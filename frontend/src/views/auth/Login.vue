@@ -117,13 +117,19 @@ async function onSubmit() {
       await userStore.login({ username: form.username, password: form.password })
       ElMessage.success('注册成功，已自动登录')
     }
-    const redirect = route.query.redirect || '/'
+    const redirect = route.query.redirect || (isMobile() ? '/m/chat' : '/')
     router.push(redirect)
   } catch (e) {
     // http.js 已经弹过错误提示
   } finally {
     loading.value = false
   }
+}
+
+function isMobile() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  ) || window.innerWidth < 768
 }
 </script>
 

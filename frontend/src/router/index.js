@@ -89,7 +89,45 @@ const routes = [
       }
     ]
   },
-  { path: '/:pathMatch(.*)*', redirect: '/' }
+  { path: '/:pathMatch(.*)*', redirect: '/' },
+  {
+    // V3.2: 移动端 H5 路由 (/m/*)
+    path: '/m',
+    component: () => import('@/views/mobile/Index.vue'),
+    redirect: '/m/chat',
+    children: [
+      {
+        path: 'chat',
+        name: 'MChat',
+        component: () => import('@/views/mobile/Chat.vue'),
+        meta: { title: '对话', public: false }
+      },
+      {
+        path: 'agent',
+        name: 'MAgent',
+        component: () => import('@/views/mobile/Agent.vue'),
+        meta: { title: 'Agent' }
+      },
+      {
+        path: 'kg',
+        name: 'MKg',
+        component: () => import('@/views/mobile/Kg.vue'),
+        meta: { title: '知识图谱' }
+      },
+      {
+        path: 'plugins',
+        name: 'MPlugins',
+        component: () => import('@/views/mobile/Plugins.vue'),
+        meta: { title: '插件' }
+      },
+      {
+        path: 'me',
+        name: 'MMe',
+        component: () => import('@/views/mobile/Me.vue'),
+        meta: { title: '我的' }
+      },
+    ]
+  },
 ]
 
 const router = createRouter({

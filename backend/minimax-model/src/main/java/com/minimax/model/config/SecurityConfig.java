@@ -51,6 +51,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     .requestMatchers("/health", "/actuator/**").permitAll()
+                    // V3.3: OpenAI 兼容网关
+                    .requestMatchers("/api/v1/openai/**").permitAll()
                     .anyRequest().authenticated()
             )
             .exceptionHandling(eh -> eh
