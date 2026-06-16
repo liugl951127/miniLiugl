@@ -90,4 +90,29 @@
 - [ ] 限流 + 配额
 - [ ] 真实模型调用
 
-## Day 4 - 待开始
+## Day 4 - 2026-06-16 ✅ 模型路由层 (OpenAI 兼容 + 限流 + 配额) + 跨服务验证
+
+**今日完成：**
+- [x] SQL：model_provider + model_config + model_quota (3 表 + 3 provider + 6 模型初始数据)
+- [x] 实体：ModelProvider、ModelConfig、ModelQuota
+- [x] Mapper：3 个 + 2 个 XML
+- [x] Provider 适配器：ModelProviderAdapter 接口 + OpenAiCompatibleAdapter + MockAdapter + Factory
+- [x] 限流：Bucket4j 60/min 突发 10
+- [x] 配额：QuotaService 原子 upsert
+- [x] Service + Controller（4 端点：list/providers/chat/stream）
+- [x] H2 test profile + schema
+- [x] 单元测试：10 用例全过
+- [x] Maven 编译：5 模块全过
+- [x] 3 服务跨跳 E2E 验证（auth + chat + model 同步运行）
+- [x] 限流触发：1006 RATE_LIMIT
+- [x] SSE 流式：真起推送字符
+- [x] 前端构建：19.26s
+
+**代码量：** Java 3293 行 + XML 1278 行 + SQL 396 行
+
+**明日计划 Day 5：**
+- [ ] 流式对话 SSE 真实接入
+- [ ] 实时打字机效果
+- [ ] 取消按钮 + 中断流式
+
+## Day 5 - 待开始

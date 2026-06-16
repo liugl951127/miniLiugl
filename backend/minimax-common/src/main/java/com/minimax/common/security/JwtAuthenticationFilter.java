@@ -86,6 +86,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             } catch (Exception e) {
                 log.debug("JWT 解析失败: {}", e.getMessage());
                 SecurityContextHolder.clearContext();
+                // 注意：不重抛 BizException，让下游 SecurityConfig 返 401 走 EntryPoint JSON 响应
+                // （SSE 场景下也会走到同一处）
             }
         }
         chain.doFilter(req, resp);

@@ -1,0 +1,52 @@
+server:
+  port: 8083
+  servlet:
+    context-path: /api/v1
+
+spring:
+  application:
+    name: minimax-model-test
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+  datasource:
+    url: jdbc:h2:mem:minimax;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-h2.sql
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+minimax:
+  jwt:
+    secret: test-secret-key-1234567890-abcdef-min-32-bytes-for-jwt-hs256
+    access-ttl-seconds: 1800
+    refresh-ttl-seconds: 604800
+    issuer: minimax-platform
+  model:
+    mock-mode: true   # 测试模式默认走 mock，不需要真实 key
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.minimax.model.entity
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      id-type: AUTO
+
+logging:
+  level:
+    com.minimax: DEBUG
+    org.springframework.security: WARN
+    reactor.netty: WARN

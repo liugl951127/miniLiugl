@@ -31,6 +31,10 @@ export default defineConfig(({ mode }) => {
           target: 'http://localhost:8082',
           changeOrigin: true
         },
+        '/api/v1/models': {
+          target: 'http://localhost:8083',
+          changeOrigin: true
+        },
         '/api': {
           target: env.VITE_API_BASE || 'http://localhost:8080',
           changeOrigin: true

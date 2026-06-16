@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.minimax.model.mapper.ModelConfigMapper">
+
+    <resultMap id="cfgMap" type="com.minimax.model.entity.ModelConfig">
+        <id     property="id"             column="id"/>
+        <result property="providerId"     column="provider_id"/>
+        <result property="modelCode"      column="model_code"/>
+        <result property="displayName"    column="display_name"/>
+        <result property="maxContext"     column="max_context"/>
+        <result property="maxOutput"      column="max_output"/>
+        <result property="inputPrice"     column="input_price"/>
+        <result property="outputPrice"    column="output_price"/>
+        <result property="supportsVision" column="supports_vision"/>
+        <result property="supportsTools"  column="supports_tools"/>
+        <result property="supportsStream" column="supports_stream"/>
+        <result property="enabled"        column="enabled"/>
+        <result property="sort"           column="sort"/>
+        <result property="description"    column="description"/>
+    </resultMap>
+
+    <select id="selectEnabledWithProvider" resultType="java.util.LinkedHashMap">
+        SELECT
+            c.id              AS model_id,
+            c.model_code      AS model_code,
+            c.display_name    AS display_name,
+            c.max_context     AS max_context,
+            c.max_output      AS max_output,
+            c.input_price     AS input_price,
+            c.output_price    AS output_price,
+            c.supports_vision AS supports_vision,
+            c.supports_tools  AS supports_tools,
+            c.supports_stream AS supports_stream,
+            p.id              AS provider_id,
+            p.code            AS provider_code,
+            p.name            AS provider_name,
+            p.base_url        AS base_url,
+            p.protocol        AS protocol
+        FROM model_config c
+        JOIN model_provider p ON p.id = c.provider_id
+        WHERE c.enabled = 1 AND p.enabled = 1 AND c.deleted = 0 AND p.deleted = 0
+        ORDER BY p.sort, c.sort
+    </select>
+
+    <select id="selectByCode" resultType="java.util.LinkedHashMap">
+        SELECT
+            c.id              AS model_id,
+            c.model_code      AS model_code,
+            c.display_name    AS display_name,
+            c.max_context     AS max_context,
+            c.max_output      AS max_output,
+            c.input_price     AS input_price,
+            c.output_price    AS output_price,
+            c.supports_vision AS supports_vision,
+            c.supports_tools  AS supports_tools,
+            c.supports_stream AS supports_stream,
+            p.id              AS provider_id,
+            p.code            AS provider_code,
+            p.name            AS provider_name,
+            p.base_url        AS base_url,
+            p.api_key         AS api_key,
+            p.protocol        AS protocol
+        FROM model_config c
+        JOIN model_provider p ON p.id = c.provider_id
+        WHERE c.model_code = #{code} AND c.deleted = 0 AND p.deleted = 0
+        LIMIT 1
+    </select>
+</mapper>

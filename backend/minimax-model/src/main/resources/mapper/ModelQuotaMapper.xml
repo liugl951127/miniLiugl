@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.minimax.model.mapper.ModelQuotaMapper">
+
+    <insert id="incrementUsage">
+        INSERT INTO model_quota (user_id, model_id, quota_date, used_tokens, used_requests, limit_tokens, limit_requests, created_at, updated_at)
+        VALUES (#{userId}, #{modelId}, #{quotaDate}, #{tokens}, #{requests}, 100000, 100, NOW(), NOW())
+        ON DUPLICATE KEY UPDATE
+            used_tokens   = used_tokens + #{tokens},
+            used_requests = used_requests + #{requests},
+            updated_at    = NOW()
+    </insert>
+</mapper>

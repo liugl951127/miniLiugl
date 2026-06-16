@@ -56,9 +56,20 @@
       <template v-else>
         <div class="chat-header">
           <h3>{{ sessionStore.currentSession.title }}</h3>
-          <el-tag v-if="sessionStore.currentSession.model" size="small">
-            {{ sessionStore.currentSession.model }}
-          </el-tag>
+          <el-select
+            v-model="modelCode"
+            placeholder="选择模型"
+            size="small"
+            style="width: 220px"
+            @change="onModelChange"
+          >
+            <el-option
+              v-for="m in modelStore.models"
+              :key="m.code"
+              :label="`${m.displayName} (${m.providerCode})`"
+              :value="m.code"
+            />
+          </el-select>
         </div>
 
         <div class="chat-messages" ref="msgBox">
@@ -95,13 +106,17 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { Plus, Search, ChatDotRound, MoreFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useSessionStore } from '@/store/session'
+import { useModelStore } from '@/store/model'
 import { sessionApi } from '@/api/session'
+import { modelApi } from '@/api/model'
 
 const sessionStore = useSessionStore()
+const modelStore = useModelStore()
 const search = ref('')
 const input = ref('')
 const sending = ref(false)
 const msgBox = ref(null)
+const modelCode = ref(modelStore.currentModel)
 
 const filteredSessions = computed(() => {
   const kw = search.value.trim().toLowerCase()
@@ -167,19 +182,31 @@ async function onSend() {
   input.value = ''
   sending.value = true
   try {
+    // 1) 发送用户消息到 chat 模块入库
     await sessionStore.appendMessage(sid, { role: 'user', content: text })
     await scrollBottom()
-    // Day 5: 这里改成流式
-    await sessionStore.appendMessage(sid, {
-      role: 'assistant',
-      content: `[Day 3 演示回复] 已收到: ${text}\n(流式 + 真实模型将在 Day 4/5 接入)`
+    // 2) 调真实模型（带历史上下文）
+    const historyMsgs = sessionStore.messages
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .slice(-10)
+      .map(m => ({ role: m.role, content: m.content }))
+    const res = await modelApi.chat({
+      model: modelCode.value,
+      messages: historyMsgs
     })
+    const reply = res.data?.content || '（模型无响应）'
+    await sessionStore.appendMessage(sid, { role: 'assistant', content: reply })
     await scrollBottom()
   } catch (e) {
+    console.error(e)
     ElMessage.error('发送失败')
   } finally {
     sending.value = false
   }
+}
+
+function onModelChange(code) {
+  modelStore.setCurrentModel(code)
 }
 
 async function scrollBottom() {
@@ -188,9 +215,15 @@ async function scrollBottom() {
 }
 
 onMounted(async () => {
-  await sessionStore.loadSessions(1)  // 只拉正常状态
+  await Promise.all([
+    sessionStore.loadSessions(1),
+    modelStore.loadModels()
+  ])
   if (sessionStore.sessions.length > 0) {
     await sessionStore.selectSession(sessionStore.sessions[0].id)
+  }
+  if (modelStore.models.length > 0) {
+    modelCode.value = modelStore.currentModel || modelStore.models[0].code
   }
 })
 </script>
