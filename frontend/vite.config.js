@@ -55,6 +55,15 @@ export default defineConfig(({ mode }) => {
           target: 'http://localhost:8088',
           changeOrigin: true
         },
+        '/api/v1/agent': {
+          target: 'http://localhost:8090',
+          changeOrigin: true
+        },
+        '/ws': {
+          target: 'ws://localhost:8090',
+          ws: true,
+          changeOrigin: true
+        },
         '/api': {
           target: env.VITE_API_BASE || 'http://localhost:8080',
           changeOrigin: true

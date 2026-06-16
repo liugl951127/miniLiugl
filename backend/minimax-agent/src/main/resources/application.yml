@@ -1,0 +1,33 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: minimax-agent
+  datasource:
+    url: jdbc:mysql://localhost:3306/minimax?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: root
+  profiles:
+    active: dev
+
+minimax:
+  agent:
+    max-rounds: 8
+    base-url: ${MODEL_BASE_URL:http://localhost:8083}
+    model: ${MODEL_NAME:MiniMax-Text-01}
+    token: ${MODEL_TOKEN:}
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      logic-delete-field: deleted
+      logic-not-delete-value: 0
+      logic-delete-value: 1
+
+logging:
+  level:
+    com.minimax: info

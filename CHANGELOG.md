@@ -159,3 +159,42 @@
 | 前端组件/视图 | 12+ |
 | 部署脚本 | 4 |
 | Git commits | 14+ |
+
+## [V2.0] - 2026-06-16 — 4 大新功能
+
+### Added
+- **V2.1 Agent 自主任务**: 12th microservice (8090), ReAct 循环
+  - Thought/Action/Observation 三段式 + `<final>` 包裹最终答案
+  - 最多 8 轮, 每轮可视化
+  - 区别于 Function Calling: Agent 是目标驱动, Function 是轮次驱动
+- **V2.2 知识图谱**: 实体-关系存储 + 1跳/2跳 + 最短路径
+  - 实体类型: person/place/org/concept/event
+  - 关系类型: works_at/located_in/friend_of/owns/...
+  - 重要性评分 1-10 + 别名 + 描述
+- **V2.3 实时协作**: WebSocket 多人编辑会话
+  - 消息广播 / typing 指示 / cursor 位置 / edit 同步
+  - 房间创建/加入/关闭, owner/editor/viewer 角色
+  - 持久化: collab_session + collab_member
+- **V2.4 插件市场**: 系统插件 + 用户发布
+  - 4 类型: Java class / HTTP / JS / WASM
+  - 评分/下载量/启停
+  - 4 个内置系统插件: weather-widget / markdown-export / code-formatter / translation
+- **V2.5 前端可视化**: 4 页面
+  - /agent: Agent 思考时间线 (步骤卡片 + 高亮颜色)
+  - /kg: 知识图谱 (实体搜索 + 1跳/2跳邻居 + 关系创建)
+  - /collab: WebSocket 多人协作 (在线列表 + 消息流 + typing)
+  - /plugins: 插件市场卡片 (评分 + 下载 + 一键发布)
+
+### SQL
+- 6 张新表: agent_task / kg_entity / kg_relation / collab_session / collab_member / plugin
+- 4 个内置插件种子数据
+
+### Test
+- 5 个新单测 (AgentServiceTest 2 + KnowledgeGraphServiceTest 3)
+- Agent 模块 BUILD SUCCESS
+
+### Build
+- 12 个后端模块 BUILD SUCCESS
+- 前端 4 新页面集成到路由
+- vite proxy 加 /api/v1/agent (8090) + /ws (WebSocket)
+

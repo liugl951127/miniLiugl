@@ -300,3 +300,28 @@
 - [ ] 演示场景 + 客户案例
 
 ## Day 14 - 待开始
+
+## V2 增值包 - 2026-06-16 ✅ 4 大新功能
+
+**今日完成：**
+- [x] **V2.1 Agent 自主任务** - ReAct 模式 (Thought/Action/Observation + XML 包裹 Final Answer)
+- [x] **V2.2 知识图谱** - entity-relation + 1跳/2跳 + 最短路径 BFS
+- [x] **V2.3 实时协作** - WebSocket 多人编辑 (消息/typing/cursor/edit) + 持久化
+- [x] **V2.4 插件市场** - 系统插件 + 用户发布 + 评分/启停 (4 类型: class/url/js/wasm)
+- [x] **V2.5 前端可视化** - Agent 思考时间线 / KG 实体图 / WS 在线 / 插件卡片
+
+**关键文件数：** 22 Java + 1462 行 + 6 SQL 表 + 19 端点 + 4 前端页面
+**测试：** 5 个新单测全过 (AgentServiceTest 2 + KnowledgeGraphServiceTest 3)
+**编译：** 12 个模块 BUILD SUCCESS (含新 minimax-agent 8090 端口)
+
+**核心代码：**
+- `backend/minimax-agent/` - 12 模块
+- `sql/15_v2_features.sql` - 6 表
+- `frontend/src/views/{agent,kg,collab,plugins}/Index.vue` - 4 页面
+- `reports/v2-features-report.md` - V2 报告
+
+**商业价值：**
+- Agent 让 AI 真正"自主" (目标驱动 vs 轮次驱动)
+- KG 让 RAG 升级为关系推理
+- 协作让 AI 助手从"单人"变"团队"
+- 插件让平台可扩展成生态

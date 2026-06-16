@@ -30,6 +30,7 @@
         <module>minimax-admin</module>
         <module>minimax-multimodal</module>
         <module>minimax-monitor</module>
+        <module>minimax-agent</module>
     </modules>
 
     <properties>

@@ -38,6 +38,30 @@ const routes = [
         meta: { title: '记忆', icon: 'Memory' }
       },
       {
+        path: 'agent',
+        name: 'Agent',
+        component: () => import('@/views/agent/Index.vue'),
+        meta: { title: 'Agent 自主任务', icon: 'MagicStick' }
+      },
+      {
+        path: 'kg',
+        name: 'KnowledgeGraph',
+        component: () => import('@/views/kg/Index.vue'),
+        meta: { title: '知识图谱', icon: 'Share' }
+      },
+      {
+        path: 'collab',
+        name: 'Collab',
+        component: () => import('@/views/collab/Index.vue'),
+        meta: { title: '实时协作', icon: 'UserFilled' }
+      },
+      {
+        path: 'plugins',
+        name: 'Plugins',
+        component: () => import('@/views/plugins/Index.vue'),
+        meta: { title: '插件市场', icon: 'Grid' }
+      },
+      {
         path: 'admin',
         name: 'Admin',
         component: () => import('@/views/admin/Index.vue'),
