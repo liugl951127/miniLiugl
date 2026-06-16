@@ -4,7 +4,8 @@ import com.minimax.model.dto.ChatRequest;
 import com.minimax.model.vo.ChatResponse;
 import reactor.core.publisher.Flux;
 
-import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 /**
  * 模型 Provider 适配器接口。
@@ -12,7 +13,7 @@ import java.util.Map;
  *
  * 两个调用形式：
  *  1. 阻塞 chat()：返回完整响应
- *  2. 流式 stream()：返回 SSE 字符串片段（data: {...}\n\n）
+ *  2. 流式 streamChat()：以回调方式推每个 chunk（SSE JSON 字符串）
  */
 public interface ModelProviderAdapter {
 
@@ -28,12 +29,23 @@ public interface ModelProviderAdapter {
     ChatResponse chat(String endpoint, String apiKey, ChatRequest req);
 
     /**
-     * 流式调用。
-     * 返回 SSE 片段（"data: {...}\n\n" 形式），最后一段为 "data: [DONE]\n\n"。
+     * 流式调用（回调式）。每个 chunk 是一段 SSE JSON 字符串（不含 "data: " 前缀）。
+     * 取消时抛 RuntimeException("STREAM_CANCELLED") 由调用方捕获。
+     *
+     * @return OpenAiCompatibleAdapter.StreamResult 包含完整 token 统计
+     */
+    default OpenAiCompatibleAdapter.StreamResult streamChat(String endpoint, String apiKey, ChatRequest req,
+                                                             Consumer<String> chunkJsonConsumer,
+                                                             AtomicBoolean stopFlag) {
+        throw new UnsupportedOperationException(code() + " 不支持流式");
+    }
+
+    /**
+     * 兼容旧流式 API（webflux Flux）。Day 4 保留。
      */
     Flux<String> stream(String endpoint, String apiKey, ChatRequest req);
 
-    /** 健康检查（可选，Ollama 用于探活）。 */
+    /** 健康检查。 */
     default boolean ping(String endpoint, String apiKey) {
         return true;
     }

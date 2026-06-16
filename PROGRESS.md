@@ -115,4 +115,27 @@
 - [ ] 实时打字机效果
 - [ ] 取消按钮 + 中断流式
 
-## Day 5 - 待开始
+## Day 5 - 2026-06-16 ✅ 流式对话 SSE (核心) + 取消机制 + 打字机
+
+**今日完成：**
+- [x] OpenAI 真实流式调用 (HttpClient + BodyHandlers.ofLines)
+- [x] Mock 流式 30ms/字符
+- [x] 流式控制器（按 provider 选 adapter + SSE 推 chunk）
+- [x] 取消机制（后端 stopFlag + streamId 跟踪）
+- [x] /models/chat/cancel 端点
+- [x] 前端 fetch + ReadableStream 实时处理
+- [x] 打字机效果（光标 blink 动画）
+- [x] 取消按钮（流式时 "发送" 变 "停止"）
+- [x] Token 计数 + finishReason UI
+- [x] 单元测试 13 用例全过
+- [x] Maven 编译：全过
+- [x] 3 服务跳 E2E：流式 + 取消 都验证过
+
+**关键代码量：** Java 3593 行 + XML 1336 行
+
+**明日计划 Day 6：**
+- [ ] 短期记忆 (Redis) - 多轮上下文管理
+- [ ] 上下文窗口截断
+- [ ] 系统提示词模板
+
+## Day 6 - 待开始
