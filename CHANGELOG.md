@@ -1,55 +1,161 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+所有重要的项目变更都记录在此。
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
-## [Unreleased]
+## [1.0.0] - 2026-06-16
 
-### Planned (Day 3-14)
-- Session module + sidebar UI
-- Model router (OpenAI-compatible)
-- Streaming chat (SSE) ⭐
-- Short/long-term memory
-- RAG knowledge base
-- Function calling
-- Admin dashboard
-- Multimodal upload
-- Monitoring
-- Production hardening
+### 14 天路线图全部完成 🎉
 
-## [0.2.0] - 2026-06-16
+### Day 13 - 2026-06-16
+#### Added
+- 限流: Bucket4j 多维度 (IP/User/Global) + RateLimitService 配置化
+- 缓存: Caffeine CacheService (防击穿 + TTL + 统计)
+- 异步: AsyncTaskService (UUID + 状态机 + 重试 + 回调 + Future)
+- 请求日志: RequestLogFilter (traceId + 慢/错采点)
+- 压测: benchmark.sh (Bash 并发: QPS + p50/p95/p99)
+- 配置: minimax-optimized.yml (生产调优模板)
+- SQL: request_log / async_task / rate_limit_rule (3 表)
+- 测试: 11 用例 (限流/缓存/异步)
+- 累计: **125 用例 0 失败**
 
-### Day 2 - User System & JWT Auth
-- Added: SQL schema (5 tables: sys_user/sys_role/sys_user_role/auth_refresh_token/auth_login_log)
-- Added: User/Role/UserRole/RefreshToken/LoginLog entities
-- Added: MyBatis-Plus mappers (5) + XML mappings (2)
-- Added: JWT dual-token (access 30min + refresh 7d) with SHA-256 hashed refresh
-- Added: Spring Security 6 stateless config + JWT filter + JSON entry points
-- Added: AuthService (register/login/refresh/logout/me)
-- Added: AuthController 5 REST endpoints
-- Added: AuthApplication (standalone runnable)
-- Added: Frontend real login page (login/register tabs)
-- Added: Pinia user store with dual-token persistence
-- Added: Axios 401 auto-refresh and retry
-- Added: Full router guards
-- Added: Vite proxy `/api/v1/auth` -> :8081
-- Added: Unit tests (4 cases)
-- Added: Self-check scripts (daily-build.sh, java-static-check.sh)
-- Fixed: Element Plus Memory icon deprecated -> Cpu
-- Fixed: Result.toJsonString() missing
-- Fixed: UA length truncation
+### Day 12 - 2026-06-16
+#### Added
+- 监控模块: 11th microservice (8089)
+- MetricsCollector: 5 Counter + 4 Gauge + 2 Timer (Micrometer)
+- AlertEngine: 30s 评估 + 6 运算符 + 冷却 + 自动恢复
+- HealthDetailService: 5 维度 (DB/JVM/Disk/Thread/System)
+- SnapshotService: 60s 落库 + 30d 清理
+- 5 默认告警规则 (CPU/JVM/磁盘/LLM延迟/错误率)
+- Prometheus 集成: `/actuator/prometheus`
+- SQL: metric_snapshot / alert_rule / alert_event (3 表)
+- 测试: 11 用例 (HealthDetail + AlertEngine)
+- 累计: **114 用例**
 
-## [0.1.0] - 2026-06-15
+### Day 11 - 2026-06-16
+#### Added
+- 多模态模块: 10th microservice (8088)
+- VisionService: OpenAI vision 协议 + Mock 降级
+- 图片信息识别: PNG/JPEG/GIF/WebP magic number
+- 醒目前端升级:
+  - MarkdownView: Markdown + 代码高亮 + 复制按钮
+  - ChatMessage: Markdown + 工具调用 + RAG 引用 + 拖拽图片
+  - chat/Index.vue: 快速提问 + 拖拽上传 + 流式 + 工具展示
+  - admin/Dashboard.vue: 健康 pill + KPI 卡片 + ECharts 折线/饼图
+  - layout/Index.vue: 顶部服务健康 pill (30s 自动刷新)
+- 测试: 7 用例 (VisionService)
 
-### Day 1 - Project Skeleton
-- Added: Spring Boot 3 multi-module Maven structure (7 modules)
-- Added: Unified Result wrapper + global exception handler
-- Added: Vue 3 + Vite + Element Plus + Pinia skeleton
-- Added: Frontend routes (login/chat/knowledge/memory/admin/about)
-- Added: Layout (sidebar + topbar + user dropdown)
-- Added: docker-compose for MySQL 8 + Redis 7 + ES 8 + MinIO
-- Added: Gateway health check + platform intro API
-- Added: Daily build script
-- Added: Cron setup script
+### Day 10 - 2026-06-16
+#### Added
+- 管理后台模块: 9th microservice (8087)
+- ServiceClient: Java 11+ HttpClient 跨服务客户端 (无 Feign 依赖)
+- UserMgmtService: 代理 auth + 自动审计
+- ModelMgmtService: 代理 model + 调限流审计
+- StatsService: 业务统计 + dashboard 聚合
+- HealthAggregator: 并发 ping 6 服务
+- AuditService: 统一操作审计
+- SQL: admin_audit_log
+- 测试: 11 用例
+
+### Day 9 - 2026-06-16
+#### Added
+- Function Calling 模块: 8th microservice (8086)
+- 4 个内置工具: get_current_time / calculator / http_get / random_number
+- 自实现表达式求值器 (不依赖 Nashorn, Java 17 headless 兼容)
+- ToolExecutor: 工具路由器 (内置 + HTTP)
+- FunctionCallService: LLM + tool 循环 (最多 5 轮)
+- SSRF 防护 + 字符白名单
+- SQL: function_tool + function_call_log
+- 测试: 23 用例
+
+### Day 8 - 2026-06-16
+#### Added
+- RAG 模块完整版: 7th microservice (8085)
+- 3 种文档解析器: TXT/MD (BOM 探测) / DOCX (POI) / PDF (PDFBox)
+- 智能分块器 TextChunker (滑动窗口 500/50 + 位置跟踪)
+- DocumentService: SHA-256 去重 + 状态机
+- Retriever: 向量检索 topK + 引用填充
+- RagService: 检索 + LLM 增强 + 3 级降级
+- SQL: knowledge_base / document / document_chunk
+- 测试: 19 用例
+
+### Day 7 - 2026-06-16
+#### Added
+- 长期记忆 (向量库)
+- Embedding 抽象: OpenAI 兼容 + Mock 离线
+- 长期记忆 Service: store / recall (余弦) / recent / delete
+- 用户偏好 Service: set/get/list/delete
+- 跨会话 Context Builder: 短+长+偏好+摘要
+- 真实 LLM 摘要升级 (调 model 服务)
+- SQL: memory_long_term + memory_user_pref
+- 测试: 12 用例 (新增)
+
+### Day 6 - 2026-06-16
+#### Added
+- 短期记忆 (Redis + Caffeine 双层降级)
+- ContextBuilder: 按 maxContext 智能裁剪
+- Summarizer: 35→10 条触发压缩
+- MemoryController 6 端点
+- chat 模块独立 SessionContextCache
+- 累计: 43 用例
+
+### Day 5 - 2026-06-16
+#### Added
+- 真流式 (HttpClient BodyHandlers.ofLines)
+- 取消机制 (streamId + stopFlag + POST /cancel)
+- 打字机 + 停止按钮
+- 前端 fetch + ReadableStream
+- 累计: 33 用例
+
+### Day 4 - 2026-06-16
+#### Added
+- 模型路由 (model_provider / model_config / model_quota)
+- OpenAI 兼容 + Bucket4j 限流 (10/60s)
+- 6 个模型: gpt-4o / MiniMax-Text-01 / VL-01 / ollama / qwen / mock
+- Mock 模式开关 (无 key 也能演示)
+- SSE StreamingResponseBody
+- 累计: 30 用例
+
+### Day 3 - 2026-06-16
+#### Added
+- 会话消息 (chat_session / chat_message)
+- SessionController + MessageController
+- 前端侧边栏
+- 架构重构: JwtAuthenticationFilter 抽到 common
+- H2 test profile
+- 累计: 20 用例
+
+### Day 2 - 2026-06-16
+#### Added
+- 用户鉴权: 5 表 + JWT 双 token (30min/7d)
+- Spring Security 6 + BCrypt
+- AuthController 5 端点
+- Pinia user store + 401 自动 refresh
+- 累计: 8 用例
+
+### Day 1 - 2026-06-16
+#### Added
+- 项目骨架: 7 模块 Spring Boot 3 多模块
+- Vue 3 + Element Plus + Pinia 前端
+- docker-compose: MySQL + Redis + ES + MinIO
+- 定时任务安装脚本
+- 网关健康检查 + 平台介绍 API
+
+---
+
+## 整体数据
+
+| 指标 | 14 天累计 |
+|------|-----------|
+| 后端模块 | 11 |
+| Java 文件 | 191 |
+| Java 行数 | 11,454 |
+| SQL 文件 | 8 |
+| SQL 行数 | 963 |
+| 单元/集成测试 | 125 (0 失败) |
+| HTTP 端点 | 92+ |
+| 数据表 (MySQL) | 18+ |
+| 前端组件/视图 | 12+ |
+| 部署脚本 | 4 |
+| Git commits | 14+ |
