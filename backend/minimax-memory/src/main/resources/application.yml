@@ -1,0 +1,38 @@
+server:
+  port: 8084
+  servlet:
+    context-path: /api/v1
+
+spring:
+  application:
+    name: minimax-memory
+  profiles:
+    active: dev
+  jackson:
+    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
+  datasource:
+    url: jdbc:mysql://localhost:3306/minimax?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${DB_USER:root}
+    password: ${DB_PASS:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASS:}
+
+minimax:
+  jwt:
+    secret: ${JWT_SECRET:minimax-default-secret-please-override-in-production-32+}
+    access-ttl-seconds: 1800
+    refresh-ttl-seconds: 604800
+    issuer: minimax-platform
+  memory:
+    use-redis: true   # false → 强制用本地 Caffeine
+
+logging:
+  level:
+    com.minimax: DEBUG
+    org.springframework.security: WARN
+    org.springframework.data.redis: WARN

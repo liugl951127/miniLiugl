@@ -138,4 +138,29 @@
 - [ ] 上下文窗口截断
 - [ ] 系统提示词模板
 
-## Day 6 - 待开始
+## Day 6 - 2026-06-16 ✅ 短期记忆 (Redis) + 摘要压缩 + 上下文管理
+
+**今日完成：**
+- [x] memory 模块上线
+- [x] ShortTermMemory (Redis LIST + Caffeine 兑底)
+- [x] ContextBuilder (按 maxContext 智能裁剪)
+- [x] Summarizer (摘要压缩、30 条触发)
+- [x] MemoryController 6 端点
+- [x] chat 模块加 SessionContextCache (本地独立)
+- [x] chat appendMessage 自动同步短期记忆
+- [x] chat recentContext 接口
+- [x] 单元测试 21 用例全过 (memory 8 新)
+- [x] Maven 编译 6 模块全过 (41.8s)
+- [x] 4 服务跳 E2E (auth+chat+model+memory)
+- [x] 摘要验证：35→10 条成功
+- [x] 上下文构建验证
+- [x] 集成验证：chat history → model 调成功
+
+**代码量：** Java 4329 行 + XML 1633 行
+
+**明日计划 Day 7：**
+- [ ] 长期记忆 (向量库)
+- [ ] 真实 LLM 摘要
+- [ ] 跨会话记忆召回
+
+## Day 7 - 待开始
