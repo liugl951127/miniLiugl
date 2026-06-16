@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    password: root
+
+minimax:
+  jwt:
+    secret: dev_secret_minimax_jwt_key_2024_at_least_32_bytes_xxxxx
+
+logging:
+  level:
+    com.minimax: DEBUG

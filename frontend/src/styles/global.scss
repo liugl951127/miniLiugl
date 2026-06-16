@@ -1,0 +1,63 @@
+// 全局变量
+:root {
+  --minimax-primary: #5b8def;
+  --minimax-primary-dark: #3b6dd0;
+  --minimax-accent: #b66dff;
+  --minimax-bg: #f5f7fa;
+  --minimax-bg-dark: #0b1220;
+  --minimax-text: #1f2937;
+  --minimax-text-secondary: #6b7280;
+  --minimax-border: #e5e7eb;
+  --minimax-success: #10b981;
+  --minimax-warning: #f59e0b;
+  --minimax-danger: #ef4444;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--minimax-bg);
+  color: var(--minimax-text);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+a { color: var(--minimax-primary); text-decoration: none; }
+a:hover { color: var(--minimax-primary-dark); }
+
+// 滚动条
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+::-webkit-scrollbar-track { background: transparent; }
+
+// 通用工具类
+.flex { display: flex; }
+.flex-1 { flex: 1; }
+.flex-center { display: flex; align-items: center; justify-content: center; }
+.flex-between { display: flex; align-items: center; justify-content: space-between; }
+.gap-8 { gap: 8px; }
+.gap-12 { gap: 12px; }
+.gap-16 { gap: 16px; }
+.mt-8 { margin-top: 8px; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+
+// 卡片
+.minimax-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+// 渐变文字
+.gradient-text {
+  background: linear-gradient(90deg, var(--minimax-primary), var(--minimax-accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 700;
+}
