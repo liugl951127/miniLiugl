@@ -277,4 +277,26 @@
 - [ ] 异步化 (@Async)
 - [ ] 压测报告
 
-## Day 13 - 待开始
+## Day 13 - 2026-06-16 ✅ 调优 (限流/缓存/异步/请求日志/压测)
+
+**今日完成：**
+- [x] MySQL 3 张表：`request_log` / `async_task` / `rate_limit_rule`
+- [x] RateLimiter (Bucket4j 令牌桶) + RateLimitService (IP/User/Global 三维)
+- [x] CacheService (Caffeine) + 防击穿 getOrLoad + TTL + stats
+- [x] AsyncTaskService (UUID 任务 + 状态机 + 重试 + 回调 + Future)
+- [x] RequestLogFilter (traceId + 慢/错采点)
+- [x] benchmark.sh (Bash 并发压测: QPS + p50/p95/p99)
+- [x] minimax-optimized.yml (Tomcat/HikariCP/Redis/JVM 生产调优模板)
+- [x] common 模块升级: Bucket4j 8.10.1 + Caffeine 3.1.8
+- [x] 集成测试 11 用例 (限流/缓存/异步)
+
+**关键数据：** +6 java (191 总) / +617 行 (11454) / 11 测试 / 3 张 MySQL 表 / 1 压测脚本 / 11 后端模块
+**报告：** `reports/day-13-report.md`
+
+**明日计划 Day 14：**
+- [ ] 完整 README + 架构图
+- [ ] API 文档 (OpenAPI 3)
+- [ ] Docker 镜像 + K8s manifest
+- [ ] 演示场景 + 客户案例
+
+## Day 14 - 待开始
