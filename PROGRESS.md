@@ -209,4 +209,26 @@
 - [ ] 自定义工具 API
 - [ ] 工具调用 + 聊天循环
 
-## Day 9 - 待开始
+## Day 9 - 2026-06-16 ✅ Function Calling (工具调用)
+
+**今日完成：**
+- [x] MySQL 2 张表：`function_tool` (工具注册) + `function_call_log` (调用审计)
+- [x] 4 个内置工具：get_current_time / calculator / http_get / random_number
+- [x] 自实现表达式求值器 (不依赖 Nashorn, Java 17 headless 兼容)
+- [x] ToolExecutor 路由器：内置按 name bean / 自定义 HTTP POST
+- [x] FunctionCallService：LLM + tool 循环 (最多 5 轮)
+- [x] 工具调用结果回传 LLM (OpenAI tool_use 协议)
+- [x] SSRF 防护 + 字符白名单 + 异常隔离
+- [x] FunctionController 10 端点 (CRUD + invoke + logs + chat)
+- [x] 集成测试 23 用例 (13 unit + 10 integration)
+
+**关键数据：** +17 java (152 总) / +1412 行 (8407) / 23 测试 / 2 张 MySQL 表 / 10 端点 / 4 内置工具 / 8 后端模块
+**报告：** `reports/day-9-report.md`
+
+**明日计划 Day 10：**
+- [ ] 管理后台 (用户/模型/KB/统计)
+- [ ] 跨服务 API 聚合
+- [ ] 监控面板 (JVM 指标 + 业务指标)
+- [ ] 操作审计 (关键操作日志)
+
+## Day 10 - 待开始

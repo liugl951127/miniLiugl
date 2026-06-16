@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.minimax.function.mapper.FunctionCallLogMapper">
+
+    <resultMap id="logMap" type="com.minimax.function.entity.FunctionCallLog">
+        <id     property="id"          column="id"/>
+        <result property="userId"      column="user_id"/>
+        <result property="sessionId"   column="session_id"/>
+        <result property="toolName"    column="tool_name"/>
+        <result property="arguments"   column="arguments"/>
+        <result property="result"      column="result"/>
+        <result property="status"      column="status"/>
+        <result property="errorMsg"    column="error_msg"/>
+        <result property="durationMs"  column="duration_ms"/>
+        <result property="ip"          column="ip"/>
+        <result property="userAgent"   column="user_agent"/>
+        <result property="createdAt"   column="created_at"/>
+    </resultMap>
+
+    <select id="selectByUser" resultMap="logMap">
+        SELECT * FROM function_call_log
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectByTool" resultMap="logMap">
+        SELECT * FROM function_call_log
+        WHERE tool_name = #{toolName}
+        ORDER BY created_at DESC
+        LIMIT #{limit}
+    </select>
+</mapper>

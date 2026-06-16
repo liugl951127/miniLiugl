@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.minimax.function.mapper.FunctionToolMapper">
+
+    <resultMap id="toolMap" type="com.minimax.function.entity.FunctionTool">
+        <id     property="id"           column="id"/>
+        <result property="name"         column="name"/>
+        <result property="displayName"  column="display_name"/>
+        <result property="description"  column="description"/>
+        <result property="category"     column="category"/>
+        <result property="scope"        column="scope"/>
+        <result property="ownerId"      column="owner_id"/>
+        <result property="parameters"   column="parameters"/>
+        <result property="endpoint"     column="endpoint"/>
+        <result property="httpMethod"   column="http_method"/>
+        <result property="enabled"      column="enabled"/>
+        <result property="tags"         column="tags"/>
+        <result property="createdAt"    column="created_at"/>
+        <result property="updatedAt"    column="updated_at"/>
+    </resultMap>
+
+    <select id="selectByName" resultMap="toolMap">
+        SELECT * FROM function_tool
+        WHERE name = #{name} AND deleted = 0
+        LIMIT 1
+    </select>
+
+    <select id="selectByCategory" resultMap="toolMap">
+        SELECT * FROM function_tool
+        WHERE category = #{category} AND deleted = 0 AND enabled = 1
+        ORDER BY id ASC
+    </select>
+
+    <select id="selectEnabled" resultMap="toolMap">
+        SELECT * FROM function_tool
+        WHERE deleted = 0 AND enabled = 1
+        ORDER BY id ASC
+    </select>
+</mapper>
