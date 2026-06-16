@@ -1,0 +1,46 @@
+server:
+  port: 8089
+  servlet:
+    context-path: /api/v1
+
+spring:
+  application:
+    name: minimax-monitor-test
+  datasource:
+    url: jdbc:h2:mem:minimax;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-h2.sql
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: minimax-monitor
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+minimax:
+  jwt:
+    secret: test-secret-key-1234567890-abcdef-min-32-bytes-for-jwt-hs256
+    access-ttl-seconds: 1800
+    refresh-ttl-seconds: 604800
+    issuer: minimax-platform
+
+logging:
+  level:
+    com.minimax: DEBUG

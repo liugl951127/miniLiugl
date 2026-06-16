@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.minimax.monitor.mapper.MetricSnapshotMapper">
+
+    <resultMap id="snapMap" type="com.minimax.monitor.entity.MetricSnapshot">
+        <id     property="id"           column="id"/>
+        <result property="service"      column="service"/>
+        <result property="metricName"   column="metric_name"/>
+        <result property="metricValue"  column="metric_value"/>
+        <result property="tags"         column="tags"/>
+        <result property="recordedAt"   column="recorded_at"/>
+    </resultMap>
+
+    <select id="selectRecent" resultMap="snapMap">
+        SELECT * FROM metric_snapshot
+        <where>
+            <if test="metricName != null and metricName != ''">AND metric_name = #{metricName}</if>
+            <if test="service != null and service != ''">AND service = #{service}</if>
+            AND recorded_at >= TIMESTAMPADD(MINUTE, -#{sinceMinutes}, CURRENT_TIMESTAMP)
+        </where>
+        ORDER BY recorded_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="aggregate" resultType="java.util.LinkedHashMap">
+        SELECT
+            AVG(metric_value) AS avg_val,
+            MAX(metric_value) AS max_val,
+            MIN(metric_value) AS min_val,
+            COUNT(*) AS cnt
+        FROM metric_snapshot
+        <where>
+            <if test="metricName != null and metricName != ''">AND metric_name = #{metricName}</if>
+            <if test="service != null and service != ''">AND service = #{service}</if>
+            AND recorded_at >= TIMESTAMPADD(MINUTE, -#{sinceMinutes}, CURRENT_TIMESTAMP)
+        </where>
+    </select>
+
+    <update id="deleteOlderThan">
+        DELETE FROM metric_snapshot WHERE recorded_at &lt; TIMESTAMPADD(DAY, -#{days}, CURRENT_TIMESTAMP)
+    </update>
+</mapper>

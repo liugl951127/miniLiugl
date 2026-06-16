@@ -254,4 +254,27 @@
 - [ ] 多模态 RAG
 - [ ] 图片理解对话
 
-## Day 11 - 待开始
+## Day 12 - 2026-06-16 ✅ 监控 (Prometheus + 告警 + 健康详情)
+
+**今日完成：**
+- [x] MySQL 3 张表：`metric_snapshot` / `alert_rule` / `alert_event`
+- [x] 5 个默认告警规则 (CPU/JVM/磁盘/LLM延迟/错误率)
+- [x] HealthDetailService：DB/JVM/磁盘/线程/系统 5 维度
+- [x] MetricsCollector：5 Counter + 4 Gauge + 2 Timer (Micrometer)
+- [x] SnapshotService：60s 落库 + 30 天自动清理
+- [x] AlertEngine：30s 评估 + 6 种运算符 + 冷却 + 自动恢复
+- [x] Prometheus：`/actuator/prometheus` 暴露
+- [x] MonitorController 15 端点
+- [x] 集成测试 11 用例 (6 health + 5 alert)
+
+**关键数据：** +13 java (185 总) / +1427 行 (10837) / 11 测试 / 3 张 MySQL 表 / 15 端点 / 5 告警规则 / 11 后端模块
+**报告：** `reports/day-12-report.md`
+
+**明日计划 Day 13：**
+- [ ] JVM 调优 (G1GC, Metaspace, DirectMemory)
+- [ ] HikariCP 连接池调优
+- [ ] 缓存层 (Caffeine + Redis)
+- [ ] 异步化 (@Async)
+- [ ] 压测报告
+
+## Day 13 - 待开始

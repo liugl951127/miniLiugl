@@ -29,6 +29,7 @@
         <module>minimax-function</module>
         <module>minimax-admin</module>
         <module>minimax-multimodal</module>
+        <module>minimax-monitor</module>
     </modules>
 
     <properties>
