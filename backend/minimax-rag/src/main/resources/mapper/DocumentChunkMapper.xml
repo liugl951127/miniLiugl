@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.minimax.rag.mapper.DocumentChunkMapper">
+
+    <resultMap id="chunkMap" type="com.minimax.rag.entity.DocumentChunk">
+        <id     property="id"             column="id"/>
+        <result property="docId"          column="doc_id"/>
+        <result property="kbId"           column="kb_id"/>
+        <result property="ownerId"        column="owner_id"/>
+        <result property="chunkIndex"     column="chunk_index"/>
+        <result property="content"        column="content"/>
+        <result property="embedding"      column="embedding"/>
+        <result property="dim"            column="dim"/>
+        <result property="charCount"      column="char_count"/>
+        <result property="startPos"       column="start_pos"/>
+        <result property="endPos"         column="end_pos"/>
+        <result property="accessCount"    column="access_count"/>
+        <result property="lastAccessAt"   column="last_access_at"/>
+        <result property="createdAt"      column="created_at"/>
+        <result property="updatedAt"      column="updated_at"/>
+    </resultMap>
+
+    <select id="selectEmbeddingsByKb" resultMap="chunkMap">
+        SELECT id, doc_id, kb_id, owner_id, chunk_index, content, embedding, dim,
+               char_count, start_pos, end_pos, access_count, last_access_at,
+               created_at, updated_at
+        FROM document_chunk
+        WHERE kb_id = #{kbId} AND deleted = 0
+        ORDER BY id ASC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectByDoc" resultMap="chunkMap">
+        SELECT id, doc_id, kb_id, owner_id, chunk_index, content, dim,
+               char_count, start_pos, end_pos, access_count, last_access_at,
+               created_at, updated_at
+        FROM document_chunk
+        WHERE doc_id = #{docId} AND deleted = 0
+        ORDER BY chunk_index ASC
+    </select>
+
+    <update id="touchAccess">
+        UPDATE document_chunk
+        SET access_count = access_count + 1, last_access_at = NOW()
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <update id="deleteByDoc">
+        UPDATE document_chunk SET deleted = 1
+        WHERE doc_id = #{docId}
+    </update>
+</mapper>

@@ -186,4 +186,27 @@
 - [ ] 检索增强生成 (retrieval-augmented chat)
 - [ ] 引用来源标注
 
-## Day 8 - 待开始
+## Day 8 - 2026-06-16 ✅ RAG (知识库 + 文档上传 + 检索 + 问答 + 引用)
+
+**今日完成：**
+- [x] MySQL 3 张表：`knowledge_base` + `document` + `document_chunk`
+- [x] 3 种文档解析器：TXT/MD (BOM探测) / DOCX (POI) / PDF (PDFBox)
+- [x] 智能分块器 TextChunker (滑动窗口 500/50 + 位置跟踪)
+- [x] DocumentService upload：SHA-256 去重 + 解析 + 分块 + 向量化 + 入库 + 状态机
+- [x] Retriever：向量检索 topK + touchAccess + 引用填充
+- [x] RagService：检索 → 拼 context → 调 LLM → 答案+来源 (3 级降级)
+- [x] RagController 11 端点 (KB CRUD + Doc upload + retrieve + ask)
+- [x] 集成测试 19 用例 (8 端到端 + 6 chunker + 5 vector)
+- [x] Maven 7 模块编译 + 62 总测试全过
+
+**关键数据：** +26 java (135 总) / +1538 行 (6995) / 19 测试 / 3 张 MySQL 表 / 11 端点
+**报告：** `reports/day-8-report.md`
+
+**明日计划 Day 9：**
+- [ ] 工具注册表 (function registry)
+- [ ] LLM 工具调用协议 (OpenAI functions)
+- [ ] 内置工具: 时间/计算器/HTTP抓取
+- [ ] 自定义工具 API
+- [ ] 工具调用 + 聊天循环
+
+## Day 9 - 待开始
