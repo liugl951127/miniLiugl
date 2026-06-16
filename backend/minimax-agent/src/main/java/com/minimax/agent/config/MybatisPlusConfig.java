@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.time.LocalDateTime;
 
-@Configuration
+@Configuration("agentMybatisPlusConfig")
 public class MybatisPlusConfig {
 
     @Bean
