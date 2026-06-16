@@ -231,4 +231,27 @@
 - [ ] 监控面板 (JVM 指标 + 业务指标)
 - [ ] 操作审计 (关键操作日志)
 
-## Day 10 - 待开始
+## Day 10 - 2026-06-16 ✅ 管理后台 (跨服务 API 聚合 + 审计 + 监控)
+
+**今日完成：**
+- [x] MySQL 1 张表：`admin_audit_log` (统一操作审计)
+- [x] ServiceClient：Java 11+ HttpClient 封装的跨服务 HTTP 客户端 (无 Feign 依赖)
+- [x] 6 服务端点配置 (auth/chat/model/memory/rag/function)
+- [x] UserMgmtService：代理 auth + 自动审计 (重置密码/启停)
+- [x] ModelMgmtService：代理 model + 调限流审计
+- [x] StatsService：业务统计 (today/last7d/last30d) + dashboard
+- [x] HealthAggregator：并发 ping 6 服务 + 跨服务 health
+- [x] AuditService：统一操作审计 + 记录/查询/统计
+- [x] AdminController 14 端点 (用户管理 + 模型管理 + 统计 + 监控 + 审计)
+- [x] 集成测试 11 用例 (8 integration + 3 unit)
+
+**关键数据：** +14 java (166 总) / +1003 行 (9410) / 11 测试 / 1 张 MySQL 表 / 14 端点 / 9 后端模块
+**报告：** `reports/day-10-report.md`
+
+**明日计划 Day 11：**
+- [ ] 多模态 (图片上传 + 视觉模型)
+- [ ] 多模态 Embedding
+- [ ] 多模态 RAG
+- [ ] 图片理解对话
+
+## Day 11 - 待开始

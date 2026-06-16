@@ -27,6 +27,7 @@
         <module>minimax-model</module>
         <module>minimax-rag</module>
         <module>minimax-function</module>
+        <module>minimax-admin</module>
     </modules>
 
     <properties>

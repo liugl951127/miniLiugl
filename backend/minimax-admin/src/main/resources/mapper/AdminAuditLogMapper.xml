@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.minimax.admin.mapper.AdminAuditLogMapper">
+
+    <resultMap id="logMap" type="com.minimax.admin.entity.AdminAuditLog">
+        <id     property="id"            column="id"/>
+        <result property="actorId"       column="actor_id"/>
+        <result property="actorName"     column="actor_name"/>
+        <result property="action"        column="action"/>
+        <result property="resourceType"  column="resource_type"/>
+        <result property="resourceId"    column="resource_id"/>
+        <result property="detail"        column="detail"/>
+        <result property="result"        column="result"/>
+        <result property="errorMsg"      column="error_msg"/>
+        <result property="ip"            column="ip"/>
+        <result property="userAgent"     column="user_agent"/>
+        <result property="createdAt"     column="created_at"/>
+    </resultMap>
+
+    <select id="selectByActor" resultMap="logMap">
+        SELECT * FROM admin_audit_log
+        WHERE actor_id = #{actorId}
+        ORDER BY created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectRecent" resultMap="logMap">
+        SELECT * FROM admin_audit_log
+        ORDER BY created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="countByAction" resultType="java.util.LinkedHashMap">
+        SELECT action, COUNT(*) AS cnt
+        FROM admin_audit_log
+        <if test="since != null and since != ''">
+        WHERE created_at &gt;= #{since}
+        </if>
+        GROUP BY action
+        ORDER BY cnt DESC
+    </select>
+
+    <select id="countByResourceType" resultType="java.util.LinkedHashMap">
+        SELECT resource_type, COUNT(*) AS cnt
+        FROM admin_audit_log
+        <if test="since != null and since != ''">
+        WHERE created_at &gt;= #{since}
+        </if>
+        GROUP BY resource_type
+        ORDER BY cnt DESC
+    </select>
+</mapper>
