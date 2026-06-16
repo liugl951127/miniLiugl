@@ -15,6 +15,10 @@ spring:
     username: sa
     password:
     driver-class-name: org.h2.Driver
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-h2.sql
 
 minimax:
   jwt:
@@ -23,7 +27,19 @@ minimax:
     refresh-ttl-seconds: 604800
     issuer: minimax-platform
   memory:
-    use-redis: false  # 测试时强制走本地 Caffeine
+    use-redis: false
+    embedding:
+      model: mock
+      dim: 64      # mock 用 64 维 (生产建议 1536)
+      base-url: http://localhost:8083
+      api-key: ""
+    recall:
+      top-k: 5
+      min-score: 0.10    # mock embedding 相似度不高，调低
+    summary:
+      model: mock
+      base-url: http://localhost:8083
+      token: ""
 
 logging:
   level:

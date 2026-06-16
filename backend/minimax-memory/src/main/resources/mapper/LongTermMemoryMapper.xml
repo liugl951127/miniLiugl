@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.minimax.memory.longterm.LongTermMemoryMapper">
+
+    <resultMap id="lrmMap" type="com.minimax.memory.longterm.LongTermMemory">
+        <id     property="id"            column="id"/>
+        <result property="userId"        column="user_id"/>
+        <result property="sessionId"     column="session_id"/>
+        <result property="content"       column="content"/>
+        <result property="summary"       column="summary"/>
+        <result property="role"          column="role"/>
+        <result property="dim"           column="dim"/>
+        <result property="importance"    column="importance"/>
+        <result property="tags"          column="tags"/>
+        <result property="accessCount"   column="access_count"/>
+        <result property="lastAccessAt"  column="last_access_at"/>
+        <result property="expiresAt"     column="expires_at"/>
+        <result property="createdAt"     column="created_at"/>
+        <result property="updatedAt"     column="updated_at"/>
+    </resultMap>
+
+    <select id="selectRecentByUser" resultMap="lrmMap">
+        SELECT id, user_id, session_id, content, summary, role, dim,
+               importance, tags, access_count, last_access_at, expires_at,
+               created_at, updated_at
+        FROM memory_long_term
+        WHERE user_id = #{userId} AND deleted = 0
+        ORDER BY created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectEmbeddingsByUser" resultMap="lrmMap">
+        SELECT id, user_id, session_id, content, summary, role, embedding, dim,
+               importance, tags, access_count, last_access_at, expires_at,
+               created_at, updated_at
+        FROM memory_long_term
+        WHERE user_id = #{userId} AND deleted = 0
+        ORDER BY created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <update id="touchAccess">
+        UPDATE memory_long_term
+        SET access_count = access_count + 1,
+            last_access_at = NOW()
+        WHERE id = #{id} AND deleted = 0
+    </update>
+</mapper>

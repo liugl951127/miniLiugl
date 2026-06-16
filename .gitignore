@@ -58,3 +58,4 @@ out/
 
 # 沙箱临时
 logs/cron.log
+.e2e/

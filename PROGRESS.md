@@ -163,4 +163,27 @@
 - [ ] 真实 LLM 摘要
 - [ ] 跨会话记忆召回
 
-## Day 7 - 待开始
+## Day 7 - 2026-06-16 ✅ 长期记忆 (向量库) + 跨会话召回 + 偏好 + 真实 LLM 摘要
+
+**今日完成：**
+- [x] MySQL 2 张表：`memory_long_term`（向量 BLOB）+ `memory_user_pref`（偏好 KV）
+- [x] Embedding 抽象层 (`EmbeddingClient`): OpenAI 兼容 + Mock (离线)
+- [x] `LongTermMemoryService`: store / recall (余弦) / recent / delete
+- [x] `UserPrefService`: 用户偏好 KV (set/get/list/delete)
+- [x] `CrossSessionContextBuilder`: 跨会话 context (短+长+偏好+摘要)
+- [x] `LlmSummarizer`: 调 model 服务做真实摘要（替换 Day 6 占位）
+- [x] `VectorUtils`: float[]↔byte[] + cosine 数学
+- [x] MemoryController 扩展到 16 端点
+- [x] `MemoryIntegrationTest` (6 cases) 覆盖端到端
+- [x] Maven 7 模块编译 + 43 用例测试 + Java 启动验证
+
+**关键数据：** +16 java (109 总) / +1128 行 (5457) / 43 测试 / 2 张 MySQL 表
+**报告：** `reports/day-7-report.md`
+
+**明日计划 Day 8：**
+- [ ] 文档上传 + 解析 (PDF/DOCX/MD)
+- [ ] 分块 (chunk) + embedding 入向量库
+- [ ] 检索增强生成 (retrieval-augmented chat)
+- [ ] 引用来源标注
+
+## Day 8 - 待开始

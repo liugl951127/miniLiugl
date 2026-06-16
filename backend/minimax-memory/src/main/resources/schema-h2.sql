@@ -1,0 +1,32 @@
+-- H2 兼容 schema for memory module
+
+CREATE TABLE IF NOT EXISTS memory_long_term (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  session_id BIGINT,
+  content CLOB NOT NULL,
+  summary VARCHAR(500),
+  role VARCHAR(16) DEFAULT 'user',
+  embedding LONGVARBINARY NOT NULL,
+  dim INT NOT NULL,
+  importance DECIMAL(3,2) NOT NULL DEFAULT 0.50,
+  tags VARCHAR(255),
+  access_count INT NOT NULL DEFAULT 0,
+  last_access_at TIMESTAMP,
+  expires_at TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deleted INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS memory_user_pref (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  pref_key VARCHAR(64) NOT NULL,
+  pref_value CLOB NOT NULL,
+  weight DECIMAL(3,2) NOT NULL DEFAULT 0.50,
+  source VARCHAR(32) DEFAULT 'manual',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deleted INT NOT NULL DEFAULT 0
+);
