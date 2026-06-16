@@ -43,23 +43,16 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
-        <!-- Bucket4j 限流 -->
+        <!-- Bucket4j 限流 (版本统一在父 pom) -->
         <dependency>
             <groupId>com.bucket4j</groupId>
-            <artifactId>bucket4j_jdk17-core</artifactId>
-            <version>8.16.0</version>
-        </dependency>
-
-        <!-- OpenAI 官方 Java SDK（也兼容 Minimax-M3 / Ollama） -->
-        <dependency>
-            <groupId>com.openai</groupId>
-            <artifactId>openai-java</artifactId>
-            <version>0.18.1</version>
+            <artifactId>bucket4j-core</artifactId>
         </dependency>
 
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>com.h2database</groupId>
