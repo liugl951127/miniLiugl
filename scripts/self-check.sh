@@ -79,6 +79,7 @@ for f in \
   deploy/README.md \
   deploy/prometheus/prometheus.yml \
   reports/day-2-report.md \
+  reports/day-3-report.md \
   reports/runbook-day-3.md \
   reports/next-day.txt; do
     TOTAL=$((TOTAL+1))

@@ -1,0 +1,57 @@
+-- H2 兼容 schema for auth
+CREATE TABLE IF NOT EXISTS sys_user (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(64) NOT NULL UNIQUE,
+  password VARCHAR(128) NOT NULL,
+  nickname VARCHAR(64),
+  email VARCHAR(128),
+  phone VARCHAR(32),
+  avatar VARCHAR(256),
+  gender INT DEFAULT 0,
+  status INT NOT NULL DEFAULT 1,
+  last_login_ip VARCHAR(64),
+  last_login_at TIMESTAMP,
+  tenant_id BIGINT NOT NULL DEFAULT 0,
+  remark VARCHAR(255),
+  created_by BIGINT,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_by BIGINT,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deleted INT NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS sys_role (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(32) NOT NULL UNIQUE,
+  name VARCHAR(64) NOT NULL,
+  description VARCHAR(255),
+  sort INT NOT NULL DEFAULT 0,
+  enabled INT NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deleted INT NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS sys_user_role (
+  user_id BIGINT NOT NULL,
+  role_id BIGINT NOT NULL,
+  PRIMARY KEY (user_id, role_id)
+);
+CREATE TABLE IF NOT EXISTS auth_refresh_token (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  token VARCHAR(128) NOT NULL UNIQUE,
+  expires_at TIMESTAMP NOT NULL,
+  revoked INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS auth_login_log (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT,
+  username VARCHAR(64),
+  ip VARCHAR(64),
+  user_agent VARCHAR(512),
+  status INT NOT NULL,
+  message VARCHAR(255),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 角色和 admin 用户由 AdminDataInitializer 在启动时创建（密码用 BCrypt 正确编码）

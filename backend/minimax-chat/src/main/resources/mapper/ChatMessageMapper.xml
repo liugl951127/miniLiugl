@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.minimax.chat.mapper.ChatMessageMapper">
+
+    <resultMap id="msgMap" type="com.minimax.chat.entity.ChatMessage">
+        <id     property="id"            column="id"/>
+        <result property="sessionId"     column="session_id"/>
+        <result property="userId"        column="user_id"/>
+        <result property="role"          column="role"/>
+        <result property="content"       column="content"/>
+        <result property="tokens"        column="tokens"/>
+        <result property="finishReason"  column="finish_reason"/>
+        <result property="errorMessage"  column="error_message"/>
+        <result property="createdAt"     column="created_at"/>
+        <result property="deleted"       column="deleted"/>
+    </resultMap>
+
+    <select id="selectBySessionId" resultMap="msgMap">
+        SELECT * FROM chat_message
+        WHERE session_id = #{sessionId} AND deleted = 0
+        ORDER BY id ASC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectLastN" resultMap="msgMap">
+        SELECT * FROM (
+            SELECT * FROM chat_message
+            WHERE session_id = #{sessionId} AND deleted = 0
+            ORDER BY id DESC
+            LIMIT #{limit}
+        ) t ORDER BY id ASC
+    </select>
+
+    <select id="countBySessionId" resultType="long">
+        SELECT COUNT(*) FROM chat_message
+        WHERE session_id = #{sessionId} AND deleted = 0
+    </select>
+</mapper>

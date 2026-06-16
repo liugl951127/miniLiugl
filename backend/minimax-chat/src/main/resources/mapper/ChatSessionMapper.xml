@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.minimax.chat.mapper.ChatSessionMapper">
+
+    <resultMap id="sessionMap" type="com.minimax.chat.entity.ChatSession">
+        <id     property="id"             column="id"/>
+        <result property="userId"         column="user_id"/>
+        <result property="title"          column="title"/>
+        <result property="model"          column="model"/>
+        <result property="systemPrompt"   column="system_prompt"/>
+        <result property="temperature"    column="temperature"/>
+        <result property="status"         column="status"/>
+        <result property="messageCount"   column="message_count"/>
+        <result property="lastMessageAt"  column="last_message_at"/>
+        <result property="tenantId"       column="tenant_id"/>
+        <result property="createdAt"      column="created_at"/>
+        <result property="updatedAt"      column="updated_at"/>
+        <result property="deleted"        column="deleted"/>
+    </resultMap>
+
+    <select id="selectByUserId" resultMap="sessionMap">
+        SELECT * FROM chat_session
+        WHERE user_id = #{userId} AND deleted = 0
+        <if test="status != null">AND status = #{status}</if>
+        ORDER BY COALESCE(last_message_at, updated_at) DESC
+    </select>
+
+    <update id="bumpMessage">
+        UPDATE chat_session
+        SET message_count = message_count + 1,
+            last_message_at = #{at},
+            updated_at = #{at}
+        WHERE id = #{sessionId} AND deleted = 0
+    </update>
+
+    <update id="archiveByIdAndUser">
+        UPDATE chat_session
+        SET status = 0, updated_at = NOW()
+        WHERE id = #{id} AND user_id = #{userId} AND deleted = 0
+    </update>
+</mapper>

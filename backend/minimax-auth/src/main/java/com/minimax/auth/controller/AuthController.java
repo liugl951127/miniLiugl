@@ -3,7 +3,7 @@ package com.minimax.auth.controller;
 import com.minimax.auth.dto.LoginRequest;
 import com.minimax.auth.dto.RefreshRequest;
 import com.minimax.auth.dto.RegisterRequest;
-import com.minimax.auth.security.JwtAuthenticationFilter.AuthenticatedUser;
+import com.minimax.common.security.JwtAuthenticationFilter.AuthenticatedUser;
 import com.minimax.auth.service.AuthService;
 import com.minimax.auth.vo.LoginResponse;
 import com.minimax.common.result.Result;

@@ -59,10 +59,35 @@
 - [ ] 多会话切换
 - [ ] 历史消息分页加载
 
-## Day 3 - 待开始
+## Day 3 - 2026-06-16 ✅ 会话模块 (CRUD + 侧边栏) + 实跳验训
 
-> ⏰ 明日 20:00 由 cron 触发推进。Runbook: `reports/runbook-day-3.md`
-> Cron 任务 ID: `409475887587539` (Mavis / minimax-daily-pipeline)
-> 下次执行: 2026-06-16 20:00 (Asia/Shanghai)
+**今日完成：**
+- [x] SQL 脚本：chat_session + chat_message（132 行 + 索引）
+- [x] 实体：ChatSession、ChatMessage + MessageRole 枚举
+- [x] Mapper：2 个 + 2 个 XML
+- [x] Service：ChatSessionService、ChatMessageService（鉴权 + 软删 + 分页 + 自动计数）
+- [x] Controller：SessionController（5 端点）+ MessageController（嵌套）
+- [x] ChatApplication 启动类
+- [x] 前端 API/Store/视图（侧边栏 + 会话管理 + 消息流）
+- [x] 架构重构：JwtAuthenticationFilter 从 auth 移到 common
+- [x] H2 测试 profile：本地一键启动验证
+- [x] AdminDataInitializer：启动时 BCrypt 编码 admin 密码
+- [x] Maven 编译：4 个模块全部 BUILD SUCCESS（25.6s）
+- [x] 单元测试：7 用例全过
+- [x] **java -jar 真实启动 auth + chat 跨服务运行** （两个端口 8081/8082 都起起来了）
+- [x] **跨服务 JWT 鉴权全链路验证**：登录→拿 token→ chat 创建会话→添加消息→自动 messageCount +1
+- [x] 前端构建：20.48s 通过
+- [x] 父 pom 增强 aliyun 镜像（spring / spring-plugin / google）
+- [x] ~/.m2/settings.xml 配置 mirror 走 aliyun
+
+**关键文件数：** 60 Java + 8 Vue + 8 JS + 4 SQL = 80 个源文件
+**代码量：** Java 2251 行 + XML 928 行 + SQL 264 行 = 3443 行
+**静态体检：** 60 Java / 7 测试 / 0 TODO
+
+**明日计划 Day 4：**
+- [ ] Model 路由层（OpenAI 兼容）
+- [ ] 多 provider 支持
+- [ ] 限流 + 配额
+- [ ] 真实模型调用
 
 ## Day 4 - 待开始

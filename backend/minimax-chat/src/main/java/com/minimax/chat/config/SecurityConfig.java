@@ -1,4 +1,4 @@
-package com.minimax.auth.config;
+package com.minimax.chat.config;
 
 import com.minimax.common.security.JwtAuthenticationFilter;
 import com.minimax.common.security.RestAccessDeniedHandler;
@@ -10,8 +10,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -27,11 +25,6 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtFilter;
     private final RestAuthEntryPoint authEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -57,11 +50,7 @@ public class SecurityConfig {
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                    .requestMatchers(
-                            "/auth/register", "/auth/login", "/auth/refresh",
-                            "/health", "/health/**", "/", "/error",
-                            "/v3/api-docs/**", "/swagger-ui/**"
-                    ).permitAll()
+                    .requestMatchers("/health", "/actuator/**").permitAll()
                     .anyRequest().authenticated()
             )
             .exceptionHandling(eh -> eh

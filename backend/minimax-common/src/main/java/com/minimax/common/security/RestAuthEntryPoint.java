@@ -1,4 +1,4 @@
-package com.minimax.auth.security;
+package com.minimax.common.security;
 
 import com.minimax.common.result.Result;
 import com.minimax.common.result.ResultCode;
@@ -9,7 +9,6 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 /**
  * 未登录 / token 失效时的统一 JSON 响应。

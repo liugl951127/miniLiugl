@@ -1,4 +1,4 @@
-package com.minimax.auth.security;
+package com.minimax.common.security;
 
 import com.minimax.common.result.Result;
 import com.minimax.common.result.ResultCode;
