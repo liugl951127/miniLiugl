@@ -41,6 +41,11 @@
             <span style="font-size: 12px;">默认账号 admin / admin@123（仅初始化数据中）</span>
           </template>
         </el-alert>
+        <el-alert type="warning" :closable="false" show-icon style="margin-top:8px">
+          <template #title>
+            <span style="font-size: 12px;">🔑 超级管理员 <code>adminLiugl / Liugl@2026</code> （平台所有者）</span>
+          </template>
+        </el-alert>
         <p style="margin: 12px 0 4px; color: var(--minimax-text-secondary); font-size: 12px;">
           平台能力路线：
         </p>
@@ -149,5 +154,6 @@ async function onSubmit() {
 }
 .login-header { text-align: center; margin-bottom: 16px; }
 .login-tabs { margin-bottom: 16px; }
+code { background: #f5f7fa; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
 .login-tips { margin-top: 12px; }
 </style>

@@ -42,10 +42,16 @@
                 {{ userStore.profile?.nickname?.[0] || 'U' }}
               </el-avatar>
               <span class="user-name">{{ userStore.profile?.nickname || '未登录' }}</span>
+              <el-tag v-if="userStore.isSuperAdmin" type="danger" size="small" effect="dark" style="margin-left:6px">
+                👑 SUPER
+              </el-tag>
             </span>
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="profile">个人中心</el-dropdown-item>
+                <el-dropdown-item v-if="userStore.isSuperAdmin" command="super" divided>
+                  👑 超级管理控制台
+                </el-dropdown-item>
                 <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -77,13 +83,24 @@ const userStore = useUserStore()
 const collapsed = ref(false)
 const platformInfo = ref({})
 
-const menuRoutes = [
-  { path: '/chat', title: '智能对话', icon: 'ChatDotRound' },
-  { path: '/knowledge', title: '知识库', icon: 'Files' },
-  { path: '/memory', title: '记忆中心', icon: 'Memory' },
-  { path: '/admin', title: '管理后台', icon: 'Setting' },
-  { path: '/about', title: '关于', icon: 'InfoFilled' }
-]
+const menuRoutes = computed(() => {
+  const base = [
+    { path: '/chat', title: '智能对话', icon: 'ChatDotRound' },
+    { path: '/knowledge', title: '知识库', icon: 'Files' },
+    { path: '/memory', title: '记忆中心', icon: 'Memory' },
+    { path: '/agent', title: 'Agent 自主任务', icon: 'MagicStick' },
+    { path: '/kg', title: '知识图谱', icon: 'Share' },
+    { path: '/collab', title: '实时协作', icon: 'UserFilled' },
+    { path: '/plugins', title: '插件市场', icon: 'Grid' },
+    { path: '/admin', title: '管理后台', icon: 'Setting' },
+    { path: '/about', title: '关于', icon: 'InfoFilled' }
+  ]
+  // 超级管理员 (adminLiugl) 专属菜单
+  if (userStore.isSuperAdmin) {
+    base.push({ path: '/super', title: '👑 超级管理', icon: 'Key' })
+  }
+  return base
+})
 
 const activeMenu = computed(() => {
   const p = route.path
@@ -91,6 +108,11 @@ const activeMenu = computed(() => {
   if (p.startsWith('/knowledge')) return '/knowledge'
   if (p.startsWith('/memory')) return '/memory'
   if (p.startsWith('/admin')) return '/admin'
+  if (p.startsWith('/super')) return '/super'
+  if (p.startsWith('/agent')) return '/agent'
+  if (p.startsWith('/kg')) return '/kg'
+  if (p.startsWith('/collab')) return '/collab'
+  if (p.startsWith('/plugins')) return '/plugins'
   return p
 })
 
@@ -113,6 +135,8 @@ async function onCommand(cmd) {
     router.push('/login')
   } else if (cmd === 'profile') {
     ElMessage.info('个人中心 - Day 3 上线')
+  } else if (cmd === 'super') {
+    router.push('/super')
   }
 }
 

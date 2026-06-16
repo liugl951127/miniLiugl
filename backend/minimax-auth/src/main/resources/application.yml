@@ -36,6 +36,10 @@ minimax:
     access-ttl-seconds: 1800        # 30 min
     refresh-ttl-seconds: 604800     # 7 days
     issuer: minimax-platform
+  auth:
+    super-admin-username: ${SUPER_ADMIN_USERNAME:adminLiugl}
+    super-admin-password: ${SUPER_ADMIN_PASSWORD:Liugl@2026}
+    super-admin-email: ${SUPER_ADMIN_EMAIL:liugl951127@gmail.com}
 
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml

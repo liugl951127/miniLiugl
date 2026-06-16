@@ -62,6 +62,12 @@ const routes = [
         meta: { title: '插件市场', icon: 'Grid' }
       },
       {
+        path: 'super',
+        name: 'SuperAdmin',
+        component: () => import('@/views/super/Index.vue'),
+        meta: { title: '超级管理 (adminLiugl)', icon: 'Key', requiresSuper: true }
+      },
+      {
         path: 'admin',
         name: 'Admin',
         component: () => import('@/views/admin/Index.vue'),
@@ -98,6 +104,9 @@ router.beforeEach((to, from, next) => {
     next({ name: 'Login', query: { redirect: to.fullPath } })
   } else if (to.name === 'Login' && userStore.isLogin) {
     next({ path: '/' })
+  } else if (to.meta.requiresSuper && !userStore.isSuperAdmin) {
+    // 需要超级管理员 (adminLiugl) 才能访问
+    next({ path: '/', query: { error: 'need_super_admin' } })
   } else {
     next()
   }

@@ -128,6 +128,7 @@ public class AuthServiceImpl implements AuthService {
         return LoginResponse.UserInfo.builder()
                 .id(u.getId()).username(u.getUsername()).nickname(u.getNickname())
                 .email(u.getEmail()).avatar(u.getAvatar()).roles(roles)
+                .superAdmin(roles != null && roles.contains("SUPER_ADMIN"))
                 .build();
     }
 
@@ -135,6 +136,8 @@ public class AuthServiceImpl implements AuthService {
 
     private LoginResponse buildLoginResponse(SysUser u) {
         List<String> roles = userMapper.selectRoleCodesByUserId(u.getId());
+        boolean superAdmin = roles != null && roles.contains("SUPER_ADMIN");
+
         String access = jwt.issueAccessToken(u.getId(), u.getUsername(), roles);
         String refresh = jwt.issueRefreshToken();
 
@@ -152,7 +155,8 @@ public class AuthServiceImpl implements AuthService {
                 .tokenType("Bearer")
                 .user(LoginResponse.UserInfo.builder()
                         .id(u.getId()).username(u.getUsername()).nickname(u.getNickname())
-                        .email(u.getEmail()).avatar(u.getAvatar()).roles(roles).build())
+                        .email(u.getEmail()).avatar(u.getAvatar()).roles(roles)
+                        .superAdmin(superAdmin).build())
                 .build();
     }
 

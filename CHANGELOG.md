@@ -198,3 +198,54 @@
 - 前端 4 新页面集成到路由
 - vite proxy 加 /api/v1/agent (8090) + /ws (WebSocket)
 
+## [V3.0] - 2026-06-16 — adminLiugl 超级管理员
+
+### Added
+- **adminLiugl 超级管理员**: 唯一超级管理员 (独立于普通 admin)
+  - 账号: `adminLiugl` / `Liugl@2026` / 邮箱 `liugl951127@gmail.com`
+  - 角色: `SUPER_ADMIN` (独立于 `ADMIN`)
+  - 启动时由 `AdminDataInitializer` BCrypt 编码
+- **SuperAdminGuard**: 通用权限检查工具
+  - `isSuperAdmin()`: 当前用户是超级管理员?
+  - `requireSuperAdmin()`: 强制要求超级管理员 (否则 403)
+  - `isAdminOrAbove()`: ADMIN 或 SUPER_ADMIN
+- **SuperAdminController**: 专属 API
+  - `GET  /auth/super/me`              - 当前超级管理员信息 + 能力列表
+  - `GET  /auth/super/users`           - 列出所有用户
+  - `POST /auth/super/users/{id}/disable` - 禁用用户 (不能禁 adminLiugl)
+  - `POST /auth/super/users/{id}/enable`  - 启用用户
+  - `POST /auth/super/users/{id}/reset-pwd` - 重置密码
+- **UserInfo.superAdmin**: 登录/me 返回新增布尔字段
+  - adminLiugl 登录: `superAdmin: true`
+  - admin 登录: `superAdmin: false`
+- **前端超级管理控制台** (`/super`)
+  - 顶部 👑 SUPER 徽章 (仅 adminLiugl 可见)
+  - 侧边栏菜单 "超级管理" (仅 adminLiugl 可见)
+  - 用户表格: 禁用/启用/重置密码
+  - 平台统计: 总用户/活跃/禁用
+  - 路由 guard: 强制要求 super admin
+- **登录页提示**: adminLiugl 账号说明
+- **SQL 16_super_admin.sql**: SUPER_ADMIN 角色 + 独立密码 (兼容已有库)
+
+### Security
+- adminLiugl 唯一超级管理员
+- 不能被自己禁用 (`super admin 不能禁自己`)
+- 普通 admin 无法访问 `/auth/super/*` (403)
+- 前端路由 guard: 普通用户访问 `/super` → 跳首页
+
+### Test
+- 5 个 SuperAdminGuardTest (isSuperAdmin / requireSuperAdmin / admin 拒绝 等)
+- 端到端验证:
+  - adminLiugl 登录 → superAdmin:true ✅
+  - admin 登录 → superAdmin:false ✅
+  - adminLiugl 访问 /auth/super/me → success ✅
+  - admin 访问 /auth/super/me → 403 ✅
+  - adminLiugl 禁用 admin → success ✅
+  - adminLiugl 禁用自己 → 异常 “禁止禁用超级管理员” ✅
+
+### Build
+- 12 个后端模块 BUILD SUCCESS
+- 135 个测试 0 失败 (从 130 + 5)
+- 前端 BUILD SUCCESS (含新增 super 页面)
+- 端到端验证: H2 内存模式启动 auth 模块, 登录 + 权限检查全过
+

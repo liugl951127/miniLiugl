@@ -8,6 +8,10 @@ import { authApi } from '@/api/auth'
  *  - accessToken 短命，refreshToken 长命；两者分开存
  *  - 后端 401 触发 http.js 自动 logout + 跳登录；不在这里处理
  *  - 用户资料走 /auth/me 拉取，避免 token 中角色信息过期
+ *
+ * 角色:
+ *  - admin       → ADMIN       (普通管理员)
+ *  - adminLiugl  → SUPER_ADMIN (平台所有者, 唯一超级管理员)
  */
 export const useUserStore = defineStore(
   'user',
@@ -19,12 +23,16 @@ export const useUserStore = defineStore(
     const isLogin = computed(() => !!accessToken.value)
     const isAdmin = computed(() => {
       const roles = profile.value?.roles || []
-      return roles.includes('ADMIN') || profile.value?.role === 'ADMIN'
+      return roles.includes('ADMIN') || roles.includes('SUPER_ADMIN')
+    })
+    /** ⭐ adminLiugl 独有 */
+    const isSuperAdmin = computed(() => {
+      return profile.value?.superAdmin === true ||
+             (profile.value?.roles || []).includes('SUPER_ADMIN')
     })
 
     async function login(payload) {
       const res = await authApi.login(payload)
-      // http.js 已剥离外层，res 即 {code, message, data}
       const { accessToken: at, refreshToken: rt, user } = res.data
       accessToken.value = at
       refreshToken.value = rt
@@ -63,6 +71,7 @@ export const useUserStore = defineStore(
       profile,
       isLogin,
       isAdmin,
+      isSuperAdmin,
       login,
       logout,
       fetchProfile,

@@ -24,5 +24,9 @@ public class LoginResponse {
         private String email;
         private String avatar;
         private List<String> roles;
+
+        /** ⭐ 超级管理员标识 (adminLiugl 独有) */
+        @Builder.Default
+        private Boolean superAdmin = false;
     }
 }
