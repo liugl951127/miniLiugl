@@ -27,6 +27,10 @@
             <el-icon><Expand v-if="collapsed" /><Fold v-else /></el-icon>
           </el-button>
           <span class="header-title">{{ activeTitle }}</span>
+          <span v-if="healthSummary" :class="['health-pill', healthSummary.allUp ? 'up' : 'partial']">
+            <span class="dot" :class="healthSummary.allUp ? 'dot-up' : 'dot-amber'"></span>
+            {{ healthSummary.upCount }}/{{ healthSummary.total }} 服务 UP
+          </span>
         </div>
         <div class="header-right">
           <el-tooltip content="刷新">
@@ -120,7 +124,22 @@ onMounted(async () => {
     const res = await systemApi.intro()
     platformInfo.value = res.data
   } catch (e) { /* ignore */ }
+  // 后台拉取健康状态
+  refreshHealth()
+  setInterval(refreshHealth, 30000)
 })
+
+const healthSummary = ref(null)
+async function refreshHealth() {
+  try {
+    const r = await fetch('/api/v1/admin/health').then(r => r.json()).catch(() => null)
+    if (r && r.data) {
+      const all = r.data
+      const upCount = Object.values(all).filter(v => v && v.status === 'UP').length
+      healthSummary.value = { upCount, total: 6, allUp: upCount === 6 }
+    }
+  } catch (e) { /* ignore */ }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -175,4 +194,24 @@ onMounted(async () => {
 .fade-slide-enter-active, .fade-slide-leave-active { transition: all 0.2s; }
 .fade-slide-enter-from { opacity: 0; transform: translateX(8px); }
 .fade-slide-leave-to { opacity: 0; transform: translateX(-8px); }
+
+.health-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid;
+  margin-left: 8px;
+}
+.health-pill.up { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
+.health-pill.partial { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+.health-pill .dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+}
+.dot-up { background: #10b981; }
+.dot-amber { background: #f59e0b; }
 </style>

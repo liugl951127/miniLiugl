@@ -1,0 +1,30 @@
+server:
+  port: 8088
+  servlet:
+    context-path: /api/v1
+
+spring:
+  application:
+    name: minimax-multimodal-test
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 25MB
+
+minimax:
+  jwt:
+    secret: test-secret-key-1234567890-abcdef-min-32-bytes-for-jwt-hs256
+    access-ttl-seconds: 1800
+    refresh-ttl-seconds: 604800
+    issuer: minimax-platform
+  multimodal:
+    provider: openai
+    base-url: https://api.openai.com/v1
+    api-key: ""
+    model: gpt-4o
+    mock-mode: true
+    timeout-seconds: 30
+
+logging:
+  level:
+    com.minimax: DEBUG

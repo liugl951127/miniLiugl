@@ -28,6 +28,7 @@
         <module>minimax-rag</module>
         <module>minimax-function</module>
         <module>minimax-admin</module>
+        <module>minimax-multimodal</module>
     </modules>
 
     <properties>

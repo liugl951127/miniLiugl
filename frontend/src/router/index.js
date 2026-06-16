@@ -41,7 +41,15 @@ const routes = [
         path: 'admin',
         name: 'Admin',
         component: () => import('@/views/admin/Index.vue'),
-        meta: { title: '管理后台', icon: 'Setting' }
+        meta: { title: '管理后台', icon: 'Setting' },
+        children: [
+          {
+            path: '',
+            name: 'AdminDashboard',
+            component: () => import('@/views/admin/Dashboard.vue'),
+            meta: { title: '仪表盘', icon: 'DataLine' }
+          },
+        ]
       },
       {
         path: 'about',

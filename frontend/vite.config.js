@@ -35,6 +35,26 @@ export default defineConfig(({ mode }) => {
           target: 'http://localhost:8083',
           changeOrigin: true
         },
+        '/api/v1/memory': {
+          target: 'http://localhost:8084',
+          changeOrigin: true
+        },
+        '/api/v1/rag': {
+          target: 'http://localhost:8085',
+          changeOrigin: true
+        },
+        '/api/v1/function': {
+          target: 'http://localhost:8086',
+          changeOrigin: true
+        },
+        '/api/v1/admin': {
+          target: 'http://localhost:8087',
+          changeOrigin: true
+        },
+        '/api/v1/multimodal': {
+          target: 'http://localhost:8088',
+          changeOrigin: true
+        },
         '/api': {
           target: env.VITE_API_BASE || 'http://localhost:8080',
           changeOrigin: true

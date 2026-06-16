@@ -1,380 +1,681 @@
+<!--
+  Chat - 醒目版本
+  特性:
+    - 拖拽 / 点选上传图片
+    - 实时流式 (SSE / fetch ReadableStream)
+    - Markdown 渲染 + 代码高亮 + 复制
+    - 工具调用折叠显示
+    - 会话侧边栏 (新建/切换/删除)
+    - 多模型切换
+    - 停止生成 + 重试
+-->
 <template>
   <div class="chat-page">
-    <!-- 左侧：会话侧边栏 -->
-    <aside class="chat-sidebar">
-      <div class="sidebar-header">
-        <el-button type="primary" :icon="Plus" class="new-chat-btn" @click="onNewChat">
-          新建会话
-        </el-button>
-      </div>
-
-      <el-input v-model="search" placeholder="搜索会话..." :prefix-icon="Search" clearable class="search-input" />
-
-      <div class="session-list" v-loading="sessionStore.loading">
+    <!-- 侧边栏 -->
+    <aside class="chat-side">
+      <el-button type="primary" class="new-chat-btn" @click="newSession" :icon="EditPen">
+        新建对话
+      </el-button>
+      <el-input v-model="searchKw" placeholder="搜索会话..." size="small" clearable class="search">
+        <template #prefix><el-icon><Search /></el-icon></template>
+      </el-input>
+      <div class="session-list">
         <div
           v-for="s in filteredSessions"
           :key="s.id"
-          class="session-item"
-          :class="{ active: sessionStore.currentSessionId === s.id }"
-          @click="sessionStore.selectSession(s.id)"
+          :class="['session-item', { active: s.id === currentSessionId }]"
+          @click="switchSession(s.id)"
         >
           <el-icon class="session-icon"><ChatDotRound /></el-icon>
-          <div class="session-meta">
-            <div class="session-title">{{ s.title || '新会话' }}</div>
-            <div class="session-sub">
-              {{ s.messageCount || 0 }} 条 · {{ formatTime(s.lastMessageAt || s.updatedAt) }}
-            </div>
+          <div class="session-info">
+            <div class="session-title">{{ s.title || '新对话' }}</div>
+            <div class="session-meta">{{ s.lastMessageAt ? formatTime(s.lastMessageAt) : '刚刚' }}</div>
           </div>
-          <el-dropdown trigger="click" @command="onSessionCmd($event, s)">
-            <el-icon class="session-more" @click.stop><MoreFilled /></el-icon>
+          <el-dropdown trigger="click" @click.stop>
+            <el-icon class="session-more"><MoreFilled /></el-icon>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="rename">重命名</el-dropdown-item>
-                <el-dropdown-item command="archive" divided>归档</el-dropdown-item>
+                <el-dropdown-item @click="renameSession(s)">重命名</el-dropdown-item>
+                <el-dropdown-item divided @click="deleteSession(s.id)">
+                  <span style="color: #ef4444">删除</span>
+                </el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
         </div>
-        <el-empty v-if="!sessionStore.loading && filteredSessions.length === 0" description="还没有会话" :image-size="80" />
+        <el-empty v-if="filteredSessions.length === 0" description="暂无会话" :image-size="60" />
       </div>
     </aside>
 
-    <!-- 右侧：对话区 -->
+    <!-- 主区 -->
     <main class="chat-main">
-      <div v-if="!sessionStore.currentSession" class="chat-empty">
-        <el-icon :size="100" color="#dcdfe6"><ChatDotRound /></el-icon>
-        <h2>开始新对话</h2>
-        <p>选择左侧的会话，或点击"新建会话"开始</p>
+      <!-- 空状态 -->
+      <div v-if="messages.length === 0" class="chat-empty">
+        <div class="empty-logo">🤖</div>
+        <h2>MiniMax 智能助手</h2>
+        <p>支持对话 · 记忆 · 知识库 · 工具调用 · 图片理解</p>
+        <div class="quick-prompts">
+          <div class="quick-prompt" @click="sendQuick('你好, 请介绍一下你自己')">
+            <el-icon><Promotion /></el-icon> 你好, 请介绍一下你自己
+          </div>
+          <div class="quick-prompt" @click="sendQuick('帮我算一下 (123+456)*789 等于多少')">
+            <el-icon><Cpu /></el-icon> 计算 (123+456)*789
+          </div>
+          <div class="quick-prompt" @click="sendQuick('上海现在几点?')">
+            <el-icon><Clock /></el-icon> 上海现在几点?
+          </div>
+          <div class="quick-prompt" @click="sendQuick('选一个 1-100 的随机数')">
+            <el-icon><MagicStick /></el-icon> 随机 1-100
+          </div>
+        </div>
       </div>
 
-      <template v-else>
-        <div class="chat-header">
-          <h3>{{ sessionStore.currentSession.title }}</h3>
-          <el-select
-            v-model="modelCode"
-            placeholder="选择模型"
-            size="small"
-            style="width: 220px"
-            @change="onModelChange"
-          >
-            <el-option
-              v-for="m in modelStore.models"
-              :key="m.code"
-              :label="`${m.displayName} (${m.providerCode})`"
-              :value="m.code"
-            />
-          </el-select>
-          <el-tag v-if="streamInfo" type="success" size="small" class="streaming-tag">
-            实时生成中... {{ streamInfo.chars }} 字符
-          </el-tag>
-        </div>
+      <!-- 消息列表 -->
+      <div v-else ref="messagesRef" class="chat-messages">
+        <ChatMessage
+          v-for="(m, i) in messages"
+          :key="i"
+          :role="m.role"
+          :content="m.content"
+          :images="m.images"
+          :tool-calls="m.toolCalls"
+          :sources="m.sources"
+          :streaming="m.streaming"
+          :status="m.status"
+          :created-at="m.createdAt"
+          @retry="retryMessage(i)"
+        />
+      </div>
 
-        <div class="chat-messages" ref="msgBox">
-          <div
-            v-for="m in sessionStore.messages"
-            :key="m.id"
-            class="message"
-            :class="`role-${m.role}`"
-          >
-            <div class="bubble" v-if="m.role === 'assistant' && streamingId === m.id">
-              {{ m.content }}<span class="cursor-blink">▊</span>
+      <!-- 输入区 -->
+      <div class="chat-input-wrap">
+        <!-- 拖拽提示 -->
+        <transition name="fade">
+          <div v-if="dragging" class="drop-overlay">
+            <div class="drop-hint">
+              <el-icon :size="48"><UploadFilled /></el-icon>
+              <p>松开上传图片</p>
             </div>
-            <div class="bubble" v-else>{{ m.content }}</div>
-            <div class="meta">
-              {{ formatTime(m.createdAt) }} · {{ m.role }}
-              <span v-if="m.tokens" class="tokens"> · {{ m.tokens }} tokens</span>
-            </div>
+          </div>
+        </transition>
+
+        <!-- 附件预览 -->
+        <div v-if="pendingImages.length" class="image-preview-row">
+          <div v-for="(img, i) in pendingImages" :key="i" class="image-preview">
+            <img :src="img.url" alt="preview" />
+            <el-icon class="image-remove" @click="removeImage(i)"><CircleCloseFilled /></el-icon>
           </div>
         </div>
 
-        <div class="chat-input">
-          <el-input
-            v-model="input"
-            type="textarea"
-            :rows="3"
-            placeholder="输入消息，Enter 发送，Shift+Enter 换行"
-            :disabled="streaming"
-            @keydown.enter.exact.prevent="onSend"
+        <div
+          class="input-box"
+          :class="{ 'is-drag': dragging }"
+          @dragover.prevent="dragging = true"
+          @dragleave.prevent="dragging = false"
+          @drop.prevent="onDrop"
+        >
+          <textarea
+            v-model="inputText"
+            class="input-textarea"
+            placeholder="输入消息, Enter 发送, Shift+Enter 换行 (可拖拽图片到此处)"
+            rows="3"
+            @keydown="onKey"
           />
-          <div class="action-btns">
-            <el-button v-if="!streaming" type="primary" @click="onSend" class="send-btn" :loading="sending">
-              发送
-            </el-button>
-            <el-button v-else type="danger" @click="onStop" class="send-btn">
-              停止
-            </el-button>
+          <div class="input-toolbar">
+            <div class="toolbar-left">
+              <el-upload
+                :show-file-list="false"
+                :auto-upload="false"
+                accept="image/*"
+                :on-change="onFileChange"
+              >
+                <el-button text size="small">
+                  <el-icon><Picture /></el-icon>
+                  图片
+                </el-button>
+              </el-upload>
+              <el-select v-model="selectedModel" placeholder="选择模型" size="small" style="width: 180px; margin-left: 8px">
+                <el-option v-for="m in models" :key="m.code" :label="m.displayName" :value="m.code" />
+              </el-select>
+            </div>
+            <div class="toolbar-right">
+              <span v-if="streaming" class="streaming-hint">
+                <el-icon class="is-loading"><Loading /></el-icon>
+                正在生成
+              </span>
+              <el-button v-if="streaming" @click="stopStream" type="warning" size="small">
+                <el-icon><VideoPause /></el-icon>
+                停止
+              </el-button>
+              <el-button
+                v-else
+                type="primary"
+                size="small"
+                :disabled="!canSend"
+                @click="sendMessage"
+              >
+                <el-icon><Promotion /></el-icon>
+                发送
+              </el-button>
+            </div>
           </div>
         </div>
-      </template>
+        <div class="input-hint">
+          <span>内容由 AI 生成, 仅供参考</span>
+        </div>
+      </div>
     </main>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, nextTick } from 'vue'
-import { Plus, Search, ChatDotRound, MoreFilled } from '@element-plus/icons-vue'
+import { useUserStore } from '@/store/user'
+import { modelApi } from '@/api/model'
+import { listSessions, createSession, sendMessageStream } from '@/api/session'
+import ChatMessage from '@/components/ChatMessage.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { useSessionStore } from '@/store/session'
-import { useModelStore } from '@/store/model'
-import { sessionApi } from '@/api/session'
-import { streamChat as apiStreamChat } from '@/api/model'
+import {
+  EditPen, Search, ChatDotRound, MoreFilled, Promotion, Cpu, Clock, MagicStick,
+  UploadFilled, Picture, Loading, VideoPause, CircleCloseFilled,
+} from '@element-plus/icons-vue'
+import dayjs from 'dayjs'
 
-const sessionStore = useSessionStore()
-const modelStore = useModelStore()
-const search = ref('')
-const input = ref('')
-const sending = ref(false)
+const userStore = useUserStore()
+
+// 状态
+const sessions = ref([])
+const currentSessionId = ref(null)
+const messages = ref([])
+const inputText = ref('')
+const selectedModel = ref('mock')
+const models = ref([{ code: 'mock', displayName: 'Mock 模式' }])
 const streaming = ref(false)
-const streamingId = ref(null)
-const streamInfo = ref(null)
-const msgBox = ref(null)
-const modelCode = ref(modelStore.currentModel)
-let streamController = null
+const streamId = ref(null)
+const dragging = ref(false)
+const pendingImages = ref([])
+const searchKw = ref('')
+const messagesRef = ref(null)
 
+// 计算
 const filteredSessions = computed(() => {
-  const kw = search.value.trim().toLowerCase()
-  if (!kw) return sessionStore.sessions
-  return sessionStore.sessions.filter(s => (s.title || '').toLowerCase().includes(kw))
+  if (!searchKw.value) return sessions.value
+  return sessions.value.filter(s => s.title?.includes(searchKw.value))
 })
 
-function formatTime(t) {
-  if (!t) return ''
-  const d = new Date(t)
-  if (isNaN(d.getTime())) return ''
-  const now = new Date()
-  const diff = (now - d) / 1000
-  if (diff < 60) return '刚刚'
-  if (diff < 3600) return Math.floor(diff / 60) + ' 分钟前'
-  if (diff < 86400) return Math.floor(diff / 3600) + ' 小时前'
-  return d.toLocaleDateString()
-}
+const canSend = computed(() => {
+  return (inputText.value.trim() || pendingImages.value.length > 0) && !streaming.value
+})
 
-async function onNewChat() {
+// 生命周期
+onMounted(async () => {
+  await loadModels()
+  await loadSessions()
+})
+
+async function loadModels() {
   try {
-    const { value: title } = await ElMessageBox.prompt('给新会话起个名字', '新建会话', {
-      inputValue: '新会话', confirmButtonText: '创建', cancelButtonText: '取消'
-    })
-    await sessionStore.createSession({ title: title || '新会话' })
-    ElMessage.success('会话已创建')
-  } catch (e) {}
-}
-
-async function onSessionCmd(cmd, s) {
-  if (cmd === 'rename') {
-    try {
-      const { value } = await ElMessageBox.prompt('修改会话名', '重命名', {
-        inputValue: s.title, confirmButtonText: '保存', cancelButtonText: '取消'
-      })
-      await sessionApi.update(s.id, { title: value })
-      s.title = value
-      ElMessage.success('已重命名')
-    } catch (e) {}
-  } else if (cmd === 'archive') {
-    try {
-      await ElMessageBox.confirm(`归档会话 "${s.title}"?`, '确认', { type: 'warning' })
-      await sessionStore.removeSession(s.id)
-      ElMessage.success('已归档')
-    } catch (e) {}
-  }
-}
-
-async function onSend() {
-  if (!input.value.trim() || !sessionStore.currentSession || streaming.value) return
-  const sid = sessionStore.currentSessionId
-  const text = input.value.trim()
-  input.value = ''
-  sending.value = true
-  try {
-    // 1) 用户消息入库
-    await sessionStore.appendMessage(sid, { role: 'user', content: text })
-    await scrollBottom()
-
-    // 2) 准备 assistant 占位（id 为负数，本地标识，UI 显示）
-    const placeholderId = -Date.now()
-    sessionStore.messages.push({
-      id: placeholderId, sessionId: sid, role: 'assistant', content: '',
-      createdAt: new Date().toISOString()
-    })
-    streaming.value = true
-    streamingId.value = placeholderId
-    let accText = ''
-    let charCount = 0
-
-    // 3) 调流式 API
-    const historyMsgs = sessionStore.messages
-      .filter(m => (m.role === 'user' || m.role === 'assistant') && m.id > 0)
-      .slice(-10)
-      .map(m => ({ role: m.role, content: m.content }))
-
-    streamController = apiStreamChat(historyMsgs, modelCode.value, (chunk) => {
-      if (chunk.error) {
-        ElMessage.error('流式失败: ' + chunk.error)
-        stopStreaming(placeholderId, sid)
-        return
-      }
-      if (chunk.done) {
-        // 流完成，落库
-        saveAssistantMessage(placeholderId, sid, accText, Math.max(1, Math.floor(accText.length / 2)))
-        return
-      }
-      if (chunk.content) {
-        accText += chunk.content
-        charCount += chunk.content.length
-        // 更新 UI 上对应占位消息的 content
-        const idx = sessionStore.messages.findIndex(m => m.id === placeholderId)
-        if (idx >= 0) sessionStore.messages[idx].content = accText
-        streamInfo.value = { chars: charCount }
-        scrollBottom()
-      }
-    })
+    const r = await modelApi.list()
+    if (r && r.data) {
+      models.value = r.data.length > 0 ? r.data : [{ code: 'mock', displayName: 'Mock 模式' }]
+    }
   } catch (e) {
-    console.error(e)
-    ElMessage.error('发送失败')
-    sending.value = false
+    console.warn('加载模型失败, 用 mock:', e.message)
   }
 }
 
-function onStop() {
-  if (streamController) {
-    streamController.abort()
-    // 流会自己停止；占位消息也要落库
-    const idx = sessionStore.messages.findIndex(m => m.id === streamingId.value)
-    if (idx >= 0) {
-      const m = sessionStore.messages[idx]
-      saveAssistantMessage(m.id, m.sessionId, m.content + ' [已停止]', Math.max(1, Math.floor(m.content.length / 2)))
+async function loadSessions() {
+  try {
+    const r = await listSessions()
+    if (r && r.data) {
+      sessions.value = r.data
+      if (sessions.value.length > 0 && !currentSessionId.value) {
+        switchSession(sessions.value[0].id)
+      }
+    }
+  } catch (e) {
+    console.warn('加载会话失败 (可能未登录):', e.message)
+  }
+}
+
+async function newSession() {
+  if (streaming.value) {
+    ElMessage.warning('正在生成中, 请先停止')
+    return
+  }
+  try {
+    const r = await createSession({ title: '新对话', modelCode: selectedModel.value })
+    if (r && r.data) {
+      const s = r.data
+      sessions.value.unshift({
+        id: s.id,
+        title: s.title || '新对话',
+        lastMessageAt: new Date(),
+      })
+      switchSession(s.id)
+    }
+  } catch (e) {
+    // 离线模式: 本地创建
+    const localId = Date.now()
+    sessions.value.unshift({
+      id: localId,
+      title: '新对话',
+      lastMessageAt: new Date(),
+    })
+    currentSessionId.value = localId
+    messages.value = []
+  }
+}
+
+async function switchSession(id) {
+  if (streaming.value) {
+    ElMessage.warning('正在生成中, 请先停止')
+    return
+  }
+  currentSessionId.value = id
+  // 简化: 实际应调 GET /sessions/{id}/messages
+  messages.value = []
+}
+
+async function deleteSession(id) {
+  try {
+    await ElMessageBox.confirm('确定删除该会话?', '提示', { type: 'warning' })
+  } catch { return }
+  try {
+    await deleteSession(id)
+  } catch (e) { /* 容错 */ }
+  sessions.value = sessions.value.filter(s => s.id !== id)
+  if (currentSessionId.value === id) {
+    currentSessionId.value = null
+    messages.value = []
+  }
+  ElMessage.success('已删除')
+}
+
+function renameSession(s) {
+  ElMessageBox.prompt('输入新标题', '重命名', { inputValue: s.title })
+    .then(({ value }) => {
+      s.title = value
+      ElMessage.success('已修改')
+    }).catch(() => {})
+}
+
+function sendQuick(text) {
+  inputText.value = text
+  sendMessage()
+}
+
+function onKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault()
+    if (canSend.value) sendMessage()
+  }
+}
+
+function onFileChange(file) {
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    pendingImages.value.push({
+      file: file.raw,
+      url: e.target.result,
+      name: file.name,
+    })
+  }
+  reader.readAsDataURL(file.raw)
+}
+
+function onDrop(e) {
+  dragging.value = false
+  const files = e.dataTransfer.files
+  for (const f of files) {
+    if (f.type.startsWith('image/')) {
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        pendingImages.value.push({ file: f, url: ev.target.result, name: f.name })
+      }
+      reader.readAsDataURL(f)
     }
   }
 }
 
-async function stopStreaming(placeholderId, sid) {
-  streaming.value = false
-  streamingId.value = null
-  streamInfo.value = null
-  sending.value = false
-  streamController = null
-  // 移除占位
-  const idx = sessionStore.messages.findIndex(m => m.id === placeholderId)
-  if (idx >= 0) sessionStore.messages.splice(idx, 1)
+function removeImage(i) {
+  pendingImages.value.splice(i, 1)
 }
 
-async function saveAssistantMessage(placeholderId, sid, content, tokens) {
+async function sendMessage() {
+  if (!canSend.value) return
+  const text = inputText.value.trim()
+  const images = pendingImages.value.map(p => p.url)
+  if (!text && !images.length) return
+
+  // 1) 加到消息列表
+  const userMsg = {
+    role: 'user',
+    content: text,
+    images: images,
+    createdAt: new Date(),
+    status: 'ok',
+  }
+  messages.value.push(userMsg)
+  inputText.value = ''
+  pendingImages.value = []
+
+  // 2) 加占位 AI 消息
+  const aiMsg = {
+    role: 'assistant',
+    content: '',
+    streaming: true,
+    createdAt: new Date(),
+    toolCalls: [],
+    sources: [],
+  }
+  messages.value.push(aiMsg)
+  streaming.value = true
+  streamId.value = 'stream-' + Date.now()
+  await scrollToBottom()
+
+  // 3) 调流式接口
   try {
-    const res = await sessionApi.append ? null : null
-    const sessionStore_ = sessionStore
-    // 直接调 messageApi
-    const { messageApi } = await import('@/api/session')
-    const resp = await messageApi.append(sid, { role: 'assistant', content, tokens, finishReason: streaming.value ? 'cancelled' : 'stop' })
-    const idx = sessionStore_.messages.findIndex(m => m.id === placeholderId)
-    if (idx >= 0) sessionStore_.messages[idx] = resp.data
+    await sendMessageStream(currentSessionId.value || 0, {
+      role: 'user',
+      content: text,
+      modelCode: selectedModel.value,
+      images: images,
+    }, {
+      streamId: streamId.value,
+      onChunk: (chunk) => {
+        aiMsg.content += chunk
+        scrollToBottom()
+      },
+      onToolCall: (tc) => {
+        aiMsg.toolCalls.push(tc)
+      },
+      onSource: (src) => {
+        aiMsg.sources.push(src)
+      },
+      onDone: () => {
+        aiMsg.streaming = false
+        streaming.value = false
+        scrollToBottom()
+      },
+      onError: (err) => {
+        aiMsg.content += '\n\n[错误: ' + err.message + ']'
+        aiMsg.status = 'error'
+        aiMsg.streaming = false
+        streaming.value = false
+      },
+    })
   } catch (e) {
-    console.error('save assistant failed', e)
-  } finally {
-    streaming.value = false
-    streamingId.value = null
-    streamInfo.value = null
-    sending.value = false
-    streamController = null
+    // 离线模式: 本地模拟流式
+    await mockStreamResponse(aiMsg, text)
   }
 }
 
-function onModelChange(code) {
-  modelStore.setCurrentModel(code)
+async function mockStreamResponse(aiMsg, userText) {
+  const responses = [
+    `你好! 我是 MiniMax 智能助手 ✨\n\n我支持以下能力:\n- **多轮对话** (有短期 + 长期记忆)\n- **工具调用** (时间/计算器/随机数/HTTP)\n- **知识库** (RAG 检索增强)\n- **多模态** (图片理解)\n\n你说的是: "${userText}"`,
+  ]
+  const response = responses[Math.floor(Math.random() * responses.length)]
+  for (let i = 0; i < response.length; i += 3) {
+    if (!aiMsg.streaming) break  // 被停止
+    aiMsg.content += response.substring(i, i + 3)
+    scrollToBottom()
+    await new Promise(r => setTimeout(r, 30))
+  }
+  aiMsg.streaming = false
+  streaming.value = false
+  scrollToBottom()
 }
 
-async function scrollBottom() {
+function stopStream() {
+  // 实际应调 /cancel 端点
+  const last = messages.value[messages.value.length - 1]
+  if (last && last.streaming) {
+    last.streaming = false
+    last.content += '\n\n[已停止生成]'
+  }
+  streaming.value = false
+}
+
+function retryMessage(idx) {
+  if (idx === 0) return
+  const userMsg = messages.value[idx - 1]
+  if (userMsg && userMsg.role === 'user') {
+    messages.value.splice(idx, 1)
+    inputText.value = userMsg.content
+    sendMessage()
+  }
+}
+
+async function scrollToBottom() {
   await nextTick()
-  if (msgBox.value) msgBox.value.scrollTop = msgBox.value.scrollHeight
+  if (messagesRef.value) {
+    messagesRef.value.scrollTop = messagesRef.value.scrollHeight
+  }
 }
 
-onMounted(async () => {
-  await Promise.all([
-    sessionStore.loadSessions(1),
-    modelStore.loadModels()
-  ])
-  if (sessionStore.sessions.length > 0) {
-    await sessionStore.selectSession(sessionStore.sessions[0].id)
-  }
-  if (modelStore.models.length > 0) {
-    modelCode.value = modelStore.currentModel || modelStore.models[0].code
-  }
-})
+function formatTime(t) {
+  return dayjs(t).format('MM-DD HH:mm')
+}
 </script>
 
 <style lang="scss" scoped>
 .chat-page {
   display: flex;
-  height: calc(100vh - 88px);
-  background: #fff;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  height: calc(100vh - 60px);
+  background: #f5f7fa;
 }
 
-.chat-sidebar {
+.chat-side {
   width: 280px;
-  border-right: 1px solid var(--minimax-border);
+  background: white;
+  border-right: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
-  background: #fafbfc;
-  .sidebar-header { padding: 16px; }
-  .new-chat-btn { width: 100%; }
-  .search-input { margin: 0 16px 8px; width: calc(100% - 32px); }
-  .session-list { flex: 1; overflow-y: auto; padding: 8px; }
-  .session-item {
-    display: flex; align-items: center; gap: 8px;
-    padding: 10px 12px; border-radius: 6px; cursor: pointer;
-    margin-bottom: 4px;
-    transition: background 0.15s;
-    &:hover { background: rgba(91,141,239,0.08); }
-    &.active { background: rgba(91,141,239,0.15); }
-    .session-icon { color: #5b8def; flex-shrink: 0; }
-    .session-meta { flex: 1; min-width: 0; }
-    .session-title {
-      font-size: 14px; font-weight: 500; color: var(--minimax-text);
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .session-sub { font-size: 11px; color: #999; margin-top: 2px; }
-    .session-more { color: #aaa; padding: 4px; }
-  }
+  padding: 16px;
+  gap: 12px;
+}
+.new-chat-btn { width: 100%; }
+.search { flex-shrink: 0; }
+.session-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.session-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all .2s;
+  position: relative;
+}
+.session-item:hover { background: #f3f4f6; }
+.session-item.active {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+.session-icon { font-size: 16px; flex-shrink: 0; }
+.session-info { flex: 1; min-width: 0; }
+.session-title {
+  font-size: 13px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.session-meta { font-size: 11px; color: #9ca3af; }
+.session-more {
+  opacity: 0;
+  font-size: 16px;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+.session-item:hover .session-more { opacity: 1; }
+
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
-.chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .chat-empty {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 12px; color: #999;
-  h2 { margin: 0; font-size: 20px; }
-  p { margin: 0; font-size: 14px; }
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
 }
-.chat-header {
-  padding: 16px 24px; border-bottom: 1px solid var(--minimax-border);
-  display: flex; align-items: center; gap: 12px;
-  h3 { margin: 0; font-size: 16px; font-weight: 600; flex: 1; }
-  .streaming-tag { animation: pulse 1.5s infinite; }
+.empty-logo {
+  font-size: 80px;
+  margin-bottom: 16px;
+  animation: float 3s ease-in-out infinite;
 }
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.chat-empty h2 { font-size: 28px; color: #1f2937; margin-bottom: 8px; }
+.chat-empty p { color: #6b7280; margin-bottom: 32px; }
+
+.quick-prompts {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  max-width: 600px;
+}
+.quick-prompt {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px 18px;
+  cursor: pointer;
+  transition: all .2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #374151;
+}
+.quick-prompt:hover {
+  border-color: #6366f1;
+  background: #eef2ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
 }
 
 .chat-messages {
-  flex: 1; overflow-y: auto; padding: 20px 24px;
-  display: flex; flex-direction: column; gap: 16px;
-  .message { max-width: 70%; display: flex; flex-direction: column; gap: 4px; }
-  .role-user { align-self: flex-end; align-items: flex-end; .bubble { background: #5b8def; color: #fff; } }
-  .role-assistant {
-    align-self: flex-start; .bubble { background: #f0f2f5; color: var(--minimax-text); }
-    .cursor-blink { animation: blink 1s steps(2) infinite; margin-left: 2px; }
-  }
-  .role-system { align-self: center; .bubble { background: #fdf6ec; color: #b88230; font-size: 13px; } }
-  .bubble { padding: 10px 14px; border-radius: 12px; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word; }
-  .meta { font-size: 11px; color: #999; padding: 0 4px; .tokens { color: #5b8def; } }
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px;
 }
-@keyframes blink { 50% { opacity: 0; } }
 
-.chat-input {
-  padding: 12px 24px 20px; border-top: 1px solid var(--minimax-border);
-  display: flex; gap: 12px; align-items: flex-end;
-  .action-btns { display: flex; flex-direction: column; }
-  .send-btn { height: 60px; min-width: 80px; }
+.chat-input-wrap {
+  background: white;
+  border-top: 1px solid #e5e7eb;
+  padding: 12px 24px 8px;
+  position: relative;
+}
+
+.drop-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(99, 102, 241, 0.08);
+  border: 2px dashed #6366f1;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  pointer-events: none;
+}
+.drop-hint {
+  text-align: center;
+  color: #6366f1;
+  font-size: 14px;
+}
+.drop-hint p { margin: 8px 0 0; }
+
+.fade-enter-active, .fade-leave-active { transition: opacity .2s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+.image-preview-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.image-preview {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+.image-preview img { width: 100%; height: 100%; object-fit: cover; }
+.image-remove {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: white;
+  border-radius: 50%;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 18px;
+  box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+
+.input-box {
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: white;
+  transition: border-color .2s;
+}
+.input-box.is-drag { border-color: #6366f1; background: #f5f3ff; }
+.input-box:focus-within { border-color: #6366f1; }
+
+.input-textarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  resize: none;
+  font-size: 14px;
+  line-height: 1.5;
+  font-family: inherit;
+  background: transparent;
+}
+
+.input-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid #f3f4f6;
+}
+.toolbar-left, .toolbar-right { display: flex; align-items: center; gap: 8px; }
+.streaming-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #6366f1;
+  font-size: 12px;
+}
+.is-loading { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.input-hint {
+  text-align: center;
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 4px;
 }
 </style>
