@@ -1,0 +1,26 @@
+# 通用 Dockerfile 模板
+# 用法: docker build -f Dockerfile.auth -t minimax-auth:v1.0.0 ../..
+
+FROM eclipse-temurin:17-jre-jammy
+
+LABEL maintainer="Mavis" \
+      app="minimax-platform"
+
+WORKDIR /app
+
+# 复制 jar (构建时由 CI 注入)
+ARG SERVICE_NAME=auth
+COPY backend/minimax-${SERVICE_NAME}/target/minimax-${SERVICE_NAME}.jar /app/app.jar
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -sf http://localhost:${SERVER_PORT:-8081}/api/v1/${SERVICE_NAME}/health || exit 1
+
+EXPOSE 8081
+
+ENV JAVA_OPTS="-Xms256m -Xmx768m \
+    -XX:+UseG1GC \
+    -XX:+HeapDumpOnOutOfMemoryError \
+    -Djava.security.egd=file:/dev/./urandom"
+
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]

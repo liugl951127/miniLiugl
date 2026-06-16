@@ -1,0 +1,14 @@
+FROM eclipse-temurin:17-jre-jammy
+
+LABEL maintainer="Mavis" app="minimax-platform"
+
+WORKDIR /app
+
+ARG SERVICE_NAME=model
+COPY backend/minimax-${SERVICE_NAME}/target/minimax-${SERVICE_NAME}.jar /app/app.jar
+
+EXPOSE 8083
+
+ENV JAVA_OPTS="-Xms256m -Xmx768m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
+
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]
