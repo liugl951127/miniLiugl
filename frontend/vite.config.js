@@ -35,6 +35,14 @@ export default defineConfig(({ mode }) => {
           target: 'http://localhost:8083',
           changeOrigin: true
         },
+        '/api/v1/test': {
+          target: 'http://localhost:8083',
+          changeOrigin: true
+        },
+        '/api/v1/openai': {
+          target: 'http://localhost:8083',
+          changeOrigin: true
+        },
         '/api/v1/memory': {
           target: 'http://localhost:8084',
           changeOrigin: true

@@ -51,8 +51,10 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     .requestMatchers("/health", "/actuator/**").permitAll()
+                    // V4: 真实 AI 对接测试端点 (公开, 演示用)
+                    .requestMatchers("/test/**", "/api/v1/test/**").permitAll()
                     // V3.3: OpenAI 兼容网关
-                    .requestMatchers("/api/v1/openai/**").permitAll()
+                    .requestMatchers("/openai/**", "/api/v1/openai/**").permitAll()
                     .anyRequest().authenticated()
             )
             .exceptionHandling(eh -> eh

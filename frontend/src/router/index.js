@@ -86,6 +86,25 @@ const routes = [
         name: 'About',
         component: () => import('@/views/About.vue'),
         meta: { title: '关于', icon: 'InfoFilled' }
+      },
+      // V4: 真实 AI 对接演示
+      {
+        path: 'showcase/battle',
+        name: 'MiniMaxShowcase',
+        component: () => import('@/views/showcase/MiniMaxShowcase.vue'),
+        meta: { title: '多模型对决', icon: 'Aim' }
+      },
+      {
+        path: 'showcase/vision',
+        name: 'VisionShowcase',
+        component: () => import('@/views/showcase/VisionShowcase.vue'),
+        meta: { title: '视觉对决', icon: 'View' }
+      },
+      {
+        path: 'showcase/playground',
+        name: 'SingleChatPlayground',
+        component: () => import('@/views/showcase/SingleChatPlayground.vue'),
+        meta: { title: '单模型 PlayGround', icon: 'Lightning' }
       }
     ]
   },

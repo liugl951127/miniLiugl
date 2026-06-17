@@ -37,7 +37,7 @@ import java.util.*;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/openai")
+@RequestMapping("/openai")
 @RequiredArgsConstructor
 public class OpenAIGatewayController {
 
