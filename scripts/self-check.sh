@@ -20,9 +20,9 @@ for f in \
   backend/minimax-auth/src/main/java/com/minimax/auth/controller/AuthController.java \
   backend/minimax-auth/src/main/java/com/minimax/auth/jwt/JwtTokenProvider.java \
   backend/minimax-auth/src/main/java/com/minimax/auth/jwt/JwtProperties.java \
-  backend/minimax-auth/src/main/java/com/minimax/auth/security/JwtAuthenticationFilter.java \
-  backend/minimax-auth/src/main/java/com/minimax/auth/security/RestAuthEntryPoint.java \
-  backend/minimax-auth/src/main/java/com/minimax/auth/security/RestAccessDeniedHandler.java \
+  backend/minimax-common/src/main/java/com/minimax/common/security/JwtAuthenticationFilter.java \
+  backend/minimax-common/src/main/java/com/minimax/common/security/RestAuthEntryPoint.java \
+  backend/minimax-common/src/main/java/com/minimax/common/security/RestAccessDeniedHandler.java \
   backend/minimax-auth/src/main/java/com/minimax/auth/service/AuthService.java \
   backend/minimax-auth/src/main/java/com/minimax/auth/service/impl/AuthServiceImpl.java \
   backend/minimax-auth/src/main/java/com/minimax/auth/entity/SysUser.java \
