@@ -1,6 +1,7 @@
-# MiniMax 平台 - 14 天推进记录
+# MiniMax 平台 - 推进记录
 
 > 每天 20:00 自动构建一次。每天结束时这里会追加当日产出 + 明日计划。
+> 当前版本: **V4.3** | 后端模块: **14** | Java 文件: **247** | Vue 文件: **35**
 
 ## Day 1 - 2026-06-15 ✅ 项目骨架
 
@@ -299,7 +300,39 @@
 - [ ] Docker 镜像 + K8s manifest
 - [ ] 演示场景 + 客户案例
 
-## Day 14 - 待开始
+## Day 14 - 2026-06-16 ✅ 文档交付 (README + ARCHITECTURE + CHANGELOG + API)
+
+**今日完成：**
+- [x] README.md 主文档 (10 大能力 + 架构图 + 快速启动)
+- [x] ARCHITECTURE.md (8553 字, 7 大设计原则 + ER + 时序图 + 安全架构)
+- [x] CHANGELOG.md (4159 字, Day 1-14 完整记录)
+- [x] API.md (7255 字, 92+ 端点完整参考)
+- [x] 部署文档 + 演示场景 + 客户案例
+
+**关键数据：** README + ARCHITECTURE + CHANGELOG + API + 14 reports
+**累计：** 11,454 行 Java / 191 Java 文件 / 125 测试 / 92+ 端点 / 18+ 表
+
+**明日计划：** → V4 增值包
+
+---
+
+## Day 15 - 2026-06-18 ✅ V4.3 Prompt 模板系统
+
+**今日完成：**
+- [x] CHANGELOG 大补全 (V4.0 / V4.1 / V4.2 / V4.3)
+- [x] **minimax-prompt 模块** (第 14 个微服务, 8091 端口)
+  - PromptTemplate 实体 + Mapper + Service + Controller (7 端点)
+  - 变量占位符 `{{variable}}` 提取 + 填值解析
+  - 5 个内置系统模板 (翻译/代码审查/会议纪要/营销文案/故障排查)
+  - 启动时自动初始化内置模板
+- [x] `sql/19_prompt_template.sql` — prompt_template 表 + 种子数据
+- [x] 前端模板管理页面 (`/prompts`): 卡片/列表视图 + 变量填值弹窗 + 实时预览
+- [x] Chat 页面: `?prompt=` query 参数自动填入消息框
+- [x] 侧边栏菜单 + vite proxy
+- [x] 修复 5 个既有 bug (AudioShowcase/DagShowcase/prompt.js/Vue解析)
+
+**关键数据：** +7 Java / +1 SQL / +3 JS/Vue / 14 模块
+**报告：** `reports/day-15-report.md`
 
 ## V2 增值包 - 2026-06-16 ✅ 4 大新功能
 

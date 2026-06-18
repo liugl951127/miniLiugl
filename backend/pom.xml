@@ -32,6 +32,7 @@
         <module>minimax-multimodal</module>
         <module>minimax-monitor</module>
         <module>minimax-agent</module>
+        <module>minimax-prompt</module>
     </modules>
 
     <properties>

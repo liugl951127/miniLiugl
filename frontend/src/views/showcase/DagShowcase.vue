@@ -124,6 +124,7 @@
             <el-button size="small" type="danger" @click="deleteNode(selectedNode)" block>
               删除节点
             </el-button>
+          </el-form>
         </div>
         <div v-else class="exec-log">
           <div v-if="execSteps.length === 0" style="color: #94a3b8; text-align: center; padding: 40px 0">

@@ -88,6 +88,7 @@ const menuRoutes = computed(() => {
     { path: '/chat', title: '智能对话', icon: 'ChatDotRound' },
     { path: '/knowledge', title: '知识库', icon: 'Files' },
     { path: '/memory', title: '记忆中心', icon: 'Memory' },
+    { path: '/prompts', title: 'Prompt 模板', icon: 'DocumentCopy' },
     { path: '/agent', title: 'Agent 自主任务', icon: 'MagicStick' },
     { path: '/kg', title: '知识图谱', icon: 'Share' },
     { path: '/collab', title: '实时协作', icon: 'UserFilled' },

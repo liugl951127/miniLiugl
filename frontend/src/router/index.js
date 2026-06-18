@@ -44,6 +44,12 @@ const routes = [
         meta: { title: 'Agent 自主任务', icon: 'MagicStick' }
       },
       {
+        path: 'prompts',
+        name: 'Prompts',
+        component: () => import('@/views/prompts/Index.vue'),
+        meta: { title: 'Prompt 模板', icon: 'DocumentCopy' }
+      },
+      {
         path: 'kg',
         name: 'KnowledgeGraph',
         component: () => import('@/views/kg/Index.vue'),

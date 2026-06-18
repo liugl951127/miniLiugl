@@ -96,7 +96,7 @@
                 <el-button @click="speakText(asrResult.text)">用 TTS 朗读</el-button>
               </el-button-group>
             </div>
-            <el-empty v-else description="录音后点 "🚀 开始转写"" />
+            <el-empty v-else description="录音后点 🚀 开始转写" />
           </section>
         </div>
       </el-tab-pane>
@@ -149,7 +149,7 @@
                 <el-button @click="copyText(ttsResult.text)">复制文字</el-button>
               </el-button-group>
             </div>
-            <el-empty v-else description="输入文字后点 "🔊 开始合成"" />
+            <el-empty v-else description="输入文字后点 🔊 开始合成" />
           </section>
         </div>
       </el-tab-pane>

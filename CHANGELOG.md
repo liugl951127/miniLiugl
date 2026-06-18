@@ -148,17 +148,17 @@
 
 | 指标 | 14 天累计 |
 |------|-----------|
-| 后端模块 | 11 |
-| Java 文件 | 191 |
-| Java 行数 | 11,454 |
-| SQL 文件 | 8 |
-| SQL 行数 | 963 |
-| 单元/集成测试 | 125 (0 失败) |
-| HTTP 端点 | 92+ |
-| 数据表 (MySQL) | 18+ |
-| 前端组件/视图 | 12+ |
+| 后端模块 | 13 (v4.3 新增 minimax-prompt 8091) |
+| Java 文件 | 241+ |
+| SQL 文件 | 8+ |
+| SQL 行数 | 1,000+ |
+| 单元/集成测试 | 135+ (0 失败) |
+| HTTP 端点 | 110+ |
+| 数据表 (MySQL) | 22+ |
+| 前端组件/视图 | 34+ |
 | 部署脚本 | 4 |
 | Git commits | 14+ |
+| 当前版本 | V4.3 (Prompt 模板系统) |
 
 ## [V2.0] - 2026-06-16 — 4 大新功能
 
@@ -248,4 +248,110 @@
 - 135 个测试 0 失败 (从 130 + 5)
 - 前端 BUILD SUCCESS (含新增 super 页面)
 - 端到端验证: H2 内存模式启动 auth 模块, 登录 + 权限检查全过
+
+## [V4.3] - 2026-06-18 — Prompt 模板系统
+
+### Added
+- **minimax-prompt 模块**: 14th microservice (8091), Prompt 模板管理
+  - PromptTemplate 实体: id / name / description / category / content / variables(JSON) / creatorId / isPublic / useCount / createdAt
+  - PromptTemplateController 7 端点:
+    - `GET  /prompts`            - 列表 (分页 + 分类过滤 + 搜索)
+    - `GET  /prompts/{id}`       - 详情
+    - `POST /prompts`            - 创建 (支持变量占位符 `{{variable}}`)
+    - `PUT  /prompts/{id}`       - 更新
+    - `DELETE /prompts/{id}`     - 删除 (软删)
+    - `POST /prompts/{id}/use`   - 使用计数 +1
+    - `GET  /prompts/categories` - 全部分类
+  - PromptTemplateService: CRUD + 变量解析 (正则提取 `{{...}}`) + 分类聚合
+  - 5 个系统内置模板: 翻译助手 / 代码审查 / 会议纪要 / 营销文案 / 故障排查
+  - SQL: `prompt_template` 表
+- **前端模板管理页面** (`/prompts`):
+  - 卡片列表 + 搜索 + 分类筛选
+  - 模板编辑器 (textarea + 变量高亮)
+  - 变量填值弹窗 + 预览效果
+  - 快速使用 (一键填入 chat 输入框)
+  - 创建/编辑/删除交互
+- **集成到 Chat 输入框**:
+  - chat/Index.vue 顶部加 "📝 用模板" 快捷入口
+  - 点击模板自动展开变量填写，填完直接填入消息框
+
+### Build
+- 13 个后端模块 BUILD SUCCESS (新增 minimax-prompt)
+- 前端 BUILD SUCCESS
+
+---
+
+## [V4.2] - 2026-06-18 — WebSocket 流式 + PWA + i18n + 视频生成 + Agent DAG
+
+### Added
+- **minimax-ws 模块**: 13th microservice (8092), WebSocket 统一流式网关
+  - StreamGatewayHandler 5 类型流式协议:
+    - `chat`  / `vision`  / `audio`  / `agent`  / `battle`
+    - 客户端: `cancel`  / `ping`  控制帧
+    - 服务端: `ready`  / `chunk`  / `done`  / `error`  推送帧
+  - WsApplication (Spring Boot 3, 独立端口)
+  - WebSocketConfig 注册 `/ws/stream` 端点
+  - SecurityConfig 全公开 (业务内 token 校验)
+- **前端新页面**:
+  - `StreamShowcase.vue` WebSocket 流式演示台 (5 类型 + 事件日志面板)
+  - `VideoGenShowcase.vue` 文生视频 (6 模型: Sora/可灵/CogVideoX/万相/AnimateDiff/Mock)
+  - `DagShowcase.vue` Agent DAG 工作流 (6 节点类型 + 拖拽 + 3 内置模板)
+- **PWA 离线支持**: manifest.json + service worker
+- **i18n 国际化**: 中文 + 英文双语 (vue-i18n)
+
+### Build
+- 13 个后端模块 BUILD SUCCESS (新增 minimax-ws)
+- 前端 BUILD SUCCESS
+
+---
+
+## [V4.1] - 2026-06-18 — 文生图 + ASR/TTS + 排行榜 + Plugin SDK
+
+### Added
+- **ImageGenController** (minimax-model, 5 模型):
+  - FLUX / SDXL / Kolors / 通义万相 / DALL-E
+  - Mock 模式: prompt 哈希生成 SVG 渐变图 (data URI, 离线可用)
+  - 真实模式: SILICONFLOW_API_KEY 调用
+  - 端点: `GET /imagegen/models` , `POST /imagegen/generate`
+- **AudioController** 语音能力 (ASR + TTS):
+  - ASR: Whisper V3 / SenseVoice Small / Mock
+  - TTS: Edge-TTS 5 个音色 (晓晓/云希/云扬/Jenny/Mock)
+  - 端点: `/audio/asr/{models,transcribe}` , `/audio/tts/{voices,synthesize}`
+  - Mock: 生成 1 秒静音 WAV (标准 RIFF/WAVE 头)
+- **LeaderboardController** 模型对决排行榜:
+  - `GET /leaderboard/overall` 综合评分 (按 avg_score 降序)
+  - `POST /leaderboard/battle` 发起对决
+  - `GET /leaderboard/history` 对决历史
+  - model_battle_log 表 (新增)
+- **Plugin SDK** (minimax-agent):
+  - Plugin 接口 + PluginContext + PluginExecutor
+  - 插件注册表热加载 (动态发现)
+
+### Build
+- 12 个后端模块 BUILD SUCCESS
+- 前端 BUILD SUCCESS (含 ASR/TTS/ImageGen UI)
+
+---
+
+## [V4.0] - 2026-06-17 — 真实 AI 对接 + 多模型对决 + 视觉对决 + PlayGround
+
+### Added
+- **RealAiTestController** (minimax-model, 3 端点):
+  - `GET  /api/v1/test/ping`       健康检查
+  - `POST /api/v1/test/single`     单次非流式 (真 OpenAI 协议)
+  - `POST /api/v1/test/battle`     多模型并发对决 (8 线程池, 120s 超时)
+- **真实 AI 对接**:
+  - siliconflow / dashscope / deepseek 3 个新 provider
+  - 10 个新模型: Qwen2-VL / InternVL / GLM-4V / Qwen-Max / DeepSeek V3 / R1 等
+  - SecurityConfig 开放 `/api/v1/test/**` 和 `/openai/**`
+- **PlayGround** 前端页面 (`/playground`):
+  - 单次对话 / 流式对话 / 对决 3 种模式
+  - 模型选择 + 参数调节 (temperature / top_p / max_tokens)
+  - 视觉对决: 图片上传 + 双模型并发理解
+- **model_battle_log** SQL 表 (对决日志)
+
+### Build
+- 12 个后端模块 BUILD SUCCESS
+- 前端 BUILD SUCCESS (含 playground 页面)
+- 真实 API key 验证 (需要 SILICONFLOW_API_KEY / DASHSCOPE_API_KEY / DEEPSEEK_API_KEY)
 

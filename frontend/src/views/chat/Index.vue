@@ -169,7 +169,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { modelApi } from '@/api/model'
 import { listSessions, createSession, sendMessageStream } from '@/api/session'
@@ -182,6 +183,7 @@ import {
 import dayjs from 'dayjs'
 
 const userStore = useUserStore()
+const route = useRoute()
 
 // 状态
 const sessions = ref([])
@@ -211,6 +213,16 @@ const canSend = computed(() => {
 onMounted(async () => {
   await loadModels()
   await loadSessions()
+  // V4.3: 从 Prompt 模板页填入内容
+  const q = route.query
+  if (q.prompt) {
+    inputText.value = decodeURIComponent(q.prompt)
+  }
+})
+
+// V4.3: 监听 prompt query 变化 (从模板页切回来时)
+watch(() => route.query.prompt, (val) => {
+  if (val) inputText.value = decodeURIComponent(val)
 })
 
 async function loadModels() {

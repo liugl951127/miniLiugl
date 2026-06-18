@@ -75,6 +75,10 @@ export default defineConfig(({ mode }) => {
           target: 'http://localhost:8088',
           changeOrigin: true
         },
+        '/api/v1/prompts': {
+          target: 'http://localhost:8091',
+          changeOrigin: true
+        },
         '/api/v1/agent': {
           target: 'http://localhost:8090',
           changeOrigin: true
