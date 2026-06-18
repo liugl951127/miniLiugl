@@ -2,8 +2,14 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#6366f1" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="MiniMax" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>MiniMax 大模型平台</title>
     <style>
       html, body, #app { height: 100%; margin: 0; padding: 0; }
@@ -38,5 +44,17 @@
       </div>
     </div>
     <script type="module" src="/src/main.js"></script>
+    <script>
+      // 注册 Service Worker (PWA 离线支持)
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then(reg => {
+            console.log('SW registered:', reg.scope);
+          }).catch(err => {
+            console.warn('SW register failed:', err);
+          });
+        });
+      }
+    </script>
   </body>
 </html>

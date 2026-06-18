@@ -21,6 +21,7 @@
     <modules>
         <module>minimax-common</module>
         <module>minimax-gateway</module>
+        <module>minimax-ws</module>
         <module>minimax-auth</module>
         <module>minimax-chat</module>
         <module>minimax-memory</module>

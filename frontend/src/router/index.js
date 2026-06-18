@@ -129,6 +129,24 @@ const routes = [
         name: 'PluginShowcase',
         component: () => import('@/views/showcase/PluginShowcase.vue'),
         meta: { title: '插件 SDK', icon: 'Connection' }
+      },
+      {
+        path: 'showcase/stream',
+        name: 'StreamShowcase',
+        component: () => import('@/views/showcase/StreamShowcase.vue'),
+        meta: { title: 'WebSocket 流式', icon: 'Connection' }
+      },
+      {
+        path: 'showcase/dag',
+        name: 'DagShowcase',
+        component: () => import('@/views/showcase/DagShowcase.vue'),
+        meta: { title: 'Agent DAG', icon: 'Share' }
+      },
+      {
+        path: 'showcase/videogen',
+        name: 'VideoGenShowcase',
+        component: () => import('@/views/showcase/VideoGenShowcase.vue'),
+        meta: { title: '文生视频', icon: 'VideoCamera' }
       }
     ]
   },

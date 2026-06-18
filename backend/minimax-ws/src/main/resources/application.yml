@@ -1,0 +1,13 @@
+server:
+  port: 8095
+
+spring:
+  application:
+    name: minimax-ws
+  jackson:
+    time-zone: GMT+8
+
+minimax:
+  jwt:
+    secret: ${JWT_SECRET:minimax-default-secret-please-override-in-production-32+}
+    issuer: minimax-platform

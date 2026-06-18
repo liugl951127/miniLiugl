@@ -84,6 +84,11 @@ export default defineConfig(({ mode }) => {
           ws: true,
           changeOrigin: true
         },
+        '/api/v1/ws': {
+          target: 'ws://localhost:8095',
+          ws: true,
+          changeOrigin: true
+        },
         '/api': {
           target: env.VITE_API_BASE || 'http://localhost:8080',
           changeOrigin: true
