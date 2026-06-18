@@ -1,7 +1,12 @@
 package com.minimax.model.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.minimax.common.result.Result;
 import com.minimax.model.dto.ChatRequest;
+import com.minimax.model.entity.ModelBattleLog;
+import com.minimax.model.entity.ModelConfig;
+import com.minimax.model.mapper.ModelBattleLogMapper;
+import com.minimax.model.mapper.ModelConfigMapper;
 import com.minimax.model.provider.ModelProviderFactory;
 import com.minimax.model.service.ModelService;
 import com.minimax.model.vo.ChatResponse;
@@ -9,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -28,6 +34,8 @@ public class RealAiTestController {
 
     private final ModelService modelService;
     private final ModelProviderFactory providerFactory;
+    private final ModelBattleLogMapper battleLogMapper;
+    private final ModelConfigMapper modelConfigMapper;
     private final ExecutorService pool = Executors.newFixedThreadPool(8);
 
     @GetMapping("/ping")
@@ -172,6 +180,31 @@ public class RealAiTestController {
             r.error = e.getMessage() != null && e.getMessage().length() > 200
                     ? e.getMessage().substring(0, 200) : e.getMessage();
             r.latencyMs = System.currentTimeMillis() - t0;
+        }
+        // 写入 battle log
+        try {
+            ModelBattleLog log = new ModelBattleLog();
+            log.setBattleId(battleId);
+            log.setUserId(0L);
+            log.setModelCode(modelCode);
+            log.setPrompt(prompt);
+            log.setResponse(r.content != null && r.content.length() > 65000
+                    ? r.content.substring(0, 65000) : r.content);
+            log.setPromptTokens(r.promptTokens);
+            log.setCompletionTokens(r.completionTokens);
+            log.setLatencyMs((int) Math.min(r.latencyMs, Integer.MAX_VALUE));
+            log.setStatus(r.status);
+            log.setErrorMsg(r.error);
+            log.setCreatedAt(LocalDateTime.now());
+            // 找 model_id
+            try {
+                ModelConfig cfg = modelConfigMapper.selectOne(
+                        new LambdaQueryWrapper<ModelConfig>().eq(ModelConfig::getModelCode, modelCode));
+                if (cfg != null) log.setModelId(cfg.getId());
+            } catch (Exception ignore) {}
+            battleLogMapper.insert(log);
+        } catch (Exception e) {
+            this.log.warn("battle log 写入失败: {}", e.getMessage());
         }
         return r;
     }

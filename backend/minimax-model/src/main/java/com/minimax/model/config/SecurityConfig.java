@@ -55,6 +55,10 @@ public class SecurityConfig {
                     .requestMatchers("/test/**", "/api/v1/test/**").permitAll()
                     // V3.3: OpenAI 兼容网关
                     .requestMatchers("/openai/**", "/api/v1/openai/**").permitAll()
+                    // V4.1: 文生图 / 语音 / 排行榜
+                    .requestMatchers("/imagegen/**", "/api/v1/imagegen/**").permitAll()
+                    .requestMatchers("/audio/**", "/api/v1/audio/**").permitAll()
+                    .requestMatchers("/leaderboard/**", "/api/v1/leaderboard/**").permitAll()
                     .anyRequest().authenticated()
             )
             .exceptionHandling(eh -> eh

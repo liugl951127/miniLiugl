@@ -105,6 +105,30 @@ const routes = [
         name: 'SingleChatPlayground',
         component: () => import('@/views/showcase/SingleChatPlayground.vue'),
         meta: { title: '单模型 PlayGround', icon: 'Lightning' }
+      },
+      {
+        path: 'showcase/imagegen',
+        name: 'ImageGenShowcase',
+        component: () => import('@/views/showcase/ImageGenShowcase.vue'),
+        meta: { title: '文生图', icon: 'Picture' }
+      },
+      {
+        path: 'showcase/audio',
+        name: 'AudioShowcase',
+        component: () => import('@/views/showcase/AudioShowcase.vue'),
+        meta: { title: '语音能力 (ASR/TTS)', icon: 'Microphone' }
+      },
+      {
+        path: 'showcase/leaderboard',
+        name: 'LeaderboardShowcase',
+        component: () => import('@/views/showcase/LeaderboardShowcase.vue'),
+        meta: { title: '模型排行榜', icon: 'Trophy' }
+      },
+      {
+        path: 'showcase/plugins',
+        name: 'PluginShowcase',
+        component: () => import('@/views/showcase/PluginShowcase.vue'),
+        meta: { title: '插件 SDK', icon: 'Connection' }
       }
     ]
   },
