@@ -20,7 +20,7 @@
 --   deleted      INT          DEFAULT 0                 -- 逻辑删除 (MyBatis-Plus @TableLogic)
 -- ============================================================
 
-USE `minimax`;
+USE `minimax_platform`;
 
 DROP TABLE IF EXISTS `prompt_template`;
 CREATE TABLE `prompt_template` (

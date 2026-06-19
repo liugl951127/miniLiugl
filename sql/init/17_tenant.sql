@@ -4,7 +4,7 @@
 -- 其他用户通过 tenant_id 严格隔离
 -- ============================================================
 
-USE `minimax`;
+USE `minimax_platform`;
 
 -- 1. 租户表
 DROP TABLE IF EXISTS `tenant`;

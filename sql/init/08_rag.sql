@@ -2,7 +2,7 @@
 -- MiniMax Platform - Day 8: RAG (Knowledge Base + Document + Chunk)
 -- ============================================================
 
-USE `minimax`;
+USE `minimax_platform`;
 
 -- ------------------------------------------------------------
 -- knowledge_base 知识库 (用户的"文档容器")

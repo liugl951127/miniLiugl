@@ -3,8 +3,8 @@
 -- MySQL 8.x  |  utf8mb4  |  InnoDB
 -- ============================================================
 
-CREATE DATABASE IF NOT EXISTS `minimax` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `minimax`;
+CREATE DATABASE IF NOT EXISTS `minimax_platform` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `minimax_platform`;
 
 -- ------------------------------------------------------------
 -- sys_user 用户表

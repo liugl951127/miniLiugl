@@ -15,7 +15,7 @@ set -e
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SQL_DIR="$ROOT/sql/init"
 DB_USER="${DB_USER:-root}"
-DB_NAME="minimax"
+DB_NAME="minimax_platform"
 # 默认 localhost 走 socket (MariaDB default), 127.0.0.1 走 TCP
 DB_HOST="${DB_HOST:-localhost}"
 

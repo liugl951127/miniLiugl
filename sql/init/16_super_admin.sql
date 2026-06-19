@@ -4,7 +4,7 @@
 -- 独立密码、独立 JWT claim
 -- ============================================================
 
-USE `minimax`;
+USE `minimax_platform`;
 
 -- 确保 SUPER_ADMIN 角色存在
 INSERT INTO `sys_role` (`code`, `name`, `description`, `sort`, `enabled`)

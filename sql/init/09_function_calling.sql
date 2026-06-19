@@ -2,7 +2,7 @@
 -- MiniMax Platform - Day 9: Function Calling
 -- ============================================================
 
-USE `minimax`;
+USE `minimax_platform`;
 
 -- ------------------------------------------------------------
 -- function_tool 工具注册表 (系统 + 用户自定义)

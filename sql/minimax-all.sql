@@ -17,8 +17,8 @@
 -- 来源: sql/init/01..19_*.sql 合并
 -- ============================================================
 
-CREATE DATABASE IF NOT EXISTS `minimax` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `minimax`;
+CREATE DATABASE IF NOT EXISTS `minimax_platform` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `minimax_platform`;
 
 
 -- ▸ 来源: sql/init/02_user_auth.sql
