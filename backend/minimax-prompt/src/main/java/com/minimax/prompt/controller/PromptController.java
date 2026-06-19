@@ -49,7 +49,7 @@ public class PromptController {
             @RequestParam(defaultValue = "12") int size,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String keyword) {
-        return Result.success(promptService.page(userId, current, size, category, keyword));
+        return Result.ok(promptService.page(userId, current, size, category, keyword));
     }
 
     @GetMapping("/{id}")
@@ -58,12 +58,12 @@ public class PromptController {
             @AuthenticationPrincipal(expression = "id") Long userId) {
         PromptTemplate t = promptService.getById(id, userId);
         if (t == null) return Result.fail("模板不存在或无权访问");
-        return Result.success(t);
+        return Result.ok(t);
     }
 
     @GetMapping("/categories")
     public Result<List<String>> categories() {
-        return Result.success(promptService.categories());
+        return Result.ok(promptService.categories());
     }
 
     // ---------- 写操作 ----------
@@ -73,7 +73,7 @@ public class PromptController {
             @AuthenticationPrincipal(expression = "id") Long userId,
             @AuthenticationPrincipal(expression = "username") String userName,
             @RequestBody PromptTemplate template) {
-        return Result.success(promptService.create(template, userId, userName));
+        return Result.ok(promptService.create(template, userId, userName));
     }
 
     @PutMapping("/{id}")
@@ -82,7 +82,7 @@ public class PromptController {
             @AuthenticationPrincipal(expression = "id") Long userId,
             @RequestBody PromptTemplate updates) {
         try {
-            return Result.success(promptService.update(id, updates, userId));
+            return Result.ok(promptService.update(id, updates, userId));
         } catch (SecurityException e) {
             return Result.fail(e.getMessage());
         }
@@ -94,7 +94,7 @@ public class PromptController {
             @AuthenticationPrincipal(expression = "id") Long userId) {
         try {
             boolean ok = promptService.delete(id, userId);
-            return ok ? Result.success(null) : Result.fail("删除失败");
+            return ok ? Result.ok(null) : Result.fail("删除失败");
         } catch (SecurityException e) {
             return Result.fail(e.getMessage());
         }
@@ -103,7 +103,7 @@ public class PromptController {
     @PostMapping("/{id}/use")
     public Result<Void> use(@PathVariable Long id) {
         promptService.incrementUseCount(id);
-        return Result.success(null);
+        return Result.ok(null);
     }
 
     /** 变量解析接口：填入变量值，返回最终 prompt */
@@ -113,7 +113,7 @@ public class PromptController {
             return Result.fail("content 和 values 不能为空");
         }
         String resolved = promptService.resolve(req.getContent(), req.getValues());
-        return Result.success(resolved);
+        return Result.ok(resolved);
     }
 
     @Data

@@ -9,5 +9,5 @@ spring:
 
 minimax:
   jwt:
-    secret: ${JWT_SECRET:minimax-default-secret-please-override-in-production-32+}
+    secret: ${JWT_SECRET:VwSWPd816F4nwowFzF5B0F8rihlle2836g6QAh5i13o=}
     issuer: minimax-platform

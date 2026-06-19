@@ -149,7 +149,7 @@ if [ "$1" = "--with-test" ]; then
   fi
   echo "  初始化数据库..."
   mysql -uroot -e "CREATE DATABASE IF NOT EXISTS minimax DEFAULT CHARSET utf8mb4;" 2>/dev/null
-  mysql -uroot -e "CREATE USER IF NOT EXISTS 'minimax'@'127.0.0.1' IDENTIFIED BY 'minimax'; GRANT ALL ON minimax.* TO 'minimax'@'127.0.0.1';" 2>/dev/null
+  mysql -uroot -e "CREATE USER IF NOT EXISTS 'minimax'@'127.0.0.1' IDENTIFIED BY 'minimax_pass_2024'; GRANT ALL ON minimax.* TO 'minimax'@'127.0.0.1';" 2>/dev/null
   for f in release/sql/*.sql; do
     mysql -uroot minimax < "$f" 2>/dev/null
   done

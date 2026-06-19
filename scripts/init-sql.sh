@@ -94,7 +94,7 @@ fi
 # 建库
 echo -e "\n${YELLOW}[2/3] 建库 + 用户...${NC}"
 mysql -u"$DB_USER" -h "$DB_HOST" -e "CREATE DATABASE IF NOT EXISTS $DB_NAME DEFAULT CHARSET utf8mb4;"
-mysql -u"$DB_USER" -h "$DB_HOST" -e "CREATE USER IF NOT EXISTS 'minimax'@'127.0.0.1' IDENTIFIED BY 'minimax';" 2>/dev/null || true
+mysql -u"$DB_USER" -h "$DB_HOST" -e "CREATE USER IF NOT EXISTS 'minimax'@'127.0.0.1' IDENTIFIED BY 'minimax_pass_2024';" 2>/dev/null || true
 mysql -u"$DB_USER" -h "$DB_HOST" -e "GRANT ALL ON $DB_NAME.* TO 'minimax'@'127.0.0.1'; FLUSH PRIVILEGES;" 2>/dev/null || true
 echo -e "  ${GREEN}✓ 数据库 $DB_NAME${NC}"
 

@@ -6,8 +6,8 @@ spring:
     name: minimax-agent
   datasource:
     url: jdbc:mysql://127.0.0.1:3306/minimax?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
-    username: root
-    password: root
+    username: ${DB_USER:minimax}
+    password: ${DB_PASS:minimax_pass_2024}
   profiles:
     active: dev
 

@@ -55,7 +55,7 @@ fi
 echo ""
 echo -e "${YELLOW}[3/6] 初始化数据库...${NC}"
 mysql -uroot -e "CREATE DATABASE IF NOT EXISTS minimax DEFAULT CHARSET utf8mb4;"
-mysql -uroot -e "CREATE USER IF NOT EXISTS 'minimax'@'127.0.0.1' IDENTIFIED BY 'minimax'; GRANT ALL ON minimax.* TO 'minimax'@'127.0.0.1'; FLUSH PRIVILEGES;"
+mysql -uroot -e "CREATE USER IF NOT EXISTS 'minimax'@'127.0.0.1' IDENTIFIED BY 'minimax_pass_2024'; GRANT ALL ON minimax.* TO 'minimax'@'127.0.0.1'; FLUSH PRIVILEGES;"
 if [ -z "$(mysql -uminimax -pminimax -h 127.0.0.1 minimax -e 'SHOW TABLES' 2>/dev/null)" ]; then
   for f in $ROOT/sql/init/*.sql; do
     echo "  → $(basename $f)"

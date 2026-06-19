@@ -413,7 +413,7 @@ mysql -uroot -e "SELECT 1;"
 mysql -uroot -e "SELECT user, host FROM mysql.user WHERE user='minimax';"
 
 # 3. 重建
-mysql -uroot -e "CREATE USER 'minimax'@'127.0.0.1' IDENTIFIED BY 'minimax';"
+mysql -uroot -e "CREATE USER 'minimax'@'127.0.0.1' IDENTIFIED BY 'minimax_pass_2024';"
 mysql -uroot -e "GRANT ALL ON minimax.* TO 'minimax'@'127.0.0.1';"
 mysql -uroot -e "FLUSH PRIVILEGES;"
 

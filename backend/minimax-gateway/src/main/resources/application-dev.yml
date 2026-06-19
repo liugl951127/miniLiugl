@@ -1,6 +1,6 @@
 spring:
   datasource:
-    password: root
+    password: ${MYSQL_PASSWORD:minimax_pass_2024}
 
 minimax:
   jwt:

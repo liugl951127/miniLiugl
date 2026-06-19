@@ -136,7 +136,7 @@ if ($args -contains "-WithTest") {
   }
   Write-Host "  初始化数据库..."
   & mysql -uroot -e "CREATE DATABASE IF NOT EXISTS minimax DEFAULT CHARSET utf8mb4;" 2>$null
-  & mysql -uroot -e "CREATE USER IF NOT EXISTS 'minimax'@'127.0.0.1' IDENTIFIED BY 'minimax'; GRANT ALL ON minimax.* TO 'minimax'@'127.0.0.1';" 2>$null
+  & mysql -uroot -e "CREATE USER IF NOT EXISTS 'minimax'@'127.0.0.1' IDENTIFIED BY 'minimax_pass_2024'; GRANT ALL ON minimax.* TO 'minimax'@'127.0.0.1';" 2>$null
   foreach ($f in (Get-ChildItem release\sql\*.sql)) {
     & mysql -uroot minimax < $f.FullName 2>$null
   }

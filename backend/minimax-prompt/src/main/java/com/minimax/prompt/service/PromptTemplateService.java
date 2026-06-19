@@ -144,7 +144,10 @@ public class PromptTemplateService {
      */
     @Transactional
     public void incrementUseCount(Long id) {
-        mapper.executeSql("UPDATE prompt_template SET use_count = use_count + 1 WHERE id = " + id);
+        PromptTemplate t = mapper.selectById(id);
+        if (t == null) return;
+        t.setUseCount(t.getUseCount() == null ? 1 : t.getUseCount() + 1);
+        mapper.updateById(t);
     }
 
     /**
