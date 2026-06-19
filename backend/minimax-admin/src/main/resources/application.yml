@@ -1,11 +1,11 @@
 server:
-  port: 8081
+  port: 8087
   servlet:
-    context-path: /
+    context-path: /api/v1
 
 spring:
   application:
-    name: minimax-auth
+    name: minimax-admin
   profiles:
     active: dev
   jackson:
@@ -24,35 +24,23 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASS:minimax_redis_2024}
-      timeout: 3s
-  servlet:
-    multipart:
-      max-file-size: 50MB
-      max-request-size: 100MB
 
 minimax:
   jwt:
     secret: ${JWT_SECRET:VwSWPd816F4nwowFzF5B0F8rihlle2836g6QAh5i13o=}
-    access-ttl-seconds: 1800        # 30 min
-    refresh-ttl-seconds: 604800     # 7 days
+    access-ttl-seconds: 1800
+    refresh-ttl-seconds: 604800
     issuer: minimax-platform
-  auth:
-    super-admin-username: ${SUPER_ADMIN_USERNAME:adminLiugl}
-    super-admin-password: ${SUPER_ADMIN_PASSWORD:Liugl@2026}
-    super-admin-email: ${SUPER_ADMIN_EMAIL:liugl951127@gmail.com}
-
-mybatis-plus:
-  mapper-locations: classpath*:mapper/**/*.xml
-  type-aliases-package: com.minimax.auth.entity
-  configuration:
-    map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-  global-config:
-    db-config:
-      logic-delete-field: deleted
-      logic-delete-value: 1
-      logic-not-delete-value: 0
-      id-type: AUTO
+  admin:
+    timeout-seconds: 3
+    service-token: ""
+    services:
+      auth: http://localhost:8081
+      chat: http://localhost:8082
+      model: http://localhost:8083
+      memory: http://localhost:8084
+      rag: http://localhost:8085
+      function: http://localhost:8086
 
 logging:
   level:
