@@ -134,6 +134,14 @@ public class AuthServiceImpl implements AuthService {
 
     // ---------------------- private helpers ----------------------
 
+    /**
+     * 公开: 给微信扫码登录等场景生成登录响应 (无需 HttpServletRequest).
+     */
+    @Override
+    public LoginResponse issueLoginResponse(SysUser u, HttpServletRequest ignore) {
+        return buildLoginResponse(u);
+    }
+
     private LoginResponse buildLoginResponse(SysUser u) {
         List<String> roles = userMapper.selectRoleCodesByUserId(u.getId());
         boolean superAdmin = roles != null && roles.contains("SUPER_ADMIN");

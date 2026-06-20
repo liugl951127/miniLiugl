@@ -42,6 +42,18 @@ public class SysUser implements Serializable {
     private Long tenantId;
     private String remark;
 
+    // ============ V5: 微信扫码登录 ============
+    /** 微信 openid (公众号/小程序唯一) */
+    private String wechatOpenid;
+    /** 微信 unionid (开放平台跨应用唯一) */
+    private String wechatUnionid;
+    /** 微信昵称 (冗余) */
+    private String wechatNickname;
+    /** 微信头像 URL */
+    private String wechatAvatar;
+    /** 微信绑定时间 */
+    private LocalDateTime wechatBoundAt;
+
     @TableField(fill = FieldFill.INSERT)
     private Long createdBy;
     @TableField(fill = FieldFill.INSERT)

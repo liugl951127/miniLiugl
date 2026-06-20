@@ -60,6 +60,8 @@ public class SecurityConfig {
                     .requestMatchers(
                             "/auth/register", "/auth/login", "/auth/refresh",
                             "/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh",
+                            // V5: 微信扫码登录全部公开
+                            "/auth/wechat/**", "/api/v1/auth/wechat/**",
                             "/health", "/health/**", "/", "/error",
                             "/v3/api-docs/**", "/swagger-ui/**"
                     ).permitAll()

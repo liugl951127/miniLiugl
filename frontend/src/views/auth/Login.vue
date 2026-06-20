@@ -4,15 +4,18 @@
     <div class="login-box">
       <div class="login-header">
         <h1 class="gradient-text" style="margin: 0 0 8px; font-size: 32px;">MiniMax</h1>
-        <p style="color: var(--minimax-text-secondary); margin: 0;">大模型应用平台</p>
+        <p style="color: var(--minimax-text-secondary); margin: 0;">大模型应用平台 · v5</p>
       </div>
 
+      <!-- V5: 3 种登录方式 (密码 / 注册 / 微信扫码) -->
       <el-tabs v-model="mode" stretch class="login-tabs">
-        <el-tab-pane label="登录" name="login" />
-        <el-tab-pane label="注册" name="register" />
+        <el-tab-pane label="🔑 账号密码" name="login" />
+        <el-tab-pane label="📝 注册" name="register" />
+        <el-tab-pane label="📱 微信扫码" name="wechat" />
       </el-tabs>
 
-      <el-form ref="formRef" :model="form" :rules="rules" size="large" @submit.prevent="onSubmit">
+      <!-- 密码登录 / 注册 -->
+      <el-form v-if="mode !== 'wechat'" ref="formRef" :model="form" :rules="rules" size="large" @submit.prevent="onSubmit">
         <el-form-item prop="username">
           <el-input v-model="form.username" placeholder="用户名" :prefix-icon="User" autocomplete="username" />
         </el-form-item>
@@ -29,13 +32,21 @@
         <el-form-item v-if="mode === 'register'" prop="email">
           <el-input v-model="form.email" placeholder="邮箱（选填）" :prefix-icon="Message" />
         </el-form-item>
-
         <el-button type="primary" size="large" :loading="loading" style="width: 100%;" @click="onSubmit">
           {{ mode === 'login' ? '登 录' : '注 册 并 登 录' }}
         </el-button>
       </el-form>
 
-      <div class="login-tips">
+      <!-- V5: 微信扫码登录 -->
+      <div v-else class="wechat-tab">
+        <WechatScanLogin @login-success="onWechatLogin" />
+        <el-divider><span style="font-size: 12px; color: #94a3b8;">其他方式</span></el-divider>
+        <p class="wechat-tip">
+          没有微信? 用 <a href="javascript:;" @click="mode = 'login'">账号密码</a> 登录
+        </p>
+      </div>
+
+      <div v-if="mode !== 'wechat'" class="login-tips">
         <el-alert type="info" :closable="false" show-icon>
           <template #title>
             <span style="font-size: 12px;">默认账号 admin / admin@123（仅初始化数据中）</span>
@@ -51,10 +62,13 @@
         </p>
         <ul style="margin: 0; padding-left: 20px; color: var(--minimax-text-secondary); font-size: 12px; line-height: 1.8;">
           <li>✅ Day 2 - 真实账号体系 (JWT + RBAC)</li>
-          <li>Day 3 - 多会话历史持久化</li>
-          <li>Day 5 - 流式对话 + 实时打字机</li>
-          <li>Day 6-7 - 短/长期记忆</li>
-          <li>Day 8 - 知识库 RAG</li>
+          <li>✅ Day 5 - 流式对话 + 实时打字机</li>
+          <li>✅ Day 6-7 - 短/长期记忆</li>
+          <li>✅ Day 8 - 知识库 RAG</li>
+          <li>✅ V2 - Agent / 知识图谱 / 协作 / 插件</li>
+          <li>✅ V3 - 多租户 + 移动端 H5 + OpenAI 兼容</li>
+          <li>✅ V4 - 16 大模型对决 + 文生图/音/视频</li>
+          <li>✅ V5 - <strong>微信扫码登录</strong></li>
         </ul>
       </div>
     </div>
@@ -68,6 +82,7 @@ import { ElMessage } from 'element-plus'
 import { User, Lock, Message, Avatar } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'
 import { authApi } from '@/api/auth'
+import WechatScanLogin from '@/components/WechatScanLogin.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -93,7 +108,7 @@ watch(mode, (v) => {
   if (v === 'register') {
     form.username = ''
     form.password = ''
-  } else {
+  } else if (v === 'login') {
     form.username = 'admin'
     form.password = 'admin@123'
   }
@@ -126,40 +141,50 @@ async function onSubmit() {
   }
 }
 
+/**
+ * V5: 微信扫码登录成功回调
+ */
+async function onWechatLogin({ accessToken, refreshToken, userId }) {
+  try {
+    // 把 token 存进 user store, 模拟正常登录
+    userStore.accessToken = accessToken
+    userStore.refreshToken = refreshToken
+    // 拉一次 /auth/me 拿完整 user info
+    await userStore.fetchProfile()
+    ElMessage.success(`微信扫码登录成功! 欢迎 ${userStore.nickname || userStore.username}`)
+    const redirect = route.query.redirect || (isMobile() ? '/m/chat' : '/')
+    router.push(redirect)
+  } catch (e) {
+    ElMessage.error('登录后初始化失败: ' + e.message)
+  }
+}
+
 function isMobile() {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent
-  ) || window.innerWidth < 768
+  return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
 }
 </script>
 
-<style lang="scss" scoped>
-.login-page {
-  position: relative; height: 100vh; width: 100vw;
-  display: flex; align-items: center; justify-content: center;
-  overflow: hidden;
-}
-.login-bg {
-  position: absolute; inset: 0;
-  background: linear-gradient(135deg, #1f2a44 0%, #0b1220 50%, #2d1b4e 100%);
-  &::before, &::after {
-    content: ''; position: absolute; border-radius: 50%;
-    background: radial-gradient(circle, rgba(91,141,239,0.3), transparent 70%);
-  }
-  &::before { width: 500px; height: 500px; top: -100px; right: -100px; }
-  &::after { width: 400px; height: 400px; bottom: -100px; left: -100px;
-    background: radial-gradient(circle, rgba(182,109,255,0.3), transparent 70%); }
-}
+<style scoped>
+.login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; }
+.login-bg { position: absolute; inset: 0; background: linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #1e1b4b 100%); z-index: 0; }
 .login-box {
   position: relative; z-index: 1;
-  width: 440px; padding: 32px 40px 24px;
-  background: rgba(255, 255, 255, 0.98);
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-  backdrop-filter: blur(10px);
+  width: 100%; max-width: 440px;
+  background: rgba(255,255,255,0.95); backdrop-filter: blur(20px);
+  border-radius: 18px; padding: 36px 32px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.4);
 }
-.login-header { text-align: center; margin-bottom: 16px; }
-.login-tabs { margin-bottom: 16px; }
-code { background: #f5f7fa; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
-.login-tips { margin-top: 12px; }
+.login-header { text-align: center; margin-bottom: 24px; }
+.gradient-text { background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.login-tabs { margin-bottom: 18px; }
+
+/* V5: 微信扫码 tab */
+.wechat-tab { padding: 12px 0; }
+.wechat-tip { text-align: center; color: #64748b; font-size: 13px; margin: 8px 0 0; }
+.wechat-tip a { color: #6366f1; text-decoration: none; }
+.wechat-tip a:hover { text-decoration: underline; }
+
+.login-tips { margin-top: 18px; }
+:deep(.el-tabs__item) { font-size: 14px; }
+:deep(.el-form-item) { margin-bottom: 16px; }
 </style>

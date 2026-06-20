@@ -19,6 +19,7 @@
     "markdown-it": "^14.1.0",
     "pinia": "^2.1.7",
     "pinia-plugin-persistedstate": "^3.2.1",
+    "qrcode": "^1.5.4",
     "vant": "^4.9.24",
     "vue": "^3.4.21",
     "vue-echarts": "^7.0.3",
