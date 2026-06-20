@@ -190,6 +190,12 @@ const routes = [
         name: 'WechatBindings',
         component: () => import('@/views/admin/WechatBindings.vue'),
         meta: { title: '微信绑定管理', icon: 'ChatDotRound', requiresSuper: true }
+      },
+      {
+        path: 'tenant',
+        name: 'TenantMgmt',
+        component: () => import('@/views/tenant/Index.vue'),
+        meta: { title: '租户管理', icon: 'Office', requiresSuper: true }
       }
     ]
   },

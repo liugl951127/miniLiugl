@@ -52,6 +52,9 @@
                 <el-dropdown-item v-if="userStore.isSuperAdmin" command="super" divided>
                   👑 超级管理控制台
                 </el-dropdown-item>
+                <el-dropdown-item v-if="userStore.isSuperAdmin" command="tenant">
+                  🏢 租户管理
+                </el-dropdown-item>
                 <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -99,6 +102,7 @@ const menuRoutes = computed(() => {
   // 超级管理员 (adminLiugl) 专属菜单
   if (userStore.isSuperAdmin) {
     base.push({ path: '/super', title: '👑 超级管理', icon: 'Key' })
+    base.push({ path: '/tenant', title: '🏢 租户管理', icon: 'Office' })
   }
   return base
 })
@@ -110,6 +114,7 @@ const activeMenu = computed(() => {
   if (p.startsWith('/memory')) return '/memory'
   if (p.startsWith('/admin')) return '/admin'
   if (p.startsWith('/super')) return '/super'
+  if (p.startsWith('/tenant')) return '/tenant'
   if (p.startsWith('/agent')) return '/agent'
   if (p.startsWith('/kg')) return '/kg'
   if (p.startsWith('/collab')) return '/collab'
@@ -138,6 +143,8 @@ async function onCommand(cmd) {
     ElMessage.info('个人中心 - Day 3 上线')
   } else if (cmd === 'super') {
     router.push('/super')
+  } else if (cmd === 'tenant') {
+    router.push('/tenant')
   }
 }
 
