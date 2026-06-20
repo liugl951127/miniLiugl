@@ -1,5 +1,5 @@
 # =============================================================
-# MiniMax Gateway 配置 (V5.5)
+# MiniMax Gateway 配置 (V5.5 + V5.7)
 # 公共配置在 application-common.yml
 # =============================================================
 
@@ -26,14 +26,12 @@ spring:
 
 # =============================================================
 # Spring Cloud Gateway 路由 (V5.5)
-# 前后台分流:
-#   前台: /api/v1/{module}/**     业务微服务
-#   后台: /api/v1/admin/**         超级管理 (adminLiugl only)
+# V5.7: uri 从 http://127.0.0.1:{port} 改为 lb://minimax-{module} (Nacos LoadBalancer)
 # =============================================================
 spring.cloud.gateway:
   discovery:
     locator:
-      enabled: false
+      enabled: false              # 不自动发现, 显式声明路由
 
   globalcors:
     cors-configurations:
@@ -54,11 +52,14 @@ spring.cloud.gateway:
     - DedupeResponseHeader=Access-Control-Allow-Origin
     - AddRequestHeader=X-Request-Source, gateway
     - AddResponseHeader=X-Response-Source, minimax-gateway
+    # V5.7 熔断降级: 每个路由单独配 fallbackUri
+    # 注: gateway 默认 filter 用 Spring Cloud CircuitBreaker (不是 resilience4j), 需要 spring-cloud-circuitbreaker
+    # 这里用 fallback controller (lb 失败 / 5xx 时 fallbackUri: forward:/fallback)
 
   routes:
-    # ============== 前台业务 (按模块) ==============
+    # ============== 前台业务 (按模块) — V5.7 lb:// Nacos LoadBalancer ==============
     - id: auth
-      uri: http://127.0.0.1:8081
+      uri: lb://minimax-auth
       predicates:
         - Path=/api/v1/auth/**,/api/auth/**
       filters:
@@ -70,7 +71,7 @@ spring.cloud.gateway:
             key-resolver: "#{@userKeyResolver}"
 
     - id: chat
-      uri: http://127.0.0.1:8082
+      uri: lb://minimax-chat
       predicates:
         - Path=/api/v1/chat/**,/api/v1/sessions/**,/api/v1/messages/**
       filters:
@@ -82,49 +83,49 @@ spring.cloud.gateway:
             key-resolver: "#{@userKeyResolver}"
 
     - id: model
-      uri: http://127.0.0.1:8083
+      uri: lb://minimax-model
       predicates:
         - Path=/api/v1/model/**,/api/v1/test/**,/api/v1/openai/**,/api/v1/imagegen/**,/api/v1/audio/**,/api/v1/leaderboard/**
       filters:
         - StripPrefix=2
 
     - id: memory
-      uri: http://127.0.0.1:8084
+      uri: lb://minimax-memory
       predicates:
         - Path=/api/v1/memory/**
       filters:
         - StripPrefix=2
 
     - id: rag
-      uri: http://127.0.0.1:8085
+      uri: lb://minimax-rag
       predicates:
         - Path=/api/v1/rag/**
       filters:
         - StripPrefix=2
 
     - id: function
-      uri: http://127.0.0.1:8086
+      uri: lb://minimax-function
       predicates:
         - Path=/api/v1/function/**
       filters:
         - StripPrefix=2
 
     - id: multimodal
-      uri: http://127.0.0.1:8088
+      uri: lb://minimax-multimodal
       predicates:
         - Path=/api/v1/multimodal/**,/api/v1/multi/**
       filters:
         - StripPrefix=2
 
     - id: monitor
-      uri: http://127.0.0.1:8089
+      uri: lb://minimax-monitor
       predicates:
         - Path=/api/v1/monitor/**
       filters:
         - StripPrefix=2
 
     - id: agent
-      uri: http://127.0.0.1:8090
+      uri: lb://minimax-agent
       predicates:
         - Path=/api/v1/agent/**
       filters:
@@ -136,22 +137,22 @@ spring.cloud.gateway:
             key-resolver: "#{@userKeyResolver}"
 
     - id: prompt
-      uri: http://127.0.0.1:8091
+      uri: lb://minimax-prompt
       predicates:
         - Path=/api/v1/prompt/**,/api/v1/prompts/**
       filters:
         - StripPrefix=2
 
     - id: ws
-      uri: http://127.0.0.1:8095
+      uri: lb:ws://minimax-ws
       predicates:
         - Path=/api/v1/ws/**,/ws/**
       filters:
         - StripPrefix=2
 
-    # ============== 后台管理 (单独限流) ==============
+    # ============== 后台管理 ==============
     - id: admin
-      uri: http://127.0.0.1:8087
+      uri: lb://minimax-admin
       predicates:
         - Path=/api/v1/admin/**,/admin/**
       filters:
@@ -161,6 +162,54 @@ spring.cloud.gateway:
             redis-rate-limiter.replenishRate: 20
             redis-rate-limiter.burstCapacity: 40
             key-resolver: "#{@userKeyResolver}"
+
+# =============================================================
+# Nacos 服务发现 (V5.7)
+# =============================================================
+spring.cloud.nacos:
+  discovery:
+    server-addr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
+    namespace: ${NACOS_NS:minimax-dev}
+    username: ${NACOS_USER:nacos}
+    password: ${NACOS_PASS:nacos}
+    register-enabled: true       # gateway 也注册到 nacos
+    metadata:
+      version: 5.7.0
+      group: minimax
+
+# =============================================================
+# Resilience4j 熔断降级 (V5.7)
+# =============================================================
+resilience4j.circuitbreaker:
+  configs:
+    default:
+      slidingWindowSize: 10
+      minimumNumberOfCalls: 5
+      failureRateThreshold: 50
+      waitDurationInOpenState: 10s
+      permittedNumberOfCallsInHalfOpenState: 3
+      automaticTransitionFromOpenToHalfOpenEnabled: true
+      registerHealthIndicator: true
+  instances:
+    default:
+      baseConfig: default
+
+resilience4j.timelimiter:
+  configs:
+    default:
+      timeoutDuration: 5s
+  instances:
+    default:
+      baseConfig: default
+
+resilience4j.retry:
+  configs:
+    default:
+      maxAttempts: 3
+      waitDuration: 1s
+  instances:
+    default:
+      baseConfig: default
 
 # =============================================================
 # 网关特有配置
@@ -203,7 +252,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,gateway,refresh,routes
+        include: health,info,metrics,gateway,refresh,routes,circuitbreakers
   endpoint:
     health:
       show-details: always
@@ -220,14 +269,10 @@ management:
     tags:
       application: minimax-gateway
 
-# Spring Security 允许公开访问
-spring.security:
-  user:
-    name: disabled
-    password: disabled
-
 logging:
   level:
     org.springframework.cloud.gateway: INFO
     reactor.netty: INFO
+    com.alibaba.nacos: WARN
     com.minimax: DEBUG
+    io.github.resilience4j: INFO

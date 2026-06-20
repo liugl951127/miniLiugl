@@ -64,6 +64,15 @@
                 <scope>import</scope>
             </dependency>
 
+            <!-- Spring Cloud Alibaba BOM (V5.7 Nacos 必需) -->
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>2023.0.1.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <!-- MyBatis Plus -->
             <dependency>
                 <groupId>com.baomidou</groupId>
@@ -182,6 +191,8 @@
                             <artifactId>lombok</artifactId>
                         </exclude>
                     </excludes>
+                    <!-- V5.7: install 时输出原始 jar (top-level classpath) 供其他模块依赖, package 阶段才生成 boot jar -->
+                    <classifier>spring-boot</classifier>
                 </configuration>
             </plugin>
         </plugins>

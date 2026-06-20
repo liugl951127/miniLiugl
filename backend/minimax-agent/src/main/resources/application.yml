@@ -46,3 +46,51 @@ spring:
 # 模块特殊配置 (保留原 minimax.* 块)
 minimax:
   # (无特殊配置)
+
+# =============================================================
+# V5.7 Nacos 服务发现 (注册当前微服务, gateway 通过 lb:// 调用)
+# =============================================================
+spring.cloud.nacos:
+  discovery:
+    server-addr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
+    namespace: ${NACOS_NS:minimax-dev}
+    username: ${NACOS_USER:nacos}
+    password: ${NACOS_PASS:nacos}
+    register-enabled: true
+    metadata:
+      version: 5.7.0
+      group: minimax
+
+# =============================================================
+# V5.7 Resilience4j 熔断降级 (下游微服务挂掉时自动 fallback)
+# =============================================================
+resilience4j.circuitbreaker:
+  configs:
+    default:
+      slidingWindowSize: 10
+      minimumNumberOfCalls: 5
+      failureRateThreshold: 50
+      waitDurationInOpenState: 10s
+      permittedNumberOfCallsInHalfOpenState: 3
+      automaticTransitionFromOpenToHalfOpenEnabled: true
+      registerHealthIndicator: true
+  instances:
+    default:
+      baseConfig: default
+
+resilience4j.timelimiter:
+  configs:
+    default:
+      timeoutDuration: 5s
+  instances:
+    default:
+      baseConfig: default
+
+resilience4j.retry:
+  configs:
+    default:
+      maxAttempts: 3
+      waitDuration: 1s
+  instances:
+    default:
+      baseConfig: default
