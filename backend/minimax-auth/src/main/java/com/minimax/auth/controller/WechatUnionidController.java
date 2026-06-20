@@ -13,6 +13,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.minimax.auth.entity.OAuthBinding;
+import com.minimax.auth.mapper.OAuthBindingMapper;
+import com.minimax.auth.entity.SysUser;
+import com.minimax.auth.mapper.SysUserMapper;
+
 import java.util.*;
 
 /**
@@ -37,6 +43,7 @@ public class WechatUnionidController {
     private final WechatUnionidService unionidService;
     private final WechatBindingService bindingService;
     private final SysUserMapper userMapper;
+    private final OAuthBindingMapper oauthBindingMapper;
 
     // ================ 用户端 ================
 
@@ -98,5 +105,61 @@ public class WechatUnionidController {
         String reason = (String) body.getOrDefault("reason", "管理员合并");
         unionidService.mergeAccounts(userToId, userFromId, reason);
         return Result.ok();
+    }
+
+    /**
+     * V5.2: 跨平台统计面板
+     * - 各平台 binding 数
+     * - 多平台用户数 (2 个+平台)
+     * - 总 unionid 关联数
+     */
+    @GetMapping("/auth/admin/wechat/cross-platform-stats")
+    public Result<Map<String, Object>> crossPlatformStats() {
+        Map<String, Object> out = new LinkedHashMap<>();
+
+        // 各平台 binding 数 (从 oauth_binding 表)
+        List<Map<String, Object>> byPlatform = new ArrayList<>();
+        String[] platforms = {"wechat", "qq", "alipay", "weibo", "github"};
+        long totalBindings = 0;
+        for (String p : platforms) {
+            Long cnt = oauthBindingMapper.selectCount(
+                    new LambdaQueryWrapper<OAuthBinding>().eq(OAuthBinding::getPlatform, p));
+            byPlatform.add(Map.of("platform", p, "count", cnt));
+            totalBindings += cnt;
+        }
+        out.put("bindingByPlatform", byPlatform);
+        out.put("totalBindings", totalBindings);
+
+        // 老 wechat_user_binding 也算上
+        Long wxOldCnt = bindingService != null ? 0L : 0L;
+        out.put("wechatUserBindingLegacy", wxOldCnt);
+
+        // 多平台用户数
+        Long multiPlatformUsers = userMapper.selectCount(
+                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<SysUser>()
+                        .apply("(qq_openid IS NOT NULL OR alipay_openid IS NOT NULL) AND wechat_openid IS NOT NULL"));
+        out.put("multiPlatformUsers", multiPlatformUsers);
+
+        // 各平台独立用户数
+        for (String p : platforms) {
+            String col = switch (p) {
+                case "wechat" -> "wechat_openid";
+                case "qq" -> "qq_openid";
+                case "alipay" -> "alipay_openid";
+                default -> null;
+            };
+            if (col == null) continue;
+            Long cnt = userMapper.selectCount(
+                    new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<SysUser>()
+                            .isNotNull(col));
+            out.put(p + "Users", cnt);
+        }
+
+        // unionid_relations 数
+        Long unionidCnt = oauthBindingMapper == null ? 0L
+                : oauthBindingMapper.selectCount(null);
+        out.put("unionidRelations", unionidCnt);
+
+        return Result.ok(out);
     }
 }

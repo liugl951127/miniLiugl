@@ -35,9 +35,11 @@ public class WechatUnionidService {
     private final SysUserMapper userMapper;
     private final WechatUserBindingMapper bindingMapper;
     private final UnionidRelationsMapper unionidMapper;
+    private final com.minimax.auth.mapper.OAuthBindingMapper oauthBindingMapper;
 
     /**
-     * 查 unionid 关联的所有用户
+     * 查 unionid 关联的所有用户 (跨平台: wechat/qq/alipay).
+     * V5.2: 同时查 oauth_binding 表.
      */
     public List<Map<String, Object>> findUsersByUnionid(String unionid) {
         List<UnionidRelations> relations = unionidMapper.selectList(
@@ -59,12 +61,31 @@ public class WechatUnionidService {
             row.put("firstSeenAt", r.getFirstSeenAt());
             row.put("lastSeenAt", r.getLastSeenAt());
 
-            // 该 user_id 下所有 binding (跨应用列表)
-            List<WechatUserBinding> bindings = bindingMapper.selectList(
-                    new LambdaQueryWrapper<WechatUserBinding>().eq(WechatUserBinding::getUserId, u.getId()));
+            // 合并 wechat_user_binding + oauth_binding
             List<Map<String, Object>> apps = new ArrayList<>();
-            for (WechatUserBinding b : bindings) {
+
+            // 1) 老的 wechat binding
+            List<WechatUserBinding> wxBindings = bindingMapper.selectList(
+                    new LambdaQueryWrapper<WechatUserBinding>().eq(WechatUserBinding::getUserId, u.getId()));
+            for (WechatUserBinding b : wxBindings) {
                 Map<String, Object> app = new LinkedHashMap<>();
+                app.put("platform", "wechat");
+                app.put("appType", b.getAppType());
+                app.put("openid", b.getOpenid());
+                app.put("nickname", b.getNickname());
+                app.put("avatar", b.getAvatar());
+                app.put("boundAt", b.getBoundAt());
+                app.put("lastLoginAt", b.getLastLoginAt());
+                apps.add(app);
+            }
+
+            // 2) 新的 oauth binding (含 qq/alipay/weibo/github)
+            List<com.minimax.auth.entity.OAuthBinding> oauthBindings = oauthBindingMapper.selectList(
+                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.minimax.auth.entity.OAuthBinding>()
+                            .eq(com.minimax.auth.entity.OAuthBinding::getUserId, u.getId()));
+            for (com.minimax.auth.entity.OAuthBinding b : oauthBindings) {
+                Map<String, Object> app = new LinkedHashMap<>();
+                app.put("platform", b.getPlatform());
                 app.put("appType", b.getAppType());
                 app.put("openid", b.getOpenid());
                 app.put("nickname", b.getNickname());

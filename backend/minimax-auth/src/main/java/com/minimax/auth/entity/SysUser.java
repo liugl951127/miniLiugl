@@ -54,6 +54,29 @@ public class SysUser implements Serializable {
     /** 微信绑定时间 */
     private LocalDateTime wechatBoundAt;
 
+    // ============ V5.2: QQ/支付宝 跨平台 ============
+    /** QQ openid */
+    private String qqOpenid;
+    /** QQ unionid (QQ互联跨应用唯一) */
+    private String qqUnionid;
+    /** QQ 昵称 */
+    private String qqNickname;
+    /** QQ 头像 URL */
+    private String qqAvatar;
+    /** QQ 绑定时间 */
+    private LocalDateTime qqBoundAt;
+
+    /** 支付宝 openid (用户标识) */
+    private String alipayOpenid;
+    /** 支付宝 user_id (应用授权令牌返回) */
+    private String alipayUserId;
+    /** 支付宝昵称 */
+    private String alipayNickname;
+    /** 支付宝头像 URL */
+    private String alipayAvatar;
+    /** 支付宝绑定时间 */
+    private LocalDateTime alipayBoundAt;
+
     @TableField(fill = FieldFill.INSERT)
     private Long createdBy;
     @TableField(fill = FieldFill.INSERT)

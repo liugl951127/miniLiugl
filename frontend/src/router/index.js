@@ -9,6 +9,12 @@ const routes = [
     meta: { public: true, title: '登录' }
   },
   {
+    path: '/h5-login',
+    name: 'H5Login',
+    component: () => import('@/views/auth/H5Login.vue'),
+    meta: { public: true, title: 'H5 跨平台登录' }
+  },
+  {
     path: '/',
     component: () => import('@/layout/Index.vue'),
     redirect: '/chat',

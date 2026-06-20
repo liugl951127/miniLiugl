@@ -36,8 +36,19 @@ CREATE TABLE IF NOT EXISTS unionid_relations (
     INDEX idx_platform (platform)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='unionid 跨应用关联';
 
--- 3) sys_user 加索引 (unionid 字段已有, 加索引加速匹配)
-ALTER TABLE sys_user ADD INDEX idx_wechat_unionid (wechat_unionid);
+-- 3) sys_user 加索引 (unionid 字段已有, 加索引加速匹配, IF NOT EXISTS 兼容)
+DROP PROCEDURE IF EXISTS add_wechat_unionid_idx;
+DELIMITER //
+CREATE PROCEDURE add_wechat_unionid_idx()
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.statistics
+        WHERE table_schema = DATABASE() AND table_name = 'sys_user' AND index_name = 'idx_wechat_unionid') THEN
+        ALTER TABLE sys_user ADD INDEX idx_wechat_unionid (wechat_unionid);
+    END IF;
+END //
+DELIMITER ;
+CALL add_wechat_unionid_idx();
+DROP PROCEDURE add_wechat_unionid_idx;
 
 -- 4) 预置示例 unionid (沙箱演示用)
 INSERT IGNORE INTO unionid_relations (user_id, unionid, platform, binding_count) VALUES

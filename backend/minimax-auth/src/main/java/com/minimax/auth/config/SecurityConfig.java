@@ -62,6 +62,8 @@ public class SecurityConfig {
                             "/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh",
                             // V5: 微信扫码登录全部公开
                             "/auth/wechat/**", "/api/v1/auth/wechat/**",
+                            // V5.2: 跨平台 OAuth 全部公开
+                            "/auth/oauth/**", "/api/v1/auth/oauth/**",
                             "/health", "/health/**", "/", "/error",
                             "/v3/api-docs/**", "/swagger-ui/**"
                     ).permitAll()
