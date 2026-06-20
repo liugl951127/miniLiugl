@@ -1,33 +1,25 @@
+# =============================================================
+# agent 模块配置 (V5.4 重构后)
+# 公共配置在 application-common.yml, 这里只放模块特有配置
+# =============================================================
+
 server:
   port: 8090
+  servlet:
+    context-path: /api/v1
 
 spring:
+  config:
+    import: classpath:application-common.yml
   application:
     name: minimax-agent
-  datasource:
-    url: jdbc:mysql://127.0.0.1:3306/minimax_platform?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
-    username: ${DB_USER:minimax}
-    password: ${DB_PASS:minimax_pass_2024}
   profiles:
     active: dev
 
+# 模块特殊配置 (保留原 minimax.* 块)
 minimax:
-  agent:
-    max-rounds: 8
-    base-url: ${MODEL_BASE_URL:http://localhost:8083}
-    model: ${MODEL_NAME:MiniMax-Text-01}
-    token: ${MODEL_TOKEN:}
-
-mybatis-plus:
-  mapper-locations: classpath*:mapper/*.xml
-  configuration:
-    map-underscore-to-camel-case: true
-  global-config:
-    db-config:
-      logic-delete-field: deleted
-      logic-not-delete-value: 0
-      logic-delete-value: 1
-
-logging:
-  level:
-    com.minimax: info
+agent:
+  max-rounds: 8
+  base-url: ${MODEL_BASE_URL:http://localhost:8083}
+  model: ${MODEL_NAME:MiniMax-Text-01}
+  token: ${MODEL_TOKEN:}

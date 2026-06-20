@@ -1,48 +1,35 @@
+# =============================================================
+# admin 模块配置 (V5.4 重构后)
+# 公共配置在 application-common.yml, 这里只放模块特有配置
+# =============================================================
+
 server:
   port: 8087
   servlet:
     context-path: /api/v1
 
 spring:
+  config:
+    import: classpath:application-common.yml
   application:
     name: minimax-admin
   profiles:
     active: dev
-  jackson:
-    time-zone: GMT+8
-    date-format: yyyy-MM-dd HH:mm:ss
-  datasource:
-    url: jdbc:mysql://127.0.0.1:3306/minimax_platform?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: ${DB_USER:minimax}
-    password: ${DB_PASS:minimax_pass_2024}
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 2
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASS:minimax_redis_2024}
 
+# 模块特殊配置 (保留原 minimax.* 块)
 minimax:
-  jwt:
-    secret: ${JWT_SECRET:VwSWPd816F4nwowFzF5B0F8rihlle2836g6QAh5i13o=}
-    access-ttl-seconds: 1800
-    refresh-ttl-seconds: 604800
-    issuer: minimax-platform
-  admin:
-    timeout-seconds: 3
-    service-token: ""
-    services:
-      auth: http://localhost:8081
-      chat: http://localhost:8082
-      model: http://localhost:8083
-      memory: http://localhost:8084
-      rag: http://localhost:8085
-      function: http://localhost:8086
-
-logging:
-  level:
-    com.minimax: DEBUG
-    org.springframework.security: INFO
+jwt:
+  secret: ${JWT_SECRET:VwSWPd816F4nwowFzF5B0F8rihlle2836g6QAh5i13o=}
+  access-ttl-seconds: 1800
+  refresh-ttl-seconds: 604800
+  issuer: minimax-platform
+admin:
+  timeout-seconds: 3
+  service-token: ""
+  services:
+    auth: http://localhost:8081
+    chat: http://localhost:8082
+    model: http://localhost:8083
+    memory: http://localhost:8084
+    rag: http://localhost:8085
+    function: http://localhost:8086

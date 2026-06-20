@@ -1,13 +1,23 @@
+# =============================================================
+# ws 模块配置 (V5.4 重构后)
+# 公共配置在 application-common.yml, 这里只放模块特有配置
+# =============================================================
+
 server:
   port: 8095
+  servlet:
+    context-path: /api/v1
 
 spring:
+  config:
+    import: classpath:application-common.yml
   application:
     name: minimax-ws
-  jackson:
-    time-zone: GMT+8
+  profiles:
+    active: dev
 
+# 模块特殊配置 (保留原 minimax.* 块)
 minimax:
-  jwt:
-    secret: ${JWT_SECRET:VwSWPd816F4nwowFzF5B0F8rihlle2836g6QAh5i13o=}
-    issuer: minimax-platform
+jwt:
+  secret: ${JWT_SECRET:VwSWPd816F4nwowFzF5B0F8rihlle2836g6QAh5i13o=}
+  issuer: minimax-platform

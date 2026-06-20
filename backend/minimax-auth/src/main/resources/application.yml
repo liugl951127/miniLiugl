@@ -1,63 +1,29 @@
+# =============================================================
+# auth 模块配置 (V5.4 重构后)
+# 公共配置在 application-common.yml, 这里只放模块特有配置
+# =============================================================
+
 server:
   port: 8081
   servlet:
     context-path: /
 
-spring.mvc.throw-exception-if-no-handler-found: true
-spring.web.resources.add-mappings: false
-
 spring:
+  config:
+    import: classpath:application-common.yml
   application:
     name: minimax-auth
   profiles:
     active: dev
-  jackson:
-    time-zone: GMT+8
-    date-format: yyyy-MM-dd HH:mm:ss
-  datasource:
-    url: jdbc:mysql://127.0.0.1:3306/minimax_platform?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: ${DB_USER:minimax}
-    password: ${DB_PASS:minimax_pass_2024}
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 2
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASS:minimax_redis_2024}
-      timeout: 3s
-  servlet:
-    multipart:
-      max-file-size: 50MB
-      max-request-size: 100MB
 
+# 模块特殊配置 (保留原 minimax.* 块)
 minimax:
-  jwt:
-    secret: ${JWT_SECRET:VwSWPd816F4nwowFzF5B0F8rihlle2836g6QAh5i13o=}
-    access-ttl-seconds: 1800        # 30 min
-    refresh-ttl-seconds: 604800     # 7 days
-    issuer: minimax-platform
-  auth:
-    super-admin-username: ${SUPER_ADMIN_USERNAME:adminLiugl}
-    super-admin-password: ${SUPER_ADMIN_PASSWORD:Liugl@2026}
-    super-admin-email: ${SUPER_ADMIN_EMAIL:liugl951127@gmail.com}
-
-mybatis-plus:
-  mapper-locations: classpath*:mapper/**/*.xml
-  type-aliases-package: com.minimax.auth.entity
-  configuration:
-    map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-  global-config:
-    db-config:
-      logic-delete-field: deleted
-      logic-delete-value: 1
-      logic-not-delete-value: 0
-      id-type: AUTO
-
-logging:
-  level:
-    com.minimax: DEBUG
-    org.springframework.security: INFO
+jwt:
+  secret: ${JWT_SECRET:VwSWPd816F4nwowFzF5B0F8rihlle2836g6QAh5i13o=}
+  access-ttl-seconds: 1800        # 30 min
+  refresh-ttl-seconds: 604800     # 7 days
+  issuer: minimax-platform
+auth:
+  super-admin-username: ${SUPER_ADMIN_USERNAME:adminLiugl}
+  super-admin-password: ${SUPER_ADMIN_PASSWORD:Liugl@2026}
+  super-admin-email: ${SUPER_ADMIN_EMAIL:liugl951127@gmail.com}

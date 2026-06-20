@@ -1,10 +1,10 @@
 # =============================================================
-# memory 模块配置 (V5.4 重构后)
+# rag 模块配置 (V5.4 重构后)
 # 公共配置在 application-common.yml, 这里只放模块特有配置
 # =============================================================
 
 server:
-  port: 8084
+  port: 8085
   servlet:
     context-path: /api/v1
 
@@ -12,16 +12,11 @@ spring:
   config:
     import: classpath:application-common.yml
   application:
-    name: minimax-memory
+    name: minimax-rag
   profiles:
     active: dev
 
 # 模块特殊配置 (保留原 minimax.* 块)
 minimax:
-jwt:
-  secret: ${JWT_SECRET:VwSWPd816F4nwowFzF5B0F8rihlle2836g6QAh5i13o=}
-  access-ttl-seconds: 1800
-  refresh-ttl-seconds: 604800
-  issuer: minimax-platform
-memory:
-  use-redis: true   # false → 强制用本地 Caffeine
+  # (无特殊配置, 模块按需添加)
+  # (无特殊配置)

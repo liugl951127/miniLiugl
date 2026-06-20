@@ -1,0 +1,116 @@
+# =============================================================
+# MiniMax 公共配置 (V5.4 冗余重构)
+# 各微服务通过 spring.config.import 引入此文件
+# 节省每个模块 40-60 行重复 yml
+#
+# 用法 (在 application.yml 头部加):
+#   spring:
+#     config:
+#       import: classpath:application-common.yml
+# =============================================================
+
+server:
+  shutdown: graceful
+  compression:
+    enabled: true
+    mime-types: application/json,text/html,text/css,application/javascript
+  tomcat:
+    threads:
+      max: 400
+      min-spare: 50
+    accept-count: 200
+    max-connections: 10000
+    connection-timeout: 20s
+    keep-alive-timeout: 60s
+
+spring:
+  # ===== 公共 Jackson 配置 =====
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+      fail-on-empty-beans: false
+    deserialization:
+      fail-on-unknown-properties: false
+
+  # ===== 公共文件上传 =====
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 200MB
+
+  # ===== 公共数据源 (默认 mysql, 各模块可覆盖) =====
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:3306/minimax_platform?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:minimax}
+    password: ${MYSQL_PASSWORD:minimax_pass_2024}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30s
+      idle-timeout: 10m
+      max-lifetime: 30m
+
+  # ===== 公共 Redis =====
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASS:minimax_redis_2024}
+      database: 0
+      timeout: 3s
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 1
+
+  # ===== 公共生命周期 =====
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+  # ===== 公共 MyBatis-Plus =====
+  mybatis-plus:
+    configuration:
+      map-underscore-to-camel-case: true
+      log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    global-config:
+      db-config:
+        id-type: ASSIGN_ID
+        logic-delete-field: deleted
+        logic-delete-value: 1
+        logic-not-delete-value: 0
+    mapper-locations: classpath*:mapper/**/*.xml
+
+# ===== 公共 JWT 配置 =====
+minimax:
+  jwt:
+    secret: ${JWT_SECRET:VwSWPd816F4nwowFzF5B0F8rihlle2836g6QAh5i13o=}
+    header: Authorization
+    prefix: "Bearer "
+    expire-minutes: 10080
+    refresh-expire-minutes: 43200
+
+# ===== 公共 CORS =====
+minimax:
+  cors:
+    allowed-origins:
+      - http://localhost:3000
+      - http://localhost:5173
+      - http://127.0.0.1:3000
+      - http://127.0.0.1:5173
+    allowed-methods: "*"
+    allowed-headers: "*"
+    allow-credentials: true
+
+# ===== 公共日志 =====
+logging:
+  level:
+    root: INFO
+    com.minimax: DEBUG
+    org.springframework.web: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
