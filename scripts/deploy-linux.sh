@@ -1,0 +1,582 @@
+#!/usr/bin/env bash
+# ================================================================
+# MiniMax 大模型平台 - Linux 一键打包部署脚本 (非 Docker)
+#
+# 适用系统: Ubuntu 20.04+ / Debian 11+ / CentOS 8+
+# 运行用户: root (会自动创建 minimax 用户)
+# 默认端口: 8081-8095 (后端) + 5173 (前端)
+#
+# 用法:
+#   sudo ./deploy-linux.sh install        # 安装 Java/Node/MariaDB + 编译 + 启 systemd
+#   sudo ./deploy-linux.sh start          # 启动所有服务
+#   sudo ./deploy-linux.sh stop           # 停止所有服务
+#   sudo ./deploy-linux.sh restart        # 重启所有服务
+#   sudo ./deploy-linux.sh status         # 查看所有服务状态
+#   sudo ./deploy-linux.sh logs [module]  # 查看日志 (auth|chat|model|...)
+#   sudo ./deploy-linux.sh backup         # 备份数据库 + jar
+#   sudo ./deploy-linux.sh update         # 拉代码 + 重新打包 + 重启
+#   sudo ./deploy-linux.sh uninstall      # 完全卸载 (保留数据)
+#
+# 环境变量 (可选):
+#   JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+#   NODE_VERSION=22
+#   INSTALL_DIR=/opt/minimax
+#   DB_ROOT_PASS=minimax_pass_2024
+# ================================================================
+
+set -euo pipefail
+
+# =============== 颜色 ===============
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+BLUE='\033[0;34m'; CYAN='\033[0;36m'; NC='\033[0m'
+
+log_info()  { echo -e "${GREEN}[INFO]${NC}  $*"; }
+log_warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
+log_err()   { echo -e "${RED}[ERROR]${NC} $*"; }
+log_step()  { echo -e "\n${BLUE}══════════${NC} ${CYAN}$*${NC} ${BLUE}══════════${NC}\n"; }
+
+# =============== 配置 ===============
+INSTALL_DIR="${INSTALL_DIR:-/opt/minimax}"
+SRC_DIR="$(cd "$(dirname "$0")/.." && pwd)"   # 假设脚本在 scripts/ 下
+LOG_DIR="/var/log/minimax"
+DATA_DIR="${INSTALL_DIR}/data"
+BACKUP_DIR="${INSTALL_DIR}/backups"
+SERVICE_USER="minimax"
+
+JAVA_VERSION="17"
+NODE_VERSION="${NODE_VERSION:-22}"
+MAVEN_VERSION="3.8.7"
+
+DB_NAME="minimax_platform"
+DB_USER="minimax"
+DB_PASS="${DB_ROOT_PASS:-minimax_pass_2024}"
+
+JWT_SECRET="${JWT_SECRET:-VwSWPd816F4nwowFzF5B0F8rihlle2836g6QAh5i13o=}"
+SERVER_PORT_BASE=8081
+
+# 13 个微服务模块 + 端口
+MODULES=(
+  "auth:8081"
+  "chat:8082"
+  "model:8083"
+  "memory:8084"
+  "rag:8085"
+  "function:8086"
+  "admin:8087"
+  "multimodal:8088"
+  "monitor:8089"
+  "agent:8090"
+  "prompt:8091"
+  "ws:8095"
+)
+
+FRONTEND_PORT=5173
+
+# =============== 工具函数 ===============
+detect_os() {
+  if [[ -f /etc/os-release ]]; then
+    . /etc/os-release
+    OS=$ID
+    VER=$VERSION_ID
+  else
+    log_err "无法识别系统"
+    exit 1
+  fi
+  log_info "检测到系统: $OS $VER"
+}
+
+is_root() {
+  if [[ $EUID -ne 0 ]]; then
+    log_err "请用 root 运行 (sudo ./deploy-linux.sh ...)"
+    exit 1
+  fi
+}
+
+cmd_exists() { command -v "$1" &>/dev/null; }
+
+# =============== install_java ===============
+install_java() {
+  log_step "安装 Java $JAVA_VERSION"
+  if cmd_exists java; then
+    JAVA_VER=$(java -version 2>&1 | head -1 | awk -F\" '{print $2}')
+    if [[ "$JAVA_VER" == "$JAVA_VERSION"* ]]; then
+      log_info "Java $JAVA_VER 已安装 ✓"
+      return
+    fi
+  fi
+
+  case "$OS" in
+    ubuntu|debian)
+      apt-get update -qq
+      apt-get install -y -qq openjdk-${JAVA_VERSION}-jdk wget curl unzip git mariadb-server
+      ;;
+    centos|rhel|rocky|almalinux)
+      dnf install -y java-${JAVA_VERSION}-openjdk-devel wget curl unzip git mariadb-server
+      ;;
+    *)
+      log_err "不支持的系统: $OS"; exit 1
+      ;;
+  esac
+  java -version
+}
+
+# =============== install_maven ===============
+install_maven() {
+  log_step "安装 Maven $MAVEN_VERSION"
+  if cmd_exists mvn; then
+    log_info "Maven $(mvn -v | head -1 | awk '{print $3}') 已安装 ✓"
+    return
+  fi
+
+  cd /opt
+  wget -q "https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz"
+  tar -xzf "apache-maven-${MAVEN_VERSION}-bin.tar.gz"
+  rm -f "apache-maven-${MAVEN_VERSION}-bin.tar.gz"
+  ln -sf "/opt/apache-maven-${MAVEN_VERSION}/bin/mvn" /usr/local/bin/mvn
+  log_info "Maven $(mvn -v | head -1 | awk '{print $3}') 安装完成 ✓"
+}
+
+# =============== install_node ===============
+install_node() {
+  log_step "安装 Node.js $NODE_VERSION"
+  if cmd_exists node; then
+    NODE_VER=$(node -v | sed 's/v//')
+    if [[ "${NODE_VER%%.*}" -ge "$NODE_VERSION" ]]; then
+      log_info "Node v$NODE_VER 已安装 ✓"
+      return
+    fi
+  fi
+
+  curl -fsSL "https://deb.nodesource.com/setup_${NODE_VERSION}.x" -o /tmp/node-setup.sh
+  bash /tmp/node-setup.sh
+  case "$OS" in
+    ubuntu|debian) apt-get install -y -qq nodejs ;;
+    centos|rhel|rocky|almalinux) dnf install -y nodejs ;;
+  esac
+  rm -f /tmp/node-setup.sh
+  node -v
+  npm -v
+}
+
+# =============== setup_mariadb ===============
+setup_mariadb() {
+  log_step "初始化 MariaDB"
+  if ! cmd_exists mysql; then
+    log_err "MariaDB 未安装"
+    exit 1
+  fi
+
+  # 启动 mariadb
+  systemctl enable mariadb
+  systemctl start mariadb
+
+  # 设置 root 密码 + 创建库
+  log_info "创建数据库 $DB_NAME..."
+  mysql -uroot <<EOF
+ALTER USER 'root'@'localhost' IDENTIFIED BY '${DB_PASS}';
+CREATE DATABASE IF NOT EXISTS ${DB_NAME} DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
+GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'localhost';
+FLUSH PRIVILEGES;
+EOF
+
+  # 导入 SQL
+  if [[ -f "$SRC_DIR/sql/minimax-all.sql" ]]; then
+    log_info "导入 minimax-all.sql..."
+    mysql -uroot -p"${DB_PASS}" < "$SRC_DIR/sql/minimax-all.sql" 2>&1 | tail -3
+    log_info "数据库初始化完成 ✓"
+  else
+    log_warn "未找到 sql/minimax-all.sql, 跳过导入"
+  fi
+}
+
+# =============== create_user ===============
+create_user() {
+  log_step "创建服务用户 $SERVICE_USER"
+  if ! id -u "$SERVICE_USER" &>/dev/null; then
+    useradd -r -s /bin/bash -d "$INSTALL_DIR" "$SERVICE_USER"
+    log_info "用户 $SERVICE_USER 创建 ✓"
+  fi
+}
+
+# =============== build_backend ===============
+build_backend() {
+  log_step "编译后端 (13 个模块)"
+  cd "$SRC_DIR/backend"
+
+  # 配置阿里云镜像
+  mkdir -p ~/.m2
+  cat > ~/.m2/settings.xml <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<settings>
+  <mirrors>
+    <mirror>
+      <id>aliyun</id>
+      <mirrorOf>central,public</mirrorOf>
+      <name>aliyun maven</name>
+      <url>https://maven.aliyun.com/repository/public</url>
+    </mirror>
+  </mirrors>
+</settings>
+EOF
+
+  # mvn install (跳过测试)
+  mvn -B -DskipTests -T 1C clean install 2>&1 | tail -20
+
+  # 拷贝 jar
+  mkdir -p "$INSTALL_DIR/apps"
+  for module_port in "${MODULES[@]}"; do
+    module="${module_port%%:*}"
+    jar="$SRC_DIR/backend/minimax-${module}/target/minimax-${module}.jar"
+    if [[ -f "$jar" ]]; then
+      cp -f "$jar" "$INSTALL_DIR/apps/"
+      log_info "  ✓ ${module}.jar"
+    else
+      log_warn "  ✗ ${module}.jar 未生成"
+    fi
+  done
+}
+
+# =============== build_frontend ===============
+build_frontend() {
+  log_step "编译前端"
+  cd "$SRC_DIR/frontend"
+
+  # 配置淘宝镜像
+  npm config set registry https://registry.npmmirror.com
+
+  npm install --no-audit --no-fund
+  npm run build
+
+  mkdir -p "$INSTALL_DIR/frontend/dist"
+  cp -r dist/* "$INSTALL_DIR/frontend/dist/"
+  log_info "前端构建完成 ✓"
+}
+
+# =============== generate_systemd ===============
+generate_systemd() {
+  log_step "生成 systemd 服务"
+  for module_port in "${MODULES[@]}"; do
+    module="${module_port%%:*}"
+    port="${module_port##*:}"
+
+    cat > "/etc/systemd/system/minimax-${module}.service" <<EOF
+[Unit]
+Description=MiniMax ${module} microservice
+After=network.target mariadb.service
+
+[Service]
+Type=simple
+User=${SERVICE_USER}
+Group=${SERVICE_USER}
+WorkingDirectory=${INSTALL_DIR}/apps
+ExecStart=/usr/bin/java \\
+  -Xms256m -Xmx512m \\
+  -Dspring.profiles.active=prod \\
+  -Dserver.port=${port} \\
+  -jar ${INSTALL_DIR}/apps/minimax-${module}.jar
+Restart=always
+RestartSec=5
+LimitNOFILE=65536
+StandardOutput=append:${LOG_DIR}/${module}.log
+StandardError=append:${LOG_DIR}/${module}.err.log
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    log_info "  ✓ minimax-${module}.service (端口 ${port})"
+  done
+
+  # 前端用 nginx 部署, 不需要 systemd
+  # 但加一个 minimax-frontend.service 用 serve
+  cat > /etc/systemd/system/minimax-frontend.service <<EOF
+[Unit]
+Description=MiniMax Frontend (Vite preview)
+After=network.target
+
+[Service]
+Type=simple
+User=${SERVICE_USER}
+Group=${SERVICE_USER}
+WorkingDirectory=${INSTALL_DIR}/frontend
+ExecStart=/usr/bin/npx vite preview --host 0.0.0.0 --port ${FRONTEND_PORT}
+Restart=always
+RestartSec=5
+StandardOutput=append:${LOG_DIR}/frontend.log
+StandardError=append:${LOG_DIR}/frontend.err.log
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  # nginx 反向代理服务
+  cat > /etc/systemd/system/minimax-nginx.service <<EOF
+[Unit]
+Description=MiniMax Nginx Reverse Proxy
+After=network.target
+
+[Service]
+Type=forking
+PIDFile=/run/nginx.pid
+ExecStartPre=/usr/sbin/nginx -t
+ExecStart=/usr/sbin/nginx
+ExecReload=/bin/kill -s HUP \$MAINPID
+ExecStop=/bin/kill -s QUIT \$MAINPID
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  systemctl daemon-reload
+}
+
+# =============== generate_nginx ===============
+generate_nginx() {
+  log_step "生成 nginx 配置"
+
+  if ! cmd_exists nginx; then
+    case "$OS" in
+      ubuntu|debian) apt-get install -y -qq nginx ;;
+      centos|rhel|rocky|almalinux) dnf install -y nginx ;;
+    esac
+  fi
+
+  cat > /etc/nginx/conf.d/minimax.conf <<EOF
+upstream minimax_auth      { server 127.0.0.1:8081; }
+upstream minimax_chat      { server 127.0.0.1:8082; }
+upstream minimax_model     { server 127.0.0.1:8083; }
+upstream minimax_memory    { server 127.0.0.1:8084; }
+upstream minimax_rag       { server 127.0.0.1:8085; }
+upstream minimax_function  { server 127.0.0.1:8086; }
+upstream minimax_admin     { server 127.0.0.1:8087; }
+upstream minimax_multimodal{ server 127.0.0.1:8088; }
+upstream minimax_monitor   { server 127.0.0.1:8089; }
+upstream minimax_agent     { server 127.0.0.1:8090; }
+upstream minimax_prompt    { server 127.0.0.1:8091; }
+upstream minimax_ws        { server 127.0.0.1:8095; }
+upstream minimax_frontend  { server 127.0.0.1:${FRONTEND_PORT}; }
+
+server {
+    listen 80 default_server;
+    server_name _;
+
+    client_max_body_size 100M;
+
+    # 前端
+    location / {
+        proxy_pass http://minimax_frontend;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    }
+
+    # 网关: 按模块路由
+    location /api/v1/auth/      { proxy_pass http://minimax_auth;      proxy_set_header Host \$host; proxy_set_header X-Real-IP \$remote_addr; proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for; proxy_read_timeout 300s; }
+    location /api/v1/chat/      { proxy_pass http://minimax_chat;      proxy_set_header Host \$host; proxy_set_header X-Real-IP \$remote_addr; proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for; }
+    location /api/v1/model/     { proxy_pass http://minimax_model;     proxy_set_header Host \$host; proxy_set_header X-Real-IP \$remote_addr; proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for; proxy_read_timeout 300s; }
+    location /api/v1/memory/    { proxy_pass http://minimax_memory;    proxy_set_header Host \$host; proxy_set_header X-Real-IP \$remote_addr; proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for; }
+    location /api/v1/rag/       { proxy_pass http://minimax_rag;       proxy_set_header Host \$host; proxy_set_header X-Real-IP \$remote_addr; proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for; }
+    location /api/v1/function/  { proxy_pass http://minimax_function;  proxy_set_header Host \$host; proxy_set_header X-Real-IP \$remote_addr; proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for; }
+    location /api/v1/admin/     { proxy_pass http://minimax_admin;     proxy_set_header Host \$host; proxy_set_header X-Real-IP \$remote_addr; proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for; }
+    location /api/v1/multi/     { proxy_pass http://minimax_multimodal;proxy_set_header Host \$host; proxy_set_header X-Real-IP \$remote_addr; proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for; proxy_read_timeout 300s; }
+    location /api/v1/monitor/   { proxy_pass http://minimax_monitor;   proxy_set_header Host \$host; proxy_set_header X-Real-IP \$remote_addr; proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for; }
+    location /api/v1/agent/     { proxy_pass http://minimax_agent;     proxy_set_header Host \$host; proxy_set_header X-Real-IP \$remote_addr; proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for; proxy_read_timeout 600s; }
+    location /api/v1/prompt/    { proxy_pass http://minimax_prompt;    proxy_set_header Host \$host; proxy_set_header X-Real-IP \$remote_addr; proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for; }
+    location /ws/              { proxy_pass http://minimax_ws;        proxy_set_header Host \$host; proxy_set_header X-Real-IP \$remote_addr; proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for; proxy_http_version 1.1; proxy_set_header Upgrade \$http_upgrade; proxy_set_header Connection "upgrade"; }
+
+    location /health { return 200 'OK'; add_header Content-Type text/plain; }
+}
+EOF
+
+  nginx -t && systemctl reload nginx
+}
+
+# =============== start_services ===============
+start_services() {
+  log_step "启动所有服务"
+  systemctl enable mariadb
+  systemctl start mariadb
+
+  # 数据库
+  systemctl enable --now minimax-frontend minimax-nginx
+  for module_port in "${MODULES[@]}"; do
+    module="${module_port%%:*}"
+    systemctl enable "minimax-${module}.service"
+    systemctl start  "minimax-${module}.service"
+    log_info "  ✓ minimax-${module}"
+  done
+
+  sleep 15
+  show_status
+}
+
+# =============== stop_services ===============
+stop_services() {
+  log_step "停止所有服务"
+  systemctl stop minimax-nginx 2>/dev/null || true
+  systemctl stop minimax-frontend 2>/dev/null || true
+  for module_port in "${MODULES[@]}"; do
+    module="${module_port%%:*}"
+    systemctl stop "minimax-${module}.service" 2>/dev/null || true
+  done
+  log_info "已停止"
+}
+
+# =============== restart_services ===============
+restart_services() {
+  stop_services
+  sleep 2
+  start_services
+}
+
+# =============== show_status ===============
+show_status() {
+  log_step "服务状态"
+  printf "%-25s %-10s %-10s %s\n" "SERVICE" "STATE" "UPTIME" "PORT"
+  printf "%-25s %-10s %-10s %s\n" "-------" "-----" "------" "----"
+  for module_port in "${MODULES[@]}"; do
+    module="${module_port%%:*}"
+    port="${module_port##*:}"
+    if systemctl is-active --quiet "minimax-${module}.service"; then
+      state="${GREEN}active${NC}"
+      uptime=$(systemctl show "minimax-${module}.service" --property=ActiveEnterTimestamp --value 2>/dev/null)
+    else
+      state="${RED}inactive${NC}"
+      uptime="-"
+    fi
+    printf "%-25s %-20s %-10s %s\n" "minimax-${module}" "$state" "${uptime: -8}" "$port"
+  done
+  echo
+  systemctl is-active --quiet minimax-frontend && echo "minimax-frontend            ${GREEN}active${NC} (port $FRONTEND_PORT)" || echo "minimax-frontend            ${RED}inactive${NC}"
+  systemctl is-active --quiet minimax-nginx && echo "minimax-nginx               ${GREEN}active${NC} (port 80)" || echo "minimax-nginx               ${RED}inactive${NC}"
+}
+
+# =============== show_logs ===============
+show_logs() {
+  local module="${1:-}"
+  if [[ -z "$module" ]]; then
+    echo "用法: $0 logs <module>"
+    echo "可用模块: ${MODULES[*]%%:*} frontend nginx"
+    return
+  fi
+  if [[ "$module" == "frontend" || "$module" == "nginx" ]]; then
+    journalctl -u "minimax-${module}" -f
+  else
+    journalctl -u "minimax-${module}" -f
+  fi
+}
+
+# =============== backup ===============
+backup_all() {
+  log_step "备份数据库 + jar"
+  local ts=$(date +%Y%m%d_%H%M%S)
+  mkdir -p "$BACKUP_DIR"
+
+  # 数据库
+  log_info "备份数据库..."
+  mysqldump -uroot -p"${DB_PASS}" --single-transaction "${DB_NAME}" | gzip > "${BACKUP_DIR}/db_${ts}.sql.gz"
+  log_info "  ✓ db_${ts}.sql.gz"
+
+  # jar
+  log_info "备份 jar..."
+  tar -czf "${BACKUP_DIR}/apps_${ts}.tar.gz" -C "$INSTALL_DIR" apps/
+  log_info "  ✓ apps_${ts}.tar.gz"
+
+  # 仅保留最近 5 个备份
+  ls -t "${BACKUP_DIR}"/*.gz 2>/dev/null | tail -n +6 | xargs -r rm -f
+  log_info "备份目录: $BACKUP_DIR"
+}
+
+# =============== update ===============
+update_all() {
+  log_step "更新代码 + 重打包"
+  cd "$SRC_DIR"
+  git pull --rebase
+  build_backend
+  build_frontend
+  restart_services
+}
+
+# =============== install ===============
+install_all() {
+  is_root
+  detect_os
+
+  log_step "MiniMax 一键安装"
+  mkdir -p "$LOG_DIR" "$BACKUP_DIR" "$INSTALL_DIR"/{apps,frontend,data}
+
+  install_java
+  install_maven
+  install_node
+  create_user
+
+  setup_mariadb
+  build_backend
+  build_frontend
+
+  generate_systemd
+  generate_nginx
+
+  chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR" "$LOG_DIR"
+  systemctl enable mariadb
+
+  start_services
+
+  log_step "✅ 安装完成"
+  echo
+  echo "  访问入口:"
+  echo "    前端:    http://localhost"
+  echo "    后端:    http://localhost/api/v1/<module>/..."
+  echo "    账号:    adminLiugl / Liugl@2026"
+  echo
+  echo "  服务管理:"
+  echo "    $0 status"
+  echo "    $0 restart"
+  echo "    $0 logs auth"
+  echo
+}
+
+# =============== uninstall ===============
+uninstall_all() {
+  log_step "卸载 MiniMax (保留数据)"
+  stop_services
+
+  for module_port in "${MODULES[@]}"; do
+    module="${module_port%%:*}"
+    rm -f "/etc/systemd/system/minimax-${module}.service"
+  done
+  rm -f /etc/systemd/system/minimax-frontend.service
+  rm -f /etc/nginx/conf.d/minimax.conf
+  systemctl daemon-reload
+
+  log_info "已删除 systemd 服务 + nginx 配置"
+  log_warn "数据保留: $INSTALL_DIR $BACKUP_DIR (如需删除请手动 rm -rf)"
+}
+
+# =============== main ===============
+case "${1:-}" in
+  install)   install_all ;;
+  start)     start_services ;;
+  stop)      stop_services ;;
+  restart)   restart_services ;;
+  status)    show_status ;;
+  logs)      show_logs "${2:-}" ;;
+  backup)    backup_all ;;
+  update)    update_all ;;
+  uninstall) uninstall_all ;;
+  *)
+    echo "用法: $0 {install|start|stop|restart|status|logs|backup|update|uninstall}"
+    echo
+    echo "  install    一键安装 (Java + Node + MariaDB + 编译 + systemd + nginx)"
+    echo "  start      启动所有服务"
+    echo "  stop       停止所有服务"
+    echo "  restart    重启所有服务"
+    echo "  status     查看服务状态"
+    echo "  logs M     跟踪模块 M 的日志 (auth|chat|model|frontend|nginx|...)"
+    echo "  backup     备份数据库 + jar"
+    echo "  update     git pull + 重打包 + 重启"
+    echo "  uninstall  卸载服务 (保留数据)"
+    exit 1
+    ;;
+esac
