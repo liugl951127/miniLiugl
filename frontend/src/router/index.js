@@ -91,6 +91,12 @@ const routes = [
             component: () => import('@/views/admin/Dashboard.vue'),
             meta: { title: '仪表盘', icon: 'DataLine' }
           },
+          {
+            path: 'monitor',
+            name: 'AdminMonitor',
+            component: () => import('@/views/monitor/Index.vue'),
+            meta: { title: '系统监控', icon: 'Monitor' }
+          },
         ]
       },
       {

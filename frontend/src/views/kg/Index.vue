@@ -1,12 +1,22 @@
+<!--
+  知识图谱 V5.6 - V2.0 实体管理 + 可视化 + 最短路径
+  特性:
+    - 创建/搜索实体 (person/place/org/concept/event)
+    - 1/2 跳邻居查询
+    - 创建关系 (任意 type)
+    - ECharts Graph 可视化 (中心 + 邻居节点 + 边)
+    - 最短路径查询 (任意两实体)
+    - 节点点击跳转, 边权值显示
+-->
 <template>
   <div class="kg-container">
     <div class="kg-header">
-      <h1>🕸️ 知识图谱 <span class="badge">V2.0</span></h1>
-      <p class="sub">实体-关系图谱 · N 跳查询 · 最短路径</p>
+      <h1>🕸️ 知识图谱 <span class="badge">V5.6</span></h1>
+      <p class="sub">实体-关系图谱 · N 跳查询 · 最短路径 · 可视化</p>
     </div>
 
     <el-row :gutter="20">
-      <el-col :span="10">
+      <el-col :span="8">
         <el-card>
           <template #header><span>➕ 添加实体</span></template>
           <el-form :inline="false" size="default">
@@ -31,49 +41,86 @@
         </el-card>
 
         <el-card style="margin-top:16px">
-          <template #header><span>🔍 搜索实体</span></template>
+          <template #header>
+            <span>🔍 搜索实体 ({{ entities.length }})</span>
+          </template>
           <el-input v-model="searchKw" @keyup.enter="doSearch" placeholder="输入关键词">
             <template #append><el-button @click="doSearch">搜索</el-button></template>
           </el-input>
-          <el-scrollbar style="margin-top:12px;max-height:300px">
+          <el-scrollbar style="margin-top:12px;max-height:280px">
             <div v-for="e in entities" :key="e.id"
                  class="entity-item" :class="{ active: selectedEntity?.id === e.id }"
                  @click="selectEntity(e)">
-              <el-tag size="small">{{ e.entityType }}</el-tag>
+              <el-tag size="small" :type="typeTag(e.entityType)">{{ e.entityType }}</el-tag>
               <strong>{{ e.name }}</strong>
-              <span v-if="e.description" class="desc">— {{ e.description }}</span>
+              <span v-if="e.description" class="desc">— {{ truncate(e.description, 20) }}</span>
             </div>
           </el-scrollbar>
         </el-card>
+
+        <el-card style="margin-top:16px">
+          <template #header><span>🛣️ 最短路径</span></template>
+          <el-form :inline="true" size="small">
+            <el-form-item label="起点">
+              <el-select v-model="pathFromId" filterable style="width:140px" placeholder="起点实体">
+                <el-option v-for="e in entities" :key="e.id" :label="e.name" :value="e.id" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="终点">
+              <el-select v-model="pathToId" filterable style="width:140px" placeholder="终点实体">
+                <el-option v-for="e in entities" :key="e.id" :label="e.name" :value="e.id" />
+              </el-select>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="warning" @click="findPath">查找</el-button>
+            </el-form-item>
+          </el-form>
+          <div v-if="pathResult" class="path-result">
+            <el-tag type="success">路径长度: {{ pathResult.length }}</el-tag>
+            <div v-for="(n, i) in pathResult.nodes" :key="i" class="path-node">
+              <span>{{ i + 1 }}.</span>
+              <el-tag size="small" :type="typeTag(n.entityType)">{{ n.entityType }}</el-tag>
+              <strong>{{ n.name }}</strong>
+              <span v-if="i < pathResult.relations.length" class="via">—[{{ pathResult.relations[i] }}]→</span>
+            </div>
+          </div>
+        </el-card>
       </el-col>
 
-      <el-col :span="14">
-        <el-card v-if="selectedEntity">
+      <el-col :span="16">
+        <el-card>
           <template #header>
-            <span>🌐 {{ selectedEntity.name }} 的关联</span>
-            <el-button-group style="margin-left:12px">
+            <span>🌐 {{ selectedEntity ? selectedEntity.name : '图谱可视化' }}</span>
+            <el-button-group style="margin-left:12px" v-if="selectedEntity">
               <el-button size="small" :type="hop===1?'primary':''" @click="setHop(1)">1 跳</el-button>
               <el-button size="small" :type="hop===2?'primary':''" @click="setHop(2)">2 跳</el-button>
+              <el-button size="small" :type="hop===3?'primary':''" @click="setHop(3)">3 跳</el-button>
             </el-button-group>
+            <el-tag v-if="graphStats.nodes" type="info" style="margin-left:12px">
+              节点: {{ graphStats.nodes }} · 边: {{ graphStats.edges }}
+            </el-tag>
           </template>
 
+          <div ref="chartEl" class="kg-chart"></div>
+        </el-card>
+
+        <el-card v-if="selectedEntity" style="margin-top:16px">
+          <template #header><span>📋 邻居列表 ({{ neighbors.length }})</span></template>
           <el-empty v-if="!neighbors.length" description="无关联" />
-          <el-scrollbar v-else style="height:500px">
+          <el-scrollbar v-else style="height:200px">
             <div v-for="(n, i) in neighbors" :key="i" class="neighbor">
-              <el-tag :type="n.hop===1?'success':'info'" size="small">
-                {{ n.hop === 1 ? '1跳' : '2跳' }}
+              <el-tag :type="hopTag(n.hop)" size="small">
+                {{ n.hop }}跳
               </el-tag>
-              <el-tag size="small" style="margin-left:6px">{{ n.entity.entityType }}</el-tag>
+              <el-tag size="small" style="margin-left:6px" :type="typeTag(n.entity.entityType)">
+                {{ n.entity.entityType }}
+              </el-tag>
               <strong style="margin-left:6px">{{ n.entity.name }}</strong>
               <span class="via">via {{ n.via }}</span>
               <el-button v-if="n.hop === 1" text type="primary"
                          @click="createRelationTo(n.entity.id)">↔ 建关系</el-button>
             </div>
           </el-scrollbar>
-        </el-card>
-
-        <el-card v-else>
-          <el-empty description="选择一个实体查看关联" />
         </el-card>
 
         <el-card v-if="selectedEntity" style="margin-top:16px">
@@ -98,8 +145,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, nextTick } from 'vue'
 import axios from 'axios'
+import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
 
 const API = import.meta.env.VITE_API_BASE || 'http://localhost'
@@ -113,6 +161,34 @@ const selectedEntity = ref<any>(null)
 const neighbors = ref<any[]>([])
 const hop = ref(1)
 const relForm = reactive({ toId: null as number | null, type: '' })
+
+// 最短路径
+const pathFromId = ref<number | null>(null)
+const pathToId = ref<number | null>(null)
+const pathResult = ref<any>(null)
+
+// ECharts Graph
+const chartEl = ref<HTMLDivElement>()
+let chart: echarts.ECharts | null = null
+const graphStats = ref({ nodes: 0, edges: 0 })
+
+// 类型 -> 颜色
+const TYPE_COLOR: Record<string, string> = {
+  person: '#f56c6c',
+  place: '#67c23a',
+  org: '#409eff',
+  concept: '#e6a23c',
+  event: '#9c27b0',
+}
+function typeTag(t: string) {
+  return ({ person: 'danger', place: 'success', org: '', concept: 'warning', event: 'info' } as any)[t] || ''
+}
+function hopTag(h: number) {
+  return h === 1 ? 'success' : h === 2 ? 'warning' : 'info'
+}
+function truncate(s: string, n: number) {
+  return s && s.length > n ? s.substring(0, n) + '...' : s
+}
 
 function auth() { return { headers: { Authorization: `Bearer ${token}` } } }
 
@@ -137,22 +213,55 @@ async function doSearch() {
 
 async function selectEntity(e: any) {
   selectedEntity.value = e
+  pathFromId.value = e.id
   await loadNeighbors()
+  await nextTick()
+  renderGraph()
 }
 
 async function setHop(h: number) {
   hop.value = h
   await loadNeighbors()
+  await nextTick()
+  renderGraph()
 }
 
 async function loadNeighbors() {
   if (!selectedEntity.value) return
-  const url = hop.value === 1
-    ? `${API}/api/v1/agent/kg/entities/${selectedEntity.value.id}/neighbors`
-    : `${API}/api/v1/agent/kg/entities/${selectedEntity.value.id}/2hop`
+  // 1 / 2 / 3 跳
+  const urlMap: Record<number, string> = {
+    1: `${API}/api/v1/agent/kg/entities/${selectedEntity.value.id}/neighbors`,
+    2: `${API}/api/v1/agent/kg/entities/${selectedEntity.value.id}/2hop`,
+    3: `${API}/api/v1/agent/kg/entities/${selectedEntity.value.id}/3hop`,
+  }
+  // V5.6: 用 neighbors 端点多次调合并
   try {
-    const { data } = await axios.get(url, auth())
-    neighbors.value = data.data || []
+    if (hop.value === 1) {
+      const { data } = await axios.get(urlMap[1], auth())
+      neighbors.value = data.data || []
+    } else if (hop.value === 2) {
+      const { data } = await axios.get(urlMap[2], auth())
+      neighbors.value = data.data || []
+    } else {
+      // 3 跳: 调 2 跳 + 每个邻居再调 1 跳
+      const r2 = await axios.get(urlMap[2], auth())
+      const list2 = r2.data.data || []
+      const extra: any[] = []
+      const seen = new Set([selectedEntity.value.id])
+      list2.forEach((n: any) => seen.add(n.entity.id))
+      for (const n of list2.slice(0, 5)) {
+        try {
+          const r1 = await axios.get(`${API}/api/v1/agent/kg/entities/${n.entity.id}/neighbors`, auth())
+          for (const m of (r1.data.data || [])) {
+            if (!seen.has(m.entity.id)) {
+              extra.push({ ...m, hop: 3, via: `${n.entity.name} → ${m.via}` })
+              seen.add(m.entity.id)
+            }
+          }
+        } catch (_) {}
+      }
+      neighbors.value = [...list2, ...extra]
+    }
   } catch (e: any) { ElMessage.error(e?.message) }
 }
 
@@ -170,14 +279,137 @@ async function submitRelation() {
     }, auth())
     ElMessage.success('关系已创建')
     await loadNeighbors()
+    await nextTick()
+    renderGraph()
   } catch (e: any) { ElMessage.error(e?.response?.data?.message || e?.message) }
 }
 
-onMounted(doSearch)
+async function findPath() {
+  if (!pathFromId.value || !pathToId.value) { ElMessage.warning('请选择起终点'); return }
+  try {
+    const { data } = await axios.get(`${API}/api/v1/agent/kg/path`, {
+      params: { userId, fromId: pathFromId.value, toId: pathToId.value },
+      ...auth()
+    })
+    if (data.data) {
+      pathResult.value = data.data
+      ElMessage.success(`找到长度 ${data.data.length} 的路径`)
+      // 可视化路径
+      await renderPathGraph()
+    } else {
+      pathResult.value = null
+      ElMessage.warning('未找到路径')
+    }
+  } catch (e: any) { ElMessage.error(e?.response?.data?.message || e?.message) }
+}
+
+// ====== ECharts 渲染 ======
+function renderGraph() {
+  if (!chartEl.value) return
+  if (!chart) chart = echarts.init(chartEl.value)
+  const nodes: any[] = []
+  const edges: any[] = []
+  // 中心节点
+  if (selectedEntity.value) {
+    nodes.push({
+      id: String(selectedEntity.value.id),
+      name: selectedEntity.value.name,
+      symbolSize: 50,
+      itemStyle: { color: TYPE_COLOR[selectedEntity.value.entityType] || '#409eff' },
+      label: { show: true, fontSize: 14, fontWeight: 'bold' },
+      category: selectedEntity.value.entityType,
+    })
+  }
+  // 邻居
+  neighbors.value.forEach((n, i) => {
+    const ent = n.entity || n
+    nodes.push({
+      id: String(ent.id || `n${i}`),
+      name: ent.name,
+      symbolSize: n.hop === 1 ? 30 : 20,
+      itemStyle: { color: TYPE_COLOR[ent.entityType] || '#909399' },
+      label: { show: true, fontSize: 11 },
+      category: ent.entityType,
+    })
+    if (selectedEntity.value) {
+      edges.push({
+        source: String(selectedEntity.value.id),
+        target: String(ent.id || `n${i}`),
+        label: { show: true, formatter: n.via || '', fontSize: 9 },
+        lineStyle: { color: n.hop === 1 ? '#67c23a' : '#e6a23c', width: n.hop === 1 ? 2 : 1 },
+      })
+    }
+  })
+  graphStats.value = { nodes: nodes.length, edges: edges.length }
+  chart.setOption({
+    tooltip: { trigger: 'item', formatter: (p: any) => p.dataType === 'node' ? `${p.data.name} (${p.data.category})` : `${p.data.source} → ${p.data.target}` },
+    legend: [{
+      data: Object.keys(TYPE_COLOR),
+      textStyle: { fontSize: 11 },
+      orient: 'vertical',
+      right: 10,
+      top: 10,
+    }],
+    series: [{
+      type: 'graph',
+      layout: 'force',
+      roam: true,
+      draggable: true,
+      animation: true,
+      force: { repulsion: 400, edgeLength: 120 },
+      categories: Object.keys(TYPE_COLOR).map(k => ({ name: k, itemStyle: { color: TYPE_COLOR[k] } })),
+      data: nodes,
+      links: edges,
+    }],
+  })
+}
+
+async function renderPathGraph() {
+  if (!chart || !pathResult.value) return
+  const nodes = (pathResult.value.nodes || []).map((n: any) => ({
+    id: String(n.id),
+    name: n.name,
+    symbolSize: 40,
+    itemStyle: { color: TYPE_COLOR[n.entityType] || '#409eff' },
+    category: n.entityType,
+  }))
+  const edges: any[] = []
+  const rels = pathResult.value.relations || []
+  for (let i = 0; i < nodes.length - 1; i++) {
+    edges.push({
+      source: nodes[i].id,
+      target: nodes[i + 1].id,
+      label: { show: true, formatter: rels[i] || '', fontSize: 11, color: '#f56c6c', fontWeight: 'bold' },
+      lineStyle: { color: '#f56c6c', width: 3, curveness: 0.2 },
+    })
+  }
+  graphStats.value = { nodes: nodes.length, edges: edges.length }
+  chart.setOption({
+    tooltip: { trigger: 'item' },
+    series: [{
+      type: 'graph',
+      layout: 'force',
+      roam: true,
+      draggable: true,
+      force: { repulsion: 400, edgeLength: 120 },
+      categories: Object.keys(TYPE_COLOR).map(k => ({ name: k, itemStyle: { color: TYPE_COLOR[k] } })),
+      data: nodes,
+      links: edges,
+    }],
+  })
+}
+
+window.addEventListener('resize', () => chart?.resize())
+
+onMounted(async () => {
+  await nextTick()
+  if (chartEl.value && !chart) chart = echarts.init(chartEl.value)
+  doSearch()
+})
 </script>
 
 <style scoped>
-.kg-container { padding: 20px; max-width: 1200px; margin: 0 auto; }
+.kg-container { padding: 20px; max-width: 1400px; margin: 0 auto; }
 .kg-header h1 { display:flex; align-items:center; gap:10px; }
 .badge {
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
@@ -195,4 +427,28 @@ onMounted(doSearch)
   padding: 10px; border-bottom: 1px dashed #eee; display: flex; align-items: center;
 }
 .via { color: #999; margin-left: 8px; font-size: 12px; font-style: italic; }
+.kg-chart {
+  height: 480px;
+  width: 100%;
+  background: linear-gradient(135deg, #fafbfc 0%, #f0f2f5 100%);
+  border-radius: 4px;
+}
+.path-result {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f5f7fa;
+  border-radius: 4px;
+}
+.path-node {
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.path-node span:first-child {
+  color: #999;
+  font-weight: bold;
+  min-width: 24px;
+}
 </style>

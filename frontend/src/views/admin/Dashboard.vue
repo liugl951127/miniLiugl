@@ -121,7 +121,7 @@ import {
   TrendCharts, PieChart as IconPie,
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
-import { getAdminHealth, getOpsStats, getRecentAudit } from '@/api/admin'
+import { getAdminHealth, getOpsStats, getRecentAudit, getDashboard } from '@/api/admin'
 
 use([CanvasRenderer, LineChart, PieChart, TitleComponent, TooltipComponent, LegendComponent, GridComponent])
 
@@ -226,13 +226,41 @@ async function loadAudit() {
 }
 
 async function loadKpis() {
-  // 模拟: 实际可调各服务 stats
-  stats.value = {
-    userCount: 128,
-    sessionCount: 56,
-    callCount: 1284,
-    toolCount: 4,
+  try {
+    // V5.6: 调 admin 后端 dashboard 接口获取真实 KPI
+    const r = await getDashboard()
+    if (r && r.data) {
+      const d = r.data
+      // ops.today 是按 action 汇总的列表, 累加即总调用
+      const ops = d.ops || {}
+      const todayArr = Array.isArray(ops.today) ? ops.today : []
+      const callCount = todayArr.reduce((acc, x) => acc + (Number(x.cnt || x.CNT) || 0), 0)
+      // model / tools 是 JSON 字符串 或 object
+      const modelObj = typeof d.model === 'string' ? safeJson(d.model) : (d.model || {})
+      const toolObj = typeof d.tools === 'string' ? safeJson(d.tools) : (d.tools || {})
+      const toolArr = Array.isArray(toolObj.function?.today || toolObj.today) ? (toolObj.function?.today || toolObj.today || []) : []
+      const toolCount = toolArr.reduce((acc, x) => acc + (Number(x.cnt || x.CNT) || 0), 0)
+      // session 数: 暂从 chat stats / user count
+      stats.value = {
+        userCount: Number(modelObj?.userCount || modelObj?.users || 0),
+        sessionCount: Number(modelObj?.sessionCount || modelObj?.sessions || 0),
+        callCount: callCount || Number(modelObj?.callCount || modelObj?.calls || 0),
+        toolCount: toolCount || Number(toolObj.function?.total || 0),
+      }
+      // 后端未提供 → 默认
+      if (!stats.value.userCount) stats.value.userCount = 0
+      if (!stats.value.sessionCount) stats.value.sessionCount = 0
+      if (!stats.value.callCount) stats.value.callCount = callCount
+      if (!stats.value.toolCount) stats.value.toolCount = toolCount
+    }
+  } catch (e) {
+    // fallback: 后端不可达 → 保持 0
+    stats.value = { userCount: 0, sessionCount: 0, callCount: 0, toolCount: 0 }
   }
+}
+
+function safeJson(s) {
+  try { return JSON.parse(s) } catch (_) { return {} }
 }
 
 function formatTime(t) {
