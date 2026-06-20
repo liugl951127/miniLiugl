@@ -48,6 +48,7 @@ public class WechatScanLoginService {
     private final SysUserMapper userMapper;
     private final AuthService authService;
     private final WechatApiClient wechatApi;
+    private final WechatScanMonitorService monitorService;
 
     @Value("${minimax.auth.wechat.ticket-expire-seconds:300}")
     private int ticketExpireSeconds;
@@ -91,6 +92,9 @@ public class WechatScanLoginService {
         session.setUserAgent(userAgent);
         session.setExpiresAt(LocalDateTime.now().plusSeconds(ticketExpireSeconds));
         sessionMapper.insert(session);
+
+        // V5: 告警
+        if (monitorService != null) monitorService.onQrcodeGenerated(clientIp);
 
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("ticket", ticket);
@@ -196,6 +200,9 @@ public class WechatScanLoginService {
         session.setStatus("confirmed");
         session.setConfirmedAt(LocalDateTime.now());
         sessionMapper.updateById(session);
+
+        // V5: 告警
+        if (monitorService != null) monitorService.onScanConfirmed(openid, session.getClientIp());
 
         log.info("微信扫码登录成功: user={} openid={}", sysUser.getUsername(), openid);
         Map<String, Object> out = new LinkedHashMap<>();

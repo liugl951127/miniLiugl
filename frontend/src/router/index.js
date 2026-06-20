@@ -153,6 +153,25 @@ const routes = [
         name: 'VideoGenShowcase',
         component: () => import('@/views/showcase/VideoGenShowcase.vue'),
         meta: { title: '文生视频', icon: 'VideoCamera' }
+      },
+      // V5: 微信扫码登录演示 + 我的绑定
+      {
+        path: 'wechat',
+        name: 'WechatScan',
+        component: () => import('@/views/auth/WechatScanPage.vue'),
+        meta: { title: '微信扫码登录', icon: 'ChatDotRound', public: true }
+      },
+      {
+        path: 'profile/wechat',
+        name: 'MyWechat',
+        component: () => import('@/views/user/Profile.vue'),
+        meta: { title: '我的微信' }
+      },
+      {
+        path: 'admin/wechat',
+        name: 'WechatBindings',
+        component: () => import('@/views/admin/WechatBindings.vue'),
+        meta: { title: '微信绑定管理', icon: 'ChatDotRound', requiresSuper: true }
       }
     ]
   },
