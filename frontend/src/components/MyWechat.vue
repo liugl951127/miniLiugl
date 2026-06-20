@@ -26,7 +26,10 @@
         <p class="time">绑定于 {{ formatTime(binding.boundAt) }}</p>
         <p class="bindings">共 {{ (binding.bindings || []).length }} 个应用绑定</p>
       </div>
-      <el-button type="danger" plain @click="doUnbind">解绑</el-button>
+      <div class="actions">
+        <el-button type="primary" plain @click="goCrossApp">跨应用管理</el-button>
+        <el-button type="danger" plain @click="doUnbind">解绑</el-button>
+      </div>
     </div>
   </div>
 </template>
@@ -83,6 +86,10 @@ function goBind() {
   router.push('/login')
 }
 
+function goCrossApp() {
+  router.push('/profile/wechat/cross')
+}
+
 function formatTime(t) {
   return t ? dayjs(t).format('YYYY-MM-DD HH:mm') : '-'
 }
@@ -100,6 +107,7 @@ onMounted(load)
 .bound { display: flex; align-items: center; gap: 20px; padding: 20px;
   background: linear-gradient(135deg, #f0fdf4, #fff); border-radius: 12px;
   border: 1px solid #d1fae5; }
+.actions { display: flex; flex-direction: column; gap: 8px; }
 .info { flex: 1; }
 .info h3 { margin: 0 0 8px; font-size: 18px; }
 .openid code { font-size: 11px; background: #fff; padding: 2px 6px; border-radius: 3px; }

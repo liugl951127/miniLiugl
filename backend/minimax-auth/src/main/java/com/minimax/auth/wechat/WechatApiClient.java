@@ -45,12 +45,26 @@ public class WechatApiClient {
     public Map<String, Object> code2AccessToken(String appId, String appSecret, String code) {
         // Mock 模式
         if (isMock(appId, appSecret)) {
+            // V5.1: 加了以 "TU_" 开头的 code (test unionid) — mock 模式模拟跨应用打通场景
+            // 同一 prefix (code 前 4 字符) 的 code 返回同一 unionid
+            String prefix = code.length() >= 4 ? code.substring(0, 4) : code;
+            if (code.startsWith("TU_")) {
+                String sharedUnion = "test_unionid_" + prefix;
+                return Map.of(
+                        "access_token", "mock_at_" + System.currentTimeMillis(),
+                        "expires_in", 7200,
+                        "refresh_token", "mock_rt_" + System.currentTimeMillis(),
+                        "openid", "mock_openid_" + code,
+                        "unionid", sharedUnion,
+                        "scope", "snsapi_login"
+                );
+            }
             return Map.of(
                     "access_token", "mock_at_" + System.currentTimeMillis(),
                     "expires_in", 7200,
                     "refresh_token", "mock_rt_" + System.currentTimeMillis(),
                     "openid", "mock_openid_" + code.substring(0, Math.min(8, code.length())),
-                    "unionid", "mock_unionid_" + code.substring(0, Math.min(8, code.length())),
+                    "unionid", "test_unionid_" + prefix,  // V5.1: 统一 unionid 前缀
                     "scope", "snsapi_login"
             );
         }
@@ -83,6 +97,39 @@ public class WechatApiClient {
                 + "?access_token=" + urlEncode(accessToken)
                 + "&openid=" + urlEncode(openid)
                 + "&lang=zh_CN";
+        return getJson(url);
+    }
+
+    /**
+     * 小程序: jscode2session (V5.1).
+     * GET https://api.weixin.qq.com/sns/jscode2session?appid=&secret=&js_code=&grant_type=authorization_code
+     * 返回: { openid, session_key, unionid } (unionid 需在同一开放平台)
+     *
+     * @return { openid, session_key, unionid }
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> jscode2session(String appId, String appSecret, String jsCode) {
+        if (isMock(appId, appSecret)) {
+            // V5.1: TU_ prefix → 共享 unionid (用于跨应用打通测试)
+            if (jsCode.startsWith("TU_")) {
+                String prefix = jsCode.length() >= 4 ? jsCode.substring(0, 4) : jsCode;
+                return Map.of(
+                        "openid", "mock_mini_openid_" + jsCode,
+                        "session_key", "mock_session_key_" + System.currentTimeMillis(),
+                        "unionid", "test_unionid_" + prefix
+                );
+            }
+            return Map.of(
+                    "openid", "mock_mini_openid_" + jsCode.substring(0, Math.min(8, jsCode.length())),
+                    "session_key", "mock_session_key_" + System.currentTimeMillis(),
+                    "unionid", "mock_mini_unionid_" + jsCode.substring(0, Math.min(8, jsCode.length()))
+            );
+        }
+        String url = "https://api.weixin.qq.com/sns/jscode2session"
+                + "?appid=" + urlEncode(appId)
+                + "&secret=" + urlEncode(appSecret)
+                + "&js_code=" + urlEncode(jsCode)
+                + "&grant_type=authorization_code";
         return getJson(url);
     }
 

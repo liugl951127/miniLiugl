@@ -1,6 +1,7 @@
 package com.minimax.auth.wechat;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.minimax.auth.entity.*;
 import com.minimax.auth.mapper.*;
 import com.minimax.auth.service.AuthService;
@@ -49,6 +50,7 @@ public class WechatScanLoginService {
     private final AuthService authService;
     private final WechatApiClient wechatApi;
     private final WechatScanMonitorService monitorService;
+    private final WechatUnionidService unionidService;
 
     @Value("${minimax.auth.wechat.ticket-expire-seconds:300}")
     private int ticketExpireSeconds;
@@ -189,8 +191,8 @@ public class WechatScanLoginService {
         session.setStatus("scanned");
         sessionMapper.updateById(session);
 
-        // 找/建平台账号
-        SysUser sysUser = findOrCreateUser(openid, unionid, nickname, avatar, mockMode);
+        // 找/建平台账号 (mp appType)
+        SysUser sysUser = findOrCreateUser("mp", openid, unionid, nickname, avatar, mockMode);
         session.setUserId(sysUser.getId());
 
         // 生成 JWT
@@ -244,7 +246,7 @@ public class WechatScanLoginService {
         session.setStatus("scanned");
         sessionMapper.updateById(session);
 
-        SysUser sysUser = findOrCreateUser(mockOpenid, mockOpenid, mockNickname, session.getAvatar(), true);
+        SysUser sysUser = findOrCreateUser("mp", mockOpenid, mockOpenid, mockNickname, session.getAvatar(), true);
         session.setUserId(sysUser.getId());
         LoginResponse login = authService.issueLoginResponse(sysUser, null);
         session.setAccessToken(login.getAccessToken());
@@ -277,51 +279,129 @@ public class WechatScanLoginService {
         String appId = cfg != null ? cfg.getAppId() : "mock_appid";
         String appSecret = cfg != null ? cfg.getAppSecret() : "mock_secret";
 
-        Map<String, Object> tokenInfo = wechatApi.code2AccessToken(appId, appSecret, code);
-        String openid = (String) tokenInfo.get("openid");
-        Map<String, Object> userInfo = wechatApi.getUserInfo(
-                (String) tokenInfo.get("access_token"), openid);
-        String nickname = (String) userInfo.getOrDefault("nickname", "微信用户");
-        String avatar = (String) userInfo.getOrDefault("headimgurl", null);
-        String unionid = (String) userInfo.getOrDefault("unionid", null);
+        String openid;
+        String unionid = null;
+        String nickname = "微信用户";
+        String avatar = null;
 
-        SysUser sysUser = findOrCreateUser(openid, unionid, nickname, avatar, mockMode);
+        // 小程序走 jscode2session (直接返回 unionid, 无需后续 userinfo 调用)
+        if ("mini".equals(appType)) {
+            Map<String, Object> session = wechatApi.jscode2session(appId, appSecret, code);
+            openid = (String) session.get("openid");
+            unionid = (String) session.get("unionid");
+            // mock 模式: 合成昵称和头像
+            if (mockMode) {
+                nickname = "小程序用户_" + (openid != null ? openid.substring(Math.max(0, openid.length() - 6)) : "");
+                avatar = "https://thirdwx.qlogo.cn/mmopen/mock/mini.png";
+            }
+        } else {
+            // 公众号/open 走 oauth2/access_token + userinfo
+            Map<String, Object> tokenInfo = wechatApi.code2AccessToken(appId, appSecret, code);
+            openid = (String) tokenInfo.get("openid");
+            unionid = (String) tokenInfo.get("unionid");
+            Map<String, Object> userInfo = wechatApi.getUserInfo(
+                    (String) tokenInfo.get("access_token"), openid);
+            nickname = (String) userInfo.getOrDefault("nickname", "微信用户");
+            avatar = (String) userInfo.getOrDefault("headimgurl", null);
+        }
+
+        SysUser sysUser = findOrCreateUser(appType, openid, unionid, nickname, avatar, mockMode);
         return authService.issueLoginResponse(sysUser, null);
     }
 
     /**
-     * 根据 openid 找/建平台账号
+     * 根据 openid 找/建平台账号 (V5.1: 支持 unionid 跨应用打通).
+     *
+     * 查找顺序:
+     *   1. binding (app_type + openid) — 精确匹配
+     *   2. sys_user.wechat_openid — 主应用号
+     *   3. ★ unionid 打通 — 同微信开放平台下不同应用的同一人
+     *   4. 新建账号
+     *
+     * @param appType 应用类型 mp/mini/open/web
+     * @param openid 当前应用的 openid
+     * @param unionid 跨应用唯一 ID (可空)
      */
     @Transactional
-    public SysUser findOrCreateUser(String openid, String unionid, String nickname, String avatar, boolean mockMode) {
-        // 1. 先查 binding 表
+    public SysUser findOrCreateUser(String appType, String openid, String unionid,
+                                    String nickname, String avatar, boolean mockMode) {
+        // 0. mock 模式: unionid 复用 openid (模拟同一微信)
+        if (mockMode) {
+            unionid = unionid != null ? unionid : openid;
+        }
+
+        // 1. 先查 binding (app_type + openid)
         WechatUserBinding binding = bindingMapper.selectOne(
-                new LambdaQueryWrapper<WechatUserBinding>().eq(WechatUserBinding::getOpenid, openid));
+                new LambdaQueryWrapper<WechatUserBinding>()
+                        .eq(WechatUserBinding::getAppType, appType)
+                        .eq(WechatUserBinding::getOpenid, openid));
         if (binding != null) {
             SysUser u = userMapper.selectById(binding.getUserId());
             if (u != null && u.getStatus() != null && u.getStatus() == 1) {
                 binding.setLastLoginAt(LocalDateTime.now());
+                if (unionid != null) binding.setUnionid(unionid);
+                binding.setNickname(nickname);
+                binding.setAvatar(avatar);
                 bindingMapper.updateById(binding);
+                // 同步 sys_user.wechat_* (主应用号为最后登录的应用)
+                updateSysUserWechat(u.getId(), openid, unionid, nickname, avatar);
                 return u;
             }
         }
-        // 2. 看 sys_user.wechat_openid
+
+        // 2. ★ unionid 打通 (跨应用唯一 ID)
+        if (unionid != null && !unionid.isBlank()) {
+            // 查同一 unionid 的其他 binding
+            List<WechatUserBinding> sameUnionid = bindingMapper.selectList(
+                    new LambdaQueryWrapper<WechatUserBinding>()
+                            .eq(WechatUserBinding::getUnionid, unionid)
+                            .ne(WechatUserBinding::getAppType, appType));
+            if (!sameUnionid.isEmpty()) {
+                // 找到同一个微信账号下的其他应用, 复用同一 user_id
+                SysUser existing = userMapper.selectById(sameUnionid.get(0).getUserId());
+                if (existing != null && existing.getStatus() != null && existing.getStatus() == 1) {
+                    // 创建新应用的 binding
+                    WechatUserBinding nb = new WechatUserBinding();
+                    nb.setUserId(existing.getId());
+                    nb.setOpenid(openid);
+                    nb.setUnionid(unionid);
+                    nb.setAppType(appType);
+                    nb.setNickname(nickname);
+                    nb.setAvatar(avatar);
+                    nb.setBoundAt(LocalDateTime.now());
+                    nb.setLastLoginAt(LocalDateTime.now());
+                    bindingMapper.insert(nb);
+                    // 更新 sys_user 主微信
+                    updateSysUserWechat(existing.getId(), openid, unionid, nickname, avatar);
+                    // V5.1: 更新 unionid_relations (binding_count++)
+                    if (unionidService != null) {
+                        try { unionidService.recordUnionid(existing.getId(), unionid, "wechat"); } catch (Exception ignore) {}
+                    }
+                    log.info("unionid 打通: user={} appType={}->{} unionid={}", existing.getUsername(),
+                            sameUnionid.get(0).getAppType(), appType, unionid);
+                    return existing;
+                }
+            }
+        }
+
+        // 3. sys_user.wechat_openid (主应用号)
         SysUser u = userMapper.selectOne(
                 new LambdaQueryWrapper<SysUser>().eq(SysUser::getWechatOpenid, openid));
         if (u != null) {
-            // 写 binding
             WechatUserBinding b = new WechatUserBinding();
             b.setUserId(u.getId());
             b.setOpenid(openid);
             b.setUnionid(unionid);
-            b.setAppType("mp");
+            b.setAppType(appType);
             b.setNickname(nickname);
             b.setAvatar(avatar);
+            b.setBoundAt(LocalDateTime.now());
             b.setLastLoginAt(LocalDateTime.now());
             bindingMapper.insert(b);
             return u;
         }
-        // 3. 新建账号
+
+        // 4. 新建账号
         SysUser newUser = new SysUser();
         newUser.setUsername("wx_" + openid.substring(0, Math.min(16, openid.length())));
         newUser.setNickname(nickname != null ? nickname : "微信用户");
@@ -341,17 +421,36 @@ public class WechatScanLoginService {
         newUser.setWechatAvatar(avatar);
         newUser.setWechatBoundAt(LocalDateTime.now());
         userMapper.insert(newUser);
-        // 写 binding (user_role 不在这里加, 微信用户首次登录后由前端引导绑定手机号或后续完善)
+
         WechatUserBinding b = new WechatUserBinding();
         b.setUserId(newUser.getId());
         b.setOpenid(openid);
         b.setUnionid(unionid);
-        b.setAppType("mp");
+        b.setAppType(appType);
         b.setNickname(nickname);
         b.setAvatar(avatar);
+        b.setBoundAt(LocalDateTime.now());
         b.setLastLoginAt(LocalDateTime.now());
         bindingMapper.insert(b);
-        log.info("微信用户自动注册: username={} openid={}", newUser.getUsername(), openid);
+        log.info("微信用户自动注册: username={} openid={} appType={} unionid={}",
+                newUser.getUsername(), openid, appType, unionid);
+        // 记录 unionid 关联 (V5.1)
+        if (unionidService != null) {
+            try { unionidService.recordUnionid(newUser.getId(), unionid, "wechat"); } catch (Exception e) { /* ignore */ }
+        }
         return newUser;
+    }
+
+    /**
+     * 更新 sys_user 微信主应用号字段 (LambdaUpdateWrapper 强制 set)
+     */
+    private void updateSysUserWechat(Long userId, String openid, String unionid, String nickname, String avatar) {
+        userMapper.update(null, new LambdaUpdateWrapper<SysUser>()
+                .eq(SysUser::getId, userId)
+                .set(SysUser::getWechatOpenid, openid)
+                .set(SysUser::getWechatUnionid, unionid)
+                .set(SysUser::getWechatNickname, nickname)
+                .set(SysUser::getWechatAvatar, avatar)
+                .set(SysUser::getWechatBoundAt, LocalDateTime.now()));
     }
 }

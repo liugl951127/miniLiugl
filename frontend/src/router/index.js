@@ -168,6 +168,18 @@ const routes = [
         meta: { title: '我的微信' }
       },
       {
+        path: 'profile/wechat/cross',
+        name: 'CrossAppBinding',
+        component: () => import('@/views/user/CrossAppBinding.vue'),
+        meta: { title: '跨应用绑定 (unionid)' }
+      },
+      {
+        path: 'admin/wechat/unionid',
+        name: 'WechatUnionidAdmin',
+        component: () => import('@/views/admin/WechatUnionidAdmin.vue'),
+        meta: { title: 'unionid 跨应用管理', icon: 'Connection', requiresSuper: true }
+      },
+      {
         path: 'admin/wechat',
         name: 'WechatBindings',
         component: () => import('@/views/admin/WechatBindings.vue'),
