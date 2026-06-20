@@ -1,12 +1,7 @@
 # =============================================================
-# gateway 模块配置 (V5.4 重构后)
+# MiniMax Gateway 配置 (V5.5)
 # 公共配置在 application-common.yml
 # =============================================================
-
-server:
-  port: 8080
-  servlet:
-    context-path: /
 
 spring:
   config:
@@ -15,18 +10,185 @@ spring:
     name: minimax-gateway
   profiles:
     active: dev
+  main:
+    web-application-type: reactive
+    allow-bean-definition-overriding: true
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASS:minimax_redis_2024}
+      database: 0
+      timeout: 3s
+      lettuce:
+        pool:
+          max-active: 16
 
-# gateway 特有配置 (跨平台路由 + 文件上传 + minio)
+# =============================================================
+# Spring Cloud Gateway 路由 (V5.5)
+# 前后台分流:
+#   前台: /api/v1/{module}/**     业务微服务
+#   后台: /api/v1/admin/**         超级管理 (adminLiugl only)
+# =============================================================
+spring.cloud.gateway:
+  discovery:
+    locator:
+      enabled: false
+
+  globalcors:
+    cors-configurations:
+      '[/**]':
+        allowed-origin-patterns:
+          - http://localhost:*
+          - http://127.0.0.1:*
+          - https://*.your-domain.com
+        allowed-methods: "*"
+        allowed-headers: "*"
+        exposed-headers:
+          - X-Trace-Id
+          - X-User-Id
+        allow-credentials: true
+        max-age: 3600
+
+  default-filters:
+    - DedupeResponseHeader=Access-Control-Allow-Origin
+    - AddRequestHeader=X-Request-Source, gateway
+    - AddResponseHeader=X-Response-Source, minimax-gateway
+
+  routes:
+    # ============== 前台业务 (按模块) ==============
+    - id: auth
+      uri: http://127.0.0.1:8081
+      predicates:
+        - Path=/api/v1/auth/**,/api/auth/**
+      filters:
+        - StripPrefix=2
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 100
+            redis-rate-limiter.burstCapacity: 200
+            key-resolver: "#{@userKeyResolver}"
+
+    - id: chat
+      uri: http://127.0.0.1:8082
+      predicates:
+        - Path=/api/v1/chat/**,/api/v1/sessions/**,/api/v1/messages/**
+      filters:
+        - StripPrefix=2
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 50
+            redis-rate-limiter.burstCapacity: 100
+            key-resolver: "#{@userKeyResolver}"
+
+    - id: model
+      uri: http://127.0.0.1:8083
+      predicates:
+        - Path=/api/v1/model/**,/api/v1/test/**,/api/v1/openai/**,/api/v1/imagegen/**,/api/v1/audio/**,/api/v1/leaderboard/**
+      filters:
+        - StripPrefix=2
+
+    - id: memory
+      uri: http://127.0.0.1:8084
+      predicates:
+        - Path=/api/v1/memory/**
+      filters:
+        - StripPrefix=2
+
+    - id: rag
+      uri: http://127.0.0.1:8085
+      predicates:
+        - Path=/api/v1/rag/**
+      filters:
+        - StripPrefix=2
+
+    - id: function
+      uri: http://127.0.0.1:8086
+      predicates:
+        - Path=/api/v1/function/**
+      filters:
+        - StripPrefix=2
+
+    - id: multimodal
+      uri: http://127.0.0.1:8088
+      predicates:
+        - Path=/api/v1/multimodal/**,/api/v1/multi/**
+      filters:
+        - StripPrefix=2
+
+    - id: monitor
+      uri: http://127.0.0.1:8089
+      predicates:
+        - Path=/api/v1/monitor/**
+      filters:
+        - StripPrefix=2
+
+    - id: agent
+      uri: http://127.0.0.1:8090
+      predicates:
+        - Path=/api/v1/agent/**
+      filters:
+        - StripPrefix=2
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 10
+            redis-rate-limiter.burstCapacity: 20
+            key-resolver: "#{@userKeyResolver}"
+
+    - id: prompt
+      uri: http://127.0.0.1:8091
+      predicates:
+        - Path=/api/v1/prompt/**,/api/v1/prompts/**
+      filters:
+        - StripPrefix=2
+
+    - id: ws
+      uri: http://127.0.0.1:8095
+      predicates:
+        - Path=/api/v1/ws/**,/ws/**
+      filters:
+        - StripPrefix=2
+
+    # ============== 后台管理 (单独限流) ==============
+    - id: admin
+      uri: http://127.0.0.1:8087
+      predicates:
+        - Path=/api/v1/admin/**,/admin/**
+      filters:
+        - StripPrefix=2
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 20
+            redis-rate-limiter.burstCapacity: 40
+            key-resolver: "#{@userKeyResolver}"
+
+# =============================================================
+# 网关特有配置
+# =============================================================
 minimax:
   jwt:
     expire-minutes: 10080
     refresh-expire-minutes: 43200
     issuer: minimax-platform
+    gateway-auth:
+      enabled: true
+      public-paths:
+        - /api/v1/auth/login
+        - /api/v1/auth/register
+        - /api/v1/auth/refresh
+        - /api/v1/auth/oauth
+        - /api/v1/auth/wechat
+        - /api/v1/health
+        - /health
+        - /v3/api-docs
+        - /swagger-ui
+        - /doc.html
+        - /actuator
   cors:
     allowed-origins:
+      - http://localhost:3000
       - http://localhost:5173
-      - http://localhost:5174
-      - http://127.0.0.1:5173
+      - http://127.0.0.1:3000
   upload:
     base-dir: ${UPLOAD_DIR:./data/upload}
     max-size-mb: 100
@@ -36,3 +198,36 @@ minimax:
     access-key: minimax_admin
     secret-key: minimax_minio_2024
     bucket: minimax-files
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway,refresh,routes
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+    gateway:
+      enabled: true
+  health:
+    redis:
+      enabled: false
+    db:
+      enabled: false
+  metrics:
+    tags:
+      application: minimax-gateway
+
+# Spring Security 允许公开访问
+spring.security:
+  user:
+    name: disabled
+    password: disabled
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+    reactor.netty: INFO
+    com.minimax: DEBUG

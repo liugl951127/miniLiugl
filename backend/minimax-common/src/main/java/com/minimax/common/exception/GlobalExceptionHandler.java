@@ -4,6 +4,7 @@ import com.minimax.common.result.Result;
 import com.minimax.common.result.ResultCode;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
@@ -17,10 +18,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.stream.Collectors;
 
 /**
- * 全局异常处理器
+ * 全局异常处理器 (servlet only, gateway webflux 不扫)
  */
 @Slf4j
 @RestControllerAdvice
+@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 public class GlobalExceptionHandler {
 
     /** 业务异常 */

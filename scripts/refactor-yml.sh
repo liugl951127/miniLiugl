@@ -31,6 +31,12 @@ for entry in "${modules[@]}"; do
   port=$(echo $entry | cut -d: -f2)
   ctx=$(echo $entry | cut -d: -f3)
 
+  # gateway 模块特殊: 有 Spring Cloud Gateway 路由, 不能用此模板
+  if [ "$module" = "gateway" ]; then
+    echo "  ⏭  ${module} (Spring Cloud Gateway, skip template, keep own yml)"
+    continue
+  fi
+
   yml="minimax-${module}/src/main/resources/application.yml"
   if [ ! -f "$yml" ]; then
     echo "  ❌ ${module} (no yml, skip)"
@@ -77,10 +83,13 @@ done
 echo ""
 echo "=== 重构后总行数 ==="
 total=0
+count=0
 for yml in minimax-*/src/main/resources/application.yml; do
+  [ ! -f "$yml" ] && continue
   lines=$(wc -l < "$yml")
   total=$((total + lines))
+  count=$((count + 1))
 done
-echo "  13 个模块 yml 总: $total 行 (重构前 646 行)"
+echo "  ${count} 个模块 yml 总: $total 行 (重构前 646 行)"
 echo "  公共 yml: $(wc -l < minimax-common/src/main/resources/application-common.yml) 行"
 echo "  节省: $((646 - total)) 行"
