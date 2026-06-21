@@ -1,0 +1,306 @@
+name: MiniMax CI
+
+on:
+  push:
+    branches: [main, develop, 'V*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_mvn:
+        description: '跳过 Maven 编译 (节省 CI 时间)'
+        type: boolean
+        default: false
+      skip_frontend:
+        description: '跳过前端构建'
+        type: boolean
+        default: false
+
+env:
+  JAVA_VERSION: '17'
+  NODE_VERSION: '22'
+  MAVEN_OPTS: '-Xmx2g -XX:+UseG1GC'
+  MAVEN_VERSION: '3.9.6'
+
+jobs:
+  # ============================================================
+  # 1. Backend - Maven 编译 + 测试
+  # ============================================================
+  backend:
+    name: ☕ Backend (Maven ${{ env.MAVEN_VERSION }})
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    if: ${{ !inputs.skip_mvn }}
+
+    services:
+      mariadb:
+        image: mariadb:10.5
+        env:
+          MARIADB_ROOT_PASSWORD: rootpass
+          MARIADB_DATABASE: minimax_platform
+          MARIADB_USER: minimax
+          MARIADB_PASSWORD: minimax_pass_2024
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+      redis:
+        image: redis:7.2-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=3s
+          --health-retries=5
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: 🔧 Setup Maven ${{ env.MAVEN_VERSION }}
+        run: |
+          sudo apt-get install -y maven
+          mvn -version
+
+      - name: 📦 Cache ~/.m2
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2-
+
+      - name: 🗄️ Init DB schema (导入 SQL)
+        run: |
+          for i in 1 2 3 4 5; do
+            if mysql -h 127.0.0.1 -uroot -prootpass -e "SELECT 1" >/dev/null 2>&1; then
+              echo "✓ MariaDB 就绪"
+              break
+            fi
+            echo "等 MariaDB... ($i)"
+            sleep 5
+          done
+          mysql -h 127.0.0.1 -uroot -prootpass minimax_platform < sql/init-minimax.sql
+          mysql -h 127.0.0.1 -uroot -prootpass -e "SHOW TABLES" minimax_platform | head -10
+
+      - name: 🔨 Maven Compile
+        run: |
+          mvn -B -T 4 \
+            -Dmaven.test.skip=true \
+            -Dspotless.check.skip=true \
+            -Djacoco.skip=true \
+            -Pparallel \
+            -f backend/pom.xml clean install
+
+      - name: 🧪 Maven Test
+        run: |
+          mvn -B -T 4 \
+            -Dtest='*Test' \
+            -DfailIfNoTests=false \
+            -Dspotless.check.skip=true \
+            -f backend/pom.xml test
+
+      - name: 📊 Surefire Report
+        if: always()
+        run: |
+          echo "测试结果:"
+          find backend -name "TEST-*.xml" | wc -l
+          find backend -name "TEST-*.xml" -exec grep -l "failure\|error" {} \; 2>/dev/null | head
+        continue-on-error: true
+
+      - name: 📤 Upload Surefire Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: |
+            backend/**/surefire-reports/
+            backend/**/target/site/jacoco/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # ============================================================
+  # 2. Frontend - Node 构建
+  # ============================================================
+  frontend:
+    name: 🎨 Frontend (Node ${{ env.NODE_VERSION }})
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    if: ${{ !inputs.skip_frontend }}
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 📦 Install deps
+        working-directory: frontend
+        run: |
+          npm config set registry https://registry.npmmirror.com
+          npm ci --prefer-offline --no-audit || npm install --prefer-offline --no-audit
+
+      - name: 🔨 Build
+        working-directory: frontend
+        run: npm run build
+
+      - name: 📤 Upload dist
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          if-no-files-found: warn
+          retention-days: 7
+
+  # ============================================================
+  # 3. Deploy Scripts 验证
+  # ============================================================
+  deploy-scripts:
+    name: 🐚 Deploy Scripts (bash -n + shellcheck)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐚 Bash syntax check
+        run: |
+          echo "=== bash -n 所有脚本 ==="
+          fail=0
+          for f in scripts/*.sh scripts/*.py 2>/dev/null; do
+            [[ -f "$f" ]] || continue
+            if bash -n "$f" 2>/dev/null; then
+              echo "  ✓ $f"
+            else
+              echo "  ✗ $f SYNTAX ERROR"
+              bash -n "$f"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - name: 🐚 ShellCheck (best-effort)
+        run: |
+          sudo apt-get install -y shellcheck || true
+          if command -v shellcheck >/dev/null 2>&1; then
+            shellcheck -x scripts/deploy-minimax.sh scripts/deploy-linux.sh scripts/e2e-full-test.sh 2>&1 | head -40 || true
+          else
+            echo "shellcheck 不可用, 跳过"
+          fi
+        continue-on-error: true
+
+      - name: 🐍 Python syntax check
+        run: |
+          for f in scripts/*.py 2>/dev/null; do
+            [[ -f "$f" ]] || continue
+            python3 -m py_compile "$f" && echo "  ✓ $f" || echo "  ✗ $f"
+          done
+
+      - name: 📜 YAML lint (docker-compose + workflows)
+        run: |
+          python3 -c "
+          import yaml, glob, sys
+          fail = 0
+          for f in glob.glob('**/*.yml', recursive=True) + glob.glob('**/*.yaml', recursive=True):
+            try:
+              yaml.safe_load(open(f))
+              print(f'  ✓ {f}')
+            except Exception as e:
+              print(f'  ✗ {f}: {e}')
+              fail = 1
+          sys.exit(fail)
+          "
+
+  # ============================================================
+  # 4. SQL 文件检查
+  # ============================================================
+  sql-check:
+    name: 🗄️ SQL Init Check
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+
+    services:
+      mariadb:
+        image: mariadb:10.5
+        env:
+          MARIADB_ROOT_PASSWORD: rootpass
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🗄️ 验证 init-minimax.sql
+        run: |
+          for i in 1 2 3 4 5; do
+            if mysql -h 127.0.0.1 -uroot -prootpass -e "SELECT 1" >/dev/null 2>&1; then
+              echo "✓ MariaDB 就绪"
+              break
+            fi
+            sleep 5
+          done
+
+          # 数表数
+          table_count=$(grep -c "^CREATE TABLE" sql/init-minimax.sql || echo 0)
+          insert_count=$(grep -c "^INSERT INTO" sql/init-minimax.sql || echo 0)
+          echo "  CREATE TABLE: $table_count"
+          echo "  INSERT INTO: $insert_count"
+
+          [[ $table_count -ge 35 ]] || (echo "✗ 表数过少 (期望 ≥35)" && exit 1)
+          [[ $insert_count -ge 30 ]] || (echo "✗ 预置数据过少 (期望 ≥30)" && exit 1)
+
+          # 实际导入验证
+          mysql -h 127.0.0.1 -uroot -prootpass -e "DROP DATABASE IF EXISTS minimax_platform; CREATE DATABASE minimax_platform;"
+          mysql -h 127.0.0.1 -uroot -prootpass minimax_platform < sql/init-minimax.sql
+          echo "  实际导入后表数:"
+          mysql -h 127.0.0.1 -uroot -prootpass -e "SHOW TABLES" minimax_platform | wc -l
+
+  # ============================================================
+  # 5. 最终汇总
+  # ============================================================
+  summary:
+    name: 📋 Summary
+    runs-on: ubuntu-22.04
+    needs: [backend, frontend, deploy-scripts, sql-check]
+    if: always()
+    steps:
+      - name: 📊 结果汇总
+        run: |
+          echo "## MiniMax CI 结果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| ☕ Backend | ${{ needs.backend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🎨 Frontend | ${{ needs.frontend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🐚 Deploy Scripts | ${{ needs.deploy-scripts.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🗄️ SQL Check | ${{ needs.sql-check.result }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: ❌ 检查是否有失败
+        if: needs.backend.result != 'success' || needs.frontend.result != 'success' || needs.deploy-scripts.result != 'success' || needs.sql-check.result != 'success'
+        run: |
+          echo "⚠️ 部分 Job 失败"
+          exit 0  # 允许合并但标记

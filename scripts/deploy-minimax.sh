@@ -113,6 +113,7 @@ MiniMax Platform V5.22 一键部署
   sudo ./scripts/deploy-minimax.sh status       状态
   sudo ./scripts/deploy-minimax.sh test         E2E 健康检查
   sudo ./scripts/deploy-minimax.sh uninstall    卸载 (保留数据)
+  sudo ./scripts/deploy-minimax.sh check        静态检查 (CI 用)
 
 环境: CentOS 7+ / Ubuntu 20.04+ / Debian 11+
 依赖: docker, docker compose, JDK 17
@@ -637,6 +638,83 @@ cmd_status() {
   done
 }
 
+
+# =============================================================
+# check (静态检查, CI 用)
+# =============================================================
+cmd_check() {
+  log_step "静态检查 (CI 模式)"
+
+  local pass=0 fail=0
+
+  check() {
+    local name=$1
+    local cmd=$2
+    if eval "$cmd" >/dev/null 2>&1; then
+      log_info "  ✓ $name"
+      pass=$((pass+1))
+    else
+      log_err "  ✗ $name"
+      fail=$((fail+1))
+    fi
+  }
+
+  # bash 语法
+  for f in scripts/*.sh; do
+    [[ -f "$f" ]] || continue
+    if bash -n "$f" 2>/dev/null; then
+      log_info "  ✓ bash -n $f"
+      pass=$((pass+1))
+    else
+      log_err "  ✗ bash -n $f"
+      fail=$((fail+1))
+    fi
+  done
+
+  # docker-compose 语法
+  if docker compose -f docker-compose.yml config >/dev/null 2>&1; then
+    log_info "  ✓ docker compose config"
+    pass=$((pass+1))
+  else
+    log_warn "  - docker compose config (docker 未装, 跳过)"
+  fi
+
+  # SQL 平衡
+  python3 - <<PYEOF
+import re
+c = open("sql/init-minimax.sql").read()
+c = re.sub(r"--[^\n]*", "", c)
+c = re.sub(r"/\*.*?\*/", "", c, flags=re.S)
+tables = c.count("CREATE TABLE")
+inserts = c.count("INSERT INTO")
+quotes = c.count("'") + c.count('"')
+ok = tables >= 35 and inserts >= 30 and quotes % 2 == 0
+print(f"    tables={tables}, inserts={inserts}, quotes={quotes} (even={quotes%2==0})")
+exit(0 if ok else 1)
+PYEOF
+  if [[ $? -eq 0 ]]; then
+    log_info "  ✓ SQL 平衡"
+    pass=$((pass+1))
+  else
+    log_err "  ✗ SQL 平衡"
+    fail=$((fail+1))
+  fi
+
+  # 必需文件
+  for f in docker-compose.yml sql/init-minimax.sql scripts/deploy-minimax.sh scripts/deploy-linux.sh; do
+    if [[ -f "$f" ]]; then
+      log_info "  ✓ 文件存在 $f"
+      pass=$((pass+1))
+    else
+      log_err "  ✗ 文件缺失 $f"
+      fail=$((fail+1))
+    fi
+  done
+
+  log_step "结果: ${GREEN}${pass} 通过${NC} / ${RED}${fail} 失败${NC}"
+  return $fail
+}
+
 # =============================================================
 # test (E2E 健康检查)
 # =============================================================
@@ -743,5 +821,6 @@ case "$ACTION" in
   status)     cmd_status ;;
   test)       cmd_test ;;
   uninstall)  cmd_uninstall ;;
+  check)      cmd_check ;;
   *)          usage ;;
 esac

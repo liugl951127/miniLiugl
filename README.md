@@ -1,6 +1,12 @@
 # MiniMax Platform — 企业级大模型平台
 
-> **V5.12 架构升级** · 13 个微服务 · Spring Cloud Gateway · Nacos 服务发现 · Prometheus 全链路监控 · TraceId 全链路追踪 · 11,454+ 行代码
+[![CI](https://github.com/liugl951127/miniLiugl/actions/workflows/ci.yml/badge.svg)](https://github.com/liugl951127/miniLiugl/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://openjdk.org/projects/jdk/17/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-green.svg)](https://spring.io/projects/spring-boot)
+[![Vue](https://img.shields.io/badge/Vue-3.4-brightgreen.svg)](https://vuejs.org/)
+
+> **V5.23 CI + 一键部署** · 13 个微服务 · Spring Cloud Gateway · Nacos 服务发现 · Prometheus 全链路监控 · TraceId 全链路追踪 · GitHub Actions 5-Job CI · 41+ 张数据表 · 11,454+ 行代码
 >
 > Java 17 + Spring Boot 3 + Spring Cloud Gateway + Nacos + Vue 3 + Element Plus + 大模型 + 向量库 + RAG + Function Calling + 多模态 + 监控 + 调优 + 可观测性
 
@@ -168,8 +174,40 @@ V5 系列 8 个版本聚焦**生产级架构能力**:
 | **V5.10** | Prometheus 全链路监控 + MetricsFilter + BaseController | `c5d93fd` |
 | **V5.11** | API 文档聚合中心 (13 服务) + knife4j 统一配置 | `e9db693` |
 | **V5.12** | 部署脚本集成 Nacos + Gateway + E2E 健康检查 | `5a06932` |
+| **V5.13** | 架构文档完善 (README + ARCHITECTURE 11KB) | `0f95507` |
+| **V5.14** | OpenTelemetry 分布式追踪 (W3C traceparent + Jaeger) | `a9c456c` |
+| **V5.15** | E2E 自动化测试脚本 (35+ 用例 7 Phase) | `509d1f7` |
+| **V5.16** | Agent 增强 (流式 SSE + Plan 模式 + 记忆集成) | `2564e5b` |
+| **V5.17** | Multi-Agent 多智能体 (Planner + Executor + Critic) | `5381c78` |
+| **V5.18** | 真实 LLM (Claude + Gemini + 多 Key 轮询) | `0914689` |
+| **V5.19** | WebSocket 双向流 (pause/resume/steer/feedback) | `b812499` |
+| **V5.20** | Docker Compose 全栈中间件 + PWA + 后端 i18n | `4704604` |
+| **V5.21** | 统一 SQL (单文件 1448 行) + 一键部署脚本 | `ae5294d` |
+| **V5.22** | deploy-minimax.sh 生产可用 (747 行 9 子命令) | `da1f4f1` |
+| **V5.23** | GitHub Actions CI (5 Job) + check 命令 + 27/27 通过 | `pending` |
 
-**V5 累计**: +5,400 行 / -1,200 行, 12 个新文档, 16 个 systemd 服务
+**V5 累计**: +7,500 行 / -3,800 行, 19 个新文档, 13 个 systemd 服务, **5 个 CI Job 自动验证**
+
+---
+
+## 🔄 CI/CD (V5.23 新增)
+
+```yaml
+# .github/workflows/ci.yml - 5 个并行 Job
+jobs:
+  backend:        # Maven 编译 + 测试 (MariaDB + Redis service)
+  frontend:       # Node 22 构建 (npm registry.npmmirror.com)
+  deploy-scripts: # bash -n + shellcheck + YAML lint
+  sql-check:      # 数 CREATE TABLE/INSERT, 实导入验证
+  summary:        # 汇总 4 个 job 结果到 GitHub Step Summary
+```
+
+**触发**: push main / PR / workflow_dispatch
+
+**快速验证**:
+```bash
+./scripts/deploy-minimax.sh check    # 静态检查 (27 项)
+```
 
 ---
 

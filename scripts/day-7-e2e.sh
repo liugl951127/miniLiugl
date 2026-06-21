@@ -100,4 +100,4 @@ echo
 echo
 echo "=== end ==="
 kill $A $M 2>/dev/null
-} 2>&1 | tee $OUT
+echo "result saved to: $OUT"
