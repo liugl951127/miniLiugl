@@ -616,3 +616,35 @@
 - frontend: 2 (Multi.vue + router)
 - docs: 1 new (MULTI-AGENT-GUIDE.md)
 - config: 1 modified (CHANGELOG.md)
+
+## [V5.18] - 2026-06-22 — 真实 LLM API 接入 (Claude + Gemini + 多 Key 轮询)
+
+### Added (后端)
+- **AnthropicAdapter** (11KB, 新): Claude Messages API 协议
+  - 适用: claude-3-5-sonnet / claude-3-opus / claude-3-haiku
+  - 协议: x-api-key header + anthropic-version + 流式 SSE
+- **GeminiAdapter** (11KB, 新): Google Generative Language API 协议
+  - 适用: gemini-1.5-pro / gemini-1.5-flash
+  - 协议: URL ?key= 认证, contents/parts 结构
+- **ApiKeyProviderService** (4.7KB, 新): 多源 API Key 管理
+  - 优先级: 环境变量 > DB api_key > mock fallback
+  - 多 Key 轮询 (逗号分隔, Round-Robin)
+  - 失败熔断 (>= 3 次跳过 5 分钟)
+  - 环境变量: OPENAI_API_KEY / ANTHROPIC_API_KEY / GEMINI_API_KEY / DEEPSEEK_API_KEY
+
+### Changed
+- ModelServiceImpl: 优先用 ApiKeyProviderService 解析 key, 成功清零计数, 失败 +1
+
+### SQL
+- `sql/21_anthropic_gemini.sql` (新): 插入 anthropic + gemini 2 个 provider, 5 个模型
+  - claude-3-5-sonnet-20241022 / claude-3-opus-20240229 / claude-3-haiku-20240307
+  - gemini-1.5-pro / gemini-1.5-flash
+
+### Docs
+- **docs/LLM-PROVIDER-GUIDE.md** (4.8KB): 6 个 provider 矩阵/配置/协议差异/测试
+
+### Files (7)
+- backend: 4 (AnthropicAdapter + GeminiAdapter + ApiKeyProviderService + ModelServiceImpl)
+- sql: 1 new (21_anthropic_gemini.sql)
+- docs: 1 new (LLM-PROVIDER-GUIDE.md)
+- config: 1 modified (CHANGELOG.md)

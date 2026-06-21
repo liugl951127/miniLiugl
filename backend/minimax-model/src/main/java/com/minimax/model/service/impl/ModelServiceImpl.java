@@ -8,6 +8,7 @@ import com.minimax.model.provider.ModelProviderAdapter;
 import com.minimax.model.provider.ModelProviderFactory;
 import com.minimax.model.quota.QuotaService;
 import com.minimax.model.quota.RateLimiter;
+import com.minimax.model.service.ApiKeyProviderService;
 import com.minimax.model.service.ModelService;
 import com.minimax.model.vo.ChatResponse;
 import com.minimax.model.vo.ModelVO;
@@ -30,6 +31,7 @@ public class ModelServiceImpl implements ModelService {
     private final ModelProviderFactory providerFactory;
     private final RateLimiter rateLimiter;
     private final QuotaService quotaService;
+    private final ApiKeyProviderService apiKeyService;
 
     @Override
     public List<ModelVO> listEnabled() {
@@ -64,15 +66,33 @@ public class ModelServiceImpl implements ModelService {
         Map<String, Object> model = modelConfigMapper.selectByCode(req.getModel());
         if (model == null) throw new BizException(ResultCode.MODEL_NOT_FOUND);
 
-        ModelProviderAdapter adapter = providerFactory.get((String) model.get("provider_code"));
+        String providerCode = (String) model.get("provider_code");
+        ModelProviderAdapter adapter = providerFactory.get(providerCode);
         String endpoint = (String) model.get("base_url");
-        String apiKey   = (String) model.get("api_key");
+        // V5.18: 优先用环境变量 key (支持多 key 轮询), DB api_key 作为兜底
+        String dbApiKey = (String) model.get("api_key");
+        String apiKey = resolveApiKey(providerCode, dbApiKey);
 
-        ChatResponse resp = adapter.chat(endpoint, apiKey, req);
-        long tokens = (resp.getTotalTokens() != null && resp.getTotalTokens() > 0)
-                ? resp.getTotalTokens() : 1;
-        quotaService.record(userId, toLong(model.get("model_id")), tokens);
-        return resp;
+        try {
+            ChatResponse resp = adapter.chat(endpoint, apiKey, req);
+            apiKeyService.reportSuccess(providerCode, apiKey);
+            long tokens = (resp.getTotalTokens() != null && resp.getTotalTokens() > 0)
+                    ? resp.getTotalTokens() : 1;
+            quotaService.record(userId, toLong(model.get("model_id")), tokens);
+            return resp;
+        } catch (Exception e) {
+            apiKeyService.reportFailure(providerCode, apiKey);
+            throw e;
+        }
+    }
+
+    /**
+     * V5.18: 解析 API key — 优先环境变量 (支持轮询), DB 兜底
+     */
+    private String resolveApiKey(String providerCode, String dbApiKey) {
+        String envKey = apiKeyService.nextKey(providerCode);
+        if (envKey != null && !envKey.isBlank()) return envKey;
+        return dbApiKey;
     }
 
     @Override
@@ -83,9 +103,11 @@ public class ModelServiceImpl implements ModelService {
         Map<String, Object> model = modelConfigMapper.selectByCode(req.getModel());
         if (model == null) return Flux.error(new BizException(ResultCode.MODEL_NOT_FOUND));
 
-        ModelProviderAdapter adapter = providerFactory.get((String) model.get("provider_code"));
+        String providerCode = (String) model.get("provider_code");
+        ModelProviderAdapter adapter = providerFactory.get(providerCode);
         String endpoint = (String) model.get("base_url");
-        String apiKey   = (String) model.get("api_key");
+        String dbApiKey = (String) model.get("api_key");
+        String apiKey = resolveApiKey(providerCode, dbApiKey);
         return adapter.stream(endpoint, apiKey, req);
     }
 
