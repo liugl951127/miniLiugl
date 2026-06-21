@@ -473,3 +473,30 @@
 - scripts: 1 modified (deploy-linux.sh, 581→834 行)
 - docs: 1 new (DEPLOY-GUIDE.md)
 - config: 1 modified (CHANGELOG.md)
+
+## [V5.13] - 2026-06-21 — 架构总览文档完善 (README + ARCHITECTURE)
+
+### Added
+- **README.md 全面升级** (V5.12 反映):
+  - 标题行: 13 个微服务 / Spring Cloud Gateway / Nacos / Prometheus / TraceId
+  - 架构图重画: 浏览器 → nginx :3000 → gateway :8080 → Nacos → 12 微服务 → MariaDB/Redis
+  - 新增"V5 架构升级"章节 (8 个版本 + commit hash)
+  - 启动方式更新: 推荐 deploy-linux.sh + e2e 健康检查
+  - 总结表加 V5 关键创新 7 条
+- **docs/ARCHITECTURE.md** (11KB, 新文档):
+  - 一句话定位 + 顶层视图
+  - 分层架构: Client/Edge/Gateway/Microservice/Infrastructure
+  - 13 微服务职责矩阵 (端口/表/职责/依赖)
+  - 3 大数据流: HTTP / SSE / Agent 工具循环
+  - 9 个关键技术决策 (V5.5-V5.12)
+  - 可观测性分层: HTTP/业务/JVM + 5 条告警规则
+  - 部署架构 + 16 个 systemd 清单
+  - 4 条扩展路径 (新微服务/告警/Provider/水平扩展)
+  - 故障转移矩阵
+  - 技术选型对照表
+  - 演进路线 V5 → V6
+
+### Files (3)
+- docs: 1 new (ARCHITECTURE.md, 11KB)
+- root: 1 modified (README.md)
+- config: 1 modified (CHANGELOG.md)

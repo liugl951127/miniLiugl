@@ -1,8 +1,8 @@
 # MiniMax Platform — 企业级大模型平台
 
-> **14 天极限构建 · 11 个微服务 · 191 个 Java 文件 · 11,454 行代码 · 125 个测试用例 · 0 失败**
+> **V5.12 架构升级** · 13 个微服务 · Spring Cloud Gateway · Nacos 服务发现 · Prometheus 全链路监控 · TraceId 全链路追踪 · 11,454+ 行代码
 >
-> Java 17 + Spring Boot 3 + Vue 3 + Element Plus + 大模型 + 向量库 + RAG + Function Calling + 多模态 + 监控 + 调优
+> Java 17 + Spring Boot 3 + Spring Cloud Gateway + Nacos + Vue 3 + Element Plus + 大模型 + 向量库 + RAG + Function Calling + 多模态 + 监控 + 调优 + 可观测性
 
 ---
 
@@ -23,22 +23,51 @@
 
 ---
 
-## 🏗️ 系统架构
+## 🏗️ 系统架构 (V5.12)
 
 ```
-┌──────────────────────────────────────────────────────────────────────────┐
-│                       Frontend  (Vue 3 + Element Plus)                  │
-│  Markdown · 代码高亮 · 拖拽上传 · 流式打字机 · Admin Dashboard          │
-└────────────────────────┬─────────────────────────────────────────────────┘
-                         │  /api/v1/*
-┌────────────────────────▼─────────────────────────────────────────────────┐
-│                  Gateway  :8080  (反向代理 / 限流)                       │
-└──┬──────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┬─────────┘
-   │      │      │      │      │      │      │      │      │      │
-   ▼      ▼      ▼      ▼      ▼      ▼      ▼      ▼      ▼      ▼
- auth  chat  memory  model   rag   func   admin  multi  moni  common
-8081  8082  8084   8083  8085  8086  8087   8088   8089   shared
-                                                              + gateway
+                        ┌────────────────────────┐
+                        │  Browser / Mobile H5   │
+                        └──────────┬─────────────┘
+                                   │ :3000
+                        ┌──────────▼─────────────┐
+                        │  nginx (V5.8 优化)     │
+                        │  gzip / br / sec hdr   │
+                        └──────────┬─────────────┘
+                                   │ /api/**
+                        ┌──────────▼─────────────┐
+                        │ Spring Cloud Gateway   │
+                        │ :8080 (WebFlux)        │
+                        │ - JwtAuthFilter        │
+                        │ - Resilience4j         │
+                        │ - TraceId (V5.8)       │
+                        │ - 限流 (Redis 令牌桶)  │
+                        └──────────┬─────────────┘
+                                   │ lb://minimax-*
+                        ┌──────────▼─────────────┐
+                        │ Nacos 2.3.2  (V5.7)    │
+                        │ :8848 服务发现          │
+                        └──────────┬─────────────┘
+                                   │
+   ┌─────┬─────┬─────┬─────┬─────┬─┴────┬─────┬─────┬─────┬─────┬─────┐
+   ▼     ▼     ▼     ▼     ▼     ▼      ▼     ▼     ▼     ▼     ▼     ▼
+  auth  chat model memory rag function admin multi monitor agent prompt ws
+  8081  8082 8083  8084  8085 8086   8087  8088 8089  8090  8091 8095
+   │     │    │     │     │     │       │     │    │     │     │     │
+   └─────┴────┴─────┴─────┴─────┴───────┴─────┴────┴─────┴─────┴─────┘
+                                   │
+                        ┌──────────▼──────────────┐
+                        │ MariaDB / Redis / Nacos │
+                        │ 3306    / 6379 / 8848   │
+                        └─────────────────────────┘
+```
+
+**核心组件 (V5.5-V5.12)**:
+- **Spring Cloud Gateway** (WebFlux): 13 路由 + 网关级 JWT + Resilience4j 降级 + TraceId
+- **Nacos 2.3.2**: 服务发现 + 配置中心 (12 微服务 + gateway 自动注册)
+- **nginx**: :3000 统一入口 + gzip/brotli 压缩 + security headers
+- **Prometheus**: 13 服务 `/actuator/prometheus` + MetricsFilter 自动采点
+- **WebSocket**: 双重路由 (`/ws/notifications` 直连 auth, 其他走 gateway)
 ```
 
 | 模块 | 端口 | 端点数 | 测试 | 核心能力 |
@@ -58,57 +87,54 @@
 
 ---
 
-## 🚀 5 分钟快速启动
+## 🚀 5 分钟快速启动 (V5.12)
 
-### 前置
-- Docker 20.10+ (推荐) 或 JDK 17 + Maven 3.8+
-
-### 方式 A: Docker Compose (推荐)
+### 方式 A: 一键部署 (生产, 推荐)
 ```bash
 git clone https://github.com/liugl951127/miniLiugl.git
 cd miniLiugl
-
-# 启动基础设施 + 应用
-docker compose up -d
-
-# 访问
-# 前端:  http://localhost
-# API:   http://localhost:8080
-# 监控:  http://localhost:8089/actuator/prometheus
+sudo ./scripts/deploy-linux.sh install    # 装 Java/Maven/Node/MariaDB/Redis/Nacos + 编译 + 启 systemd
+sudo ./scripts/deploy-linux.sh e2e        # 一键健康检查 13 服务
 ```
 
-默认账号: `admin / admin@123`
+**自动部署**: Nacos → Gateway → 12 微服务 → nginx, 端口 3000 统一入口
 
-### 方式 B: 本地 jar (开发模式)
+### 方式 B: Docker Compose (开发)
 ```bash
-# 装 JDK 17 + Maven
-# Ubuntu: apt install openjdk-17-jdk maven
-# Mac:    brew install openjdk@17 maven
+docker compose up -d
+# 前端:  http://localhost:3000
+# API:   http://localhost:3000/api/v1/<module>/...
+# Nacos: http://localhost:8848/nacos  (nacos/nacos)
+# API 文档: http://localhost:3000/api-docs
+# 监控:  http://localhost:3000/admin/metrics
+```
 
+默认账号: `adminLiugl / Liugl@2026`
+
+### 方式 C: 本地 jar (开发调试)
+```bash
 cd backend
 mvn -B clean install -DskipTests
-java -jar minimax-auth/target/minimax-auth.jar --spring.profiles.active=test --server.port=8081
-# 重复启其他 6 个服务...
+# 启 Nacos + 12 微服务 + gateway
+java -jar minimax-nacos/target/...     # Nacos (用 docker 跑更简单)
+java -jar minimax-gateway/target/...  # Gateway :8080
+java -jar minimax-auth/target/...     # Auth :8081
+# ... 其他 11 个
 
-# 启动前端
+# 前端
 cd ../frontend
 npm install && npm run dev
 # http://localhost:5173
 ```
 
-### 方式 C: 一键部署 (生产)
-参考 [`deploy/`](deploy/) 目录:
-- `deploy/windows/deploy-windows.bat` — Windows 单机
-- `deploy/linux-single/deploy-linux-single.sh` — Linux 单机
-- `deploy/linux-cluster/deploy-linux-cluster.sh` — K8s 集群
-
-```bash
-# Linux 单机
-bash deploy/linux-single/deploy-linux-single.sh docker
-
-# K8s 集群
-bash deploy/linux-cluster/deploy-linux-cluster.sh k8s minimax
-```
+**架构入口** (V5.5-V5.12):
+| 入口 | URL | 用途 |
+|------|-----|------|
+| 前端 | http://localhost:3000 | 统一入口 (V5.8 优化) |
+| API | http://localhost:3000/api/v1/... | 走 gateway (lb://minimax-*) |
+| Nacos | http://localhost:8848/nacos | 服务发现 + 配置 |
+| API 文档 | http://localhost:3000/api-docs | 13 服务聚合 (V5.11) |
+| 监控 | http://localhost:3000/admin/metrics | Prometheus 数据 (V5.10) |
 
 ---
 
@@ -125,6 +151,25 @@ mvn -B test
 bash scripts/benchmark.sh http://localhost:8081 /api/v1/auth/health 50 1000
 # 输出: QPS / p50 / p95 / p99
 ```
+
+---
+
+## 🆕 V5 架构升级 (2026-06-21)
+
+V5 系列 8 个版本聚焦**生产级架构能力**:
+
+| 版本 | 关键能力 | 提交 |
+|------|---------|------|
+| **V5.5** | Spring Cloud Gateway (WebFlux) + 13 路由 + JwtAuthFilter | `2d3c9e7` |
+| **V5.6** | Dashboard 真实数据 + KG ECharts + 监控面板 | `fd14fdf` |
+| **V5.7** | Nacos 服务发现 + Resilience4j 熔断降级 + lb:// | `f91a70a` |
+| **V5.8** | TraceId 全链路追踪 + 智能分包 + nginx gzip/br | `c49ec80` |
+| **V5.9** | Dashboard 真实图表 + 告警规则 CRUD UI + WS 精确分流 | `97f73b7` |
+| **V5.10** | Prometheus 全链路监控 + MetricsFilter + BaseController | `c5d93fd` |
+| **V5.11** | API 文档聚合中心 (13 服务) + knife4j 统一配置 | `e9db693` |
+| **V5.12** | 部署脚本集成 Nacos + Gateway + E2E 健康检查 | `5a06932` |
+
+**V5 累计**: +5,400 行 / -1,200 行, 12 个新文档, 16 个 systemd 服务
 
 ---
 
@@ -278,23 +323,36 @@ MIT
 
 ---
 
-## 🏆 14 天总结
+## 🏆 总结 (Day 1-14 + V5.5-V5.12)
 
 | 指标 | 值 |
 |------|---|
-| 后端模块 | 11 |
-| Java 文件 | 191 |
-| Java 行数 | 11,454 |
-| SQL 文件 | 8 |
-| SQL 行数 | 963 |
-| YAML/XML | 2,500+ |
+| **后端模块** | **13** (V5.5 加 gateway) |
+| **微服务** | **12 + gateway + common** |
+| Java 文件 | 191+ |
+| Java 行数 | 11,454+ |
+| SQL 文件 | 9 (含 20_notification.sql) |
+| SQL 行数 | 963+ |
+| YAML/XML | 2,800+ |
 | 单元/集成测试 | 125 (0 失败) |
-| HTTP 端点 | 92+ |
-| 数据表 (MySQL) | 18+ |
-| 部署脚本 | 4 (Win/Linux-Single/Linux-Cluster/DB-Init) |
-| Dockerfiles | 6 |
-| K8s manifests | 10 |
-| 报告 | 14 份 (Day 1-14) |
-| Git commits | 14+ |
+| HTTP 端点 | 120+ |
+| 数据表 (MySQL) | 41+ (含 wechat/oauth/notification/alert) |
+| systemd 服务 | 16 (含 nacos/gateway) |
+| 文档 | 16 份 (Day 1-14 + V5.5-V5.12 升级) |
+| 部署脚本 | 3 (deploy-linux.sh + docker-compose + windows) |
+| Git commits | 30+ (含 V5 系列 8 个) |
+| **可观测性** | **Prometheus + TraceId + 告警规则 + Dashboard** |
+| **服务发现** | **Nacos 2.3.2** |
+| **API 网关** | **Spring Cloud Gateway (WebFlux)** |
+| **API 文档** | **knife4j 聚合 (V5.11)** |
+
+**V5 关键创新**:
+- 网关级 JWT 鉴权 (所有路由统一拦截, 业务模块零感知)
+- lb:// 服务发现 (业务模块无需硬编码 URL, 扩缩容自动发现)
+- TraceId 全链路 (gateway 注入 → 日志/响应头 → 前端 5xx 错误带 traceId)
+- Prometheus 自动采点 (13 服务统一指标 + MetricsFilter URI 归一化)
+- 告警规则 CRUD (UI 弹窗编辑阈值/服务/通知渠道, 5 条预置规则)
+- WebSocket 精确分流 (`/ws/notifications` 直连 auth 绕过 gateway)
+- 部署一键化 (`./deploy-linux.sh install` + `./deploy-linux.sh e2e`)
 
 **这是一个完整可投产的企业级大模型平台。**
