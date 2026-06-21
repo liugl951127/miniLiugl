@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniMax API 文档中心 (V5.11)</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🚀%3C/text%3E%3C/svg%3E" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f5f7fa; }
+    .header {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: #fff;
+      padding: 12px 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.1);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header h1 { display: inline-block; margin: 0; font-size: 18px; font-weight: 600; }
+    .header .meta { float: right; font-size: 12px; opacity: .9; }
+    .header .meta a { color: #fff; text-decoration: none; margin-left: 12px; padding: 4px 10px; background: rgba(255,255,255,.15); border-radius: 4px; }
+    .header .meta a:hover { background: rgba(255,255,255,.25); }
+    .tabs {
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 0 12px;
+      overflow-x: auto;
+      white-space: nowrap;
+      position: sticky;
+      top: 48px;
+      z-index: 99;
+    }
+    .tab {
+      display: inline-block;
+      padding: 10px 16px;
+      font-size: 13px;
+      color: #6b7280;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all .2s;
+      user-select: none;
+    }
+    .tab:hover { color: #6366f1; }
+    .tab.active { color: #6366f1; border-bottom-color: #6366f1; font-weight: 500; }
+    .tab .count { font-size: 11px; padding: 1px 6px; background: #e0e7ff; color: #4f46e5; border-radius: 8px; margin-left: 4px; }
+    .toolbar {
+      background: #fff;
+      padding: 8px 16px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .toolbar input {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 12px;
+      outline: none;
+    }
+    .toolbar input:focus { border-color: #6366f1; }
+    .toolbar button {
+      padding: 6px 12px;
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .toolbar button:hover { background: #4f46e5; }
+    .toolbar .open-new { background: #10b981; }
+    .toolbar .open-new:hover { background: #059669; }
+    iframe {
+      width: 100%;
+      height: calc(100vh - 110px);
+      border: none;
+      background: #fff;
+    }
+    .empty {
+      padding: 60px 20px;
+      text-align: center;
+      color: #9ca3af;
+    }
+    .empty code {
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🚀 MiniMax API 文档中心</h1>
+    <div class="meta">
+      <span id="serverInfo">载入中...</span>
+      <a href="/admin" target="_self">← 返回管理后台</a>
+      <a href="/actuator/health" target="_blank">健康检查</a>
+    </div>
+  </div>
+  <div class="tabs" id="tabs">
+    <div class="tab active" data-service="gateway">Gateway (聚合) <span class="count">live</span></div>
+    <div class="tab" data-service="minimax-auth">auth 8081</div>
+    <div class="tab" data-service="minimax-chat">chat 8082</div>
+    <div class="tab" data-service="minimax-model">model 8083</div>
+    <div class="tab" data-service="minimax-memory">memory 8084</div>
+    <div class="tab" data-service="minimax-rag">rag 8085</div>
+    <div class="tab" data-service="minimax-function">function 8086</div>
+    <div class="tab" data-service="minimax-admin">admin 8087</div>
+    <div class="tab" data-service="minimax-multimodal">multimodal 8088</div>
+    <div class="tab" data-service="minimax-monitor">monitor 8089</div>
+    <div class="tab" data-service="minimax-agent">agent 8090</div>
+    <div class="tab" data-service="minimax-prompt">prompt 8091</div>
+    <div class="tab" data-service="minimax-ws">ws 8095</div>
+  </div>
+  <div class="toolbar">
+    <span>当前: <strong id="currentService">Gateway</strong></span>
+    <input id="baseUrl" placeholder="服务 URL (留空使用 gateway 默认)" />
+    <button onclick="reloadIframe()">🔄 刷新</button>
+    <button class="open-new" onclick="openInNew()">↗ 新窗口打开</button>
+  </div>
+  <iframe id="docFrame" src="about:blank"></iframe>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab');
+    const frame = document.getElementById('docFrame');
+    const currentLabel = document.getElementById('currentService');
+    const baseUrlInput = document.getElementById('baseUrl');
+
+    // 默认 baseUrl 推断: 通过 gateway :8080 走 lb:// 转发
+    function defaultBase() {
+      return window.location.origin;
+    }
+
+    function buildUrl(service) {
+      const base = (baseUrlInput.value || defaultBase()).replace(/\/+$/, '');
+      // 通过 nginx :3000 (或 gateway :8080) 转发到具体服务的 knife4j
+      // knife4j 默认路径: /doc.html
+      if (service === 'gateway') {
+        // Gateway 自身也有 knife4j (gateway 模块加了 knife4j 依赖)
+        return `${base}/doc.html`;
+      }
+      // 走 nginx → gateway → lb://minimax-{service}/doc.html
+      return `${base}/api/v1/${service.replace('minimax-', '')}/doc.html`;
+    }
+
+    function activate(tab) {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const service = tab.dataset.service;
+      currentLabel.textContent = tab.textContent.replace(/live/, '').trim();
+      const url = buildUrl(service);
+      frame.src = url;
+      // 持久化
+      try { localStorage.setItem('docs.activeService', service); } catch (e) {}
+    }
+
+    function reloadIframe() {
+      frame.src = frame.src;
+    }
+
+    function openInNew() {
+      window.open(frame.src, '_blank');
+    }
+
+    // 监听 tab 点击
+    tabs.forEach(tab => tab.addEventListener('click', () => activate(tab)));
+
+    // 恢复上次的 tab
+    try {
+      const last = localStorage.getItem('docs.activeService');
+      if (last) {
+        const target = document.querySelector(`.tab[data-service="${last}"]`);
+        if (target) activate(target);
+        else activate(tabs[0]);
+      } else {
+        activate(tabs[0]);
+      }
+    } catch (e) {
+      activate(tabs[0]);
+    }
+
+    // 拉取健康状态显示
+    fetch('/actuator/info').then(r => r.json()).then(d => {
+      const info = d.data || d;
+      document.getElementById('serverInfo').textContent =
+        `${info.application?.name || 'monitor'} v${info.application?.version || '5.11'} · ${new Date().toLocaleString('zh-CN')}`;
+    }).catch(() => {
+      document.getElementById('serverInfo').textContent = new Date().toLocaleString('zh-CN');
+    });
+  </script>
+</body>
+</html>

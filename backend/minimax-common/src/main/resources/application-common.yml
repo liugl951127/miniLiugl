@@ -94,3 +94,20 @@ management:
         enabled: true
         step: 10s  # Prometheus 抓取间隔 (10s)
         descriptions: true
+# ===== V5.11 Swagger / Knife4j 统一配置 (下沉到 common) =====
+# 13 个微服务统一启用, 文档中心通过 /monitor/api-docs 聚合
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+  packages-to-scan: com.minimax
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+    enable-version: true
+    enable-swagger-models: true
+    swagger-model-name: 实体类列表

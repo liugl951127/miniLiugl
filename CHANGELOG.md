@@ -420,3 +420,29 @@
 - frontend: 2 files (views/admin/Metrics.vue + router/index.js)
 - docs: 1 file (METRICS-GUIDE.md)
 - config: 1 file (CHANGELOG.md)
+
+## [V5.11] - 2026-06-21 — API 文档聚合中心 + knife4j 统一配置下沉重构
+
+### Added
+- **API 文档聚合中心** (`/api-docs`):
+  - 新增 `static/api-docs.html` (7KB) — 13 服务 tab 切换 + iframe 嵌入
+  - 新增 `ApiDocsController` (`/monitor/api-docs` → 静态资源)
+  - 入口: `/api-docs` / `/doc.html` → 302 重定向到 monitor 聚合页
+  - 单服务直访: `/api/v1/{module}/doc.html` (走 gateway lb:// 转发)
+- **knife4j 统一配置下沉重构**:
+  - 10 个业务 yml 的 knife4j/springdoc 重复块全部清理
+  - 配置统一在 `application-common.yml` (V5.11 顺手修潜在 DuplicateKeyException)
+  - knife4j 中文 UI + 实体类列表 + 多版本切换
+
+### Changed
+- `scripts/nginx-minimax-3000.conf` 加 3 个 location (302 重定向)
+- `application-common.yml` 加 springdoc + knife4j 块 (13 模块自动继承)
+
+### Docs
+- `docs/API-DOCS-GUIDE.md` (3.6KB): 入口/架构/文件清单/PromQL
+
+### Files (16)
+- backend: 5 new (ApiDocsController + static/api-docs.html + common yml 增量 + 10 yml 去重)
+- frontend: 0
+- docs: 1 new (API-DOCS-GUIDE.md)
+- config: 1 modified (nginx-minimax-3000.conf)

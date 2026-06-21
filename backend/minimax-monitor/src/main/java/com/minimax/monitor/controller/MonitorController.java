@@ -216,7 +216,8 @@ public class MonitorController {
         r.put("port", 8089);
         r.put("endpoints", java.util.List.of(
                 "GET /monitor/health", "GET /monitor/metrics", "GET /monitor/alerts",
-                "GET /actuator/prometheus", "GET /monitor/forward-prometheus"
+                "GET /actuator/prometheus", "GET /monitor/forward-prometheus",
+                "GET /monitor/api-docs"  // V5.11: API 文档聚合
         ));
         return Result.ok(r);
     }

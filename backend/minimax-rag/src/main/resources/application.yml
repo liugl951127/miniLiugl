@@ -106,13 +106,3 @@ springdoc:
 knife4j:
   enable: true
 
-# =============================================================
-# Knife4j / SpringDoc OpenAPI 配置
-# =============================================================
-springdoc:
-  api-docs:
-    enabled: true
-  swagger-ui:
-    enabled: true
-knife4j:
-  enable: true
