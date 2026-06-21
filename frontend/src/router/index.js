@@ -104,6 +104,12 @@ const routes = [
             meta: { title: '实时指标 (V5.10)', icon: 'TrendCharts' }
           },
           {
+            path: 'traces',
+            name: 'AdminTraces',
+            component: () => import('@/views/admin/Traces.vue'),
+            meta: { title: '分布式追踪 (V5.14)', icon: 'Connection' }
+          },
+          {
             path: 'monitor',
             name: 'AdminMonitor',
             component: () => import('@/views/monitor/Index.vue'),

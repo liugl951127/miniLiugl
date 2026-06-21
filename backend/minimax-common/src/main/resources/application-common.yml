@@ -111,3 +111,32 @@ knife4j:
     enable-version: true
     enable-swagger-models: true
     swagger-model-name: 实体类列表
+
+# ===== V5.14 OpenTelemetry 分布式追踪 =====
+# Spring Boot OTel Starter 自动配置: HTTP client/server, JDBC, Kafka, RabbitMQ 等
+# 通过 OTLP 协议导出到 Jaeger / Tempo / SigNoz 等后端
+otel:
+  service:
+    name: ${spring.application.name}
+  # 启用常见 instrumentation
+  instrumentation:
+    common:
+      default-enabled: true
+  # 导出器
+  exporter:
+    otlp:
+      protocol: http/protobuf
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}
+  # 资源属性
+  resource:
+    attributes:
+      service.namespace: minimax-platform
+      deployment.environment: ${SPRING_PROFILES_ACTIVE:dev}
+  # 采样率 (生产可降为 0.1)
+  traces:
+    sampler: parentbased_traceidratio
+    sampler.arg: 1.0
+  # 传播器
+  propagation:
+    - tracecontext
+    - baggage

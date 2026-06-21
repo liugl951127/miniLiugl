@@ -40,6 +40,16 @@ public class TraceFilter implements GlobalFilter, Ordered {
         ServerHttpResponse response = exchange.getResponse();
         response.getHeaders().add(TRACE_ID_HEADER, traceId);
 
+        // V5.14: W3C traceparent 头, OpenTelemetry 跨服务追踪
+        // 格式: 00-{traceId-32hex}-{spanId-16hex}-{flags}
+        // 复用 V5.8 的 traceId (16 位), 用 0 填充到 W3C 要求的 32 位
+        final String traceIdPadded = (traceId + "00000000000000000000000000000000").substring(0, 32);
+        final String spanId = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+        final String traceparent = "00-" + traceIdPadded + "-" + spanId + "-01";
+        exchange.getRequest().mutate()
+                .header("traceparent", traceparent)
+                .build();
+
         long startNs = System.nanoTime();
         final String path = exchange.getRequest().getURI().getPath();
         final String method = exchange.getRequest().getMethod() != null ? exchange.getRequest().getMethod().name() : "UNKNOWN";

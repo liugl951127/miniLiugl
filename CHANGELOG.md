@@ -500,3 +500,33 @@
 - docs: 1 new (ARCHITECTURE.md, 11KB)
 - root: 1 modified (README.md)
 - config: 1 modified (CHANGELOG.md)
+
+## [V5.14] - 2026-06-21 — OpenTelemetry 分布式追踪 (从单点 trace 到全链路 span)
+
+### Added
+- **OpenTelemetry 接入** (root pom + common pom):
+  - opentelemetry-bom:1.36.0 + opentelemetry-instrumentation-bom:2.2.0
+  - opentelemetry-spring-boot-starter (auto-config 模式)
+  - opentelemetry-exporter-otlp (OTLP/HTTP 协议)
+- **W3C traceparent 注入** (gateway TraceFilter V5.14 升级):
+  - 32+16 hex 格式, 复用 V5.8 的 16 位 traceId 填充
+  - 13 个微服务自动识别, 创建 child span
+- **零代码 instrumentation** (auto-detect):
+  - HTTP Server/Client, JDBC, Kafka, RabbitMQ, gRPC
+  - Spring WebFlux, Spring Cloud Gateway, @Scheduled
+- **OTLP 配置** (application-common.yml):
+  - 默认 endpoint: http://localhost:4318
+  - W3C tracecontext + baggage 传播器
+  - 采样率 1.0 (dev), 生产建议 0.1
+- **前端 Traces Dashboard** (`/admin/traces`):
+  - 服务名 + Trace ID 搜索
+  - 概览 (Traces / Spans / 平均耗时 / 错误率)
+  - Span 树展开 (层级 + service + 耗时)
+  - 一键跳转 Jaeger UI
+  - 10s 自动刷新
+- **docs/TRACES-GUIDE.md** (6.5KB): 部署/配置/auto-instrumentation/自定义 span
+
+### Files (7)
+- backend: 4 (root pom + common pom + common yml + gateway TraceFilter)
+- frontend: 2 (admin/Traces.vue + router)
+- docs: 1 new (TRACES-GUIDE.md)
