@@ -56,6 +56,12 @@ const routes = [
         meta: { title: 'Agent 流式 (V5.16)', icon: 'VideoPlay' }
       },
       {
+        path: 'agent/multi',
+        name: 'AgentMulti',
+        component: () => import('@/views/agent/Multi.vue'),
+        meta: { title: '多智能体 (V5.17)', icon: 'Connection' }
+      },
+      {
         path: 'notification',
         name: 'Notification',
         component: () => import('@/views/notification/Index.vue'),

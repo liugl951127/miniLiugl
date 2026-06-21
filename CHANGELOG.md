@@ -583,3 +583,36 @@
 - backend: 2 (AgentService + AgentController)
 - frontend: 2 (Stream.vue + router)
 - config: 1 modified (CHANGELOG.md)
+
+## [V5.17] - 2026-06-22 — Multi-Agent 多智能体协作 (Planner + Executor + Critic)
+
+### Added (后端)
+- **MultiAgentService** (14KB, 新):
+  - 3 角色: Planner 规划 / Executor 执行 / Critic 评估
+  - 失败自动重规划 (max 3 轮, Critic 反馈给 Planner)
+  - LLM 直调 (不走工具循环) — Planner/Critic 温度 0.3/0.2
+  - Executor 复用 V5.16 AgentService.run (ReAct + tools)
+- **4 个新端点**:
+  - `POST /agent/multi/run` — 同步多智能体
+  - `POST /agent/multi/stream` — SSE 流式 (10 种事件)
+  - `POST /agent/multi/plan` — 单独 Planner
+  - `POST /agent/multi/critic` — 单独 Critic
+- **SSE 事件类型**: multi-agent-start / planner-start / planner-plan / executor-step / executor-result / critic-eval / critic-result / critic-retry / final / done / error
+- **DTO**: MultiAgentResult + StepRecord + CriticRecord + CriticEval
+
+### Added (前端)
+- **`/agent/multi` 页面** (Multi.vue 12KB):
+  - 流式/同步双模式
+  - 3 角色实时展示 (蓝=Planner, 绿=Executor, 黄=Critic)
+  - Critic 通过/不通过 (绿/红背景高亮)
+  - 失败自动重规划可视化
+  - 原始事件流 JSON 调试
+
+### Docs
+- **docs/MULTI-AGENT-GUIDE.md** (5KB): 架构图/端点/事件类型/角色模型
+
+### Files (5)
+- backend: 2 (MultiAgentService + AgentController)
+- frontend: 2 (Multi.vue + router)
+- docs: 1 new (MULTI-AGENT-GUIDE.md)
+- config: 1 modified (CHANGELOG.md)

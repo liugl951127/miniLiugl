@@ -7,6 +7,7 @@ import com.minimax.agent.entity.Plugin;
 import com.minimax.agent.service.AgentService;
 import com.minimax.agent.service.CollabDbService;
 import com.minimax.agent.service.KnowledgeGraphService;
+import com.minimax.agent.service.MultiAgentService;
 import com.minimax.agent.service.PluginService;
 import com.minimax.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
@@ -125,6 +126,70 @@ public class AgentController {
         List<String> tools = (List<String>) body.get("tools");
         Long sessionId = body.get("sessionId") != null ? ((Number) body.get("sessionId")).longValue() : null;
         return Result.ok(agent.runWithMemory(userId, goal, tools, sessionId));
+    }
+
+    // ---------- V5.17: Multi-Agent 协作 ----------
+
+    /**
+     * V5.17: 同步多智能体协作 (Planner + Executor + Critic).
+     * 默认 critic 最多 3 轮重试.
+     */
+    @Operation(summary = "V5.17: 多智能体协作 (Planner + Executor + Critic)")
+    @PostMapping("/multi/run")
+    public Result<MultiAgentService.MultiAgentResult> multiRun(@RequestBody Map<String, Object> body) {
+        Long userId = ((Number) body.get("userId")).longValue();
+        String goal = (String) body.get("goal");
+        @SuppressWarnings("unchecked")
+        List<String> tools = (List<String>) body.get("tools");
+        return Result.ok(multiAgent.run(userId, goal, tools));
+    }
+
+    /**
+     * V5.17: 流式多智能体 (SSE, 实时推送每个角色决策).
+     */
+    @Operation(summary = "V5.17: 流式多智能体 (SSE 实时推送 3 角色协作过程)")
+    @PostMapping(value = "/multi/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter multiStream(@RequestBody Map<String, Object> body) {
+        Long userId = ((Number) body.get("userId")).longValue();
+        String goal = (String) body.get("goal");
+        @SuppressWarnings("unchecked")
+        List<String> tools = (List<String>) body.get("tools");
+        return multiAgent.runStream(userId, goal, tools);
+    }
+
+    /**
+     * V5.17: 单独调用 Planner (复用 multi-agent 的 planner prompt).
+     */
+    @Operation(summary = "V5.17: 单独 Planner (LLM 拆解目标)")
+    @PostMapping("/multi/plan")
+    public Result<List<String>> multiPlan(@RequestBody Map<String, Object> body) {
+        Long userId = body.get("userId") != null ? ((Number) body.get("userId")).longValue() : null;
+        String goal = (String) body.get("goal");
+        String feedback = (String) body.get("feedback");
+        // 复用 AgentService.plan (它只读 planSteps, 没有 feedback)
+        // 多智能体版: feedback 透传给 planner
+        // 这里直接用 multiAgent 内部, 临时反射调用
+        List<String> steps = multiAgent.planSteps(goal, feedback);
+        return Result.ok(steps);
+    }
+
+    /**
+     * V5.17: 单独调用 Critic (评估执行结果).
+     */
+    @Operation(summary = "V5.17: 单独 Critic (评估 plan+results)")
+    @PostMapping("/multi/critic")
+    public Result<Map<String, Object>> multiCritic(@RequestBody Map<String, Object> body) {
+        String goal = (String) body.get("goal");
+        @SuppressWarnings("unchecked")
+        List<String> plan = (List<String>) body.get("plan");
+        String results = (String) body.get("results");
+        MultiAgentService.CriticEval eval = multiAgent.evaluate(goal, plan, results);
+        Map<String, Object> resp = new java.util.LinkedHashMap<>();
+        resp.put("passed", eval.passed());
+        resp.put("score", eval.score());
+        resp.put("feedback", eval.feedback());
+        resp.put("improvedAnswer", eval.improvedAnswer());
+        return Result.ok(resp);
     }
 
     // ---------- 知识图谱 ----------
