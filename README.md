@@ -188,7 +188,8 @@ V5 系列 8 个版本聚焦**生产级架构能力**:
 | **V5.24** | 前端 5 placeholder 补完 + Provider/Leaderboard 管理页 | `6034984` |
 | **V5.25** | 删除 deploy-linux.sh (旧版) + 文档引用清理 | `d1c1866` |
 | **V5.26** | CentOS 专用部署脚本 (install-middleware + deploy-centos) | `a6db04c` |
-| **V5.27** | MariaDB 迁移到 MySQL 8.0 (docker-compose + 3 脚本 + CI + 15 文档) | `pending` |
+| **V5.27** | MariaDB 迁移到 MySQL 8.0 (docker-compose + 3 脚本 + CI + 15 文档) | `1a788fb` |
+| **V5.28** | **纯 Docker 全栈部署** (18 service: 中间件 + 13 微服务 + nginx 一键启) | `pending` |
 
 **V5 累计**: +11,000 行 / -4,200 行, 21 个新文档, 13 个 systemd 服务, **5 个 CI Job 自动验证**, **前端 45 个页面全交付**, **CentOS 专用部署脚本**
 
@@ -239,6 +240,41 @@ sudo ./deploy-centos.sh install
 **check 命令**: 28/28 通过 (4 个新加验证项)
 
 **总量**: +2030 行 (2 个脚本 + 1 个文档)
+
+---
+
+## 🐳 V5.28 纯 Docker 全栈部署 (本期重点)
+
+全项目彻底 Docker 化, **18 个 service 一行启动** (中间件 + 13 微服务 + gateway + nginx ):
+
+| 类别 | Service | 镜像 | 端口 |
+|------|---------|------|------|
+| **中间件** | mysql | `mysql:8.0` | 3306 |
+| | redis | `redis:7.2-alpine` | 6379 |
+| | nacos | `nacos/nacos-server:v2.3.2` | 8848 |
+| **Gateway** | gateway | 自构建 (backend/Dockerfile) | 8080 |
+| **12 微服务** | auth/chat/model/memory/rag/function/admin/multimodal/monitor/agent/prompt/ws | 自构建 | 8081-8091, 8095 |
+| **前端** | nginx | `nginx:1.25-alpine` | 3000 |
+| **可选** | adminer | `adminer:4.8.1` | 8082 (profile=tools) |
+
+**一行安装**:
+```bash
+sudo ./scripts/deploy-minimax.sh install    # 构建镜像 + 启动全部 (5-10 分钟首次)
+sudo ./scripts/deploy-minimax.sh status     # 查看状态
+sudo ./scripts/deploy-minimax.sh test       # 19 项 E2E
+sudo ./scripts/deploy-minimax.sh logs auth  # 查看服务日志
+```
+
+**服务连接** (Docker 网络 DNS):
+- 微服务 → MySQL: `mysql:3306`
+- 微服务 → Redis: `redis:6379`
+- 微服务 → Nacos: `nacos:8848`
+- 前端 → Gateway: `gateway:8080`
+- 不再需要 systemd / host java
+
+**check 命令**: 30/30 通过 (含 docker-compose + Dockerfile 验证)
+
+**总量**: +17.5KB (重写 docker-compose.yml + Dockerfile + 重写 deploy 脚本)
 
 ---
 

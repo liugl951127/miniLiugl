@@ -1,33 +1,69 @@
 # =============================================================
-# MiniMax Platform - 全栈中间件 Docker Compose (V5.20)
+# MiniMax Platform - 全栈 Docker Compose (V5.28)
 #
-# 一行启动所有中间件:
-#   docker compose up -d                # 必选 (MySQL + Redis + Nacos)
-#   docker compose --profile monitoring up -d   # 可选 (Prometheus + Grafana)
-#   docker compose --profile tracing up -d      # 可选 (Jaeger + OTel Collector)
-#   docker compose --profile search up -d       # 可选 (ES + Kibana)
+# 一行启动所有服务 (中间件 + 13 微服务 + nginx):
+#   docker compose up -d                 # 启动全部
+#   docker compose ps                    # 查看状态
+#   docker compose logs -f auth          # 查看日志
+#   docker compose down                  # 停止
 #
 # 端口分配:
-#   3000  nginx (前端, 需在 host 启动或用 deploy/nginx)
+#   3000  nginx (前端统一入口)
 #   3306  MySQL
 #   6379  Redis
-#   8080  Gateway (Spring Cloud Gateway, 不在 compose, 用 deploy-minimax.sh 或 mvn)
 #   8848  Nacos
-#   9090  Prometheus (可选 profile=monitoring)
-#   3001  Grafana (可选 profile=monitoring)
-#   16686 Jaeger UI (可选 profile=tracing)
-#   9200  Elasticsearch (可选 profile=search)
-#   5601  Kibana (可选 profile=search)
+#   8080  Gateway
+#   8081-8091, 8095  12 个微服务
+#
+# 服务配置 (容器网络 DNS):
+#   MySQL:        mysql:3306
+#   Redis:        redis:6379
+#   Nacos:        nacos:8848
+#   Gateway:      gateway:8080
+#   其他服务:     <service-name>:<port>
 # =============================================================
 
-version: '3.8'
+name: minimax-platform
 
+# =============================================================
+# 公共配置
+# =============================================================
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-restart: &default-restart
+  restart: unless-stopped
+
+# =============================================================
+# 网络
+# =============================================================
+networks:
+  minimax-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# =============================================================
+# 数据卷
+# =============================================================
+volumes:
+  minimax-mysql:
+  minimax-redis:
+  minimax-nacos:
+
+# =============================================================
+# 服务列表
+# =============================================================
 services:
-  # ========== 必选: 核心中间件 ==========
+  # ========== MySQL 8.0 数据库 ==========
   mysql:
     image: mysql:8.0
     container_name: minimax-mysql
-    restart: unless-stopped
+    <<: *default-restart
     environment:
       MYSQL_ROOT_PASSWORD: minimax_root_2024
       MYSQL_DATABASE: minimax_platform
@@ -37,7 +73,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - ./data/mysql:/var/lib/mysql
+      - minimax-mysql:/var/lib/mysql
       - ./sql:/docker-entrypoint-initdb.d
     command:
       - --character-set-server=utf8mb4
@@ -51,184 +87,575 @@ services:
       start_period: 30s
     networks:
       - minimax-net
+    logging: *default-logging
 
+  # ========== Redis 7.2 ==========
   redis:
     image: redis:7.2-alpine
     container_name: minimax-redis
-    restart: unless-stopped
+    <<: *default-restart
+    command:
+      - redis-server
+      - --requirepass
+      - "minimax_redis_2024"
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - "256mb"
+      - --maxmemory-policy
+      - "allkeys-lru"
     ports:
       - "6379:6379"
     volumes:
-      - ./data/redis:/data
-    command:
-      - redis-server
-      - --appendonly
-      - "yes"
-      - --requirepass
-      - "minimax_redis_2024"
-      - --maxmemory
-      - "512mb"
-      - --maxmemory-policy
-      - "allkeys-lru"
+      - minimax-redis:/data
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "minimax_redis_2024", "ping"]
       interval: 10s
-      timeout: 5s
+      timeout: 3s
       retries: 5
     networks:
       - minimax-net
+    logging: *default-logging
 
+  # ========== Nacos 服务发现 ==========
   nacos:
     image: nacos/nacos-server:v2.3.2
     container_name: minimax-nacos
-    restart: unless-stopped
-    ports:
-      - "8848:8848"
-      - "9848:9848"   # gRPC
+    <<: *default-restart
     environment:
       MODE: standalone
       JVM_XMS: 512m
-      JVM_XMX: 1g
-      JVM_XMN: 512m
+      JVM_XMX: 512m
+      JVM_XMN: 256m
       SPRING_DATASOURCE_PLATFORM: mysql
       NACOS_AUTH_ENABLE: "true"
-      NACOS_AUTH_TOKEN: "SecretKey012345678901234567890123456789012345678901234567890123456789"
-      NACOS_AUTH_IDENTITY_KEY: "minimaxKey"
-      NACOS_AUTH_IDENTITY_VALUE: "minimaxSecret"
+      NACOS_AUTH_TOKEN: SecretKey012345678901234567890123456789012345678901234567890123456789
+      NACOS_AUTH_IDENTITY_KEY: minimax
+      NACOS_AUTH_IDENTITY_VALUE: minimax
+      TZ: Asia/Shanghai
+    ports:
+      - "8848:8848"
+      - "9848:9848"
     volumes:
-      - ./data/nacos/logs:/home/nacos/logs
-      - ./data/nacos/data:/home/nacos/data
+      - minimax-nacos:/home/nacos/data
     depends_on:
       mysql:
         condition: service_healthy
     networks:
       - minimax-net
+    logging: *default-logging
 
-  # ========== 可选 profile: 监控 (Prometheus + Grafana) ==========
-  prometheus:
-    image: prom/prometheus:v2.50.0
-    container_name: minimax-prometheus
-    restart: unless-stopped
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./data/prometheus:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-    profiles: ["monitoring"]
-    networks:
-      - minimax-net
-
-  grafana:
-    image: grafana/grafana:10.2.2
-    container_name: minimax-grafana
-    restart: unless-stopped
-    ports:
-      - "3001:3000"   # 避免与 nginx 3000 冲突
+  # ========== Spring Cloud Gateway ==========
+  gateway:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        MODULE: gateway
+    image: minimax-gateway:latest
+    container_name: minimax-gateway
+    <<: *default-restart
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: minimax_grafana_2024
-      GF_INSTALL_PLUGINS: grafana-piechart-panel,grafana-clock-panel
-    volumes:
-      - ./data/grafana:/var/lib/grafana
-      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: prod
+      NACOS_HOST: nacos
+      NACOS_PORT: 8848
+      NACOS_NAMESPACE: public
+    ports:
+      - "8080:8080"
     depends_on:
-      - prometheus
-    profiles: ["monitoring"]
+      nacos:
+        condition: service_started
     networks:
       - minimax-net
+    logging: *default-logging
 
-  # ========== 可选 profile: 分布式追踪 (Jaeger + OTLP) ==========
-  jaeger:
-    image: jaegertracing/all-in-one:1.55
-    container_name: minimax-jaeger
-    restart: unless-stopped
-    ports:
-      - "16686:16686"  # Jaeger UI
-      - "14268:14268"  # Jaeger collector (HTTP)
-      - "4317:4317"    # OTLP gRPC
-      - "4318:4318"    # OTLP HTTP
+  # ========== auth 微服务 (8081) ==========
+  auth:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        MODULE: auth
+    image: minimax-auth:latest
+    container_name: minimax-auth
+    <<: *default-restart
     environment:
-      COLLECTOR_OTLP_ENABLED: "true"
-      SPAN_STORAGE_TYPE: badger
-    volumes:
-      - ./data/jaeger:/badger
-    profiles: ["tracing"]
-    networks:
-      - minimax-net
-
-  # ========== 可选 profile: 搜索 (ES + Kibana) ==========
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
-    container_name: minimax-es
-    restart: unless-stopped
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      SERVER_PORT: 8081
+      NACOS_HOST: nacos
+      NACOS_PORT: 8848
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: minimax_platform
+      MYSQL_USER: minimax
+      MYSQL_PASSWORD: minimax_pass_2024
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: minimax_redis_2024
+      NACOS_USER: nacos
+      NACOS_PASS: nacos
+      NACOS_NS: public
     ports:
-      - "9200:9200"
-    volumes:
-      - ./data/es:/usr/share/elasticsearch/data
-    profiles: ["search"]
-    networks:
-      - minimax-net
-
-  kibana:
-    image: docker.elastic.co/kibana/kibana:8.11.0
-    container_name: minimax-kibana
-    restart: unless-stopped
-    ports:
-      - "5601:5601"
-    environment:
-      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      - "8081:8081"
     depends_on:
-      - elasticsearch
-    profiles: ["search"]
+      nacos:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - minimax-net
+    logging: *default-logging
 
-  # ========== 工具: Adminer (Web DB GUI) ==========
+  # ========== chat 微服务 (8082) ==========
+  chat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        MODULE: chat
+    image: minimax-chat:latest
+    container_name: minimax-chat
+    <<: *default-restart
+    environment:
+      SERVER_PORT: 8082
+      NACOS_HOST: nacos
+      NACOS_PORT: 8848
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: minimax_platform
+      MYSQL_USER: minimax
+      MYSQL_PASSWORD: minimax_pass_2024
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: minimax_redis_2024
+      NACOS_USER: nacos
+      NACOS_PASS: nacos
+      NACOS_NS: public
+    ports:
+      - "8082:8082"
+    depends_on:
+      nacos:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - minimax-net
+    logging: *default-logging
+
+  # ========== model 微服务 (8083) ==========
+  model:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        MODULE: model
+    image: minimax-model:latest
+    container_name: minimax-model
+    <<: *default-restart
+    environment:
+      SERVER_PORT: 8083
+      NACOS_HOST: nacos
+      NACOS_PORT: 8848
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: minimax_platform
+      MYSQL_USER: minimax
+      MYSQL_PASSWORD: minimax_pass_2024
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: minimax_redis_2024
+      NACOS_USER: nacos
+      NACOS_PASS: nacos
+      NACOS_NS: public
+    ports:
+      - "8083:8083"
+    depends_on:
+      nacos:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - minimax-net
+    logging: *default-logging
+
+  # ========== memory 微服务 (8084) ==========
+  memory:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        MODULE: memory
+    image: minimax-memory:latest
+    container_name: minimax-memory
+    <<: *default-restart
+    environment:
+      SERVER_PORT: 8084
+      NACOS_HOST: nacos
+      NACOS_PORT: 8848
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: minimax_platform
+      MYSQL_USER: minimax
+      MYSQL_PASSWORD: minimax_pass_2024
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: minimax_redis_2024
+      NACOS_USER: nacos
+      NACOS_PASS: nacos
+      NACOS_NS: public
+    ports:
+      - "8084:8084"
+    depends_on:
+      nacos:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - minimax-net
+    logging: *default-logging
+
+  # ========== rag 微服务 (8085) ==========
+  rag:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        MODULE: rag
+    image: minimax-rag:latest
+    container_name: minimax-rag
+    <<: *default-restart
+    environment:
+      SERVER_PORT: 8085
+      NACOS_HOST: nacos
+      NACOS_PORT: 8848
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: minimax_platform
+      MYSQL_USER: minimax
+      MYSQL_PASSWORD: minimax_pass_2024
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: minimax_redis_2024
+      NACOS_USER: nacos
+      NACOS_PASS: nacos
+      NACOS_NS: public
+    ports:
+      - "8085:8085"
+    depends_on:
+      nacos:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - minimax-net
+    logging: *default-logging
+
+  # ========== function 微服务 (8086) ==========
+  function:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        MODULE: function
+    image: minimax-function:latest
+    container_name: minimax-function
+    <<: *default-restart
+    environment:
+      SERVER_PORT: 8086
+      NACOS_HOST: nacos
+      NACOS_PORT: 8848
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: minimax_platform
+      MYSQL_USER: minimax
+      MYSQL_PASSWORD: minimax_pass_2024
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: minimax_redis_2024
+      NACOS_USER: nacos
+      NACOS_PASS: nacos
+      NACOS_NS: public
+    ports:
+      - "8086:8086"
+    depends_on:
+      nacos:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - minimax-net
+    logging: *default-logging
+
+  # ========== admin 微服务 (8087) ==========
+  admin:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        MODULE: admin
+    image: minimax-admin:latest
+    container_name: minimax-admin
+    <<: *default-restart
+    environment:
+      SERVER_PORT: 8087
+      NACOS_HOST: nacos
+      NACOS_PORT: 8848
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: minimax_platform
+      MYSQL_USER: minimax
+      MYSQL_PASSWORD: minimax_pass_2024
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: minimax_redis_2024
+      NACOS_USER: nacos
+      NACOS_PASS: nacos
+      NACOS_NS: public
+    ports:
+      - "8087:8087"
+    depends_on:
+      nacos:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - minimax-net
+    logging: *default-logging
+
+  # ========== multimodal 微服务 (8088) ==========
+  multimodal:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        MODULE: multimodal
+    image: minimax-multimodal:latest
+    container_name: minimax-multimodal
+    <<: *default-restart
+    environment:
+      SERVER_PORT: 8088
+      NACOS_HOST: nacos
+      NACOS_PORT: 8848
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: minimax_platform
+      MYSQL_USER: minimax
+      MYSQL_PASSWORD: minimax_pass_2024
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: minimax_redis_2024
+      NACOS_USER: nacos
+      NACOS_PASS: nacos
+      NACOS_NS: public
+    ports:
+      - "8088:8088"
+    depends_on:
+      nacos:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - minimax-net
+    logging: *default-logging
+
+  # ========== monitor 微服务 (8089) ==========
+  monitor:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        MODULE: monitor
+    image: minimax-monitor:latest
+    container_name: minimax-monitor
+    <<: *default-restart
+    environment:
+      SERVER_PORT: 8089
+      NACOS_HOST: nacos
+      NACOS_PORT: 8848
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: minimax_platform
+      MYSQL_USER: minimax
+      MYSQL_PASSWORD: minimax_pass_2024
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: minimax_redis_2024
+      NACOS_USER: nacos
+      NACOS_PASS: nacos
+      NACOS_NS: public
+    ports:
+      - "8089:8089"
+    depends_on:
+      nacos:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - minimax-net
+    logging: *default-logging
+
+  # ========== agent 微服务 (8090) ==========
+  agent:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        MODULE: agent
+    image: minimax-agent:latest
+    container_name: minimax-agent
+    <<: *default-restart
+    environment:
+      SERVER_PORT: 8090
+      NACOS_HOST: nacos
+      NACOS_PORT: 8848
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: minimax_platform
+      MYSQL_USER: minimax
+      MYSQL_PASSWORD: minimax_pass_2024
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: minimax_redis_2024
+      NACOS_USER: nacos
+      NACOS_PASS: nacos
+      NACOS_NS: public
+    ports:
+      - "8090:8090"
+    depends_on:
+      nacos:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - minimax-net
+    logging: *default-logging
+
+  # ========== prompt 微服务 (8091) ==========
+  prompt:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        MODULE: prompt
+    image: minimax-prompt:latest
+    container_name: minimax-prompt
+    <<: *default-restart
+    environment:
+      SERVER_PORT: 8091
+      NACOS_HOST: nacos
+      NACOS_PORT: 8848
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: minimax_platform
+      MYSQL_USER: minimax
+      MYSQL_PASSWORD: minimax_pass_2024
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: minimax_redis_2024
+      NACOS_USER: nacos
+      NACOS_PASS: nacos
+      NACOS_NS: public
+    ports:
+      - "8091:8091"
+    depends_on:
+      nacos:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - minimax-net
+    logging: *default-logging
+
+  # ========== ws 微服务 (8095) ==========
+  ws:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        MODULE: ws
+    image: minimax-ws:latest
+    container_name: minimax-ws
+    <<: *default-restart
+    environment:
+      SERVER_PORT: 8095
+      NACOS_HOST: nacos
+      NACOS_PORT: 8848
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: minimax_platform
+      MYSQL_USER: minimax
+      MYSQL_PASSWORD: minimax_pass_2024
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: minimax_redis_2024
+      NACOS_USER: nacos
+      NACOS_PASS: nacos
+      NACOS_NS: public
+    ports:
+      - "8095:8095"
+    depends_on:
+      nacos:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - minimax-net
+    logging: *default-logging
+
+  # ========== nginx 统一入口 (前端 + 反代) ==========
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: minimax-nginx
+    <<: *default-restart
+    ports:
+      - "3000:80"
+    volumes:
+      - ./scripts/nginx-minimax-3000.conf:/etc/nginx/conf.d/minimax.conf:ro
+      - ./frontend/dist:/usr/share/nginx/html:ro
+    depends_on:
+      - gateway
+    networks:
+      - minimax-net
+    logging: *default-logging
+
+  # ========== Adminer (DB Web GUI, 可选) ==========
   adminer:
-    image: adminer:latest
+    image: adminer:4.8.1
     container_name: minimax-adminer
-    restart: unless-stopped
-    ports:
-      - "8082:8080"
+    <<: *default-restart
     environment:
       ADMINER_DEFAULT_SERVER: mysql
+      TZ: Asia/Shanghai
+    ports:
+      - "8082:8080"
     depends_on:
       - mysql
+    profiles:
+      - tools
     networks:
       - minimax-net
-
-networks:
-  minimax-net:
-    driver: bridge
-
-# =============================================================
-# 用法:
-#   # 1. 启动必选 (MySQL + Redis + Nacos + Adminer)
-#   docker compose up -d
-#
-#   # 2. 启动监控 (Prometheus + Grafana)
-#   docker compose --profile monitoring up -d
-#
-#   # 3. 启动追踪 (Jaeger)
-#   docker compose --profile tracing up -d
-#
-#   # 4. 启动搜索 (ES + Kibana)
-#   docker compose --profile search up -d
-#
-#   # 5. 全部启动
-#   docker compose --profile monitoring --profile tracing --profile search up -d
-#
-#   # 6. 停止
-#   docker compose down
-#
-#   # 7. 完全清理 (含数据)
-#   docker compose down -v
-# =============================================================
+    logging: *default-logging
