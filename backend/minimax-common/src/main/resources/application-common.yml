@@ -50,3 +50,47 @@ logging:
   pattern:
     # V5.8 加 traceId (由 gateway TraceFilter 注入 MDC)
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [traceId=%X{traceId:-}] %logger{36} - %msg%n"
+
+# ===== V5.10 Actuator / Prometheus / Micrometer (各微服务统一) =====
+# 启用 health / metrics / prometheus 端点 (供 Prometheus 抓取 + Grafana 展示)
+management:
+  endpoints:
+    web:
+      exposure:
+        # V5.10: 默认暴露 health/info/metrics/prometheus
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized  # 只对已登录用户暴露详情
+      probes:
+        enabled: true
+    prometheus:
+      enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+    db:
+      enabled: true
+    redis:
+      enabled: true
+    diskspace:
+      enabled: true
+  metrics:
+    tags:
+      # V5.10: 每个微服务的 metrics 自动带 application 标签 (便于 Grafana 按服务分组)
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        minimax.llm.latency: true
+      percentiles:
+        http.server.requests: 0.5, 0.75, 0.95, 0.99
+        minimax.llm.latency: 0.5, 0.75, 0.95, 0.99
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+        step: 10s  # Prometheus 抓取间隔 (10s)
+        descriptions: true

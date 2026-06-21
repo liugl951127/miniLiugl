@@ -386,3 +386,37 @@
 - frontend: 3 files (api/admin.js, api/monitor.js, admin/Dashboard.vue, monitor/Index.vue)
 - scripts: 1 file (nginx-minimax-3000.conf)
 
+
+## [V5.10] - 2026-06-21 — Prometheus 全链路监控 + BaseController 落地
+
+### Added
+- **HTTP 自动指标** (common/MetricsFilter):
+  - `minimax.http.requests.total` Counter (method, uri, status)
+  - `minimax.http.requests.duration` Timer (含 p50/p95/p99 histogram)
+  - `minimax.http.4xx.errors.total` / `minimax.http.5xx.errors.total` Counter
+  - URI 归一化 (防高基数标签): `/api/v1/user/123` → `/api/v1/user/{id}`
+- **Prometheus 端点统一启用** (application-common.yml):
+  - management.endpoints.web.exposure.include: health,info,metrics,prometheus
+  - management.metrics.tags.application = ${spring.application.name} (Grafana 按服务分组)
+  - percentiles-histogram 启用 http.server.requests + minimax.llm.latency
+- **依赖**: spring-boot-starter-actuator + micrometer-registry-prometheus (common pom)
+- **跨服务 Prometheus 转发** (monitor 模块):
+  - ServiceEndpoints: 12 微服务 + gateway URL 解析
+  - `GET /monitor/forward-prometheus?service=minimax-auth` 透传 prometheus 文本
+- **前端 Metrics Dashboard** (`/admin/metrics`):
+  - 服务选择下拉 (12 微服务 + gateway)
+  - 概览卡片 (总请求 / 4xx / 5xx / 平均延迟)
+  - Top 10 高频 URI / Top 10 慢 URI / 状态码饼图 / 耗时 Top 5 柱图
+  - 10s 自动刷新 + 原始 Prometheus 文本折叠
+- **V5.10 BaseController 落地演示**:
+  - ProviderController (minimax-model): 5 个标准 CRUD + 1 个 `/test` 业务专属端点
+  - 模板: 直接使用 mapper + Result + Swagger 注解, 风格与 BaseController 一致
+
+### Docs
+- `docs/METRICS-GUIDE.md` (5.7KB): Prometheus + Grafana 接入指南, PromQL 示例
+
+### Files (10)
+- backend: 6 files (common/MetricsFilter + common/pom + common/yml + monitor/ServiceEndpoints + monitor/Controller + model/ProviderController)
+- frontend: 2 files (views/admin/Metrics.vue + router/index.js)
+- docs: 1 file (METRICS-GUIDE.md)
+- config: 1 file (CHANGELOG.md)

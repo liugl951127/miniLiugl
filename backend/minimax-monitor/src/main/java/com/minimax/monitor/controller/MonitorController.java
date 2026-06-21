@@ -2,6 +2,7 @@ package com.minimax.monitor.controller;
 
 import com.minimax.common.result.Result;
 import com.minimax.monitor.alert.AlertEngine;
+import com.minimax.monitor.client.ServiceEndpoints;
 import com.minimax.monitor.collector.MetricsCollector;
 import com.minimax.monitor.entity.AlertEvent;
 import com.minimax.monitor.entity.AlertRule;
@@ -11,8 +12,16 @@ import com.minimax.monitor.service.SnapshotService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,12 +54,19 @@ import java.util.Map;
 @RestController
 @RequestMapping("/monitor")
 @RequiredArgsConstructor
+@Slf4j
 public class MonitorController {
 
     private final HealthDetailService health;
     private final MetricsCollector collector;
     private final SnapshotService snapshotService;
     private final AlertEngine alert;
+    private final ServiceEndpoints endpoints;
+
+    // V5.10: Java HttpClient 复用 (跨服务调 /actuator/prometheus)
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(5))
+            .build();
 
     // ---------- 健康 ----------
 
@@ -200,8 +216,46 @@ public class MonitorController {
         r.put("port", 8089);
         r.put("endpoints", java.util.List.of(
                 "GET /monitor/health", "GET /monitor/metrics", "GET /monitor/alerts",
-                "GET /actuator/prometheus"
+                "GET /actuator/prometheus", "GET /monitor/forward-prometheus"
         ));
         return Result.ok(r);
+    }
+
+    // ---------- V5.10 Prometheus 转发 ----------
+
+    /**
+     * 跨服务调 /actuator/prometheus 返回文本 (供前端 Metrics Dashboard 使用).
+     * <pre>
+     *   GET /monitor/forward-prometheus?service=minimax-auth
+     *   返回: text/plain (Prometheus 文本格式)
+     * </pre>
+     */
+    @Operation(summary = "转发其他服务的 Prometheus 输出 (V5.10)")
+    @GetMapping(value = "/forward-prometheus", produces = MediaType.TEXT_PLAIN_VALUE)
+    public ResponseEntity<String> forwardPrometheus(@RequestParam("service") String service) {
+        String base = endpoints.resolve(service);
+        if (base == null) {
+            return ResponseEntity.badRequest().body("# unknown service: " + service);
+        }
+        String url = base + "/actuator/prometheus";
+        try {
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(8))
+                    .GET()
+                    .build();
+            HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() == 200) {
+                return ResponseEntity.ok()
+                        .contentType(MediaType.TEXT_PLAIN)
+                        .body(resp.body());
+            }
+            return ResponseEntity.status(resp.statusCode())
+                    .body("# upstream " + service + " status=" + resp.statusCode());
+        } catch (Exception ex) {
+            log.warn("forward prometheus to {} failed: {}", service, ex.getMessage());
+            return ResponseEntity.status(502)
+                    .body("# forward failed: " + service + " - " + ex.getMessage());
+        }
     }
 }

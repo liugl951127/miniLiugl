@@ -98,6 +98,12 @@ const routes = [
             meta: { title: '仪表盘', icon: 'DataLine' }
           },
           {
+            path: 'metrics',
+            name: 'AdminMetrics',
+            component: () => import('@/views/admin/Metrics.vue'),
+            meta: { title: '实时指标 (V5.10)', icon: 'TrendCharts' }
+          },
+          {
             path: 'monitor',
             name: 'AdminMonitor',
             component: () => import('@/views/monitor/Index.vue'),
