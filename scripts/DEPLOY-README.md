@@ -362,3 +362,40 @@ sudo apt remove --purge -y mariadb-server nginx
 - [USER_GUIDE.md](../docs/USER_GUIDE.md) - 用户指南
 - [MODULES.md](../docs/MODULES.md) - 模块清单
 - [WECHAT-GUIDE.md](../docs/WECHAT-GUIDE.md) - 微信扫码登录
+---
+
+# 🆕 V5.21+: 两种部署脚本
+
+V5.21 引入新脚本 `deploy-minimax.sh`, 与 `deploy-linux.sh` 区别:
+
+| 维度 | `deploy-linux.sh` (旧) | `deploy-minimax.sh` (新) |
+|------|----------------------|------------------------|
+| 中间件安装 | apt 装 (需 root) | Docker 一行 / apt 二选一 |
+| 默认模式 | --native | **--docker (一行启动)** |
+| SQL 文件 | 旧 minimax-all.sql 路径 (V5.21 已修) | sql/init-minimax.sql |
+| 启动顺序 | 手动 | 自动 (nacos→gateway→微服务) |
+| 健康检查 | 5 项 | 16 项 |
+| 升级路径 | 旧 (V5.12 之前) | **新 (V5.21 推荐)** |
+
+**用法**:
+
+```bash
+# 方式 A: Docker (推荐, 一行启动所有中间件)
+sudo ./scripts/deploy-minimax.sh install           # 默认 --docker
+sudo ./scripts/deploy-minimax.sh install --docker  # 等价
+sudo ./scripts/deploy-minimax.sh start
+sudo ./scripts/deploy-minimax.sh test
+sudo ./scripts/deploy-minimax.sh status
+
+# 方式 B: Linux apt 原生 (无 Docker)
+sudo ./scripts/deploy-minimax.sh install --native
+# 自动: apt 装 Java/Maven/Node/MariaDB/Redis + 编译 + systemd
+
+# 旧脚本 (V5.12 之前, 仍可用, 已修 SQL 路径)
+sudo ./scripts/deploy-linux.sh install
+```
+
+**注意**:
+- 两个脚本互不依赖, 任选一个
+- 推荐: 新部署用 `deploy-minimax.sh --docker`, 老部署保留 `deploy-linux.sh` 不变
+- 单独 SQL 导入: `mysql -uroot -p < sql/init-minimax.sql`

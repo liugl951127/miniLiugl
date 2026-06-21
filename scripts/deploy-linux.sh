@@ -270,12 +270,12 @@ FLUSH PRIVILEGES;
 EOF
 
   # 导入 SQL
-  if [[ -f "$SRC_DIR/sql/minimax-all.sql" ]]; then
-    log_info "导入 minimax-all.sql..."
-    mysql -uroot -p"${DB_PASS}" < "$SRC_DIR/sql/minimax-all.sql" 2>&1 | tail -3
+  if [[ -f "$SRC_DIR/sql/init-minimax.sql" ]]; then
+    log_info "导入 init-minimax.sql..."
+    mysql -uroot -p"${DB_PASS}" < "$SRC_DIR/sql/init-minimax.sql" 2>&1 | tail -3
     log_info "数据库初始化完成 ✓"
   else
-    log_warn "未找到 sql/minimax-all.sql, 跳过导入"
+    log_warn "未找到 sql/init-minimax.sql, 跳过导入"
   fi
 }
 
