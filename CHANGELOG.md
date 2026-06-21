@@ -673,3 +673,44 @@
 - backend: 2 (BidirectionalStreamHandler + WebSocketConfig)
 - frontend: 2 (chat/Stream.vue + router)
 - config: 1 modified (CHANGELOG.md)
+
+## [V5.20] - 2026-06-22 — Docker Compose 全栈中间件 + PWA 升级 + 后端 i18n
+
+### Added (基础设施)
+- **docker-compose.yml 重写** (200 行, 4 profile 分组):
+  - 必选: MariaDB 10.5 + Redis 7.2 + Nacos 2.3.2 + Adminer
+  - profile=monitoring: Prometheus 2.50 + Grafana 10.2
+  - profile=tracing: Jaeger 1.55 (含 OTLP gRPC/HTTP)
+  - profile=search: Elasticsearch 8.11 + Kibana 8.11
+  - 数据持久化: ./data/ (mariadb/redis/nacos/prometheus/grafana/jaeger/es)
+  - 健康检查: depends_on + healthcheck
+- **一行启动所有中间件**:
+  - `docker compose up -d` (必选)
+  - `docker compose --profile monitoring up -d` (+监控)
+  - `docker compose --profile tracing up -d` (+追踪)
+  - `docker compose --profile search up -d` (+搜索)
+
+### Added (PWA)
+- **frontend/public/sw.js 重写** (78→110 行):
+  - 缓存版本号 (v5.20.0)
+  - 3 种 fetch 策略: API=Network First, 静态=Cache First, 导航=Network First + SPA fallback
+  - 离线降级: API 请求返回 `{code:-1, offline:true}` 503
+  - 后台 sync 监听 + skipWaiting 消息
+
+### Added (后端 i18n)
+- **LocaleConfig.java** (新, 1.5KB):
+  - SessionLocaleResolver 默认 zh_CN
+  - LocaleChangeInterceptor (?lang=en_US 切换)
+  - WebMvcConfigurer 注册
+  - 业务用 LocaleContextHolder.getLocale()
+
+### Docs
+- **docs/INFRA-DOCKER-GUIDE.md** (4.2KB): profile 分组/端口/启动/接入/Troubleshooting
+- **docs/DB-SHARDING-GUIDE.md** (3.4KB): 41 表分库分表策略 + V6.x 计划
+
+### Files (6)
+- infra: 1 modified (docker-compose.yml 125→200 行)
+- backend: 1 new (LocaleConfig)
+- frontend: 1 modified (sw.js 78→110 行)
+- docs: 2 new (INFRA-DOCKER-GUIDE.md + DB-SHARDING-GUIDE.md)
+- config: 1 modified (CHANGELOG.md)
