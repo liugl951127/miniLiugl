@@ -16,7 +16,7 @@
 ## 任务清单
 
 ### 1. SQL 补全
-- [ ] 确认 `sql/17_tenant.sql` 与 `sql/minimax-all.sql` 同步
+- [ ] 确认 `sql/17_tenant.sql` 与 `sql/init-minimax.sql` 同步
 - [ ] 确保 init-sql.sh 包含 17_tenant.sql
 
 ### 2. 前端 API

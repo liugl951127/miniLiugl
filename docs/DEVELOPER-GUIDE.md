@@ -108,7 +108,7 @@ FLUSH PRIVILEGES;
 SQL
 
 # 导入 SQL (41 张表)
-mysql -uroot -p minimax_platform < sql/minimax-all.sql
+mysql -uroot -p minimax_platform < sql/init-minimax.sql
 
 # 验证
 mysql -uminimax -pminimax_pass_2024 -e "SHOW TABLES;" minimax_platform | wc -l

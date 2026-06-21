@@ -171,15 +171,15 @@ location /health            →  "OK"
 - **DB 名**: `minimax_platform`
 - **DB 用户**: `minimax` / `minimax_pass_2024`
 - **表数量**: 38 (含 4 张微信扫码表)
-- **初始化**: `sql/minimax-all.sql` (1258 行)
+- **初始化**: `sql/init-minimax.sql` (1258 行)
 
 ```bash
 # 手动初始化
-mysql -uroot -p"${DB_ROOT_PASS}" < /opt/minimax/src/sql/minimax-all.sql
+mysql -uroot -p"${DB_ROOT_PASS}" < /opt/minimax/src/sql/init-minimax.sql
 
 # 或重置
 mysql -uroot -p"${DB_ROOT_PASS}" -e "DROP DATABASE minimax_platform; CREATE DATABASE minimax_platform DEFAULT CHARACTER SET utf8mb4;"
-mysql -uroot -p"${DB_ROOT_PASS}" < /opt/minimax/src/sql/minimax-all.sql
+mysql -uroot -p"${DB_ROOT_PASS}" < /opt/minimax/src/sql/init-minimax.sql
 ```
 
 ## 🔄 更新流程
