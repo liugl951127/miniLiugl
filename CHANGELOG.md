@@ -714,3 +714,44 @@
 - frontend: 1 modified (sw.js 78→110 行)
 - docs: 2 new (INFRA-DOCKER-GUIDE.md + DB-SHARDING-GUIDE.md)
 - config: 1 modified (CHANGELOG.md)
+
+## [V5.21] - 2026-06-22 — 统一 SQL 脚本 + 一键部署脚本 (清理 15 个分文件)
+
+### Changed (清理 + 整合)
+- **删除 15 个分 SQL 文件** (02-21):
+  - 02_user_auth / 03_chat / 04_model / 07_memory_long / 08_rag /
+    09_function_calling / 10_admin / 12_monitor / 13_optimization /
+    15_v2_features / 16_super_admin / 17_tenant / 19_prompt_template /
+    20_notification / 21_anthropic_gemini
+- **删除 sql/init/ 18 个子文件** (01-22)
+- **统一为单文件**: `sql/init-minimax.sql` (1448 行, 41 张表)
+
+### Added
+- **sql/init-minimax.sql** (单文件, 完整初始化):
+  - 41 张表 + 40 个 INSERT 预置数据
+  - adminLiugl / Liugl@2026 (唯一超级管理员)
+  - 6 个 LLM Provider (openai/minimax/ollama/anthropic/gemini/deepseek)
+  - 10 个 LLM 模型 (gpt-4o / claude-3-5-sonnet / gemini-1.5 等)
+  - 4 类工具 (get_current_time / calculator / http_get / send_email)
+  - 5 条预置告警规则 (CPU / JVM / 磁盘 / LLM 延迟 / 错误率)
+  - 11 个微信扫码 / Unionid / 多租户表
+  - 通知表 (V4.11)
+  - 文件头说明: 用法 / 包含内容 / 预置账号
+  - 软链到 sql/init/ (Docker 兼容)
+
+- **scripts/deploy-minimax.sh** (16KB, 一键脚本):
+  - 9 个子命令: install / start / stop / restart / status / test / backup / update / uninstall
+  - 2 种模式: --docker (默认, 一行启动中间件) / --native (apt 装)
+  - 自动检测 OS (Ubuntu/Debian/CentOS)
+  - 13 微服务 + gateway + nginx 完整 systemd 配置
+  - MariaDB 自动初始化 (含 init-minimax.sql 导入)
+  - Redis/Nacos 自动配置
+  - E2E 健康检查 (15 个服务)
+  - 数据库备份 (含时间戳)
+  - Git pull + 重打包
+  - 完整 uninstall (保留数据)
+
+### Files
+- sql: 删除 33 个分文件, 新增 init-minimax.sql
+- scripts: 新增 deploy-minimax.sh (替换 deploy-linux.sh 作为推荐入口)
+- config: 1 modified (CHANGELOG.md)

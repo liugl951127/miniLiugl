@@ -1,5 +1,27 @@
 -- ============================================================
--- Day 1 - 创建数据库
+-- MiniMax Platform V5.21 - 数据库初始化脚本 (单文件)
+--
+-- 用法:
+--   mysql -uroot -p < sql/init-minimax.sql
+--   或: docker exec -i minimax-mariadb mysql -uroot -pminimax_root_2024 < sql/init-minimax.sql
+--
+-- 包含:
+--   - Day 1: 数据库创建
+--   - Day 2-3: 用户/认证/角色/多租户
+--   - Day 4-5: 模型/Provider/调用日志
+--   - Day 6-7: 短期/长期记忆
+--   - Day 8-9: RAG 知识库 / Function Calling
+--   - Day 10: 管理后台 + 审计
+--   - Day 11-12: 监控 + 告警规则
+--   - Day 13-15: 优化/特性
+--   - V2.0+: 微信扫码/Unionid/QQ/支付宝 OAuth
+--   - V3.0+: 超级管理员 adminLiugl + 多租户
+--   - V4.11: 通知中心
+--   - V5.18: Anthropic Claude + Google Gemini Provider
+--
+-- 预置账号:
+--   adminLiugl / Liugl@2026   (唯一超级管理员)
+--   admin / admin@123           (演示用普通管理员, 需手动执行 INSERT, 见 sql/seed-user.sql)
 -- ============================================================
 CREATE DATABASE IF NOT EXISTS `minimax_platform` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -1379,3 +1401,48 @@ INSERT IGNORE INTO oauth_app_config (platform, app_type, app_id, app_secret, red
 ('alipay', 'web',      'PLACEHOLDER_ALIPAY_WEB',  'PLACEHOLDER_ALIPAY_WEB_SECRET',  'https://api.your-domain.com/auth/oauth/alipay/callback', 0),
 ('alipay', 'h5',       'PLACEHOLDER_ALIPAY_H5',   'PLACEHOLDER_ALIPAY_H5_SECRET',   'https://api.your-domain.com/auth/oauth/alipay/callback', 0),
 ('alipay', 'app',      'PLACEHOLDER_ALIPAY_APP',  'PLACEHOLDER_ALIPAY_APP_SECRET',  '',                                                              0);
+-- ============================================================
+-- V5.18: Anthropic Claude + Google Gemini Provider + 模型
+-- ============================================================
+
+-- 1. 插入 2 个新 provider
+INSERT INTO `model_provider` (`code`,`name`,`base_url`,`api_key`,`protocol`,`enabled`,`sort`,`description`) VALUES
+('anthropic','Anthropic Claude','https://api.anthropic.com',NULL,'anthropic',1,4,'Claude 3.5 Sonnet / Opus / Haiku (Anthropic Messages API)'),
+('gemini','Google Gemini','https://generativelanguage.googleapis.com',NULL,'gemini',1,5,'Gemini 1.5 Pro / Flash (Google Generative Language API)');
+
+-- 2. Anthropic 模型
+INSERT INTO `model_config` (`provider_id`,`model_code`,`display_name`,`max_context`,`max_output`,`input_price`,`output_price`,`supports_vision`,`supports_tools`,`supports_stream`,`enabled`,`sort`,`description`)
+SELECT p.id, 'claude-3-5-sonnet-20241022', 'Claude 3.5 Sonnet', 200000, 8192, 0.003, 0.015, 1, 1, 1, 1, 1, '最新 Sonnet, 强逻辑' FROM model_provider p WHERE p.code='anthropic';
+
+INSERT INTO `model_config` (`provider_id`,`model_code`,`display_name`,`max_context`,`max_output`,`input_price`,`output_price`,`supports_vision`,`supports_tools`,`supports_stream`,`enabled`,`sort`,`description`)
+SELECT p.id, 'claude-3-opus-20240229', 'Claude 3 Opus', 200000, 4096, 0.015, 0.075, 1, 1, 1, 1, 2, 'Opus 强推理' FROM model_provider p WHERE p.code='anthropic';
+
+INSERT INTO `model_config` (`provider_id`,`model_code`,`display_name`,`max_context`,`max_output`,`input_price`,`output_price`,`supports_vision`,`supports_tools`,`supports_stream`,`enabled`,`sort`,`description`)
+SELECT p.id, 'claude-3-haiku-20240307', 'Claude 3 Haiku', 200000, 4096, 0.00025, 0.00125, 0, 1, 1, 1, 3, '快速便宜' FROM model_provider p WHERE p.code='anthropic';
+
+-- 3. Gemini 模型
+INSERT INTO `model_config` (`provider_id`,`model_code`,`display_name`,`max_context`,`max_output`,`input_price`,`output_price`,`supports_vision`,`supports_tools`,`supports_stream`,`enabled`,`sort`,`description`)
+SELECT p.id, 'gemini-1.5-pro', 'Gemini 1.5 Pro', 2000000, 8192, 0.0035, 0.0105, 1, 1, 1, 1, 1, 'Pro, 2M context' FROM model_provider p WHERE p.code='gemini';
+
+INSERT INTO `model_config` (`provider_id`,`model_code`,`display_name`,`max_context`,`max_output`,`input_price`,`output_price`,`supports_vision`,`supports_tools`,`supports_stream`,`enabled`,`sort`,`description`)
+SELECT p.id, 'gemini-1.5-flash', 'Gemini 1.5 Flash', 1000000, 8192, 0.000075, 0.0003, 1, 0, 1, 1, 2, 'Flash, 快速便宜' FROM model_provider p WHERE p.code='gemini';
+
+-- ============================================================
+-- V4.11: Notification 通知表 (V5.21 后补)
+-- ============================================================
+DROP TABLE IF EXISTS `notification`;
+CREATE TABLE `notification` (
+  `id`            BIGINT       NOT NULL AUTO_INCREMENT,
+  `user_id`       BIGINT       NOT NULL                COMMENT '接收用户 ID',
+  `type`          VARCHAR(32)  NOT NULL                COMMENT '类型: SESSION_CREATED / AGENT_COMPLETE / DOC_APPROVED',
+  `title`         VARCHAR(128) NOT NULL                COMMENT '标题',
+  `content`       TEXT         NOT NULL                COMMENT '内容',
+  `link`          VARCHAR(256)          DEFAULT NULL   COMMENT '跳转链接',
+  `is_read`       TINYINT      NOT NULL DEFAULT 0      COMMENT '0 未读 / 1 已读',
+  `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `read_at`       DATETIME              DEFAULT NULL   COMMENT '已读时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_is_read` (`is_read`),
+  KEY `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='实时通知表 (V4.11)';
