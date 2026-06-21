@@ -162,6 +162,33 @@ public class MonitorController {
         return Result.ok(alert.summary());
     }
 
+    // ---------- V5.9 告警规则 CRUD ----------
+
+    @Operation(summary = "全部告警规则 (含禁用, V5.9)")
+    @GetMapping("/alerts/rules/all")
+    public Result<List<AlertRule>> allRules() {
+        return Result.ok(alert.allRules());
+    }
+
+    @Operation(summary = "创建告警规则 (V5.9)")
+    @PostMapping("/alerts/rules")
+    public Result<AlertRule> createRule(@RequestBody AlertRule rule) {
+        return Result.ok(alert.createRule(rule));
+    }
+
+    @Operation(summary = "更新告警规则 (V5.9)")
+    @PutMapping("/alerts/rules/{id}")
+    public Result<AlertRule> updateRule(@PathVariable("id") Long id, @RequestBody AlertRule patch) {
+        return Result.ok(alert.updateRule(id, patch));
+    }
+
+    @Operation(summary = "删除告警规则 (V5.9)")
+    @DeleteMapping("/alerts/rules/{id}")
+    public Result<Void> deleteRule(@PathVariable("id") Long id) {
+        alert.deleteRule(id);
+        return Result.ok();
+    }
+
     // ---------- 服务信息 ----------
 
     @Operation(summary = "服务信息")

@@ -355,3 +355,34 @@
 - 前端 BUILD SUCCESS (含 playground 页面)
 - 真实 API key 验证 (需要 SILICONFLOW_API_KEY / DASHSCOPE_API_KEY / DEEPSEEK_API_KEY)
 
+
+## [V5.9] - 2026-06-21 — Dashboard 真实图表 + 告警规则 CRUD + WebSocket 精确分流
+
+### Added
+- **Dashboard 真实折线图** (admin 模块):
+  - 新增 `countByDay(since, action)` mapper 方法 (MySQL DATE GROUP BY)
+  - 新增 `GET /admin/audit/by-day?days=7&action=user_op` 端点
+  - Dashboard.vue 折线图从 mock `[12, 28, 18, ...]` 改为接 3 条 API 真实数据:
+    - 全部操作 / 用户类 / 工具调用 (各 fetch 一次 by-day)
+- **告警规则 CRUD UI** (monitor 模块, V5.9.2):
+  - 后端 4 个新端点: `GET/POST/PUT/DELETE /monitor/alerts/rules` + `GET /monitor/alerts/rules/all`
+  - AlertEngine 新增 allRules/createRule/updateRule/deleteRule 方法
+  - 前端 monitor/Index.vue 新增告警规则管理卡片 + 编辑弹窗 (含 9 个表单字段: 名称/服务/指标/运算符/阈值/级别/冷却/通知渠道/启用)
+  - 13 个服务选项下拉 (gateway + 12 业务模块)
+  - 支持新建/编辑/删除/刷新
+- **WebSocket 精确分流** (V5.9.3 nginx):
+  - 解决: `@ServerEndpoint` (Jakarta WS) vs WebFlux Gateway 协议不兼容
+  - nginx location 拆分:
+    - `location = /ws/notifications` → 直连 auth:8081 (Jakarta WS 绕过 gateway)
+    - `location /ws/` 和 `location /ws` → gateway :8080 → lb:ws://minimax-ws (Spring WebSocketHandler)
+
+### Changed
+- Dashboard.vue `loadAll()` 增加 `loadTrend()` 并行调用, 新增 `dailyOps/dailyUserOps/dailyToolOps` 3 个 ref
+- monitor.js 新增 5 个 API 函数 (getMonitorAlertRules / create / update / delete / summary)
+- frontend api/admin.js 新增 `getAuditByDay(days, action)` 函数
+
+### Files
+- backend: 5 files (AdminController / AuditService / AdminAuditLogMapper + xml / AlertEngine / MonitorController)
+- frontend: 3 files (api/admin.js, api/monitor.js, admin/Dashboard.vue, monitor/Index.vue)
+- scripts: 1 file (nginx-minimax-3000.conf)
+

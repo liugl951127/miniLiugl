@@ -30,3 +30,7 @@ export const getRecentAudit = (limit = 50) =>
 
 export const getAuditByActor = (actorId, limit = 20) =>
   http.get(`/admin/audit/by-actor/${actorId}?limit=${limit}`)
+
+// V5.9: 按天审计统计 (Dashboard 折线图)
+export const getAuditByDay = (days = 7, action) =>
+  http.get(`/admin/audit/by-day?days=${days}${action ? `&action=${action}` : ''}`)

@@ -22,3 +22,9 @@ export const kgNeighbors = (id) => http.get(`/agent/kg/entities/${id}/neighbors`
 export const kgTwoHop = (id) => http.get(`/agent/kg/entities/${id}/2hop`)
 export const kgPath = (userId, fromId, toId) =>
   http.get('/agent/kg/path', { params: { userId, fromId, toId } })
+// V5.9: 告警规则 CRUD
+export const getMonitorAlertRules = () => http.get('/monitor/alerts/rules')
+export const createMonitorAlertRule = (body) => http.post('/monitor/alerts/rules', body)
+export const updateMonitorAlertRule = (id, body) => http.put(`/monitor/alerts/rules/${id}`, body)
+export const deleteMonitorAlertRule = (id) => http.delete(`/monitor/alerts/rules/${id}`)
+export const getMonitorAlertSummary = () => http.get('/monitor/alerts/summary')

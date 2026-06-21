@@ -405,3 +405,16 @@
 ---
 
 ## Day 18 - 待开始
+
+## V5.9 (2026-06-21) — Dashboard 真实图表 + 告警规则 CRUD + WS 精确分流
+
+- ✅ Dashboard 折线图接 by-day API (admin/audit/by-day, 7天 3条线)
+- ✅ Monitor 告警规则 CRUD UI (新增/编辑/删除 + 13服务下拉)
+- ✅ nginx 拆分 WS: /ws/notifications → auth 直连, /ws/* → gateway
+- ✅ CHANGELOG + 静态体检通过
+
+## V5.5-V5.8 (历史)
+- V5.5: Spring Cloud Gateway (WebFlux) + 12 routes + JwtAuth + 限流 + CORS
+- V5.6: Dashboard 真实数据 + KG ECharts + 监控面板 + yml 清理
+- V5.7: Nacos 服务发现 + Resilience4j + lb:// 转发
+- V5.8: TraceFilter + 智能分包 + nginx gzip/br + http X-Trace-Id

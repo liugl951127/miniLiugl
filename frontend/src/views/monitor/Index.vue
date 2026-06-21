@@ -153,15 +153,105 @@
         </el-card>
       </el-col>
     </el-row>
+
+    <!-- V5.9: 告警规则管理 -->
+    <el-row :gutter="16" class="row" v-if="canEditRules">
+      <el-col :span="24">
+        <el-card>
+          <template #header>
+            <span>⚙️ 告警规则 (V5.9)</span>
+            <el-button-group style="margin-left:12px">
+              <el-button size="small" @click="loadRules">刷新</el-button>
+              <el-button size="small" type="primary" @click="openRuleDialog()">+ 新增规则</el-button>
+            </el-button-group>
+          </template>
+          <el-table :data="rules" stripe size="small" empty-text="暂无规则">
+            <el-table-column prop="id" label="ID" width="60" />
+            <el-table-column prop="name" label="名称" min-width="120" />
+            <el-table-column prop="service" label="服务" width="100" />
+            <el-table-column prop="metricName" label="指标" min-width="100" />
+            <el-table-column label="阈值" width="120">
+              <template #default="s">
+                <code>{{ s.row.operator }} {{ s.row.threshold }}</code>
+              </template>
+            </el-table-column>
+            <el-table-column prop="severity" label="级别" width="90">
+              <template #default="s">
+                <el-tag :type="severityType(s.row.severity)" size="small">{{ s.row.severity }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="cooldownMinutes" label="冷却(分)" width="90" />
+            <el-table-column label="状态" width="80">
+              <template #default="s">
+                <el-tag :type="s.row.enabled ? 'success' : 'info'" size="small">
+                  {{ s.row.enabled ? '启用' : '禁用' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="160">
+              <template #default="s">
+                <el-button size="small" text type="primary" @click="openRuleDialog(s.row)">编辑</el-button>
+                <el-button size="small" text type="danger" @click="removeRule(s.row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- V5.9: 规则编辑弹窗 -->
+    <el-dialog v-model="ruleDialog" :title="ruleForm.id ? '编辑规则' : '新增规则'" width="500px">
+      <el-form :model="ruleForm" label-width="100px" size="default">
+        <el-form-item label="名称"><el-input v-model="ruleForm.name" placeholder="e.g. 高错误率告警" /></el-form-item>
+        <el-form-item label="服务">
+          <el-select v-model="ruleForm.service" placeholder="选择服务" style="width:100%">
+            <el-option v-for="s in serviceOptions" :key="s" :label="s" :value="s" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="指标">
+          <el-input v-model="ruleForm.metricName" placeholder="e.g. http_5xx_total / jvm.memory.used" />
+        </el-form-item>
+        <el-form-item label="运算符">
+          <el-select v-model="ruleForm.operator" style="width:100%">
+            <el-option label="> 大于" value=">" />
+            <el-option label=">= 大于等于" value=">=" />
+            <el-option label="< 小于" value="<" />
+            <el-option label="<= 小于等于" value="<=" />
+            <el-option label="== 等于" value="==" />
+            <el-option label="!= 不等于" value="!=" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="阈值"><el-input-number v-model="ruleForm.threshold" :min="0" :step="0.1" style="width:100%" /></el-form-item>
+        <el-form-item label="级别">
+          <el-select v-model="ruleForm.severity" style="width:100%">
+            <el-option label="critical 严重" value="critical" />
+            <el-option label="warning 警告" value="warning" />
+            <el-option label="info 提示" value="info" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="冷却(分)"><el-input-number v-model="ruleForm.cooldownMinutes" :min="1" :max="1440" style="width:100%" /></el-form-item>
+        <el-form-item label="通知渠道">
+          <el-input v-model="ruleForm.notifyChannel" placeholder="e.g. email,websocket,dingtalk (逗号分隔)" />
+        </el-form-item>
+        <el-form-item label="启用">
+          <el-switch v-model="ruleForm.enabled" :active-value="1" :inactive-value="0" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="ruleDialog = false">取消</el-button>
+        <el-button type="primary" :loading="ruleSaving" @click="saveRule">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { CircleCheck, CircleClose } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
+import { getMonitorAlertRules, createMonitorAlertRule, updateMonitorAlertRule, deleteMonitorAlertRule } from '@/api/monitor'
 
 const API = import.meta.env.VITE_API_BASE || 'http://localhost'
 const token = localStorage.getItem('access_token') || ''
@@ -182,6 +272,22 @@ const jvmInfo = ref<any>(null)
 const dbInfo = ref<any>(null)
 const diskInfo = ref<any>(null)
 const alerts = ref<any[]>([])
+
+// V5.9: 告警规则管理
+const rules = ref<any[]>([])
+const canEditRules = ref(true)  // 是否能编辑 (根据角色控制)
+const ruleDialog = ref(false)
+const ruleSaving = ref(false)
+const ruleForm = reactive<any>({
+  id: null, name: '', service: '', metricName: '',
+  operator: '>', threshold: 0, severity: 'warning',
+  cooldownMinutes: 15, notifyChannel: 'websocket', enabled: 1,
+})
+const serviceOptions = [
+  'minimax-gateway', 'minimax-auth', 'minimax-chat', 'minimax-model',
+  'minimax-memory', 'minimax-rag', 'minimax-function', 'minimax-agent',
+  'minimax-admin', 'minimax-prompt', 'minimax-multimodal', 'minimax-monitor', 'minimax-ws',
+]
 
 function metricLabel(k: string) {
   return ({
@@ -278,7 +384,68 @@ async function loadAlerts() {
 }
 
 async function loadAll() {
-  await Promise.all([loadHealth(), loadMetrics(), loadJvm(), loadDb(), loadDisk(), loadAlerts()])
+  await Promise.all([loadHealth(), loadMetrics(), loadJvm(), loadDb(), loadDisk(), loadAlerts(), loadRules()])
+}
+
+// V5.9: 加载告警规则
+async function loadRules() {
+  try {
+    const { data } = await getMonitorAlertRules()
+    rules.value = data.data || []
+  } catch (_) { rules.value = [] }
+}
+
+// V5.9: 严重程度 → el-tag 类型
+function severityType(s: string) {
+  if (s === 'critical') return 'danger'
+  if (s === 'warning') return 'warning'
+  return 'info'
+}
+
+// V5.9: 打开编辑弹窗 (row 可为 null → 新增)
+function openRuleDialog(row?: any) {
+  if (row) {
+    Object.assign(ruleForm, row)
+  } else {
+    Object.assign(ruleForm, {
+      id: null, name: '', service: 'minimax-gateway', metricName: '',
+      operator: '>', threshold: 0, severity: 'warning',
+      cooldownMinutes: 15, notifyChannel: 'websocket', enabled: 1,
+    })
+  }
+  ruleDialog.value = true
+}
+
+// V5.9: 保存规则
+async function saveRule() {
+  if (!ruleForm.name?.trim()) return ElMessage.warning('请输入名称')
+  if (!ruleForm.metricName?.trim()) return ElMessage.warning('请输入指标名')
+  ruleSaving.value = true
+  try {
+    if (ruleForm.id) {
+      await updateMonitorAlertRule(ruleForm.id, ruleForm)
+      ElMessage.success('规则已更新')
+    } else {
+      await createMonitorAlertRule(ruleForm)
+      ElMessage.success('规则已创建')
+    }
+    ruleDialog.value = false
+    await loadRules()
+  } catch (e: any) {
+    ElMessage.error('保存失败: ' + (e?.response?.data?.msg || e?.message || '未知错误'))
+  } finally {
+    ruleSaving.value = false
+  }
+}
+
+// V5.9: 删除规则 (二次确认)
+async function removeRule(row: any) {
+  try {
+    await ElMessageBox.confirm(`确认删除规则 [${row.name}]?`, '提示', { type: 'warning' })
+    await deleteMonitorAlertRule(row.id)
+    ElMessage.success('已删除')
+    await loadRules()
+  } catch (_) { /* cancel */ }
 }
 
 function toggleAuto(v: boolean) {

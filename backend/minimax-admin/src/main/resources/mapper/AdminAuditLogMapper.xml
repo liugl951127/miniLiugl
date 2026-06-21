@@ -50,4 +50,16 @@
         GROUP BY resource_type
         ORDER BY cnt DESC
     </select>
+
+    <!-- V5.9: 按天统计, 返回 [{day:'2026-06-15', cnt:12}, ...] -->
+    <select id="countByDay" resultType="java.util.LinkedHashMap">
+        SELECT DATE(created_at) AS day, COUNT(*) AS cnt
+        FROM admin_audit_log
+        <where>
+            <if test="since != null and since != ''">created_at &gt;= #{since}</if>
+            <if test="action != null and action != ''">AND action = #{action}</if>
+        </where>
+        GROUP BY DATE(created_at)
+        ORDER BY day ASC
+    </select>
 </mapper>

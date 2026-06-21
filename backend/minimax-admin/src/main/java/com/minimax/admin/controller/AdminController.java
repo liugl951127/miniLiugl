@@ -167,4 +167,21 @@ public class AdminController {
                                                      @RequestParam(defaultValue = "20") int limit) {
         return Result.ok(audit.byActor(actorId, limit));
     }
+
+    /**
+     * V5.9: 按天统计 (近 N 天) — Dashboard 折线图.
+     * <pre>
+     *   GET /admin/audit/by-day?days=7&action=update_rate_limit
+     *   返回: [{day:'2026-06-15', cnt:12}, ...] 按 day 升序
+     * </pre>
+     */
+    @Operation(summary = "按天审计统计 (V5.9 Dashboard 折线图)")
+    @GetMapping("/audit/by-day")
+    public Result<List<Map<String, Object>>> auditByDay(
+            @RequestParam(defaultValue = "7") int days,
+            @RequestParam(required = false) String action) {
+        // 计算 since (N 天前 ISO 时间)
+        java.time.LocalDateTime since = java.time.LocalDateTime.now().minusDays(days);
+        return Result.ok(audit.countByDay(since.toString(), action));
+    }
 }

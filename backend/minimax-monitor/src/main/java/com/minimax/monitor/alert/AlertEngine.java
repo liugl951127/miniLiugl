@@ -170,4 +170,43 @@ public class AlertEngine {
         r.put("resolvedCount", eventMapper.selectByStatus("resolved", 1000).size());
         return r;
     }
+
+    // ── V5.9 规则 CRUD ──────────────────────────────────────────────────
+
+    /** 全部规则 (含禁用) */
+    public List<AlertRule> allRules() {
+        return ruleMapper.selectAll();
+    }
+
+    /** 创建规则 */
+    public AlertRule createRule(AlertRule rule) {
+        if (rule.getEnabled() == null) rule.setEnabled(1);
+        if (rule.getCooldownMinutes() == null) rule.setCooldownMinutes(15);
+        if (rule.getSeverity() == null) rule.setSeverity("warning");
+        ruleMapper.insert(rule);
+        return rule;
+    }
+
+    /** 更新规则 */
+    public AlertRule updateRule(Long id, AlertRule patch) {
+        AlertRule existing = ruleMapper.selectById(id);
+        if (existing == null) throw new IllegalArgumentException("rule not found: " + id);
+        if (patch.getName() != null) existing.setName(patch.getName());
+        if (patch.getDescription() != null) existing.setDescription(patch.getDescription());
+        if (patch.getMetricName() != null) existing.setMetricName(patch.getMetricName());
+        if (patch.getService() != null) existing.setService(patch.getService());
+        if (patch.getOperator() != null) existing.setOperator(patch.getOperator());
+        if (patch.getThreshold() != null) existing.setThreshold(patch.getThreshold());
+        if (patch.getSeverity() != null) existing.setSeverity(patch.getSeverity());
+        if (patch.getEnabled() != null) existing.setEnabled(patch.getEnabled());
+        if (patch.getCooldownMinutes() != null) existing.setCooldownMinutes(patch.getCooldownMinutes());
+        if (patch.getNotifyChannel() != null) existing.setNotifyChannel(patch.getNotifyChannel());
+        ruleMapper.updateById(existing);
+        return existing;
+    }
+
+    /** 软删除 */
+    public void deleteRule(Long id) {
+        ruleMapper.deleteById(id);
+    }
 }

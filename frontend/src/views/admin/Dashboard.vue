@@ -121,7 +121,7 @@ import {
   TrendCharts, PieChart as IconPie,
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
-import { getAdminHealth, getOpsStats, getRecentAudit, getDashboard } from '@/api/admin'
+import { getAdminHealth, getOpsStats, getRecentAudit, getDashboard, getAuditByDay } from '@/api/admin'
 
 use([CanvasRenderer, LineChart, PieChart, TitleComponent, TooltipComponent, LegendComponent, GridComponent])
 
@@ -130,42 +130,68 @@ const stats = ref({ userCount: 0, sessionCount: 0, callCount: 0, toolCount: 0 })
 const auditLogs = ref([])
 const trendData = ref({})
 
-// ECharts 折线图
-const trendOption = computed(() => ({
-  tooltip: { trigger: 'axis' },
-  legend: { bottom: 0, icon: 'circle' },
-  grid: { left: 40, right: 20, top: 20, bottom: 40 },
-  xAxis: {
-    type: 'category',
-    data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
-    axisLine: { lineStyle: { color: '#d1d5db' } },
-  },
-  yAxis: { type: 'value', splitLine: { lineStyle: { color: '#f3f4f6' } } },
-  series: [
-    {
-      name: '用户操作',
-      type: 'line',
-      smooth: true,
-      data: [12, 28, 18, 35, 22, 30, 25],
-      lineStyle: { color: '#6366f1', width: 3 },
-      itemStyle: { color: '#6366f1' },
-      areaStyle: { color: 'rgba(99, 102, 241, 0.1)' },
-      symbol: 'circle',
-      symbolSize: 8,
+// V5.9: 折线图真实数据 (按天审计统计, 7 天)
+const dailyOps = ref([])        // 所有操作按天
+const dailyUserOps = ref([])    // 用户类操作按天
+const dailyToolOps = ref([])    // 工具调用按天
+
+// ECharts 折线图 (V5.9: 接真实 audit by-day API)
+const trendOption = computed(() => {
+  const days = 7
+  // 以 dailyOps 的 day 为基准 (可能不是连续 7 天, 有数据的才有点)
+  const dayLabels = dailyOps.value.length > 0
+    ? dailyOps.value.map(d => d.day || d.DAY)
+    : Array(days).fill('').map((_, i) => `Day ${i + 1}`)
+  const opCounts = dailyOps.value.map(d => d.cnt || d.CNT || 0)
+  const userCounts = dailyUserOps.value.map(d => d.cnt || d.CNT || 0)
+  const toolCounts = dailyToolOps.value.map(d => d.cnt || d.CNT || 0)
+  return {
+    tooltip: { trigger: 'axis' },
+    legend: { bottom: 0, icon: 'circle' },
+    grid: { left: 40, right: 20, top: 20, bottom: 40 },
+    xAxis: {
+      type: 'category',
+      data: dayLabels,
+      axisLine: { lineStyle: { color: '#d1d5db' } },
     },
-    {
-      name: '工具调用',
-      type: 'line',
-      smooth: true,
-      data: [5, 12, 8, 15, 9, 14, 11],
-      lineStyle: { color: '#10b981', width: 3 },
-      itemStyle: { color: '#10b981' },
-      areaStyle: { color: 'rgba(16, 185, 129, 0.1)' },
-      symbol: 'circle',
-      symbolSize: 8,
-    },
-  ],
-}))
+    yAxis: { type: 'value', splitLine: { lineStyle: { color: '#f3f4f6' } } },
+    series: [
+      {
+        name: '所有操作',
+        type: 'line',
+        smooth: true,
+        data: opCounts,
+        lineStyle: { color: '#6366f1', width: 3 },
+        itemStyle: { color: '#6366f1' },
+        areaStyle: { color: 'rgba(99, 102, 241, 0.1)' },
+        symbol: 'circle',
+        symbolSize: 8,
+      },
+      {
+        name: '用户类',
+        type: 'line',
+        smooth: true,
+        data: userCounts,
+        lineStyle: { color: '#10b981', width: 3 },
+        itemStyle: { color: '#10b981' },
+        areaStyle: { color: 'rgba(16, 185, 129, 0.1)' },
+        symbol: 'circle',
+        symbolSize: 8,
+      },
+      {
+        name: '工具调用',
+        type: 'line',
+        smooth: true,
+        data: toolCounts,
+        lineStyle: { color: '#f59e0b', width: 3 },
+        itemStyle: { color: '#f59e0b' },
+        areaStyle: { color: 'rgba(245, 158, 11, 0.1)' },
+        symbol: 'circle',
+        symbolSize: 8,
+      },
+    ],
+  }
+})
 
 // 饼图
 const pieOption = computed(() => {
@@ -193,7 +219,28 @@ onMounted(async () => {
 })
 
 async function loadAll() {
-  await Promise.all([loadHealth(), loadStats(), loadAudit(), loadKpis()])
+  await Promise.all([loadHealth(), loadStats(), loadAudit(), loadKpis(), loadTrend()])
+}
+
+/**
+ * V5.9: 加载近 7 天按天审计 (3 条折线)
+ */
+async function loadTrend() {
+  try {
+    // 三条线: 全部 / 用户类 / 工具类
+    const [all, user, tool] = await Promise.all([
+      getAuditByDay(7).catch(() => ({ data: [] })),
+      getAuditByDay(7, 'user_op').catch(() => ({ data: [] })),
+      getAuditByDay(7, 'tool_call').catch(() => ({ data: [] })),
+    ])
+    dailyOps.value = (all && all.data) || []
+    dailyUserOps.value = (user && user.data) || []
+    dailyToolOps.value = (tool && tool.data) || []
+  } catch (e) {
+    dailyOps.value = []
+    dailyUserOps.value = []
+    dailyToolOps.value = []
+  }
 }
 
 async function loadHealth() {

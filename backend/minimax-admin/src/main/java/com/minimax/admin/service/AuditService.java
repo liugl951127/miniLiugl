@@ -67,5 +67,13 @@ public class AuditService {
         return mapper.countByResourceType(since);
     }
 
+    /**
+     * V5.9: 按天统计 (近 N 天), 可选 action 过滤.
+     * 返回 [{day:'2026-06-15', cnt:12}, ...] 按 day 升序.
+     */
+    public List<Map<String, Object>> countByDay(String since, String action) {
+        return mapper.countByDay(since, action);
+    }
+
     private String truncate(String s, int n) { return s == null ? null : (s.length() > n ? s.substring(0, n) : s); }
 }

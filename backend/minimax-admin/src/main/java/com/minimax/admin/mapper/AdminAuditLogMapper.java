@@ -21,4 +21,8 @@ public interface AdminAuditLogMapper extends BaseMapper<AdminAuditLog> {
 
     /** 按 resource_type 统计 */
     List<Map<String, Object>> countByResourceType(@Param("since") String since);
+
+    /** V5.9: 按天统计 (近 N 天, 含 action 过滤) — Dashboard 折线图 */
+    List<Map<String, Object>> countByDay(@Param("since") String since,
+                                          @Param("action") String action);
 }
