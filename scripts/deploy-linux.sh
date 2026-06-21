@@ -630,10 +630,10 @@ show_status() {
   systemctl is-active --quiet redis-server && echo "redis (system)              ${GREEN}active${NC} (port $REDIS_PORT)" || systemctl is-active --quiet redis && echo "redis (system)              ${GREEN}active${NC} (port $REDIS_PORT)" || echo "redis (system)              ${RED}inactive${NC}"
 }
 
-# =============== e2e_health_check (V5.12) ===============
-# 一键 HTTP 健康检查 13 个服务 + nginx 入口 + nacos
-e2e_health_check() {
-  log_step "V5.12 E2E 健康检查 (13 服务 + nginx + nacos)"
+# =============== e2e_health_check (V5.12 + V5.15) ===============
+# V5.15: 调用 e2e-full-test.sh 跑完整端到端 (含 JWT/TraceId/Prometheus)
+# 旧 V5.12 健康检查代码保留, 通过 e2e_health_check_quick 调用
+e2e_health_check_quick() {
 
   local pass=0
   local fail=0
@@ -677,6 +677,32 @@ e2e_health_check() {
   log_step "结果: ${GREEN}${pass} 通过${NC} / ${RED}${fail} 失败${NC}"
   [[ $fail -eq 0 ]] && log_info "✅ 所有服务健康" || log_warn "⚠️  有 ${fail} 个服务异常, 请检查 $0 logs <module>"
   return $fail
+}
+
+# =============== e2e_full (V5.15) ===============
+# 调用 e2e-full-test.sh 跑完整端到端测试 (含 JWT/跨服务/TraceId/Prometheus)
+e2e_full() {
+  log_step "V5.15 完整 E2E 测试 (含鉴权/TraceId/Prometheus)"
+
+  local script_path="$SRC_DIR/scripts/e2e-full-test.sh"
+  if [[ ! -f "$script_path" ]]; then
+    log_err "e2e-full-test.sh 未找到: $script_path"
+    return 1
+  fi
+  chmod +x "$script_path"
+
+  # 跑 quick 模式 (健康检查) + 完整测试
+  log_info "[阶段 1/2] 快速健康检查..."
+  if "$script_path" --quick; then
+    log_info "✅ 健康检查通过"
+  else
+    log_warn "⚠️  有服务异常, 但继续完整测试..."
+  fi
+
+  echo
+  log_info "[阶段 2/2] 完整 E2E 测试..."
+  "$script_path" --full
+  return $?
 }
 
 # =============== show_logs ===============
@@ -813,6 +839,7 @@ case "${1:-}" in
   restart)   restart_services ;;
   status)    show_status ;;
   e2e)       e2e_health_check ;;     # V5.12: 一键健康检查
+  e2e-full)  e2e_full ;;                  # V5.15: 完整 E2E 测试 (含 JWT/TraceId)
   logs)      show_logs "${2:-}" ;;
   backup)    backup_all ;;
   update)    update_all ;;

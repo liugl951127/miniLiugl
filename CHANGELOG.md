@@ -530,3 +530,30 @@
 - backend: 4 (root pom + common pom + common yml + gateway TraceFilter)
 - frontend: 2 (admin/Traces.vue + router)
 - docs: 1 new (TRACES-GUIDE.md)
+
+## [V5.15] - 2026-06-21 — 完整 E2E 自动化测试 (健康 + JWT + TraceId + Prometheus)
+
+### Added
+- **scripts/e2e-full-test.sh** (10KB, 新):
+  - 7 个 Phase 自动化测试:
+    1. 基础设施健康 (nginx/nacos/redis/mariadb)
+    2. 13 服务健康检查 (gateway + 12 微服务)
+    3. JWT 鉴权全链路 (401 → 登录 → 200)
+    4. 跨服务调用 (admin/monitor/chat/model/rag)
+    5. TraceId 透传验证 (V5.14 OTel W3C traceparent)
+    6. Prometheus 指标验证 (V5.10)
+    7. 错误码一致性
+  - 支持 `--quick` (只跑 Phase 1+2) 和 `--full` (跑全部)
+  - 支持自定义 BASE/GATEWAY/NACOS/账号 环境变量
+  - 35+ 测试用例, 彩色输出 + 汇总表 + 退出码
+- **deploy-linux.sh 加 e2e-full 子命令**:
+  - `e2e` (V5.12 旧): 快速健康检查 (inline)
+  - `e2e-full` (V5.15 新): 调用 e2e-full-test.sh 跑完整测试
+
+### Docs
+- **docs/E2E-GUIDE.md** (5KB): 用法/CI 集成/故障排查
+
+### Files (4)
+- scripts: 2 (e2e-full-test.sh + deploy-linux.sh 加子命令)
+- docs: 1 new (E2E-GUIDE.md)
+- config: 1 modified (CHANGELOG.md)
