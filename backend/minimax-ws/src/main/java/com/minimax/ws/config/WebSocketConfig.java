@@ -13,10 +13,15 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 public class WebSocketConfig implements WebSocketConfigurer {
 
     private final StreamGatewayHandler streamHandler;
+    private final com.minimax.ws.handler.BidirectionalStreamHandler bidirectionalHandler;
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+        // V4.2: 单向流
         registry.addHandler(streamHandler, "/ws/stream")
+                .setAllowedOriginPatterns("*");
+        // V5.19: 双向流 (新)
+        registry.addHandler(bidirectionalHandler, "/ws/bidi")
                 .setAllowedOriginPatterns("*");
     }
 }

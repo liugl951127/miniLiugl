@@ -648,3 +648,28 @@
 - sql: 1 new (21_anthropic_gemini.sql)
 - docs: 1 new (LLM-PROVIDER-GUIDE.md)
 - config: 1 modified (CHANGELOG.md)
+
+## [V5.19] - 2026-06-22 — WebSocket 双向流 (pause/resume/steer/feedback/inject)
+
+### Added (后端)
+- **BidirectionalStreamHandler** (13.5KB, 新):
+  - 路径: ws://host:8095/ws/bidi?type=chat&model=xxx
+  - 服务端 → 客户端 (推): ready / chunk / thinking / tool_call / observation / status / done / error
+  - 客户端 → 服务端 (推): ping / cancel / pause / resume / steer / feedback / inject / set_model
+  - StreamState 跨线程共享 (volatile + CopyOnWriteArrayList)
+  - 推送线程池 (cached, daemon, 不阻塞 Tomcat)
+- **WebSocketConfig 加 /ws/bidi 路由**
+- **2 种流式类型**: chat (mock 流式) + agent (模拟多步骤)
+
+### Added (前端)
+- **`/chat/stream` 页面** (Stream.vue 12KB):
+  - 实时消息渲染 (chunk/thinking/tool_call/observation/status/done/error 颜色编码)
+  - 双向交互面板: 暂停/恢复/取消 + steer 引导 + feedback 评分 + inject 注入 + set_model 切换
+  - 事件日志面板 (last 10 events)
+  - 自动滚动到底部
+  - 5 个模型下拉: mock / gpt-4o-mini / gpt-4o / claude-3-haiku / gemini-1.5-flash
+
+### Files (5)
+- backend: 2 (BidirectionalStreamHandler + WebSocketConfig)
+- frontend: 2 (chat/Stream.vue + router)
+- config: 1 modified (CHANGELOG.md)

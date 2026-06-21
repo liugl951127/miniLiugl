@@ -26,6 +26,12 @@ const routes = [
         meta: { title: '对话', icon: 'ChatDotRound' }
       },
       {
+        path: 'chat/stream',
+        name: 'ChatStream',
+        component: () => import('@/views/chat/Stream.vue'),
+        meta: { title: '双向流聊天 (V5.19)', icon: 'ChatLineRound' }
+      },
+      {
         path: 'chat/:sessionId',
         name: 'ChatSession',
         component: () => import('@/views/chat/Index.vue'),
