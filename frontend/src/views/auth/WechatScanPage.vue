@@ -6,8 +6,8 @@
 <template>
   <div class="wechat-scan-page">
     <div class="container">
-      <h1>📱 微信扫码</h1>
-      <p class="hint">用微信扫一扫下方二维码, {{ userStore.isLogin ? '自动绑定当前账号' : '快速登录' }}</p>
+      <h1>📱 {{ t('user.wechatScan') }}</h1>
+      <p class="hint">{{ t('user.scanHint') }} {{ userStore.isLogin ? t('user.autoBind') : t('user.quickLogin') }}</p>
       <WechatScanLogin @login-success="onLogin" @bind-success="onBind" />
     </div>
   </div>
@@ -18,6 +18,7 @@ import WechatScanLogin from '@/components/WechatScanLogin.vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { ElMessage } from 'element-plus'
+import { t } from '@/i18n'
 
 const router = useRouter()
 const userStore = useUserStore()

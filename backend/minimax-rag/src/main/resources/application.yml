@@ -43,19 +43,8 @@ spring:
   profiles:
     active: dev
 
-# 模块特殊配置 (保留原 minimax.* 块)
+# 模块特殊配置
 minimax:
-# (无特殊配置, 模块按需添加)
-# (无特殊配置)
-
-# (无特殊配置, 模块按需添加)
-# (无特殊配置)
-
-# 模块特殊配置 (从 git HEAD 恢复)
-# (无特殊配置, 模块按需添加)
-# (无特殊配置)
-
-# 模块特殊配置 (从 git HEAD 恢复)
   # (无特殊配置)
 
 # =============================================================
@@ -105,3 +94,25 @@ resilience4j.retry:
   instances:
     default:
       baseConfig: default
+
+# =============================================================
+# Swagger / Knife4j 配置
+# =============================================================
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+knife4j:
+  enable: true
+
+# =============================================================
+# Knife4j / SpringDoc OpenAPI 配置
+# =============================================================
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+knife4j:
+  enable: true

@@ -94,3 +94,25 @@ resilience4j.retry:
   instances:
     default:
       baseConfig: default
+
+# =============================================================
+# Swagger / Knife4j 配置
+# =============================================================
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+knife4j:
+  enable: true
+
+# =============================================================
+# Knife4j / SpringDoc OpenAPI 配置
+# =============================================================
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+knife4j:
+  enable: true

@@ -1,22 +1,22 @@
 <template>
   <div class="plugins-container">
     <div class="plugins-header">
-      <h1>🧩 插件市场 <span class="badge">V2.0</span></h1>
-      <p class="sub">下载即用 · 用户可发布 · 支持评分/启停</p>
+      <h1>🧩 {{ t('plugins.title') }} <span class="badge">V2.0</span></h1>
+      <p class="sub">{{ t('plugins.subtitle') }}</p>
     </div>
 
     <el-card>
       <el-row :gutter="12" align="middle">
         <el-col :span="6">
-          <el-select v-model="filterCategory" placeholder="全部分类" clearable @change="loadList" style="width:100%">
-            <el-option label="UI 组件" value="ui" />
-            <el-option label="导出工具" value="export" />
-            <el-option label="增强" value="enhance" />
-            <el-option label="通用" value="general" />
+          <el-select v-model="filterCategory" :placeholder="t('plugins.allCategories')" clearable @change="loadList" style="width:100%">
+            <el-option :label="t('plugins.uiComponent')" value="ui" />
+            <el-option :label="t('plugins.exportTool')" value="export" />
+            <el-option :label="t('plugins.enhance')" value="enhance" />
+            <el-option :label="t('plugins.general')" value="general" />
           </el-select>
         </el-col>
         <el-col :span="18" style="text-align:right">
-          <el-button type="primary" @click="showPublish = true">📤 发布我的插件</el-button>
+          <el-button type="primary" @click="showPublish = true">{{ t('plugins.publishMy') }}</el-button>
         </el-col>
       </el-row>
     </el-card>
@@ -31,7 +31,7 @@
               <span class="meta">v{{ p.version }} · {{ p.author || '匿名' }}</span>
             </div>
             <el-tag :type="p.scope === 'system' ? 'danger' : 'success'" size="small">
-              {{ p.scope === 'system' ? '系统' : '用户' }}
+              {{ p.scope === 'system' ? t('plugins.system') : t('plugins.user') }}
             </el-tag>
           </div>
           <p class="desc">{{ p.description || '—' }}</p>
@@ -52,31 +52,31 @@
     </el-row>
 
     <!-- 发布对话框 -->
-    <el-dialog v-model="showPublish" title="发布插件" width="500px">
+    <el-dialog v-model="showPublish" :title="t('plugins.publishDialog')" width="500px">
       <el-form>
-        <el-form-item label="插件 ID"><el-input v-model="pub.name" placeholder="唯一名称" /></el-form-item>
-        <el-form-item label="显示名"><el-input v-model="pub.displayName" /></el-form-item>
-        <el-form-item label="分类">
+        <el-form-item :label="t('plugins.pluginId')"><el-input v-model="pub.name" :placeholder="t('plugins.uniqueName')" /></el-form-item>
+        <el-form-item :label="t('plugins.displayName')"><el-input v-model="pub.displayName" /></el-form-item>
+        <el-form-item :label="t('common.category')">
           <el-select v-model="pub.category">
-            <el-option label="UI 组件" value="ui" />
-            <el-option label="导出工具" value="export" />
-            <el-option label="增强" value="enhance" />
-            <el-option label="通用" value="general" />
+            <el-option :label="t('plugins.uiComponent')" value="ui" />
+            <el-option :label="t('plugins.exportTool')" value="export" />
+            <el-option :label="t('plugins.enhance')" value="enhance" />
+            <el-option :label="t('plugins.general')" value="general" />
           </el-select>
         </el-form-item>
-        <el-form-item label="类型">
+        <el-form-item :label="t('plugins.type')">
           <el-select v-model="pub.pluginType">
-            <el-option label="Java 类" value="class" />
-            <el-option label="HTTP" value="url" />
-            <el-option label="JS 脚本" value="js" />
+            <el-option :label="t('plugins.javaClass')" value="class" />
+            <el-option :label="t('plugins.http')" value="url" />
+            <el-option :label="t('plugins.jsScript')" value="js" />
           </el-select>
         </el-form-item>
-        <el-form-item label="入口"><el-input v-model="pub.entry" placeholder="类全名 / URL / JS 路径" /></el-form-item>
-        <el-form-item label="描述"><el-input v-model="pub.description" type="textarea" /></el-form-item>
+        <el-form-item :label="t('plugins.entry')"><el-input v-model="pub.entry" :placeholder="t('plugins.entryPlaceholder')" /></el-form-item>
+        <el-form-item :label="t('common.description')"><el-input v-model="pub.description" type="textarea" /></el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showPublish = false">取消</el-button>
-        <el-button type="primary" @click="doPublish">发布</el-button>
+        <el-button @click="showPublish = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="doPublish">{{ t('plugins.publish') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -86,6 +86,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { t } from '@/i18n'
 
 const API = import.meta.env.VITE_API_BASE || 'http://localhost'
 const token = localStorage.getItem('access_token') || ''
@@ -114,16 +115,16 @@ async function loadList() {
 async function rate(id: number, score: number) {
   try {
     await axios.post(`${API}/api/v1/agent/plugins/${id}/rate?score=${score}`, {}, auth())
-    ElMessage.success('评分成功')
+    ElMessage.success(t('plugins.rateSuccess'))
     loadList()
   } catch (e: any) { ElMessage.error(e?.message) }
 }
 
 async function doPublish() {
-  if (!pub.name || !pub.entry) { ElMessage.warning('请填写完整'); return }
+  if (!pub.name || !pub.entry) { ElMessage.warning(t('common.fillComplete')); return }
   try {
     await axios.post(`${API}/api/v1/agent/plugins?ownerId=${userId}`, pub, auth())
-    ElMessage.success('已发布')
+    ElMessage.success(t('plugins.published'))
     showPublish.value = false
     loadList()
   } catch (e: any) { ElMessage.error(e?.response?.data?.message || e?.message) }

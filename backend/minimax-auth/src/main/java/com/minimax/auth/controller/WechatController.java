@@ -1,6 +1,8 @@
 package com.minimax.auth.controller;
 
 import com.minimax.auth.vo.LoginResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.minimax.auth.wechat.WechatScanLoginService;
 import com.minimax.common.result.Result;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,6 +27,7 @@ import java.util.Map;
  * @since 2026-06
  */
 @Slf4j
+@Tag(name = "微信扫码登录")
 @RestController
 @RequestMapping("/auth/wechat")
 @RequiredArgsConstructor
@@ -32,6 +35,7 @@ public class WechatController {
 
     private final WechatScanLoginService wechatService;
 
+    @Operation(summary = "生成微信登录二维码")
     @GetMapping("/qrcode")
     public Result<Map<String, Object>> createQrCode(HttpServletRequest req) {
         String ip = getIp(req);
@@ -39,6 +43,7 @@ public class WechatController {
         return Result.ok(wechatService.createQrCode(ip, ua));
     }
 
+    @Operation(summary = "查询扫码状态")
     @GetMapping("/status")
     public Result<Map<String, Object>> getStatus(@RequestParam String ticket) {
         return Result.ok(wechatService.getStatus(ticket));
@@ -48,6 +53,7 @@ public class WechatController {
      * 微信回调 (微信服务器重定向)
      * URL: GET /api/v1/auth/wechat/callback?code=xxx&state=sceneId
      */
+    @Operation(summary = "微信OAuth回调")
     @GetMapping("/callback")
     public Object callback(@RequestParam(required = false) String code,
                            @RequestParam(required = false) String state,
@@ -77,6 +83,7 @@ public class WechatController {
      * mock 扫码 (仅 mock 模式可见, 供前端"模拟扫码"按钮)
      * GET /api/v1/auth/wechat/mock-scan?ticket=xxx
      */
+    @Operation(summary = "模拟扫码(仅mock模式)")
     @GetMapping("/mock-scan")
     public Result<Map<String, Object>> mockScan(@RequestParam String ticket) {
         return Result.ok(wechatService.mockScan(ticket));
@@ -87,6 +94,7 @@ public class WechatController {
      * POST /api/v1/auth/wechat/mobile-login
      * body: { code, appType: "mp"|"mini" }
      */
+    @Operation(summary = "移动端微信静默登录")
     @PostMapping("/mobile-login")
     public Result<LoginResponse> mobileLogin(@RequestBody Map<String, Object> body) {
         String code = (String) body.get("code");

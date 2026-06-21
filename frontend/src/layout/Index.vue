@@ -33,6 +33,13 @@
           </span>
         </div>
         <div class="header-right">
+          <el-tooltip content="通知中心">
+            <el-badge :value="notifStore.unreadCount" :hidden="!notifStore.unreadCount" type="danger" :max="99">
+              <el-button text @click="$router.push('/notification')">
+                <el-icon><Bell /></el-icon>
+              </el-button>
+            </el-badge>
+          </el-tooltip>
           <el-tooltip content="刷新">
             <el-button text @click="reload"><el-icon><Refresh /></el-icon></el-button>
           </el-tooltip>
@@ -78,11 +85,13 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'
+import { useNotificationStore } from '@/store/notification'
 import { systemApi } from '@/api/system'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const notifStore = useNotificationStore()
 const collapsed = ref(false)
 const platformInfo = ref({})
 
@@ -119,6 +128,7 @@ const activeMenu = computed(() => {
   if (p.startsWith('/kg')) return '/kg'
   if (p.startsWith('/collab')) return '/collab'
   if (p.startsWith('/plugins')) return '/plugins'
+  if (p.startsWith('/notification')) return '/notification'
   return p
 })
 
@@ -151,6 +161,10 @@ async function onCommand(cmd) {
 onMounted(async () => {
   if (!userStore.profile && userStore.isLogin) {
     try { await userStore.fetchProfile() } catch (e) { /* ignore */ }
+  }
+  // 初始化通知中心（WS 连接 + 未读数）
+  if (userStore.isLogin) {
+    notifStore.init()
   }
   try {
     const res = await systemApi.intro()

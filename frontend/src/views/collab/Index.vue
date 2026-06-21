@@ -1,15 +1,15 @@
 <template>
   <div class="collab-container">
     <div class="collab-header">
-      <h1>👥 实时协作 <span class="badge">V2.0</span></h1>
-      <p class="sub">WebSocket 多人协作 · 实时消息/输入指示/在线状态</p>
+      <h1>👥 {{ t('collab.title') }} <span class="badge">V2.0</span></h1>
+      <p class="sub">{{ t('collab.subtitle') }}</p>
     </div>
 
     <el-card v-if="!joined">
-      <el-button type="primary" @click="createRoom">🚀 创建协作会话</el-button>
-      <el-divider>或加入已有</el-divider>
-      <el-input v-model="joinSessionId" placeholder="输入 sessionId" style="width:300px">
-        <template #append><el-button @click="joinRoom">加入</el-button></template>
+      <el-button type="primary" @click="createRoom">🚀 {{ t('collab.createSession') }}</el-button>
+      <el-divider>{{ t('collab.orJoin') }}</el-divider>
+      <el-input v-model="joinSessionId" :placeholder="t('collab.enterSessionId')" style="width:300px">
+        <template #append><el-button @click="joinRoom">{{ t('collab.join') }}</el-button></template>
       </el-input>
     </el-card>
 
@@ -18,11 +18,11 @@
         <el-card>
           <template #header>
             <div class="card-header">
-              <span>💬 房间 {{ sessionId }}</span>
+              <span>💬 {{ t('collab.room') }} {{ sessionId }}</span>
               <div>
                 <el-tag type="success">{{ status }}</el-tag>
-                <el-tag type="info" style="margin-left:8px">👥 {{ users.length }} 人</el-tag>
-                <el-button size="small" type="danger" text @click="leave" style="margin-left:8px">离开</el-button>
+                <el-tag type="info" style="margin-left:8px">👥 {{ users.length }} {{ t('collab.users') }}</el-tag>
+                <el-button size="small" type="danger" text @click="leave" style="margin-left:8px">{{ t('collab.leave') }}</el-button>
               </div>
             </div>
           </template>
@@ -35,32 +35,32 @@
           </div>
 
           <div class="typing" v-if="typingUsers.length">
-            <em>{{ typingUsers.join(', ') }} 正在输入...</em>
+            <em>{{ typingUsers.join(', ') }} {{ t('collab.typing') }}...</em>
           </div>
 
           <el-input v-model="input" @keydown="onTyping" @keyup.enter="send"
-                    placeholder="输入消息后回车发送" style="margin-top:12px">
-            <template #append><el-button type="primary" @click="send">发送</el-button></template>
+                    :placeholder="t('collab.enterToSend')" style="margin-top:12px">
+            <template #append><el-button type="primary" @click="send">{{ t('collab.send') }}</el-button></template>
           </el-input>
         </el-card>
       </el-col>
 
       <el-col :span="8">
         <el-card>
-          <template #header><span>👥 在线用户</span></template>
+          <template #header><span>{{ t('collab.online') }}</span></template>
           <div v-for="u in users" :key="u" class="user">
             <el-avatar :size="32" style="background:#409eff">U{{ u }}</el-avatar>
-            <span style="margin-left:8px">用户 {{ u }}</span>
+            <span style="margin-left:8px">{{ t('collab.user') }} {{ u }}</span>
           </div>
-          <el-empty v-if="!users.length" description="无人在线" :image-size="60" />
+          <el-empty v-if="!users.length" :description="t('collab.noOneOnline')" :image-size="60" />
         </el-card>
 
         <el-card style="margin-top:16px">
-          <template #header><span>📊 连接信息</span></template>
-          <p>Session: <code>{{ sessionId }}</code></p>
-          <p>状态: <el-tag size="small">{{ status }}</el-tag></p>
-          <p>消息数: {{ messages.length }}</p>
-          <el-button size="small" @click="ping">🏓 Ping</el-button>
+          <template #header><span>{{ t('collab.connectionInfo') }}</span></template>
+          <p>{{ t('collab.session') }}: <code>{{ sessionId }}</code></p>
+          <p>{{ t('collab.status') }}: <el-tag size="small">{{ status }}</el-tag></p>
+          <p>{{ t('collab.messageCount') }}: {{ messages.length }}</p>
+          <el-button size="small" @click="ping">{{ t('collab.ping') }}</el-button>
         </el-card>
       </el-col>
     </el-row>
@@ -71,6 +71,7 @@
 import { ref, nextTick } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { t } from '@/i18n'
 
 const API = import.meta.env.VITE_API_BASE || 'http://localhost'
 const WS_BASE = (import.meta.env.VITE_WS_BASE || 'ws://localhost')
@@ -117,7 +118,7 @@ function connectWs(sid: string) {
   ws.onopen = () => {
     status.value = 'connected'
     joined.value = true
-    ElMessage.success('已加入房间')
+    ElMessage.success(t('collab.joinedRoom'))
   }
   ws.onmessage = (e) => {
     const msg = JSON.parse(e.data)

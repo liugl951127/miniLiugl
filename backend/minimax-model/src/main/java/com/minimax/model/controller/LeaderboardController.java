@@ -1,5 +1,7 @@
 package com.minimax.model.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.minimax.common.result.Result;
 import com.minimax.model.entity.ModelBattleLog;
@@ -26,6 +28,7 @@ import java.util.*;
  * @since 2026-06
  */
 @Slf4j
+@Tag(name = "模型管理")
 @RestController
 @RequestMapping("/leaderboard")
 @RequiredArgsConstructor
@@ -34,7 +37,7 @@ public class LeaderboardController {
     private final ModelBattleLogMapper battleLogMapper;
     private final ModelConfigMapper modelConfigMapper;
 
-    /** 总体排行 (按平均评分降序) */
+    @Operation(summary = "模型总体排行（按平均评分）")
     @GetMapping("/overall")
     public Result<List<Map<String, Object>>> overall(
             @RequestParam(defaultValue = "50") int limit) {
@@ -42,7 +45,7 @@ public class LeaderboardController {
         return Result.ok(rows.stream().limit(limit).toList());
     }
 
-    /** 速度排行 (按 P50 延迟升序) */
+    @Operation(summary = "模型速度排行（按延迟升序）")
     @GetMapping("/latency")
     public Result<List<Map<String, Object>>> latency(
             @RequestParam(defaultValue = "50") int limit) {
@@ -50,7 +53,7 @@ public class LeaderboardController {
         return Result.ok(rows.stream().limit(limit).toList());
     }
 
-    /** 最近对决 (按时间倒序, 取每模型最近 5 局) */
+    @Operation(summary = "最近模型对决记录")
     @GetMapping("/recent")
     public Result<List<Map<String, Object>>> recent(
             @RequestParam(defaultValue = "20") int limit) {
@@ -65,7 +68,7 @@ public class LeaderboardController {
         return Result.ok(rows);
     }
 
-    /** 分类排行 (按 provider) */
+    @Operation(summary = "按分类/供应商列模型")
     @GetMapping("/categories")
     public Result<Map<String, List<Map<String, Object>>>> categories() {
         List<ModelConfig> allModels = modelConfigMapper.selectList(null);

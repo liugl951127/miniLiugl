@@ -8,6 +8,8 @@ import com.minimax.rag.retriever.Retriever;
 import com.minimax.rag.service.DocumentService;
 import com.minimax.rag.service.KnowledgeBaseService;
 import com.minimax.rag.service.RagService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -35,6 +37,7 @@ import java.util.Map;
  *   POST   /rag/retrieve                    纯检索 (返回 topK chunks)
  *   POST   /rag/ask                         RAG 问答 (检索+LLM+引用)
  */
+@Tag(name = "RAG知识库")
 @RestController
 @RequestMapping("/rag")
 @RequiredArgsConstructor
@@ -47,6 +50,7 @@ public class RagController {
 
     // ---------- KB ----------
 
+    @Operation(summary = "创建知识库")
     @PostMapping("/kb")
     public Result<Long> createKb(@RequestParam Long ownerId,
                                   @RequestBody Map<String, String> body) {
@@ -55,21 +59,25 @@ public class RagController {
         return Result.ok(id);
     }
 
+    @Operation(summary = "列出租户知识库")
     @GetMapping("/kb")
     public Result<List<KnowledgeBase>> listMyKbs(@RequestParam Long ownerId) {
         return Result.ok(kbService.listByOwner(ownerId));
     }
 
+    @Operation(summary = "列出公开知识库")
     @GetMapping("/kb/public")
     public Result<List<KnowledgeBase>> listPublicKbs() {
         return Result.ok(kbService.listPublic());
     }
 
+    @Operation(summary = "获取知识库详情")
     @GetMapping("/kb/{id}")
     public Result<KnowledgeBase> getKb(@PathVariable Long id, @RequestParam Long ownerId) {
         return Result.ok(kbService.get(id, ownerId));
     }
 
+    @Operation(summary = "删除知识库")
     @DeleteMapping("/kb/{id}")
     public Result<Boolean> deleteKb(@PathVariable Long id, @RequestParam Long ownerId) {
         return Result.ok(kbService.delete(id, ownerId));
@@ -77,6 +85,7 @@ public class RagController {
 
     // ---------- Document ----------
 
+    @Operation(summary = "上传文档")
     @PostMapping("/doc/upload")
     public Result<Long> uploadDoc(@RequestParam Long ownerId,
                                    @RequestParam Long kbId,
@@ -90,17 +99,20 @@ public class RagController {
         return Result.ok(id);
     }
 
+    @Operation(summary = "列出知识库文档")
     @GetMapping("/doc")
     public Result<List<Document>> listDocs(@RequestParam Long kbId,
                                             @RequestParam(defaultValue = "50") int limit) {
         return Result.ok(docService.listByKb(kbId, limit));
     }
 
+    @Operation(summary = "获取文档切片列表")
     @GetMapping("/doc/{id}/chunks")
     public Result<List<DocumentChunk>> listChunks(@PathVariable Long id) {
         return Result.ok(docService.chunksOfDoc(id));
     }
 
+    @Operation(summary = "删除文档")
     @DeleteMapping("/doc/{id}")
     public Result<Boolean> deleteDoc(@PathVariable Long id, @RequestParam Long ownerId) {
         return Result.ok(docService.delete(id, ownerId));
@@ -108,6 +120,7 @@ public class RagController {
 
     // ---------- 检索 + 问答 ----------
 
+    @Operation(summary = "向量检索")
     @PostMapping("/retrieve")
     public Result<List<Retriever.Hit>> retrieve(@RequestBody Map<String, Object> body) {
         Long kbId = body.get("kbId") == null ? null : ((Number) body.get("kbId")).longValue();
@@ -116,6 +129,7 @@ public class RagController {
         return Result.ok(retriever.retrieve(kbId, query, topK));
     }
 
+    @Operation(summary = "RAG问答")
     @PostMapping("/ask")
     public Result<RagService.RagAnswer> ask(@RequestBody Map<String, Object> body) {
         Long kbId = body.get("kbId") == null ? null : ((Number) body.get("kbId")).longValue();

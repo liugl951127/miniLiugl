@@ -65,7 +65,9 @@ public class SecurityConfig {
                             // V5.2: 跨平台 OAuth 全部公开
                             "/auth/oauth/**", "/api/v1/auth/oauth/**",
                             "/health", "/health/**", "/", "/error",
-                            "/v3/api-docs/**", "/swagger-ui/**"
+                            "/v3/api-docs/**", "/swagger-ui/**",
+                            // WebSocket 端点（JWT 在 handler 层校验）
+                            "/ws/notifications"
                     ).permitAll()
                     .anyRequest().authenticated()
             )

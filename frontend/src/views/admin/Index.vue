@@ -1,10 +1,10 @@
 <template>
   <div class="placeholder-page">
-    <el-empty :description="`${title} - 即将上线`">
+    <el-empty :description="`${title} - ${t('common.comingSoon')}`">
       <template #image>
         <el-icon :size="80" color="#5b8def"><component :is="iconComp" /></el-icon>
       </template>
-      <el-button type="primary" @click="$router.push('/')">返回首页</el-button>
+      <el-button type="primary" @click="$router.push('/')">{{ t('common.backHome') }}</el-button>
     </el-empty>
   </div>
 </template>
@@ -12,6 +12,7 @@
 <script setup>
 import { computed } from 'vue'
 import { ChatDotRound, Files, Cpu, Setting } from '@element-plus/icons-vue'
+import { t } from '@/i18n'
 
 const props = defineProps({
   title: { type: String, default: '对话' }

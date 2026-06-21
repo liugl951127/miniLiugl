@@ -8,6 +8,8 @@ import com.minimax.monitor.entity.AlertRule;
 import com.minimax.monitor.entity.MetricSnapshot;
 import com.minimax.monitor.health.HealthDetailService;
 import com.minimax.monitor.service.SnapshotService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,6 +41,7 @@ import java.util.Map;
  * 实用:
  *   GET  /monitor/info                服务自身信息
  */
+@Tag(name = "系统监控")
 @RestController
 @RequestMapping("/monitor")
 @RequiredArgsConstructor
@@ -51,21 +54,25 @@ public class MonitorController {
 
     // ---------- 健康 ----------
 
+    @Operation(summary = "深度健康检查")
     @GetMapping("/health")
     public Result<Map<String, Object>> deepHealth() {
         return Result.ok(health.deepCheck());
     }
 
+    @Operation(summary = "数据库健康检查")
     @GetMapping("/health/database")
     public Result<Map<String, Object>> db() {
         return Result.ok(health.checkDatabase());
     }
 
+    @Operation(summary = "JVM健康检查")
     @GetMapping("/health/jvm")
     public Result<Map<String, Object>> jvm() {
         return Result.ok(health.checkJvm());
     }
 
+    @Operation(summary = "磁盘健康检查")
     @GetMapping("/health/disk")
     public Result<Map<String, Object>> disk() {
         return Result.ok(health.checkDisk());
@@ -73,6 +80,7 @@ public class MonitorController {
 
     // ---------- 指标 ----------
 
+    @Operation(summary = "获取业务指标")
     @GetMapping("/metrics")
     public Result<Map<String, Object>> metrics() {
         Map<String, Object> r = new LinkedHashMap<>();
@@ -90,6 +98,7 @@ public class MonitorController {
         return Result.ok(r);
     }
 
+    @Operation(summary = "获取指标快照")
     @GetMapping("/metrics/snapshot")
     public Result<List<MetricSnapshot>> snapshot(
             @RequestParam(required = false) String metricName,
@@ -99,6 +108,7 @@ public class MonitorController {
         return Result.ok(snapshotService.recent(metricName, service, sinceMinutes, limit));
     }
 
+    @Operation(summary = "获取指标趋势")
     @GetMapping("/metrics/trend")
     public Result<List<Map<String, Object>>> trend(
             @RequestParam String metricName,
@@ -107,6 +117,7 @@ public class MonitorController {
         return Result.ok(snapshotService.trend(metricName, service, sinceMinutes));
     }
 
+    @Operation(summary = "自助计数")
     @PostMapping("/metrics/inc")
     public Result<Void> inc(@RequestBody Map<String, Object> body) {
         String name = (String) body.get("name");
@@ -127,21 +138,25 @@ public class MonitorController {
 
     // ---------- 告警 ----------
 
+    @Operation(summary = "最近告警事件")
     @GetMapping("/alerts")
     public Result<List<AlertEvent>> alerts(@RequestParam(defaultValue = "20") int limit) {
         return Result.ok(alert.recentEvents(limit));
     }
 
+    @Operation(summary = "当前触发中的告警")
     @GetMapping("/alerts/firing")
     public Result<List<AlertEvent>> firing(@RequestParam(defaultValue = "20") int limit) {
         return Result.ok(alert.firingEvents(limit));
     }
 
+    @Operation(summary = "启用中的告警规则")
     @GetMapping("/alerts/rules")
     public Result<List<AlertRule>> rules() {
         return Result.ok(alert.rules());
     }
 
+    @Operation(summary = "告警摘要统计")
     @GetMapping("/alerts/summary")
     public Result<Map<String, Object>> alertSummary() {
         return Result.ok(alert.summary());
@@ -149,6 +164,7 @@ public class MonitorController {
 
     // ---------- 服务信息 ----------
 
+    @Operation(summary = "服务信息")
     @GetMapping("/info")
     public Result<Map<String, Object>> info() {
         Map<String, Object> r = new LinkedHashMap<>();

@@ -1,6 +1,8 @@
 package com.minimax.model.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.minimax.common.result.Result;
 import com.minimax.model.dto.ChatRequest;
 import com.minimax.model.entity.ModelBattleLog;
@@ -27,6 +29,7 @@ import java.util.concurrent.*;
  * @since 2026-06
  */
 @Slf4j
+@Tag(name = "AI模型测试")
 @RestController
 @RequestMapping("/test")
 @RequiredArgsConstructor
@@ -38,6 +41,7 @@ public class RealAiTestController {
     private final ModelConfigMapper modelConfigMapper;
     private final ExecutorService pool = Executors.newFixedThreadPool(8);
 
+    @Operation(summary = "服务健康检查")
     @GetMapping("/ping")
     public Result<Map<String, Object>> ping() {
         Map<String, Object> data = new LinkedHashMap<>();
@@ -54,6 +58,7 @@ public class RealAiTestController {
         } catch (Exception e) { return true; }
     }
 
+    @Operation(summary = "单模型对话测试")
     @PostMapping("/single")
     @SuppressWarnings("unchecked")
     public Result<ChatResponse> testSingle(@RequestBody Map<String, Object> body) {
@@ -91,6 +96,7 @@ public class RealAiTestController {
         }
     }
 
+    @Operation(summary = "多模型对决测试")
     @PostMapping("/battle")
     @SuppressWarnings("unchecked")
     public Result<Map<String, Object>> battle(@RequestBody Map<String, Object> body) {

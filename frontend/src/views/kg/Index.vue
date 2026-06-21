@@ -11,41 +11,41 @@
 <template>
   <div class="kg-container">
     <div class="kg-header">
-      <h1>🕸️ 知识图谱 <span class="badge">V5.6</span></h1>
-      <p class="sub">实体-关系图谱 · N 跳查询 · 最短路径 · 可视化</p>
+      <h1>🕸️ {{ t('kg.title') }} <span class="badge">V5.6</span></h1>
+      <p class="sub">{{ t('kg.subtitle') }}</p>
     </div>
 
     <el-row :gutter="20">
       <el-col :span="8">
         <el-card>
-          <template #header><span>➕ 添加实体</span></template>
+          <template #header><span>➕ {{ t('kg.addEntity') }}</span></template>
           <el-form :inline="false" size="default">
-            <el-form-item label="名称"><el-input v-model="newEntity.name" placeholder="e.g. 张三" /></el-form-item>
-            <el-form-item label="类型">
+            <el-form-item :label="t('kg.name')"><el-input v-model="newEntity.name" :placeholder="t('kg.namePlaceholder')" /></el-form-item>
+            <el-form-item :label="t('kg.type')">
               <el-select v-model="newEntity.type" style="width:100%">
-                <el-option label="人物 person" value="person" />
-                <el-option label="地点 place" value="place" />
-                <el-option label="组织 org" value="org" />
-                <el-option label="概念 concept" value="concept" />
-                <el-option label="事件 event" value="event" />
+                <el-option :label="t('kg.person')" value="person" />
+                <el-option :label="t('kg.place')" value="place" />
+                <el-option :label="t('kg.org')" value="org" />
+                <el-option :label="t('kg.concept')" value="concept" />
+                <el-option :label="t('kg.event')" value="event" />
               </el-select>
             </el-form-item>
-            <el-form-item label="描述"><el-input v-model="newEntity.description" /></el-form-item>
-            <el-form-item label="重要性">
+            <el-form-item :label="t('kg.description')"><el-input v-model="newEntity.description" /></el-form-item>
+            <el-form-item :label="t('kg.importance')">
               <el-rate v-model="newEntity.importance" :max="10" />
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="createEntity">添加</el-button>
+              <el-button type="primary" @click="createEntity">{{ t('kg.add') }}</el-button>
             </el-form-item>
           </el-form>
         </el-card>
 
         <el-card style="margin-top:16px">
           <template #header>
-            <span>🔍 搜索实体 ({{ entities.length }})</span>
+            <span>{{ t('kg.searchEntity') }} ({{ entities.length }})</span>
           </template>
-          <el-input v-model="searchKw" @keyup.enter="doSearch" placeholder="输入关键词">
-            <template #append><el-button @click="doSearch">搜索</el-button></template>
+          <el-input v-model="searchKw" @keyup.enter="doSearch" :placeholder="t('kg.searchPlaceholder')">
+            <template #append><el-button @click="doSearch">{{ t('common.search') }}</el-button></template>
           </el-input>
           <el-scrollbar style="margin-top:12px;max-height:280px">
             <div v-for="e in entities" :key="e.id"
@@ -59,24 +59,24 @@
         </el-card>
 
         <el-card style="margin-top:16px">
-          <template #header><span>🛣️ 最短路径</span></template>
+          <template #header><span>{{ t('kg.shortestPath') }}</span></template>
           <el-form :inline="true" size="small">
-            <el-form-item label="起点">
-              <el-select v-model="pathFromId" filterable style="width:140px" placeholder="起点实体">
+            <el-form-item :label="t('kg.from')">
+              <el-select v-model="pathFromId" filterable style="width:140px" :placeholder="t('kg.fromPlaceholder')">
                 <el-option v-for="e in entities" :key="e.id" :label="e.name" :value="e.id" />
               </el-select>
             </el-form-item>
-            <el-form-item label="终点">
-              <el-select v-model="pathToId" filterable style="width:140px" placeholder="终点实体">
+            <el-form-item :label="t('kg.to')">
+              <el-select v-model="pathToId" filterable style="width:140px" :placeholder="t('kg.toPlaceholder')">
                 <el-option v-for="e in entities" :key="e.id" :label="e.name" :value="e.id" />
               </el-select>
             </el-form-item>
             <el-form-item>
-              <el-button type="warning" @click="findPath">查找</el-button>
+              <el-button type="warning" @click="findPath">{{ t('kg.find') }}</el-button>
             </el-form-item>
           </el-form>
           <div v-if="pathResult" class="path-result">
-            <el-tag type="success">路径长度: {{ pathResult.length }}</el-tag>
+            <el-tag type="success">{{ t('kg.pathLength') }}: {{ pathResult.length }}</el-tag>
             <div v-for="(n, i) in pathResult.nodes" :key="i" class="path-node">
               <span>{{ i + 1 }}.</span>
               <el-tag size="small" :type="typeTag(n.entityType)">{{ n.entityType }}</el-tag>
@@ -97,7 +97,7 @@
               <el-button size="small" :type="hop===3?'primary':''" @click="setHop(3)">3 跳</el-button>
             </el-button-group>
             <el-tag v-if="graphStats.nodes" type="info" style="margin-left:12px">
-              节点: {{ graphStats.nodes }} · 边: {{ graphStats.edges }}
+              {{ t('kg.nodes') }}: {{ graphStats.nodes }} · {{ t('kg.edges') }}: {{ graphStats.edges }}
             </el-tag>
           </template>
 
@@ -105,8 +105,8 @@
         </el-card>
 
         <el-card v-if="selectedEntity" style="margin-top:16px">
-          <template #header><span>📋 邻居列表 ({{ neighbors.length }})</span></template>
-          <el-empty v-if="!neighbors.length" description="无关联" />
+          <template #header><span>{{ t('kg.neighborList') }} ({{ neighbors.length }})</span></template>
+          <el-empty v-if="!neighbors.length" :description="t('kg.noRelations')" />
           <el-scrollbar v-else style="height:200px">
             <div v-for="(n, i) in neighbors" :key="i" class="neighbor">
               <el-tag :type="hopTag(n.hop)" size="small">
@@ -116,26 +116,26 @@
                 {{ n.entity.entityType }}
               </el-tag>
               <strong style="margin-left:6px">{{ n.entity.name }}</strong>
-              <span class="via">via {{ n.via }}</span>
+              <span class="via">{{ t('kg.via') }} {{ n.via }}</span>
               <el-button v-if="n.hop === 1" text type="primary"
-                         @click="createRelationTo(n.entity.id)">↔ 建关系</el-button>
+                         @click="createRelationTo(n.entity.id)">{{ t('kg.createRelation') }}</el-button>
             </div>
           </el-scrollbar>
         </el-card>
 
         <el-card v-if="selectedEntity" style="margin-top:16px">
-          <template #header><span>➕ 添加关系</span></template>
+          <template #header><span>➕ {{ t('kg.addRelation') }}</span></template>
           <el-form :inline="true">
-            <el-form-item label="目标实体">
+            <el-form-item :label="t('kg.targetEntity')">
               <el-select v-model="relForm.toId" filterable style="width:180px">
                 <el-option v-for="e in entities" :key="e.id" :label="e.name" :value="e.id" />
               </el-select>
             </el-form-item>
-            <el-form-item label="关系类型">
+            <el-form-item :label="t('kg.relationType')">
               <el-input v-model="relForm.type" placeholder="e.g. works_at" />
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="submitRelation">创建</el-button>
+              <el-button type="primary" @click="submitRelation">{{ t('kg.create') }}</el-button>
             </el-form-item>
           </el-form>
         </el-card>
@@ -149,6 +149,7 @@ import { ref, reactive, onMounted, nextTick } from 'vue'
 import axios from 'axios'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
+import { t } from '@/i18n'
 
 const API = import.meta.env.VITE_API_BASE || 'http://localhost'
 const userId = localStorage.getItem('user_id') || '1'
@@ -193,11 +194,11 @@ function truncate(s: string, n: number) {
 function auth() { return { headers: { Authorization: `Bearer ${token}` } } }
 
 async function createEntity() {
-  if (!newEntity.name) { ElMessage.warning('请输入名称'); return }
+  if (!newEntity.name) { ElMessage.warning(t('kg.enterName')); return }
   try {
     await axios.post(`${API}/api/v1/agent/kg/entities`,
       { userId, ...newEntity, importance: newEntity.importance }, auth())
-    ElMessage.success('已创建')
+    ElMessage.success(t('kg.created'))
     newEntity.name = ''; newEntity.description = ''
     doSearch()
   } catch (e: any) { ElMessage.error(e?.response?.data?.message || e?.message) }
@@ -271,13 +272,13 @@ async function createRelationTo(toId: number) {
 }
 
 async function submitRelation() {
-  if (!relForm.toId || !relForm.type) { ElMessage.warning('请填写完整'); return }
+  if (!relForm.toId || !relForm.type) { ElMessage.warning(t('kg.fillComplete')); return }
   try {
     await axios.post(`${API}/api/v1/agent/kg/relations`, {
       userId, fromId: selectedEntity.value.id, toId: relForm.toId,
       type: relForm.type, weight: 1.0
     }, auth())
-    ElMessage.success('关系已创建')
+    ElMessage.success(t('kg.relationCreated'))
     await loadNeighbors()
     await nextTick()
     renderGraph()
@@ -285,7 +286,7 @@ async function submitRelation() {
 }
 
 async function findPath() {
-  if (!pathFromId.value || !pathToId.value) { ElMessage.warning('请选择起终点'); return }
+  if (!pathFromId.value || !pathToId.value) { ElMessage.warning(t('kg.selectEndpoints')); return }
   try {
     const { data } = await axios.get(`${API}/api/v1/agent/kg/path`, {
       params: { userId, fromId: pathFromId.value, toId: pathToId.value },
@@ -293,12 +294,12 @@ async function findPath() {
     })
     if (data.data) {
       pathResult.value = data.data
-      ElMessage.success(`找到长度 ${data.data.length} 的路径`)
+      ElMessage.success(t('kg.pathFound') + ` ${data.data.length}`)
       // 可视化路径
       await renderPathGraph()
     } else {
       pathResult.value = null
-      ElMessage.warning('未找到路径')
+      ElMessage.warning(t('kg.noPathFound'))
     }
   } catch (e: any) { ElMessage.error(e?.response?.data?.message || e?.message) }
 }

@@ -9,6 +9,8 @@ import com.minimax.agent.service.CollabDbService;
 import com.minimax.agent.service.KnowledgeGraphService;
 import com.minimax.agent.service.PluginService;
 import com.minimax.common.result.Result;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,6 +47,7 @@ import java.util.Map;
  *   POST   /agent/plugins/{id}/toggle 启停
  *   DELETE /agent/plugins/{id}        删除
  */
+@Tag(name = "AI智能体")
 @RestController
 @RequestMapping("/agent")
 @RequiredArgsConstructor
@@ -57,6 +60,7 @@ public class AgentController {
 
     // ---------- Agent ----------
 
+    @Operation(summary = "运行智能体任务")
     @PostMapping("/run")
     public Result<AgentService.AgentResult> run(@RequestBody Map<String, Object> body) {
         Long userId = ((Number) body.get("userId")).longValue();
@@ -68,6 +72,7 @@ public class AgentController {
 
     // ---------- 知识图谱 ----------
 
+    @Operation(summary = "创建/更新实体")
     @PostMapping("/kg/entities")
     public Result<Long> upsertEntity(@RequestBody Map<String, Object> body) {
         Long userId = ((Number) body.get("userId")).longValue();
@@ -80,11 +85,13 @@ public class AgentController {
         return Result.ok(id);
     }
 
+    @Operation(summary = "获取实体详情")
     @GetMapping("/kg/entities/{id}")
     public Result<KgEntity> getEntity(@PathVariable Long id, @RequestParam Long userId) {
         return Result.ok(kg.getEntity(id, userId));
     }
 
+    @Operation(summary = "搜索实体")
     @GetMapping("/kg/entities/search")
     public Result<List<KgEntity>> searchEntities(@RequestParam Long userId,
                                                    @RequestParam String keyword,
@@ -92,11 +99,13 @@ public class AgentController {
         return Result.ok(kg.searchEntities(userId, keyword, limit));
     }
 
+    @Operation(summary = "删除实体")
     @DeleteMapping("/kg/entities/{id}")
     public Result<Boolean> deleteEntity(@PathVariable Long id, @RequestParam Long userId) {
         return Result.ok(kg.deleteEntity(id, userId));
     }
 
+    @Operation(summary = "创建实体关系")
     @PostMapping("/kg/relations")
     public Result<Long> createRelation(@RequestBody Map<String, Object> body) {
         Long userId = ((Number) body.get("userId")).longValue();
@@ -108,16 +117,19 @@ public class AgentController {
         return Result.ok(kg.createRelation(userId, fromId, toId, type, desc, weight));
     }
 
+    @Operation(summary = "获取实体1跳邻居")
     @GetMapping("/kg/entities/{id}/neighbors")
     public Result<List<Map<String, Object>>> neighbors(@PathVariable Long id) {
         return Result.ok(kg.neighbors(id));
     }
 
+    @Operation(summary = "获取实体2跳邻居")
     @GetMapping("/kg/entities/{id}/2hop")
     public Result<List<Map<String, Object>>> twoHop(@PathVariable Long id) {
         return Result.ok(kg.twoHopNeighbors(id));
     }
 
+    @Operation(summary = "查询最短路径")
     @GetMapping("/kg/path")
     public Result<List<KgEntity>> shortestPath(@RequestParam Long userId,
                                                  @RequestParam Long from,
@@ -127,6 +139,7 @@ public class AgentController {
 
     // ---------- 协作 ----------
 
+    @Operation(summary = "创建协作会话")
     @PostMapping("/collab/sessions")
     public Result<Long> createCollab(@RequestBody Map<String, Object> body) {
         Long ownerId = ((Number) body.get("ownerId")).longValue();
@@ -135,11 +148,13 @@ public class AgentController {
     }
 
 
+    @Operation(summary = "加入协作会话")
     @PostMapping("/collab/{id}/join")
     public Result<Boolean> joinCollab(@PathVariable("id") Long collabId, @RequestParam Long userId) {
         return Result.ok(collab.joinSession(collabId, userId, "editor"));
     }
 
+    @Operation(summary = "关闭协作会话")
     @PostMapping("/collab/{id}/close")
     public Result<Boolean> closeCollab(@PathVariable("id") Long collabId, @RequestParam Long userId) {
         return Result.ok(collab.closeSession(collabId, userId));
@@ -147,16 +162,19 @@ public class AgentController {
 
     // ---------- 插件市场 ----------
 
+    @Operation(summary = "列出插件")
     @GetMapping("/plugins")
     public Result<List<Plugin>> listPlugins(@RequestParam(required = false) String category) {
         return Result.ok(plugin.listAll(category));
     }
 
+    @Operation(summary = "获取插件详情")
     @GetMapping("/plugins/{id}")
     public Result<Plugin> getPlugin(@PathVariable Long id) {
         return Result.ok(plugin.get(id));
     }
 
+    @Operation(summary = "发布插件")
     @PostMapping("/plugins")
     public Result<Long> publishPlugin(@RequestParam Long ownerId, @RequestBody Map<String, Object> body) {
         Long id = plugin.publish(ownerId,
@@ -172,16 +190,19 @@ public class AgentController {
         return Result.ok(id);
     }
 
+    @Operation(summary = "评分插件")
     @PostMapping("/plugins/{id}/rate")
     public Result<Boolean> ratePlugin(@PathVariable Long id, @RequestParam Double score) {
         return Result.ok(plugin.rate(id, score));
     }
 
+    @Operation(summary = "启用/禁用插件")
     @PostMapping("/plugins/{id}/toggle")
     public Result<Boolean> togglePlugin(@PathVariable Long id, @RequestParam Boolean enabled) {
         return Result.ok(plugin.setEnabled(id, enabled));
     }
 
+    @Operation(summary = "删除插件")
     @DeleteMapping("/plugins/{id}")
     public Result<Boolean> deletePlugin(@PathVariable Long id, @RequestParam Long ownerId) {
         return Result.ok(plugin.delete(id, ownerId));

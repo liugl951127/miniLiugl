@@ -8,12 +8,12 @@
     <!-- 页面标题 -->
     <div class="page-header">
       <div>
-        <h1>🏢 多租户管理</h1>
-        <p class="sub">平台所有租户的增删改查、启停、配额调整 — adminLiugl 专属</p>
+        <h1>🏢 {{ t('tenant.title') }}</h1>
+        <p class="sub">{{ t('tenant.subtitle') }}</p>
       </div>
       <el-button type="primary" @click="openCreateDialog">
         <el-icon><Plus /></el-icon>
-        新建租户
+        {{ t('tenant.newTenant') }}
       </el-button>
     </div>
 
@@ -24,7 +24,7 @@
           <div class="kpi-icon"><el-icon><OfficeBuilding /></el-icon></div>
           <div class="kpi-content">
             <div class="kpi-value">{{ tenants.length }}</div>
-            <div class="kpi-label">租户总数</div>
+            <div class="kpi-label">{{ t('tenant.total') }}</div>
           </div>
         </div>
       </el-col>
@@ -33,7 +33,7 @@
           <div class="kpi-icon"><el-icon><CircleCheck /></el-icon></div>
           <div class="kpi-content">
             <div class="kpi-value">{{ activeCount }}</div>
-            <div class="kpi-label">正常运营</div>
+            <div class="kpi-label">{{ t('tenant.activeCount') }}</div>
           </div>
         </div>
       </el-col>
@@ -42,7 +42,7 @@
           <div class="kpi-icon"><el-icon><User /></el-icon></div>
           <div class="kpi-content">
             <div class="kpi-value">{{ totalUsers }}</div>
-            <div class="kpi-label">注册用户</div>
+            <div class="kpi-label">{{ t('tenant.users') }}</div>
           </div>
         </div>
       </el-col>
@@ -51,7 +51,7 @@
           <div class="kpi-icon"><el-icon><Warning /></el-icon></div>
           <div class="kpi-content">
             <div class="kpi-value">{{ disabledCount }}</div>
-            <div class="kpi-label">已停用</div>
+            <div class="kpi-label">{{ t('tenant.disabled') }}</div>
           </div>
         </div>
       </el-col>
@@ -61,8 +61,8 @@
     <el-card class="table-card">
       <template #header>
         <div class="card-header">
-          <span>🏢 租户列表</span>
-          <el-button text @click="loadTenants"><el-icon><Refresh /></el-icon> 刷新</el-button>
+          <span>🏢 {{ t('tenant.list') }}</span>
+          <el-button text @click="loadTenants"><el-icon><Refresh /></el-icon> {{ t('common.refresh') }}</el-button>
         </div>
       </template>
 
@@ -79,10 +79,10 @@
             <el-tag :type="planType(row.plan)" size="small">{{ row.plan }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="90">
+        <el-table-column prop="status" :label="t('common.status')" width="90">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">
-              {{ row.status === 1 ? '正常' : '禁用' }}
+              {{ row.status === 1 ? t('tenant.active') : t('tenant.inactive') }}
             </el-tag>
           </template>
         </el-table-column>
@@ -104,7 +104,7 @@
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button size="small" text type="primary" @click="viewUsers(row)">
-              <el-icon><User /></el-icon> 用户
+              <el-icon><User /></el-icon> {{ t('common.users') }}
             </el-button>
             <el-button
               size="small"
@@ -113,7 +113,7 @@
               @click="toggleStatus(row)"
             >
               <el-icon><Switch /></el-icon>
-              {{ row.status === 1 ? '停用' : '启用' }}
+              {{ row.status === 1 ? t('tenant.disable') : t('tenant.enable') }}
             </el-button>
             <el-button
               v-if="row.code !== 'default'"
@@ -130,74 +130,74 @@
     </el-card>
 
     <!-- 创建/编辑租户弹窗 -->
-    <el-dialog v-model="createVisible" :title="editingTenant ? '编辑租户' : '新建租户'" width="520px">
+    <el-dialog v-model="createVisible" :title="editingTenant ? t('tenant.editTenant') : t('tenant.newTenant')" width="520px">
       <el-form :model="form" label-width="100" ref="formRef">
-        <el-form-item label="租户代码" prop="code" required>
-          <el-input v-model="form.code" placeholder="如: corp-a" :disabled="!!editingTenant" />
+        <el-form-item :label="t('tenant.code')" prop="code" required>
+          <el-input v-model="form.code" :placeholder="t('tenant.codePlaceholder')" :disabled="!!editingTenant" />
         </el-form-item>
-        <el-form-item label="租户名称" prop="name" required>
-          <el-input v-model="form.name" placeholder="如: 某某公司" />
+        <el-form-item :label="t('tenant.name')" prop="name" required>
+          <el-input v-model="form.name" :placeholder="t('tenant.namePlaceholder')" />
         </el-form-item>
-        <el-form-item label="套餐" prop="plan">
+        <el-form-item :label="t('tenant.plan')" prop="plan">
           <el-select v-model="form.plan" style="width:100%">
-            <el-option label="Free (10用户/100k配额)" value="free" />
-            <el-option label="Pro (100用户/1M配额)" value="pro" />
-            <el-option label="Enterprise (无限制)" value="enterprise" />
+            <el-option :label="t('tenant.freePlan')" value="free" />
+            <el-option :label="t('tenant.proPlan')" value="pro" />
+            <el-option :label="t('tenant.enterprisePlan')" value="enterprise" />
           </el-select>
         </el-form-item>
-        <el-form-item label="用户上限" prop="maxUsers">
+        <el-form-item :label="t('tenant.userLimit')" prop="maxUsers">
           <el-input-number v-model="form.maxUsers" :min="1" :max="10000" style="width:100%" />
         </el-form-item>
-        <el-form-item label="月度配额" prop="monthlyQuota">
+        <el-form-item :label="t('tenant.monthlyQuota')" prop="monthlyQuota">
           <el-input-number v-model="form.monthlyQuota" :min="0" :step="10000" style="width:100%" />
         </el-form-item>
-        <el-form-item label="QPS 限制" prop="qpsLimit">
+        <el-form-item :label="t('tenant.qpsLimit')" prop="qpsLimit">
           <el-input-number v-model="form.qpsLimit" :min="1" :max="10000" style="width:100%" />
         </el-form-item>
-        <el-form-item label="联系人邮箱" prop="contactEmail">
+        <el-form-item :label="t('tenant.contactEmail')" prop="contactEmail">
           <el-input v-model="form.contactEmail" placeholder="admin@company.com" />
         </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="可选备注" />
+        <el-form-item :label="t('tenant.remark')" prop="remark">
+          <el-input v-model="form.remark" type="textarea" :rows="2" :placeholder="t('tenant.remarkPlaceholder')" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="createVisible = false">取消</el-button>
+        <el-button @click="createVisible = false">{{ t('common.cancel') }}</el-button>
         <el-button type="primary" :loading="submitting" @click="submitTenant">
-          {{ editingTenant ? '保存' : '创建' }}
+          {{ editingTenant ? t('common.save') : t('common.create') }}
         </el-button>
       </template>
     </el-dialog>
 
     <!-- 配额调整弹窗 -->
-    <el-dialog v-model="quotaVisible" title="调整月度配额" width="420px">
+    <el-dialog v-model="quotaVisible" :title="t('tenant.adjustQuota')" width="420px">
       <el-form label-width="110">
-        <el-form-item :label="`${currentTenant?.name} 当前配额`">
+        <el-form-item :label="`${currentTenant?.name} ${t('tenant.currentQuota')}`">
           <span class="quota-text">{{ formatQuota(currentTenant?.monthlyQuota || 0) }}</span>
         </el-form-item>
-        <el-form-item label="新配额">
+        <el-form-item :label="t('tenant.newQuota')">
           <el-input-number v-model="newQuota" :min="0" :step="10000" style="width:100%" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="quotaVisible = false">取消</el-button>
+        <el-button @click="quotaVisible = false">{{ t('common.cancel') }}</el-button>
         <el-button type="primary" :loading="submitting" @click="submitQuota">
-          确认调整
+          {{ t('tenant.confirmAdjust') }}
         </el-button>
       </template>
     </el-dialog>
 
     <!-- 租户用户列表弹窗 -->
-    <el-dialog v-model="usersVisible" :title="`${currentTenant?.name} - 用户列表`" width="600px">
+    <el-dialog v-model="usersVisible" :title="`${currentTenant?.name} - ${t('tenant.userList')}`" width="600px">
       <el-table :data="tenantUsers" stripe v-loading="usersLoading">
-        <el-table-column prop="id" label="ID" width="70" />
-        <el-table-column prop="username" label="用户名" width="150" />
-        <el-table-column prop="nickname" label="昵称" />
-        <el-table-column prop="email" label="邮箱" />
-        <el-table-column label="状态" width="80">
+        <el-table-column prop="id" :label="t('common.id')" width="70" />
+        <el-table-column prop="username" :label="t('tenant.username')" width="150" />
+        <el-table-column prop="nickname" :label="t('tenant.nickname')" />
+        <el-table-column prop="email" :label="t('tenant.email')" />
+        <el-table-column :label="t('common.status')" width="80">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">
-              {{ row.status === 1 ? '正常' : '禁用' }}
+              {{ row.status === 1 ? t('tenant.active') : t('tenant.inactive') }}
             </el-tag>
           </template>
         </el-table-column>
@@ -213,6 +213,7 @@ import {
   Plus, Refresh, Switch, Delete, OfficeBuilding, CircleCheck, User, Warning
 } from '@element-plus/icons-vue'
 import { useTenantStore } from '@/store/tenant'
+import { t } from '@/i18n'
 
 const tenantStore = useTenantStore()
 
@@ -250,17 +251,17 @@ function openCreateDialog() {
 
 async function submitTenant() {
   if (!form.value.code || !form.value.name) {
-    ElMessage.warning('代码和名称必填')
+    ElMessage.warning(t('tenant.codeAndNameRequired'))
     return
   }
   submitting.value = true
   try {
     await tenantStore.createTenant(form.value)
-    ElMessage.success(editingTenant.value ? '保存成功' : '创建成功')
+    ElMessage.success(editingTenant.value ? t('tenant.saveSuccess') : t('tenant.createSuccess'))
     createVisible.value = false
     await loadTenants()
   } catch (e) {
-    ElMessage.error(e?.message || '操作失败')
+    ElMessage.error(e?.message || t('tenant.operationFailed'))
   } finally {
     submitting.value = false
   }
@@ -269,13 +270,13 @@ async function submitTenant() {
 // 启停
 async function toggleStatus(row) {
   const newStatus = row.status === 1 ? 0 : 1
-  const label = newStatus === 1 ? '启用' : '停用'
+  const label = newStatus === 1 ? t('tenant.enable') : t('tenant.disable')
   try {
-    await ElMessageBox.confirm(`确认 ${label} 租户「${row.name}」？`, label, { type: 'warning' })
+    await ElMessageBox.confirm(t('tenant.confirmToggle') + '「' + row.name + '」？', label, { type: 'warning' })
     await tenantStore.toggleStatus(row.id, newStatus)
-    ElMessage.success(`${label}成功`)
+    ElMessage.success(label + t('tenant.success'))
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error(e?.message || `${label}失败`)
+    if (e !== 'cancel') ElMessage.error(e?.message || label + t('tenant.failed'))
   }
 }
 
@@ -293,25 +294,25 @@ function openQuotaDialog(row) {
 async function submitQuota() {
   try {
     await tenantStore.setQuota(currentTenant.value.id, newQuota.value)
-    ElMessage.success('配额已更新')
+    ElMessage.success(t('tenant.quotaUpdated'))
     quotaVisible.value = false
   } catch (e) {
-    ElMessage.error(e?.message || '更新失败')
+    ElMessage.error(e?.message || t('tenant.updateFailed'))
   }
 }
 
 // 删除
 async function deleteTenant(row) {
   if (row.code === 'default') {
-    ElMessage.warning('default 租户不可删除')
+    ElMessage.warning(t('tenant.defaultNotDeletable'))
     return
   }
   try {
-    await ElMessageBox.confirm(`确认删除租户「${row.name}」？此操作不可恢复！`, '危险操作', { type: 'error' })
+    await ElMessageBox.confirm(t('tenant.confirmDelete') + '「' + row.name + '」' + t('tenant.deleteWarning'), t('tenant.dangerous'), { type: 'error' })
     await tenantStore.removeTenant(row.id)
-    ElMessage.success('已删除')
+    ElMessage.success(t('tenant.deleted'))
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error(e?.message || '删除失败')
+    if (e !== 'cancel') ElMessage.error(e?.message || t('tenant.deleteFailed'))
   }
 }
 
@@ -327,7 +328,7 @@ async function viewUsers(row) {
   try {
     tenantUsers.value = await tenantStore.fetchTenantUsers(row.id)
   } catch (e) {
-    ElMessage.error('加载用户列表失败')
+    ElMessage.error(t('tenant.loadUsersFailed'))
   } finally {
     usersLoading.value = false
   }
@@ -338,7 +339,7 @@ async function loadTenants() {
   try {
     await tenantStore.fetchTenants()
   } catch (e) {
-    ElMessage.error('加载租户列表失败，请确认拥有超级管理员权限')
+    ElMessage.error(t('tenant.loadFailed'))
   }
 }
 

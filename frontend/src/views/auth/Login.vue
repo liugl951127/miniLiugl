@@ -4,14 +4,14 @@
     <div class="login-box">
       <div class="login-header">
         <h1 class="gradient-text" style="margin: 0 0 8px; font-size: 32px;">MiniMax</h1>
-        <p style="color: var(--minimax-text-secondary); margin: 0;">大模型应用平台 · v5</p>
+        <p style="color: var(--minimax-text-secondary); margin: 0;">{{ t('app.tagline') }} · v5</p>
       </div>
 
       <!-- V5: 3 种登录方式 (密码 / 注册 / 微信扫码) -->
       <el-tabs v-model="mode" stretch class="login-tabs">
-        <el-tab-pane label="🔑 账号密码" name="login" />
-        <el-tab-pane label="📝 注册" name="register" />
-        <el-tab-pane label="📱 微信扫码" name="wechat" />
+        <el-tab-pane :label="'🔑 ' + t('user.accountPassword')" name="login" />
+        <el-tab-pane :label="'📝 ' + t('user.register')" name="register" />
+        <el-tab-pane :label="'📱 ' + t('user.wechatScan')" name="wechat" />
       </el-tabs>
 
       <!-- 密码登录 / 注册 -->
@@ -33,7 +33,7 @@
           <el-input v-model="form.email" placeholder="邮箱（选填）" :prefix-icon="Message" />
         </el-form-item>
         <el-button type="primary" size="large" :loading="loading" style="width: 100%;" @click="onSubmit">
-          {{ mode === 'login' ? '登 录' : '注 册 并 登 录' }}
+          {{ mode === 'login' ? t('user.login') : t('user.registerAndLogin') }}
         </el-button>
       </el-form>
 
@@ -42,23 +42,23 @@
         <WechatScanLogin @login-success="onWechatLogin" />
         <el-divider><span style="font-size: 12px; color: #94a3b8;">其他方式</span></el-divider>
         <p class="wechat-tip">
-          没有微信? 用 <a href="javascript:;" @click="mode = 'login'">账号密码</a> 登录
+          {{ t('user.noWechat') }} <a href="javascript:;" @click="mode = 'login'">{{ t('user.accountPassword') }}</a> {{ t('user.login') }}
         </p>
       </div>
 
       <div v-if="mode !== 'wechat'" class="login-tips">
         <el-alert type="info" :closable="false" show-icon>
           <template #title>
-            <span style="font-size: 12px;">默认账号 admin / admin@123（仅初始化数据中）</span>
+            <span style="font-size: 12px;">{{ t('user.defaultAccount') }}</span>
           </template>
         </el-alert>
         <el-alert type="warning" :closable="false" show-icon style="margin-top:8px">
           <template #title>
-            <span style="font-size: 12px;">🔑 超级管理员 <code>adminLiugl / Liugl@2026</code> （平台所有者）</span>
+            <span style="font-size: 12px;">{{ t('user.superAdmin') }}</span>
           </template>
         </el-alert>
         <p style="margin: 12px 0 4px; color: var(--minimax-text-secondary); font-size: 12px;">
-          平台能力路线：
+          {{ t('user.roadmapTitle') }}：
         </p>
         <ul style="margin: 0; padding-left: 20px; color: var(--minimax-text-secondary); font-size: 12px; line-height: 1.8;">
           <li>✅ Day 2 - 真实账号体系 (JWT + RBAC)</li>
@@ -83,6 +83,7 @@ import { User, Lock, Message, Avatar } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'
 import { authApi } from '@/api/auth'
 import WechatScanLogin from '@/components/WechatScanLogin.vue'
+import { t } from '@/i18n'
 
 const router = useRouter()
 const route = useRoute()

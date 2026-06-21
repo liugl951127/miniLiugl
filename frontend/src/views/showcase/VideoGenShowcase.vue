@@ -6,19 +6,19 @@
 <template>
   <div class="videogen">
     <header class="header">
-      <h1>🎬 文生视频 (Text-to-Video)</h1>
-      <p class="subtitle">输入文字描述, AI 生成短视频 (Sora / 可灵 / CogVideoX 等)</p>
+      <h1>🎬 {{ t('showcase.videoGen') }}</h1>
+      <p class="subtitle">{{ t('showcase.videoGenSubtitle') }}</p>
       <div class="badges">
         <span class="badge">Sora</span>
-        <span class="badge">可灵</span>
+        <span class="badge">{{ t('showcase.kling') }}</span>
         <span class="badge">CogVideoX</span>
-        <span class="badge">通义万相</span>
+        <span class="badge">{{ t('showcase.wanxiang') }}</span>
       </div>
     </header>
 
     <section class="input-panel">
       <el-input v-model="prompt" type="textarea" :rows="3"
-                placeholder="描述视频场景, 例如: 一只橘猫在草地上追蝴蝶, 慢动作, 电影质感" />
+                :placeholder="t('showcase.describeScene')" />
       <div class="quick-prompts">
         <el-tag v-for="qp in quickPrompts" :key="qp" class="qp" @click="prompt = qp">
           {{ qp.slice(0, 30) }}...
@@ -28,11 +28,11 @@
       <div class="settings">
         <div class="form-row">
           <div class="form-item half">
-            <label>时长: {{ duration }}s</label>
+            <label>{{ t('showcase.duration') }}: {{ duration }}s</label>
             <el-slider v-model="duration" :min="2" :max="10" :step="1" />
           </div>
           <div class="form-item half">
-            <label>分辨率</label>
+            <label>{{ t('showcase.resolution') }}</label>
             <el-select v-model="resolution" style="width: 100%">
               <el-option label="720P (1280×720)" value="720P" />
               <el-option label="1080P (1920×1080)" value="1080P" />
@@ -41,7 +41,7 @@
           </div>
         </div>
         <div class="form-item">
-          <label>模型 (1-3 个)</label>
+          <label>{{ t('showcase.models') }}</label>
           <div class="model-grid">
             <div v-for="m in availableModels" :key="m.code"
                  :class="['model-chip', { active: selectedModels.includes(m.code) }]"
@@ -53,21 +53,21 @@
         </div>
         <el-button type="primary" size="large" :icon="VideoCamera" :loading="generating"
                    :disabled="!canGenerate" @click="generate" block>
-          {{ generating ? '🎬 生成中 (可能 1-5 分钟)...' : '🚀 批量生成视频' }}
+          {{ generating ? '🎬 ' + t('showcase.generating') : '🚀 ' + t('showcase.generateVideos') }}
         </el-button>
       </div>
     </section>
 
     <!-- 结果 -->
     <section v-if="results.length" class="results">
-      <h2>🎥 生成结果 ({{ results.length }} 个)</h2>
+      <h2>🎥 {{ t('showcase.results') }} ({{ results.length }})</h2>
       <div class="grid">
         <div v-for="(r, idx) in results" :key="idx" class="video-card">
           <div class="vc-preview">
             <div v-if="r.status === 'generating'" class="vc-loading">
               <div class="spinner"></div>
               <p>{{ r.progress }}%</p>
-              <p class="vc-tip">AI 渲染中...</p>
+              <p class="vc-tip">{{ t('showcase.rendering') }}</p>
             </div>
             <div v-else-if="r.status === 'done'" class="vc-done">
               <!-- Mock 视频: 用动画 SVG + 文字 -->
@@ -100,7 +100,7 @@
             <div class="vc-meta">
               <span>⏱ {{ r.duration }}s</span>
               <span>📺 {{ r.resolution }}</span>
-              <el-tag v-if="r.mock" size="small" type="info">Mock</el-tag>
+              <el-tag v-if="r.mock" size="small" type="info">{{ t('showcase.mock') }}</el-tag>
             </div>
             <el-rate v-model="r.score" :max="5" size="small" />
           </div>
@@ -114,6 +114,7 @@
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { VideoCamera, VideoPlay, WarningFilled } from '@element-plus/icons-vue'
+import { t } from '@/i18n'
 
 const prompt = ref('一只橘猫在草地上追蝴蝶, 慢动作, 电影质感, 黄金时刻光线')
 const duration = ref(5)

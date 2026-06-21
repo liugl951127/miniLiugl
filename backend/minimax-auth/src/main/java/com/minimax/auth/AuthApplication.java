@@ -11,7 +11,8 @@ import org.springframework.context.annotation.ComponentScan;
  */
 @SpringBootApplication(scanBasePackages = {
         "com.minimax.auth",
-        "com.minimax.common"
+        "com.minimax.common",
+        "com.minimax.common.config"  // 注入 WebSocket 等通用组件
 })
 @MapperScan("com.minimax.auth.mapper")
 public class AuthApplication {

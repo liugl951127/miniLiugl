@@ -1,0 +1,242 @@
+version: 1
+name: day17-v4-infrastructure
+owner: root
+cycle_limit: 1
+auto_reject_retries: 0
+plan:
+  name: day17-v4-infrastructure
+  summary: "Day 17 — V4 基础设施补全: Swagger文档 / i18n / 移动端H5 / WebSocket通知"
+  next_deadline: "2026-06-21 20:00"
+
+tasks:
+  - id: swagger
+    title: Swagger/OpenAPI 文档 + knife4j 全模块激活
+    prompt: |
+      在 backend 所有 Controller 上加 @Tag/@Operation 注解，并在相关模块的 application.yml 中激活 knife4j。
+
+      涉及模块：minimax-auth, minimax-chat, minimax-model, minimax-memory, minimax-rag,
+      minimax-function, minimax-agent, minimax-admin, minimax-prompt, minimax-monitor
+
+      每个 Controller 类加 @Tag(name="模块中文名")，每个接口方法加 @Operation(summary="接口描述中文")。
+      knife4j 已在 root pom 的 dependencyManagement 中定义，只需在各模块 yml 加:
+        springdoc:
+          api-docs:
+            enabled: true
+          swagger-ui:
+            enabled: true
+        knife4j:
+          enable: true
+
+      工作目录: /workspace/minimax-platform（注意实际路径是 /workspace/minimax-platform）
+
+      操作步骤：
+      1. 找到所有 Controller 文件（grep "Controller.java" 在 backend 各模块 src 目录）
+      2. 每个 Controller 类加 @Tag(name="中文模块名")
+      3. 每个 public 方法加 @Operation(summary="中文描述")
+      4. 找各模块的 application.yml，加 knife4j 配置
+
+      不要动 pom.xml。只加注解和 yml 配置。
+      完成后回显修改的文件列表。
+    assigned_to: scout
+    timeout_ms: 1200000
+    verify_skip_reason: "Swagger annotations are code changes verified by the self-check gate at plan end."
+
+  - id: i18n
+    title: 国际化 i18n 补全
+    prompt: |
+      为 MiniMax 平台补全前端国际化 i18n。
+
+      步骤1: 读取现有 locale 文件了解结构:
+        - /workspace/minimax-platform/frontend/src/i18n/locales/zh.js
+        - /workspace/minimax-platform/frontend/src/i18n/locales/en.js
+
+      步骤2: 在 zh.js 和 en.js 末尾（export default { 块内末尾）追加缺失的 section key。
+      需要添加的 sections (只添加 zh 里没有的):
+        tenant: { title:"租户管理", list:"租户列表", create:"创建租户", ... }
+        admin: { title:"管理后台", dashboard:"仪表盘", users:"用户管理", ... }
+        monitor: { title:"监控中心", health:"健康检查", alerts:"告警", ... }
+        prompt: { title:"提示词模板", templates:"模板列表", create:"创建模板", ... }
+        agent: { title:"Agent 自主任务", task:"任务", running:"运行中", ... }
+        kg: { title:"知识图谱", graph:"图谱", entities:"实体", ... }
+        collab: { title:"实时协作", online:"在线用户", typing:"正在输入", ... }
+        plugins: { title:"插件市场", install:"安装", uninstall:"卸载", ... }
+        about: { title:"关于", version:"版本", author:"作者", ... }
+
+      步骤3: 在以下 17 个 Vue 文件中，加 `import { t } from '@/i18n'` 并将硬编码中文替换为 `t('section.key')`:
+        /workspace/minimax-platform/frontend/src/views/admin/Index.vue
+        /workspace/minimax-platform/frontend/src/views/agent/Index.vue
+        /workspace/minimax-platform/frontend/src/views/auth/Login.vue
+        /workspace/minimax-platform/frontend/src/views/auth/WechatScanPage.vue
+        /workspace/minimax-platform/frontend/src/views/collab/Index.vue
+        /workspace/minimax-platform/frontend/src/views/kg/Index.vue
+        /workspace/minimax-platform/frontend/src/views/knowledge/Index.vue
+        /workspace/minimax-platform/frontend/src/views/memory/Index.vue
+        /workspace/minimax-platform/frontend/src/views/mobile/Index.vue
+        /workspace/minimax-platform/frontend/src/views/mobile/Me.vue
+        /workspace/minimax-platform/frontend/src/views/plugins/Index.vue
+        /workspace/minimax-platform/frontend/src/views/prompts/Index.vue
+        /workspace/minimax-platform/frontend/src/views/showcase/PluginShowcase.vue
+        /workspace/minimax-platform/frontend/src/views/showcase/VideoGenShowcase.vue
+        /workspace/minimax-platform/frontend/src/views/tenant/Index.vue
+        /workspace/minimax-platform/frontend/src/views/user/CrossAppBinding.vue
+
+      规则：
+      - 英文翻译 key 用英文原文
+      - format: t('section.key') — 符合现有 zh.js/en.js 风格
+      - 不要改动已有使用 t() 的地方
+      - 中文文件：zh.js/en.js 都改
+      完成后回显修改的文件列表。
+    assigned_to: general
+    timeout_ms: 1200000
+    verify_skip_reason: "i18n changes are code/text verified by the build gate at plan end."
+
+  - id: mobile
+    title: 移动端 H5 适配优化
+    prompt: |
+      优化 MiniMax 平台移动端 H5 页面，使用 Vant 组件。
+
+      工作目录: /workspace/minimax-platform/frontend/src/views/mobile/
+
+      优化以下 6 个页面（已有基础，改进体验）:
+
+      1. Index.vue:
+         - 移动端入口页，卡片式导航
+         - Vant Cell Group: 对话/知识库/Memory/Agent/协作/插件/关于
+         - 顶部平台名称 + 标语
+
+      2. Chat.vue:
+         - 完善聊天界面
+         - 消息气泡：自己发的右对齐绿色，对方左对齐灰色
+         - Vant Field 底部输入框 + 发送按钮
+         - 会话列表（Vant List）
+
+      3. Agent.vue:
+         - Agent 任务输入 + 结果展示
+         - Vant Input/Button
+         - 加载状态 (Vant Loading)
+
+      4. Kg.vue:
+         - 知识图谱迷你展示
+         - vue-echarts 简化图（只展示核心节点）
+         - Vant Cell 节点列表
+
+      5. Plugins.vue:
+         - 插件卡片展示
+         - Vant Card 组件
+         - 安装/卸载按钮
+
+      6. Me.vue:
+         - 个人中心
+         - Vant Cell: 头像/昵称/邮箱/退出登录
+         - 当前用户信息从 userStore 读取
+
+      同时确认 router/index.js 有移动端路由:
+        /mobile/chat, /mobile/agent, /mobile/kg, /mobile/plugins, /mobile/me
+
+      只改动 /workspace/minimax-platform/frontend/src/views/mobile/ 和 frontend/src/router/index.js
+      完成后回显修改的文件列表。
+    assigned_to: general
+    timeout_ms: 900000
+    verify_skip_reason: "Mobile H5 changes are UI changes verified by the build gate at plan end."
+
+  - id: websocket
+    title: WebSocket 实时通知中心
+    prompt: |
+      为 MiniMax 平台实现 WebSocket 实时通知中心。
+
+      工作目录: /workspace/minimax-platform
+
+      【后端 - minimax-auth 模块】
+      1. sql/20_notification.sql:
+         CREATE TABLE notification (
+           id BIGINT AUTO_INCREMENT PRIMARY KEY,
+           user_id BIGINT NOT NULL,
+           type VARCHAR(50) NOT NULL COMMENT 'SESSION_CREATED/AGENT_COMPLETE/DOC_APPROVED...',
+           title VARCHAR(255) NOT NULL,
+           content TEXT,
+           is_read TINYINT(1) DEFAULT 0,
+           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+           INDEX idx_user_id (user_id),
+           INDEX idx_is_read (is_read)
+         );
+
+      2. Notification.java: 实体 (Lombok @Data/@NoArgsConstructor/@AllArgsConstructor, @TableName)
+
+      3. NotificationMapper.java + NotificationMapper.xml (继承 BaseMapper<Notification>)
+
+      4. NotificationService.java:
+         - list(userId, page, size): 分页通知列表
+         - unreadCount(userId): 未读数
+         - markRead(id): 标记已读
+         - markAllRead(userId): 全部已读
+         - clear(userId): 清空
+         - sendNotification(userId, type, title, content): 发送通知
+
+      5. NotificationController.java:
+         @RestController @RequestMapping("/notifications")
+         @Tag(name="通知管理")
+         - GET / - list
+         - GET /unread-count - unreadCount
+         - PUT /{id}/read - markRead
+         - PUT /read-all - markAllRead
+         - DELETE / - clear
+
+      6. NotificationWebSocket.java:
+         @ServerEndpoint("/ws/notifications")
+         - @OnOpen: JWT 验证, 注册 session 到 ConcurrentHashMap
+         - @OnMessage: 处理心跳/订阅
+         - @OnClose: 移除 session
+         - @OnError: 移除 session
+         - sendToUser(userId, message): 推送消息给指定用户
+
+      7. AuthApplication.java: 注入 WS endpoint (Spring 会自动注册 @ServerEndpoint)
+
+      【通知触发 - 可选，在相关 Service 中注入 NotificationService】
+      - ChatSessionService.createSession: 通知
+      - AgentService 完成: 通知
+      - DocumentService 审核通过: 通知
+
+      【前端】
+      1. src/api/notification.js:
+         - listNotifications(page, size)
+         - unreadCount()
+         - markRead(id)
+         - markAllRead()
+         - clearNotifications()
+
+      2. src/store/notification.js (Pinia):
+         - state: notifications[], unreadCount
+         - actions: fetchList, fetchUnread, markRead, markAllRead, clear
+         - WebSocket 连接管理（在 store 初始化时连接 /ws/notifications）
+         - ws onmessage: push 到 notifications, unreadCount++
+
+      3. src/views/notification/Index.vue:
+         - 通知列表（Vant List + Cell）
+         - 未读高亮
+         - 标记已读按钮
+         - 全部已读/清空
+
+      4. src/layout/Index.vue:
+         - 右上角 🔔 图标 + unreadCount 红点 (el-badge 或 Vant Badge)
+         - 点击跳转 /notification
+         - activeMenu 高亮
+
+      完成后回显修改的文件列表。
+    assigned_to: general
+    timeout_ms: 1200000
+    verify_skip_reason: "WebSocket notification changes verified by the self-check gate at plan end."
+
+gates:
+  - id: self-check
+    title: 自检门
+    prompt: |
+      运行以下 3 个检查，全部必须通过才算完成:
+      1. bash /workspace/minimax-platform/scripts/self-check.sh (78+/78+)
+      2. bash /workspace/minimax-platform/scripts/java-static-check.sh (0 错误)
+      3. cd /workspace/minimax-platform/frontend && npm run build (必须成功)
+
+      任一失败则 report failure with the exact error.
+
+      全部通过则回显 "✅ ALL CHECKS PASSED"。
+    verified_by: root

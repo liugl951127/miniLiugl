@@ -1,5 +1,7 @@
 package com.minimax.auth.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.minimax.auth.entity.OAuthAppConfig;
 import com.minimax.auth.oauth.OAuthPlatformClient;
 import com.minimax.auth.oauth.OAuthPlatformService;
@@ -27,6 +29,7 @@ import java.util.*;
  * @since 2026-06
  */
 @Slf4j
+@Tag(name = "认证授权")
 @RestController
 @RequestMapping("/auth/oauth")
 @RequiredArgsConstructor
@@ -34,9 +37,7 @@ public class OAuthController {
 
     private final OAuthPlatformService oauthService;
 
-    /**
-     * 生成授权 URL (前端跳转用)
-     */
+    @Operation(summary = "生成 OAuth 授权 URL")
     @GetMapping("/{platform}/authorize-url")
     public Result<Map<String, Object>> authorizeUrl(
             @PathVariable String platform,
@@ -56,10 +57,7 @@ public class OAuthController {
         ));
     }
 
-    /**
-     * 跨平台登录 (POST 直接传 code)
-     * 移动端/小程序/公众号 OAuth 已在客户端处理回调, 直接 POST code 过来即可.
-     */
+    @Operation(summary = "跨平台登录（POST 直接传 code）")
     @PostMapping("/{platform}/login")
     public Result<LoginResponse> login(@PathVariable String platform,
                                        @RequestBody Map<String, Object> body) {
@@ -73,9 +71,7 @@ public class OAuthController {
         return Result.ok(resp);
     }
 
-    /**
-     * 平台回调 (GET, 类似微信回调)
-     */
+    @Operation(summary = "OAuth 平台回调（GET）")
     @GetMapping("/{platform}/callback")
     public Result<LoginResponse> callback(@PathVariable String platform,
                                           @RequestParam String code,
@@ -86,9 +82,7 @@ public class OAuthController {
         return Result.ok(resp);
     }
 
-    /**
-     * 查应用配置
-     */
+    @Operation(summary = "查询应用 OAuth 配置")
     @GetMapping("/{platform}/config")
     public Result<Map<String, Object>> getConfig(@PathVariable String platform,
                                                  @RequestParam(defaultValue = "web") String appType) {
@@ -113,9 +107,7 @@ public class OAuthController {
         ));
     }
 
-    /**
-     * 列出所有平台配置 (admin)
-     */
+    @Operation(summary = "列出所有 OAuth 平台配置")
     @GetMapping("/configs")
     public Result<List<Map<String, Object>>> listConfigs() {
         List<OAuthAppConfig> all = oauthService.getConfigMapper() == null ? List.of()

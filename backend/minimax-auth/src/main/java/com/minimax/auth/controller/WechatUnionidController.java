@@ -1,6 +1,8 @@
 package com.minimax.auth.controller;
 
 import com.minimax.auth.entity.SysUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.minimax.auth.mapper.SysUserMapper;
 import com.minimax.auth.wechat.WechatBindingService;
 import com.minimax.auth.wechat.WechatUnionidService;
@@ -36,6 +38,7 @@ import java.util.*;
  * @since 2026-06
  */
 @Slf4j
+@Tag(name = "微信Unionid跨应用")
 @RestController
 @RequiredArgsConstructor
 public class WechatUnionidController {
@@ -47,6 +50,7 @@ public class WechatUnionidController {
 
     // ================ 用户端 ================
 
+    @Operation(summary = "获取我的跨应用绑定信息")
     @GetMapping("/auth/wechat/unionid/me")
     public Result<List<Map<String, Object>>> getMyUnionid(
             @AuthenticationPrincipal AuthenticatedUser principal) {
@@ -84,18 +88,21 @@ public class WechatUnionidController {
         }
     }
 
+    @Operation(summary = "列出所有unionid关联关系")
     @GetMapping("/auth/admin/wechat/unionid-relations")
     public Result<List<Map<String, Object>>> listAllUnionidRelations(
             @RequestParam(defaultValue = "100") int limit) {
         return Result.ok(unionidService.listAllUnionidRelations(limit));
     }
 
+    @Operation(summary = "按unionid查询关联用户")
     @GetMapping("/auth/admin/wechat/users-by-unionid")
     public Result<List<Map<String, Object>>> getUsersByUnionid(
             @RequestParam String unionid) {
         return Result.ok(unionidService.findUsersByUnionid(unionid));
     }
 
+    @Operation(summary = "合并用户账号")
     @PostMapping("/auth/admin/wechat/merge-accounts")
     public Result<Void> mergeAccounts(@AuthenticationPrincipal AuthenticatedUser principal,
                                       @RequestBody Map<String, Object> body) {
@@ -113,6 +120,7 @@ public class WechatUnionidController {
      * - 多平台用户数 (2 个+平台)
      * - 总 unionid 关联数
      */
+    @Operation(summary = "跨平台绑定统计面板")
     @GetMapping("/auth/admin/wechat/cross-platform-stats")
     public Result<Map<String, Object>> crossPlatformStats() {
         Map<String, Object> out = new LinkedHashMap<>();

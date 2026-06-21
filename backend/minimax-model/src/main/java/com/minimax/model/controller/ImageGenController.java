@@ -1,5 +1,7 @@
 package com.minimax.model.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.minimax.common.result.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,7 @@ import java.util.*;
  * @since 2026-06
  */
 @Slf4j
+@Tag(name = "模型管理")
 @RestController
 @RequestMapping("/imagegen")
 @RequiredArgsConstructor
@@ -41,7 +44,7 @@ public class ImageGenController {
             .connectTimeout(Duration.ofSeconds(15))
             .build();
 
-    /** 列出可用模型 */
+    @Operation(summary = "列出可用文生图模型")
     @GetMapping("/models")
     public Result<List<Map<String, Object>>> models() {
         List<Map<String, Object>> ms = new ArrayList<>();
@@ -100,6 +103,7 @@ public class ImageGenController {
         return Result.ok(ms);
     }
 
+    @Operation(summary = "生成图片")
     @PostMapping("/generate")
     @SuppressWarnings("unchecked")
     public Result<Map<String, Object>> generate(@RequestBody Map<String, Object> body) {

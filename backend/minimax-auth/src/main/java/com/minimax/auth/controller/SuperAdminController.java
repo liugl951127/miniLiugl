@@ -1,5 +1,7 @@
 package com.minimax.auth.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.minimax.auth.entity.SysUser;
 import com.minimax.auth.mapper.SysUserMapper;
 import com.minimax.auth.service.AuthService;
@@ -25,6 +27,7 @@ import java.util.Map;
  *   POST /auth/super/impersonate/{id} - 模拟某用户 (只读 token)
  */
 @Slf4j
+@Tag(name = "认证授权")
 @RestController
 @RequestMapping("/auth/super")
 @RequiredArgsConstructor
@@ -33,6 +36,7 @@ public class SuperAdminController {
     private final SysUserMapper userMapper;
     private final AuthService authService;
 
+    @Operation(summary = "获取当前超级管理员信息")
     @GetMapping("/me")
     public Result<Map<String, Object>> me() {
         SuperAdminGuard.requireSuperAdmin();
@@ -50,6 +54,7 @@ public class SuperAdminController {
         return Result.ok(data);
     }
 
+    @Operation(summary = "列出所有用户")
     @GetMapping("/users")
     public Result<List<Map<String, Object>>> listUsers() {
         SuperAdminGuard.requireSuperAdmin();
@@ -68,6 +73,7 @@ public class SuperAdminController {
         }).toList());
     }
 
+    @Operation(summary = "禁用指定用户")
     @PostMapping("/users/{id}/disable")
     public Result<Boolean> disableUser(@PathVariable Long id) {
         SuperAdminGuard.requireSuperAdmin();
@@ -82,6 +88,7 @@ public class SuperAdminController {
         return Result.ok(true);
     }
 
+    @Operation(summary = "启用指定用户")
     @PostMapping("/users/{id}/enable")
     public Result<Boolean> enableUser(@PathVariable Long id) {
         SuperAdminGuard.requireSuperAdmin();
@@ -93,6 +100,7 @@ public class SuperAdminController {
         return Result.ok(true);
     }
 
+    @Operation(summary = "重置用户密码")
     @PostMapping("/users/{id}/reset-pwd")
     public Result<String> resetPwd(@PathVariable Long id,
                                     @RequestParam(defaultValue = "Temp@123456") String newPwd) {

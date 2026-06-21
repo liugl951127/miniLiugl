@@ -1,29 +1,29 @@
 <template>
   <div class="agent-container">
     <div class="agent-header">
-      <h1>🤖 Agent 自主任务 <span class="badge">V2.0</span></h1>
-      <p class="sub">给 Agent 一个目标, 它会自主规划 → 调工具 → 反思 → 给出最终答案</p>
+      <h1>🤖 {{ t('agent.title') }} <span class="badge">V2.0</span></h1>
+      <p class="sub">{{ t('agent.subtitle') }}</p>
     </div>
 
     <el-card class="input-card">
       <el-form>
-        <el-form-item label="任务目标">
+        <el-form-item :label="t('agent.taskGoal')">
           <el-input
             v-model="goal"
             type="textarea"
             :rows="3"
-            placeholder="例: 查一下北京今天的天气, 算出明天温差, 然后发邮件给张伟"
+            :placeholder="t('agent.taskGoalPlaceholder')"
           />
         </el-form-item>
-        <el-form-item label="允许使用的工具 (留空 = 全部)">
-          <el-select v-model="tools" multiple filterable placeholder="选择工具" style="width:100%">
-            <el-option v-for="t in availableTools" :key="t.name"
-                        :label="t.displayName + ' (' + t.name + ')'" :value="t.name" />
+        <el-form-item :label="t('agent.allowedTools')">
+          <el-select v-model="tools" multiple filterable :placeholder="t('agent.selectTools')" style="width:100%">
+            <el-option v-for="tool in availableTools" :key="tool.name"
+                        :label="tool.displayName + ' (' + tool.name + ')'" :value="tool.name" />
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" :loading="running" @click="run">🚀 执行</el-button>
-          <el-button @click="reset">重置</el-button>
+          <el-button type="primary" :loading="running" @click="run">🚀 {{ t('agent.execute') }}</el-button>
+          <el-button @click="reset">{{ t('common.reset') }}</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -31,11 +31,11 @@
     <el-card v-if="steps.length" class="timeline-card">
       <template #header>
         <div class="card-header">
-          <span>📋 思考过程 (ReAct 循环)</span>
+          <span>{{ t('agent.thinkingProcess') }}</span>
           <div>
-            <el-tag>轮数: {{ rounds }}</el-tag>
-            <el-tag type="success" style="margin-left:8px">工具: {{ toolsUsed.join(', ') || '无' }}</el-tag>
-            <el-tag type="info" style="margin-left:8px">耗时: {{ duration }}ms</el-tag>
+            <el-tag>{{ t('agent.rounds') }}: {{ rounds }}</el-tag>
+            <el-tag type="success" style="margin-left:8px">{{ t('agent.tools') }}: {{ toolsUsed.join(', ') || t('common.none') }}</el-tag>
+            <el-tag type="info" style="margin-left:8px">{{ t('agent.duration') }}: {{ duration }}ms</el-tag>
           </div>
         </div>
       </template>
@@ -67,7 +67,7 @@
 
     <el-card v-if="finalAnswer" class="answer-card">
       <template #header>
-        <span>✨ 最终答案</span>
+        <span>✨ {{ t('agent.finalAnswer') }}</span>
       </template>
       <div class="final-answer">
         <MarkdownView :content="finalAnswer" />
@@ -81,6 +81,7 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import MarkdownView from '@/components/MarkdownView.vue'
+import { t } from '@/i18n'
 
 const goal = ref('查一下北京今天的天气, 然后给出一个旅游建议')
 const tools = ref<string[]>([])
@@ -111,7 +112,7 @@ async function loadTools() {
 
 async function run() {
   if (!goal.value.trim()) {
-    ElMessage.warning('请输入任务目标')
+    ElMessage.warning(t('agent.enterGoal'))
     return
   }
   running.value = true
@@ -125,7 +126,7 @@ async function run() {
       { headers: { Authorization: `Bearer ${token}` } })
     const result = data?.data
     if (!result) {
-      ElMessage.error('执行失败: ' + (data?.message || '无响应'))
+      ElMessage.error(t('agent.execFailed') + (data?.message || t('agent.noResponse')))
       return
     }
     steps.value = result.steps || []
@@ -136,7 +137,7 @@ async function run() {
       ? result.answer
       : '❌ ' + (result.answer || '执行失败')
   } catch (e: any) {
-    ElMessage.error('请求失败: ' + (e?.response?.data?.message || e?.message))
+    ElMessage.error(t('agent.requestFailed') + (e?.response?.data?.message || e?.message))
   } finally {
     running.value = false
   }

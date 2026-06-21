@@ -385,4 +385,23 @@
 
 ---
 
-## Day 17 - 待开始
+## Day 17 - 2026-06-21 ✅ V4 基础设施补全 (Swagger/i18n/移动端/通知)
+
+**今日完成：**
+- [x] Swagger/OpenAPI (knife4j): 10模块24个Controller加@Tag/@Operation注解，10个yml激活knife4j
+- [x] 国际化i18n: 新增9个locale section（tenant/admin/monitor/prompt/agent/kg/collab/plugins/about），17个Vue页面接入t()
+- [x] 移动端H5: 6个页面全面升级（Index/Banner+Tabbar、Chat/气泡+时间戳、Agent/Steps、Kg/ECharts图、Plugins/安装卸载、Me/退出登录）
+- [x] WebSocket通知: notification表+实体/Mapper/Service/Controller+NotificationWebSocket端点+前端通知页面+铃铛红点Badge
+
+**关键数据：** +~21个后端文件 / +~30个前端文件 / 24个Controller改注解 / 1张SQL表
+**报告：** `reports/day-17-report.md`
+
+**明日计划 Day 18：**
+- [ ] API网关增强（路由可配置化）
+- [ ] 性能监控面板（真实数据接入）
+- [ ] 告警通知推送（邮件/钉钉）
+- [ ] API Key 管理界面
+
+---
+
+## Day 18 - 待开始

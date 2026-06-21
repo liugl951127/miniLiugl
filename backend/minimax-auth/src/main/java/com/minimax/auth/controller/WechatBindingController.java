@@ -1,5 +1,7 @@
 package com.minimax.auth.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.minimax.auth.entity.SysUser;
 import com.minimax.auth.mapper.SysUserMapper;
 import com.minimax.auth.wechat.WechatBindingService;
@@ -30,6 +32,7 @@ import java.util.*;
  * @since 2026-06
  */
 @Slf4j
+@Tag(name = "认证授权")
 @RestController
 @RequiredArgsConstructor
 public class WechatBindingController {
@@ -39,11 +42,13 @@ public class WechatBindingController {
 
     // ================ 用户端 ================
 
+    @Operation(summary = "查询当前用户微信绑定信息")
     @GetMapping("/auth/wechat/binding/me")
     public Result<Map<String, Object>> getMyBinding(@AuthenticationPrincipal AuthenticatedUser principal) {
         return Result.ok(bindingService.getMyBinding(principal.id()));
     }
 
+    @Operation(summary = "当前用户解绑微信")
     @DeleteMapping("/auth/wechat/binding/me")
     public Result<Void> unbindMyself(@AuthenticationPrincipal AuthenticatedUser principal) {
         bindingService.unbindMyself(principal.id());
@@ -61,6 +66,7 @@ public class WechatBindingController {
         }
     }
 
+    @Operation(summary = "列出所有微信绑定记录（管理员）")
     @GetMapping("/auth/admin/wechat/bindings")
     public Result<List<Map<String, Object>>> listAll(
             @RequestParam(defaultValue = "100") int limit,
@@ -68,11 +74,13 @@ public class WechatBindingController {
         return Result.ok(bindingService.listAll(limit, keyword));
     }
 
+    @Operation(summary = "按 openid 查询绑定记录（管理员）")
     @GetMapping("/auth/admin/wechat/find")
     public Result<Map<String, Object>> findByOpenid(@RequestParam String openid) {
         return Result.ok(bindingService.findByOpenid(openid));
     }
 
+    @Operation(summary = "管理员强制绑定微信")
     @PostMapping("/auth/admin/wechat/bind")
     public Result<Void> bindByAdmin(@AuthenticationPrincipal AuthenticatedUser principal,
                                     @RequestBody Map<String, Object> body) {
@@ -87,6 +95,7 @@ public class WechatBindingController {
         return Result.ok();
     }
 
+    @Operation(summary = "管理员强制解绑微信")
     @DeleteMapping("/auth/admin/wechat/bind/{userId}")
     public Result<Void> unbindByAdmin(@AuthenticationPrincipal AuthenticatedUser principal,
                                      @PathVariable Long userId) {

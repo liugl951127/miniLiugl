@@ -50,6 +50,12 @@ const routes = [
         meta: { title: 'Agent 自主任务', icon: 'MagicStick' }
       },
       {
+        path: 'notification',
+        name: 'Notification',
+        component: () => import('@/views/notification/Index.vue'),
+        meta: { title: '通知中心', icon: 'Bell' }
+      },
+      {
         path: 'prompts',
         name: 'Prompts',
         component: () => import('@/views/prompts/Index.vue'),
@@ -207,10 +213,10 @@ const routes = [
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },
   {
-    // V3.2: 移动端 H5 路由 (/m/*)
-    path: '/m',
+    // V3.2: 移动端 H5 路由 (/mobile/*)
+    path: '/mobile',
     component: () => import('@/views/mobile/Index.vue'),
-    redirect: '/m/chat',
+    redirect: '/mobile/chat',
     children: [
       {
         path: 'chat',

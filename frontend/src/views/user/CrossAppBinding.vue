@@ -6,8 +6,8 @@
 <template>
   <div class="cross-app-page">
     <header class="page-header">
-      <h1>🔗 跨应用账号绑定</h1>
-      <p class="subtitle">同一微信开放平台下的所有应用共享账号</p>
+      <h1>🔗 {{ t('user.crossAppBinding') }}</h1>
+      <p class="subtitle">{{ t('user.crossAppBindingDesc') }}</p>
     </header>
     <CrossAppBinding />
   </div>
@@ -15,6 +15,7 @@
 
 <script setup>
 import CrossAppBinding from '@/components/CrossAppBinding.vue'
+import { t } from '@/i18n'
 </script>
 
 <style scoped>

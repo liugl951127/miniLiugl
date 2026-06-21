@@ -6,11 +6,12 @@
         <van-dropdown-item v-model="currentSession" :options="sessionOptions" @change="switchSession" />
       </van-dropdown-menu>
       <van-button size="mini" type="primary" @click="newSession" icon="plus" />
+      <van-button size="mini" @click="clearChat" icon="delete-o" />
     </div>
 
     <!-- 消息流 -->
     <div class="messages" ref="msgBox">
-      <div v-if="!messages.length" class="empty">
+      <div v-if="!messages.length && !streaming" class="empty">
         <van-empty description="开始第一句对话吧 👋">
           <van-button round type="primary" class="primary-btn" @click="quickAsk('你好, 请介绍一下你自己')">
             打个招呼
@@ -18,34 +19,33 @@
         </van-empty>
       </div>
 
-      <div v-for="(m, i) in messages" :key="i" :class="['msg', m.role]">
-        <van-image
-          v-if="m.avatar"
-          round
-          :src="m.avatar"
-          width="32"
-          height="32"
-          class="avatar"
-        />
-        <div v-else class="avatar-placeholder" :class="m.role">
-          {{ m.role === 'user' ? '👤' : '🤖' }}
+      <div
+        v-for="(m, i) in messages"
+        :key="i"
+        :class="['msg-row', m.role]"
+      >
+        <div v-if="m.role === 'assistant'" class="avatar ai-avatar">🤖</div>
+        <div v-else class="avatar user-avatar">
+          {{ userStore.profile?.nickname?.[0] || 'U' }}
         </div>
-        <div class="bubble">
-          <div class="content">
+        <div class="bubble-wrap">
+          <div :class="['bubble', m.role]">
             <MarkdownView v-if="m.role === 'assistant'" :content="m.content" />
-            <div v-else>{{ m.content }}</div>
+            <div v-else class="user-text">{{ m.content }}</div>
           </div>
+          <div class="msg-time">{{ formatTime(m.time) }}</div>
         </div>
       </div>
 
       <!-- 流式中的消息 -->
-      <div v-if="streaming" class="msg assistant">
-        <div class="avatar-placeholder assistant">🤖</div>
-        <div class="bubble">
-          <div class="content">
+      <div v-if="streaming" class="msg-row assistant">
+        <div class="avatar ai-avatar">🤖</div>
+        <div class="bubble-wrap">
+          <div class="bubble assistant streaming">
             <span>{{ streamContent }}</span>
             <span class="cursor">▊</span>
           </div>
+          <div class="msg-time">正在输入...</div>
         </div>
       </div>
     </div>
@@ -55,12 +55,14 @@
       <van-field
         v-model="input"
         type="textarea"
-        rows="2"
+        rows="1"
         autosize
         placeholder="说点什么..."
         :border="false"
         class="input-field"
-        @keyup.enter.exact="send"
+        @keyup.enter.exact.prevent="send"
+        @focus="inputFocused = true"
+        @blur="inputFocused = false"
       />
       <van-button
         type="primary"
@@ -70,7 +72,10 @@
         @click="send"
         class="send-btn"
       >
-        发送
+        <template #icon>
+          <van-icon name="arrow-up" v-if="!sending" />
+          <van-loading v-else size="14px" color="white" />
+        </template>
       </van-button>
     </div>
   </div>
@@ -79,7 +84,6 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue'
 import { showToast, showConfirmDialog } from 'vant'
-import { DropdownMenu, DropdownItem, Button, Field, Empty, Image as VanImage, NavBar, CellGroup, Cell, Tag } from 'vant'
 import axios from 'axios'
 import MarkdownView from '@/components/MarkdownView.vue'
 import { useUserStore } from '@/store/user'
@@ -96,9 +100,16 @@ const sessions = ref<any[]>([])
 const currentSession = ref<number | string>(0)
 const sessionOptions = ref<any[]>([{ text: '+ 新会话', value: 0 }])
 const msgBox = ref<HTMLElement>()
+const inputFocused = ref(false)
 
 function auth() {
   return { headers: { Authorization: `Bearer ${userStore.accessToken}` } }
+}
+
+function formatTime(ts: number) {
+  if (!ts) return ''
+  const d = new Date(ts)
+  return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`
 }
 
 async function loadSessions() {
@@ -125,6 +136,13 @@ async function newSession() {
   }
 }
 
+async function clearChat() {
+  try {
+    await showConfirmDialog({ title: '提示', message: '清空当前对话?' })
+    messages.value = []
+  } catch (e) {}
+}
+
 async function switchSession(id: number | string) {
   if (id === 0) return newSession()
   try {
@@ -132,6 +150,7 @@ async function switchSession(id: number | string) {
     messages.value = (data.data || []).map((m: any) => ({
       role: m.role,
       content: m.content,
+      time: Date.now(),
     }))
     scrollToBottom()
   } catch (e) {
@@ -146,7 +165,7 @@ async function quickAsk(text: string) {
 
 async function send() {
   if (!input.value.trim() || sending.value) return
-  const userMsg = { role: 'user', content: input.value }
+  const userMsg = { role: 'user', content: input.value, time: Date.now() }
   messages.value.push(userMsg)
   const text = input.value
   input.value = ''
@@ -155,7 +174,6 @@ async function send() {
   streamContent.value = ''
   scrollToBottom()
 
-  // 调用流式接口
   try {
     const url = `${API}/api/v1/models/chat/stream`
     const resp = await fetch(url, {
@@ -195,8 +213,7 @@ async function send() {
         }
       }
     }
-    // 流式完成, 移到 messages
-    messages.value.push({ role: 'assistant', content: streamContent.value })
+    messages.value.push({ role: 'assistant', content: streamContent.value, time: Date.now() })
   } catch (e: any) {
     showToast('发送失败: ' + e.message)
   } finally {
@@ -237,16 +254,19 @@ onMounted(() => {
   overflow-y: auto;
   padding: 12px;
   -webkit-overflow-scrolling: touch;
+  background: #f0f2f5;
 }
 .empty { padding: 40px 0; }
-.msg {
+.msg-row {
   display: flex;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   align-items: flex-start;
 }
-.msg.user { flex-direction: row-reverse; }
-.avatar, .avatar-placeholder {
+.msg-row.user {
+  flex-direction: row-reverse;
+}
+.avatar {
   flex-shrink: 0;
   width: 32px;
   height: 32px;
@@ -254,24 +274,47 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 14px;
+  font-weight: 600;
 }
-.avatar-placeholder.user { background: #409eff; color: white; }
-.avatar-placeholder.assistant { background: #f0f9ff; }
-.bubble {
-  max-width: 75%;
-  background: white;
-  padding: 8px 12px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-.msg.user .bubble {
-  background: #409eff;
+.user-avatar {
+  background: linear-gradient(135deg, #409eff, #66b1ff);
   color: white;
 }
-.content { font-size: 14px; line-height: 1.5; }
-.content :deep(pre) { background: #f5f7fa; color: #303133; }
-.content :deep(code) { color: #f56c6c; }
+.ai-avatar {
+  background: #f0f9ff;
+  border: 1px solid #e0efff;
+}
+.bubble-wrap { display: flex; flex-direction: column; max-width: 75%; }
+.msg-row.user .bubble-wrap { align-items: flex-end; }
+.bubble {
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.bubble.user {
+  background: linear-gradient(135deg, #409eff, #66b1ff);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+.bubble.assistant {
+  background: white;
+  color: #303133;
+  border-bottom-left-radius: 4px;
+}
+.bubble.streaming {
+  background: white;
+}
+.user-text { white-space: pre-wrap; }
+.msg-time {
+  font-size: 10px;
+  color: #c0c4cc;
+  margin-top: 4px;
+  padding: 0 4px;
+}
 .cursor { animation: blink 1s infinite; }
 @keyframes blink { 0%, 50% { opacity: 1; } 50%, 100% { opacity: 0; } }
 .input-bar {
@@ -285,8 +328,23 @@ onMounted(() => {
 .input-field {
   flex: 1;
   background: #f5f7fa;
-  border-radius: 8px;
-  padding: 4px 8px;
+  border-radius: 20px;
+  padding: 8px 14px;
 }
-.send-btn { flex-shrink: 0; }
+.input-field :deep(.van-field__control) {
+  font-size: 14px;
+}
+.send-btn {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.send-btn :deep(.van-button__content) {
+  padding: 0;
+}
 </style>

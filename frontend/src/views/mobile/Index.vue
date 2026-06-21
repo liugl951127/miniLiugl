@@ -1,24 +1,41 @@
 <template>
   <div class="mobile-app">
-    <!-- 顶部安全区 -->
+    <!-- 顶部安全区 + 平台信息 -->
     <div class="mobile-header">
       <div class="header-left">
-        <el-avatar :size="32" style="background:#409eff">
-          {{ userStore.profile?.nickname?.[0] || 'U' }}
-        </el-avatar>
+        <van-image
+          round
+          :src="userStore.profile?.avatar || 'https://img.yzcdn.cn/vant/cat.jpeg'"
+          width="36"
+          height="36"
+        />
         <div class="header-info">
           <div class="user-name">
             {{ userStore.profile?.nickname || '未登录' }}
-            <el-tag v-if="userStore.isSuperAdmin" type="danger" size="small" effect="dark">👑</el-tag>
+            <van-tag v-if="userStore.isSuperAdmin" type="danger" size="small" effect="dark">👑</van-tag>
           </div>
-          <div class="tenant-info">
-            {{ tenantLabel }}
-          </div>
+          <div class="tenant-info">{{ tenantLabel }}</div>
         </div>
       </div>
-      <el-button text @click="logout" size="small">
-        <el-icon><SwitchButton /></el-icon>
-      </el-button>
+      <van-button text size="small" @click="logout" icon="setting-o" />
+    </div>
+
+    <!-- 平台品牌 Banner -->
+    <div class="platform-banner">
+      <div class="banner-content">
+        <div class="banner-logo">🚀</div>
+        <div class="banner-text">
+          <h1 class="banner-title">MiniMax Platform</h1>
+          <p class="banner-slogan">大模型 · 企业级 · 智能协作</p>
+        </div>
+      </div>
+      <div class="banner-stats">
+        <div class="stat-item"><span class="stat-num">12</span><span class="stat-label">微服务</span></div>
+        <div class="stat-divider"></div>
+        <div class="stat-item"><span class="stat-num">116+</span><span class="stat-label">API</span></div>
+        <div class="stat-divider"></div>
+        <div class="stat-item"><span class="stat-num">135</span><span class="stat-label">测试</span></div>
+      </div>
     </div>
 
     <!-- 页面内容 -->
@@ -32,11 +49,11 @@
 
     <!-- 底部 Tab 栏 -->
     <van-tabbar v-model="activeTab" route safe-area-inset-bottom>
-      <van-tabbar-item to="/m/chat" icon="comment-o">对话</van-tabbar-item>
-      <van-tabbar-item to="/m/agent" icon="aiming">Agent</van-tabbar-item>
-      <van-tabbar-item to="/m/kg" icon="cluster-o">图谱</van-tabbar-item>
-      <van-tabbar-item to="/m/plugins" icon="apps-o">插件</van-tabbar-item>
-      <van-tabbar-item to="/m/me" icon="user-o">我的</van-tabbar-item>
+      <van-tabbar-item to="/mobile/chat" icon="comment-o">对话</van-tabbar-item>
+      <van-tabbar-item to="/mobile/agent" icon="aiming">Agent</van-tabbar-item>
+      <van-tabbar-item to="/mobile/kg" icon="cluster-o">图谱</van-tabbar-item>
+      <van-tabbar-item to="/mobile/plugins" icon="apps-o">插件</van-tabbar-item>
+      <van-tabbar-item to="/mobile/me" icon="user-o">我的</van-tabbar-item>
     </van-tabbar>
   </div>
 </template>
@@ -44,8 +61,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessageBox, ElMessage } from 'element-plus'
-import { SwitchButton } from '@element-plus/icons-vue'
+import { showConfirmDialog, showToast } from 'vant'
 import { useUserStore } from '@/store/user'
 
 const userStore = useUserStore()
@@ -59,9 +75,9 @@ const tenantLabel = computed(() => {
 
 async function logout() {
   try {
-    await ElMessageBox.confirm('确认退出登录?', '提示', { type: 'warning' })
+    await showConfirmDialog({ title: '提示', message: '确认退出登录?' })
     await userStore.logout()
-    ElMessage.success('已退出')
+    showToast({ message: '已退出', position: 'bottom' })
     router.push('/login')
   } catch (e) {
     // cancel
@@ -86,16 +102,30 @@ async function logout() {
   padding: 12px 16px;
   background: white;
   border-bottom: 1px solid #ebeef5;
-  padding-top: env(safe-area-inset-top);
+  padding-top: calc(env(safe-area-inset-top) + 4px);
 }
 .header-left { display: flex; align-items: center; gap: 10px; }
 .header-info { display: flex; flex-direction: column; }
-.user-name { font-size: 14px; font-weight: 600; color: #303133; }
+.user-name { font-size: 14px; font-weight: 600; color: #303133; display: flex; align-items: center; gap: 4px; }
 .tenant-info { font-size: 11px; color: #909399; }
+.platform-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px 16px 16px;
+}
+.banner-content { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.banner-logo { font-size: 40px; }
+.banner-title { font-size: 20px; font-weight: 700; margin: 0 0 2px; }
+.banner-slogan { font-size: 12px; opacity: 0.85; margin: 0; }
+.banner-stats { display: flex; align-items: center; justify-content: space-around; background: rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 0; }
+.stat-item { display: flex; flex-direction: column; align-items: center; }
+.stat-num { font-size: 16px; font-weight: 700; }
+.stat-label { font-size: 10px; opacity: 0.8; }
+.stat-divider { width: 1px; height: 24px; background: rgba(255,255,255,0.3); }
 .mobile-content {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: 60px; /* 给 tabbar 留位置 */
+  padding-bottom: 60px;
   -webkit-overflow-scrolling: touch;
 }
 .slide-enter-active, .slide-leave-active {

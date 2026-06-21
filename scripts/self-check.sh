@@ -45,7 +45,7 @@ for f in \
   backend/minimax-auth/src/test/java/com/minimax/auth/JwtTokenProviderTest.java \
   backend/minimax-gateway/pom.xml \
   backend/minimax-gateway/src/main/java/com/minimax/gateway/GatewayApplication.java \
-  backend/minimax-gateway/src/main/java/com/minimax/gateway/controller/HealthController.java \
+  backend/minimax-gateway/src/main/java/com/minimax/gateway/filter/JwtAuthGlobalFilter.java \
   backend/minimax-common/pom.xml \
   backend/minimax-common/src/main/java/com/minimax/common/result/Result.java \
   backend/minimax-common/src/main/java/com/minimax/common/result/ResultCode.java \

@@ -7,6 +7,8 @@ import com.minimax.function.executor.ToolExecutor;
 import com.minimax.function.mapper.FunctionCallLogMapper;
 import com.minimax.function.service.FunctionCallService;
 import com.minimax.function.service.FunctionToolService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -33,6 +35,7 @@ import java.util.Map;
  * Chat (LLM + tool 循环):
  *   POST   /function/chat                        单轮 chat, 可选 enableTools
  */
+@Tag(name = "函数工具")
 @RestController
 @RequestMapping("/function")
 @RequiredArgsConstructor
@@ -45,26 +48,31 @@ public class FunctionController {
 
     // ---------- Tool CRUD ----------
 
+    @Operation(summary = "列出工具列表")
     @GetMapping("/tools")
     public Result<List<FunctionTool>> listTools(@RequestParam(required = false) String category) {
         return Result.ok(toolService.listByCategory(category));
     }
 
+    @Operation(summary = "按分类列出工具")
     @GetMapping("/tools/category/{category}")
     public Result<List<FunctionTool>> listByCategory(@PathVariable String category) {
         return Result.ok(toolService.listByCategory(category));
     }
 
+    @Operation(summary = "获取工具详情")
     @GetMapping("/tools/{id}")
     public Result<FunctionTool> getTool(@PathVariable Long id) {
         return Result.ok(toolService.get(id));
     }
 
+    @Operation(summary = "按名称获取工具")
     @GetMapping("/tools/by-name/{name}")
     public Result<FunctionTool> getByName(@PathVariable String name) {
         return Result.ok(toolService.getByName(name));
     }
 
+    @Operation(summary = "注册自定义工具")
     @PostMapping("/tools")
     public Result<Long> createTool(@RequestParam Long ownerId,
                                     @RequestBody Map<String, Object> body) {
@@ -79,6 +87,7 @@ public class FunctionController {
         return Result.ok(id);
     }
 
+    @Operation(summary = "更新工具配置")
     @PutMapping("/tools/{id}")
     public Result<Boolean> updateTool(@PathVariable Long id,
                                        @RequestParam Long ownerId,
@@ -91,6 +100,7 @@ public class FunctionController {
                 body.get("enabled") == null ? null : ((Number) body.get("enabled")).intValue()));
     }
 
+    @Operation(summary = "删除工具")
     @DeleteMapping("/tools/{id}")
     public Result<Boolean> deleteTool(@PathVariable Long id, @RequestParam Long ownerId) {
         return Result.ok(toolService.delete(id, ownerId));
@@ -98,6 +108,7 @@ public class FunctionController {
 
     // ---------- Tool 直接调用 ----------
 
+    @Operation(summary = "直接调用工具")
     @PostMapping("/invoke/{name}")
     public Result<ToolExecutor.ToolResult> invoke(@PathVariable String name,
                                                    @RequestParam Long userId,
@@ -114,6 +125,7 @@ public class FunctionController {
         return Result.ok(executor.invoke(userId, sessionId, name, argsJson, ip, ua));
     }
 
+    @Operation(summary = "获取调用历史")
     @GetMapping("/logs")
     public Result<List<FunctionCallLog>> myLogs(@RequestParam Long userId,
                                                   @RequestParam(defaultValue = "20") int limit) {
@@ -122,6 +134,7 @@ public class FunctionController {
 
     // ---------- Chat with tools ----------
 
+    @Operation(summary = "带工具的对话")
     @PostMapping("/chat")
     public Result<FunctionCallService.ChatResult> chat(@RequestBody Map<String, Object> body) {
         Long userId = ((Number) body.get("userId")).longValue();

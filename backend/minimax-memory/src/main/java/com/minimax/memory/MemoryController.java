@@ -8,6 +8,8 @@ import com.minimax.memory.pref.UserPref;
 import com.minimax.memory.pref.UserPrefService;
 import com.minimax.memory.shortterm.ShortTermMemory;
 import com.minimax.memory.summary.Summarizer;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,6 +45,7 @@ import java.util.Map;
  *   GET    /memory/pref                    列出所有
  *   DELETE /memory/pref/{key}              删除
  */
+@Tag(name = "记忆管理")
 @RestController
 @RequestMapping("/memory")
 @RequiredArgsConstructor
@@ -56,12 +59,14 @@ public class MemoryController {
 
     // ---------- 短期记忆 ----------
 
+    @Operation(summary = "获取短期记忆")
     @GetMapping("/short-term/{sessionId}")
     public Result<List<Map<String, String>>> get(@PathVariable Long sessionId,
                                                   @RequestParam(defaultValue = "20") int limit) {
         return Result.ok(memory.recent(sessionId, limit));
     }
 
+    @Operation(summary = "追加短期记忆")
     @PostMapping("/short-term/{sessionId}")
     public Result<Void> append(@PathVariable Long sessionId,
                                @RequestBody Map<String, String> msg) {
@@ -69,12 +74,14 @@ public class MemoryController {
         return Result.ok();
     }
 
+    @Operation(summary = "清空短期记忆")
     @DeleteMapping("/short-term/{sessionId}")
     public Result<Void> clear(@PathVariable Long sessionId) {
         memory.clear(sessionId);
         return Result.ok();
     }
 
+    @Operation(summary = "获取短期记忆大小")
     @GetMapping("/short-term/{sessionId}/size")
     public Result<Long> size(@PathVariable Long sessionId) {
         return Result.ok(memory.size(sessionId));
@@ -82,6 +89,7 @@ public class MemoryController {
 
     // ---------- 上下文 ----------
 
+    @Operation(summary = "构建单会话上下文")
     @PostMapping("/context/{sessionId}")
     public Result<List<Map<String, String>>> buildContext(@PathVariable Long sessionId,
                                                            @RequestBody Map<String, Object> body) {
@@ -90,6 +98,7 @@ public class MemoryController {
         return Result.ok(crossCtx.build(0L, sessionId, sys, max, 5));
     }
 
+    @Operation(summary = "构建跨会话上下文")
     @PostMapping("/cross-context")
     public Result<List<Map<String, String>>> crossContext(@RequestBody Map<String, Object> body) {
         Long userId = ((Number) body.get("userId")).longValue();
@@ -102,11 +111,13 @@ public class MemoryController {
 
     // ---------- 摘要 ----------
 
+    @Operation(summary = "触发会话摘要")
     @PostMapping("/summarize/{sessionId}")
     public Result<Boolean> summarize(@PathVariable Long sessionId) {
         return Result.ok(summarizer.maybeSummarize(sessionId));
     }
 
+    @Operation(summary = "获取会话摘要")
     @GetMapping("/summary/{sessionId}")
     public Result<String> getSummary(@PathVariable Long sessionId) {
         return Result.ok(summarizer.getSummary(sessionId));
@@ -114,6 +125,7 @@ public class MemoryController {
 
     // ---------- 长期记忆 ----------
 
+    @Operation(summary = "存储长期记忆")
     @PostMapping("/long-term")
     public Result<Long> storeLong(@RequestBody Map<String, Object> body) {
         Long userId = ((Number) body.get("userId")).longValue();
@@ -126,6 +138,7 @@ public class MemoryController {
         return Result.ok(longTerm.store(userId, sessionId, role, content, summary, tags, importance));
     }
 
+    @Operation(summary = "召回长期记忆")
     @PostMapping("/long-term/recall")
     public Result<List<LongTermMemoryService.RecallHit>> recall(@RequestBody Map<String, Object> body) {
         Long userId = ((Number) body.get("userId")).longValue();
@@ -134,12 +147,14 @@ public class MemoryController {
         return Result.ok(longTerm.recall(userId, query, topK));
     }
 
+    @Operation(summary = "获取最近长期记忆")
     @GetMapping("/long-term/recent")
     public Result<List<LongTermMemory>> recent(@RequestParam Long userId,
                                                 @RequestParam(defaultValue = "20") int limit) {
         return Result.ok(longTerm.recent(userId, limit));
     }
 
+    @Operation(summary = "删除长期记忆")
     @DeleteMapping("/long-term/{id}")
     public Result<Boolean> deleteLong(@PathVariable Long id, @RequestParam Long userId) {
         return Result.ok(longTerm.delete(id, userId));
@@ -147,6 +162,7 @@ public class MemoryController {
 
     // ---------- 用户偏好 ----------
 
+    @Operation(summary = "设置用户偏好")
     @PutMapping("/pref/{key}")
     public Result<Void> setPref(@RequestParam Long userId,
                                  @PathVariable String key,
@@ -155,16 +171,19 @@ public class MemoryController {
         return Result.ok();
     }
 
+    @Operation(summary = "获取用户偏好")
     @GetMapping("/pref/{key}")
     public Result<String> getPref(@RequestParam Long userId, @PathVariable String key) {
         return Result.ok(prefs.get(userId, key));
     }
 
+    @Operation(summary = "列出用户所有偏好")
     @GetMapping("/pref")
     public Result<List<UserPref>> listPref(@RequestParam Long userId) {
         return Result.ok(prefs.listByUser(userId));
     }
 
+    @Operation(summary = "删除用户偏好")
     @DeleteMapping("/pref/{key}")
     public Result<Boolean> deletePref(@RequestParam Long userId, @PathVariable String key) {
         return Result.ok(prefs.delete(userId, key));

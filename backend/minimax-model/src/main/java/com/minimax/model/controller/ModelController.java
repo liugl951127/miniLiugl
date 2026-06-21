@@ -1,5 +1,7 @@
 package com.minimax.model.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.minimax.common.security.JwtAuthenticationFilter.AuthenticatedUser;
 import com.minimax.model.dto.ChatRequest;
 import com.minimax.model.provider.MockAdapter;
@@ -30,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
+@Tag(name = "模型管理")
 @RestController
 @RequestMapping("/models")
 @RequiredArgsConstructor
@@ -46,28 +49,26 @@ public class ModelController {
     /** 用于跟踪活跃流式 session → stopFlag，支持取消。 */
     private final Map<String, AtomicBoolean> stopFlags = new ConcurrentHashMap<>();
 
+    @Operation(summary = "列出所有可用模型")
     @GetMapping
     public Result<List<ModelVO>> list() {
         return Result.ok(modelService.listEnabled());
     }
 
+    @Operation(summary = "列出支持的模型提供商")
     @GetMapping("/providers")
     public Result<List<String>> providers() {
         return Result.ok(List.of("openai", "minimax", "ollama", "zhipu", "qwen", "deepseek"));
     }
 
+    @Operation(summary = "非流式对话请求")
     @PostMapping("/chat")
     public Result<ChatResponse> chat(@AuthenticationPrincipal AuthenticatedUser principal,
                                      @Valid @RequestBody ChatRequest req) {
         return Result.ok(modelService.chat(principal.id(), req));
     }
 
-    /**
-     * Day 5: 真流式 chat 端点。
-     * - 按 provider 选 adapter
-     * - SSE 协议推送每个 chunk
-     * - 支持 /chat/cancel 取消（按 streamId）
-     */
+    @Operation(summary = "流式对话请求（SSE）")
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public StreamingResponseBody streamChat(@AuthenticationPrincipal AuthenticatedUser principal,
                                             @RequestBody ChatRequest req,
@@ -130,10 +131,7 @@ public class ModelController {
         };
     }
 
-    /**
-     * 取消流式生成。
-     * POST /models/chat/cancel?streamId=xxx
-     */
+    @Operation(summary = "取消流式生成")
     @PostMapping("/chat/cancel")
     public Result<Void> cancel(@RequestParam String streamId) {
         AtomicBoolean flag = stopFlags.remove(streamId);

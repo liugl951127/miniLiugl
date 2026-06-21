@@ -1,5 +1,7 @@
 package com.minimax.model.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.minimax.common.result.Result;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ import java.util.*;
  * @since 2026-06
  */
 @Slf4j
+@Tag(name = "模型管理")
 @RestController
 @RequestMapping("/audio")
 @RequiredArgsConstructor
@@ -46,6 +49,7 @@ public class AudioController {
 
     // ============ ASR ============
 
+    @Operation(summary = "列出可用 ASR 模型")
     @GetMapping("/asr/models")
     public Result<List<Map<String, Object>>> asrModels() {
         return Result.ok(List.of(
@@ -58,6 +62,7 @@ public class AudioController {
         ));
     }
 
+    @Operation(summary = "上传音频进行语音识别（ASR）")
     @PostMapping(value = "/asr/transcribe")
     public Result<Map<String, Object>> transcribe(
             @RequestParam("file") MultipartFile file,
@@ -140,6 +145,7 @@ public class AudioController {
 
     // ============ TTS ============
 
+    @Operation(summary = "列出可用 TTS 音色")
     @GetMapping("/tts/voices")
     public Result<List<Map<String, Object>>> ttsVoices() {
         return Result.ok(List.of(
@@ -151,6 +157,7 @@ public class AudioController {
         ));
     }
 
+    @Operation(summary = "文字转语音合成（TTS）")
     @PostMapping("/tts/synthesize")
     @SuppressWarnings("unchecked")
     public Result<Map<String, Object>> synthesize(@RequestBody Map<String, Object> body) {

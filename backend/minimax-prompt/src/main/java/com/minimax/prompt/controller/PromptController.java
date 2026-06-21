@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.minimax.common.result.Result;
 import com.minimax.prompt.entity.PromptTemplate;
 import com.minimax.prompt.service.PromptTemplateService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ import java.util.Map;
  *   GET    /prompts/categories   全部分类列表
  *   POST   /prompts/resolve      变量解析 (填值生成最终 prompt)
  */
+@Tag(name = "Prompt模板")
 @RestController
 @RequestMapping("/prompts")
 @RequiredArgsConstructor
@@ -42,6 +45,7 @@ public class PromptController {
 
     // ---------- 查询 ----------
 
+    @Operation(summary = "分页查询Prompt模板")
     @GetMapping
     public Result<IPage<PromptTemplate>> list(
             @AuthenticationPrincipal(expression = "id") Long userId,
@@ -52,6 +56,7 @@ public class PromptController {
         return Result.ok(promptService.page(userId, current, size, category, keyword));
     }
 
+    @Operation(summary = "获取模板详情")
     @GetMapping("/{id}")
     public Result<PromptTemplate> get(
             @PathVariable Long id,
@@ -61,6 +66,7 @@ public class PromptController {
         return Result.ok(t);
     }
 
+    @Operation(summary = "获取所有分类")
     @GetMapping("/categories")
     public Result<List<String>> categories() {
         return Result.ok(promptService.categories());
@@ -68,6 +74,7 @@ public class PromptController {
 
     // ---------- 写操作 ----------
 
+    @Operation(summary = "创建Prompt模板")
     @PostMapping
     public Result<PromptTemplate> create(
             @AuthenticationPrincipal(expression = "id") Long userId,
@@ -76,6 +83,7 @@ public class PromptController {
         return Result.ok(promptService.create(template, userId, userName));
     }
 
+    @Operation(summary = "更新Prompt模板")
     @PutMapping("/{id}")
     public Result<PromptTemplate> update(
             @PathVariable Long id,
@@ -88,6 +96,7 @@ public class PromptController {
         }
     }
 
+    @Operation(summary = "删除Prompt模板")
     @DeleteMapping("/{id}")
     public Result<Void> delete(
             @PathVariable Long id,
@@ -100,13 +109,14 @@ public class PromptController {
         }
     }
 
+    @Operation(summary = "使用计数+1")
     @PostMapping("/{id}/use")
     public Result<Void> use(@PathVariable Long id) {
         promptService.incrementUseCount(id);
         return Result.ok(null);
     }
 
-    /** 变量解析接口：填入变量值，返回最终 prompt */
+    @Operation(summary = "变量解析生成最终Prompt")
     @PostMapping("/resolve")
     public Result<String> resolve(@RequestBody ResolveRequest req) {
         if (req.getContent() == null || req.getValues() == null) {

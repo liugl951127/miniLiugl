@@ -3,10 +3,10 @@
     <!-- 顶部 -->
     <div class="page-header">
       <div>
-        <h1>📝 Prompt 模板 <span class="badge">V4.3</span></h1>
-        <p class="sub">变量占位符 · 分类管理 · 一键填入对话</p>
+        <h1>📝 {{ t('prompt.title') }} <span class="badge">V4.3</span></h1>
+        <p class="sub">{{ t('prompt.subtitle') }}</p>
       </div>
-      <el-button type="primary" @click="openEditor()">+ 新建模板</el-button>
+      <el-button type="primary" @click="openEditor()">+ {{ t('prompt.newTemplate') }}</el-button>
     </div>
 
     <!-- 过滤器 -->
@@ -18,14 +18,14 @@
           </el-input>
         </el-col>
         <el-col :span="6">
-          <el-select v-model="filterCategory" placeholder="全部分类" clearable @change="loadList" style="width:100%">
+          <el-select v-model="filterCategory" :placeholder="t('prompt.allCategories')" clearable @change="loadList" style="width:100%">
             <el-option v-for="c in categories" :key="c" :label="c" :value="c" />
           </el-select>
         </el-col>
         <el-col :span="12" style="text-align:right">
           <el-radio-group v-model="viewMode" size="small">
-            <el-radio-button value="grid">卡片</el-radio-button>
-            <el-radio-button value="list">列表</el-radio-button>
+            <el-radio-button value="grid">{{ t('prompt.cardView') }}</el-radio-button>
+            <el-radio-button value="list">{{ t('prompt.listView') }}</el-radio-button>
           </el-radio-group>
         </el-col>
       </el-row>
@@ -40,8 +40,8 @@
             <h3 class="tpl-name">{{ tpl.name }}</h3>
             <span class="tpl-meta">
               <el-tag size="small" :type="tagType(tpl.category)">{{ tpl.category }}</el-tag>
-              <span v-if="tpl.isPublic" class="public-badge">🌐 公开</span>
-              <span v-else class="private-badge">🔒 私有</span>
+              <span v-if="tpl.isPublic" class="public-badge">🌐 {{ t('prompt.public') }}</span>
+              <span v-else class="private-badge">🔒 {{ t('prompt.private') }}</span>
             </span>
           </div>
         </div>
@@ -55,9 +55,9 @@
         </div>
 
         <div class="tpl-footer">
-          <span class="use-count">📊 {{ tpl.useCount || 0 }} 次使用</span>
+          <span class="use-count">📊 {{ tpl.useCount || 0 }} {{ t('prompt.uses') }}</span>
           <div style="flex:1"></div>
-          <el-button size="small" @click="openUse(tpl)">▶ 使用</el-button>
+          <el-button size="small" @click="openUse(tpl)">▶ {{ t('prompt.use') }}</el-button>
           <el-button size="small" type="primary" :icon="Edit" @click="openEditor(tpl)" />
           <el-button v-if="isOwner(tpl)" size="small" type="danger" :icon="Delete" @click="handleDelete(tpl)" />
         </div>
@@ -74,16 +74,16 @@
           </template>
         </el-table-column>
         <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="isPublic" label="可见" width="80">
+        <el-table-column prop="isPublic" :label="t('prompt.visibility')" width="80">
           <template #default="{ row }">
-            {{ row.isPublic ? '🌐 公开' : '🔒 私有' }}
+            {{ row.isPublic ? '🌐 ' + t('prompt.public') : '🔒 ' + t('prompt.private') }}
           </template>
         </el-table-column>
         <el-table-column prop="useCount" label="使用次数" width="100" />
         <el-table-column prop="creatorName" label="创建者" width="100" />
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" type="success" @click="openUse(row)">▶ 使用</el-button>
+            <el-button size="small" type="success" @click="openUse(row)">▶ {{ t('prompt.use') }}</el-button>
             <el-button size="small" :icon="Edit" @click="openEditor(row)" />
             <el-button v-if="isOwner(row)" size="small" type="danger" :icon="Delete" @click="handleDelete(row)" />
           </template>
@@ -105,7 +105,7 @@
     </div>
 
     <!-- 变量填值对话框 -->
-    <el-dialog v-model="showUseDialog" title="📝 填写模板变量" width="560px">
+    <el-dialog v-model="showUseDialog" :title="t('prompt.fillVariables')" width="560px">
       <div v-if="activeTemplate">
         <p class="use-desc">{{ activeTemplate.description }}</p>
         <el-divider />
@@ -115,41 +115,41 @@
           </el-form-item>
         </el-form>
         <el-divider />
-        <p class="preview-label">📋 预览效果:</p>
+        <p class="preview-label">{{ t('prompt.preview') }}:</p>
         <el-input v-model="previewContent" type="textarea" :rows="6" readonly class="preview-box" />
       </div>
       <template #footer>
-        <el-button @click="showUseDialog = false">取消</el-button>
-        <el-button type="success" @click="goUse">🚀 填入对话</el-button>
+        <el-button @click="showUseDialog = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="success" @click="goUse">🚀 {{ t('prompt.fillToChat') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 编辑器对话框 -->
-    <el-dialog v-model="showEditor" :title="editingTemplate?.id ? '编辑模板' : '新建模板'" width="640px">
+    <el-dialog v-model="showEditor" :title="editingTemplate?.id ? t('prompt.editTemplate') : t('prompt.newTemplate')" width="640px">
       <el-form :model="editorForm" label-position="top">
-        <el-form-item label="模板名称" required>
+        <el-form-item :label="t('prompt.templateName')" required>
           <el-input v-model="editorForm.name" placeholder="如: 翻译助手" maxlength="100" show-word-limit />
         </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="editorForm.description" placeholder="简短描述用途" maxlength="500" type="textarea" :rows="2" />
+        <el-form-item :label="t('common.description')">
+          <el-input v-model="editorForm.description" :placeholder="t('prompt.descPlaceholder')" maxlength="500" type="textarea" :rows="2" />
         </el-form-item>
-        <el-form-item label="分类" required>
+        <el-form-item :label="t('common.category')" required>
           <el-select v-model="editorForm.category" placeholder="选择分类" style="width:100%">
             <el-option v-for="c in ALL_CATEGORIES" :key="c" :label="c" :value="c" />
           </el-select>
         </el-form-item>
-        <el-form-item label="模板内容 (使用 {{变量名}} 占位)" required>
+        <el-form-item :label="t('prompt.templateContent')" required>
           <el-input v-model="editorForm.content" type="textarea" :rows="8" placeholder="支持 {{变量名}} 占位符..."
             @input="updateVarList" />
-          <div class="hint">变量会自动提取并显示在上方的「使用」界面中</div>
+          <div class="hint">{{ t('prompt.varsAutoExtract') }}</div>
         </el-form-item>
-        <el-form-item label="是否公开">
-          <el-switch v-model="editorForm.isPublic" active-text="公开 (所有人可用)" inactive-text="私有 (仅自己)" />
+        <el-form-item :label="t('prompt.isPublic')">
+          <el-switch v-model="editorForm.isPublic" :active-text="t('prompt.publicDesc')" :inactive-text="t('prompt.privateDesc')" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showEditor = false">取消</el-button>
-        <el-button type="primary" @click="handleSave">保存</el-button>
+        <el-button @click="showEditor = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="handleSave">{{ t('common.save') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -162,6 +162,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Edit, Delete } from '@element-plus/icons-vue'
 import { promptApi } from '@/api/prompt'
 import { useUserStore } from '@/store/user'
+import { t } from '@/i18n'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -202,7 +203,7 @@ async function loadList() {
       total.value = d.total || 0
     }
   } catch (e) {
-    ElMessage.error('加载模板列表失败: ' + e.message)
+    ElMessage.error(t('prompt.loadFailed') + e.message)
   }
 }
 
@@ -288,32 +289,32 @@ function openEditor(tpl = null) {
 
 async function handleSave() {
   if (!editorForm.name || !editorForm.content) {
-    ElMessage.warning('名称和内容不能为空')
+    ElMessage.warning(t('prompt.nameAndContentRequired'))
     return
   }
   try {
     if (editingTemplate.value?.id) {
       await promptApi.update(editingTemplate.value.id, editorForm)
-      ElMessage.success('更新成功')
+      ElMessage.success(t('prompt.updateSuccess'))
     } else {
       await promptApi.create(editorForm)
-      ElMessage.success('创建成功')
+      ElMessage.success(t('prompt.createSuccess'))
     }
     showEditor.value = false
     await loadList()
   } catch (e) {
-    ElMessage.error(e.message || '保存失败')
+    ElMessage.error(e.message || t('prompt.saveFailed'))
   }
 }
 
 async function handleDelete(tpl) {
   try {
-    await ElMessageBox.confirm(`确定删除模板「${tpl.name}」？此操作不可恢复。`, '删除确认', { type: 'warning' })
+    await ElMessageBox.confirm(t('prompt.deleteConfirm') + '「' + tpl.name + '」' + t('prompt.deleteConfirmSuffix'), t('prompt.deleteConfirmTitle'), { type: 'warning' })
     await promptApi.remove(tpl.id)
-    ElMessage.success('已删除')
+    ElMessage.success(t('prompt.deleted'))
     await loadList()
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error(e.message || '删除失败')
+    if (e !== 'cancel') ElMessage.error(e.message || t('prompt.deleteFailed'))
   }
 }
 </script>

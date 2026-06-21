@@ -1,5 +1,7 @@
 package com.minimax.multimodal.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.minimax.common.result.Result;
 import com.minimax.multimodal.service.VisionService;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,7 @@ import java.util.Map;
  *   POST /multimodal/chat           流式文字 + 图片对话
  *   GET  /multimodal/info           当前视觉模型信息
  */
+@Tag(name = "多模态")
 @RestController
 @RequestMapping("/multimodal")
 @RequiredArgsConstructor
@@ -25,9 +28,7 @@ public class MultimodalController {
 
     private final VisionService vision;
 
-    /**
-     * 上传图片 (返回 base64 + 元信息, 供前端存到消息里)
-     */
+    @Operation(summary = "上传图片（返回 base64 + 元信息）")
     @PostMapping("/upload")
     public Result<Map<String, Object>> upload(@RequestParam("file") MultipartFile file) throws Exception {
         if (file.isEmpty()) throw new IllegalArgumentException("文件为空");
@@ -48,10 +49,7 @@ public class MultimodalController {
         return Result.ok(data);
     }
 
-    /**
-     * 图片理解 (JSON body)
-     *   { "imageBase64": "...", "mimeType": "image/png", "prompt": "描述这张图" }
-     */
+    @Operation(summary = "图片理解（文字+图片→描述）")
     @PostMapping("/describe")
     public Result<Map<String, Object>> describe(@RequestBody Map<String, String> body) {
         String b64 = body.get("imageBase64");
@@ -69,9 +67,7 @@ public class MultimodalController {
         return Result.ok(r);
     }
 
-    /**
-     * 模型信息
-     */
+    @Operation(summary = "多模态模型信息")
     @GetMapping("/info")
     public Result<Map<String, Object>> info() {
         Map<String, Object> r = new HashMap<>();

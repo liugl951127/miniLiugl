@@ -8,19 +8,19 @@
 <template>
   <div class="plugin-sdk">
     <header class="header">
-      <h1>🔌 插件 SDK</h1>
-      <p class="subtitle">4 类插件 (class/url/js/wasm) + JS 沙箱执行, 上传你的代码立即生效</p>
+      <h1>🔌 {{ t('showcase.pluginSDK') }}</h1>
+      <p class="subtitle">{{ t('showcase.pluginSDKSubtitle') }}</p>
       <div class="badges">
         <span class="badge">Class Plugin</span>
         <span class="badge">URL Plugin</span>
-        <span class="badge">JS 沙箱</span>
-        <span class="badge">WASM (预留)</span>
+        <span class="badge">JS {{ t('showcase.sandbox') }}</span>
+        <span class="badge">WASM ({{ t('showcase.reserved') }})</span>
       </div>
     </header>
 
     <el-tabs v-model="activeTab" type="border-card">
       <!-- 模板市场 -->
-      <el-tab-pane label="🛒 模板市场" name="market">
+      <el-tab-pane :label="'🛒 ' + t('plugins.market')" name="market">
         <div class="market-grid">
           <div v-for="p in marketPlugins" :key="p.code" class="market-card">
             <div class="mc-icon">{{ p.icon }}</div>
@@ -34,17 +34,17 @@
               <el-tag size="small" type="success">★ {{ p.rating.toFixed(1) }}</el-tag>
             </div>
             <el-button type="primary" plain size="small" @click="useTemplate(p)">
-              {{ activeTemplate === p.code ? '✓ 已选' : '使用此模板' }}
+              {{ activeTemplate === p.code ? '✓ ' + t('plugins.selected') : t('plugins.useTemplate') }}
             </el-button>
           </div>
         </div>
       </el-tab-pane>
 
       <!-- JS 沙箱测试 -->
-      <el-tab-pane label="🧪 JS 沙箱测试" name="js">
+      <el-tab-pane :label="'🧪 ' + t('plugins.jsSandboxTest')" name="js">
         <div class="js-grid">
           <section class="editor-side">
-            <h3>插件代码 (JavaScript)</h3>
+            <h3>{{ t('plugins.pluginCode') }}</h3>
             <el-input v-model="pluginCode" type="textarea" :rows="14"
                       :placeholder="`// 编写插件代码, 必须导出 execute 函数:
 function execute(input) {
@@ -56,15 +56,15 @@ function execute(input) {
 }`"
                       style="font-family: 'SF Mono', Menlo, monospace; font-size: 13px" />
             <div class="form-item">
-              <label>测试输入 (JSON)</label>
+              <label>{{ t('plugins.testInput') }}</label>
               <el-input v-model="testInput" type="textarea" :rows="4" />
             </div>
             <el-button type="primary" :loading="executing" @click="executePlugin" block size="large">
-              {{ executing ? '执行中...' : '▶ 执行插件' }}
+              {{ executing ? t('plugins.executing') + '...' : '▶ ' + t('plugins.executePlugin') }}
             </el-button>
           </section>
           <section class="output-side">
-            <h3>执行结果</h3>
+            <h3>{{ t('plugins.execResult') }}</h3>
             <div v-if="execResult" class="exec-result">
               <div class="exec-status">
                 <el-tag :type="execResult.success ? 'success' : 'danger'">
@@ -72,10 +72,10 @@ function execute(input) {
                 </el-tag>
                 <span>耗时: {{ execResult.latencyMs }}ms</span>
               </div>
-              <h4>输出</h4>
+              <h4>{{ t('common.output') }}</h4>
               <pre>{{ JSON.stringify(execResult.output, null, 2) }}</pre>
               <div v-if="execResult.logs && execResult.logs.length" class="logs">
-                <h4>日志</h4>
+                <h4>{{ t('common.logs') }}</h4>
                 <div v-for="(l, i) in execResult.logs" :key="i" class="log-line">
                   <span class="log-time">[{{ l.time }}]</span>
                   <span :class="`log-${l.level}`">[{{ l.level }}]</span>
@@ -83,60 +83,60 @@ function execute(input) {
                 </div>
               </div>
               <div v-if="execResult.error" class="error">
-                <h4>错误</h4>
+                <h4>{{ t('common.error') }}</h4>
                 <pre>{{ execResult.error }}</pre>
               </div>
             </div>
-            <el-empty v-else description="点 ▶ 执行插件 查看结果" />
+            <el-empty v-else :description="t('plugins.clickToExecute')" />
           </section>
         </div>
       </el-tab-pane>
 
       <!-- Class 插件 (后端) -->
-      <el-tab-pane label="☕ Class 插件 (后端)" name="class">
-        <h3>4 个内置 Class 插件 (后端 Java)</h3>
+      <el-tab-pane :label="'☕ ' + t('plugins.classPlugin')" name="class">
+        <h3>{{ t('plugins.classPluginDesc') }}</h3>
         <el-table :data="classPlugins" stripe>
           <el-table-column prop="code" label="插件 code" />
           <el-table-column prop="name" label="名称" />
           <el-table-column prop="description" label="描述" />
-          <el-table-column label="调用" width="200">
+          <el-table-column :label="t('common.call')" width="200">
             <template #default="{ row }">
-              <el-button size="small" @click="callClassPlugin(row)">测试</el-button>
+              <el-button size="small" @click="callClassPlugin(row)">{{ t('common.test') }}</el-button>
             </template>
           </el-table-column>
         </el-table>
         <div v-if="classResult" class="class-result">
-          <h4>执行结果</h4>
+          <h4>{{ t('plugins.execResult') }}</h4>
           <pre>{{ JSON.stringify(classResult, null, 2) }}</pre>
         </div>
       </el-tab-pane>
 
       <!-- 上传我的插件 -->
-      <el-tab-pane label="📤 上传我的插件" name="upload">
+      <el-tab-pane :label="'📤 ' + t('plugins.uploadMyPlugin')" name="upload">
         <el-form :model="uploadForm" label-width="120px">
-          <el-form-item label="插件名称">
-            <el-input v-model="uploadForm.name" placeholder="例如: 我的翻译助手" />
+          <el-form-item :label="t('plugins.pluginName')">
+            <el-input v-model="uploadForm.name" :placeholder="t('plugins.pluginNamePlaceholder')" />
           </el-form-item>
-          <el-form-item label="插件 code">
-            <el-input v-model="uploadForm.code" placeholder="例如: my-translator" />
+          <el-form-item :label="t('plugins.pluginCode')">
+            <el-input v-model="uploadForm.code" :placeholder="t('plugins.pluginCodePlaceholder')" />
           </el-form-item>
-          <el-form-item label="类型">
+          <el-form-item :label="t('plugins.type')">
             <el-select v-model="uploadForm.type" style="width: 100%">
-              <el-option label="JS 沙箱 (前端执行)" value="js" />
-              <el-option label="URL (HTTP 调用)" value="url" />
-              <el-option label="Class (后端 Java, 待后端编译)" value="class" />
+              <el-option :label="t('plugins.jsSandboxType')" value="js" />
+              <el-option :label="t('plugins.urlType')" value="url" />
+              <el-option :label="t('plugins.classType')" value="class" />
             </el-select>
           </el-form-item>
-          <el-form-item label="描述">
+          <el-form-item :label="t('common.description')">
             <el-input v-model="uploadForm.desc" type="textarea" :rows="2" />
           </el-form-item>
-          <el-form-item label="代码 / URL">
+          <el-form-item :label="t('plugins.codeOrUrl')">
             <el-input v-model="uploadForm.content" type="textarea" :rows="10"
                       :placeholder="uploadForm.type === 'url' ? 'https://example.com/api' : 'function execute(input) { ... }'" />
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="submitPlugin">发布插件</el-button>
-            <el-button @click="uploadForm = { name:'', code:'', type:'js', desc:'', content:'' }">重置</el-button>
+            <el-button type="primary" @click="submitPlugin">{{ t('plugins.publishPlugin') }}</el-button>
+            <el-button @click="uploadForm = { name:'', code:'', type:'js', desc:'', content:'' }">{{ t('common.reset') }}</el-button>
           </el-form-item>
         </el-form>
       </el-tab-pane>
@@ -148,6 +148,7 @@ function execute(input) {
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import http from '@/api/http'
+import { t } from '@/i18n'
 
 const activeTab = ref('market')
 const activeTemplate = ref(null)
@@ -185,7 +186,7 @@ function useTemplate(p) {
   activeTab.value = 'js'
   pluginCode.value = p.code_body
   testInput.value = JSON.stringify({ user: 'admin', message: 'Hello from template: ' + p.name }, null, 2)
-  ElMessage.success('已加载模板: ' + p.name)
+  ElMessage.success(t('plugins.templateLoaded') + p.name)
 }
 
 // ===== JS 沙箱 =====
@@ -231,10 +232,10 @@ async function executePlugin() {
       ...result,
       latencyMs: Date.now() - t0
     }
-    ElMessage.success(result.success ? '执行成功' : '执行失败')
+    ElMessage.success(result.success ? t('plugins.execSuccess') : t('plugins.execFailed'))
   } catch (e) {
     execResult.value = { success: false, error: e.message, logs: [], latencyMs: Date.now() - t0 }
-    ElMessage.error('执行失败: ' + e.message)
+    ElMessage.error(t('plugins.execFailed') + e.message)
   } finally {
     executing.value = false
   }
@@ -258,10 +259,10 @@ async function callClassPlugin(p) {
 
     const r = await http.post(`/api/v1/agent/plugins/${p.code}/call`, input)
     classResult.value = r.data || r
-    ElMessage.success('调用成功')
+    ElMessage.success(t('plugins.callSuccess'))
   } catch (e) {
     classResult.value = { error: e.message }
-    ElMessage.error('调用失败: ' + e.message)
+    ElMessage.error(t('plugins.callFailed') + e.message)
   }
 }
 
@@ -269,14 +270,14 @@ async function callClassPlugin(p) {
 const uploadForm = ref({ name: '', code: '', type: 'js', desc: '', content: '' })
 async function submitPlugin() {
   if (!uploadForm.value.name || !uploadForm.value.code) {
-    ElMessage.warning('请填完整')
+    ElMessage.warning(t('common.fillComplete'))
     return
   }
   // 简化: 存 localStorage (实际生产写后端)
   const list = JSON.parse(localStorage.getItem('minimax_my_plugins') || '[]')
   list.push({ ...uploadForm.value, createdAt: new Date().toISOString() })
   localStorage.setItem('minimax_my_plugins', JSON.stringify(list))
-  ElMessage.success('已发布到我的插件库!')
+  ElMessage.success(t('plugins.publishedToMy'))
   uploadForm.value = { name: '', code: '', type: 'js', desc: '', content: '' }
 }
 </script>

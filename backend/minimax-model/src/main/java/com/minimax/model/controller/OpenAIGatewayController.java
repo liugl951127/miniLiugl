@@ -1,6 +1,8 @@
 package com.minimax.model.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.minimax.common.security.SuperAdminGuard;
 import com.minimax.model.entity.ModelConfig;
@@ -36,6 +38,7 @@ import java.util.*;
  *     -d '{"model": "MiniMax-Text-01", "messages": [...]}'
  */
 @Slf4j
+@Tag(name = "OpenAI兼容网关")
 @RestController
 @RequestMapping("/openai")
 @RequiredArgsConstructor
@@ -49,6 +52,7 @@ public class OpenAIGatewayController {
             .build();
 
     /** 列出可用模型 */
+    @Operation(summary = "列出OpenAI兼容模型")
     @GetMapping(value = "/models", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> listModels() {
         List<ModelConfig> enabled = modelConfigMapper.selectList(
@@ -77,6 +81,7 @@ public class OpenAIGatewayController {
      * Chat Completions
      * 兼容: OpenAI / minimax-M3 / Ollama (OpenAI 协议)
      */
+    @Operation(summary = "OpenAI兼容Chat对话")
     @PostMapping(value = "/chat/completions", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> chatCompletions(@RequestBody Map<String, Object> body) {
         // 找模型
