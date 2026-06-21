@@ -164,13 +164,13 @@ data/
 | `backend/minimax-common/.../i18n/LocaleConfig.java` | 新 1.5KB |
 | `docs/INFRA-DOCKER-GUIDE.md` | 本文档 |
 
-## 8. 与 deploy-linux.sh 关系
+## 8. 与 deploy-minimax.sh 关系
 
 | 场景 | 推荐方式 |
 |------|---------|
 | 开发 (单机) | `docker compose up -d` + `mvn spring-boot:run` |
 | 测试 (CI) | `docker compose up -d` + jar 启动 |
-| 生产 (单机) | `sudo ./deploy-linux.sh install` (apt 装 mariadb/redis/nacos) |
+| 生产 (单机) | `sudo ./deploy-minimax.sh install` (apt 装 mariadb/redis/nacos) |
 | 生产 (集群) | Kubernetes + Helm Chart (V6.x 计划) |
 
 ## 9. Troubleshooting

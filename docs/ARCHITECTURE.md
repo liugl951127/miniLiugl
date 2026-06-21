@@ -205,7 +205,7 @@ Step 4: 终态返回
 ### 6.1 单机一键部署
 
 ```bash
-sudo ./scripts/deploy-linux.sh install
+sudo ./scripts/deploy-minimax.sh install
 # 自动: Java/Maven/Node + MariaDB/Redis/Nacos + 编译 + 16 systemd + nginx
 ```
 
@@ -238,7 +238,7 @@ mkdir backend/minimax-foo
 # 2. 继承 common 父 POM
 # 3. application.yml 加 minimax: 顶层配置 + nacos discovery
 # 4. gateway yml 加 route
-# 5. deploy-linux.sh MODULES 数组加 "foo:8xxx"
+# 5. deploy-minimax.sh MODULES 数组加 "foo:8xxx"
 # 6. 重跑 install
 ```
 

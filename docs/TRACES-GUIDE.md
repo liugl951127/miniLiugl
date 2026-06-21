@@ -65,7 +65,7 @@ docker run -d --name jaeger \
 
 ```bash
 # 启动 13 微服务
-sudo ./scripts/deploy-linux.sh start
+sudo ./scripts/deploy-minimax.sh start
 # 或开发模式
 mvn spring-boot:run
 ```

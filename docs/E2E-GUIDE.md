@@ -5,7 +5,7 @@
 ## 1. 一句话
 
 ```bash
-sudo ./scripts/deploy-linux.sh e2e-full    # 跑全部 7 个 Phase
+sudo ./scripts/deploy-minimax.sh e2e-full    # 跑全部 7 个 Phase
 ```
 
 ## 2. 两种模式
@@ -13,7 +13,7 @@ sudo ./scripts/deploy-linux.sh e2e-full    # 跑全部 7 个 Phase
 ### 2.1 快速模式 (`e2e`)
 
 ```bash
-sudo ./scripts/deploy-linux.sh e2e
+sudo ./scripts/deploy-minimax.sh e2e
 # 或
 ./scripts/e2e-full-test.sh --quick
 ```
@@ -23,7 +23,7 @@ sudo ./scripts/deploy-linux.sh e2e
 ### 2.2 完整模式 (`e2e-full`)
 
 ```bash
-sudo ./scripts/deploy-linux.sh e2e-full
+sudo ./scripts/deploy-minimax.sh e2e-full
 # 或
 ./scripts/e2e-full-test.sh --full
 ```
@@ -130,9 +130,9 @@ ADMIN_USER=adminLiugl ADMIN_PASS=Liugl@2026 ./scripts/e2e-full-test.sh
 ```yaml
 - name: E2E test
   run: |
-    sudo ./scripts/deploy-linux.sh install
+    sudo ./scripts/deploy-minimax.sh install
     sleep 30
-    sudo ./scripts/deploy-linux.sh e2e-full
+    sudo ./scripts/deploy-minimax.sh e2e-full
 ```
 
 ### 6.2 Jenkins
@@ -140,8 +140,8 @@ ADMIN_USER=adminLiugl ADMIN_PASS=Liugl@2026 ./scripts/e2e-full-test.sh
 ```bash
 stage('E2E') {
     steps {
-        sh 'sudo ./scripts/deploy-linux.sh install'
-        sh 'sleep 30 && sudo ./scripts/deploy-linux.sh e2e-full'
+        sh 'sudo ./scripts/deploy-minimax.sh install'
+        sh 'sleep 30 && sudo ./scripts/deploy-minimax.sh e2e-full'
     }
 }
 ```
@@ -213,5 +213,5 @@ stage('E2E') {
 | 文件 | 用途 |
 |------|------|
 | `scripts/e2e-full-test.sh` | 10KB, 7 Phase + 35+ 测试用例 |
-| `scripts/deploy-linux.sh` | 加 `e2e-full` 子命令 |
+| `scripts/deploy-minimax.sh` | 加 `e2e-full` 子命令 |
 | `docs/E2E-GUIDE.md` | 本文档 |

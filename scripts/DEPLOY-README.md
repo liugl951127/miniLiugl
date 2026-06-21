@@ -5,9 +5,9 @@
 ## 📦 一行命令
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/liugl951127/miniLiugl/main/scripts/deploy-linux.sh -o deploy-linux.sh
-chmod +x deploy-linux.sh
-sudo ./deploy-linux.sh install
+curl -fsSL https://raw.githubusercontent.com/liugl951127/miniLiugl/main/scripts/deploy-minimax.sh -o deploy-minimax.sh
+chmod +x deploy-minimax.sh
+sudo ./deploy-minimax.sh install
 ```
 
 完成后访问:
@@ -86,7 +86,7 @@ sudo ./deploy-linux.sh install
 ### 查看状态
 
 ```bash
-sudo ./deploy-linux.sh status
+sudo ./deploy-minimax.sh status
 ```
 
 输出示例:
@@ -121,10 +121,10 @@ sudo systemctl disable minimax-auth
 ### 全部服务
 
 ```bash
-sudo ./deploy-linux.sh start     # 启动
-sudo ./deploy-linux.sh stop      # 停止
-sudo ./deploy-linux.sh restart   # 重启
-sudo ./deploy-linux.sh status    # 状态
+sudo ./deploy-minimax.sh start     # 启动
+sudo ./deploy-minimax.sh stop      # 停止
+sudo ./deploy-minimax.sh restart   # 重启
+sudo ./deploy-minimax.sh status    # 状态
 ```
 
 ## 📋 部署模块 (12 个后端 + 1 个前端)
@@ -185,7 +185,7 @@ mysql -uroot -p"${DB_ROOT_PASS}" < /opt/minimax/src/sql/init-minimax.sql
 ## 🔄 更新流程
 
 ```bash
-sudo ./deploy-linux.sh update
+sudo ./deploy-minimax.sh update
 ```
 
 执行:
@@ -197,7 +197,7 @@ sudo ./deploy-linux.sh update
 ## 💼 备份
 
 ```bash
-sudo ./deploy-linux.sh backup
+sudo ./deploy-minimax.sh backup
 ```
 
 输出:
@@ -337,7 +337,7 @@ export NODE_VERSION=22                    # Node 版本
 ## 🎯 卸载
 
 ```bash
-sudo ./deploy-linux.sh uninstall
+sudo ./deploy-minimax.sh uninstall
 ```
 
 保留:
@@ -366,9 +366,9 @@ sudo apt remove --purge -y mariadb-server nginx
 
 # 🆕 V5.21+: 两种部署脚本
 
-V5.21 引入新脚本 `deploy-minimax.sh`, 与 `deploy-linux.sh` 区别:
+V5.21 引入新脚本 `deploy-minimax.sh`, 与 `deploy-minimax.sh` 区别:
 
-| 维度 | `deploy-linux.sh` (旧) | `deploy-minimax.sh` (新) |
+| 维度 | `deploy-minimax.sh` (旧) | `deploy-minimax.sh` (新) |
 |------|----------------------|------------------------|
 | 中间件安装 | apt 装 (需 root) | Docker 一行 / apt 二选一 |
 | 默认模式 | --native | **--docker (一行启动)** |
@@ -392,10 +392,10 @@ sudo ./scripts/deploy-minimax.sh install --native
 # 自动: apt 装 Java/Maven/Node/MariaDB/Redis + 编译 + systemd
 
 # 旧脚本 (V5.12 之前, 仍可用, 已修 SQL 路径)
-sudo ./scripts/deploy-linux.sh install
+sudo ./scripts/deploy-minimax.sh install
 ```
 
 **注意**:
 - 两个脚本互不依赖, 任选一个
-- 推荐: 新部署用 `deploy-minimax.sh --docker`, 老部署保留 `deploy-linux.sh` 不变
+- 推荐: 新部署用 `deploy-minimax.sh --docker`, 老部署保留 `deploy-minimax.sh` 不变
 - 单独 SQL 导入: `mysql -uroot -p < sql/init-minimax.sql`

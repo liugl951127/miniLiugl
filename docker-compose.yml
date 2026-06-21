@@ -11,7 +11,7 @@
 #   3000  nginx (前端, 需在 host 启动或用 deploy/nginx)
 #   3306  MariaDB
 #   6379  Redis
-#   8080  Gateway (Spring Cloud Gateway, 不在 compose, 用 deploy-linux.sh 或 mvn)
+#   8080  Gateway (Spring Cloud Gateway, 不在 compose, 用 deploy-minimax.sh 或 mvn)
 #   8848  Nacos
 #   9090  Prometheus (可选 profile=monitoring)
 #   3001  Grafana (可选 profile=monitoring)

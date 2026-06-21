@@ -99,8 +99,8 @@
 ```bash
 git clone https://github.com/liugl951127/miniLiugl.git
 cd miniLiugl
-sudo ./scripts/deploy-linux.sh install    # 装 Java/Maven/Node/MariaDB/Redis/Nacos + 编译 + 启 systemd
-sudo ./scripts/deploy-linux.sh e2e        # 一键健康检查 13 服务
+sudo ./scripts/deploy-minimax.sh install    # 装 Java/Maven/Node/MariaDB/Redis/Nacos + 编译 + 启 systemd
+sudo ./scripts/deploy-minimax.sh test       # 一键健康检查 19 项
 ```
 
 **自动部署**: Nacos → Gateway → 12 微服务 → nginx, 端口 3000 统一入口
@@ -185,7 +185,8 @@ V5 系列 8 个版本聚焦**生产级架构能力**:
 | **V5.21** | 统一 SQL (单文件 1448 行) + 一键部署脚本 | `ae5294d` |
 | **V5.22** | deploy-minimax.sh 生产可用 (747 行 9 子命令) | `da1f4f1` |
 | **V5.23** | GitHub Actions CI (5 Job) + check 命令 + 27/27 通过 | `b0c49a4` |
-| **V5.24** | 前端 5 placeholder 补完 + Provider/Leaderboard 管理页 | `pending` |
+| **V5.24** | 前端 5 placeholder 补完 + Provider/Leaderboard 管理页 | `6034984` |
+| **V5.25** | 删除 deploy-linux.sh (旧版) + 文档引用清理 | `pending` |
 
 **V5 累计**: +9,500 行 / -4,000 行, 19 个新文档, 13 个 systemd 服务, **5 个 CI Job 自动验证**, **前端 45 个页面全交付**
 
@@ -397,7 +398,7 @@ MIT
 | 数据表 (MySQL) | 41+ (含 wechat/oauth/notification/alert) |
 | systemd 服务 | 16 (含 nacos/gateway) |
 | 文档 | 16 份 (Day 1-14 + V5.5-V5.12 升级) |
-| 部署脚本 | 3 (deploy-linux.sh + docker-compose + windows) |
+| 部署脚本 | 3 (deploy-minimax.sh + docker-compose + windows) |
 | Git commits | 30+ (含 V5 系列 8 个) |
 | **可观测性** | **Prometheus + TraceId + 告警规则 + Dashboard** |
 | **服务发现** | **Nacos 2.3.2** |
@@ -411,6 +412,6 @@ MIT
 - Prometheus 自动采点 (13 服务统一指标 + MetricsFilter URI 归一化)
 - 告警规则 CRUD (UI 弹窗编辑阈值/服务/通知渠道, 5 条预置规则)
 - WebSocket 精确分流 (`/ws/notifications` 直连 auth 绕过 gateway)
-- 部署一键化 (`./deploy-linux.sh install` + `./deploy-linux.sh e2e`)
+- 部署一键化 (`./scripts/deploy-minimax.sh install` + `./scripts/deploy-minimax.sh test`)
 
 **这是一个完整可投产的企业级大模型平台。**
