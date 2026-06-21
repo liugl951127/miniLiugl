@@ -12,7 +12,9 @@ import com.minimax.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Map;
@@ -60,7 +62,7 @@ public class AgentController {
 
     // ---------- Agent ----------
 
-    @Operation(summary = "运行智能体任务")
+    @Operation(summary = "运行智能体任务 (同步)")
     @PostMapping("/run")
     public Result<AgentService.AgentResult> run(@RequestBody Map<String, Object> body) {
         Long userId = ((Number) body.get("userId")).longValue();
@@ -68,6 +70,61 @@ public class AgentController {
         @SuppressWarnings("unchecked")
         List<String> tools = (List<String>) body.get("tools");
         return Result.ok(agent.run(userId, goal, tools));
+    }
+
+    /**
+     * V5.16: 流式执行 (SSE) — 实时推送 Agent 思考/工具调用/最终答案.
+     * 客户端用 EventSource('http://.../agent/run-stream') 接收.
+     * 事件类型: start / tools / step-start / thought / tool-call / observation / final / done / error
+     */
+    @Operation(summary = "V5.16: 流式运行 Agent (SSE, 实时推送思考过程)")
+    @PostMapping(value = "/run-stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter runStream(@RequestBody Map<String, Object> body) {
+        Long userId = ((Number) body.get("userId")).longValue();
+        String goal = (String) body.get("goal");
+        @SuppressWarnings("unchecked")
+        List<String> tools = (List<String>) body.get("tools");
+        return agent.runStream(userId, goal, tools);
+    }
+
+    /**
+     * V5.16: Plan 模式 — 把目标拆成 3-7 步骤, 用户确认后再执行.
+     * 用于复杂任务, 避免 agent 跑偏.
+     */
+    @Operation(summary = "V5.16: Plan 模式 (LLM 拆解目标为有序步骤)")
+    @PostMapping("/plan")
+    public Result<List<String>> plan(@RequestBody Map<String, Object> body) {
+        Long userId = body.get("userId") != null ? ((Number) body.get("userId")).longValue() : null;
+        String goal = (String) body.get("goal");
+        List<String> steps = agent.plan(userId, goal);
+        return Result.ok(steps);
+    }
+
+    /**
+     * V5.16: 执行已确认的 Plan — 按步骤依次执行, 汇总结果.
+     */
+    @Operation(summary = "V5.16: 执行 Plan (按步骤串行执行子任务)")
+    @PostMapping("/run-plan")
+    public Result<AgentService.AgentResult> runPlan(@RequestBody Map<String, Object> body) {
+        Long userId = ((Number) body.get("userId")).longValue();
+        String goal = (String) body.get("goal");
+        @SuppressWarnings("unchecked")
+        List<String> planSteps = (List<String>) body.get("planSteps");
+        return Result.ok(agent.runPlan(userId, goal, planSteps));
+    }
+
+    /**
+     * V5.16: 集成 RAG 长期记忆 — 执行时先检索相关记忆, 拼入 system prompt.
+     */
+    @Operation(summary = "V5.16: Run with Memory (RAG 长期记忆召回)")
+    @PostMapping("/run-with-memory")
+    public Result<AgentService.AgentResult> runWithMemory(@RequestBody Map<String, Object> body) {
+        Long userId = ((Number) body.get("userId")).longValue();
+        String goal = (String) body.get("goal");
+        @SuppressWarnings("unchecked")
+        List<String> tools = (List<String>) body.get("tools");
+        Long sessionId = body.get("sessionId") != null ? ((Number) body.get("sessionId")).longValue() : null;
+        return Result.ok(agent.runWithMemory(userId, goal, tools, sessionId));
     }
 
     // ---------- 知识图谱 ----------

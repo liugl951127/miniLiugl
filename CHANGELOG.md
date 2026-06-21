@@ -557,3 +557,29 @@
 - scripts: 2 (e2e-full-test.sh + deploy-linux.sh 加子命令)
 - docs: 1 new (E2E-GUIDE.md)
 - config: 1 modified (CHANGELOG.md)
+
+## [V5.16] - 2026-06-22 — Agent 增强 (流式 SSE + Plan 模式 + 记忆集成)
+
+### Added (后端)
+- **Agent 流式执行 (SSE)**: `runStream()` 用 SseEmitter 实时推送事件
+  - 事件类型: start / tools / step-start / thought / tool-call / observation / final / done / error
+  - 2 分钟超时, 异步执行不阻塞 Tomcat
+  - 端点: `POST /agent/run-stream` (V5.16)
+- **Plan 模式**: `plan()` LLM 拆解目标为 3-7 步骤, 用户确认后 `runPlan()` 串行执行
+  - 端点: `POST /agent/plan` / `POST /agent/run-plan`
+- **RAG 长期记忆集成**: `runWithMemory()` 调 RAG /retrieve 召回相关记忆, 拼入 system prompt
+  - 端点: `POST /agent/run-with-memory`
+- **ReAct 循环保留**: 6 个 event 类型 (thought/tool-call/observation/final/done/error)
+
+### Added (前端)
+- **`/agent/stream` 页面** (V5.16, 11KB):
+  - 三模式: 流式执行 / Plan 模式 / 带记忆
+  - SSE 事件流可视化 (timeline 渲染)
+  - Plan 步骤可编辑 (textarea inline edit)
+  - 工具列表 + 原始 JSON 调试面板
+  - fetch + ReadableStream 替代 EventSource (支持 POST + JWT)
+
+### Files (4)
+- backend: 2 (AgentService + AgentController)
+- frontend: 2 (Stream.vue + router)
+- config: 1 modified (CHANGELOG.md)

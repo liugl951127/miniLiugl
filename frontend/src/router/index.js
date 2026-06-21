@@ -50,6 +50,12 @@ const routes = [
         meta: { title: 'Agent 自主任务', icon: 'MagicStick' }
       },
       {
+        path: 'agent/stream',
+        name: 'AgentStream',
+        component: () => import('@/views/agent/Stream.vue'),
+        meta: { title: 'Agent 流式 (V5.16)', icon: 'VideoPlay' }
+      },
+      {
         path: 'notification',
         name: 'Notification',
         component: () => import('@/views/notification/Index.vue'),

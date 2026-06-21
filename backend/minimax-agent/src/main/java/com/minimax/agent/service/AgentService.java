@@ -6,6 +6,9 @@ import com.minimax.function.mapper.FunctionToolMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import java.io.IOException;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -50,6 +53,13 @@ public class AgentService {
     private final ToolExecutor toolExecutor;
     private final ObjectMapper json = new ObjectMapper();
     private final HttpClient client = HttpClient.newHttpClient();
+    // V5.16: SSE 异步执行 (避免阻塞 Tomcat 线程)
+    private final java.util.concurrent.ExecutorService executor =
+        java.util.concurrent.Executors.newCachedThreadPool(r -> {
+            Thread t = new Thread(r, "agent-sse");
+            t.setDaemon(true);
+            return t;
+        });
 
     /**
      * 执行 Agent 任务。
@@ -230,6 +240,311 @@ public class AgentService {
             }
         }
         return new LlmResp(content == null ? "" : content, toolCalls);
+    }
+
+    /**
+     * V5.16: Agent 流式执行 (SSE).
+     * 实时推送每个步骤: step-start / thought / tool-call / observation / final / done
+     * 用 SseEmitter 替代单次返回, 让用户看到 agent 思考过程
+     *
+     * @return SseEmitter, 客户端通过 EventSource 接收
+     */
+    public SseEmitter runStream(Long userId, String goal, List<String> tools) {
+        SseEmitter emitter = new SseEmitter(120_000L);  // 2 分钟超时
+        executor.execute(() -> {
+            try {
+                runStreamInternal(userId, goal, tools, emitter);
+            } catch (Exception e) {
+                sendEvent(emitter, "error", Map.of("message", e.getMessage()));
+                emitter.completeWithError(e);
+            } finally {
+                try { emitter.complete(); } catch (Exception ignore) {}
+            }
+        });
+        return emitter;
+    }
+
+    private void runStreamInternal(Long userId, String goal, List<String> tools, SseEmitter emitter) throws Exception {
+        long t0 = System.currentTimeMillis();
+        int maxRounds = defaultMaxRounds;
+        List<Step> steps = new ArrayList<>();
+        Set<String> toolsUsed = new LinkedHashSet<>();
+
+        sendEvent(emitter, "start", Map.of(
+            "goal", goal,
+            "maxRounds", maxRounds,
+            "ts", t0
+        ));
+
+        // 1) 工具
+        var enabledTools = pickTools(tools);
+        if (enabledTools.isEmpty()) {
+            sendEvent(emitter, "error", Map.of("message", "没有可用工具, 无法执行"));
+            return;
+        }
+        var toolSchemas = toOpenAiTools(enabledTools);
+        sendEvent(emitter, "tools", Map.of("tools", enabledTools.stream().map(t -> Map.of(
+            "name", t.getName(), "description", t.getDescription()
+        )).toList()));
+
+        // 2) messages
+        List<Map<String, Object>> messages = new ArrayList<>();
+        messages.add(Map.of("role", "system", "content",
+                "你是一个 Agent。给定一个目标, 用 Thought/Action/Observation 循环自主完成。\n" +
+                "可用工具: " + enabledTools.stream().map(t -> t.getName()).toList() + "\n" +
+                "规则:\n" +
+                "1. 每轮先输出 Thought (你的思考, 简短)\n" +
+                "2. 然后决定 Action: 调工具 (返回 tool_calls) 或 Final Answer (用 <final>你的答案</final> 包裹)\n" +
+                "3. 最多 " + maxRounds + " 轮\n" +
+                "4. 没工具可用就直接给 Final Answer"));
+        messages.add(Map.of("role", "user", "content", "目标: " + goal));
+
+        // 3) ReAct 循环
+        for (int round = 1; round <= maxRounds; round++) {
+            Step step = new Step();
+            step.round = round;
+            long r0 = System.currentTimeMillis();
+
+            sendEvent(emitter, "step-start", Map.of("round", round));
+            LlmResp resp;
+            try {
+                resp = callLlm(messages, toolSchemas);
+            } catch (Exception e) {
+                sendEvent(emitter, "step-error", Map.of("round", round, "message", e.getMessage()));
+                return;
+            }
+
+            String content = resp.content == null ? "" : resp.content;
+            String thought = extractThinking(content);
+            step.thinking = thought;
+
+            // 推送 thought
+            sendEvent(emitter, "thought", Map.of(
+                "round", round,
+                "thought", thought
+            ));
+
+            // 检查 final answer
+            String finalAns = extractFinalAnswer(content);
+            if (finalAns != null) {
+                step.observation = "FINAL: " + finalAns;
+                step.durationMs = System.currentTimeMillis() - r0;
+                steps.add(step);
+                sendEvent(emitter, "final", Map.of(
+                    "round", round,
+                    "answer", finalAns
+                ));
+                sendEvent(emitter, "done", Map.of(
+                    "success", true,
+                    "rounds", round,
+                    "toolsUsed", new ArrayList<>(toolsUsed),
+                    "durationMs", System.currentTimeMillis() - t0
+                ));
+                return;
+            }
+
+            // 调用工具
+            if (resp.toolCalls == null || resp.toolCalls.isEmpty()) {
+                sendEvent(emitter, "step-error", Map.of("round", round, "message", "模型未返回工具调用, 终止"));
+                return;
+            }
+
+            for (var tc : resp.toolCalls) {
+                String toolName = tc.function.name;
+                String args = tc.function.arguments;
+                step.action = toolName;
+                step.arguments = args;
+                toolsUsed.add(toolName);
+
+                sendEvent(emitter, "tool-call", Map.of(
+                    "round", round,
+                    "tool", toolName,
+                    "arguments", args
+                ));
+
+                String observation = toolExecutor.invoke(toolName, args);
+                step.observation = observation;
+                sendEvent(emitter, "observation", Map.of(
+                    "round", round,
+                    "tool", toolName,
+                    "observation", observation,
+                    "durationMs", System.currentTimeMillis() - r0
+                ));
+
+                // 加入 messages
+                messages.add(Map.of("role", "assistant", "content", content,
+                    "tool_calls", List.of(Map.of(
+                        "id", tc.id != null ? tc.id : "call_" + round,
+                        "type", "function",
+                        "function", Map.of("name", toolName, "arguments", args)
+                    ))));
+                messages.add(Map.of("role", "tool", "tool_call_id",
+                    tc.id != null ? tc.id : "call_" + round,
+                    "content", observation));
+            }
+            step.durationMs = System.currentTimeMillis() - r0;
+            steps.add(step);
+        }
+
+        // 超过 maxRounds
+        sendEvent(emitter, "done", Map.of(
+            "success", false,
+            "message", "达到最大轮次 " + maxRounds,
+            "rounds", maxRounds,
+            "toolsUsed", new ArrayList<>(toolsUsed),
+            "durationMs", System.currentTimeMillis() - t0
+        ));
+    }
+
+    /**
+     * V5.16: 集成 RAG 长期记忆 — 执行时先检索相关记忆, 拼入 system prompt.
+     * 简化实现: 调 RAG /retrieve 拿相关 chunks, 拼到 system message
+     */
+    public AgentResult runWithMemory(Long userId, String goal, List<String> tools, Long sessionId) {
+        // 1) 调 RAG retrieve 拿相关记忆
+        List<String> memories = retrieveMemories(goal, 3);
+        // 2) 拼到 goal
+        String enrichedGoal = goal;
+        if (!memories.isEmpty()) {
+            enrichedGoal = "相关记忆:\n" + String.join("\n", memories) + "\n\n目标: " + goal;
+        }
+        // 3) 调普通 run
+        AgentResult base = run(userId, enrichedGoal, tools);
+        return new AgentResult(base.success(), base.answer(), base.steps(),
+                base.rounds(), base.toolsUsed(), base.durationMs());
+    }
+
+    /**
+     * V5.16: 调 RAG 服务拿相关记忆 (HTTP /api/v1/rag/retrieve)
+     */
+    private List<String> retrieveMemories(String query, int topK) {
+        try {
+            // 默认走 gateway
+            String url = "http://localhost:8080/api/v1/rag/retrieve";
+            String body = String.format("{\"query\":\"%s\",\"topK\":%d}",
+                query.replace("\\", "\\\\").replace("\"", "\\\""), topK);
+            HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofSeconds(5))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+            HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() != 200) return List.of();
+            @SuppressWarnings("unchecked")
+            Map<String, Object> root = json.readValue(resp.body(), Map.class);
+            Object data = root.get("data");
+            if (!(data instanceof List)) return List.of();
+            List<String> out = new ArrayList<>();
+            for (Object o : (List<?>) data) {
+                if (o instanceof Map) {
+                    Object text = ((Map<?, ?>) o).get("text");
+                    if (text != null) out.add(text.toString());
+                }
+            }
+            return out;
+        } catch (Exception e) {
+            log.debug("RAG retrieve 失败: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    private void sendEvent(SseEmitter emitter, String event, Object data) {
+        try {
+            emitter.send(SseEmitter.event()
+                .name(event)
+                .data(data, MediaType.APPLICATION_JSON));
+        } catch (IOException e) {
+            log.warn("SSE 发送失败 event={}: {}", event, e.getMessage());
+        }
+    }
+
+    // ---- V5.16: Plan 模式 ----
+
+    /**
+     * V5.16: Plan 模式 — 先让 LLM 把目标拆成 3-7 个步骤, 用户确认后再执行.
+     * 用于复杂任务, 避免 agent 跑偏.
+     */
+    public List<String> plan(Long userId, String goal) {
+        try {
+            String sysPrompt = "你是一个任务规划专家。给定一个目标, 拆成 3-7 个有序步骤。\n" +
+                "每个步骤要明确: 用什么工具/动作, 预期输出。\n" +
+                "返回 JSON 数组: [\"步骤1: ...\", \"步骤2: ...\", ...]\n" +
+                "不要解释, 只返回 JSON 数组。";
+            List<Map<String, Object>> msgs = List.of(
+                Map.of("role", "system", "content", sysPrompt),
+                Map.of("role", "user", "content", "目标: " + goal)
+            );
+            Map<String, Object> body = Map.of(
+                "model", model,
+                "messages", msgs,
+                "temperature", 0.3
+            );
+            HttpRequest.Builder hb = HttpRequest.newBuilder()
+                .uri(URI.create(stripSlash(baseUrl) + "/api/v1/models/chat"))
+                .timeout(Duration.ofSeconds(30))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body)));
+            if (token != null && !token.isBlank()) {
+                hb.header("Authorization", "Bearer " + token);
+            }
+            HttpRequest req = hb.build();
+            HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() != 200) return List.of();
+            @SuppressWarnings("unchecked")
+            Map<String, Object> root = json.readValue(resp.body(), Map.class);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> data = (Map<String, Object>) root.get("data");
+            if (data == null) return List.of();
+            String content = (String) data.get("content");
+            // 简单解析 JSON 数组
+            if (content == null) return List.of();
+            content = content.trim();
+            if (content.startsWith("```")) {
+                int end = content.indexOf("```", 3);
+                if (end > 0) content = content.substring(3, end).trim();
+                if (content.startsWith("json")) content = content.substring(4).trim();
+            }
+            if (content.startsWith("[") && content.endsWith("]")) {
+                return json.readValue(content, List.class);
+            }
+            // fallback: 拆行
+            return Arrays.stream(content.split("\n"))
+                .map(s -> s.replaceAll("^[\\d\\.\\s\\-\\*]+", "").trim())
+                .filter(s -> !s.isEmpty() && s.length() > 3)
+                .limit(7)
+                .toList();
+        } catch (Exception e) {
+            log.warn("plan 失败: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    /**
+     * V5.16: 执行已确认的 Plan — 按步骤依次调用 agent.run(), 每步独立完成
+     */
+    public AgentResult runPlan(Long userId, String goal, List<String> planSteps) {
+        long t0 = System.currentTimeMillis();
+        List<Step> allSteps = new ArrayList<>();
+        Set<String> toolsUsed = new LinkedHashSet<>();
+        StringBuilder finalAns = new StringBuilder();
+
+        for (int i = 0; i < planSteps.size(); i++) {
+            String subGoal = planSteps.get(i);
+            AgentResult sub = run(userId, subGoal, List.of());
+            if (sub.steps() != null) allSteps.addAll(sub.steps());
+            if (sub.toolsUsed() != null) toolsUsed.addAll(sub.toolsUsed());
+            if (sub.answer() != null) {
+                finalAns.append("【").append(i + 1).append("】").append(sub.answer()).append("\n\n");
+            }
+        }
+        return AgentResult.ok(
+            finalAns.length() > 0 ? finalAns.toString().trim() : "Plan 执行完成",
+            allSteps,
+            planSteps.size(),
+            toolsUsed,
+            System.currentTimeMillis() - t0
+        );
     }
 
     private String extractFinalAnswer(String content) {
