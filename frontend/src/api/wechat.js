@@ -13,3 +13,22 @@ export const wechatApi = {
   // 微信回调地址 (前端展示用)
   callbackUrl: () => `${location.origin}/api/v1/auth/wechat/callback`,
 }
+
+/** 微信绑定管理 (V5.24) — 跨应用 unionid 打通 */
+export const getMyBinding = () =>
+  http.get('/auth/wechat/binding/me')
+
+export const unbindMyself = () =>
+  http.delete('/auth/wechat/binding/me')
+
+export const listAllBindings = (limit = 100, keyword) =>
+  http.get(`/auth/admin/wechat/bindings?limit=${limit}${keyword ? `&keyword=${encodeURIComponent(keyword)}` : ''}`)
+
+export const findByOpenid = (openid) =>
+  http.get(`/auth/admin/wechat/find?openid=${encodeURIComponent(openid)}`)
+
+export const bindByAdmin = (body) =>
+  http.post('/auth/admin/wechat/bind', body)
+
+export const unbindByAdmin = (userId) =>
+  http.delete(`/auth/admin/wechat/bind/${userId}`)

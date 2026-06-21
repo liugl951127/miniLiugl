@@ -6,7 +6,7 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-green.svg)](https://spring.io/projects/spring-boot)
 [![Vue](https://img.shields.io/badge/Vue-3.4-brightgreen.svg)](https://vuejs.org/)
 
-> **V5.23 CI + 一键部署** · 13 个微服务 · Spring Cloud Gateway · Nacos 服务发现 · Prometheus 全链路监控 · TraceId 全链路追踪 · GitHub Actions 5-Job CI · 41+ 张数据表 · 11,454+ 行代码
+> **V5.24 前端补完** · 13 个微服务 · Spring Cloud Gateway · Nacos 服务发现 · Prometheus 全链路监控 · TraceId 全链路追踪 · GitHub Actions 5-Job CI · **前端 45 个页面全部交付** · 41+ 张数据表 · 13,500+ 行代码
 >
 > Java 17 + Spring Boot 3 + Spring Cloud Gateway + Nacos + Vue 3 + Element Plus + 大模型 + 向量库 + RAG + Function Calling + 多模态 + 监控 + 调优 + 可观测性
 
@@ -184,9 +184,29 @@ V5 系列 8 个版本聚焦**生产级架构能力**:
 | **V5.20** | Docker Compose 全栈中间件 + PWA + 后端 i18n | `4704604` |
 | **V5.21** | 统一 SQL (单文件 1448 行) + 一键部署脚本 | `ae5294d` |
 | **V5.22** | deploy-minimax.sh 生产可用 (747 行 9 子命令) | `da1f4f1` |
-| **V5.23** | GitHub Actions CI (5 Job) + check 命令 + 27/27 通过 | `pending` |
+| **V5.23** | GitHub Actions CI (5 Job) + check 命令 + 27/27 通过 | `b0c49a4` |
+| **V5.24** | 前端 5 placeholder 补完 + Provider/Leaderboard 管理页 | `pending` |
 
-**V5 累计**: +7,500 行 / -3,800 行, 19 个新文档, 13 个 systemd 服务, **5 个 CI Job 自动验证**
+**V5 累计**: +9,500 行 / -4,000 行, 19 个新文档, 13 个 systemd 服务, **5 个 CI Job 自动验证**, **前端 45 个页面全交付**
+
+---
+
+## 🎨 V5.24 前端补完 (本期重点)
+
+本期将 **5 个 placeholder 重写 + 新增 2 个管理页 + admin 容器化**, 至此前端 45 个页面全部交付 (零 placeholder).
+
+| 页面 | 状态 | 功能 | 行数 |
+|------|------|------|------|
+| `knowledge/Index.vue` 知识库 | ⚠️→✅ | KB CRUD + 文档上传 + 切片预览 + 检索问答 | 483 |
+| `memory/Index.vue` 记忆 | ⚠️→✅ | 短期/长期/偏好 3 Tab + 召回测试 + 摘要 | 442 |
+| `admin/Provider.vue` 模型供应商 | ❌→✅ | CRUD + 测试连接 + 启用切换 + API Key 脱敏 | 258 |
+| `admin/Leaderboard.vue` 模型排行 | ❌→✅ | 综合/速度/最近/分类 4 Tab + 金银铜牌 | 183 |
+| `user/CrossAppBinding.vue` 跨应用 | ⚠️→✅ | UnionID 状态 + 4 步骤引导 + 历史记录 | 198 |
+| `auth/WechatScanPage.vue` 扫码 | ⚠️→✅ | 4 步骤进度 + 已绑定信息 + 帮助折叠 | 146 |
+| `admin/Index.vue` 管理后台 | ⚠️→✅ | 侧边栏容器 + 6 子页导航 + 快捷入口 | 134 |
+| **API 封装** (3 个) | ➕ | rag.js / memory.js / model.js (CRUD 全) | 184 |
+
+**总量**: +2021 行 (前端), 7 个 .vue + 3 个 .js
 
 ---
 

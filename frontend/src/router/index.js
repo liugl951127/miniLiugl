@@ -133,6 +133,18 @@ const routes = [
             component: () => import('@/views/monitor/Index.vue'),
             meta: { title: '系统监控', icon: 'Monitor' }
           },
+          {
+            path: 'provider',
+            name: 'AdminProvider',
+            component: () => import('@/views/admin/Provider.vue'),
+            meta: { title: '模型 Provider (V5.24)', icon: 'Cpu' }
+          },
+          {
+            path: 'leaderboard',
+            name: 'AdminLeaderboard',
+            component: () => import('@/views/admin/Leaderboard.vue'),
+            meta: { title: '模型排行榜 (V5.24)', icon: 'Trophy' }
+          },
         ]
       },
       {
