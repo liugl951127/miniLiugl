@@ -6,7 +6,7 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-green.svg)](https://spring.io/projects/spring-boot)
 [![Vue](https://img.shields.io/badge/Vue-3.4-brightgreen.svg)](https://vuejs.org/)
 
-> **V5.24 前端补完** · 13 个微服务 · Spring Cloud Gateway · Nacos 服务发现 · Prometheus 全链路监控 · TraceId 全链路追踪 · GitHub Actions 5-Job CI · **前端 45 个页面全部交付** · 41+ 张数据表 · 13,500+ 行代码
+> **V5.26 CentOS 部署** · 13 个微服务 · Spring Cloud Gateway · Nacos 服务发现 · Prometheus 全链路监控 · TraceId 全链路追踪 · GitHub Actions 5-Job CI · 前端 45 个页面全交付 · **CentOS 一键部署** · 41+ 张数据表 · 14,000+ 行代码
 >
 > Java 17 + Spring Boot 3 + Spring Cloud Gateway + Nacos + Vue 3 + Element Plus + 大模型 + 向量库 + RAG + Function Calling + 多模态 + 监控 + 调优 + 可观测性
 
@@ -186,9 +186,10 @@ V5 系列 8 个版本聚焦**生产级架构能力**:
 | **V5.22** | deploy-minimax.sh 生产可用 (747 行 9 子命令) | `da1f4f1` |
 | **V5.23** | GitHub Actions CI (5 Job) + check 命令 + 27/27 通过 | `b0c49a4` |
 | **V5.24** | 前端 5 placeholder 补完 + Provider/Leaderboard 管理页 | `6034984` |
-| **V5.25** | 删除 deploy-linux.sh (旧版) + 文档引用清理 | `pending` |
+| **V5.25** | 删除 deploy-linux.sh (旧版) + 文档引用清理 | `d1c1866` |
+| **V5.26** | CentOS 专用部署脚本 (install-middleware + deploy-centos) | `pending` |
 
-**V5 累计**: +9,500 行 / -4,000 行, 19 个新文档, 13 个 systemd 服务, **5 个 CI Job 自动验证**, **前端 45 个页面全交付**
+**V5 累计**: +11,000 行 / -4,200 行, 21 个新文档, 13 个 systemd 服务, **5 个 CI Job 自动验证**, **前端 45 个页面全交付**, **CentOS 专用部署脚本**
 
 ---
 
@@ -208,6 +209,35 @@ V5 系列 8 个版本聚焦**生产级架构能力**:
 | **API 封装** (3 个) | ➕ | rag.js / memory.js / model.js (CRUD 全) | 184 |
 
 **总量**: +2021 行 (前端), 7 个 .vue + 3 个 .js
+
+---
+
+## 🐧 V5.26 CentOS 一键部署 (本期重点)
+
+新增 2 个 CentOS 专用部署脚本, 区别于通用版 `deploy-minimax.sh`:
+- 自动处理 SELinux (enforcing → permissive)
+- 自动配置 firewalld 端口
+- 配置国内 Docker 镜像加速 (5-10 倍)
+- 用 yum 装 JDK + nginx (CentOS 原生工具链)
+
+| 脚本 | 行数 | 用途 |
+|------|------|------|
+| `scripts/install-middleware-centos.sh` | 461 | **中间件独立安装** (Docker + MariaDB/Redis/Nacos/Adminer) |
+| `scripts/deploy-centos.sh` | 558 | **一键完整部署** (中间件 + JDK + mvn + 12 微服务 + nginx) |
+| `docs/DEPLOY-CENTOS-GUIDE.md` | 7KB | CentOS 部署文档 (8 步详解 + 7 故障排查) |
+
+**一行安装** (CentOS/Rocky/RHEL/AlmaLinux/Anolis):
+```bash
+curl -fsSL https://raw.githubusercontent.com/liugl951127/miniLiugl/main/scripts/deploy-centos.sh -o deploy-centos.sh
+chmod +x deploy-centos.sh
+sudo ./deploy-centos.sh install
+```
+
+**8 步流程**: JDK17 → 中间件 → 用户 → 编译 → 拷贝 jar → systemd → nginx → 启动
+
+**check 命令**: 28/28 通过 (4 个新加验证项)
+
+**总量**: +2030 行 (2 个脚本 + 1 个文档)
 
 ---
 

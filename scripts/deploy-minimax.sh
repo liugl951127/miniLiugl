@@ -701,7 +701,7 @@ PYEOF
   fi
 
   # 必需文件
-  for f in docker-compose.yml sql/init-minimax.sql scripts/deploy-minimax.sh; do
+  for f in docker-compose.yml sql/init-minimax.sql scripts/deploy-minimax.sh scripts/install-middleware-centos.sh scripts/deploy-centos.sh; do
     if [[ -f "$f" ]]; then
       log_info "  ✓ 文件存在 $f"
       pass=$((pass+1))
