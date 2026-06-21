@@ -30,7 +30,7 @@
 | **JDK** | 17+ | 后端运行 |
 | **Maven** | 3.8+ | 后端构建 |
 | **Node.js** | 22 LTS | 前端构建 |
-| **MariaDB / MySQL** | 10.5+ / 8.0+ | 数据库 |
+| **MySQL / MySQL** | 10.5+ / 8.0+ | 数据库 |
 | **Git** | 2.30+ | 代码管理 |
 | **nginx** | 1.18+ | 反向代理 |
 | **openssl** | - | HTTPS 证书 |
@@ -39,7 +39,7 @@
 
 ```bash
 sudo apt update
-sudo apt install -y openjdk-17-jdk maven nodejs npm mariadb-server nginx git curl
+sudo apt install -y openjdk-17-jdk maven nodejs npm mysql-server nginx git curl
 
 # 安装 nvm 管理 node (推荐 22 LTS)
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
@@ -50,8 +50,8 @@ nvm install 22 && nvm use 22
 ### macOS (开发机)
 
 ```bash
-brew install openjdk@17 maven node@22 mariadb nginx git
-brew services start mariadb
+brew install openjdk@17 maven node@22 mysql nginx git
+brew services start mysql
 brew services start nginx
 ```
 
@@ -61,7 +61,7 @@ brew services start nginx
 java -version          # openjdk version "17.x"
 mvn -version           # Apache Maven 3.8+
 node -v                # v22.x
-mysql --version        # mysql  Ver 15.1 Distrib 10.5-MariaDB
+mysql --version        # mysql  Ver 15.1 Distrib 10.5-MySQL
 nginx -v               # nginx version: nginx/1.18
 ```
 
@@ -91,9 +91,9 @@ cd miniLiugl
 ### 1.2 初始化数据库
 
 ```bash
-# 启动 MariaDB
-sudo systemctl enable mariadb
-sudo systemctl start mariadb
+# 启动 MySQL
+sudo systemctl enable mysql
+sudo systemctl start mysql
 
 # 设置 root 密码 (首次)
 sudo mysql_secure_installation
@@ -742,7 +742,7 @@ sudo systemctl reload nginx
 
 ```bash
 # 1. 数据库
-sudo systemctl start mariadb
+sudo systemctl start mysql
 
 # 2. 后端所有服务 (按 deploy-linux.sh 已配置好)
 sudo systemctl start minimax-auth
@@ -780,7 +780,7 @@ sudo journalctl -u minimax-auth -f
 
 ### ✅ 第一阶段: 数据库 + 后端启动
 
-- [ ] MariaDB 启动, 41 张表都建好
+- [ ] MySQL 启动, 41 张表都建好
 - [ ] 后端 12 个模块全部启动 (端口 8081-8095)
 - [ ] `curl http://localhost:8081/auth/login` 返回正常
 - [ ] adminLiugl 能登录, 拿到 JWT
@@ -872,7 +872,7 @@ A: 小程序后台 → 开发管理 → 服务器域名 → 添加 `https://api.
 
 ### Q4: 数据库连接被拒 "Access denied"
 
-A: MariaDB 重装后会丢用户. 重建:
+A: MySQL 重装后会丢用户. 重建:
 ```sql
 CREATE USER IF NOT EXISTS 'minimax'@'localhost' IDENTIFIED BY 'minimax_pass_2024';
 CREATE USER IF NOT EXISTS 'minimax'@'127.0.0.1' IDENTIFIED BY 'minimax_pass_2024';

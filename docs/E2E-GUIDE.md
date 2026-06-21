@@ -34,7 +34,7 @@ sudo ./scripts/deploy-minimax.sh e2e-full
 
 | Phase | 内容 | 期望 |
 |-------|------|------|
-| 1 | 基础设施 (nginx, nacos, redis, mariadb) | HTTP 200/302/401 |
+| 1 | 基础设施 (nginx, nacos, redis, mysql) | HTTP 200/302/401 |
 | 2 | Gateway + 12 微服务健康检查 | HTTP 200/401 |
 | 3 | JWT 鉴权 (未登录/登录/带 token) | 401 → token → 200 |
 | 4 | 跨服务调用 (admin/monitor/chat/model/rag) | HTTP 200 |
@@ -153,7 +153,7 @@ stage('E2E') {
 **症状**: `[✗] 登录失败 (无法获取 token)`
 
 **排查**:
-1. 检查 MariaDB 是否初始化 `adminLiugl` 用户:
+1. 检查 MySQL 是否初始化 `adminLiugl` 用户:
    ```sql
    SELECT username, status FROM sys_user WHERE username='adminLiugl';
    ```

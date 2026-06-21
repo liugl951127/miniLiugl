@@ -38,7 +38,7 @@
                  │          │          │
                  ▼          ▼          ▼
             ┌────────┐ ┌────────┐ ┌────────┐
-            │MariaDB │ │ Redis  │ │ Nacos  │ 8848
+            │MySQL │ │ Redis  │ │ Nacos  │ 8848
             │ 3306   │ │ 6379   │ │ (V5.12)│
             └────────┘ └────────┘ └────────┘
 ```
@@ -50,7 +50,7 @@
 | 3000 | 统一入口 | nginx |
 | 8080 | API 网关 | Spring Cloud Gateway |
 | 8848 | 服务发现 + 配置 | Nacos (V5.7+) |
-| 3306 | 关系数据库 | MariaDB |
+| 3306 | 关系数据库 | MySQL |
 | 6379 | 限流/缓存 | Redis (V5.12) |
 | 8081 | 认证授权 | minimax-auth |
 | 8082 | 聊天会话 | minimax-chat |
@@ -72,7 +72,7 @@
 curl -O https://raw.githubusercontent.com/liugl951127/miniLiugl/main/scripts/deploy-linux.sh
 chmod +x deploy-linux.sh
 
-# 2. 一键安装 (含 Java/Maven/Node/MariaDB/Redis/Nacos 全部依赖)
+# 2. 一键安装 (含 Java/Maven/Node/MySQL/Redis/Nacos 全部依赖)
 sudo ./deploy-linux.sh install
 
 # 3. 启动顺序 (V5.12):
@@ -87,7 +87,7 @@ sudo ./deploy-linux.sh e2e
 
 | 子命令 | 用途 | V5.12 增强 |
 |--------|------|-----------|
-| `install` | 一键安装 (Java/Maven/Node/MariaDB/Redis/Nacos) | 新增 Nacos + Redis |
+| `install` | 一键安装 (Java/Maven/Node/MySQL/Redis/Nacos) | 新增 Nacos + Redis |
 | `start` | 启动服务 (顺序: nacos→gateway→微服务→nginx) | 启动逻辑重写 |
 | `stop` | 停止服务 (倒序) | 加 nacos/gateway |
 | `restart` | 重启 | - |
@@ -108,7 +108,7 @@ $ sudo ./deploy-linux.sh e2e
 [1] 基础设施
   nacos (8848)                    200 (code=200)
   redis (6379)                    timeout (code=N/A)
-  mariadb (3306)                  timeout (code=N/A)
+  mysql (3306)                  timeout (code=N/A)
 
 [2] 入口 (nginx :3000 -> gateway :8080)
   nginx /                         200 (code=200)
@@ -131,7 +131,7 @@ $ sudo ./deploy-linux.sh e2e
 ```bash
 # 基础设施
 minimax-nacos.service       # Nacos 2.3.2 (8848)
-mariadb.service             # MariaDB (3306, 系统自带)
+mysql.service             # MySQL (3306, 系统自带)
 redis-server.service        # Redis (6379, 系统自带)
 
 # 应用层
@@ -201,7 +201,7 @@ sudo -u minimax bash /opt/minimax/nacos/bin/startup-standalone.sh &
 - 80/3000: nginx
 - 8080: gateway
 - 8848: nacos
-- 3306: mariadb
+- 3306: mysql
 - 6379: redis
 修改 deploy 脚本顶部变量即可。
 
@@ -211,7 +211,7 @@ sudo -u minimax bash /opt/minimax/nacos/bin/startup-standalone.sh &
 2. **JWT_SECRET 替换**: 用 `openssl rand -base64 32` 生成
 3. **nginx 白名单**: 生产环境限制 IP
 4. **HTTPS**: 加 Let's Encrypt 证书
-5. **数据库**: 启用 MariaDB SSL
+5. **数据库**: 启用 MySQL SSL
 
 ## 11. 备份策略
 
@@ -220,7 +220,7 @@ sudo -u minimax bash /opt/minimax/nacos/bin/startup-standalone.sh &
 echo "0 3 * * * root /opt/minimax/deploy-linux.sh backup" >> /etc/crontab
 
 # 备份内容:
-# - MariaDB 全库 (mysqldump)
+# - MySQL 全库 (mysqldump)
 # - 13 个 jar
 # - Nacos 配置 (nacos/conf)
 # - nginx 配置

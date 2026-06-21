@@ -56,8 +56,8 @@ choco install maven -y
 # 3. Node.js 20+ (含 npm)
 choco install nodejs-lts -y
 
-# 4. (可选) MariaDB / MySQL 8
-choco install mariadb -y
+# 4. (可选) MySQL / MySQL 8
+choco install mysql -y
 
 # 5. (可选) Docker Desktop
 choco install docker-desktop -y
@@ -73,7 +73,7 @@ node -v
 ```bash
 sudo apt update
 sudo apt install -y openjdk-17-jdk-headless maven nodejs npm default-mysql-server docker.io
-sudo systemctl enable --now docker mariadb
+sudo systemctl enable --now docker mysql
 java -version
 mvn -v
 node -v
@@ -202,7 +202,7 @@ release/
 ### 阶段 4: 单平台启动 (验证)
 
 ```bash
-# 1. 启 MariaDB
+# 1. 启 MySQL
 mysqld_safe --user=mysql --bind-address=127.0.0.1 &
 
 # 2. 初始化数据库
@@ -411,11 +411,11 @@ echo "  总大小: $size"
 # ===== 阶段 5: 测试可选启动 =====
 echo -e "\n${YELLOW}[5/5] 准备部署包 (可选: 启动测试)...${NC}"
 if [ "$1" = "--with-test" ]; then
-  echo "  启动 MariaDB..."
+  echo "  启动 MySQL..."
   if ! pgrep -x mysqld >/dev/null 2>&1; then
     mkdir -p /var/run/mysqld /var/log/mysql
     chown -R mysql:mysql /var/run/mysqld /var/log/mysql 2>/dev/null || true
-    nohup mysqld_safe --user=mysql --bind-address=127.0.0.1 > /tmp/mariadb.log 2>&1 &
+    nohup mysqld_safe --user=mysql --bind-address=127.0.0.1 > /tmp/mysql.log 2>&1 &
     sleep 8
   fi
   echo "  初始化数据库..."
@@ -635,7 +635,7 @@ Write-Host "  登录: adminLiugl / Liugl@2026"
 | 8088 | multimodal |
 | 8089 | monitor |
 | 8090 | agent |
-| 3306 | MariaDB / MySQL |
+| 3306 | MySQL / MySQL |
 | 6379 | Redis (可选) |
 
 ---
@@ -668,7 +668,7 @@ Write-Host "  登录: adminLiugl / Liugl@2026"
 ## 7️⃣ 生产部署检查清单
 
 - [ ] JDK 17 已装 (`java -version`)
-- [ ] MariaDB / MySQL 8 已启
+- [ ] MySQL / MySQL 8 已启
 - [ ] `minimax` 数据库已建 + SQL 已导入
 - [ ] `minimax@127.0.0.1` 用户已建 + 授权
 - [ ] 12 个 jar 已打包

@@ -21,7 +21,7 @@ if [ -n "$pid" ]; then
   echo "  停止前端 (PID $pid)"
 fi
 
-# 杀 MariaDB (可选, 一般保留)
+# 杀 MySQL (可选, 一般保留)
 # pkill -f mysqld_safe
 
 sleep 2

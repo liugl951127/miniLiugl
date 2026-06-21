@@ -2,14 +2,14 @@
 # MiniMax Platform - 全栈中间件 Docker Compose (V5.20)
 #
 # 一行启动所有中间件:
-#   docker compose up -d                # 必选 (MariaDB + Redis + Nacos)
+#   docker compose up -d                # 必选 (MySQL + Redis + Nacos)
 #   docker compose --profile monitoring up -d   # 可选 (Prometheus + Grafana)
 #   docker compose --profile tracing up -d      # 可选 (Jaeger + OTel Collector)
 #   docker compose --profile search up -d       # 可选 (ES + Kibana)
 #
 # 端口分配:
 #   3000  nginx (前端, 需在 host 启动或用 deploy/nginx)
-#   3306  MariaDB
+#   3306  MySQL
 #   6379  Redis
 #   8080  Gateway (Spring Cloud Gateway, 不在 compose, 用 deploy-minimax.sh 或 mvn)
 #   8848  Nacos
@@ -24,30 +24,31 @@ version: '3.8'
 
 services:
   # ========== 必选: 核心中间件 ==========
-  mariadb:
-    image: mariadb:10.5
-    container_name: minimax-mariadb
+  mysql:
+    image: mysql:8.0
+    container_name: minimax-mysql
     restart: unless-stopped
     environment:
-      MARIADB_ROOT_PASSWORD: minimax_root_2024
-      MARIADB_DATABASE: minimax_platform
-      MARIADB_USER: minimax
-      MARIADB_PASSWORD: minimax_pass_2024
+      MYSQL_ROOT_PASSWORD: minimax_root_2024
+      MYSQL_DATABASE: minimax_platform
+      MYSQL_USER: minimax
+      MYSQL_PASSWORD: minimax_pass_2024
       TZ: Asia/Shanghai
     ports:
       - "3306:3306"
     volumes:
-      - ./data/mariadb:/var/lib/mysql
+      - ./data/mysql:/var/lib/mysql
       - ./sql:/docker-entrypoint-initdb.d
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
       - --default-authentication-plugin=mysql_native_password
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pminimax_root_2024"]
       interval: 10s
       timeout: 5s
       retries: 10
+      start_period: 30s
     networks:
       - minimax-net
 
@@ -98,7 +99,7 @@ services:
       - ./data/nacos/logs:/home/nacos/logs
       - ./data/nacos/data:/home/nacos/data
     depends_on:
-      mariadb:
+      mysql:
         condition: service_healthy
     networks:
       - minimax-net
@@ -198,9 +199,9 @@ services:
     ports:
       - "8082:8080"
     environment:
-      ADMINER_DEFAULT_SERVER: mariadb
+      ADMINER_DEFAULT_SERVER: mysql
     depends_on:
-      - mariadb
+      - mysql
     networks:
       - minimax-net
 
@@ -210,7 +211,7 @@ networks:
 
 # =============================================================
 # 用法:
-#   # 1. 启动必选 (MariaDB + Redis + Nacos + Adminer)
+#   # 1. 启动必选 (MySQL + Redis + Nacos + Adminer)
 #   docker compose up -d
 #
 #   # 2. 启动监控 (Prometheus + Grafana)

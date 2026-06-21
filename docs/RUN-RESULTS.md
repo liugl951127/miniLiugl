@@ -19,14 +19,14 @@
 
 `scripts/start-platform.sh` (60 行 + 自动检测):
 1. 检查环境 (java17/mvn/node/mysql)
-2. 启 MariaDB + 初始化 31 张表
+2. 启 MySQL + 初始化 31 张表
 3. 配置 Maven aliyun 镜像
 4. 编译后端 12 模块
 5. 启动 10 微服务 (4 fat + 6 thin)
 6. 启动前端 (npm install + dev)
 
 `scripts/stop-platform.sh`:
-- 杀 10 后端 + 前端 + MariaDB (可选)
+- 杀 10 后端 + 前端 + MySQL (可选)
 
 ### 实跑状态
 
@@ -82,7 +82,7 @@ done
 
 ## 沙箱适配 (踩过的坑)
 
-1. **MariaDB socket 认证** → 建 `minimax@127.0.0.1` 用户
+1. **MySQL socket 认证** → 建 `minimax@127.0.0.1` 用户
 2. **DB URL localhost** → 改为 `127.0.0.1` 走 TCP
 3. **bash 退出杀 java** → 用 `disown` 脱离控制组
 4. **`/tmp` 写不进去** → logs 写到 workspace

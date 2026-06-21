@@ -49,7 +49,7 @@ SERVICE_UID=999
 NGINX_PORT=3000
 GATEWAY_PORT=8080
 NACOS_PORT=8848
-MARIADB_PORT=3306
+MYSQL_PORT=3306
 REDIS_PORT=6379
 
 # =============== 凭证 (生产请改) ===============
@@ -240,21 +240,21 @@ step_create_user() {
 }
 
 # =============================================================
-# Step: Docker 中间件 (MariaDB + Redis + Nacos + Adminer)
+# Step: Docker 中间件 (MySQL + Redis + Nacos + Adminer)
 # =============================================================
 step_docker_middleware() {
-  log_step "启动中间件 (Docker: MariaDB + Redis + Nacos + Adminer)"
+  log_step "启动中间件 (Docker: MySQL + Redis + Nacos + Adminer)"
 
   cd "$SRC_DIR"
 
-  # 1) MariaDB
-  log_info "[1/4] 启动 MariaDB ..."
-  docker compose up -d mariadb
-  log_info "  等待 MariaDB 健康检查 (30s)..."
+  # 1) MySQL
+  log_info "[1/4] 启动 MySQL ..."
+  docker compose up -d mysql
+  log_info "  等待 MySQL 健康检查 (30s)..."
   for i in $(seq 1 30); do
     sleep 2
-    if docker exec minimax-mariadb healthcheck.sh --connect --innodb_initialized >/dev/null 2>&1; then
-      log_info "  ✓ MariaDB 就绪 (${i}*2s)"
+    if docker exec minimax-mysql mysqladmin ping -h localhost >/dev/null 2>&1; then
+      log_info "  ✓ MySQL 就绪 (${i}*2s)"
       break
     fi
   done
@@ -270,8 +270,8 @@ step_docker_middleware() {
     log_info "  ✓ Redis 就绪"
   fi
 
-  # 4) Nacos (等 MariaDB 健康)
-  log_info "[4/4] 启动 Nacos (等 MariaDB + 20-30s)..."
+  # 4) Nacos (等 MySQL 健康)
+  log_info "[4/4] 启动 Nacos (等 MySQL + 20-30s)..."
   docker compose up -d nacos
   for i in $(seq 1 30); do
     sleep 2
@@ -367,7 +367,7 @@ ExecStart=/usr/bin/java \\
   -Dnacos.host=127.0.0.1 \\
   -Dnacos.port=${NACOS_PORT} \\
   -Dmysql.host=127.0.0.1 \\
-  -Dmysql.port=${MARIADB_PORT} \\
+  -Dmysql.port=${MYSQL_PORT} \\
   -Dmysql.database=${DB_NAME} \\
   -Dmysql.username=${DB_USER} \\
   -Dmysql.password=${DB_PASS} \\
@@ -486,7 +486,7 @@ NGINX
 # Step: 启动所有服务
 # =============================================================
 step_start_all() {
-  log_step "启动所有服务 (顺序: mariadb → redis → nacos → gateway → 12 微服务 → nginx)"
+  log_step "启动所有服务 (顺序: mysql → redis → nacos → gateway → 12 微服务 → nginx)"
 
   # 1) Docker 中间件 (已在 step_docker_middleware 启动)
   log_info "[1/5] Docker 中间件: 已在 Step 3 启动"
@@ -588,10 +588,10 @@ cmd_status() {
   printf "%-30s %-15s %-10s\n" "------" "-----" "----"
 
   # Docker
-  for svc in mariadb redis nacos adminer; do
+  for svc in mysql redis nacos adminer; do
     if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "minimax-$svc"; then
       port_var="${svc^^}_PORT"
-      port="${!port_var:-$MARIADB_PORT}"
+      port="${!port_var:-$MYSQL_PORT}"
       printf "  ${GREEN}%-28s${NC} ${GREEN}%-15s${NC} %-10s\n" "minimax-$svc (docker)" "running" "$port"
     else
       printf "  ${RED}%-28s${NC} ${RED}%-15s${NC} %-10s\n" "minimax-$svc (docker)" "stopped" "-"

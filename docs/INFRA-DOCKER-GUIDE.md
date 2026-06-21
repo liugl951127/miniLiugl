@@ -5,7 +5,7 @@
 ## 1. 一行启动
 
 ```bash
-# 必选 (MariaDB + Redis + Nacos + Adminer)
+# 必选 (MySQL + Redis + Nacos + Adminer)
 docker compose up -d
 
 # + 监控 (Prometheus + Grafana)
@@ -27,7 +27,7 @@ docker compose --profile monitoring --profile tracing --profile search up -d
 
 | 服务 | 镜像 | 端口 | 用途 | V5.x 集成 |
 |------|------|------|------|-----------|
-| **MariaDB 10.5** | `mariadb:10.5` | 3306 | 关系数据库 | 12 微服务共用 |
+| **MySQL 8.0** | `mysql:10.5` | 3306 | 关系数据库 | 12 微服务共用 |
 | **Redis 7.2** | `redis:7.2-alpine` | 6379 | 限流/缓存/短期记忆 | Bucket4j + V5.12 |
 | **Nacos 2.3.2** | `nacos/nacos-server:v2.3.2` | 8848, 9848 | 服务发现 + 配置中心 | V5.7 lb:// |
 | **Adminer** | `adminer:latest` | 8082 | Web DB 管理界面 | 开发调试 |
@@ -59,16 +59,16 @@ docker compose --profile monitoring --profile tracing --profile search up -d
 ```bash
 # Adminer Web GUI
 open http://localhost:8082
-# Server: mariadb
+# Server: mysql
 # User: minimax
 # Password: minimax_pass_2024
 # Database: minimax_platform
 
 # CLI
-docker exec -it minimax-mariadb mysql -uminimax -pminimax_pass_2024 minimax_platform
+docker exec -it minimax-mysql mysql -uminimax -pminimax_pass_2024 minimax_platform
 
 # 初始化 SQL
-docker exec -i minimax-mariadb mysql -uroot -pminimax_root_2024 < sql/01-database.sql
+docker exec -i minimax-mysql mysql -uroot -pminimax_root_2024 < sql/01-database.sql
 ```
 
 ### 3.2 Nacos
@@ -113,7 +113,7 @@ open http://localhost:16686
 
 ```
 V5.0 之前:
-  手动 apt install mariadb + redis + nacos
+  手动 apt install mysql + redis + nacos
   各种 root 权限 + 配置冲突
 
 V5.20 现在:
@@ -133,7 +133,7 @@ ports:
 ```
 
 常用冲突:
-- 3306: 本地 MariaDB
+- 3306: 本地 MySQL
 - 6379: 本地 Redis
 - 8080: 本地 Gateway
 - 8848: 本地 Nacos
@@ -144,7 +144,7 @@ ports:
 
 ```
 data/
-├── mariadb/       # MariaDB data
+├── mysql/       # MySQL data
 ├── redis/         # Redis AOF
 ├── nacos/         # Nacos logs + data
 ├── prometheus/    # Prometheus TSDB
@@ -170,7 +170,7 @@ data/
 |------|---------|
 | 开发 (单机) | `docker compose up -d` + `mvn spring-boot:run` |
 | 测试 (CI) | `docker compose up -d` + jar 启动 |
-| 生产 (单机) | `sudo ./deploy-minimax.sh install` (apt 装 mariadb/redis/nacos) |
+| 生产 (单机) | `sudo ./deploy-minimax.sh install` (apt 装 mysql/redis/nacos) |
 | 生产 (集群) | Kubernetes + Helm Chart (V6.x 计划) |
 
 ## 9. Troubleshooting
@@ -182,13 +182,13 @@ docker logs -f minimax-nacos
 # 看启动日志, 通常 20-30s 才 ready
 ```
 
-### 9.2 MariaDB 数据迁移
+### 9.2 MySQL 数据迁移
 
 ```bash
 # 导出
-docker exec minimax-mariadb mysqldump -uroot -pminimax_root_2024 minimax_platform > backup.sql
+docker exec minimax-mysql mysqldump -uroot -pminimax_root_2024 minimax_platform > backup.sql
 # 导入
-docker exec -i minimax-mariadb mysql -uroot -pminimax_root_2024 minimax_platform < backup.sql
+docker exec -i minimax-mysql mysql -uroot -pminimax_root_2024 minimax_platform < backup.sql
 ```
 
 ### 9.3 Prometheus 抓取不到

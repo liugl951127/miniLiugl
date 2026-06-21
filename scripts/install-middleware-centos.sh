@@ -6,13 +6,13 @@
 #
 # 安装内容:
 #   - Docker 20.10+ (含 docker compose plugin)
-#   - MariaDB 10.5 (via Docker, 数据持久化)
+#   - MySQL 8.0 (via Docker, 数据持久化)
 #   - Redis 7.2 (via Docker, 密码认证)
 #   - Nacos 2.3.2 (via Docker, 独立模式)
 #   - Adminer 4.8 (via Docker, DB Web GUI)
 #
 # 默认端口:
-#   3306  MariaDB    (绑定 127.0.0.1)
+#   3306  MySQL      (绑定 127.0.0.1)
 #   6379  Redis      (绑定 127.0.0.1)
 #   8848  Nacos      (绑定 0.0.0.0)
 #   8082  Adminer    (绑定 0.0.0.0, 用于外部访问)
@@ -26,9 +26,9 @@
 #   sudo ./scripts/install-middleware-centos.sh uninstall   卸载 (保留数据)
 #
 # 环境变量 (可选):
-#   DB_ROOT_PASS     MariaDB root 密码 (默认: minimax_root_2024)
-#   DB_USER          MariaDB 用户   (默认: minimax)
-#   DB_PASS          MariaDB 密码   (默认: minimax_pass_2024)
+#   DB_ROOT_PASS     MySQL root 密码   (默认: minimax_root_2024)
+#   DB_USER          MySQL 用户       (默认: minimax)
+#   DB_PASS          MySQL 密码       (默认: minimax_pass_2024)
 #   REDIS_PASS       Redis 密码     (默认: minimax_redis_2024)
 #   INSTALL_DIR      安装目录       (默认: /opt/minimax)
 #   SQL_FILE         SQL 文件路径   (默认: ./sql/init-minimax.sql)
@@ -79,7 +79,7 @@ detect_os() {
 generate_compose() {
   log_info "生成 docker-compose: $COMPOSE_FILE"
 
-  mkdir -p "$INSTALL_DIR" "$DATA_DIR/mariadb" "$DATA_DIR/redis" "$DATA_DIR/nacos" "$DATA_DIR/adminer"
+  mkdir -p "$INSTALL_DIR" "$DATA_DIR/mysql" "$DATA_DIR/redis" "$DATA_DIR/nacos" "$DATA_DIR/adminer"
   mkdir -p "$LOG_DIR"
 
   cat > "$COMPOSE_FILE" <<EOF
@@ -90,21 +90,21 @@ generate_compose() {
 name: minimax-middleware
 
 services:
-  # ========== MariaDB 10.5 ==========
-  mariadb:
-    image: mariadb:10.5
-    container_name: minimax-mariadb
+  # ========== MySQL 8.0 ==========
+  mysql:
+    image: mysql:8.0
+    container_name: minimax-mysql
     restart: unless-stopped
     environment:
-      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASS}
-      MARIADB_DATABASE: ${DB_NAME}
-      MARIADB_USER: ${DB_USER}
-      MARIADB_PASSWORD: ${DB_PASS}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASS}
       TZ: Asia/Shanghai
     ports:
       - "127.0.0.1:3306:3306"
     volumes:
-      - ${DATA_DIR}/mariadb:/var/lib/mysql
+      - ${DATA_DIR}/mysql:/var/lib/mysql
       - ${SRC_DIR}/sql/init-minimax.sql:/docker-entrypoint-initdb.d/init-minimax.sql:ro
     command:
       - --character-set-server=utf8mb4
@@ -112,7 +112,7 @@ services:
       - --max_connections=512
       - --innodb_buffer_pool_size=256M
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASS}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -179,7 +179,7 @@ services:
     volumes:
       - ${DATA_DIR}/nacos:/home/nacos/data
     depends_on:
-      mariadb:
+      mysql:
         condition: service_healthy
     networks:
       - minimax-net
@@ -195,12 +195,12 @@ services:
     container_name: minimax-adminer
     restart: unless-stopped
     environment:
-      ADMINER_DEFAULT_SERVER: mariadb
+      ADMINER_DEFAULT_SERVER: mysql
       TZ: Asia/Shanghai
     ports:
       - "${ADMINER_PORT:-8082}:8080"
     depends_on:
-      - mariadb
+      - mysql
     networks:
       - minimax-net
     logging:
@@ -298,7 +298,7 @@ configure_selinux_firewall() {
   # 防火墙: 开放必要端口
   if systemctl is-active --quiet firewalld 2>/dev/null; then
     log_info "  firewalld 活跃, 开放端口..."
-    firewall-cmd --permanent --add-port=3306/tcp 2>/dev/null || true   # MariaDB
+    firewall-cmd --permanent --add-port=3306/tcp 2>/dev/null || true   # MySQL
     firewall-cmd --permanent --add-port=6379/tcp 2>/dev/null || true   # Redis
     firewall-cmd --permanent --add-port=8848/tcp 2>/dev/null || true   # Nacos
     firewall-cmd --permanent --add-port=8082/tcp 2>/dev/null || true   # Adminer
@@ -312,31 +312,31 @@ configure_selinux_firewall() {
 
 # =============== 步骤 3: 启动中间件 ===============
 start_middleware() {
-  log_step "步骤 3/4: 启动中间件 (MariaDB + Redis + Nacos + Adminer)"
+  log_step "步骤 3/4: 启动中间件 (MySQL + Redis + Nacos + Adminer)"
 
   cd "$INSTALL_DIR"
   docker compose -f "$COMPOSE_FILE" up -d
 
-  # 等 MariaDB healthy
-  log_info "  等 MariaDB 健康 (30-60s)..."
+  # 等 MySQL healthy
+  log_info "  等 MySQL 健康 (30-60s)..."
   local ready=0
   for i in $(seq 1 30); do
     sleep 2
-    if docker exec minimax-mariadb healthcheck.sh --connect --innodb_initialized >/dev/null 2>&1; then
-      log_info "  ✓ MariaDB 就绪 (${i}*2s)"
+    if docker exec minimax-mysql mysqladmin ping -h localhost -uroot -p${DB_ROOT_PASS} >/dev/null 2>&1; then
+      log_info "  ✓ MySQL 就绪 (${i}*2s)"
       ready=1
       break
     fi
   done
   if [[ $ready -eq 0 ]]; then
-    log_warn "  MariaDB 健康检查超时, 但仍在启动..."
+    log_warn "  MySQL 健康检查超时, 但仍在启动..."
   fi
 
   # SQL 导入: 由 docker-entrypoint-initdb.d 自动执行 (容器第一次启动时)
   # 如果 init-minimax.sql 已被挂载, docker 会自动导入
   if [[ -f "$SQL_FILE" ]]; then
     log_info "  ✓ SQL 自动导入: $SQL_FILE (docker-entrypoint-initdb.d)"
-    log_info "    MariaDB 第一次启动时自动执行 init-minimax.sql"
+    log_info "    MySQL 第一次启动时自动执行 init-minimax.sql"
   fi
 
   # 等 Redis
@@ -366,7 +366,7 @@ verify() {
   printf "%-30s %-15s %s\n" "SERVICE" "STATE" "PORT"
   printf "%-30s %-15s %s\n" "------" "-----" "----"
 
-  for svc in mariadb redis nacos adminer; do
+  for svc in mysql redis nacos adminer; do
     if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "minimax-$svc"; then
       printf "  ${GREEN}%-28s${NC} ${GREEN}%-15s${NC} 127.0.0.1:%s\n" "minimax-$svc" "running" "${!svc_port:-?}"
     else
@@ -378,7 +378,7 @@ verify() {
   echo
   log_info "HTTP 健康检查:"
   for entry in \
-    "MariaDB|mysql -h 127.0.0.1 -uroot -p${DB_ROOT_PASS} -e 'SELECT 1'" \
+    "MySQL|mysql -h 127.0.0.1 -uroot -p${DB_ROOT_PASS} -e 'SELECT 1'" \
     "Redis|docker exec minimax-redis redis-cli -a ${REDIS_PASS} ping" \
     "Nacos|curl -sf http://127.0.0.1:8848/nacos/" \
     "Adminer|curl -sf http://127.0.0.1:8082/"; do
@@ -397,7 +397,7 @@ ACTION="${1:-}"
 shift || true
 
 # 端口变量 (verify 用)
-MARIADB_PORT=3306
+MYSQL_PORT=3306
 REDIS_PORT=6379
 NACOS_PORT=8848
 ADMINER_PORT=8082
@@ -420,7 +420,7 @@ case "$ACTION" in
     cat <<EOF
 
   访问入口:
-    MariaDB:  127.0.0.1:3306  (root/${DB_ROOT_PASS})
+    MySQL:    127.0.0.1:3306  (root/${DB_ROOT_PASS})
     Redis:    127.0.0.1:6379  (无用户名/${REDIS_PASS})
     Nacos:    http://localhost:8848/nacos  (nacos/nacos)
     Adminer:  http://localhost:8082  (${DB_USER}/${DB_PASS})

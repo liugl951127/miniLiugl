@@ -30,7 +30,7 @@ sudo ./deploy-minimax.sh install
        └──────────────┴──────────────────┴──────────────────┴──────────────┘
                                          │
                             ┌────────────▼────────────┐
-                            │  MariaDB 10.5           │
+                            │  MySQL 8.0           │
                             │  minimax_platform       │
                             │  (38 张表)              │
                             └─────────────────────────┘
@@ -43,7 +43,7 @@ sudo ./deploy-minimax.sh install
 | Java | OpenJDK 17 | apt / dnf |
 | Maven | 3.8.7 | Apache 归档 |
 | Node.js | 22 LTS | NodeSource |
-| MariaDB | 10.5+ | 系统包 |
+| MySQL | 10.5+ | 系统包 |
 | nginx | 1.18+ | 系统包 |
 
 ## 📁 目录结构
@@ -267,8 +267,8 @@ sudo -u minimax java -jar /opt/minimax/apps/minimax-auth.jar
 # 测试连接
 mysql -uminimax -pminimax_pass_2024 minimax_platform
 
-# 看 MariaDB 状态
-sudo systemctl status mariadb
+# 看 MySQL 状态
+sudo systemctl status mysql
 ```
 
 ### 前端 502
@@ -352,8 +352,8 @@ sudo ./deploy-minimax.sh uninstall
 如需完全清理:
 ```bash
 sudo rm -rf /opt/minimax /var/log/minimax
-sudo systemctl stop mariadb && sudo systemctl disable mariadb
-sudo apt remove --purge -y mariadb-server nginx
+sudo systemctl stop mysql && sudo systemctl disable mysql
+sudo apt remove --purge -y mysql-server nginx
 ```
 
 ## 🔗 相关文档
@@ -389,7 +389,7 @@ sudo ./scripts/deploy-minimax.sh status
 
 # 方式 B: Linux apt 原生 (无 Docker)
 sudo ./scripts/deploy-minimax.sh install --native
-# 自动: apt 装 Java/Maven/Node/MariaDB/Redis + 编译 + systemd
+# 自动: apt 装 Java/Maven/Node/MySQL/Redis + 编译 + systemd
 
 # 旧脚本 (V5.12 之前, 仍可用, 已修 SQL 路径)
 sudo ./scripts/deploy-minimax.sh install

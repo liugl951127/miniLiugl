@@ -140,11 +140,11 @@ echo "  总大小: $size"
 # ===== 阶段 5: 可选启动测试 =====
 echo -e "\n${YELLOW}[5/5] 准备部署包 (可选: 启动测试)...${NC}"
 if [ "$1" = "--with-test" ]; then
-  echo "  启动 MariaDB..."
+  echo "  启动 MySQL..."
   if ! pgrep -x mysqld >/dev/null 2>&1; then
     mkdir -p /var/run/mysqld /var/log/mysql
     chown -R mysql:mysql /var/run/mysqld /var/log/mysql 2>/dev/null || true
-    nohup mysqld_safe --user=mysql --bind-address=127.0.0.1 > /tmp/mariadb.log 2>&1 &
+    nohup mysqld_safe --user=mysql --bind-address=127.0.0.1 > /tmp/mysql.log 2>&1 &
     sleep 8
   fi
   echo "  初始化数据库..."

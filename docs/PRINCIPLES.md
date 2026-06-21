@@ -672,7 +672,7 @@ List<SysUser> findByTenant(Long tid) {
 
 1. **沙箱的 bash exit 会杀子进程** → 用 `disown` 脱离控制组
 2. **沙箱的 `/tmp` 不能写** → logs 写到 workspace
-3. **沙箱 MariaDB socket 认证** → 建 `minimax@127.0.0.1` 用户
+3. **沙箱 MySQL socket 认证** → 建 `minimax@127.0.0.1` 用户
 4. **沙箱 JAR 绝对路径找不到** → cd 到 target 用相对路径
 5. **Spring bean 冲突** → 用 `@Configuration("name")` 加前缀
 6. **MyBatis Plus 缺 jar** → `dependency:build-classpath -DincludeScope=runtime`

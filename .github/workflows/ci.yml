@@ -33,17 +33,17 @@ jobs:
     if: ${{ !inputs.skip_mvn }}
 
     services:
-      mariadb:
-        image: mariadb:10.5
+      mysql:
+        image: mysql:8.0
         env:
-          MARIADB_ROOT_PASSWORD: rootpass
-          MARIADB_DATABASE: minimax_platform
-          MARIADB_USER: minimax
-          MARIADB_PASSWORD: minimax_pass_2024
+          MYSQL_ROOT_PASSWORD: rootpass
+          MYSQL_DATABASE: minimax_platform
+          MYSQL_USER: minimax
+          MYSQL_PASSWORD: minimax_pass_2024
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-cmd="mysqladmin ping -h localhost -uroot -prootpass"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
@@ -85,10 +85,10 @@ jobs:
         run: |
           for i in 1 2 3 4 5; do
             if mysql -h 127.0.0.1 -uroot -prootpass -e "SELECT 1" >/dev/null 2>&1; then
-              echo "✓ MariaDB 就绪"
+              echo "✓ MySQL 就绪"
               break
             fi
-            echo "等 MariaDB... ($i)"
+            echo "等 MySQL... ($i)"
             sleep 5
           done
           mysql -h 127.0.0.1 -uroot -prootpass minimax_platform < sql/init-minimax.sql
@@ -238,14 +238,14 @@ jobs:
     timeout-minutes: 5
 
     services:
-      mariadb:
-        image: mariadb:10.5
+      mysql:
+        image: mysql:8.0
         env:
-          MARIADB_ROOT_PASSWORD: rootpass
+          MYSQL_ROOT_PASSWORD: rootpass
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-cmd="mysqladmin ping -h localhost -uroot -prootpass"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
@@ -258,7 +258,7 @@ jobs:
         run: |
           for i in 1 2 3 4 5; do
             if mysql -h 127.0.0.1 -uroot -prootpass -e "SELECT 1" >/dev/null 2>&1; then
-              echo "✓ MariaDB 就绪"
+              echo "✓ MySQL 就绪"
               break
             fi
             sleep 5

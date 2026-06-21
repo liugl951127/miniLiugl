@@ -34,20 +34,20 @@ fi
 java -version 2>&1 | head -1
 echo -e "${GREEN}✓ 环境就绪${NC}"
 
-# 2. 启动 MariaDB
+# 2. 启动 MySQL
 echo ""
-echo -e "${YELLOW}[2/6] 启动 MariaDB...${NC}"
+echo -e "${YELLOW}[2/6] 启动 MySQL...${NC}"
 if ! mysql -uroot -e "SELECT 1" >/dev/null 2>&1; then
   mkdir -p /var/run/mysqld /var/log/mysql
   chown -R mysql:mysql /var/run/mysqld /var/log/mysql 2>/dev/null
-  nohup mysqld_safe --user=mysql --bind-address=127.0.0.1 > $LOGS/mariadb.log 2>&1 &
+  nohup mysqld_safe --user=mysql --bind-address=127.0.0.1 > $LOGS/mysql.log 2>&1 &
   disown
   sleep 8
 fi
 if mysql -uroot -e "SELECT 1" >/dev/null 2>&1; then
-  echo -e "${GREEN}✓ MariaDB UP${NC}"
+  echo -e "${GREEN}✓ MySQL UP${NC}"
 else
-  echo -e "${RED}✗ MariaDB 启动失败, 查看 $LOGS/mariadb.log${NC}"
+  echo -e "${RED}✗ MySQL 启动失败, 查看 $LOGS/mysql.log${NC}"
   exit 1
 fi
 

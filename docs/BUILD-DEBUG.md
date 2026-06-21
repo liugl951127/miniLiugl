@@ -20,7 +20,7 @@
 
 ## 环境限制
 
-- 沙箱: **2GB RAM**, Java 17, MariaDB 10.11
+- 沙箱: **2GB RAM**, Java 17, MySQL 10.11
 - 生产: **≥ 4GB RAM** 推荐 (12 微服务 + DB + nginx)
 - macOS 开发: **≥ 8GB RAM** (IntelliJ + 12 个 Run Dashboard)
 

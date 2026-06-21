@@ -63,7 +63,7 @@
    └─────┴────┴─────┴─────┴─────┴───────┴─────┴────┴─────┴─────┴─────┘
                                    │
                         ┌──────────▼──────────────┐
-                        │ MariaDB / Redis / Nacos │
+                        │ MySQL / Redis / Nacos │
                         │ 3306    / 6379 / 8848   │
                         └─────────────────────────┘
 ```
@@ -99,7 +99,7 @@
 ```bash
 git clone https://github.com/liugl951127/miniLiugl.git
 cd miniLiugl
-sudo ./scripts/deploy-minimax.sh install    # 装 Java/Maven/Node/MariaDB/Redis/Nacos + 编译 + 启 systemd
+sudo ./scripts/deploy-minimax.sh install    # 装 Java/Maven/Node/MySQL/Redis/Nacos + 编译 + 启 systemd
 sudo ./scripts/deploy-minimax.sh test       # 一键健康检查 19 项
 ```
 
@@ -187,7 +187,8 @@ V5 系列 8 个版本聚焦**生产级架构能力**:
 | **V5.23** | GitHub Actions CI (5 Job) + check 命令 + 27/27 通过 | `b0c49a4` |
 | **V5.24** | 前端 5 placeholder 补完 + Provider/Leaderboard 管理页 | `6034984` |
 | **V5.25** | 删除 deploy-linux.sh (旧版) + 文档引用清理 | `d1c1866` |
-| **V5.26** | CentOS 专用部署脚本 (install-middleware + deploy-centos) | `pending` |
+| **V5.26** | CentOS 专用部署脚本 (install-middleware + deploy-centos) | `a6db04c` |
+| **V5.27** | MariaDB 迁移到 MySQL 8.0 (docker-compose + 3 脚本 + CI + 15 文档) | `pending` |
 
 **V5 累计**: +11,000 行 / -4,200 行, 21 个新文档, 13 个 systemd 服务, **5 个 CI Job 自动验证**, **前端 45 个页面全交付**, **CentOS 专用部署脚本**
 
@@ -222,7 +223,7 @@ V5 系列 8 个版本聚焦**生产级架构能力**:
 
 | 脚本 | 行数 | 用途 |
 |------|------|------|
-| `scripts/install-middleware-centos.sh` | 461 | **中间件独立安装** (Docker + MariaDB/Redis/Nacos/Adminer) |
+| `scripts/install-middleware-centos.sh` | 461 | **中间件独立安装** (Docker + MySQL/Redis/Nacos/Adminer) |
 | `scripts/deploy-centos.sh` | 558 | **一键完整部署** (中间件 + JDK + mvn + 12 微服务 + nginx) |
 | `docs/DEPLOY-CENTOS-GUIDE.md` | 7KB | CentOS 部署文档 (8 步详解 + 7 故障排查) |
 
@@ -246,7 +247,7 @@ sudo ./deploy-centos.sh install
 ```yaml
 # .github/workflows/ci.yml - 5 个并行 Job
 jobs:
-  backend:        # Maven 编译 + 测试 (MariaDB + Redis service)
+  backend:        # Maven 编译 + 测试 (MySQL + Redis service)
   frontend:       # Node 22 构建 (npm registry.npmmirror.com)
   deploy-scripts: # bash -n + shellcheck + YAML lint
   sql-check:      # 数 CREATE TABLE/INSERT, 实导入验证

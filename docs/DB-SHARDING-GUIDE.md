@@ -5,7 +5,7 @@
 ## 1. 当前架构 (单库单服务)
 
 ```
-[12 微服务] → [MariaDB minimax_platform] (单实例)
+[12 微服务] → [MySQL minimax_platform] (单实例)
 41 张表:
   - auth (10): sys_user, sys_role, sys_user_role, oauth_*, wechat_*, unionid_*, refresh_token
   - chat (3): chat_session, chat_message
@@ -93,8 +93,8 @@ spring:
       names: db_chat,db_memory,...
       db_chat:
         type: com.zaxxer.hikari.HikariDataSource
-        driver-class-name: org.mariadb.jdbc.Driver
-        jdbc-url: jdbc:mariadb://db-host:3306/db_chat
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        jdbc-url: jdbc:mysql://db-host:3306/db_chat
         ...
 ```
 

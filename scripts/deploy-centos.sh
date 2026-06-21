@@ -46,7 +46,7 @@ SERVICE_UID=999
 NGINX_PORT=3000
 GATEWAY_PORT=8080
 NACOS_PORT=8848
-MARIADB_PORT=3306
+MYSQL_PORT=3306
 REDIS_PORT=6379
 
 # =============== 凭证 (生产请改) ===============
@@ -302,7 +302,7 @@ ExecStart=/usr/bin/java \\
   -Dnacos.host=127.0.0.1 \\
   -Dnacos.port=${NACOS_PORT} \\
   -Dmysql.host=127.0.0.1 \\
-  -Dmysql.port=${MARIADB_PORT} \\
+  -Dmysql.port=${MYSQL_PORT} \\
   -Dmysql.database=${DB_NAME} \\
   -Dmysql.username=${DB_USER} \\
   -Dmysql.password=${DB_PASS} \\
@@ -520,9 +520,9 @@ cmd_status() {
   printf "%-30s %-15s %s\n" "------" "-----" "----"
 
   # Docker 中间件
-  for svc in mariadb redis nacos adminer; do
+  for svc in mysql redis nacos adminer; do
     if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "minimax-$svc"; then
-      printf "  ${GREEN}%-28s${NC} ${GREEN}%-15s${NC} %s\n" "minimax-$svc (docker)" "running" "$MARIADB_PORT"
+      printf "  ${GREEN}%-28s${NC} ${GREEN}%-15s${NC} %s\n" "minimax-$svc (docker)" "running" "$MYSQL_PORT"
     else
       printf "  ${RED}%-28s${NC} ${RED}%-15s${NC} -\n" "minimax-$svc (docker)" "stopped"
     fi

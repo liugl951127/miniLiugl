@@ -406,7 +406,7 @@ bash scripts/start-platform.sh
 
 ### 问题 2: 数据库连接失败
 ```bash
-# 1. 检查 MariaDB
+# 1. 检查 MySQL
 mysql -uroot -e "SELECT 1;"
 
 # 2. 检查用户

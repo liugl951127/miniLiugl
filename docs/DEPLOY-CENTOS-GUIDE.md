@@ -6,7 +6,7 @@
 
 | 脚本 | 用途 |
 |------|------|
-| **`scripts/install-middleware-centos.sh`** | 单独装中间件 (Docker + MariaDB/Redis/Nacos/Adminer) |
+| **`scripts/install-middleware-centos.sh`** | 单独装中间件 (Docker + MySQL/Redis/Nacos/Adminer) |
 | **`scripts/deploy-centos.sh`** | 一键完整部署 (中间件 + JDK + mvn + 12 微服务 + nginx) |
 
 如果**只想装中间件** (比如已有 jar 在跑), 用第一个. **全新部署**, 用第二个.
@@ -41,13 +41,13 @@ sudo ./deploy-centos.sh install
 | 步骤 | 内容 | 耗时 |
 |------|------|------|
 | 1. JDK 17 | yum install java-17-openjdk-devel | 1-2 分钟 |
-| 2. 中间件 | 调 install-middleware-centos.sh (Docker + MariaDB/Redis/Nacos/Adminer) | 3-5 分钟 |
+| 2. 中间件 | 调 install-middleware-centos.sh (Docker + MySQL/Redis/Nacos/Adminer) | 3-5 分钟 |
 | 3. 服务用户 | 创建 minimax 用户 (UID 999) | < 1s |
 | 4. 编译 | mvn clean install -DskipTests | 5-10 分钟 |
 | 5. 拷贝 jar | 12 微服务 + gateway → /opt/minimax/apps/ | < 5s |
 | 6. systemd | 生成 13 个 service 文件 | < 1s |
 | 7. nginx | yum install + 反代配置 | < 30s |
-| 8. 启动 | mariadb → nacos → gateway → 12 微服务 → nginx | 30-60s |
+| 8. 启动 | mysql → nacos → gateway → 12 微服务 → nginx | 30-60s |
 
 **总耗时**: 10-20 分钟 (含编译)
 
@@ -69,7 +69,7 @@ sudo ./deploy-centos.sh install
                   ┌──────────────────────┼──────────────────────┐
                   ▼                      ▼                      ▼
           12 个微服务 (8081-8095)    Nacos :8848 (Docker)    监控 (可选)
-            - auth:8081              MariaDB :3306 (Docker)
+            - auth:8081              MySQL :3306 (Docker)
             - chat:8082              Redis :6379 (Docker)
             - ...                    Adminer :8082 (Docker)
 ```
@@ -90,7 +90,7 @@ sed -i 's/^SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
 ### 2. firewalld 端口开放
 
 ```bash
-firewall-cmd --permanent --add-port=3306/tcp  # MariaDB
+firewall-cmd --permanent --add-port=3306/tcp  # MySQL
 firewall-cmd --permanent --add-port=6379/tcp  # Redis
 firewall-cmd --permanent --add-port=8848/tcp  # Nacos
 firewall-cmd --permanent --add-port=8082/tcp  # Adminer
@@ -172,14 +172,14 @@ sudo firewall-cmd --permanent --add-port=3000/tcp
 sudo firewall-cmd --reload
 ```
 
-### 4. MariaDB 启动失败
+### 4. MySQL 启动失败
 
 ```bash
 # 查看容器日志
-docker logs minimax-mariadb
+docker logs minimax-mysql
 
 # 进入容器调试
-docker exec -it minimax-mariadb bash
+docker exec -it minimax-mysql bash
 mysql -uroot -p
 ```
 
@@ -216,7 +216,7 @@ sudo journalctl -u nginx -n 30
 
 | 组件 | 内存 | CPU | 磁盘 |
 |------|------|-----|------|
-| MariaDB | 256MB | 0.5 | 1GB |
+| MySQL | 256MB | 0.5 | 1GB |
 | Redis | 64MB | 0.2 | 100MB |
 | Nacos | 512MB | 0.5 | 500MB |
 | Adminer | 16MB | 0.1 | 10MB |
@@ -235,8 +235,8 @@ sudo journalctl -u nginx -n 30
 | Nacos | nacos | nacos |
 | Web 后台 | adminLiugl | Liugl@2026 |
 | Redis | - | minimax_redis_2024 |
-| MariaDB | minimax | minimax_pass_2024 |
-| MariaDB (root) | root | minimax_root_2024 |
+| MySQL | minimax | minimax_pass_2024 |
+| MySQL (root) | root | minimax_root_2024 |
 
 通过环境变量改:
 ```bash
@@ -290,4 +290,4 @@ A: `deploy-centos.sh` 强制要求 CentOS/RHEL 系. 其他系统用 `deploy-mini
 A: 首次 5-10 分钟 (mvn 全量编译). 后续增量 1-2 分钟.
 
 **Q: 离线安装?**  
-A: 把 docker 镜像 (mariadb/redis/nacos/adminer) 提前 pull 下来 + 用本地 maven 仓库.
+A: 把 docker 镜像 (mysql/redis/nacos/adminer) 提前 pull 下来 + 用本地 maven 仓库.

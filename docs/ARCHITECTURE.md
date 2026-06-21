@@ -42,7 +42,7 @@
 │    auth chat model memory rag function                       │
 │    admin multimodal monitor agent prompt ws                  │
 │    每个:                                                  │
-│    - MyBatis-Plus + MariaDB                                 │
+│    - MyBatis-Plus + MySQL                                 │
 │    - Spring Security 6 + JWT 双 token                       │
 │    - /actuator/prometheus (V5.10)                           │
 │    - Swagger / knife4j (V5.11 聚合)                         │
@@ -50,7 +50,7 @@
 └──────┬──────────────────────┬────────────────────┬──────────┘
        │                      │                    │
 ┌──────▼──────┐    ┌──────────▼──────┐    ┌────────▼────────┐
-│ MariaDB     │    │ Redis            │    │ Nacos 2.3.2     │
+│ MySQL     │    │ Redis            │    │ Nacos 2.3.2     │
 │ :3306       │    │ :6379            │    │ :8848           │
 │ - 用户/会话  │    │ - 限流令牌桶     │    │ - 服务发现       │
 │ - 消息/记忆  │    │ - 短期记忆      │    │ - 配置中心       │
@@ -206,13 +206,13 @@ Step 4: 终态返回
 
 ```bash
 sudo ./scripts/deploy-minimax.sh install
-# 自动: Java/Maven/Node + MariaDB/Redis/Nacos + 编译 + 16 systemd + nginx
+# 自动: Java/Maven/Node + MySQL/Redis/Nacos + 编译 + 16 systemd + nginx
 ```
 
 ### 6.2 systemd 服务清单 (16 个)
 
 ```
-基础设施层:   minimax-nacos / mariadb / redis-server
+基础设施层:   minimax-nacos / mysql / redis-server
 应用网关层:   minimax-gateway
 微服务层:     minimax-{auth,chat,model,memory,rag,function,
                           admin,multimodal,monitor,
@@ -224,7 +224,7 @@ sudo ./scripts/deploy-minimax.sh install
 ### 6.3 启动顺序
 
 ```
-mariadb → redis → nacos (sleep 25s) → gateway (sleep 12s)
+mysql → redis → nacos (sleep 25s) → gateway (sleep 12s)
         → 12 微服务 → frontend + nginx
 ```
 
@@ -279,7 +279,7 @@ java -jar minimax-chat.jar --server.port=8082-2
 |------|------|------|
 | 某微服务挂 | gateway 503 | Resilience4j CircuitBreaker 自动 fallback |
 | Nacos 挂 | gateway 用本地缓存路由 | Nacos 重启后自动恢复 |
-| MariaDB 挂 | 所有写操作失败 | Redis 缓存兜底, MySQL 重启后恢复 |
+| MySQL 挂 | 所有写操作失败 | Redis 缓存兜底, MySQL 重启后恢复 |
 | Redis 挂 | 限流失效 / 短期记忆丢 | Bucket4j 内存降级 / 长期记忆兜底 |
 | nginx 挂 | 入口不可达 | 客户端直连 gateway :8080 兜底 |
 | gateway 挂 | API 全部 502 | 客户端直连各微服务端口兜底 |

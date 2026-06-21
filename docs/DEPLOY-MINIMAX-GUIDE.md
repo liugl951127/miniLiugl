@@ -22,7 +22,7 @@
                   ┌──────────────────────┼──────────────────────┐
                   ▼                      ▼                      ▼
           12 个微服务 (8081-8095)    Nacos :8848 (Docker)    监控 (可选)
-            - auth:8081              MariaDB :3306 (Docker)   Prometheus
+            - auth:8081              MySQL :3306 (Docker)   Prometheus
             - chat:8082              Redis :6379 (Docker)      Grafana
             - model:8083             Adminer :8082 (Docker)    Jaeger
             - memory:8084                                     ES + Kibana
@@ -74,12 +74,12 @@ sudo ./deploy-minimax.sh help         # 帮助
 |------|------|------|
 | 1. 检查依赖 | 装 Docker + Compose + Java 17 + nginx | 1-3 分钟 |
 | 2. 创建用户 | minimax 用户 (UID 999, no login) | < 1s |
-| 3. 启动中间件 | MariaDB + Redis + Nacos + Adminer (docker) | 1-2 分钟 |
+| 3. 启动中间件 | MySQL + Redis + Nacos + Adminer (docker) | 1-2 分钟 |
 | 4. SQL 导入 | docker 自动执行 sql/init/init-minimax.sql | 30s |
 | 5. 拷贝 jar | 12 微服务 + gateway → /opt/minimax/apps/ | < 5s |
 | 6. systemd | 生成 13 个 service 文件 | < 1s |
 | 7. nginx | 部署反代配置 (含 gzip / WS / api-docs) | < 5s |
-| 8. 启动顺序 | mariadb → nacos → gateway → 12 微服务 → nginx | 30s |
+| 8. 启动顺序 | mysql → nacos → gateway → 12 微服务 → nginx | 30s |
 
 ## 🌐 网络拓扑
 
@@ -87,7 +87,7 @@ sudo ./deploy-minimax.sh help         # 帮助
 
 | 服务 | 容器端口 | 宿主端口 | 通信 |
 |------|---------|---------|------|
-| mariadb | 3306 | 127.0.0.1:3306 | 宿主微服务 → 127.0.0.1:3306 |
+| mysql | 3306 | 127.0.0.1:3306 | 宿主微服务 → 127.0.0.1:3306 |
 | redis | 6379 | 127.0.0.1:6379 | 同上 |
 | nacos | 8848 | 127.0.0.1:8848 | 宿主微服务 → 127.0.0.1:8848 |
 | adminer | 8080 (内) | 127.0.0.1:8082 | 浏览器直连 |
@@ -95,7 +95,7 @@ sudo ./deploy-minimax.sh help         # 帮助
 ### 12 微服务 → 中间件
 
 每个微服务的 application.yml 通过 **127.0.0.1** 连接:
-- `spring.datasource.url=jdbc:mariadb://127.0.0.1:3306/minimax_platform`
+- `spring.datasource.url=jdbc:mysql://127.0.0.1:3306/minimax_platform`
 - `spring.redis.host=127.0.0.1`
 - `spring.cloud.nacos.discovery.server-addr=127.0.0.1:8848`
 
@@ -103,27 +103,27 @@ sudo ./deploy-minimax.sh help         # 帮助
 
 ## 🛠️ 故障排查
 
-### 1. install 卡在 "Docker 启动 MariaDB"
+### 1. install 卡在 "Docker 启动 MySQL"
 
 ```bash
 # 检查 docker
 systemctl status docker
 docker ps
 
-# 手动试 mariadb
+# 手动试 mysql
 cd /path/to/minimax-platform
-docker compose up -d mariadb
-docker logs minimax-mariadb
+docker compose up -d mysql
+docker logs minimax-mysql
 ```
 
 ### 2. SQL 导入失败
 
 ```bash
 # 看 docker 启动日志
-docker logs minimax-mariadb 2>&1 | tail -20
+docker logs minimax-mysql 2>&1 | tail -20
 
 # 手动重导入
-docker exec -i minimax-mariadb mysql -uroot -p"minimax_root_2024" < sql/init-minimax.sql
+docker exec -i minimax-mysql mysql -uroot -p"minimax_root_2024" < sql/init-minimax.sql
 ```
 
 ### 3. Nacos 起不来 (端口 8848 占用)
@@ -199,7 +199,7 @@ cd /path/to/source && docker compose down -v
 
 | 组件 | 内存 | CPU | 磁盘 |
 |------|------|-----|------|
-| MariaDB | 256MB | 0.5 | 1GB |
+| MySQL | 256MB | 0.5 | 1GB |
 | Redis | 64MB | 0.2 | 100MB |
 | Nacos | 512MB | 0.5 | 500MB |
 | Adminer | 16MB | 0.1 | 10MB |
@@ -218,8 +218,8 @@ cd /path/to/source && docker compose down -v
 | Nacos | nacos | nacos |
 | Web 后台 | adminLiugl | Liugl@2026 |
 | Redis | - | minimax_redis_2024 |
-| MariaDB | minimax | minimax_pass_2024 |
-| MariaDB (root) | root | minimax_root_2024 |
+| MySQL | minimax | minimax_pass_2024 |
+| MySQL (root) | root | minimax_root_2024 |
 
 通过环境变量改: `DB_PASS=xxx REDIS_PASS=yyy sudo ./deploy-minimax.sh install`
 

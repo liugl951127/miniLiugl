@@ -16,7 +16,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SQL_DIR="$ROOT/sql/init"
 DB_USER="${DB_USER:-root}"
 DB_NAME="minimax_platform"
-# 默认 localhost 走 socket (MariaDB default), 127.0.0.1 走 TCP
+# 默认 localhost 走 socket (MySQL default), 127.0.0.1 走 TCP
 DB_HOST="${DB_HOST:-localhost}"
 
 RED='\033[0;31m'
@@ -43,15 +43,15 @@ echo -e "${CYAN}========================================${NC}"
 # 检查 mysql 命令
 if ! command -v mysql >/dev/null 2>&1; then
   echo -e "${RED}✗ mysql 命令不存在${NC}"
-  echo "  安装: apt-get install -y default-mysql-client  或  mariadb-client"
+  echo "  安装: apt-get install -y default-mysql-client"
   exit 1
 fi
 
 # 检查连接
 if ! mysql -u"$DB_USER" -h "$DB_HOST" -e "SELECT 1" >/dev/null 2>&1; then
-  echo -e "${RED}✗ MySQL/MariaDB 未启动 或 $DB_USER@$DB_HOST 连不上${NC}"
+  echo -e "${RED}✗ MySQL 未启动 或 $DB_USER@$DB_HOST 连不上${NC}"
   echo "  启 DB:"
-  echo "    nohup mariadbd --user=mysql --bind-address=127.0.0.1 > logs/mariadb.log 2>&1 &"
+  echo "    nohup mysqld --user=mysql --bind-address=127.0.0.1 > logs/mysql.log 2>&1 &"
   exit 1
 fi
 
