@@ -446,3 +446,30 @@
 - frontend: 0
 - docs: 1 new (API-DOCS-GUIDE.md)
 - config: 1 modified (nginx-minimax-3000.conf)
+
+## [V5.12] - 2026-06-21 — 部署脚本集成 Nacos + Gateway + E2E 健康检查
+
+### Added (deploy-linux.sh)
+- **install_nacos**: 下载 Nacos 2.3.2, 配 MySQL 持久化, standalone 启动脚本
+- **install_redis**: apt 装 Redis, 配密码 + bind 127.0.0.1
+- **build_backend**: 拷贝 gateway.jar (Spring Cloud Gateway)
+- **generate_systemd**: 加 minimax-nacos.service + minimax-gateway.service
+- **start_services**: 启动顺序重写 (nacos→gateway→微服务→nginx), sleep 25+12 等依赖
+- **stop_services**: 倒序停 (微服务→gateway→nacos)
+- **show_status**: 加 nacos/gateway/redis 行
+- **show_logs**: 加 nacos/redis 特殊路径
+- **e2e_health_check (新子命令)**: 一键 HTTP 检查 13 服务 + nacos + redis + nginx
+- **install_all**: 加 install_redis + install_nacos, 改 3000 端口 + 新提示
+
+### Changed
+- nginx listen 80 → 3000 (V5.12 统一入口)
+- 子命令提示加 e2e
+- 用法文档更新 (Nacos 启动等待 25s, gateway 12s)
+
+### Docs
+- `docs/DEPLOY-GUIDE.md` (6.6KB): 架构图/端口分配/E2E 示例/systemd 清单/升级路径/故障排查
+
+### Files (3)
+- scripts: 1 modified (deploy-linux.sh, 581→834 行)
+- docs: 1 new (DEPLOY-GUIDE.md)
+- config: 1 modified (CHANGELOG.md)

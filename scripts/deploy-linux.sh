@@ -2,17 +2,24 @@
 # ================================================================
 # MiniMax 大模型平台 - Linux 一键打包部署脚本 (非 Docker)
 #
+# V5.12: 集成 Nacos + Gateway (Spring Cloud Gateway 架构)
+#
 # 适用系统: Ubuntu 20.04+ / Debian 11+ / CentOS 8+
 # 运行用户: root (会自动创建 minimax 用户)
-# 默认端口: 8081-8095 (后端) + 5173 (前端)
+# 默认端口:
+#   - 8080   gateway (Spring Cloud Gateway)
+#   - 8848   nacos (服务发现 + 配置中心)
+#   - 8081-8095  业务微服务 (12 个)
+#   - 3000   nginx 入口
 #
 # 用法:
-#   sudo ./deploy-linux.sh install        # 安装 Java/Node/MariaDB + 编译 + 启 systemd
-#   sudo ./deploy-linux.sh start          # 启动所有服务
+#   sudo ./deploy-linux.sh install        # 安装 Java/Node/MariaDB/Nacos + 编译 + 启 systemd
+#   sudo ./deploy-linux.sh start          # 启动所有服务 (nacos → gateway → 微服务)
 #   sudo ./deploy-linux.sh stop           # 停止所有服务
 #   sudo ./deploy-linux.sh restart        # 重启所有服务
 #   sudo ./deploy-linux.sh status         # 查看所有服务状态
-#   sudo ./deploy-linux.sh logs [module]  # 查看日志 (auth|chat|model|...)
+#   sudo ./deploy-linux.sh e2e            # V5.12: 一键健康检查 (13 服务)
+#   sudo ./deploy-linux.sh logs [module]  # 查看日志 (auth|chat|gateway|nacos|...)
 #   sudo ./deploy-linux.sh backup         # 备份数据库 + jar
 #   sudo ./deploy-linux.sh update         # 拉代码 + 重新打包 + 重启
 #   sudo ./deploy-linux.sh uninstall      # 完全卸载 (保留数据)
@@ -21,6 +28,7 @@
 #   JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 #   NODE_VERSION=22
 #   INSTALL_DIR=/opt/minimax
+#   NACOS_VERSION=2.3.2
 #   DB_ROOT_PASS=minimax_pass_2024
 # ================================================================
 
@@ -46,6 +54,11 @@ SERVICE_USER="minimax"
 JAVA_VERSION="17"
 NODE_VERSION="${NODE_VERSION:-22}"
 MAVEN_VERSION="3.8.7"
+NACOS_VERSION="${NACOS_VERSION:-2.3.2}"  # V5.12: Nacos 服务发现
+GATEWAY_PORT=8080                         # V5.12: Spring Cloud Gateway
+NACOS_PORT=8848
+REDIS_PORT=6379
+REDIS_PASS="minimax_redis_2024"
 
 DB_NAME="minimax_platform"
 DB_USER="minimax"
@@ -136,6 +149,82 @@ install_maven() {
   log_info "Maven $(mvn -v | head -1 | awk '{print $3}') 安装完成 ✓"
 }
 
+# =============== install_nacos (V5.12) ===============
+install_nacos() {
+  log_step "安装 Nacos $NACOS_VERSION (V5.12 服务发现)"
+
+  if [[ -d "$INSTALL_DIR/nacos" ]]; then
+    log_info "Nacos 已安装 ✓"
+    return
+  fi
+
+  cd /opt
+  NACOS_TGZ="nacos-server-${NACOS_VERSION}.tar.gz"
+  if [[ ! -f "$NACOS_TGZ" ]]; then
+    log_info "下载 Nacos..."
+    wget -q "https://github.com/alibaba/nacos/releases/download/${NACOS_VERSION}/nacos-server-${NACOS_VERSION}.tar.gz" \
+      -O "$NACOS_TGZ" || {
+        log_err "Nacos 下载失败, 请检查网络"
+        return 1
+      }
+  fi
+
+  tar -xzf "$NACOS_TGZ"
+  mv "nacos" "$INSTALL_DIR/nacos"
+  rm -f "$NACOS_TGZ"
+
+  # 配 standalone 模式 + MySQL 持久化
+  cat > "$INSTALL_DIR/nacos/conf/application.properties" <<EOF
+# V5.12 standalone mode
+server.servlet.contextPath=/nacos
+server.port=${NACOS_PORT}
+spring.datasource.platform=mysql
+db.num=1
+db.url.0=jdbc:mysql://127.0.0.1:3306/${DB_NAME}?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+db.user.0=${DB_USER}
+db.password.0=${DB_PASS}
+nacos.core.auth.enabled=true
+nacos.core.auth.server.identity.key=minimaxKey
+nacos.core.auth.server.identity.value=minimaxSecret
+nacos.core.auth.plugin.nacos.token.secret.key=${JWT_SECRET}
+EOF
+
+  # standalone 启动脚本 (V5.12: 用外部 MySQL 避免内置 Derby)
+  cat > "$INSTALL_DIR/nacos/bin/startup-standalone.sh" <<'EOF'
+#!/bin/bash
+# V5.12: standalone mode (single node)
+bash "$(dirname $0)/startup.sh" -m standalone
+EOF
+  chmod +x "$INSTALL_DIR/nacos/bin/startup-standalone.sh"
+
+  chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/nacos"
+  log_info "Nacos $NACOS_VERSION 安装完成 ✓ (端口 $NACOS_PORT, MySQL 持久化)"
+}
+
+# =============== install_redis (V5.12) ===============
+install_redis() {
+  log_step "安装 Redis (V5.12 限流/缓存)"
+
+  if cmd_exists redis-cli; then
+    log_info "Redis 已安装 ✓"
+    return
+  fi
+
+  case "$OS" in
+    ubuntu|debian) apt-get install -y -qq redis-server ;;
+    centos|rhel|rocky|almalinux) dnf install -y redis ;;
+  esac
+
+  # 配置密码 + bind
+  if [[ -f /etc/redis/redis.conf ]]; then
+    sed -i "s/^# requirepass.*/requirepass ${REDIS_PASS}/" /etc/redis/redis.conf
+    sed -i "s/^bind 127.0.0.1.*/bind 127.0.0.1/" /etc/redis/redis.conf
+  fi
+  systemctl enable redis-server 2>/dev/null || systemctl enable redis 2>/dev/null
+  systemctl restart redis-server 2>/dev/null || systemctl restart redis 2>/dev/null
+  log_info "Redis 安装完成 ✓ (端口 $REDIS_PORT, 密码 ${REDIS_PASS})"
+}
+
 # =============== install_node ===============
 install_node() {
   log_step "安装 Node.js $NODE_VERSION"
@@ -223,7 +312,7 @@ EOF
   # mvn install (跳过测试)
   mvn -B -DskipTests -T 1C clean install 2>&1 | tail -20
 
-  # 拷贝 jar
+  # 拷贝 jar (V5.12: 12 微服务 + gateway)
   mkdir -p "$INSTALL_DIR/apps"
   for module_port in "${MODULES[@]}"; do
     module="${module_port%%:*}"
@@ -235,6 +324,13 @@ EOF
       log_warn "  ✗ ${module}.jar 未生成"
     fi
   done
+  # V5.12: Spring Cloud Gateway (jar 含 spring-boot classifier)
+  if [[ -f "$SRC_DIR/backend/minimax-gateway/target/minimax-gateway.jar" ]]; then
+    cp -f "$SRC_DIR/backend/minimax-gateway/target/minimax-gateway.jar" "$INSTALL_DIR/apps/"
+    log_info "  ✓ gateway.jar (V5.12 Spring Cloud Gateway)"
+  else
+    log_warn "  ✗ gateway.jar 未生成 (需 minimax-gateway 模块)"
+  fi
 }
 
 # =============== build_frontend ===============
@@ -328,6 +424,65 @@ Restart=on-failure
 WantedBy=multi-user.target
 EOF
 
+  # V5.12: Nacos systemd 服务
+  cat > /etc/systemd/system/minimax-nacos.service <<EOF
+[Unit]
+Description=MiniMax Nacos ${NACOS_VERSION} (V5.12 服务发现)
+After=network.target mariadb.service
+Wants=mariadb.service
+
+[Service]
+Type=forking
+User=${SERVICE_USER}
+Group=${SERVICE_USER}
+Environment=JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+Environment=JVM_XMS=512m
+Environment=JVM_XMX=1g
+Environment=JVM_XMN=512m
+WorkingDirectory=${INSTALL_DIR}/nacos
+ExecStart=${INSTALL_DIR}/nacos/bin/startup-standalone.sh
+ExecStop=${INSTALL_DIR}/nacos/bin/shutdown.sh
+Restart=on-failure
+RestartSec=10
+LimitNOFILE=65536
+StandardOutput=append:${LOG_DIR}/nacos.log
+StandardError=append:${LOG_DIR}/nacos.err.log
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  log_info "  ✓ minimax-nacos.service (端口 $NACOS_PORT)"
+
+  # V5.12: Spring Cloud Gateway systemd 服务
+  cat > /etc/systemd/system/minimax-gateway.service <<EOF
+[Unit]
+Description=MiniMax Gateway (Spring Cloud Gateway, V5.12)
+After=network.target minimax-nacos.service mariadb.service
+Wants=minimax-nacos.service
+
+[Service]
+Type=simple
+User=${SERVICE_USER}
+Group=${SERVICE_USER}
+WorkingDirectory=${INSTALL_DIR}/apps
+ExecStart=/usr/bin/java \\
+  -Xms256m -Xmx512m \\
+  -Dspring.profiles.active=prod \\
+  -Dserver.port=${GATEWAY_PORT} \\
+  -Dnacos.host=127.0.0.1 \\
+  -Dnacos.port=${NACOS_PORT} \\
+  -jar ${INSTALL_DIR}/apps/minimax-gateway.jar
+Restart=always
+RestartSec=5
+LimitNOFILE=65536
+StandardOutput=append:${LOG_DIR}/gateway.log
+StandardError=append:${LOG_DIR}/gateway.err.log
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  log_info "  ✓ minimax-gateway.service (端口 $GATEWAY_PORT)"
+
   systemctl daemon-reload
 }
 
@@ -358,7 +513,8 @@ upstream minimax_ws        { server 127.0.0.1:8095; }
 upstream minimax_frontend  { server 127.0.0.1:${FRONTEND_PORT}; }
 
 server {
-    listen 80 default_server;
+    # V5.12: 端口 3000 统一入口 (避免 80 端口冲突, 走 gateway 8080)
+    listen 3000 default_server;
     server_name _;
 
     client_max_body_size 100M;
@@ -394,12 +550,22 @@ EOF
 
 # =============== start_services ===============
 start_services() {
-  log_step "启动所有服务"
+  log_step "启动所有服务 (V5.12 顺序: nacos -> gateway -> 12 微服务 -> nginx)"
   systemctl enable mariadb
   systemctl start mariadb
 
-  # 数据库
-  systemctl enable --now minimax-frontend minimax-nginx
+  # V5.12: Nacos (服务发现基础)
+  systemctl enable --now minimax-nacos
+  log_info "  ✓ minimax-nacos (端口 $NACOS_PORT)"
+  log_info "  ⏳ 等待 Nacos 启动 (需 20-30s)..."
+  sleep 25
+
+  # V5.12: Spring Cloud Gateway
+  systemctl enable --now minimax-gateway
+  log_info "  ✓ minimax-gateway (端口 $GATEWAY_PORT)"
+  sleep 12   # gateway 需从 Nacos 发现所有微服务
+
+  # 12 个业务微服务
   for module_port in "${MODULES[@]}"; do
     module="${module_port%%:*}"
     systemctl enable "minimax-${module}.service"
@@ -407,7 +573,12 @@ start_services() {
     log_info "  ✓ minimax-${module}"
   done
 
-  sleep 15
+  # 前端 + nginx
+  systemctl enable --now minimax-frontend minimax-nginx
+  log_info "  ✓ minimax-frontend (端口 ${FRONTEND_PORT})"
+  log_info "  ✓ minimax-nginx (端口 3000)"
+
+  sleep 10
   show_status
 }
 
@@ -416,10 +587,13 @@ stop_services() {
   log_step "停止所有服务"
   systemctl stop minimax-nginx 2>/dev/null || true
   systemctl stop minimax-frontend 2>/dev/null || true
+  # V5.12: 倒序停 (微服务 -> gateway -> nacos)
   for module_port in "${MODULES[@]}"; do
     module="${module_port%%:*}"
     systemctl stop "minimax-${module}.service" 2>/dev/null || true
   done
+  systemctl stop minimax-gateway 2>/dev/null || true
+  systemctl stop minimax-nacos 2>/dev/null || true
   log_info "已停止"
 }
 
@@ -449,7 +623,60 @@ show_status() {
   done
   echo
   systemctl is-active --quiet minimax-frontend && echo "minimax-frontend            ${GREEN}active${NC} (port $FRONTEND_PORT)" || echo "minimax-frontend            ${RED}inactive${NC}"
-  systemctl is-active --quiet minimax-nginx && echo "minimax-nginx               ${GREEN}active${NC} (port 80)" || echo "minimax-nginx               ${RED}inactive${NC}"
+  systemctl is-active --quiet minimax-nginx && echo "minimax-nginx               ${GREEN}active${NC} (port 3000)" || echo "minimax-nginx               ${RED}inactive${NC}"
+  # V5.12: nacos + gateway
+  systemctl is-active --quiet minimax-nacos && echo "minimax-nacos               ${GREEN}active${NC} (port $NACOS_PORT)" || echo "minimax-nacos               ${RED}inactive${NC}"
+  systemctl is-active --quiet minimax-gateway && echo "minimax-gateway             ${GREEN}active${NC} (port $GATEWAY_PORT)" || echo "minimax-gateway             ${RED}inactive${NC}"
+  systemctl is-active --quiet redis-server && echo "redis (system)              ${GREEN}active${NC} (port $REDIS_PORT)" || systemctl is-active --quiet redis && echo "redis (system)              ${GREEN}active${NC} (port $REDIS_PORT)" || echo "redis (system)              ${RED}inactive${NC}"
+}
+
+# =============== e2e_health_check (V5.12) ===============
+# 一键 HTTP 健康检查 13 个服务 + nginx 入口 + nacos
+e2e_health_check() {
+  log_step "V5.12 E2E 健康检查 (13 服务 + nginx + nacos)"
+
+  local pass=0
+  local fail=0
+  local color
+
+  check() {
+    local name=$1
+    local url=$2
+    local timeout=${3:-3}
+    local http_code
+    http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time "$timeout" "$url" 2>/dev/null)
+    if [[ "$http_code" =~ ^(200|301|302|401)$ ]]; then
+      color="${GREEN}"
+      pass=$((pass+1))
+    else
+      color="${RED}"
+      fail=$((fail+1))
+    fi
+    printf "  %-30s %s%s%s (code=%s)
+" "$name" "$color" "${http_code:-timeout}" "${NC}" "${http_code:-N/A}"
+  }
+
+  echo "[1] 基础设施"
+  check "nacos (8848)"        "http://127.0.0.1:8848/nacos/" 5
+  check "redis (6379)"        "http://127.0.0.1:6379" 2 || true
+  check "mariadb (3306)"      "http://127.0.0.1:3306" 2 || true
+  echo
+  echo "[2] 入口 (nginx :3000 -> gateway :8080)"
+  check "nginx /"             "http://127.0.0.1:3000/" 5
+  check "api-docs"            "http://127.0.0.1:3000/api-docs" 5
+  check "actuator/health"     "http://127.0.0.1:3000/actuator/health" 5
+  echo
+  echo "[3] 网关 + 微服务 (走 lb://minimax-* 转发)"
+  check "gateway :8080"       "http://127.0.0.1:8080/actuator/health" 5
+  for module_port in "${MODULES[@]}"; do
+    module="${module_port%%:*}"
+    check "$module" "http://127.0.0.1:3000/api/v1/${module}/actuator/health" 5
+  done
+
+  echo
+  log_step "结果: ${GREEN}${pass} 通过${NC} / ${RED}${fail} 失败${NC}"
+  [[ $fail -eq 0 ]] && log_info "✅ 所有服务健康" || log_warn "⚠️  有 ${fail} 个服务异常, 请检查 $0 logs <module>"
+  return $fail
 }
 
 # =============== show_logs ===============
@@ -457,8 +684,16 @@ show_logs() {
   local module="${1:-}"
   if [[ -z "$module" ]]; then
     echo "用法: $0 logs <module>"
-    echo "可用模块: ${MODULES[*]%%:*} frontend nginx"
+    echo "可用模块: ${MODULES[*]%%:*} frontend nginx gateway nacos redis"
     return
+  fi
+  if [[ "$module" == "redis" ]]; then
+    tail -f /var/log/redis/redis-server.log 2>/dev/null || tail -f /var/log/redis/redis.log
+    return 0
+  fi
+  if [[ "$module" == "nacos" ]]; then
+    tail -f ${LOG_DIR}/nacos.log
+    return 0
   fi
   if [[ "$module" == "frontend" || "$module" == "nginx" ]]; then
     journalctl -u "minimax-${module}" -f
@@ -503,7 +738,7 @@ install_all() {
   is_root
   detect_os
 
-  log_step "MiniMax 一键安装"
+  log_step "MiniMax 一键安装 (V5.12 Spring Cloud Gateway 架构)"
   mkdir -p "$LOG_DIR" "$BACKUP_DIR" "$INSTALL_DIR"/{apps,frontend,data}
 
   install_java
@@ -512,6 +747,9 @@ install_all() {
   create_user
 
   setup_mariadb
+  install_redis        # V5.12: 限流/缓存
+  install_nacos        # V5.12: 服务发现
+
   build_backend
   build_frontend
 
@@ -523,17 +761,30 @@ install_all() {
 
   start_services
 
-  log_step "✅ 安装完成"
+  log_step "✅ 安装完成 (V5.12)"
   echo
-  echo "  访问入口:"
-  echo "    前端:    http://localhost"
-  echo "    后端:    http://localhost/api/v1/<module>/..."
-  echo "    账号:    adminLiugl / Liugl@2026"
+  echo "  访问入口 (V5.12):"
+  echo "    前端:       http://localhost:3000"
+  echo "    API:        http://localhost:3000/api/v1/<module>/..."
+  echo "    API 文档:   http://localhost:3000/api-docs"
+  echo "    Nacos:      http://localhost:8848/nacos  (nacos/nacos)"
+  echo "    监控:       http://localhost:3000/admin/metrics"
+  echo "    账号:       adminLiugl / Liugl@2026"
+  echo
+  echo "  端口分配:"
+  echo "    3000  nginx 入口"
+  echo "    8080  Spring Cloud Gateway"
+  echo "    8848  Nacos 服务发现"
+  echo "    6379  Redis (限流/缓存)"
+  echo "    3306  MariaDB"
+  echo "    8081-8095  12 业务微服务"
   echo
   echo "  服务管理:"
-  echo "    $0 status"
-  echo "    $0 restart"
-  echo "    $0 logs auth"
+  echo "    $0 status         查看所有服务状态"
+  echo "    $0 e2e            V5.12: 一键健康检查 (13 服务)"
+  echo "    $0 restart        重启所有服务"
+  echo "    $0 logs gateway   查看 gateway 日志"
+  echo "    $0 logs nacos     查看 nacos 日志"
   echo
 }
 
@@ -561,6 +812,7 @@ case "${1:-}" in
   stop)      stop_services ;;
   restart)   restart_services ;;
   status)    show_status ;;
+  e2e)       e2e_health_check ;;     # V5.12: 一键健康检查
   logs)      show_logs "${2:-}" ;;
   backup)    backup_all ;;
   update)    update_all ;;
@@ -573,7 +825,8 @@ case "${1:-}" in
     echo "  stop       停止所有服务"
     echo "  restart    重启所有服务"
     echo "  status     查看服务状态"
-    echo "  logs M     跟踪模块 M 的日志 (auth|chat|model|frontend|nginx|...)"
+    echo "  e2e        V5.12 一键 HTTP 健康检查 (13 服务 + nacos + redis + nginx)"
+    echo "  logs M     跟踪模块 M 的日志 (auth|chat|gateway|nacos|redis|...)"
     echo "  backup     备份数据库 + jar"
     echo "  update     git pull + 重打包 + 重启"
     echo "  uninstall  卸载服务 (保留数据)"
