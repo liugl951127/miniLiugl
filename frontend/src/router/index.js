@@ -250,6 +250,62 @@ const routes = [
         name: 'TenantMgmt',
         component: () => import('@/views/tenant/Index.vue'),
         meta: { title: '租户管理', icon: 'Office', requiresSuper: true }
+      },
+      // V1.8: V5.31 数据分析 (analytics)
+      {
+        path: 'analytics/datasource',
+        name: 'AnalyticsDataSource',
+        component: () => import('@/views/analytics/DataSource.vue'),
+        meta: { title: '数据源管理', icon: 'Coin' }
+      },
+      {
+        path: 'analytics/schema',
+        name: 'AnalyticsSchema',
+        component: () => import('@/views/analytics/Schema.vue'),
+        meta: { title: 'Schema 浏览', icon: 'Files' }
+      },
+      {
+        path: 'analytics/nlsql',
+        name: 'AnalyticsNl2Sql',
+        component: () => import('@/views/analytics/Nl2Sql.vue'),
+        meta: { title: 'NL2SQL 实验室', icon: 'ChatLineRound' }
+      },
+      {
+        path: 'analytics/ingest',
+        name: 'AnalyticsIngest',
+        component: () => import('@/views/analytics/Ingest.vue'),
+        meta: { title: '文件导入', icon: 'UploadFilled' }
+      },
+      {
+        path: 'analytics/reports',
+        name: 'AnalyticsReports',
+        component: () => import('@/views/analytics/Reports.vue'),
+        meta: { title: '报告中心', icon: 'DataAnalysis' }
+      },
+      // V1.8: V5.32 画布工作流 (pipeline)
+      {
+        path: 'pipeline',
+        name: 'PipelineList',
+        component: () => import('@/views/pipeline/Index.vue'),
+        meta: { title: '工作流列表', icon: 'Connection' }
+      },
+      {
+        path: 'pipeline/designer',
+        name: 'PipelineDesigner',
+        component: () => import('@/views/pipeline/Designer.vue'),
+        meta: { title: '画布设计器', icon: 'EditPen' }
+      },
+      {
+        path: 'pipeline/runs',
+        name: 'PipelineRuns',
+        component: () => import('@/views/pipeline/RunMonitor.vue'),
+        meta: { title: '运行监控', icon: 'Monitor' }
+      },
+      {
+        path: 'pipeline/runs/:id',
+        name: 'PipelineWorkflowRuns',
+        component: () => import('@/views/pipeline/RunMonitor.vue'),
+        meta: { title: '工作流运行历史', hidden: true }
       }
     ]
   },

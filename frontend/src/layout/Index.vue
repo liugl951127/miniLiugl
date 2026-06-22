@@ -105,6 +105,15 @@ const menuRoutes = computed(() => {
     { path: '/kg', title: '知识图谱', icon: 'Share' },
     { path: '/collab', title: '实时协作', icon: 'UserFilled' },
     { path: '/plugins', title: '插件市场', icon: 'Grid' },
+    // V1.8: V5.31 数据分析入口
+    { path: '/analytics/datasource', title: '数据源', icon: 'Coin' },
+    { path: '/analytics/nlsql', title: 'NL2SQL 实验室', icon: 'ChatLineRound' },
+    { path: '/analytics/ingest', title: '文件导入', icon: 'UploadFilled' },
+    { path: '/analytics/reports', title: '报告中心', icon: 'DataAnalysis' },
+    // V1.8: V5.32 工作流入口
+    { path: '/pipeline', title: '工作流', icon: 'Connection' },
+    { path: '/pipeline/designer', title: '画布设计器', icon: 'EditPen' },
+    { path: '/pipeline/runs', title: '运行监控', icon: 'Monitor' },
     { path: '/admin', title: '管理后台', icon: 'Setting' },
     { path: '/about', title: '关于', icon: 'InfoFilled' }
   ]
@@ -129,6 +138,13 @@ const activeMenu = computed(() => {
   if (p.startsWith('/collab')) return '/collab'
   if (p.startsWith('/plugins')) return '/plugins'
   if (p.startsWith('/notification')) return '/notification'
+  if (p.startsWith('/analytics/datasource')) return '/analytics/datasource'
+  if (p.startsWith('/analytics/nlsql')) return '/analytics/nlsql'
+  if (p.startsWith('/analytics/ingest')) return '/analytics/ingest'
+  if (p.startsWith('/analytics/reports')) return '/analytics/reports'
+  if (p.startsWith('/pipeline/designer')) return '/pipeline/designer'
+  if (p.startsWith('/pipeline/runs')) return '/pipeline/runs'
+  if (p.startsWith('/pipeline')) return '/pipeline'
   return p
 })
 
