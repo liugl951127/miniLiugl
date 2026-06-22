@@ -74,7 +74,8 @@ import { ElMessage } from 'element-plus'
 import { t } from '@/i18n'
 
 const API = import.meta.env.VITE_API_BASE || 'http://localhost'
-const WS_BASE = (import.meta.env.VITE_WS_BASE || 'ws://localhost')
+// 同源 ws: 走 nginx 80 → gateway 8080 (V1 一体化部署)
+const WS_BASE = (import.meta.env.VITE_WS_BASE || `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}`)
 const token = localStorage.getItem('access_token') || ''
 const userId = localStorage.getItem('user_id') || '1'
 

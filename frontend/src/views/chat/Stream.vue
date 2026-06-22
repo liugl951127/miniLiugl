@@ -136,8 +136,10 @@ function log(type, msg) {
 
 function connect() {
   if (connected.value) return
-  const url = `ws://localhost:3000/api/v1/ws/bidi?type=chat&model=${selectedModel.value}`
-  // 通过 nginx :3000 走 gateway lb://minimax-ws
+  // 同源 ws: 走 nginx 80 → gateway 8080 → ws 8095 (V1 一体化部署)
+  const wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const url = `${wsProto}//${location.host}/api/v1/ws/bidi?type=chat&model=${selectedModel.value}`
+  // 通过 nginx (端口 80) 走 gateway lb://minimax-ws
   ws = new WebSocket(url)
 
   ws.onopen = () => {

@@ -225,7 +225,9 @@ function reconnect() {
     params.set('goal', agentGoal.value)
   }
 
-  const url = `ws://${location.hostname}:8095/ws/stream?${params.toString()}`
+  // 同源 ws: 走 nginx 80 → gateway 8080 (V1 一体化部署, 不直连 8095)
+  const wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const url = `${wsProto}//${location.host}/api/v1/ws/stream?${params.toString()}`
   log('connect', url)
   ws = new WebSocket(url)
 

@@ -29,6 +29,8 @@ COPY minimax-multimodal minimax-multimodal
 COPY minimax-monitor minimax-monitor
 COPY minimax-agent minimax-agent
 COPY minimax-prompt minimax-prompt
+COPY minimax-analytics minimax-analytics
+COPY minimax-pipeline minimax-pipeline
 COPY minimax-ws minimax-ws
 COPY minimax-gateway minimax-gateway
 
@@ -58,7 +60,8 @@ ENV SERVER_PORT=8080
 ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC -Djava.security.egd=file:/dev/./urandom"
 
 # Spring 配置通过环境变量注入 (在 docker-compose.yml 中)
-ENV SPRING_PROFILES_ACTIVE=prod
+# 保持 dev profile (项目只有 application.yml + application-dev.yml)
+ENV SPRING_PROFILES_ACTIVE=dev
 ENV NACOS_HOST=nacos
 ENV NACOS_PORT=8848
 ENV MYSQL_HOST=mysql
