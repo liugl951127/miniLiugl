@@ -203,7 +203,8 @@ V5 系列 8 个版本聚焦**生产级架构能力**:
 | **V5.27** | MariaDB 迁移到 MySQL 8.0 (docker-compose + 3 脚本 + CI + 15 文档) | `1a788fb` |
 | **V5.28** | **纯 Docker 全栈部署** (18 service: 中间件 + 13 微服务 + nginx 一键启) | `cdb227b` |
 | **V5.29** | 修 OpenTelemetry 依赖: starter → autoconfigure + 版本 2.2.0 → 2.6.0 | `8459999` |
-| **V5.30** | JWT secret 调整 + 关键代码行注释 + Windows IDEA 支持 | `pending` |
+| **V5.30** | JWT secret 调整 + 关键代码行注释 + Windows IDEA 支持 | `73493de` |
+| **V5.30.5** | 预编译静态检查脚本 + 修复 6 个未发现 bug | `36e9a6f` |
 
 **V5 累计**: +11,000 行 / -4,200 行, 21 个新文档, 13 个 systemd 服务, **5 个 CI Job 自动验证**, **前端 45 个页面全交付**, **CentOS 专用部署脚本**
 
@@ -349,6 +350,51 @@ sudo ./scripts/deploy-minimax.sh logs auth  # 查看服务日志
   - 开发流程 + 性能调优
 
 **净改动**: 5 files Java (重写, 加行注释) + 1 new bat + 1 new doc + README + commit + push
+
+---
+
+## 🛡️ V5.30.5 预编译静态检查 (本期重点)
+
+### 新增 scripts/precompile-check.py (18KB)
+
+跑 `mvn compile` 之前先跑这个脚本, 避免浪费时间调错误:
+
+```bash
+python3 scripts/precompile-check.py                # 全项目 (304 个 Java 文件)
+python3 scripts/precompile-check.py --module model # 单模块
+python3 scripts/precompile-check.py --list        # 列出可用模块
+python3 scripts/precompile-check.py --strict      # 警告也算错
+```
+
+### 5 类检测 (基于 V5.30.1-V5.30.4 真实教训)
+
+| 检测项 | 来源 bug | 错误等级 |
+|--------|---------|---------|
+| import 缺失 | V5.30.1 IOException 漏 import | error |
+| Lombok 笔误 | V5.30.1 @NoConstructor 漏 s | error |
+| DTO 引用不存在 | V5.30.4 dto.Message 不存在 | warn |
+| Wrapper 误用 | V5.30.3 LambdaQueryWrapper.set | error |
+| Thread.sleep 漏 throws | V5.30.3 InterruptedException | error |
+
+### 集成 deploy-minimax.sh check
+- 加 8 个新检查项: 预编译脚本 + 必需文件
+- 现在 40/40 通过 (原 32 + 新 8)
+
+### 修复 6 个隐藏 bug
+
+跑预编译脚本时, **抓到 6 个用户未发现**的真 bug:
+- `MockAdapter.java:66` streamChat() 缺 throws
+- `StreamGatewayHandler.java:101/133/156/171/203` 5 个 streamXxx() 缺 throws
+
+都是 V5.30.3 同样模式 (Thread.sleep 漏 throws), 之前只修了 BidirectionalStreamHandler, 漏了这个文件。
+
+### 验证
+- ✓ 预编译脚本: 304 个 Java 文件, 0 错误 0 警告
+- ✓ check 命令: 40/40 通过
+- ✓ 修复后 mvn compile 应该一次过
+
+### 净改动
+4 files, +516/-6 (新脚本 18KB + 6 处修复 + check 集成)
 
 ## 🔄 CI/CD (V5.23 新增)
 
