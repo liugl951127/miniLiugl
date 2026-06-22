@@ -207,6 +207,7 @@ V5 系列 8 个版本聚焦**生产级架构能力**:
 | **V5.30.5** | 预编译静态检查脚本 + 修复 6 个未发现 bug | `36e9a6f` |
 | **V5.30.6** | AnthropicAdapter/GeminiAdapter 修 record 参数 + 脚本加 record 检测 (又被用户抓 2 个) | `pending` |
 | **V5.31** | 🆕 **第 15 个微服务: minimax-analytics (数据智能分析)** | `pending` |
+| **V5.32** | 🆕 **第 16 个微服务: minimax-pipeline (画布工作流拖拽)** | `pending` |
 
 **V5 累计**: +11,000 行 / -4,200 行, 21 个新文档, 13 个 systemd 服务, **5 个 CI Job 自动验证**, **前端 45 个页面全交付**, **CentOS 专用部署脚本**
 
@@ -469,6 +470,56 @@ docs/design/analytics-v5.31-design.md (36KB 设计文档)
 
 ### 设计文档
 详见 `docs/design/analytics-v5.31-design.md` (36KB, 13 节 + 2 附录)
+
+## 🔄 V5.32 画布工作流拖拽 (本期重点) 🆕
+
+**第 16 个微服务 `minimax-pipeline` (端口 8097)** — 面向 ETL / 画布拖拽 / 定时数据处理场景.
+
+### 4 大能力
+1. **拖拽式画布** — 13 种节点 (3 INPUT + 8 TRANSFORM + 3 OUTPUT)
+2. **DAG 拓扑校验** — Kahn 拓扑排序 + 环检测 + 孤屌节点警告
+3. **异步执行引擎** — `@Async` 按拓扑层调度, 节点状态机 (PENDING/RUNNING/SUCCESS/FAILED/SKIPPED)
+4. **表达式引擎** — Aviator 过滤/选择节点 (`age > 18 && status == 'ACTIVE'`)
+
+### 13 种节点
+| 类别 | 节点 | 功能 |
+|------|------|------|
+| INPUT | MySQLInput / FileInput / ApiInput | 读 MySQL/CSV/JSON/HTTP |
+| TRANSFORM | Filter / Select / Join / Aggregate / Sort / Limit / Union / Distinct | 链式处理 |
+| OUTPUT | DbOutput / FileOutput / ReportOutput | 写 DB/CSV/复用 analytics ReportService |
+
+### 10 个端点
+- POST `/workflows` / GET `/workflows/{id}` / PUT `/workflows/{id}` / DELETE `/workflows/{id}`
+- POST `/workflows/{id}/validate` (DAG 校验)
+- POST `/runs` (触发) / GET `/runs/{id}` / GET `/runs/{id}/result/{nodeId}` (查看产出)
+- GET `/runs?workflowId=1&status=SUCCESS` (历史)
+
+### 验证
+- ✅ `mvn install` 17/17 全 SUCCESS
+- ✅ `mvn test` 40/40 测试通过 (8 测试类)
+- ✅ `precompile-check.py` 0 错 0 警告
+- ✅ `deploy-minimax.sh check` 40/40 通过
+- ✅ Gateway 路由 `lb://minimax-pipeline` 已加
+- ✅ `deploy-centos.sh MICRO_SERVICES` 已加 analytics + pipeline
+
+### 文件清单 (V5.32 新增 40 文件)
+```
+backend/minimax-pipeline/
+├── pom.xml
+├── src/main/java/com/minimax/pipeline/
+│   ├── PipelineApplication.java
+│   ├── controller/  (WorkflowController 8 + RunController 2)
+│   ├── service/     (PipelineEngine 异步执行 + WorkflowService + DagValidator)
+│   ├── executor/    (NodeExecutorFactory + 14 NodeExecutor: 3 input / 8 transform / 3 output)
+│   ├── entity/      (4 表 entity)
+│   ├── dto/         (WorkflowDto + NodeLogDto)
+│   ├── enums/       (NodeType / NodeStatus / RunStatus)
+│   ├── vo/          (DagValidationVo)
+│   └── mapper/      (4 mapper)
+├── src/main/resources/application.yml
+├── src/test/java/... (8 测试类 / 40 测试)
+sql/pipeline-v5.32.sql  (4 张 DDL)
+```
 
 ## 🔄 CI/CD (V5.23 新增)
 

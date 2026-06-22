@@ -1,0 +1,41 @@
+server:
+  port: 8097
+  servlet:
+    context-path: /api/v1
+
+spring:
+  application:
+    name: minimax-pipeline
+  config:
+    import: classpath:application-common.yml
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:3306/minimax_platform?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:minimax}
+    password: ${MYSQL_PASSWORD:minimax_pass_2024}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASS:minimax_redis_2024}
+      database: 0
+      timeout: 3s
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+
+# V5.32: 画布工作流配置
+pipeline:
+  max-rows-in-memory: 100000      # 节点间内存传递行数上限
+  output-preview-rows: 100        # 节点 output_preview 保留前 N 行
+  thread-pool:
+    core-size: 8
+    max-size: 32
+    queue-capacity: 200
+  storage:
+    output-dir: /tmp/minimax-pipeline/outputs

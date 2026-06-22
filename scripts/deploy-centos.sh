@@ -72,6 +72,8 @@ MICRO_SERVICES=(
   "agent:8090"
   "prompt:8091"
   "ws:8095"
+  "analytics:8096"
+  "pipeline:8097"
 )
 
 # =============== 工具 ===============
