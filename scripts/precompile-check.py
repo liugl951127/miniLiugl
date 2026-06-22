@@ -100,8 +100,34 @@ class JavaScanner:
         self.module_filter = module
         # 全项目 Java 类索引 (path → Set of class names)
         self.class_index: Dict[str, Set[str]] = {}  # {module: {class names}}
+        # V5.30.6: 全局 record 参数索引 {record_name: param_count}
+        self.record_params: Dict[str, int] = {}
         self.issues: List[Issue] = []
         self._build_class_index()
+        self._build_record_index()
+
+    def _build_record_index(self):
+        """V5.30.6: 全模块扫描 record 定义, 记录每个 record 的参数个数."""
+        for java_file in self.root.rglob("*.java"):
+            if any(p in java_file.parts for p in ['target', 'node_modules', '.git']):
+                continue
+            content = java_file.read_text(encoding='utf-8', errors='ignore')
+            for m in re.finditer(r'(?:public\s+)?record\s+(\w+)\s*\((.*?)\)\s*\{', content, re.S):
+                name = m.group(1)
+                params_str = m.group(2).strip()
+                if not params_str:
+                    self.record_params[name] = 0
+                else:
+                    depth = 0
+                    count = 1
+                    for ch in params_str:
+                        if ch in '<([':
+                            depth += 1
+                        elif ch in '>)]':
+                            depth -= 1
+                        elif ch == ',' and depth == 0:
+                            count += 1
+                    self.record_params[name] = count
 
     def _build_class_index(self):
         """扫描所有 .java 文件, 收集每个 module 下的所有 public class."""
@@ -322,6 +348,10 @@ class JavaScanner:
                     fix='new LambdaQueryWrapper<>().set(...) → new LambdaUpdateWrapper<>().set(...)'
                 ))
 
+        # 检测 5b: record 构造器参数个数不匹配 (V5.30.6 教训)
+        # 简化: 检查 'new XXX(...)' 与 record 'record XXX(...)' 的参数个数
+        self._check_record_constructor(content, rel_path, module)
+
         # 检测 6: Thread.sleep 但方法没 throws InterruptedException (V5.30.3 教训)
         # 找 'Thread.sleep(' 所在方法, 检查方法签名是否 throws InterruptedException
         self._check_throws_for_sleep(content, lines, rel_path)
@@ -379,6 +409,72 @@ class JavaScanner:
         for f in (self.root / module).rglob(f"{short_name}.java"):
             return True
         return False
+
+    def _check_record_constructor(self, content: str, rel_path: str, module: str):
+        """V5.30.6: 检测 record 构造器参数个数不匹配.
+
+        使用 self.record_params (全模块扫的 record 定义索引).
+        """
+        # 找所有 'new XXX(...)' 调用, 数参数个数
+        # V5.30.6: 支持 'new Outer.Inner(...)' (嵌套类)
+        for m in re.finditer(r'\bnew\s+([\w.]+)\s*\(', content):
+            full_name = m.group(1)
+            # 取最后一段 (处理 Outer.Inner)
+            name = full_name.split('.')[-1]
+            if name not in self.record_params:
+                continue
+            # 找匹配的右括号 (考虑嵌套)
+            start = m.end()  # 在左括号之后
+            depth = 1
+            end = start
+            for i, ch in enumerate(content[start:], start=start):
+                if ch == '(':
+                    depth += 1
+                elif ch == ')':
+                    depth -= 1
+                    if depth == 0:
+                        end = i
+                        break
+            if depth != 0:
+                continue
+
+            args_str = content[start:end].strip()
+            if not args_str:
+                arg_count = 0
+            else:
+                depth = 0
+                arg_count = 1
+                in_string = False
+                string_ch = None
+                for i, ch in enumerate(args_str):
+                    # 字符串字面量 (避免里面逗号计数)
+                    if in_string:
+                        if ch == '\\' and i + 1 < len(args_str):
+                            continue  # 转义符跳下一个
+                        if ch == string_ch:
+                            in_string = False
+                        continue
+                    if ch in ('"', "'"):
+                        in_string = True
+                        string_ch = ch
+                        continue
+                    if ch in '<([':
+                        depth += 1
+                    elif ch in '>)]':
+                        depth -= 1
+                    elif ch == ',' and depth == 0:
+                        arg_count += 1
+
+            expected = self.record_params[name]
+            if arg_count != expected:
+                start_line = content[:m.start()].count('\n') + 1
+                self.issues.append(Issue(
+                    severity='error',
+                    category='record-args-mismatch',
+                    file=rel_path, line=start_line,
+                    msg=f'record {name} 定义 {expected} 个参数, 但 new {name}(...) 传了 {arg_count} 个',
+                    fix=f'调整调用传参为 {expected} 个 (查 record 定义)'
+                ))
 
     def scan_all(self):
         """扫描所有 Java 文件."""

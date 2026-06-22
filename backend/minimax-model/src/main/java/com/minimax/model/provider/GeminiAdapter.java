@@ -124,8 +124,14 @@ public class GeminiAdapter implements ModelProviderAdapter {
                 }
             });
             return new OpenAiCompatibleAdapter.StreamResult(
-                contentBuilder.toString(), pt.get(), ct.get(), "stop",
-                Duration.between(t0, Instant.now()).toMillis()
+                null,                       // id (V5.30.6: 没有 streamId 参数)
+                req.getModel(),             // model
+                contentBuilder.toString(),  // content
+                pt.get(),                   // promptTokens
+                ct.get(),                   // completionTokens
+                pt.get() + ct.get(),        // totalTokens
+                "stop",                     // finishReason
+                Duration.between(t0, Instant.now()).toMillis()  // latencyMs
             );
         } catch (Exception e) {
             log.error("Gemini stream failed: {}", e.getMessage());

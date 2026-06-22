@@ -138,11 +138,14 @@ public class AnthropicAdapter implements ModelProviderAdapter {
             });
 
             return new OpenAiCompatibleAdapter.StreamResult(
-                contentBuilder.toString(),
-                inputTokens.get(),
-                outputTokens.get(),
-                finish,
-                Duration.between(t0, Instant.now()).toMillis()
+                null,                       // id
+                req.getModel(),             // model
+                contentBuilder.toString(),  // content
+                inputTokens.get(),          // promptTokens
+                outputTokens.get(),         // completionTokens
+                inputTokens.get() + outputTokens.get(),  // totalTokens
+                finish,                     // finishReason
+                Duration.between(t0, Instant.now()).toMillis()  // latencyMs
             );
         } catch (Exception e) {
             log.error("Anthropic stream failed: {}", e.getMessage());

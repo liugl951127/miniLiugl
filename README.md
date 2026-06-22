@@ -205,6 +205,7 @@ V5 系列 8 个版本聚焦**生产级架构能力**:
 | **V5.29** | 修 OpenTelemetry 依赖: starter → autoconfigure + 版本 2.2.0 → 2.6.0 | `8459999` |
 | **V5.30** | JWT secret 调整 + 关键代码行注释 + Windows IDEA 支持 | `73493de` |
 | **V5.30.5** | 预编译静态检查脚本 + 修复 6 个未发现 bug | `36e9a6f` |
+| **V5.30.6** | AnthropicAdapter/GeminiAdapter 修 record 参数 + 脚本加 record 检测 (又被用户抓 2 个) | `pending` |
 
 **V5 累计**: +11,000 行 / -4,200 行, 21 个新文档, 13 个 systemd 服务, **5 个 CI Job 自动验证**, **前端 45 个页面全交付**, **CentOS 专用部署脚本**
 
