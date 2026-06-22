@@ -75,6 +75,13 @@
             <artifactId>opentelemetry-exporter-otlp</artifactId>
         </dependency>
 
+        <!-- V5.30.2: Knife4j + Swagger 注解 (传递到所有 12 微服务) -->
+        <!-- 之前 V5.11 配了 yml 但没在 pom 加依赖, 导致 controller 用 @Tag/@Operation 编译失败 -->
+        <dependency>
+            <groupId>com.github.xiaoymin</groupId>
+            <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
