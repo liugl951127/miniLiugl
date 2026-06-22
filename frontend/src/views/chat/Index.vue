@@ -173,7 +173,7 @@ import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { modelApi } from '@/api/model'
-import { listSessions, createSession, sendMessageStream } from '@/api/session'
+import { listSessions, createSession, sendMessageStream, deleteSession as deleteSessionApi } from '@/api/session'
 import ChatMessage from '@/components/ChatMessage.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -294,7 +294,7 @@ async function deleteSession(id) {
     await ElMessageBox.confirm('确定删除该会话?', '提示', { type: 'warning' })
   } catch { return }
   try {
-    await deleteSession(id)
+    await deleteSessionApi(id)
   } catch (e) { /* 容错 */ }
   sessions.value = sessions.value.filter(s => s.id !== id)
   if (currentSessionId.value === id) {

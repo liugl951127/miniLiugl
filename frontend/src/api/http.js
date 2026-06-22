@@ -20,6 +20,14 @@ const http = axios.create({
 // 请求拦截器: 带 token + traceId
 http.interceptors.request.use(
   (config) => {
+    // V1.8: 路径前缀补齐 — 以前 API 文件写 /admin/... 现在自动补 /api/v1
+    // 不补: 绝对 URL (http://, https://, //) 和已经 /api/v1 开头 / /ws / /sse / /actuator 的
+    const url = config.url || ''
+    const isAbsolute = /^https?:\/\//i.test(url) || url.startsWith('//')
+    const isPrefixed = url.startsWith('/api/v1') || url.startsWith('/ws') || url.startsWith('/sse') || url.startsWith('/actuator') || url.startsWith('/fallback') || url.startsWith('/api-docs')
+    if (!isAbsolute && !isPrefixed && url.startsWith('/')) {
+      config.url = '/api/v1' + url
+    }
     const userStore = useUserStore()
     if (userStore.accessToken) {
       config.headers.Authorization = `Bearer ${userStore.accessToken}`

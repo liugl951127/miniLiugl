@@ -233,7 +233,7 @@ async function loadNeighbors() {
   const urlMap: Record<number, string> = {
     1: `${API}/api/v1/agent/kg/entities/${selectedEntity.value.id}/neighbors`,
     2: `${API}/api/v1/agent/kg/entities/${selectedEntity.value.id}/2hop`,
-    3: `${API}/api/v1/agent/kg/entities/${selectedEntity.value.id}/3hop`,
+    3: null, // V1.8: 后端只到 2 hop, 隐藏 3hop tab
   }
   // V5.6: 用 neighbors 端点多次调合并
   try {
@@ -289,7 +289,8 @@ async function findPath() {
   if (!pathFromId.value || !pathToId.value) { ElMessage.warning(t('kg.selectEndpoints')); return }
   try {
     const { data } = await axios.get(`${API}/api/v1/agent/kg/path`, {
-      params: { userId, fromId: pathFromId.value, toId: pathToId.value },
+      // V1.8: 后端参数名是 from/to, 不是 fromId/toId
+      params: { userId, from: pathFromId.value, to: pathToId.value },
       ...auth()
     })
     if (data.data) {

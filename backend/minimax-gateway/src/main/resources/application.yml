@@ -85,7 +85,7 @@ spring.cloud.gateway:
     - id: model
       uri: lb://minimax-model
       predicates:
-        - Path=/api/v1/model/**,/api/v1/test/**,/api/v1/openai/**,/api/v1/imagegen/**,/api/v1/audio/**,/api/v1/leaderboard/**
+        - Path=/api/v1/model/**,/api/v1/models/**,/api/v1/test/**,/api/v1/openai/**,/api/v1/imagegen/**,/api/v1/audio/**,/api/v1/leaderboard/**
       filters:
         - StripPrefix=2
 

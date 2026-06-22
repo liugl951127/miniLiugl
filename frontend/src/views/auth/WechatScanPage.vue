@@ -91,8 +91,13 @@ async function loadBinding() {
 }
 
 function onLogin(payload) {
-  userStore.setToken(payload.accessToken)
-  userStore.setProfile(payload.user || {})
+  // V1.8: user store 是 setup-style Pinia, 字段是 ref, 必须用 .value
+  // 但 store 本身代理了 ref 的读写, 正确写法: userStore.$patch({ ... })
+  userStore.$patch({
+    accessToken: payload.accessToken || '',
+    refreshToken: payload.refreshToken || '',
+    profile: payload.user || null
+  })
   currentStep.value = 4
   ElMessage.success('微信登录成功, 跳转中...')
   setTimeout(() => router.push('/chat'), 1000)

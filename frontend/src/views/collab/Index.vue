@@ -113,7 +113,8 @@ async function joinRoom() {
 }
 
 function connectWs(sid: string) {
-  const url = `${WS_BASE}/ws/collab/${sid}?userId=${userId}`
+  // V1.8: gateway ws 路由是 /api/v1/ws/** (原 /ws/collab 会被 gateway StripPrefix=2 错误拑截)
+  const url = `${WS_BASE}/api/v1/ws/collab/${sid}?userId=${userId}`
   ws = new WebSocket(url)
   status.value = 'connecting'
   ws.onopen = () => {

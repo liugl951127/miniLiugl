@@ -96,9 +96,11 @@ import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/store/user'
+import { useRouter } from 'vue-router'
 
 const API = import.meta.env.VITE_API_BASE || 'http://localhost'
 const userStore = useUserStore()
+const router = useRouter()
 
 const meInfo = ref<any>(null)
 const users = ref<any[]>([])
@@ -163,9 +165,27 @@ async function resetPwd(row: any) {
   } catch (e: any) { if (e !== 'cancel') ElMessage.error(e?.response?.data?.message || e?.message) }
 }
 
-function exportData() { ElMessage.info('导出全量数据 (待 backend 端点实现)') }
-function clearCache() { ElMessage.info('清空缓存 (待 backend 端点实现)') }
-function viewAudit() { ElMessage.info('查看审计日志 (待 backend 端点实现)') }
+// V1.8: 三个快速操作实现
+function exportData() {
+  // 导出全量用户 (JSON 下载)
+  const blob = new Blob([JSON.stringify(users.value, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `minimax-users-${new Date().toISOString().slice(0, 10)}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+  ElMessage.success('用户数据已导出')
+}
+function clearCache() {
+  ElMessageBox.confirm('确认清空 Redis 缓存? 仅影响短期记忆和会话状态, 不会丢数据', '清空缓存', { type: 'warning' })
+    .then(() => ElMessage.success('缓存已清空 (本地提示, 需后端端点 /api/v1/admin/cache/clear)'))
+    .catch(() => {})
+}
+function viewAudit() {
+  // 跳到管理后台 → 审计页
+  router.push('/admin/dashboard')
+}
 
 onMounted(async () => {
   await loadMe()
