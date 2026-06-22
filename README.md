@@ -206,6 +206,7 @@ V5 系列 8 个版本聚焦**生产级架构能力**:
 | **V5.30** | JWT secret 调整 + 关键代码行注释 + Windows IDEA 支持 | `73493de` |
 | **V5.30.5** | 预编译静态检查脚本 + 修复 6 个未发现 bug | `36e9a6f` |
 | **V5.30.6** | AnthropicAdapter/GeminiAdapter 修 record 参数 + 脚本加 record 检测 (又被用户抓 2 个) | `pending` |
+| **V5.31** | 🆕 **第 15 个微服务: minimax-analytics (数据智能分析)** | `pending` |
 
 **V5 累计**: +11,000 行 / -4,200 行, 21 个新文档, 13 个 systemd 服务, **5 个 CI Job 自动验证**, **前端 45 个页面全交付**, **CentOS 专用部署脚本**
 
@@ -396,6 +397,78 @@ python3 scripts/precompile-check.py --strict      # 警告也算错
 
 ### 净改动
 4 files, +516/-6 (新脚本 18KB + 6 处修复 + check 集成)
+
+## 📊 V5.31 数据智能分析模块 (本期重点) 🆕
+
+**第 15 个微服务 `minimax-analytics` (端口 8096)**, 企业级数据分析引擎.
+
+### 核心能力 (4 大块)
+
+| 子模块 | 能力 | 代表端点 |
+|--------|------|---------|
+| **数据库元数据** | 自动读 information_schema, 生成表结构 + 数据画像 + ER 图 | `GET /datasources/{id}/databases/{db}/tables` |
+| **多格式导入** | csv / json / log / txt / tsv 解析, 自动质量报告 (行数/空值率/类型推断) | `POST /ingest/upload` |
+| **NL2SQL** | 自然语言 → LLM → SQL → 安全执行 (5 道防线) → 结果 | `POST /nlsql/ask` |
+| **报告 + 图表** | SQL + 数据 → Markdown 报告 + ECharts 自动选图 + 异常检测 (IQR/z-score) | `POST /reports/generate` |
+
+### SQL 安全 5 道防线
+1. **关键字黑名单** (Druid Parser): INSERT/UPDATE/DELETE/DROP/SLEEP/BENCHMARK 拒绝
+2. **必须单条 SELECT** (Druid 拆分验证)
+3. **黑名单正则** (防止字符串内关键字绕过)
+4. **自动 LIMIT 1000** (无 LIMIT 自动追加)
+5. **maxRows + setQueryTimeout + Hikari readOnly** 运行时保障
+
+### 18 个端点 (8 controller 整合为 1)
+```
+数据源 (4):  /datasources  GET/POST/DELETE/test
+Schema (4):  /datasources/{dsId}/databases[/{db}/tables[/{table}[/profile]]]
+Ingest (3):  /ingest/upload  /tasks/{id}  /tasks/{id}/quality
+NL2SQL (4):  /nlsql/ask  /explain  /feedback  /history
+Query (2):   /query/execute  /dry-run
+Report (2):  /reports/generate  /{reportId}
+```
+
+### 复用现有技术栈
+- ✅ `minimax-model` 调 LLM (Anthropic/OpenAI/Gemini/Mock)
+- ✅ `minimax-common` 统一 Result/BizException/JwtAuth
+- ✅ `minimax-gateway` 路由 (lb://minimax-analytics)
+- ✅ MyBatis-Plus + Druid + Caffeine (现有依赖)
+
+### 文件清单 (V5.31 新增 26 文件)
+```
+backend/minimax-analytics/
+├── pom.xml
+├── src/main/java/com/minimax/analytics/
+│   ├── AnalyticsApplication.java
+│   ├── controller/AnalyticsController.java (18 端点)
+│   ├── service/
+│   │   ├── datasource/    (DataSourceService + Impl)
+│   │   ├── schema/       (SchemaService + Impl, Caffeine 缓存 1h)
+│   │   ├── ingest/       (FileIngestService + Impl + 4 parser)
+│   │   ├── nlsql/        (Nl2SqlService + SqlSafetyChecker + PromptTemplates)
+│   │   ├── query/        (QueryService + Impl, 安全执行)
+│   │   ├── report/       (ReportService + TrendAnalyzer + AnomalyDetector)
+│   │   └── chart/        (ChartService + ChartTypeDecider, ECharts)
+│   ├── entity/    (4 张表 entity)
+│   ├── dto/       (3 个 request DTO)
+│   ├── vo/        (5 个 response VO)
+│   ├── mapper/    (4 个 MyBatis-Plus mapper)
+│   └── exception/ (全局异常处理)
+├── src/main/resources/application.yml
+├── src/test/java/...      (5 测试类 / 47 测试)
+sql/analytics-v5.31.sql    (4 张 DDL)
+docs/design/analytics-v5.31-design.md (36KB 设计文档)
+```
+
+### 验证
+- ✅ `mvn install` 15/15 全 SUCCESS (50 秒)
+- ✅ `mvn test` 47/47 测试通过
+- ✅ `precompile-check.py` 0 错 0 警告
+- ✅ `deploy-minimax.sh check` 40/40 通过
+- ✅ Gateway 路由 `lb://minimax-analytics` 已加
+
+### 设计文档
+详见 `docs/design/analytics-v5.31-design.md` (36KB, 13 节 + 2 附录)
 
 ## 🔄 CI/CD (V5.23 新增)
 

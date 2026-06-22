@@ -33,6 +33,7 @@
         <module>minimax-monitor</module>
         <module>minimax-agent</module>
         <module>minimax-prompt</module>
+        <module>minimax-analytics</module>
     </modules>
 
     <properties>

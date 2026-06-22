@@ -1,0 +1,66 @@
+# =============================================================
+# 数据智能分析模块 (V5.31) - 配置
+# 公共配置在 application-common.yml, 这里只放模块特有配置
+# =============================================================
+
+server:
+  port: 8096
+  servlet:
+    context-path: /api/v1
+
+spring:
+  application:
+    name: minimax-analytics
+  config:
+    import: classpath:application-common.yml
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:3306/minimax_platform?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:minimax}
+    password: ${MYSQL_PASSWORD:minimax_pass_2024}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASS:minimax_redis_2024}
+      database: 0
+      timeout: 3s
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+
+# V5.31: 分析模块业务配置
+analytics:
+  query:
+    max-rows: 1000
+    timeout-seconds: 30
+  schema:
+    cache-ttl-minutes: 60
+    profile-sample-size: 1000
+  ingest:
+    upload-dir: ${ANALYTICS_UPLOAD_DIR:/tmp/minimax-analytics/uploads}
+    max-file-size-mb: 100
+    supported-types: csv,json,log,txt,tsv
+  nlsql:
+    model: MiniMax-Text-01
+    temperature: 0.1
+    max-tokens: 2048
+  report:
+    template-dir: classpath:templates/
+    default-format: markdown
+
+# 继承 minimax-model 的 LLM 配置
+minimax:
+  model:
+    mock-mode: ${MODEL_MOCK_MODE:false}
+    providers: ${MODEL_PROVIDERS:minimax:openai-compatible:https://api.minimax.chat/v1:sk-xxx}

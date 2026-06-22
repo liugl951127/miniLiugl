@@ -143,6 +143,13 @@ spring.cloud.gateway:
       filters:
         - StripPrefix=2
 
+    - id: analytics
+      uri: lb://minimax-analytics
+      predicates:
+        - Path=/api/v1/analytics/**
+      filters:
+        - StripPrefix=2
+
     - id: ws
       uri: lb:ws://minimax-ws
       predicates:
