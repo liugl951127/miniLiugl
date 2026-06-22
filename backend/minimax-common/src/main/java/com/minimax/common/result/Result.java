@@ -45,7 +45,7 @@ import java.io.Serializable;
  */
 @Slf4j                                                                       // Lombok 生成 log
 @Data                                                                       // 自动生成 getter/setter
-@NoConstructor                                                              // 自动生成无参构造 (Jackson 需要)
+@NoArgsConstructor                                                              // 自动生成无参构造 (Jackson 需要)
 @JsonInclude(JsonInclude.Include.NON_NULL)                                 // null 字段不参与序列化
 public class Result<T> implements Serializable {                            // 实现 Serializable (缓存/Session 用)
 

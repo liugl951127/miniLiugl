@@ -52,6 +52,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 // Java 标准 - 用于 HMAC SHA 密钥生成
 import javax.crypto.SecretKey;
+// Java 标准 - IO 异常 (doFilterInternal 方法签名需要 throws IOException)
+import java.io.IOException;
 // Java 标准 - 字符串编码
 import java.nio.charset.StandardCharsets;
 // Java 标准 - SHA-256 摘要算法 (把任意长度 secret 转 256-bit)
