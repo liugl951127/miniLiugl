@@ -200,6 +200,8 @@
     </dependencies>
 
     <build>
+        <!-- V5.30.8: 统一 finalName 去掉 version, deploy 脚本可以稳定定位 jar -->
+        <finalName>${project.artifactId}</finalName>
         <pluginManagement>
             <plugins>
                 <plugin>

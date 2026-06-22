@@ -58,6 +58,7 @@ REDIS_PASS="${REDIS_PASS:-minimax_redis_2024}"
 JWT_SECRET="${JWT_SECRET:-0f6beadebfcee3e97845856757a3babf97b2af8c80f0b95690783ccc7a595352}"
 
 # 13 个微服务
+PROJECT_VERSION="1.0.0-SNAPSHOT"
 MICRO_SERVICES=(
   "auth:8081"
   "chat:8082"
@@ -220,8 +221,9 @@ step4_build() {
   local need_build=0
   for module_port in "${MICRO_SERVICES[@]}"; do
     local module="${module_port%%:*}"
-    local jar="$SRC_DIR/backend/minimax-$module/target/minimax-$module.jar"
-    if [[ ! -f "$jar" ]] || [[ $(stat -c%s "$jar" 2>/dev/null || echo 0) -lt 1024 ]]; then
+    # V5.30.8: 父 pom 加 finalName, jar 名稳定为 minimax-$module.jar
+    local jar="$SRC_DIR/backend/minimax-$module/target/minimax-$module-spring-boot.jar"
+    if [[ ! -f "$jar" ]] || [[ $(stat -c%s "$jar" 2>/dev/null || echo 0) -lt 1048576 ]]; then
       need_build=1
       break
     fi
@@ -247,9 +249,10 @@ step5_copy_jars() {
   local count=0
   for module_port in "${MICRO_SERVICES[@]}"; do
     local module="${module_port%%:*}"
+    # V5.30.8: 父 pom 加 finalName=${project.artifactId}, 所有模块 jar 命名一致 (无 version)
     local jar="$SRC_DIR/backend/minimax-$module/target/minimax-$module.jar"
-    # 部分模块用 spring-boot classifier
-    if [[ ! -f "$jar" ]] || [[ $(stat -c%s "$jar" 2>/dev/null || echo 0) -lt 1024 ]]; then
+    # spring-boot classifier 优先 (含所有依赖, 可启动)
+    if [[ -f "$SRC_DIR/backend/minimax-$module/target/minimax-$module-spring-boot.jar" ]]; then
       jar="$SRC_DIR/backend/minimax-$module/target/minimax-$module-spring-boot.jar"
     fi
     if [[ -f "$jar" ]]; then
@@ -263,7 +266,7 @@ step5_copy_jars() {
 
   # Gateway
   local gw_jar="$SRC_DIR/backend/minimax-gateway/target/minimax-gateway.jar"
-  if [[ ! -f "$gw_jar" ]] || [[ $(stat -c%s "$gw_jar" 2>/dev/null || echo 0) -lt 1024 ]]; then
+  if [[ -f "$SRC_DIR/backend/minimax-gateway/target/minimax-gateway-spring-boot.jar" ]]; then
     gw_jar="$SRC_DIR/backend/minimax-gateway/target/minimax-gateway-spring-boot.jar"
   fi
   if [[ -f "$gw_jar" ]]; then
@@ -362,6 +365,19 @@ step7_nginx() {
     log_info "  装 nginx..."
     yum install -y nginx
   fi
+
+  # V5.30.8: log_format 必须在 http 顶层, 不能在 server 块.
+  # 独立生成 minimax-log.conf 让 nginx 主配置 include, 后于 minimax.conf 加载也可。
+  cat > /etc/nginx/conf.d/minimax-log.conf <<'NGINXLOG'
+# MiniMax 自定义访问日志格式 (含 traceId)
+# 加载顺序: conf.d/ 里按字典序, minimax-log.conf < minimax.conf
+log_format minimax '$remote_addr - $request_id [$time_iso8601] '
+                   '"$request" $status $body_bytes_sent '
+                   '"$http_referer" "$http_user_agent" '
+                   'rt=$request_time uct=$upstream_connect_time '
+                   'uht=$upstream_header_time urt=$upstream_response_time';
+NGINXLOG
+  log_info "  ✓ minimax-log.conf 已部署 (log_format 在 http 顶层)"
 
   # 用仓库里的 nginx 配置
   if [[ -f "$SRC_DIR/scripts/nginx-minimax-3000.conf" ]]; then
