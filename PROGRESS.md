@@ -404,7 +404,26 @@
 
 ---
 
-## Day 18 - 待开始
+## Day 18 - 2026-06-22 ✅ V5.33 API Key 管理 + 告警邮件钉钉推送
+
+**今日完成：**
+- [x] **用户 API Key 管理**：前后端全链路（SHA-256 哈希 / rawKey 一次性展示 / 轮换 / 禁用启用）
+  - 后端：UserApiKey 实体 + Mapper + Service + Controller（5 端点）
+  - 前端：`/apikey` 页面（列表/创建/复制/轮换/删除）
+  - SQL：新增 `user_api_key` 表
+- [x] **告警邮件 + 钉钉推送**：AlertNotifier 接口 + EmailAlertNotifier + DingTalkAlertNotifier
+  - AlertNotifierManager 按优先级调用所有渠道
+  - AlertEngine 触发时自动调用 notifierManager.notifyAll()
+  - SMTP + WebHook 签名密钥支持
+  - SQL：新增 `alert_channel` 表
+- [x] **自检脚本修复**：self-check.sh（过时 SQL 文件名）+ java-static-check.sh（package 声明检查范围）
+
+**明日计划 Day 19：**
+- [ ] API Key 鉴权过滤器（网关拦截 Bearer Token）
+- [ ] 完整 README + 架构图更新
+- [ ] API Key 速率限制
+
+## Day 19 - 待开始
 
 ## V5.9 (2026-06-21) — Dashboard 真实图表 + 告警规则 CRUD + WS 精确分流
 

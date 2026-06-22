@@ -19,7 +19,8 @@ ERR=0
 echo ""
 echo "[1] package 声明体检（排除 package-info.java）..."
 for f in $(find . -name "*.java" -not -name "package-info.java"); do
-    pkg=$(head -5 "$f" | grep -E "^package " | head -1)
+    # 跳过前 25 行（允许大注释头），取第一行 package
+    pkg=$(sed -n '1,30p' "$f" | grep -E "^package " | head -1)
     if [ -z "$pkg" ]; then
         echo "  ❌ $f 缺少 package"
         ERR=1

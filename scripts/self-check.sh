@@ -11,7 +11,7 @@ TOTAL=0
 MISSING_LIST=()
 for f in \
   PROGRESS.md README.md CHANGELOG.md LICENSE .gitignore docker-compose.yml \
-  sql/02_user_auth.sql sql/init/01-database.sql sql/init/02_user_auth.sql \
+  sql/init-minimax.sql sql/init/init-minimax.sql \
   backend/pom.xml \
   backend/minimax-auth/pom.xml \
   backend/minimax-auth/src/main/java/com/minimax/auth/AuthApplication.java \

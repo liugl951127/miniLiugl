@@ -34,6 +34,7 @@ public class AlertEngine {
     private final AlertEventMapper eventMapper;
     private final SnapshotService snapshotService;
     private final MetricsCollector collector;
+    private final AlertNotifierManager notifierManager;
 
     /** 每 30s 检查一次 */
     @Scheduled(fixedDelay = 30_000, initialDelay = 15_000)
@@ -75,6 +76,12 @@ public class AlertEngine {
                     r.getName(), r.getMetricName(), r.getOperator(), r.getThreshold(), v));
             eventMapper.insert(e);
             log.warn("ALERT FIRED: {}", e.getMessage());
+            // V5.33: 触发所有通知渠道 (邮件/钉钉)
+            try {
+                notifierManager.notifyAll(e);
+            } catch (Exception ex) {
+                log.warn("alert notification error: {}", ex.getMessage());
+            }
         } else {
             // 指标恢复, 解决 firing 事件
             if (latest != null && "firing".equals(latest.getStatus())) {

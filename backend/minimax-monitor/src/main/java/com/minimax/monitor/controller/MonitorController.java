@@ -4,10 +4,12 @@ import com.minimax.common.result.Result;
 import com.minimax.monitor.alert.AlertEngine;
 import com.minimax.monitor.client.ServiceEndpoints;
 import com.minimax.monitor.collector.MetricsCollector;
+import com.minimax.monitor.entity.AlertChannel;
 import com.minimax.monitor.entity.AlertEvent;
 import com.minimax.monitor.entity.AlertRule;
 import com.minimax.monitor.entity.MetricSnapshot;
 import com.minimax.monitor.health.HealthDetailService;
+import com.minimax.monitor.service.AlertChannelService;
 import com.minimax.monitor.service.SnapshotService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -62,6 +64,7 @@ public class MonitorController {
     private final SnapshotService snapshotService;
     private final AlertEngine alert;
     private final ServiceEndpoints endpoints;
+    private final AlertChannelService alertChannelService;
 
     // V5.10: Java HttpClient 复用 (跨服务调 /actuator/prometheus)
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -202,6 +205,39 @@ public class MonitorController {
     @DeleteMapping("/alerts/rules/{id}")
     public Result<Void> deleteRule(@PathVariable("id") Long id) {
         alert.deleteRule(id);
+        return Result.ok();
+    }
+
+    // ---------- V5.33 告警通知渠道 CRUD ----------
+
+    @Operation(summary = "列出告警通知渠道 (V5.33)")
+    @GetMapping("/alerts/channels")
+    public Result<List<AlertChannel>> listChannels() {
+        return Result.ok(alertChannelService.list());
+    }
+
+    @Operation(summary = "获取告警渠道详情 (V5.33)")
+    @GetMapping("/alerts/channels/{id}")
+    public Result<AlertChannel> getChannel(@PathVariable Long id) {
+        return Result.ok(alertChannelService.getById(id));
+    }
+
+    @Operation(summary = "创建告警渠道 (V5.33)")
+    @PostMapping("/alerts/channels")
+    public Result<AlertChannel> createChannel(@RequestBody AlertChannel ch) {
+        return Result.ok(alertChannelService.create(ch));
+    }
+
+    @Operation(summary = "更新告警渠道 (V5.33)")
+    @PutMapping("/alerts/channels/{id}")
+    public Result<AlertChannel> updateChannel(@PathVariable Long id, @RequestBody AlertChannel patch) {
+        return Result.ok(alertChannelService.update(id, patch));
+    }
+
+    @Operation(summary = "删除告警渠道 (V5.33)")
+    @DeleteMapping("/alerts/channels/{id}")
+    public Result<Void> deleteChannel(@PathVariable Long id) {
+        alertChannelService.delete(id);
         return Result.ok();
     }
 

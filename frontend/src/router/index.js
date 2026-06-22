@@ -306,6 +306,13 @@ const routes = [
         name: 'PipelineWorkflowRuns',
         component: () => import('@/views/pipeline/RunMonitor.vue'),
         meta: { title: '工作流运行历史', hidden: true }
+      },
+      // V5.33: API Key 管理
+      {
+        path: 'apikey',
+        name: 'ApiKeyMgmt',
+        component: () => import('@/views/apikey/Index.vue'),
+        meta: { title: 'API Key', icon: 'Key' }
       }
     ]
   },

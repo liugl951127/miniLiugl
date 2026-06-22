@@ -1428,10 +1428,49 @@ INSERT INTO `model_config` (`provider_id`,`model_code`,`display_name`,`max_conte
 SELECT p.id, 'gemini-1.5-flash', 'Gemini 1.5 Flash', 1000000, 8192, 0.000075, 0.0003, 1, 0, 1, 1, 2, 'Flash, 快速便宜' FROM model_provider p WHERE p.code='gemini';
 
 -- ============================================================
+-- V5.33: User API Key 表 (Day 18)
+-- ============================================================
+DROP TABLE IF EXISTS `user_api_key`;
+CREATE TABLE `user_api_key` (
+  `id`            BIGINT       NOT NULL AUTO_INCREMENT,
+  `user_id`       BIGINT       NOT NULL                COMMENT '所属用户 ID',
+  `name`          VARCHAR(64)  NOT NULL                COMMENT 'Key 名称，如 "测试 Key"',
+  `key_hash`      VARCHAR(128) NOT NULL                COMMENT 'SHA-256(Key) 存储，防泄露',
+  `key_prefix`    VARCHAR(16)  NOT NULL                COMMENT 'Key 前缀 mmx_ 用于展示',
+  `scopes`        VARCHAR(255)          DEFAULT NULL   COMMENT '权限范围，逗号分隔',
+  `expires_at`    DATETIME              DEFAULT NULL   COMMENT '过期时间，NULL 表示永不过期',
+  `last_used_at`  DATETIME              DEFAULT NULL   COMMENT '最后使用时间',
+  `use_count`     BIGINT       NOT NULL DEFAULT 0      COMMENT '累计调用次数',
+  `enabled`       TINYINT      NOT NULL DEFAULT 1      COMMENT '0 禁用 / 1 启用',
+  `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted`       TINYINT      NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_key_hash` (`key_hash`),
+  KEY `idx_deleted` (`deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户 API Key (Day 18)';
+
+-- ============================================================
+-- V5.33: Alert 通知渠道配置 (Day 18)
+-- ============================================================
+DROP TABLE IF EXISTS `alert_channel`;
+CREATE TABLE `alert_channel` (
+  `id`            BIGINT       NOT NULL AUTO_INCREMENT,
+  `name`          VARCHAR(64)  NOT NULL                COMMENT '渠道名称，如 "值班邮箱"',
+  `channel_type`  VARCHAR(16)  NOT NULL                COMMENT 'EMAIL / DINGTALK',
+  `config`        TEXT         NOT NULL                COMMENT 'JSON: {"email":"a@b.com"} 或 {"webhook":"https://oapi.dingtalk.com/...","secret":"..."}',
+  `enabled`       TINYINT      NOT NULL DEFAULT 1,
+  `priority`      INT          NOT NULL DEFAULT 0,
+  `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='告警通知渠道 (Day 18)';
+
+-- ============================================================
 -- V4.11: Notification 通知表 (V5.21 后补)
 -- ============================================================
 DROP TABLE IF EXISTS `notification`;
-CREATE TABLE `notification` (
   `id`            BIGINT       NOT NULL AUTO_INCREMENT,
   `user_id`       BIGINT       NOT NULL                COMMENT '接收用户 ID',
   `type`          VARCHAR(32)  NOT NULL                COMMENT '类型: SESSION_CREATED / AGENT_COMPLETE / DOC_APPROVED',

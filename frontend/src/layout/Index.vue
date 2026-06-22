@@ -62,6 +62,9 @@
                 <el-dropdown-item v-if="userStore.isSuperAdmin" command="tenant">
                   🏢 租户管理
                 </el-dropdown-item>
+                <el-dropdown-item command="apikey">
+                  🔑 API Key
+                </el-dropdown-item>
                 <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -114,6 +117,7 @@ const menuRoutes = computed(() => {
     { path: '/pipeline', title: '工作流', icon: 'Connection' },
     { path: '/pipeline/designer', title: '画布设计器', icon: 'EditPen' },
     { path: '/pipeline/runs', title: '运行监控', icon: 'Monitor' },
+    { path: '/apikey', title: 'API Key', icon: 'Key' },
     { path: '/admin', title: '管理后台', icon: 'Setting' },
     { path: '/about', title: '关于', icon: 'InfoFilled' }
   ]
@@ -145,6 +149,7 @@ const activeMenu = computed(() => {
   if (p.startsWith('/pipeline/designer')) return '/pipeline/designer'
   if (p.startsWith('/pipeline/runs')) return '/pipeline/runs'
   if (p.startsWith('/pipeline')) return '/pipeline'
+  if (p.startsWith('/apikey')) return '/apikey'
   return p
 })
 
@@ -171,6 +176,8 @@ async function onCommand(cmd) {
     router.push('/super')
   } else if (cmd === 'tenant') {
     router.push('/tenant')
+  } else if (cmd === 'apikey') {
+    router.push('/apikey')
   }
 }
 
