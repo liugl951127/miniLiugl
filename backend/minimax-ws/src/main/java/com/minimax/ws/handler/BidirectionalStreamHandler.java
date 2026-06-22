@@ -113,7 +113,7 @@ public class BidirectionalStreamHandler extends TextWebSocketHandler {
      * Mock 流式聊天 (真实场景代理 chat 8082).
      * 演示: 暂停/恢复/引导/反馈 4 个交互能力.
      */
-    private void streamChat(WebSocketSession session, String streamId, StreamState state) {
+    private void streamChat(WebSocketSession session, String streamId, StreamState state) throws InterruptedException {
         String model = state.model;
         String prompt = state.steeredHint != null ? state.steeredHint : "你好";
         String feedback = state.lastFeedback != null ? " [反馈:" + state.lastFeedback + "]" : "";
@@ -155,7 +155,7 @@ public class BidirectionalStreamHandler extends TextWebSocketHandler {
     /**
      * Agent 流式 (复用 V5.16 SSE 事件, 翻译成 WS 双向事件).
      */
-    private void streamAgent(WebSocketSession session, String streamId, StreamState state) {
+    private void streamAgent(WebSocketSession session, String streamId, StreamState state) throws InterruptedException {
         // 简化: 模拟 Agent 多步骤
         String[] steps = {
             "Thought: 用户想知道时间, 我需要调 get_current_time",

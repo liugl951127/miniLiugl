@@ -1,6 +1,7 @@
 package com.minimax.auth.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.minimax.auth.entity.Notification;
@@ -49,8 +50,9 @@ public class NotificationService {
      */
     @Transactional
     public boolean markRead(Long id) {
+        // V5.30.3: 改用 LambdaUpdateWrapper (LambdaQueryWrapper 没有 .set() 方法)
         return notificationMapper.update(null,
-                new LambdaQueryWrapper<Notification>()
+                new LambdaUpdateWrapper<Notification>()
                         .eq(Notification::getId, id)
                         .set(Notification::getIsRead, 1)
         ) > 0;
@@ -61,8 +63,9 @@ public class NotificationService {
      */
     @Transactional
     public int markAllRead(Long userId) {
+        // V5.30.3: 改用 LambdaUpdateWrapper
         return notificationMapper.update(null,
-                new LambdaQueryWrapper<Notification>()
+                new LambdaUpdateWrapper<Notification>()
                         .eq(Notification::getUserId, userId)
                         .eq(Notification::getIsRead, 0)
                         .set(Notification::getIsRead, 1)
