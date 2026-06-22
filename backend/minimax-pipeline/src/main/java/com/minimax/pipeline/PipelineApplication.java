@@ -16,9 +16,10 @@ import org.springframework.scheduling.annotation.EnableAsync;
  *   5. 与 minimax-analytics 的 ReportService 集成
  */
 @SpringBootApplication(scanBasePackages = {
-    "com.minimax.pipeline",
-    "com.minimax.common",
-    "com.minimax.analytics"
+        "com.minimax.pipeline",
+        "com.minimax.common",
+        "com.minimax.analytics",
+        "com.minimax.model"
 })
 @MapperScan("com.minimax.pipeline.mapper")
 @EnableAsync

@@ -6,9 +6,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication(scanBasePackages = {
         "com.minimax.chat",
-        "com.minimax.common",
-        "com.minimax.auth"
+        "com.minimax.common"
 })
+
 @MapperScan("com.minimax.chat.mapper")
 public class ChatApplication {
     public static void main(String[] args) {

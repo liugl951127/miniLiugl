@@ -75,6 +75,16 @@
             <artifactId>aviator</artifactId>
             <version>5.3.3</version>
         </dependency>
+        <dependency>
+            <groupId>com.minimax</groupId>
+            <artifactId>minimax-analytics</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.minimax</groupId>
+            <artifactId>minimax-model</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
