@@ -444,6 +444,21 @@ exit(0 if ok else 1)
     fi
   done
 
+  # 检测反模式: ${!var} 间接变量展开 (V5.29 fix 教训)
+  # 仅检测非数组下标形式: ${!svc_*} ${!foo_bar} (但允许 ${!arr[@]})
+  # 排除 deploy-minimax.sh 自身 (grep 检测代码会匹配到示例文本)
+  bad_indirect=$(grep -nE '\$\{![a-z_]+[^@*]' scripts/install-middleware-centos.sh scripts/deploy-centos.sh 2>/dev/null | grep -v '^[^:]*:[0-9]*:#' | head -3)
+  if [[ -z "$bad_indirect" ]]; then
+    log_info "  ✓ 无 \${!var} 反模式"
+    pass=$((pass+1))
+  else
+    log_warn "  ! 检测到间接变量展开 (bash 4.x 部分支持, 慎用):"
+    echo "$bad_indirect" | sed 's/^/      /'
+    log_warn "    建议改用 case 直接映射"
+    # 不计入失败 (合法但脆弱)
+    pass=$((pass+1))
+  fi
+
   log_step "结果: ${GREEN}${pass} 通过${NC} / ${RED}${fail} 失败${NC}"
   return $fail
 }

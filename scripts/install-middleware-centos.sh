@@ -368,7 +368,16 @@ verify() {
 
   for svc in mysql redis nacos adminer; do
     if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "minimax-$svc"; then
-      printf "  ${GREEN}%-28s${NC} ${GREEN}%-15s${NC} 127.0.0.1:%s\n" "minimax-$svc" "running" "${!svc_port:-?}"
+      # V5.29 修: 不用 ${!svc_port} (Bash 4.x 不支持)
+      # 用 case 取各服务端口
+      case "$svc" in
+        mysql)   port="$MYSQL_PORT" ;;
+        redis)   port="$REDIS_PORT" ;;
+        nacos)   port="$NACOS_PORT" ;;
+        adminer) port="$ADMINER_PORT" ;;
+        *)       port="?" ;;
+      esac
+      printf "  ${GREEN}%-28s${NC} ${GREEN}%-15s${NC} 127.0.0.1:%s\n" "minimax-$svc" "running" "$port"
     else
       printf "  ${RED}%-28s${NC} ${RED}%-15s${NC} -\n" "minimax-$svc" "stopped"
     fi
