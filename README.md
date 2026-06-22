@@ -133,6 +133,18 @@ npm install && npm run dev
 # http://localhost:5173
 ```
 
+### 方式 D: Windows + IDEA 本地开发 (V5.30)
+
+```powershell
+# Windows 本地一键启动 (后台跑后端)
+.\scripts\dev-start.bat backend
+
+# IDEA 中打开前端项目
+# → 右下角 npm scripts → 双击 "dev"
+```
+
+完整指南: [docs/WINDOWS-IDEA-GUIDE.md](docs/WINDOWS-IDEA-GUIDE.md) (10 节, JDK/Maven/Docker/IDEA 配置 + 12 个微服务 Run Config)
+
 **架构入口** (V5.5-V5.12):
 | 入口 | URL | 用途 |
 |------|-----|------|
@@ -190,7 +202,8 @@ V5 系列 8 个版本聚焦**生产级架构能力**:
 | **V5.26** | CentOS 专用部署脚本 (install-middleware + deploy-centos) | `a6db04c` |
 | **V5.27** | MariaDB 迁移到 MySQL 8.0 (docker-compose + 3 脚本 + CI + 15 文档) | `1a788fb` |
 | **V5.28** | **纯 Docker 全栈部署** (18 service: 中间件 + 13 微服务 + nginx 一键启) | `cdb227b` |
-| **V5.29** | 修 OpenTelemetry 依赖: starter → autoconfigure + 版本 2.2.0 → 2.6.0 | `pending` |
+| **V5.29** | 修 OpenTelemetry 依赖: starter → autoconfigure + 版本 2.2.0 → 2.6.0 | `8459999` |
+| **V5.30** | JWT secret 调整 + 关键代码行注释 + Windows IDEA 支持 | `pending` |
 
 **V5 累计**: +11,000 行 / -4,200 行, 21 个新文档, 13 个 systemd 服务, **5 个 CI Job 自动验证**, **前端 45 个页面全交付**, **CentOS 专用部署脚本**
 
@@ -302,6 +315,40 @@ sudo ./scripts/deploy-minimax.sh logs auth  # 查看服务日志
 **docker-compose build** 不受影响 (Dockerfile 拉取依赖后构建)
 
 ---
+
+## 🪟 V5.30 Windows + IDEA 本地支持 (本期重点)
+
+### JWT Secret 统一调整
+默认 `minimax.jwt.secret` 修改为:
+`0f6beadebfcee3e97845856757a3babf97b2af8c80f0b95690783ccc7a595352` (64 字符 hex)
+
+**4 处同步**:
+- `backend/Dockerfile` ENV
+- `scripts/deploy-centos.sh` 默认值
+- `backend/.../JwtAuthenticationFilter.java` `@Value` 默认值
+- `backend/.../GatewayApplication.java` 12 个 Service Run Config 模板
+
+### 每个关键代码加行注释
+**5 个核心文件**逐行注释 (含 import + 字段 + 方法):
+- `backend/minimax-gateway/.../GatewayApplication.java` (Spring Boot 启动类)
+- `backend/minimax-gateway/.../filter/JwtAuthGlobalFilter.java` (V5.5 网关鉴权)
+- `backend/minimax-gateway/.../filter/TraceFilter.java` (V5.8/V5.14 TraceId)
+- `backend/minimax-common/.../security/JwtAuthenticationFilter.java` (业务模块鉴权)
+- `backend/minimax-common/.../result/Result.java` (统一响应包装)
+
+每个 import / 字段 / 方法都有中文说明 (为什么 / 怎么用 / 注意事项).
+
+### Windows IDEA 本地支持 (新)
+- **scripts/dev-start.bat** (7.2KB, 5 子命令: all/backend/frontend/middleware/stop)
+- **docs/WINDOWS-IDEA-GUIDE.md** (10KB, 12 节)
+  - JDK/Maven/Node/Docker 安装
+  - Maven 镜像配置 (aliyun)
+  - IDEA 项目导入 + SDK 配置
+  - 13 个微服务 Run Configuration 模板
+  - 故障排查 5 类 (依赖/端口/Nacos/DB/npm)
+  - 开发流程 + 性能调优
+
+**净改动**: 5 files Java (重写, 加行注释) + 1 new bat + 1 new doc + README + commit + push
 
 ## 🔄 CI/CD (V5.23 新增)
 
