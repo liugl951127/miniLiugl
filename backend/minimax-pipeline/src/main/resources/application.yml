@@ -12,8 +12,8 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:3306/minimax_platform?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: ${MYSQL_USER:minimax}
-    password: ${MYSQL_PASSWORD:minimax_pass_2024}
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root123456}
     hikari:
       maximum-pool-size: 10
       minimum-idle: 2

@@ -65,10 +65,10 @@ services:
     container_name: minimax-mysql
     <<: *default-restart
     environment:
-      MYSQL_ROOT_PASSWORD: minimax_root_2024
+      MYSQL_ROOT_PASSWORD: root123456
       MYSQL_DATABASE: minimax_platform
-      MYSQL_USER: minimax
-      MYSQL_PASSWORD: minimax_pass_2024
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root123456
       TZ: Asia/Shanghai
     ports:
       - "3306:3306"
@@ -80,7 +80,7 @@ services:
       - --collation-server=utf8mb4_unicode_ci
       - --default-authentication-plugin=mysql_native_password
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pminimax_root_2024"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot123456"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -187,8 +187,8 @@ services:
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: minimax_platform
-      MYSQL_USER: minimax
-      MYSQL_PASSWORD: minimax_pass_2024
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: minimax_redis_2024
@@ -225,8 +225,8 @@ services:
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: minimax_platform
-      MYSQL_USER: minimax
-      MYSQL_PASSWORD: minimax_pass_2024
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: minimax_redis_2024
@@ -263,8 +263,8 @@ services:
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: minimax_platform
-      MYSQL_USER: minimax
-      MYSQL_PASSWORD: minimax_pass_2024
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: minimax_redis_2024
@@ -301,8 +301,8 @@ services:
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: minimax_platform
-      MYSQL_USER: minimax
-      MYSQL_PASSWORD: minimax_pass_2024
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: minimax_redis_2024
@@ -339,8 +339,8 @@ services:
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: minimax_platform
-      MYSQL_USER: minimax
-      MYSQL_PASSWORD: minimax_pass_2024
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: minimax_redis_2024
@@ -377,8 +377,8 @@ services:
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: minimax_platform
-      MYSQL_USER: minimax
-      MYSQL_PASSWORD: minimax_pass_2024
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: minimax_redis_2024
@@ -415,8 +415,8 @@ services:
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: minimax_platform
-      MYSQL_USER: minimax
-      MYSQL_PASSWORD: minimax_pass_2024
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: minimax_redis_2024
@@ -453,8 +453,8 @@ services:
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: minimax_platform
-      MYSQL_USER: minimax
-      MYSQL_PASSWORD: minimax_pass_2024
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: minimax_redis_2024
@@ -491,8 +491,8 @@ services:
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: minimax_platform
-      MYSQL_USER: minimax
-      MYSQL_PASSWORD: minimax_pass_2024
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: minimax_redis_2024
@@ -529,8 +529,8 @@ services:
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: minimax_platform
-      MYSQL_USER: minimax
-      MYSQL_PASSWORD: minimax_pass_2024
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: minimax_redis_2024
@@ -567,8 +567,8 @@ services:
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: minimax_platform
-      MYSQL_USER: minimax
-      MYSQL_PASSWORD: minimax_pass_2024
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: minimax_redis_2024
@@ -605,8 +605,8 @@ services:
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: minimax_platform
-      MYSQL_USER: minimax
-      MYSQL_PASSWORD: minimax_pass_2024
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: minimax_redis_2024
@@ -643,8 +643,8 @@ services:
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: minimax_platform
-      MYSQL_USER: minimax
-      MYSQL_PASSWORD: minimax_pass_2024
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: minimax_redis_2024
@@ -681,8 +681,8 @@ services:
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: minimax_platform
-      MYSQL_USER: minimax
-      MYSQL_PASSWORD: minimax_pass_2024
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: minimax_redis_2024
