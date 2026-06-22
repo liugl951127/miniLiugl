@@ -65,10 +65,10 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
-        <!-- V5.14: OpenTelemetry 分布式追踪 (auto-config 模式) -->
+        <!-- V5.14: OpenTelemetry 分布式追踪 (V5.29 改用 autoconfigure, 2.x starter 是空 jar) -->
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
-            <artifactId>opentelemetry-spring-boot-starter</artifactId>
+            <artifactId>opentelemetry-spring-boot-autoconfigure</artifactId>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>

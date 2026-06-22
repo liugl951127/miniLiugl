@@ -189,7 +189,8 @@ V5 系列 8 个版本聚焦**生产级架构能力**:
 | **V5.25** | 删除 deploy-linux.sh (旧版) + 文档引用清理 | `d1c1866` |
 | **V5.26** | CentOS 专用部署脚本 (install-middleware + deploy-centos) | `a6db04c` |
 | **V5.27** | MariaDB 迁移到 MySQL 8.0 (docker-compose + 3 脚本 + CI + 15 文档) | `1a788fb` |
-| **V5.28** | **纯 Docker 全栈部署** (18 service: 中间件 + 13 微服务 + nginx 一键启) | `pending` |
+| **V5.28** | **纯 Docker 全栈部署** (18 service: 中间件 + 13 微服务 + nginx 一键启) | `cdb227b` |
+| **V5.29** | 修 OpenTelemetry 依赖: starter → autoconfigure + 版本 2.2.0 → 2.6.0 | `pending` |
 
 **V5 累计**: +11,000 行 / -4,200 行, 21 个新文档, 13 个 systemd 服务, **5 个 CI Job 自动验证**, **前端 45 个页面全交付**, **CentOS 专用部署脚本**
 
@@ -275,6 +276,30 @@ sudo ./scripts/deploy-minimax.sh logs auth  # 查看服务日志
 **check 命令**: 30/30 通过 (含 docker-compose + Dockerfile 验证)
 
 **总量**: +17.5KB (重写 docker-compose.yml + Dockerfile + 重写 deploy 脚本)
+
+---
+
+## 🔧 V5.29 修复 OpenTelemetry 依赖解析
+
+**问题**: `mvn install` 报 `Could not find artifact io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter:jar:2.2.0`
+
+**原因**:
+- `opentelemetry-spring-boot-starter` 2.x 系列是**空 jar** (placeholder, 只有 417 字节)
+- 2.2.0 是 alpha, aliyun 镜像**未同步**
+- 真正可用的依赖是 `opentelemetry-spring-boot-autoconfigure` (2.6.0+, 246KB)
+
+**修复**:
+- 父 pom: `opentelemetry-instrumentation.version` 2.2.0 → **2.6.0** (Spring Boot 3.2 兼容)
+- common pom: `spring-boot-starter` → `spring-boot-autoconfigure`
+
+**验证** (aliyun HEAD):
+- `opentelemetry-spring-boot-autoconfigure-2.6.0.jar`: **246KB** ✓
+- `opentelemetry-spring-boot-starter-2.6.0.jar`: **417 字节** (空)
+- `opentelemetry-bom-1.36.0.pom`: ✓
+- `opentelemetry-instrumentation-bom-2.6.0.pom`: ✓
+- `opentelemetry-exporter-otlp-1.36.0.jar`: ✓
+
+**docker-compose build** 不受影响 (Dockerfile 拉取依赖后构建)
 
 ---
 
