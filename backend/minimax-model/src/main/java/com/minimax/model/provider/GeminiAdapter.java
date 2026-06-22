@@ -2,7 +2,6 @@ package com.minimax.model.provider;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.minimax.model.dto.ChatRequest;
-import com.minimax.model.dto.Message;
 import com.minimax.model.vo.ChatResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -149,18 +148,21 @@ public class GeminiAdapter implements ModelProviderAdapter {
         List<Map<String, Object>> contents = new ArrayList<>();
         // Gemini 不支持 system role, 合并到第一条 user
         String systemPrefix = "";
-        for (Message m : req.getMessages()) {
-            if ("system".equals(m.getRole())) {
-                systemPrefix += m.getContent() + "\n";
+        // V5.30.4: ChatRequest.messages 是 List<Map<String, String>>, 用 Map 迭代
+        for (Map<String, String> m : req.getMessages()) {
+            String role = m.get("role");
+            String content_text = m.get("content");
+            if ("system".equals(role)) {
+                systemPrefix += content_text + "\n";
                 continue;
             }
-            String role = "assistant".equals(m.getRole()) ? "model" : "user";
+            String geminiRole = "assistant".equals(role) ? "model" : "user";
             Map<String, Object> part = new HashMap<>();
-            part.put("text", m.getContent());
-            Map<String, Object> content = new HashMap<>();
-            content.put("role", role);
-            content.put("parts", List.of(part));
-            contents.add(content);
+            part.put("text", content_text);
+            Map<String, Object> geminiContent = new HashMap<>();
+            geminiContent.put("role", geminiRole);
+            geminiContent.put("parts", List.of(part));
+            contents.add(geminiContent);
         }
         // 如果有 system, 拼到第一条 user
         if (!systemPrefix.isEmpty() && !contents.isEmpty()) {

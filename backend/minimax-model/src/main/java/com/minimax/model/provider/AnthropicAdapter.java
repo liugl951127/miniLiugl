@@ -2,7 +2,6 @@ package com.minimax.model.provider;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.minimax.model.dto.ChatRequest;
-import com.minimax.model.dto.Message;
 import com.minimax.model.vo.ChatResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -168,17 +167,19 @@ public class AnthropicAdapter implements ModelProviderAdapter {
         body.put("max_tokens", req.getMaxTokens() != null ? req.getMaxTokens() : 4096);
         if (req.getTemperature() != null) body.put("temperature", req.getTemperature());
 
-        // messages
+        // messages (V5.30.4: ChatRequest.messages 是 List<Map<String, String>>, 用 Map 迭代)
         List<Map<String, Object>> messages = new ArrayList<>();
         String systemPrompt = null;
-        for (Message m : req.getMessages()) {
-            if ("system".equals(m.getRole())) {
-                if (systemPrompt == null) systemPrompt = m.getContent();
-                else systemPrompt += "\n" + m.getContent();
+        for (Map<String, String> m : req.getMessages()) {
+            String role = m.get("role");
+            String content = m.get("content");
+            if ("system".equals(role)) {
+                if (systemPrompt == null) systemPrompt = content;
+                else systemPrompt += "\n" + content;
             } else {
                 Map<String, Object> msg = new HashMap<>();
-                msg.put("role", m.getRole());
-                msg.put("content", m.getContent());
+                msg.put("role", role);
+                msg.put("content", content);
                 messages.add(msg);
             }
         }
