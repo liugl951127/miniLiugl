@@ -65,7 +65,7 @@ public class MockAdapter implements ModelProviderAdapter {
      */
     public OpenAiCompatibleAdapter.StreamResult streamChat(ChatRequest req,
                                                            Consumer<String> chunkJsonConsumer,
-                                                           AtomicBoolean stopFlag) {
+                                                           AtomicBoolean stopFlag) throws InterruptedException {
         Instant t0 = Instant.now();
         String lastUser = lastUserContent(req);
         String text = "【Mock 流式】你调用 " + req.getModel() + "，消息 \"" + truncate(lastUser, 80) + "\"。\n"

@@ -98,7 +98,7 @@ public class StreamGatewayHandler extends TextWebSocketHandler {
         }
     }
 
-    private void streamChat(WebSocketSession session, Map<String, String> params, String streamId) {
+    private void streamChat(WebSocketSession session, Map<String, String> params, String streamId) throws InterruptedException {
         String prompt = params.getOrDefault("prompt", "你好");
         String model = params.getOrDefault("model", "mock");
         cancelFlags.put(streamId, false);
@@ -130,7 +130,7 @@ public class StreamGatewayHandler extends TextWebSocketHandler {
         sendDone(session, streamId, "ok");
     }
 
-    private void streamVision(WebSocketSession session, Map<String, String> params, String streamId) {
+    private void streamVision(WebSocketSession session, Map<String, String> params, String streamId) throws InterruptedException {
         cancelFlags.put(streamId, false);
         String[] lines = {
             "我看到一张图片. ",
@@ -153,7 +153,7 @@ public class StreamGatewayHandler extends TextWebSocketHandler {
         sendDone(session, streamId, "ok");
     }
 
-    private void streamTts(WebSocketSession session, Map<String, String> params, String streamId) {
+    private void streamTts(WebSocketSession session, Map<String, String> params, String streamId) throws InterruptedException {
         // 实际生产: 流式返回 mp3 chunk (base64)
         String text = params.getOrDefault("text", "你好");
         String[] chunks = splitText(text, 5);
@@ -168,7 +168,7 @@ public class StreamGatewayHandler extends TextWebSocketHandler {
         sendDone(session, streamId, "ok");
     }
 
-    private void streamBattle(WebSocketSession session, Map<String, String> params, String streamId) {
+    private void streamBattle(WebSocketSession session, Map<String, String> params, String streamId) throws InterruptedException {
         String[] models = (params.get("models") != null ? params.get("models") : "mock,gpt-4o-mini,qwen-max").split(",");
         for (String m : models) {
             if (cancelFlags.getOrDefault(streamId, false)) { sendDone(session, streamId, "cancelled"); return; }
@@ -200,7 +200,7 @@ public class StreamGatewayHandler extends TextWebSocketHandler {
         sendDone(session, streamId, "ok");
     }
 
-    private void streamAgent(WebSocketSession session, Map<String, String> params, String streamId) {
+    private void streamAgent(WebSocketSession session, Map<String, String> params, String streamId) throws InterruptedException {
         String goal = params.getOrDefault("goal", "搜索竞品价格");
         String[] rounds = {
             "Round 1: 思考中... 我需要搜索 3 个竞品",

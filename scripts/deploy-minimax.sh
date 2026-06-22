@@ -459,6 +459,30 @@ exit(0 if ok else 1)
     pass=$((pass+1))
   fi
 
+  # 必需文件 (V5.30.5 加 precompile-check.py)
+  for f in docker-compose.yml sql/init-minimax.sql scripts/deploy-minimax.sh scripts/install-middleware-centos.sh scripts/deploy-centos.sh backend/Dockerfile frontend/Dockerfile scripts/precompile-check.py; do
+    if [[ -f "$f" ]]; then
+      log_info "  ✓ 文件存在 $f"
+      pass=$((pass+1))
+    else
+      log_err "  ✗ 文件缺失 $f"
+      fail=$((fail+1))
+    fi
+  done
+
+  # V5.30.5: 预编译静态检查 (覆盖 V5.30.1-V5.30.4 五类常见 bug)
+  if [[ -f "scripts/precompile-check.py" ]]; then
+    log_info "V5.30.5 预编译静态检查 (Java import/注解/DTO/Wrapper/throws)..."
+    if python3 scripts/precompile-check.py >/tmp/precompile.log 2>&1; then
+      log_info "  ✓ 预编译检查通过"
+      pass=$((pass+1))
+    else
+      log_err "  ✗ 预编译检查失败 (建议修复后再 mvn compile):"
+      tail -15 /tmp/precompile.log | sed 's/^/      /'
+      fail=$((fail+1))
+    fi
+  fi
+
   log_step "结果: ${GREEN}${pass} 通过${NC} / ${RED}${fail} 失败${NC}"
   return $fail
 }
