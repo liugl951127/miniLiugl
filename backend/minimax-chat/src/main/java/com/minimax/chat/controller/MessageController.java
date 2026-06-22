@@ -29,7 +29,6 @@ public class MessageController {
     private final ChatMessageService messageService;
 
     @Operation(summary = "获取会话消息列表")
-    @Operation(summary = "查询会话消息列表")
     @GetMapping
     public Result<List<MessageVO>> list(@AuthenticationPrincipal AuthenticatedUser principal,
                                         @PathVariable Long sessionId,
@@ -39,7 +38,6 @@ public class MessageController {
     }
 
     @Operation(summary = "追加发送消息")
-    @Operation(summary = "追加消息到会话")
     @PostMapping
     public Result<MessageVO> append(@AuthenticationPrincipal AuthenticatedUser principal,
                                     @PathVariable Long sessionId,

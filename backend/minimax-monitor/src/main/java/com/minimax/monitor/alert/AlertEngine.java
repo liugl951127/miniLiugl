@@ -175,7 +175,7 @@ public class AlertEngine {
 
     /** 全部规则 (含禁用) */
     public List<AlertRule> allRules() {
-        return ruleMapper.selectAll();
+        return ruleMapper.selectList(null);  // V5.30.7: AlertRuleMapper 没 selectAll, 用 BaseMapper.selectList(null)
     }
 
     /** 创建规则 */

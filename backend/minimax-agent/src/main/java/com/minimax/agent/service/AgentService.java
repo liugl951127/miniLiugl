@@ -362,7 +362,7 @@ public class AgentService {
                     "arguments", args
                 ));
 
-                String observation = toolExecutor.invoke(toolName, args);
+                String observation = toolExecutor.executeForChat(toolName, parseToolArgs(args));
                 step.observation = observation;
                 sendEvent(emitter, "observation", Map.of(
                     "round", round,
@@ -605,6 +605,23 @@ public class AgentService {
         }
         public static AgentResult fail(String msg, List<Step> s, int r, Set<String> t) {
             return new AgentResult(false, msg, s, r, t, 0);
+        }
+    }
+// ---- 工具 ----
+
+    /**
+     * V5.30.7: 解析 LLM 返回的工具参数 JSON 字符串为 Map.
+     * 之前直接传 String, 与 ToolExecutor.executeForChat(Map) 签名不一致.
+     */
+    private Map<String, Object> parseToolArgs(String argsJson) {
+        if (argsJson == null || argsJson.isBlank()) return Map.of();
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> m = json.readValue(argsJson, Map.class);
+            return m == null ? Map.of() : m;
+        } catch (Exception e) {
+            log.warn("parseToolArgs failed: {}", e.getMessage());
+            return Map.of();
         }
     }
 }

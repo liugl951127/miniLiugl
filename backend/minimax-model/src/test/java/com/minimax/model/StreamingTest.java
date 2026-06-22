@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class StreamingTest {
 
     @Test
-    void mockStreamProducesChunks() {
+    void mockStreamProducesChunks() throws Exception {
         MockAdapter adapter = new MockAdapter();
         ChatRequest req = new ChatRequest();
         req.setModel("test-model");
@@ -57,7 +57,7 @@ class StreamingTest {
     }
 
     @Test
-    void mockStreamFullText() {
+    void mockStreamFullText() throws Exception {
         MockAdapter adapter = new MockAdapter();
         ChatRequest req = new ChatRequest();
         req.setModel("demo");

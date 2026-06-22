@@ -27,14 +27,12 @@ public class SessionController {
     private final ChatSessionService sessionService;
 
     @Operation(summary = "获取会话列表")
-    @Operation(summary = "查询会话列表")
     @GetMapping
     public Result<List<SessionVO>> list(@AuthenticationPrincipal AuthenticatedUser principal,
                                         @RequestParam(required = false) Integer status) {
         return Result.ok(sessionService.listByUser(principal.id(), status));
     }
 
-    @Operation(summary = "创建新会话")
     @Operation(summary = "创建新会话")
     @PostMapping
     public Result<SessionVO> create(@AuthenticationPrincipal AuthenticatedUser principal,
@@ -43,14 +41,12 @@ public class SessionController {
     }
 
     @Operation(summary = "获取会话详情")
-    @Operation(summary = "获取会话详情")
     @GetMapping("/{id}")
     public Result<SessionVO> detail(@AuthenticationPrincipal AuthenticatedUser principal,
                                     @PathVariable Long id) {
         return Result.ok(sessionService.detail(id, principal.id()));
     }
 
-    @Operation(summary = "更新会话信息")
     @Operation(summary = "更新会话信息")
     @PutMapping("/{id}")
     public Result<SessionVO> update(@AuthenticationPrincipal AuthenticatedUser principal,
@@ -60,7 +56,6 @@ public class SessionController {
     }
 
     @Operation(summary = "归档删除会话")
-    @Operation(summary = "归档会话")
     @DeleteMapping("/{id}")
     public Result<Void> archive(@AuthenticationPrincipal AuthenticatedUser principal,
                                 @PathVariable Long id) {

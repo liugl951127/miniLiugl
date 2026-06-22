@@ -73,7 +73,8 @@ public class AnthropicAdapter implements ModelProviderAdapter {
         StringBuilder contentBuilder = new StringBuilder();
         AtomicInteger inputTokens = new AtomicInteger(0);
         AtomicInteger outputTokens = new AtomicInteger(0);
-        String finish = "stop";
+        // V5.30.7: 用数组包一层, lambda 引用值要求是 effectively final
+        final String[] finish = {"stop"};
 
         try {
             HttpRequest httpReq = buildRequest(endpoint, apiKey, body);
@@ -108,7 +109,7 @@ public class AnthropicAdapter implements ModelProviderAdapter {
                             @SuppressWarnings("unchecked")
                             Map<String, Object> delta = (Map<String, Object>) ev.get("delta");
                             if (delta != null && delta.get("stop_reason") != null) {
-                                finish = delta.get("stop_reason").toString();
+                                finish[0] = delta.get("stop_reason").toString();
                             }
                         } else if ("message_start".equals(type)) {
                             @SuppressWarnings("unchecked")
@@ -144,7 +145,7 @@ public class AnthropicAdapter implements ModelProviderAdapter {
                 inputTokens.get(),          // promptTokens
                 outputTokens.get(),         // completionTokens
                 inputTokens.get() + outputTokens.get(),  // totalTokens
-                finish,                     // finishReason
+                finish[0],                  // finishReason (V5.30.7: 数组包装)
                 Duration.between(t0, Instant.now()).toMillis()  // latencyMs
             );
         } catch (Exception e) {

@@ -60,6 +60,7 @@ public class AgentController {
     private final KnowledgeGraphService kg;
     private final CollabDbService collab;
     private final PluginService plugin;
+    private final MultiAgentService multiAgent;  // V5.30.7: 注入 MultiAgentService
 
     // ---------- Agent ----------
 
