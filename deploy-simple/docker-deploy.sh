@@ -189,43 +189,41 @@ ensure_host_nginx() {
 }
 
 # ============================================================
-# 配置宿主机 nginx (反代前端 + gateway)
+# 配置宿主机 nginx (反代前端 + gateway) - V1.9.8
+# 直接替换 /etc/nginx/nginx.conf, 不依赖 conf.d
 # ============================================================
 configure_host_nginx() {
   if [ "$USE_HOST_NGINX" != "1" ]; then
     return 0
   fi
 
-  log_info "==== 配置宿主机 nginx (反代前端 + gateway) ===="
+  log_info "==== 配置宿主机 nginx (直接替换 nginx.conf) ===="
 
-  # 用统一配置模板
-  NGINX_CONF_FILE="/etc/nginx/conf.d/minimax.conf"
+  # V1.9.8: 直接替换 /etc/nginx/nginx.conf (宿主机默认)
+  NGINX_CONF_FILE="/etc/nginx/nginx.conf"
+  TEMPLATE_FILE="$PROJECT_ROOT/scripts/nginx.conf"
 
-  # 备份旧配置
+  if [ ! -f "$TEMPLATE_FILE" ]; then
+    log_err "找不到模板: $TEMPLATE_FILE"
+    exit 1
+  fi
+
+  # 备份原配置
   if [ -f "$NGINX_CONF_FILE" ]; then
     cp "$NGINX_CONF_FILE" "${NGINX_CONF_FILE}.bak-$(date +%s)"
-    log_warn "已备份旧配置"
+    log_warn "已备份原 nginx.conf"
   fi
 
-  # 拷贝配置模板
-  cp "$PROJECT_ROOT/scripts/nginx-minimax-full.conf" "$NGINX_CONF_FILE"
+  # 复制模板
+  cp "$TEMPLATE_FILE" "$NGINX_CONF_FILE"
 
-  # V1.9.7: 不强制替换域名 - 用 placeholder, 后端能跑就行
-  if [ "${SKIP_DOMAIN_CHECK:-0}" = "1" ]; then
-    # 用 _ 通配符 (匹配任何域名/IP)
-    sed -i 's|your-domain.com|_|g' "$NGINX_CONF_FILE"
-    sed -i 's|www.your-domain.com|_|g' "$NGINX_CONF_FILE"
-    # 证书路径暂时保留但不强求
-    log_info "用 IP 模式 (server_name _)"
-  else
-    # 域名模式: 占位符保留 (用户跑 frontend 命令时再替换)
-    log_info "默认配置已生成 (用 _ 匹配, 任何域名/IP 都行)"
-  fi
+  # V1.9.8: 替换前端路径
+  sed -i "s|/opt/miniLiugl/frontend/dist|$PROJECT_ROOT/frontend/dist|g" "$NGINX_CONF_FILE"
 
-  # 前端路径: 替换成实际位置
-  sed -i "s|/opt/minimax/frontend/dist|$PROJECT_ROOT/frontend/dist|g" "$NGINX_CONF_FILE"
+  log_ok "nginx.conf 已替换: $NGINX_CONF_FILE"
+  log_info "前端路径: $PROJECT_ROOT/frontend/dist"
 
-  # 备份默认配置
+  # V1.9.8: 备份 conf.d 默认配置 (避免冲突)
   for f in /etc/nginx/conf.d/default.conf /etc/nginx/sites-enabled/default; do
     [ -f "$f" ] && mv "$f" "${f}.bak-$(date +%s)" && log_warn "已备份: $f"
   done
@@ -237,7 +235,8 @@ configure_host_nginx() {
     if nginx -t 2>&1 | grep -q "successful"; then
       log_ok "宿主机 nginx 配置语法 OK"
     else
-      log_warn "宿主机 nginx 配置有警告, 继续"
+      log_warn "宿主机 nginx 配置有警告:"
+      nginx -t 2>&1 | tail -5
     fi
   fi
 

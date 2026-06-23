@@ -277,23 +277,28 @@ echo ""
 # ============================================================
 log_info "==== 6. 配置宿主机 nginx (反代前端 + gateway) ===="
 
-# 备份旧的
+# 备份旧的 (V1.9.8: 不再放 conf.d, 直接改 /etc/nginx/nginx.conf)
 [ -f /etc/nginx/conf.d/minimax.conf ] && cp /etc/nginx/conf.d/minimax.conf /etc/nginx/conf.d/minimax.conf.bak-$(date +%s)
+[ -f /etc/nginx/nginx.conf ] && cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak-$(date +%s)
 
-# 用 setup-public-domain.sh 生成的版本 (V1.9.5)
-# 这里根据你的需求, 调整: 让 宿主机 nginx 既提供前端, 又反代 /api
-cp "$PROJECT_ROOT/scripts/nginx-minimax-full.conf" /etc/nginx/conf.d/minimax.conf
+# V1.9.8: 直接替换宿主机默认的 nginx.conf (不依赖 conf.d)
+cp "$PROJECT_ROOT/scripts/nginx.conf" /etc/nginx/nginx.conf
 
 # 替换占位符
-sed -i "s|your-domain.com|$DOMAIN|g" /etc/nginx/conf.d/minimax.conf
-sed -i "s|/opt/minimax/frontend/dist|$PROJECT_ROOT/frontend/dist|g" /etc/nginx/conf.d/minimax.conf
+sed -i "s|/opt/miniLiugl/frontend/dist|$PROJECT_ROOT/frontend/dist|g" /etc/nginx/nginx.conf
+# 启用 HTTPS server 块: 替换 _ 为具体域名
+# (脚本默认 HTTPS 是注释的, 这里改成启用)
+sed -i "s|^    # server {|    server {|g" /etc/nginx/nginx.conf
+sed -i "s|^    #     listen 443|    listen 443|g" /etc/nginx/nginx.conf
+sed -i "s|^    #     server_name _;|    server_name $DOMAIN;|g" /etc/nginx/nginx.conf
+sed -i "s|/etc/letsencrypt/live/your-domain.com|/etc/letsencrypt/live/$DOMAIN|g" /etc/nginx/nginx.conf
 
-# 备份默认配置
+# 备份默认 conf.d
 for f in /etc/nginx/conf.d/default.conf /etc/nginx/sites-enabled/default; do
   [ -f "$f" ] && mv "$f" "${f}.bak-$(date +%s)" && log_warn "已备份: $f"
 done
 
-log_ok "宿主机 nginx 配置: /etc/nginx/conf.d/minimax.conf"
+log_ok "宿主机 nginx 配置: /etc/nginx/nginx.conf"
 
 # 测试
 if ! nginx -t 2>&1 | tail -3; then
