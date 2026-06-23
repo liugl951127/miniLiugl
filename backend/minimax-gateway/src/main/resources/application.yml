@@ -154,6 +154,14 @@ spring.cloud.gateway:
       filters:
         - StripPrefix=2
 
+    # V1.9.1: V5.32 画布工作流路由
+    - id: pipeline
+      uri: lb://minimax-pipeline
+      predicates:
+        - Path=/api/v1/pipeline/**
+      filters:
+        - StripPrefix=2
+
     - id: ws
       uri: lb:ws://minimax-ws
       predicates:

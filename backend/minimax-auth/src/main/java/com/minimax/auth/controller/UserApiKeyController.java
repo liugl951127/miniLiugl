@@ -35,7 +35,7 @@ public class UserApiKeyController {
     @Operation(summary = "列出我的 API Key")
     @GetMapping
     public Result<List<ApiKeyResponse>> list(@AuthenticationPrincipal AuthenticatedUser user) {
-        return Result.ok(apiKeyService.listKeys(user.getUserId()));
+        return Result.ok(apiKeyService.listKeys(user.id()));
     }
 
     @Operation(summary = "创建 API Key（返回原始 Key，仅此次可见）")
@@ -43,7 +43,7 @@ public class UserApiKeyController {
     public Result<ApiKeyResponse> create(@AuthenticationPrincipal AuthenticatedUser user,
                                           @Valid @RequestBody(required = false) CreateApiKeyRequest req) {
         if (req == null) req = new CreateApiKeyRequest();
-        return Result.ok(apiKeyService.createKey(user.getUserId(), req));
+        return Result.ok(apiKeyService.createKey(user.id(), req));
     }
 
     @Operation(summary = "禁用/启用 Key")
@@ -51,7 +51,7 @@ public class UserApiKeyController {
     public Result<Void> toggle(@AuthenticationPrincipal AuthenticatedUser user,
                                 @PathVariable Long id,
                                 @RequestParam boolean enable) {
-        apiKeyService.toggleStatus(user.getUserId(), id, enable);
+        apiKeyService.toggleStatus(user.id(), id, enable);
         return Result.ok();
     }
 
@@ -59,7 +59,7 @@ public class UserApiKeyController {
     @DeleteMapping("/{id}")
     public Result<Void> delete(@AuthenticationPrincipal AuthenticatedUser user,
                                 @PathVariable Long id) {
-        apiKeyService.deleteKey(user.getUserId(), id);
+        apiKeyService.deleteKey(user.id(), id);
         return Result.ok();
     }
 
@@ -69,6 +69,6 @@ public class UserApiKeyController {
                                           @PathVariable Long id,
                                           @RequestBody(required = false) CreateApiKeyRequest req) {
         if (req == null) req = new CreateApiKeyRequest();
-        return Result.ok(apiKeyService.rotateKey(user.getUserId(), id, req));
+        return Result.ok(apiKeyService.rotateKey(user.id(), id, req));
     }
 }

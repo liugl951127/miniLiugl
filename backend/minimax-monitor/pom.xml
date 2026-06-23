@@ -73,6 +73,13 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
+
+        <!-- V5.33: 钉钉告警推送 (DingTalkAlertNotifier 用 hutool-json 拼钉钉 webhook 请求体) -->
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-json</artifactId>
+            <version>5.8.22</version>
+        </dependency>
     </dependencies>
 
     <build>
