@@ -88,9 +88,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {          // 
     @Value("${minimax.jwt.prefix:Bearer }")
     private String prefix;
 
-    // 从 yml 注入: HMAC SHA 签名密钥 (生产用环境变量覆盖)
-    // 默认值: 0f6beadebfcee3e97845856757a3babf97b2af8c80f0b95690783ccc7a595352 (64 字符 hex)
-    @Value("${minimax.jwt.secret:0f6beadebfcee3e97845856757a3babf97b2af8c80f0b95690783ccc7a595352}")
+    // V1.9.1: 从 application.yml 直接读取 (不依赖环境变量, maven 打包后可直接跑)
+    // 统一 secret: 16 个微服务 + gateway 共用, 保证 token 跨服务可验证
+    @Value("${minimax.jwt.secret:7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6}")
     private String secret;
 
     // 从 yml 注入: JWT 签发者 (校验 iss 字段, 防跨系统 token 误用)

@@ -1,7 +1,7 @@
 minimax:
   jwt:
-    # V1.9: 与其他 14 个微服务 + gateway 统一 secret, 保证 token 跨服务可验证
-    secret: ${MINIMAX_JWT_SECRET:7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6}
+    # V1.9.1: secret 已在 application-common.yml 字面量定义, 这里无需重复
+    # (本文件覆盖默认是不必要的, 保留仅为调试可视化)
 
 logging:
   level:

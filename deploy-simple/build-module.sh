@@ -157,8 +157,6 @@ docker_run() {
     -e "REDIS_HOST=$redis_host" \
     -e "REDIS_PORT=6379" \
     -e "REDIS_PASSWORD=minimax_redis_2024" \
-    -e "MINIMAX_JWT_SECRET=7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6" \
-    -e "MINIMAX_COMMON_SECRET=7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6" \
     "minimax-$m:latest"
 
   log_ok "$m 已启动 (容器 minimax-$m, 端口 $port)"

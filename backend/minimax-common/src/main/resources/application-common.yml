@@ -140,3 +140,18 @@ otel:
   propagation:
     - tracecontext
     - baggage
+
+# =============================================================
+# V1.9.1: MiniMax 平台全局配置 (16 个微服务 + gateway 共用)
+# secret 直接写入 application.yml, mvn 打包后无需环境变量即可启动
+# =============================================================
+minimax:
+  jwt:
+    # 统一 HMAC SHA-256 签名密钥 (64 字符 hex, 跨服务验证 token 必须一致)
+    secret: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
+    issuer: minimax-platform
+    header: Authorization
+    prefix: "Bearer "
+  # 通用加密 key (AES / SM4 / 签名 / IV 派生)
+  common:
+    secret: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
