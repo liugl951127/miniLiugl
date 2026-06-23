@@ -40,7 +40,8 @@ import java.util.Map;
  */
 @Tag(name = "数据智能分析 (V5.31)")
 @RestController
-@RequestMapping("/api/v1/analytics")
+// V1.9.1: 改为相对路径, 跟其他模块一致 (gateway StripPrefix=2 后转发到 /analytics/...)
+@RequestMapping("/analytics")
 @RequiredArgsConstructor
 public class AnalyticsController {
 
