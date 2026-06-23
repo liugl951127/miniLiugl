@@ -201,7 +201,8 @@ jobs:
         run: |
           sudo apt-get install -y shellcheck || true
           if command -v shellcheck >/dev/null 2>&1; then
-            shellcheck -x scripts/deploy-minimax.sh scripts/deploy-minimax.sh scripts/e2e-full-test.sh 2>&1 | head -40 || true
+            # V1.9.1: 检查 deploy-simple/ 下的 shell 脚本 (替代旧的 scripts/deploy-minimax.sh)
+            shellcheck -x deploy-simple/*.sh 2>&1 | head -40 || true
           else
             echo "shellcheck 不可用, 跳过"
           fi

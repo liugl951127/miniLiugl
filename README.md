@@ -95,15 +95,29 @@
 
 ## 🚀 5 分钟快速启动 (V5.12)
 
-### 方式 A: 一键部署 (生产, 推荐)
+### 方式 A: Docker 一键部署 (推荐, V1.9.1)
 ```bash
 git clone https://github.com/liugl951127/miniLiugl.git
 cd miniLiugl
-sudo ./scripts/deploy-minimax.sh install    # 装 Java/Maven/Node/MySQL/Redis/Nacos + 编译 + 启 systemd
-sudo ./scripts/deploy-minimax.sh test       # 一键健康检查 19 项
+chmod +x deploy-simple/docker-deploy.sh
+sudo ./deploy-simple/docker-deploy.sh up       # 15 微服务 + mysql + redis + nacos + nginx 一键启动
+sudo ./deploy-simple/docker-deploy.sh ps       # 查看状态
+sudo ./deploy-simple/docker-deploy.sh down     # 停止
 ```
 
-**自动部署**: Nacos → Gateway → 12 微服务 → nginx, 端口 3000 统一入口
+**自动部署**: Nacos → Gateway (7080) → 14 微服务 → nginx (80), 端口 80 统一入口
+
+**生产域名 + HTTPS**:
+```bash
+sudo ./deploy-simple/setup-domain.sh your-domain.com your-email@example.com
+# Let's Encrypt 自动签发, 访问 https://your-domain.com
+```
+
+**单模块独立部署**:
+```bash
+./deploy-simple/build-module.sh gateway --run    # 仅启动 gateway
+./deploy-simple/build-module.sh all --run        # 启动全部 15 个
+```
 
 ### 方式 B: Docker Compose (开发)
 ```bash
@@ -272,15 +286,22 @@ sudo ./deploy-centos.sh install
 | | nacos | `nacos/nacos-server:v2.3.2` | 8848 |
 | **Gateway** | gateway | 自构建 (backend/Dockerfile) | 8080 |
 | **12 微服务** | auth/chat/model/memory/rag/function/admin/multimodal/monitor/agent/prompt/ws | 自构建 | 8081-8091, 8095 |
-| **前端** | nginx | `nginx:1.25-alpine` | 3000 |
-| **可选** | adminer | `adminer:4.8.1` | 8082 (profile=tools) |
+| **前端** | nginx | `nginx:1.25-alpine` | 80 |
+| **可选** | adminer | `adminer:4.8.1` | 9090 (profile=tools) |
 
-**一行安装**:
+**一行安装** (V1.9.1):
 ```bash
-sudo ./scripts/deploy-minimax.sh install    # 构建镜像 + 启动全部 (5-10 分钟首次)
-sudo ./scripts/deploy-minimax.sh status     # 查看状态
-sudo ./scripts/deploy-minimax.sh test       # 19 项 E2E
-sudo ./scripts/deploy-minimax.sh logs auth  # 查看服务日志
+chmod +x deploy-simple/docker-deploy.sh
+sudo ./deploy-simple/docker-deploy.sh up      # 构建镜像 + 启动全部 (5-10 分钟首次)
+sudo ./deploy-simple/docker-deploy.sh ps      # 查看状态
+sudo ./deploy-simple/docker-deploy.sh logs auth  # 查看服务日志
+sudo ./deploy-simple/docker-deploy.sh down    # 停止全部
+```
+
+**生产域名 + HTTPS**:
+```bash
+sudo ./deploy-simple/setup-domain.sh your-domain.com your-email@example.com
+# 访问 https://your-domain.com (Let's Encrypt 自动签发 + 续期)
 ```
 
 **服务连接** (Docker 网络 DNS):
@@ -656,16 +677,17 @@ AI: 截图显示您的 NPE 是因为 user 可能为 null,
 
 ## 📞 运维
 
-### 启动
+### 启动 (V1.9.1)
 ```bash
-# Docker
-docker compose up -d
+# Docker 一键 (推荐)
+chmod +x deploy-simple/docker-deploy.sh
+./deploy-simple/docker-deploy.sh up
 
-# 单机 jar
-./deploy/linux-single/deploy-linux-single.sh jar
+# 单机 jar (裸机部署)
+./deploy-simple/deploy.sh
 
-# K8s
-./deploy/linux-cluster/deploy-linux-cluster.sh k8s
+# 生产域名 + HTTPS
+./deploy-simple/setup-domain.sh your-domain.com your-email@example.com
 ```
 
 ### 健康

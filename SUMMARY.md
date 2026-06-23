@@ -114,9 +114,10 @@ common    (shared) → Result/限流/缓存/异步/请求日志
 # 1. 拉代码
 git clone https://github.com/liugl951127/miniLiugl.git
 
-# 2. 一键启动 (Docker Compose)
+# 2. 一键启动 (Docker Compose, V1.9.1)
 cd miniLiugl
-bash deploy/linux-single/deploy-linux-single.sh docker
+chmod +x deploy-simple/docker-deploy.sh
+./deploy-simple/docker-deploy.sh up
 
 # 3. 访问
 # http://localhost  (前端)
@@ -135,8 +136,7 @@ bash deploy/linux-single/deploy-linux-single.sh docker
 | `API.md` | API 参考 (92+ 端点) |
 | `PROGRESS.md` | 14 天进度总表 |
 | `SUMMARY.md` | 本文档 |
-| `reports/day-1..14-report.md` | 14 份日报 |
-| `deploy/README.md` | 部署指南 |
+| `deploy-simple/PRODUCTION-DEPLOY.md` | 生产外网部署指南 (V1.9.1) |
 
 ---
 

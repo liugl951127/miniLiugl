@@ -202,10 +202,11 @@ Step 4: 终态返回
 
 ## 6. 部署架构 (V5.12)
 
-### 6.1 单机一键部署
+### 6.1 单机一键部署 (V1.9.1)
 
 ```bash
-sudo ./scripts/deploy-minimax.sh install
+chmod +x deploy-simple/docker-deploy.sh
+sudo ./deploy-simple/docker-deploy.sh up
 # 自动: Java/Maven/Node + MySQL/Redis/Nacos + 编译 + 16 systemd + nginx
 ```
 

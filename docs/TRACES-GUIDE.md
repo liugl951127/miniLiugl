@@ -64,8 +64,8 @@ docker run -d --name jaeger \
 无需特殊配置 — OTel starter 自动启用, 默认 OTLP endpoint = `http://localhost:4318`
 
 ```bash
-# 启动 13 微服务
-sudo ./scripts/deploy-minimax.sh start
+# 启动 15 微服务 (V1.9.1)
+sudo ./deploy-simple/docker-deploy.sh up
 # 或开发模式
 mvn spring-boot:run
 ```
