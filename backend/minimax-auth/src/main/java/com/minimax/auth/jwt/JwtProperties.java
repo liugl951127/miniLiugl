@@ -13,8 +13,8 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties(prefix = "minimax.jwt")
 public class JwtProperties {
-    /** HS256 密钥，至少 32 字节。 */
-    private String secret = "minimax-default-secret-please-override-in-production-32+";
+    /** HS256 密钥, 至少 32 字节。 */
+    private String secret = "7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6";
     /** 签发方 */
     private String issuer = "minimax-platform";
     /** Access token 有效期(秒) 默认 30 分钟 */
