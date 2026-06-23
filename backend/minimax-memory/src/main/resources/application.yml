@@ -4,10 +4,7 @@
 # =============================================================
 
 server:
-  port: 8084
-  servlet:
-    context-path: /api/v1
-
+  port: 8083
 spring:
   config:
     import: classpath:application-common.yml

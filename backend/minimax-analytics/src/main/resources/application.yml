@@ -4,10 +4,7 @@
 # =============================================================
 
 server:
-  port: 8096
-  servlet:
-    context-path: /api/v1
-
+  port: 8092
 spring:
   application:
     name: minimax-analytics

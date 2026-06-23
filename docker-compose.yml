@@ -257,7 +257,7 @@ services:
     container_name: minimax-model
     <<: *default-restart
     environment:
-      SERVER_PORT: 8083
+      SERVER_PORT: 8084
       NACOS_HOST: nacos
       NACOS_PORT: 8848
       MYSQL_HOST: mysql
@@ -272,7 +272,7 @@ services:
       NACOS_PASS: nacos
       NACOS_NS: public
     ports:
-      - "8083:8083"
+      - "8084:8084"
     depends_on:
       nacos:
         condition: service_started
@@ -295,7 +295,7 @@ services:
     container_name: minimax-memory
     <<: *default-restart
     environment:
-      SERVER_PORT: 8084
+      SERVER_PORT: 8083
       NACOS_HOST: nacos
       NACOS_PORT: 8848
       MYSQL_HOST: mysql
@@ -310,7 +310,7 @@ services:
       NACOS_PASS: nacos
       NACOS_NS: public
     ports:
-      - "8084:8084"
+      - "8083:8083"
     depends_on:
       nacos:
         condition: service_started
@@ -409,7 +409,7 @@ services:
     container_name: minimax-admin
     <<: *default-restart
     environment:
-      SERVER_PORT: 8087
+      SERVER_PORT: 8090
       NACOS_HOST: nacos
       NACOS_PORT: 8848
       MYSQL_HOST: mysql
@@ -424,7 +424,7 @@ services:
       NACOS_PASS: nacos
       NACOS_NS: public
     ports:
-      - "8087:8087"
+      - "8090:8090"
     depends_on:
       nacos:
         condition: service_started
@@ -447,7 +447,7 @@ services:
     container_name: minimax-multimodal
     <<: *default-restart
     environment:
-      SERVER_PORT: 8088
+      SERVER_PORT: 8087
       NACOS_HOST: nacos
       NACOS_PORT: 8848
       MYSQL_HOST: mysql
@@ -462,7 +462,7 @@ services:
       NACOS_PASS: nacos
       NACOS_NS: public
     ports:
-      - "8088:8088"
+      - "8087:8087"
     depends_on:
       nacos:
         condition: service_started
@@ -523,7 +523,7 @@ services:
     container_name: minimax-agent
     <<: *default-restart
     environment:
-      SERVER_PORT: 8090
+      SERVER_PORT: 8088
       NACOS_HOST: nacos
       NACOS_PORT: 8848
       MYSQL_HOST: mysql
@@ -538,7 +538,7 @@ services:
       NACOS_PASS: nacos
       NACOS_NS: public
     ports:
-      - "8090:8090"
+      - "8088:8088"
     depends_on:
       nacos:
         condition: service_started
@@ -637,7 +637,7 @@ services:
     container_name: minimax-analytics
     <<: *default-restart
     environment:
-      SERVER_PORT: 8096
+      SERVER_PORT: 8092
       NACOS_HOST: nacos
       NACOS_PORT: 8848
       MYSQL_HOST: mysql
@@ -652,7 +652,7 @@ services:
       NACOS_PASS: nacos
       NACOS_NS: public
     ports:
-      - "8096:8096"
+      - "8092:8092"
     depends_on:
       nacos:
         condition: service_started
@@ -675,7 +675,7 @@ services:
     container_name: minimax-pipeline
     <<: *default-restart
     environment:
-      SERVER_PORT: 8097
+      SERVER_PORT: 8093
       NACOS_HOST: nacos
       NACOS_PORT: 8848
       MYSQL_HOST: mysql
@@ -690,7 +690,7 @@ services:
       NACOS_PASS: nacos
       NACOS_NS: public
     ports:
-      - "8097:8097"
+      - "8093:8093"
     depends_on:
       nacos:
         condition: service_started

@@ -1,8 +1,5 @@
 server:
-  port: 8097
-  servlet:
-    context-path: /api/v1
-
+  port: 8093
 spring:
   application:
     name: minimax-pipeline
