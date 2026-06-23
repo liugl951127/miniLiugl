@@ -51,9 +51,16 @@ networks:
 # 数据卷
 # =============================================================
 volumes:
+  # V1.9.3: 持久化数据 (Docker named volumes, 默认在 /var/lib/docker/volumes/)
+  # 也可通过 bind mount 映射到 /opt/minimax/data/<service> (见下方各 service 配置)
   minimax-mysql:
   minimax-redis:
   minimax-nacos:
+  minimax-otel:
+
+# V1.9.3: 持久化数据默认 bind mount 到磁盘 (生产可改回 named volume)
+# 用户可修改 DATA_ROOT 环境变量自定义路径
+# 默认: /opt/minimax/data/{mysql,redis,nacos,otel}
 
 # =============================================================
 # 服务列表
@@ -73,7 +80,8 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - minimax-mysql:/var/lib/mysql
+      # V1.9.3: 数据持久化到磁盘 (默认 /opt/minimax/data/mysql, 可改)
+      - ${DATA_ROOT:-/opt/minimax/data}/mysql:/var/lib/mysql
       - ./sql:/docker-entrypoint-initdb.d
     command:
       - --character-set-server=utf8mb4
@@ -107,7 +115,8 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - minimax-redis:/data
+      # V1.9.3: AOF 持久化文件保存到磁盘
+      - ${DATA_ROOT:-/opt/minimax/data}/redis:/data
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "minimax_redis_2024", "ping"]
       interval: 10s
@@ -137,7 +146,9 @@ services:
       - "8848:8848"
       - "9848:9848"
     volumes:
-      - minimax-nacos:/home/nacos/data
+      # V1.9.3: Nacos 配置 + 日志持久化
+      - ${DATA_ROOT:-/opt/minimax/data}/nacos:/home/nacos/data
+      - ${DATA_ROOT:-/opt/minimax/data}/nacos/logs:/home/nacos/logs
     depends_on:
       mysql:
         condition: service_healthy
@@ -161,6 +172,9 @@ services:
       NACOS_HOST: nacos
       NACOS_PORT: 8848
       NACOS_NAMESPACE: public
+      # V1.9.3: OpenTelemetry Collector (分布式追踪)
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: ${SERVICE_NAME:-minimax-service}
     ports:
       - "7080:7080"
     depends_on:
@@ -191,10 +205,15 @@ services:
       MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: minimax_redis_2024
+      # V1.9.3: 注意! Spring Boot RedisProperties 字段是 password
+      # 但 application.yml 用了 ${REDIS_PASS:default}, 所以 env 变量名是 REDIS_PASS
+      REDIS_PASS: minimax_redis_2024
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9.3: OpenTelemetry Collector (分布式追踪)
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: ${SERVICE_NAME:-minimax-service}
     ports:
       - "8081:8081"
     depends_on:
@@ -229,10 +248,15 @@ services:
       MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: minimax_redis_2024
+      # V1.9.3: 注意! Spring Boot RedisProperties 字段是 password
+      # 但 application.yml 用了 ${REDIS_PASS:default}, 所以 env 变量名是 REDIS_PASS
+      REDIS_PASS: minimax_redis_2024
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9.3: OpenTelemetry Collector (分布式追踪)
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: ${SERVICE_NAME:-minimax-service}
     ports:
       - "8082:8082"
     depends_on:
@@ -267,10 +291,15 @@ services:
       MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: minimax_redis_2024
+      # V1.9.3: 注意! Spring Boot RedisProperties 字段是 password
+      # 但 application.yml 用了 ${REDIS_PASS:default}, 所以 env 变量名是 REDIS_PASS
+      REDIS_PASS: minimax_redis_2024
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9.3: OpenTelemetry Collector (分布式追踪)
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: ${SERVICE_NAME:-minimax-service}
     ports:
       - "8084:8084"
     depends_on:
@@ -305,10 +334,15 @@ services:
       MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: minimax_redis_2024
+      # V1.9.3: 注意! Spring Boot RedisProperties 字段是 password
+      # 但 application.yml 用了 ${REDIS_PASS:default}, 所以 env 变量名是 REDIS_PASS
+      REDIS_PASS: minimax_redis_2024
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9.3: OpenTelemetry Collector (分布式追踪)
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: ${SERVICE_NAME:-minimax-service}
     ports:
       - "8083:8083"
     depends_on:
@@ -343,10 +377,15 @@ services:
       MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: minimax_redis_2024
+      # V1.9.3: 注意! Spring Boot RedisProperties 字段是 password
+      # 但 application.yml 用了 ${REDIS_PASS:default}, 所以 env 变量名是 REDIS_PASS
+      REDIS_PASS: minimax_redis_2024
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9.3: OpenTelemetry Collector (分布式追踪)
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: ${SERVICE_NAME:-minimax-service}
     ports:
       - "8085:8085"
     depends_on:
@@ -381,10 +420,15 @@ services:
       MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: minimax_redis_2024
+      # V1.9.3: 注意! Spring Boot RedisProperties 字段是 password
+      # 但 application.yml 用了 ${REDIS_PASS:default}, 所以 env 变量名是 REDIS_PASS
+      REDIS_PASS: minimax_redis_2024
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9.3: OpenTelemetry Collector (分布式追踪)
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: ${SERVICE_NAME:-minimax-service}
     ports:
       - "8086:8086"
     depends_on:
@@ -419,10 +463,15 @@ services:
       MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: minimax_redis_2024
+      # V1.9.3: 注意! Spring Boot RedisProperties 字段是 password
+      # 但 application.yml 用了 ${REDIS_PASS:default}, 所以 env 变量名是 REDIS_PASS
+      REDIS_PASS: minimax_redis_2024
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9.3: OpenTelemetry Collector (分布式追踪)
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: ${SERVICE_NAME:-minimax-service}
     ports:
       - "8090:8090"
     depends_on:
@@ -457,10 +506,15 @@ services:
       MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: minimax_redis_2024
+      # V1.9.3: 注意! Spring Boot RedisProperties 字段是 password
+      # 但 application.yml 用了 ${REDIS_PASS:default}, 所以 env 变量名是 REDIS_PASS
+      REDIS_PASS: minimax_redis_2024
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9.3: OpenTelemetry Collector (分布式追踪)
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: ${SERVICE_NAME:-minimax-service}
     ports:
       - "8087:8087"
     depends_on:
@@ -495,10 +549,15 @@ services:
       MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: minimax_redis_2024
+      # V1.9.3: 注意! Spring Boot RedisProperties 字段是 password
+      # 但 application.yml 用了 ${REDIS_PASS:default}, 所以 env 变量名是 REDIS_PASS
+      REDIS_PASS: minimax_redis_2024
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9.3: OpenTelemetry Collector (分布式追踪)
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: ${SERVICE_NAME:-minimax-service}
     ports:
       - "8089:8089"
     depends_on:
@@ -533,10 +592,15 @@ services:
       MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: minimax_redis_2024
+      # V1.9.3: 注意! Spring Boot RedisProperties 字段是 password
+      # 但 application.yml 用了 ${REDIS_PASS:default}, 所以 env 变量名是 REDIS_PASS
+      REDIS_PASS: minimax_redis_2024
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9.3: OpenTelemetry Collector (分布式追踪)
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: ${SERVICE_NAME:-minimax-service}
     ports:
       - "8088:8088"
     depends_on:
@@ -571,10 +635,15 @@ services:
       MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: minimax_redis_2024
+      # V1.9.3: 注意! Spring Boot RedisProperties 字段是 password
+      # 但 application.yml 用了 ${REDIS_PASS:default}, 所以 env 变量名是 REDIS_PASS
+      REDIS_PASS: minimax_redis_2024
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9.3: OpenTelemetry Collector (分布式追踪)
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: ${SERVICE_NAME:-minimax-service}
     ports:
       - "8091:8091"
     depends_on:
@@ -609,10 +678,15 @@ services:
       MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: minimax_redis_2024
+      # V1.9.3: 注意! Spring Boot RedisProperties 字段是 password
+      # 但 application.yml 用了 ${REDIS_PASS:default}, 所以 env 变量名是 REDIS_PASS
+      REDIS_PASS: minimax_redis_2024
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9.3: OpenTelemetry Collector (分布式追踪)
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: ${SERVICE_NAME:-minimax-service}
     ports:
       - "8095:8095"
     depends_on:
@@ -647,10 +721,15 @@ services:
       MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: minimax_redis_2024
+      # V1.9.3: 注意! Spring Boot RedisProperties 字段是 password
+      # 但 application.yml 用了 ${REDIS_PASS:default}, 所以 env 变量名是 REDIS_PASS
+      REDIS_PASS: minimax_redis_2024
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9.3: OpenTelemetry Collector (分布式追踪)
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: ${SERVICE_NAME:-minimax-service}
     ports:
       - "8092:8092"
     depends_on:
@@ -685,10 +764,15 @@ services:
       MYSQL_PASSWORD: root123456
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: minimax_redis_2024
+      # V1.9.3: 注意! Spring Boot RedisProperties 字段是 password
+      # 但 application.yml 用了 ${REDIS_PASS:default}, 所以 env 变量名是 REDIS_PASS
+      REDIS_PASS: minimax_redis_2024
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9.3: OpenTelemetry Collector (分布式追踪)
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: ${SERVICE_NAME:-minimax-service}
     ports:
       - "8093:8093"
     depends_on:
@@ -698,6 +782,29 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - minimax-net
+    logging: *default-logging
+
+  # ========== OpenTelemetry Collector (分布式追踪 + 指标聚合) ==========
+  # V1.9.3: 接收所有微服务的 OTLP 数据, 转存到本地文件
+  # gateway/auth/chat 等微服务的 application-common.yml 默认 endpoint:
+  #   ${OTEL_EXPORTER_OTLP_ENDPOINT:http://otel-collector:4318}
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.96.0
+    container_name: minimax-otel
+    <<: *default-restart
+    command: ["--config=/etc/otelcol/config.yaml"]
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "4317:4317"   # OTLP gRPC (推荐)
+      - "4318:4318"   # OTLP HTTP
+      - "8888:8888"   # Prometheus 指标
+    volumes:
+      # V1.9.3: 配置 + 数据持久化
+      - ./deploy-simple/otel-collector-config.yaml:/etc/otelcol/config.yaml:ro
+      - ${DATA_ROOT:-/opt/minimax/data}/otel:/var/lib/otel
     networks:
       - minimax-net
     logging: *default-logging

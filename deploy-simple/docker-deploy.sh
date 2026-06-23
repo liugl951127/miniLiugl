@@ -89,6 +89,21 @@ preflight() {
   # 检查镜像缓存
   IMAGES=$(docker images --format '{{.Repository}}' 2>/dev/null | grep -c minimax- || true)
   log_info "已构建 minimax-* 镜像数: $IMAGES"
+
+  # V1.9.3: 检查数据目录
+  DATA_ROOT="${DATA_ROOT:-/opt/minimax/data}"
+  if [ ! -d "$DATA_ROOT" ]; then
+    log_warn "数据目录 $DATA_ROOT 不存在"
+    if [ -x "$SCRIPT_DIR/setup-data-dir.sh" ]; then
+      log_info "自动运行 setup-data-dir.sh 创建..."
+      bash "$SCRIPT_DIR/setup-data-dir.sh"
+    else
+      log_err "请手动创建: mkdir -p $DATA_ROOT/{mysql,redis,nacos,otel}"
+      exit 1
+    fi
+  else
+    log_ok "数据目录: $DATA_ROOT"
+  fi
   echo ""
 }
 
