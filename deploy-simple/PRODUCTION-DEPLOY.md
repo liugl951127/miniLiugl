@@ -1,6 +1,52 @@
-# MiniMax Platform — 生产外网部署指南 (V1.9.1)
+# MiniMax Platform — 生产外网部署指南 (V1.9.2)
 
-> **目标: 通过域名 + HTTPS 让外网用户访问你的 MiniMax 平台**
+> **V1.9.2 新增: 完整支持 CentOS Stream 9 / RHEL 9 (dnf + firewalld + SELinux)**
+> 其他 OS: Ubuntu 20+ / Debian 11+ / CentOS 7-8
+
+---
+
+## 🐧 CentOS Stream 9 快速开始
+
+```bash
+# 1. 装 docker (CentOS Stream 9 默认仓库没 docker)
+sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+sudo systemctl enable --now docker
+sudo usermod -aG docker $USER
+newgrp docker    # 或重新登录
+
+# 2. 装 git + 拉代码
+sudo dnf install -y git
+git clone https://github.com/liugl951127/miniLiugl.git
+cd miniLiugl
+
+# 3. 一键启动 (自动适配 OS)
+chmod +x deploy-simple/docker-deploy.sh
+./deploy-simple/docker-deploy.sh up
+
+# 4. (可选) 配置 HTTPS + 域名
+sudo ./deploy-simple/setup-domain.sh your-domain.com admin@example.com
+```
+
+**CentOS Stream 9 特性自动处理**:
+- ✅ dnf 包管理器 (而非 yum)
+- ✅ firewalld 防火墙 (而非 ufw)
+- ✅ SELinux 自动调整 (httpd_read_user_content, httpd_can_network_connect)
+- ✅ nginx 通过 EPEL 仓库安装
+- ✅ certbot 通过 EPEL 安装
+- ✅ 证书自动续期通过 systemd timer 或 cron.d
+- ✅ Docker CE 仓库配置提示
+
+---
+
+## 🐧 其他系统 (Ubuntu / Debian / CentOS 7-8)
+
+### 🚀 一键部署 (5 分钟)
+
+#### 前提
+- 一台公网 VPS (1 核 2G 起, 推荐 2 核 4G)
+- CentOS 7+ / Ubuntu 20+ / Debian 11+
+- 一个**已解析**到 VPS 公网 IP 的域名 (例如 `minimax.example.com`)
 
 ---
 
@@ -46,7 +92,11 @@
 
 ### 前提
 - 一台公网 VPS (1 核 2G 起, 推荐 2 核 4G)
-- CentOS 7+ / Ubuntu 20+ / Debian 11+
+- **支持的操作系统** (V1.9.2 自动适配):
+  - **CentOS Stream 9** / RHEL 9 / Rocky Linux 9 / AlmaLinux 9 (dnf + firewalld + SELinux)
+  - **CentOS Stream 8** / RHEL 8 (dnf + firewalld + SELinux)
+  - **CentOS 7** / RHEL 7 (yum 兼容)
+  - **Ubuntu 20+** / **Debian 11+** (apt + ufw)
 - 一个**已解析**到 VPS 公网 IP 的域名 (例如 `minimax.example.com`)
 
 ### 步骤

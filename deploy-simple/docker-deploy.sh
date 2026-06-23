@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # =============================================================
-# MiniMax Platform - Docker 一键部署 (V1 简化版)
+# MiniMax Platform - Docker 一键部署 (V1.9.2)
 #
 # 特性:
 #   - 一条命令拉起全部: nacos + redis + mysql + 15 微服务 + nginx
 #   - 端口 80 浏览器直接访问
 #   - 容器网络互通 (gateway 用 nacos:8848, mysql 用 mysql:3306 等)
 #   - MySQL 容器首次启动自动执行 sql/init-minimax.sql
+#   - 兼容 CentOS Stream 9 / RHEL 9 / Ubuntu 20+ / Debian 11+
 #
 # 用法:
 #   chmod +x deploy-simple/docker-deploy.sh
@@ -23,6 +24,9 @@
 
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# 加载 OS 适配层 (CentOS Stream 9 / RHEL 9 识别)
+. "$SCRIPT_DIR/os-detect.sh"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_ROOT"
 
@@ -40,8 +44,30 @@ SERVICE="${2:-}"
 # ============================================================
 preflight() {
   log_info "==== 前置检查 ===="
+
+  # OS 探测 (CentOS Stream 9 / RHEL 9 / Ubuntu / Debian 自动适配)
+  detect_os 2>/dev/null && os_info || log_warn "OS 探测失败, 继续"
+
+  # Docker 检查
   if ! command -v docker &>/dev/null; then
     log_err "docker 未安装"
+    echo ""
+    case "$OS_ID" in
+      centos|rhel|rocky|almalinux)
+        echo "  CentOS Stream 9 / RHEL 9 安装:"
+        echo "    sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo"
+        echo "    sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin"
+        echo "    sudo systemctl enable --now docker"
+        echo "    sudo usermod -aG docker $USER  # 重新登录后生效"
+        ;;
+      ubuntu|debian)
+        echo "  Ubuntu/Debian 安装:"
+        echo "    sudo apt-get update"
+        echo "    sudo apt-get install -y docker.io docker-compose-plugin"
+        echo "    sudo systemctl enable --now docker"
+        echo "    sudo usermod -aG docker $USER  # 重新登录后生效"
+        ;;
+    esac
     exit 1
   fi
   DOCKER_VER=$(docker --version | awk '{print $3}' | tr -d ',')
@@ -53,8 +79,8 @@ preflight() {
   fi
   log_ok "Docker Compose $(docker compose version | awk '{print $4}')"
 
-  # 检查端口冲突
-  for port in 80 3306 6379 8848 8080 8081 8097 9090; do
+  # 检查端口冲突 (V1.9.1 端口: gateway 7080 + 业务 8081-8093)
+  for port in 80 3306 6379 8848 7080 8081 8093 9090; do
     if ss -tlnp 2>/dev/null | grep -q ":$port "; then
       log_warn "端口 $port 已被占用, 可能冲突"
     fi

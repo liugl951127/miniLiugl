@@ -23,6 +23,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 INSTALL_DIR="/opt/minimax"
 
+# 加载 OS 适配层 (CentOS Stream 9 / RHEL 9 识别)
+. "$SCRIPT_DIR/os-detect.sh"
+
 # 颜色
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -59,7 +62,9 @@ preflight_check() {
 
   # JDK 17
   if ! command -v java &>/dev/null; then
-    log_err "JDK 未安装, 请先安装 OpenJDK 17: apt install openjdk-17-jdk / yum install java-17-openjdk"
+    log_err "JDK 未安装。安装方式:
+    CentOS Stream 9 / RHEL 9: sudo dnf install -y java-17-openjdk-devel
+    Ubuntu / Debian:            sudo apt-get install -y openjdk-17-jdk"
     exit 1
   fi
   JAVA_VERSION=$(java -version 2>&1 | awk -F'"' '/version/ {print $2}' | cut -d. -f1)
@@ -71,7 +76,9 @@ preflight_check() {
 
   # Maven
   if ! command -v mvn &>/dev/null; then
-    log_err "Maven 未安装: apt install maven / yum install maven"
+    log_err "Maven 未安装。安装方式:
+    CentOS Stream 9 / RHEL 9: sudo dnf install -y maven
+    Ubuntu / Debian:            sudo apt-get install -y maven"
     exit 1
   fi
   log_ok "Maven $(mvn -v | head -1 | awk '{print $3}')"

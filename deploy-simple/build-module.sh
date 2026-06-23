@@ -22,6 +22,9 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BACKEND="$PROJECT_ROOT/backend"
 INSTALL_DIR="/opt/minimax/backend"
 
+# 加载 OS 适配层 (CentOS Stream 9 / RHEL 9 识别)
+. "$SCRIPT_DIR/os-detect.sh"
+
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
 log_info() { echo -e "${BLUE}[INFO]${NC} $*"; }
 log_ok()   { echo -e "${GREEN}[✓]${NC} $*"; }
@@ -57,12 +60,33 @@ fi
 
 if ! command -v java &>/dev/null; then
   log_err "JDK 未安装"
+  detect_os 2>/dev/null
+  case "$OS_ID" in
+    centos|rhel|rocky|almalinux)
+      echo "    CentOS Stream 9 / RHEL 9: sudo dnf install -y java-17-openjdk-devel"
+      ;;
+    ubuntu|debian)
+      echo "    Ubuntu / Debian:           sudo apt-get install -y openjdk-17-jdk"
+      ;;
+    *)
+      echo "    通用: 装 OpenJDK 17"
+      ;;
+  esac
   exit 1
 fi
 log_ok "JDK $(java -version 2>&1 | head -1 | awk -F'"' '{print $2}')"
 
 if ! command -v mvn &>/dev/null; then
   log_err "Maven 未安装"
+  detect_os 2>/dev/null
+  case "$OS_ID" in
+    centos|rhel|rocky|almalinux)
+      echo "    CentOS Stream 9 / RHEL 9: sudo dnf install -y maven"
+      ;;
+    ubuntu|debian)
+      echo "    Ubuntu / Debian:           sudo apt-get install -y maven"
+      ;;
+  esac
   exit 1
 fi
 log_ok "Maven $(mvn -v | head -1 | awk '{print $3}')"
