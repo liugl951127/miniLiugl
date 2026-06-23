@@ -3,6 +3,10 @@
 # 公共配置在 application-common.yml
 # =============================================================
 
+# V1.9: gateway 端口改为 7080 (不占用 8080, 避免与其它服务冲突)
+server:
+  port: ${SERVER_PORT:7080}
+
 spring:
   config:
     import: classpath:application-common.yml

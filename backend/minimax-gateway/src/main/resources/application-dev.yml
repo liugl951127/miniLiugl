@@ -1,6 +1,7 @@
 minimax:
   jwt:
-    secret: dev_secret_minimax_jwt_key_2024_at_least_32_bytes_xxxxx
+    # V1.9: 与其他 14 个微服务 + gateway 统一 secret, 保证 token 跨服务可验证
+    secret: ${MINIMAX_JWT_SECRET:7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6}
 
 logging:
   level:

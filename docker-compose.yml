@@ -156,13 +156,16 @@ services:
     container_name: minimax-gateway
     <<: *default-restart
     environment:
-      SERVER_PORT: 8080
+      SERVER_PORT: 7080
       SPRING_PROFILES_ACTIVE: dev
       NACOS_HOST: nacos
       NACOS_PORT: 8848
       NACOS_NAMESPACE: public
+      # V1.9: 统一 secret (16 个微服务 + gateway 共用)
+      MINIMAX_JWT_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
+      MINIMAX_COMMON_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
     ports:
-      - "8080:8080"
+      - "7080:7080"
     depends_on:
       nacos:
         condition: service_started
@@ -195,6 +198,9 @@ services:
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9: 统一 secret (所有微服务共用, 用于 JWT/加密/签名)
+      MINIMAX_JWT_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
+      MINIMAX_COMMON_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
     ports:
       - "8081:8081"
     depends_on:
@@ -233,6 +239,9 @@ services:
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9: 统一 secret (所有微服务共用, 用于 JWT/加密/签名)
+      MINIMAX_JWT_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
+      MINIMAX_COMMON_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
     ports:
       - "8082:8082"
     depends_on:
@@ -271,6 +280,9 @@ services:
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9: 统一 secret (所有微服务共用, 用于 JWT/加密/签名)
+      MINIMAX_JWT_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
+      MINIMAX_COMMON_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
     ports:
       - "8083:8083"
     depends_on:
@@ -309,6 +321,9 @@ services:
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9: 统一 secret (所有微服务共用, 用于 JWT/加密/签名)
+      MINIMAX_JWT_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
+      MINIMAX_COMMON_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
     ports:
       - "8084:8084"
     depends_on:
@@ -347,6 +362,9 @@ services:
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9: 统一 secret (所有微服务共用, 用于 JWT/加密/签名)
+      MINIMAX_JWT_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
+      MINIMAX_COMMON_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
     ports:
       - "8085:8085"
     depends_on:
@@ -385,6 +403,9 @@ services:
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9: 统一 secret (所有微服务共用, 用于 JWT/加密/签名)
+      MINIMAX_JWT_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
+      MINIMAX_COMMON_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
     ports:
       - "8086:8086"
     depends_on:
@@ -423,6 +444,9 @@ services:
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9: 统一 secret (所有微服务共用, 用于 JWT/加密/签名)
+      MINIMAX_JWT_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
+      MINIMAX_COMMON_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
     ports:
       - "8087:8087"
     depends_on:
@@ -461,6 +485,9 @@ services:
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9: 统一 secret (所有微服务共用, 用于 JWT/加密/签名)
+      MINIMAX_JWT_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
+      MINIMAX_COMMON_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
     ports:
       - "8088:8088"
     depends_on:
@@ -499,6 +526,9 @@ services:
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9: 统一 secret (所有微服务共用, 用于 JWT/加密/签名)
+      MINIMAX_JWT_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
+      MINIMAX_COMMON_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
     ports:
       - "8089:8089"
     depends_on:
@@ -537,6 +567,9 @@ services:
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9: 统一 secret (所有微服务共用, 用于 JWT/加密/签名)
+      MINIMAX_JWT_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
+      MINIMAX_COMMON_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
     ports:
       - "8090:8090"
     depends_on:
@@ -575,6 +608,9 @@ services:
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9: 统一 secret (所有微服务共用, 用于 JWT/加密/签名)
+      MINIMAX_JWT_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
+      MINIMAX_COMMON_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
     ports:
       - "8091:8091"
     depends_on:
@@ -613,6 +649,9 @@ services:
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9: 统一 secret (所有微服务共用, 用于 JWT/加密/签名)
+      MINIMAX_JWT_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
+      MINIMAX_COMMON_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
     ports:
       - "8095:8095"
     depends_on:
@@ -651,6 +690,9 @@ services:
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9: 统一 secret (所有微服务共用, 用于 JWT/加密/签名)
+      MINIMAX_JWT_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
+      MINIMAX_COMMON_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
     ports:
       - "8096:8096"
     depends_on:
@@ -689,6 +731,9 @@ services:
       NACOS_USER: nacos
       NACOS_PASS: nacos
       NACOS_NS: public
+      # V1.9: 统一 secret (所有微服务共用, 用于 JWT/加密/签名)
+      MINIMAX_JWT_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
+      MINIMAX_COMMON_SECRET: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
     ports:
       - "8097:8097"
     depends_on:
