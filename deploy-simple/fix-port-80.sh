@@ -19,10 +19,31 @@ log_ok()   { echo -e "${GREEN}[✓]${NC} $*"; }
 log_warn() { echo -e "${YELLOW}[!]${NC} $*"; }
 log_err()  { echo -e "${RED}[✗]${NC} $*"; }
 
-cd /opt/miniLiugl 2>/dev/null || cd "$(find / -name 'docker-compose.yml' -path '*/miniLiugl/*' 2>/dev/null | head -1 | xargs dirname)" || {
+# 自动找 miniLiugl 项目目录
+PROJECT_ROOT=""
+for p in /opt/miniLiugl /root/miniLiugl /home/*/miniLiugl "$(pwd)/miniLiugl" "$(pwd)"; do
+  if [ -f "$p/docker-compose.yml" ] && grep -q "minimax-gateway" "$p/docker-compose.yml" 2>/dev/null; then
+    PROJECT_ROOT="$p"
+    break
+  fi
+done
+
+if [ -z "$PROJECT_ROOT" ]; then
+  log_warn "未找到 miniLiugl 项目目录, 用 find 兜底"
+  FOUND=$(find / -name 'docker-compose.yml' -path '*/miniLiugl/*' 2>/dev/null | head -1)
+  if [ -n "$FOUND" ]; then
+    PROJECT_ROOT="$(dirname "$FOUND")"
+  fi
+fi
+
+if [ -z "$PROJECT_ROOT" ] || [ ! -d "$PROJECT_ROOT" ]; then
   log_err "找不到 miniLiugl 项目目录"
+  log_err "请手动 cd 到项目目录再跑, 或设置 PROJECT_ROOT 环境变量"
   exit 1
-}
+fi
+
+log_ok "项目目录: $PROJECT_ROOT"
+cd "$PROJECT_ROOT"
 
 log_info "==== 1. 诊断: 80 端口被谁占用 ===="
 
@@ -42,7 +63,7 @@ fi
 if [ -z "$PORT80_PID" ]; then
   log_ok "80 端口未被占用, 无需修复"
   log_info "尝试启动 nginx 容器..."
-  cd /opt/miniLiugl && docker compose up -d nginx
+  cd "$PROJECT_ROOT" && docker compose up -d nginx
   exit 0
 fi
 
@@ -95,7 +116,7 @@ fi
 log_ok "80 端口已释放"
 
 log_info "==== 4. 启动 nginx 容器 ===="
-cd /opt/miniLiugl
+cd "$PROJECT_ROOT"
 docker compose up -d nginx
 sleep 5
 
