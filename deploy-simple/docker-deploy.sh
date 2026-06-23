@@ -80,7 +80,7 @@ preflight() {
   fi
   log_ok "Docker Compose $(docker compose version | awk '{print $4}')"
 
-  # 检查端口冲突 (V1.9.4: warn 不退出, 默认跳过 80 端口因为 docker nginx 会监听)
+  # V1.9.5: 智能端口冲突处理 - 宿主机 nginx 占用 80 时自动停掉
   if [ "${SKIP_PORT_CHECK:-0}" = "1" ]; then
     log_info "跳过端口冲突检查 (SKIP_PORT_CHECK=1)"
   else
@@ -89,10 +89,42 @@ preflight() {
         log_warn "端口 $port 已被占用, 可能冲突"
       fi
     done
-    # 80 端口特殊处理: 提示但不阻塞 (因为 docker nginx 会接管)
+
+    # 80 端口特殊: docker nginx 要用, 宿主机 nginx 必须让位
     if ss -tlnp 2>/dev/null | grep -q ":80 "; then
-      log_warn "端口 80 已被占用 (宿主机 nginx 或其他服务), docker 部署会冲突"
-      log_warn "    解决: sudo systemctl stop nginx  &&  sudo systemctl disable nginx"
+      log_warn "端口 80 已被占用"
+      # 智能识别: 是不是宿主机 nginx?
+      if systemctl is-active nginx 2>/dev/null | grep -q "^active$"; then
+        log_info "检测到宿主机 nginx 正在运行"
+        if [ "${AUTO_STOP_NGINX:-1}" = "1" ]; then
+          log_info "自动停掉宿主机 nginx (AUTO_STOP_NGINX=1)"
+          systemctl stop nginx 2>/dev/null || true
+          systemctl disable nginx 2>/dev/null || true
+          sleep 2
+          if ss -tlnp 2>/dev/null | grep -q ":80 "; then
+            log_err "停掉 nginx 后 80 仍被占用, 请手动处理"
+            exit 1
+          else
+            log_ok "80 端口已释放"
+          fi
+        else
+          log_err "请手动停止: sudo systemctl stop nginx"
+          exit 1
+        fi
+      else
+        # 不是 nginx, 是其他进程
+        PORT80_PID=$(ss -tlnp 2>/dev/null | grep ":80 " | head -1 | grep -oP 'pid=\K[0-9]+' | head -1)
+        if [ -n "$PORT80_PID" ]; then
+          PROC=$(cat /proc/$PORT80_PID/comm 2>/dev/null)
+          log_err "80 端口被进程 $PROC (PID $PORT80_PID) 占用, 请手动:"
+          log_err "    sudo kill $PORT80_PID"
+          log_err "  或: sudo lsof -i :80  # 找占用进程"
+          exit 1
+        else
+          log_err "80 端口被未知进程占用, 请手动检查"
+          exit 1
+        fi
+      fi
     fi
   fi
 
