@@ -307,6 +307,8 @@ Prometheus 服务每 15s 抓 /actuator/prometheus
 | SSRF | HttpGetTool 阻止内网 |
 | 注入 | Calculator 字符白名单 + 自实现求值 |
 | 暴力破解 | 限流 (IP 100/60s, login 10/60s) |
+| API Key 泄漏 | SHA-256 哈希存储, rawKey 仅创建时一次性展示 |
+| API Key 滥用 | 网关级按 Key 限流 (apiKeyRateLimitResolver, V5.33) |
 | 密码泄漏 | BCrypt (cost 10) |
 | 重放攻击 | JWT exp + 短寿命 |
 

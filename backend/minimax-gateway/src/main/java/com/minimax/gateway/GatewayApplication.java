@@ -34,6 +34,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableAsync;
 // 启用 @Scheduled 定时任务支持 (健康检查 / 心跳)
 import org.springframework.scheduling.annotation.EnableScheduling;
+// Slf4j 日志 (V5.33 Day 19)
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Gateway 启动类.
@@ -63,6 +66,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
     })
 public class GatewayApplication {
 
+    private static final Logger log = LoggerFactory.getLogger(GatewayApplication.class);
+
     /**
      * JVM 入口方法.
      *
@@ -75,7 +80,7 @@ public class GatewayApplication {
         // 委托给 SpringApplication 启动 (扫描配置 + 启动容器)
         SpringApplication.run(GatewayApplication.class, args);
         // 打印启动横幅 (运维一眼看到是否启动成功 + 端口 + 路由数)
-        System.out.println("""
+        log.info("""
 
                 ====================================================
                   MiniMax Gateway (Spring Cloud Gateway) started

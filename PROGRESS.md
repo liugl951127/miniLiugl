@@ -423,7 +423,26 @@
 - [ ] 完整 README + 架构图更新
 - [ ] API Key 速率限制
 
-## Day 19 - 待开始
+## Day 19 - 2026-06-23 ✅ API Key 鉴权过滤 + API Key 限流
+
+**今日完成：**
+- [x] **API Key 鉴权过滤器** (`ApiKeyAuthGlobalFilter`): 网关拦截 `Bearer mmx_xxxx` → Redis 缓存验证结果(5min TTL) → WebClient 调用 auth 服务 `/internal/apikey/validate` → 注入 `X-User-Id` 头, 优先级 Order=-200 (早于 JWT Filter)
+- [x] **API Key 内部验证接口** (`ApiKeyInternalController`): auth 模块新增 `POST /internal/apikey/validate`, 供网关内部调用
+- [x] **API Key 限流解析器** (`ApiKeyRateLimitResolver`): 按 `userId > API Key SHA-256 > IP` 优先级限流, 覆盖 auth/chat/model/agent/admin 全部路由
+- [x] **自检脚本**: 新建 `scripts/self-check.sh` (SQL/Maven/前端) + `scripts/java-static-check.sh` (package/TODO/System.out)
+- [x] **静态体检修复**: IpUtils.java `System.out` → `log.info`, GatewayApplication.java `System.out` → `log.info`
+- [x] **Gateway 配置更新**: 4 条路由切换为 `apiKeyRateLimitResolver`, model 路由新增限流配置
+- [x] **文档更新**: README.md + ARCHITECTURE.md 同步 API Key 鉴权 + 限流说明
+
+**关键数据：** +3 后端文件 (filter/config/controller) / +2 脚本 / 修改 4 文件 / 0 TODO 残留
+
+**明日计划 Day 20：**
+- [ ] 外部 API 文档 (Swagger 聚合 / Apifox / Postman collection)
+- [ ] 端到端测试 (集成测试 + 健康检查脚本)
+- [ ] API Key 配额/用量统计页面
+- [ ] 性能压测报告 (wrk / JMeter)
+
+## Day 20 - 待开始
 
 ## V5.9 (2026-06-21) — Dashboard 真实图表 + 告警规则 CRUD + WS 精确分流
 

@@ -44,10 +44,12 @@
                         ┌──────────▼─────────────┐
                         │ Spring Cloud Gateway   │
                         │ :8080 (WebFlux)        │
+                        │ - ApiKeyAuthFilter (V5.33) │  ← API Key Bearer 鉴权
                         │ - JwtAuthFilter        │
                         │ - Resilience4j         │
                         │ - TraceId (V5.8)       │
                         │ - 限流 (Redis 令牌桶)  │
+                        │   apiKeyRateLimitResolver (V5.33) → 按 API Key 限流
                         └──────────┬─────────────┘
                                    │ lb://minimax-*
                         ┌──────────▼─────────────┐
@@ -68,7 +70,9 @@
                         └─────────────────────────┘
 ```
 
-**核心组件 (V5.5-V5.12)**:
+**核心组件 (V5.5-V5.33)**:
+- **API Key 鉴权** (V5.33 Day 19): `ApiKeyAuthGlobalFilter` 拦截 `Bearer mmx_xxxx` → WebClient 调用 auth 服务 `/internal/apikey/validate` → Redis 缓存 5 分钟 → 注入 `X-User-Id` 头下游共享
+- **API Key 速率限制** (V5.33 Day 19): `ApiKeyRateLimitResolver` 按 `userId > API Key 哈希 > IP` 优先级限流, 覆盖 auth/chat/model/agent/admin 全路由
 - **Spring Cloud Gateway** (WebFlux): 13 路由 + 网关级 JWT + Resilience4j 降级 + TraceId
 - **Nacos 2.3.2**: 服务发现 + 配置中心 (12 微服务 + gateway 自动注册)
 - **nginx**: :3000 统一入口 + gzip/brotli 压缩 + security headers
@@ -78,7 +82,7 @@
 
 | 模块 | 端口 | 端点数 | 测试 | 核心能力 |
 |------|------|--------|------|----------|
-| **gateway** | 8080 | 1 | - | 反向代理 + 路由 |
+| **gateway** | 8080 | 1 | - | 反向代理 + API Key 鉴权 + 限流 |
 | **auth** | 8081 | 8 | 4 | JWT 双 token + Spring Security + RBAC |
 | **chat** | 8082 | 8 | 3 | 会话/消息 + SSE 流式 + 取消 + 重试 |
 | **memory** | 8084 | 16 | 26 | 短期/长期/偏好/摘要 + 跨会话 |

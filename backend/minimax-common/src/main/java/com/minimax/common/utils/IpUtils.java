@@ -1,6 +1,7 @@
 package com.minimax.common.utils;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigInteger;
 import java.net.InetAddress;
@@ -10,6 +11,7 @@ import java.security.SecureRandom;
 /**
  * IP 工具
  */
+@Slf4j
 public final class IpUtils {
 
     private IpUtils() {}
@@ -52,6 +54,6 @@ public final class IpUtils {
         while (secret.length() < 32) {
             secret = "0" + secret;
         }
-        System.out.println(secret);
+        log.info("Generated secret: {}", secret);
     }
 }

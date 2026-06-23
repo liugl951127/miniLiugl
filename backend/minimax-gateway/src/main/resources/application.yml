@@ -72,7 +72,7 @@ spring.cloud.gateway:
           args:
             redis-rate-limiter.replenishRate: 100
             redis-rate-limiter.burstCapacity: 200
-            key-resolver: "#{@userKeyResolver}"
+            key-resolver: "#{@apiKeyRateLimitResolver}"
 
     - id: chat
       uri: lb://minimax-chat
@@ -84,7 +84,7 @@ spring.cloud.gateway:
           args:
             redis-rate-limiter.replenishRate: 50
             redis-rate-limiter.burstCapacity: 100
-            key-resolver: "#{@userKeyResolver}"
+            key-resolver: "#{@apiKeyRateLimitResolver}"
 
     - id: model
       uri: lb://minimax-model
@@ -92,6 +92,11 @@ spring.cloud.gateway:
         - Path=/api/v1/model/**,/api/v1/models/**,/api/v1/test/**,/api/v1/openai/**,/api/v1/imagegen/**,/api/v1/audio/**,/api/v1/leaderboard/**
       filters:
         - StripPrefix=2
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 30
+            redis-rate-limiter.burstCapacity: 60
+            key-resolver: "#{@apiKeyRateLimitResolver}"
 
     - id: memory
       uri: lb://minimax-memory
@@ -138,7 +143,7 @@ spring.cloud.gateway:
           args:
             redis-rate-limiter.replenishRate: 10
             redis-rate-limiter.burstCapacity: 20
-            key-resolver: "#{@userKeyResolver}"
+            key-resolver: "#{@apiKeyRateLimitResolver}"
 
     - id: prompt
       uri: lb://minimax-prompt
@@ -180,7 +185,7 @@ spring.cloud.gateway:
           args:
             redis-rate-limiter.replenishRate: 20
             redis-rate-limiter.burstCapacity: 40
-            key-resolver: "#{@userKeyResolver}"
+            key-resolver: "#{@apiKeyRateLimitResolver}"
 
 # =============================================================
 # Nacos 服务发现 (V5.7)
