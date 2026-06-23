@@ -810,7 +810,10 @@ services:
     logging: *default-logging
 
   # ========== nginx 统一入口 (前端 + 反代, 端口 80) ==========
+  # V1.9.6: 用 profile 控制 - 默认用宿主机 nginx, 需要时启用
+  # 启用: docker compose --profile docker-nginx up -d nginx
   nginx:
+    profiles: ["docker-nginx"]   # 默认不启动 (避免跟宿主机 nginx 冲突)
     image: nginx:1.25-alpine
     container_name: minimax-nginx
     <<: *default-restart

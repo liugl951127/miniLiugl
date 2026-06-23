@@ -19,6 +19,8 @@
 #   ./deploy-simple/docker-deploy.sh rebuild              # 强制重新构建镜像
 #   sudo ./deploy-simple/docker-deploy.sh domain DOMAIN EMAIL   # 配置公网域名+HTTPS
 #   sudo ./deploy-simple/docker-deploy.sh verify [DOMAIN]      # 验证完整链路
+#   sudo ./deploy-simple/docker-deploy.sh frontend DOMAIN EMAIL # 宿主机nginx反代前端+gateway (V1.9.6 推荐)
+#   sudo ./deploy-simple/docker-deploy.sh fix-80                # 修 80 端口冲突
 #
 # 前置:
 #   - Docker 20+ (含 docker compose v2)
@@ -278,9 +280,10 @@ case "$ACTION" in
   restart)    do_restart ;;
   domain)     exec "$SCRIPT_DIR/setup-public-domain.sh" "${@:2}" ;;
   verify)     exec "$SCRIPT_DIR/verify-public-domain.sh" "${@:2}" ;;
+  frontend)   exec "$SCRIPT_DIR/setup-frontend-via-host-nginx.sh" "${@:2}" ;;
   fix-80)     exec "$SCRIPT_DIR/fix-port-80.sh" ;;
   *)
-    echo "用法: $0 {up|down|logs [svc]|ps|rebuild [svc]|restart <svc>|domain DOMAIN EMAIL|verify [DOMAIN]|fix-80}"
+    echo "用法: $0 {up|down|logs [svc]|ps|rebuild [svc]|restart <svc>|domain DOMAIN EMAIL|verify [DOMAIN]|frontend DOMAIN EMAIL|fix-80}"
     exit 1
     ;;
 esac
