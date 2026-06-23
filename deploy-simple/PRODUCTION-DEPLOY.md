@@ -28,6 +28,20 @@ chmod +x deploy-simple/docker-deploy.sh
 sudo ./deploy-simple/setup-domain.sh your-domain.com admin@example.com
 ```
 
+**环境变量开关** (V1.9.4):
+- `SKIP_NGINX_CHECK=1` 跳过所有 nginx 语法校验 (默认 warn 不退出)
+- `SKIP_PORT_CHECK=1` 完全跳过端口冲突检查 (80 端口默认不检查, 宿主机 nginx 占 80 不报错)
+- `STRICT_NGINX=1` 启用严格模式 (nginx 错误时 exit 1)
+
+**示例**:
+```bash
+# 跳过所有 nginx + 端口检查 (容器/CI 环境)
+SKIP_NGINX_CHECK=1 SKIP_PORT_CHECK=1 ./deploy-simple/docker-deploy.sh up
+
+# 严格模式 (生产环境首次部署)
+STRICT_NGINX=1 ./deploy-simple/setup-domain.sh your-domain.com admin@example.com
+```
+
 **CentOS Stream 9 特性自动处理**:
 - ✅ dnf 包管理器 (而非 yum)
 - ✅ firewalld 防火墙 (而非 ufw)

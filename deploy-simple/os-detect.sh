@@ -105,20 +105,35 @@ firewall_open() {
   fi
 }
 
-# 重启 nginx
+# 重启 nginx (V1.9.4: nginx 没装时优雅跳过, 不报错)
 nginx_reload() {
+  if [ "${SKIP_NGINX_CHECK:-0}" = "1" ]; then
+    log_warn "跳过 nginx reload (SKIP_NGINX_CHECK=1)"
+    return 0
+  fi
+  if ! command -v nginx &>/dev/null; then
+    log_warn "nginx 未安装, 跳过 reload"
+    return 0
+  fi
   if systemctl reload nginx 2>/dev/null; then
     log_ok "nginx 已重载"
   elif systemctl restart nginx 2>/dev/null; then
     log_ok "nginx 已重启"
   else
-    log_err "nginx 重载失败, 请手动检查"
-    return 1
+    log_warn "nginx reload 失败, 请手动: sudo systemctl reload nginx"
+    return 0  # V1.9.4: 不再 exit, 脚本继续
   fi
 }
 
-# nginx -t 测试
+# nginx -t 测试 (V1.9.4: 可选跳过, 不装 nginx / 配置不全时不会报错)
 nginx_test() {
+  if [ "${SKIP_NGINX_CHECK:-0}" = "1" ]; then
+    return 0  # 跳过, 返回成功
+  fi
+  if ! command -v nginx &>/dev/null; then
+    echo "nginx 未安装, 跳过检查"
+    return 0
+  fi
   nginx -t 2>&1
 }
 

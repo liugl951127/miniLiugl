@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================
-# MiniMax Platform - Docker 一键部署 (V1.9.2)
+# MiniMax Platform - Docker 一键部署 (V1.9.4)
 #
 # 特性:
 #   - 一条命令拉起全部: nacos + redis + mysql + 15 微服务 + nginx
@@ -8,6 +8,7 @@
 #   - 容器网络互通 (gateway 用 nacos:8848, mysql 用 mysql:3306 等)
 #   - MySQL 容器首次启动自动执行 sql/init-minimax.sql
 #   - 兼容 CentOS Stream 9 / RHEL 9 / Ubuntu 20+ / Debian 11+
+#   - V1.9.4: 不校验 nginx 配置 (nginx 在容器内, 无需宿主机 nginx)
 #
 # 用法:
 #   chmod +x deploy-simple/docker-deploy.sh
@@ -79,12 +80,21 @@ preflight() {
   fi
   log_ok "Docker Compose $(docker compose version | awk '{print $4}')"
 
-  # 检查端口冲突 (V1.9.1 端口: gateway 7080 + 业务 8081-8093)
-  for port in 80 3306 6379 8848 7080 8081 8093 9090; do
-    if ss -tlnp 2>/dev/null | grep -q ":$port "; then
-      log_warn "端口 $port 已被占用, 可能冲突"
+  # 检查端口冲突 (V1.9.4: warn 不退出, 默认跳过 80 端口因为 docker nginx 会监听)
+  if [ "${SKIP_PORT_CHECK:-0}" = "1" ]; then
+    log_info "跳过端口冲突检查 (SKIP_PORT_CHECK=1)"
+  else
+    for port in 3306 6379 8848 7080 8081 8093 9090; do
+      if ss -tlnp 2>/dev/null | grep -q ":$port "; then
+        log_warn "端口 $port 已被占用, 可能冲突"
+      fi
+    done
+    # 80 端口特殊处理: 提示但不阻塞 (因为 docker nginx 会接管)
+    if ss -tlnp 2>/dev/null | grep -q ":80 "; then
+      log_warn "端口 80 已被占用 (宿主机 nginx 或其他服务), docker 部署会冲突"
+      log_warn "    解决: sudo systemctl stop nginx  &&  sudo systemctl disable nginx"
     fi
-  done
+  fi
 
   # 检查镜像缓存
   IMAGES=$(docker images --format '{{.Repository}}' 2>/dev/null | grep -c minimax- || true)

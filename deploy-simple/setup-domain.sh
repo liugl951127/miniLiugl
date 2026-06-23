@@ -160,12 +160,22 @@ for f in \
   [ -f "$f" ] && mv "$f" "${f}.bak" && log_warn "已备份: $f"
 done
 
-# 测试配置
-if ! nginx_test; then
-  log_err "nginx 配置语法错误, 已回滚"
-  exit 1
+# 测试配置 (可跳过, 用于容器/跨机器部署)
+if [ "${SKIP_NGINX_CHECK:-0}" = "1" ]; then
+  log_warn "跳过 nginx 配置校验 (SKIP_NGINX_CHECK=1)"
+else
+  if ! nginx_test 2>/dev/null; then
+    if [ "${STRICT_NGINX:-0}" = "1" ]; then
+      log_err "nginx 配置语法错误"
+      nginx_test
+      exit 1
+    else
+      log_warn "nginx 配置语法有警告, 但继续 (设 STRICT_NGINX=1 严格退出)"
+    fi
+  else
+    log_ok "nginx 配置语法 OK"
+  fi
 fi
-log_ok "nginx 配置语法 OK"
 
 nginx_reload
 

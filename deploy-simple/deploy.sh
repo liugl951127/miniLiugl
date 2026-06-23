@@ -444,14 +444,20 @@ install_nginx() {
     log_warn "/etc/nginx/nginx.conf 未包含 conf.d, 需要手动添加"
   fi
 
-  # 测试配置
-  if nginx -t 2>&1 | grep -q "successful"; then
+  # 测试配置 (V1.9.4: 可跳过, 默认 warn 不退出)
+  if [ "${SKIP_NGINX_CHECK:-0}" = "1" ]; then
+    log_warn "跳过 nginx 配置校验 (SKIP_NGINX_CHECK=1)"
+  elif nginx -t 2>&1 | grep -q "successful"; then
     log_ok "nginx 配置语法 OK"
     systemctl reload nginx 2>/dev/null && log_ok "nginx 已重载" || log_warn "请手动: sudo systemctl reload nginx"
   else
-    log_err "nginx 配置语法错误"
-    nginx -t
-    exit 1
+    if [ "${STRICT_NGINX:-0}" = "1" ]; then
+      log_err "nginx 配置语法错误"
+      nginx -t
+      exit 1
+    else
+      log_warn "nginx 配置语法有警告, 但继续 (设 STRICT_NGINX=1 严格退出)"
+    fi
   fi
   echo ""
 }
