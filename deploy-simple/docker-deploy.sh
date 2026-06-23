@@ -12,11 +12,13 @@
 #
 # 用法:
 #   chmod +x deploy-simple/docker-deploy.sh
-#   ./deploy-simple/docker-deploy.sh up           # 启动全部
-#   ./deploy-simple/docker-deploy.sh down         # 停止
-#   ./deploy-simple/docker-deploy.sh logs [svc]   # 日志
-#   ./deploy-simple/docker-deploy.sh ps           # 状态
-#   ./deploy-simple/docker-deploy.sh rebuild      # 强制重新构建镜像
+#   ./deploy-simple/docker-deploy.sh up                   # 启动全部
+#   ./deploy-simple/docker-deploy.sh down                 # 停止
+#   ./deploy-simple/docker-deploy.sh logs [svc]           # 日志
+#   ./deploy-simple/docker-deploy.sh ps                   # 状态
+#   ./deploy-simple/docker-deploy.sh rebuild              # 强制重新构建镜像
+#   sudo ./deploy-simple/docker-deploy.sh domain DOMAIN EMAIL   # 配置公网域名+HTTPS
+#   sudo ./deploy-simple/docker-deploy.sh verify [DOMAIN]      # 验证完整链路
 #
 # 前置:
 #   - Docker 20+ (含 docker compose v2)
@@ -268,14 +270,17 @@ do_restart() {
 # 入口
 # ============================================================
 case "$ACTION" in
-  up)      do_up ;;
-  down)    do_down ;;
-  logs)    do_logs ;;
-  ps)      do_ps ;;
-  rebuild) do_rebuild ;;
-  restart) do_restart ;;
+  up)         do_up ;;
+  down)       do_down ;;
+  logs)       do_logs ;;
+  ps)         do_ps ;;
+  rebuild)    do_rebuild ;;
+  restart)    do_restart ;;
+  domain)     exec "$SCRIPT_DIR/setup-public-domain.sh" "${@:2}" ;;
+  verify)     exec "$SCRIPT_DIR/verify-public-domain.sh" "${@:2}" ;;
+  fix-80)     exec "$SCRIPT_DIR/fix-port-80.sh" ;;
   *)
-    echo "用法: $0 {up|down|logs [svc]|ps|rebuild [svc]|restart <svc>}"
+    echo "用法: $0 {up|down|logs [svc]|ps|rebuild [svc]|restart <svc>|domain DOMAIN EMAIL|verify [DOMAIN]|fix-80}"
     exit 1
     ;;
 esac
