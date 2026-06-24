@@ -1,0 +1,126 @@
+{
+  "info": {
+    "name": "MiniMax Platform API (V5.9 Day 20)",
+    "description": "MiniMax 大模型平台完整 API 集合\n\n版本: V5.9 (Day 20)\n基础 URL: http://localhost:3000/api/v1\n\n认证方式:\n  - JWT Bearer Token: 登录后从响应中获取 accessToken\n  - API Key: Bearer mmx_xxxx (用于网关直接调用)\n\n默认端口:\n  - Gateway: 3000\n  - Auth: 8081 | Chat: 8082 | Model: 8083 | Memory: 8084\n  - RAG: 8085 | Function: 8086 | Agent: 8090 | Monitor: 8092\n  - Admin: 8093 | Analytics: 8094 | Prompt: 8091",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api/v1" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "userId", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "认证 Auth",
+      "item": [
+        { "name": "POST /auth/login", "event": [{ "listen": "test", "script": { "exec": ["var d = JSON.parse(responseBody); pm.collectionVariables.set('accessToken', d.data.accessToken); pm.collectionVariables.set('refreshToken', d.data.refreshToken); pm.collectionVariables.set('userId', d.data.user.id);"] }}], "request": { "method": "POST", "header": [], "body": { "mode": "json", "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}" }, "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] } }, "response": [] },
+        { "name": "POST /auth/register", "request": { "method": "POST", "header": [], "body": { "mode": "json", "raw": "{\n  \"username\": \"newuser\",\n  \"password\": \"pass123\",\n  \"email\": \"user@example.com\"\n}" }, "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] } }, "response": [] },
+        { "name": "GET /auth/me", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] } }, "response": [] },
+        { "name": "POST /auth/refresh", "request": { "method": "POST", "header": [], "body": { "mode": "json", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" }, "url": { "raw": "{{baseUrl}}/auth/refresh", "host": ["{{baseUrl}}"], "path": ["auth", "refresh"] } }, "response": [] },
+        { "name": "POST /auth/logout", "request": { "method": "POST", "header": [], "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "会话 Chat",
+      "item": [
+        { "name": "GET /chat/sessions", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/chat/sessions?page=1&size=20", "host": ["{{baseUrl}}"], "path": ["chat", "sessions"] } }, "response": [] },
+        { "name": "POST /chat/sessions", "request": { "method": "POST", "header": [], "body": { "mode": "json", "raw": "{\n  \"title\": \"新会话\"\n}" }, "url": { "raw": "{{baseUrl}}/chat/sessions", "host": ["{{baseUrl}}"], "path": ["chat", "sessions"] } }, "response": [] },
+        { "name": "PUT /chat/sessions/:id", "request": { "method": "PUT", "header": [], "body": { "mode": "json", "raw": "{\n  \"title\": \"更新标题\"\n}" }, "url": { "raw": "{{baseUrl}}/chat/sessions/1", "host": ["{{baseUrl}}"], "path": ["chat", "sessions", "1"] } }, "response": [] },
+        { "name": "DELETE /chat/sessions/:id", "request": { "method": "DELETE", "header": [], "url": { "raw": "{{baseUrl}}/chat/sessions/1", "host": ["{{baseUrl}}"], "path": ["chat", "sessions", "1"] } }, "response": [] },
+        { "name": "GET /chat/sessions/:id/messages", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/chat/sessions/1/messages?page=1&size=50", "host": ["{{baseUrl}}"], "path": ["chat", "sessions", "1", "messages"] } }, "response": [] },
+        { "name": "POST /chat/sessions/:id/messages", "request": { "method": "POST", "header": [], "body": { "mode": "json", "raw": "{\n  \"content\": \"你好，MiniMax！\",\n  \"role\": \"user\"\n}" }, "url": { "raw": "{{baseUrl}}/chat/sessions/1/messages", "host": ["{{baseUrl}}"], "path": ["chat", "sessions", "1", "messages"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "模型 Model",
+      "item": [
+        { "name": "GET /models/providers", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/models/providers", "host": ["{{baseUrl}}"], "path": ["models", "providers"] } }, "response": [] },
+        { "name": "GET /models", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/models", "host": ["{{baseUrl}}"], "path": ["models"] } }, "response": [] },
+        { "name": "POST /models/chat (同步)", "request": { "method": "POST", "header": [], "body": { "mode": "json", "raw": "{\n  \"provider\": \"openai\",\n  \"model\": \"gpt-4o-mini\",\n  \"messages\": [{\"role\":\"user\",\"content\":\"Hello!\"}]\n}" }, "url": { "raw": "{{baseUrl}}/models/chat", "host": ["{{baseUrl}}"], "path": ["models", "chat"] } }, "response": [] },
+        { "name": "POST /models/chat/stream (SSE 流式)", "request": { "method": "POST", "header": [], "body": { "mode": "json", "raw": "{\n  \"provider\": \"openai\",\n  \"model\": \"gpt-4o-mini\",\n  \"messages\": [{\"role\":\"user\",\"content\":\"讲个笑话\"}],\n  \"stream\": true\n}" }, "url": { "raw": "{{baseUrl}}/models/chat/stream", "host": ["{{baseUrl}}"], "path": ["models", "chat", "stream"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "短期记忆 Memory",
+      "item": [
+        { "name": "GET /memory/short/:sessionId", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/memory/short/1", "host": ["{{baseUrl}}"], "path": ["memory", "short", "1"] } }, "response": [] },
+        { "name": "DELETE /memory/short/:sessionId", "request": { "method": "DELETE", "header": [], "url": { "raw": "{{baseUrl}}/memory/short/1", "host": ["{{baseUrl}}"], "path": ["memory", "short", "1"] } }, "response": [] },
+        { "name": "GET /memory/long", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/memory/long?page=1&size=20", "host": ["{{baseUrl}}"], "path": ["memory", "long"] } }, "response": [] },
+        { "name": "POST /memory/long", "request": { "method": "POST", "header": [], "body": { "mode": "json", "raw": "{\n  \"content\": \"用户的项目是 AI Agent 平台\",\n  \"type\": \"fact\",\n  \"tags\": [\"project\", \"ai\"]\n}" }, "url": { "raw": "{{baseUrl}}/memory/long", "host": ["{{baseUrl}}"], "path": ["memory", "long"] } }, "response": [] },
+        { "name": "POST /memory/recall", "request": { "method": "POST", "header": [], "body": { "mode": "json", "raw": "{\n  \"query\": \"AI Agent 相关信息\",\n  \"topK\": 5\n}" }, "url": { "raw": "{{baseUrl}}/memory/recall", "host": ["{{baseUrl}}"], "path": ["memory", "recall"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "知识库 RAG",
+      "item": [
+        { "name": "GET /rag/knowledge-bases", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/rag/knowledge-bases", "host": ["{{baseUrl}}"], "path": ["rag", "knowledge-bases"] } }, "response": [] },
+        { "name": "POST /rag/knowledge-bases", "request": { "method": "POST", "header": [], "body": { "mode": "json", "raw": "{\n  \"name\": \"技术文档库\",\n  \"description\": \"技术文档和架构说明\"\n}" }, "url": { "raw": "{{baseUrl}}/rag/knowledge-bases", "host": ["{{baseUrl}}"], "path": ["rag", "knowledge-bases"] } }, "response": [] },
+        { "name": "POST /rag/documents/upload", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "multipart/form-data"}], "body": { "mode": "formdata", "formdata": [{"key": "file", "type": "file"}] }, "url": { "raw": "{{baseUrl}}/rag/documents/upload?kbId=1", "host": ["{{baseUrl}}"], "path": ["rag", "documents", "upload"] } }, "response": [] },
+        { "name": "POST /rag/retrieve", "request": { "method": "POST", "header": [], "body": { "mode": "json", "raw": "{\n  \"query\": \"如何部署 MiniMax 平台？\",\n  \"kbIds\": [1],\n  \"topK\": 5\n}" }, "url": { "raw": "{{baseUrl}}/rag/retrieve", "host": ["{{baseUrl}}"], "path": ["rag", "retrieve"] } }, "response": [] },
+        { "name": "POST /rag/ask", "request": { "method": "POST", "header": [], "body": { "mode": "json", "raw": "{\n  \"query\": \"MiniMax 平台的架构是怎样的？\",\n  \"kbIds\": [1],\n  \"stream\": false\n}" }, "url": { "raw": "{{baseUrl}}/rag/ask", "host": ["{{baseUrl}}"], "path": ["rag", "ask"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "工具调用 Function",
+      "item": [
+        { "name": "GET /function/tools", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/function/tools", "host": ["{{baseUrl}}"], "path": ["function", "tools"] } }, "response": [] },
+        { "name": "POST /function/tools", "request": { "method": "POST", "header": [], "body": { "mode": "json", "raw": "{\n  \"name\": \"get_weather\",\n  \"description\": \"获取指定城市的天气\",\n  \"type\": \"http\",\n  \"config\": {\n    \"method\": \"GET\",\n    \"url\": \"https://api.weather.com/v3/weather\",\n    \"params\": {\"city\": \"{{city}}\"}\n  }\n}" }, "url": { "raw": "{{baseUrl}}/function/tools", "host": ["{{baseUrl}}"], "path": ["function", "tools"] } }, "response": [] },
+        { "name": "POST /function/invoke", "request": { "method": "POST", "header": [], "body": { "mode": "json", "raw": "{\n  \"toolName\": \"get_current_time\",\n  \"params\": {}\n}" }, "url": { "raw": "{{baseUrl}}/function/invoke", "host": ["{{baseUrl}}"], "path": ["function", "invoke"] } }, "response": [] },
+        { "name": "POST /function/chat", "request": { "method": "POST", "header": [], "body": { "mode": "json", "raw": "{\n  \"provider\": \"openai\",\n  \"model\": \"gpt-4o-mini\",\n  \"messages\": [{\"role\":\"user\",\"content\":\"现在几点了？\"}]\n}" }, "url": { "raw": "{{baseUrl}}/function/chat", "host": ["{{baseUrl}}"], "path": ["function", "chat"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "Agent (ReAct)",
+      "item": [
+        { "name": "POST /agent/chat", "request": { "method": "POST", "header": [], "body": { "mode": "json", "raw": "{\n  \"task\": \"帮我查询北京今天的天气并记录到记忆中\",\n  \"maxSteps\": 10,\n  \"stream\": false\n}" }, "url": { "raw": "{{baseUrl}}/agent/chat", "host": ["{{baseUrl}}"], "path": ["agent", "chat"] } }, "response": [] },
+        { "name": "GET /agent/history/:sessionId", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/agent/history/1", "host": ["{{baseUrl}}"], "path": ["agent", "history", "1"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "监控 Monitor",
+      "item": [
+        { "name": "GET /monitor/health-detail", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/monitor/health-detail", "host": ["{{baseUrl}}"], "path": ["monitor", "health-detail"] } }, "response": [] },
+        { "name": "GET /monitor/metrics", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/monitor/metrics", "host": ["{{baseUrl}}"], "path": ["monitor", "metrics"] } }, "response": [] },
+        { "name": "GET /monitor/alerts", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/monitor/alerts", "host": ["{{baseUrl}}"], "path": ["monitor", "alerts"] } }, "response": [] },
+        { "name": "POST /monitor/alerts/rules", "request": { "method": "POST", "header": [], "body": { "mode": "json", "raw": "{\n  \"name\": \"CPU 告警\",\n  \"metric\": \"system_cpu_usage\",\n  \"operator\": \"gt\",\n  \"threshold\": 0.8,\n  \"severity\": \"warning\"\n}" }, "url": { "raw": "{{baseUrl}}/monitor/alerts/rules", "host": ["{{baseUrl}}"], "path": ["monitor", "alerts", "rules"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "管理 Admin",
+      "item": [
+        { "name": "GET /admin/stats/dashboard", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/admin/stats/dashboard", "host": ["{{baseUrl}}"], "path": ["admin", "stats", "dashboard"] } }, "response": [] },
+        { "name": "GET /admin/stats/apikey (Day 20)", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/admin/stats/apikey", "host": ["{{baseUrl}}"], "path": ["admin", "stats", "apikey"] } }, "response": [] },
+        { "name": "GET /admin/health", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/admin/health", "host": ["{{baseUrl}}"], "path": ["admin", "health"] } }, "response": [] },
+        { "name": "GET /admin/audit/recent", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/admin/audit/recent?limit=50", "host": ["{{baseUrl}}"], "path": ["admin", "audit", "recent"] } }, "response": [] },
+        { "name": "GET /admin/audit/by-day", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/admin/audit/by-day?days=7", "host": ["{{baseUrl}}"], "path": ["admin", "audit", "by-day"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "数据智能 Analytics",
+      "item": [
+        { "name": "GET /analytics/datasources", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/analytics/datasources", "host": ["{{baseUrl}}"], "path": ["analytics", "datasources"] } }, "response": [] },
+        { "name": "POST /analytics/nlsql/ask", "request": { "method": "POST", "header": [], "body": { "mode": "json", "raw": "{\n  \"dataSourceId\": 1,\n  \"question\": \"最近7天每天有多少新用户？\"\n}" }, "url": { "raw": "{{baseUrl}}/analytics/nlsql/ask", "host": ["{{baseUrl}}"], "path": ["analytics", "nlsql", "ask"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "提示词 Prompt",
+      "item": [
+        { "name": "GET /prompts/templates", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/prompts/templates", "host": ["{{baseUrl}}"], "path": ["prompts", "templates"] } }, "response": [] },
+        { "name": "POST /prompts/render", "request": { "method": "POST", "header": [], "body": { "mode": "json", "raw": "{\n  \"templateId\": 1,\n  \"variables\": {\"name\": \"Alice\", \"topic\": \"AI\"}\n}" }, "url": { "raw": "{{baseUrl}}/prompts/render", "host": ["{{baseUrl}}"], "path": ["prompts", "render"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "系统 Health",
+      "item": [
+        { "name": "GET /health (网关公开)", "request": { "method": "GET", "header": [], "url": { "raw": "http://localhost:3000/health", "host": ["localhost:3000"], "path": ["health"] } }, "response": [] },
+        { "name": "GET /api/v1/health", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] } }, "response": [] },
+        { "name": "GET /actuator/prometheus (Gateway)", "request": { "method": "GET", "header": [], "url": { "raw": "http://localhost:3000/actuator/prometheus", "host": ["localhost:3000"], "path": ["actuator", "prometheus"] } }, "response": [] }
+      ]
+    }
+  ]
+}

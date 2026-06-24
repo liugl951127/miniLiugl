@@ -125,6 +125,8 @@ const menuRoutes = computed(() => {
   if (userStore.isSuperAdmin) {
     base.push({ path: '/super', title: '👑 超级管理', icon: 'Key' })
     base.push({ path: '/tenant', title: '🏢 租户管理', icon: 'Office' })
+    // V5.9 Day 20: API Key 用量统计
+    base.push({ path: '/apikey-stats', title: '📊 Key 统计', icon: 'DataLine' })
   }
   return base
 })

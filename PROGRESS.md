@@ -442,7 +442,27 @@
 - [ ] API Key 配额/用量统计页面
 - [ ] 性能压测报告 (wrk / JMeter)
 
-## Day 20 - 待开始
+## Day 20 - 2026-06-24 ✅ V5.9 API Key 统计 + E2E 健康检查 + Postman Collection
+
+**今日完成：**
+- [x] **API Key 用量统计** (前后端全链路)
+  - 后端: `ApiKeyStatsService` (`summary` / `newKeysTrend`) + `AdminController` 新增 2 端点
+  - 前端: `Stats.vue` KPI 卡片 + ECharts 饼图 + Top 用户排行榜
+  - 侧边栏: 超级管理员新增「📊 Key 统计」入口
+- [x] **E2E 健康检查脚本** (`scripts/e2e-health-check.sh`)
+  - 12 个微服务: Gateway/Auth/Chat/Model/Memory/RAG/Function/Agent/Monitor/Admin/Analytics/Prompt
+  - 彩色输出 + 环境变量覆盖端口 + WebSocket TCP 检测
+- [x] **Postman API Collection** (`docs/minimax-api.postman_collection.json`)
+  - 13 分组 50+ 请求，自动登录脚本 + Collection Variables
+- [x] **自检通过**: Maven 19 模块 ✅ / 前端构建 ✅ / 静态体检 0 错误 ✅
+
+**明日计划 Day 21：**
+- [ ] 性能压测脚本 (wrk / Bash 并发压测)
+- [ ] API 文档导出为 Markdown / PDF
+- [ ] API Key 配额前端告警提示
+- [ ] 外部 API 限流规则 CRUD 页面
+
+## Day 21 - 待开始
 
 ## V5.9 (2026-06-21) — Dashboard 真实图表 + 告警规则 CRUD + WS 精确分流
 

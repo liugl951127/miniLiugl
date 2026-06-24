@@ -1,6 +1,7 @@
 package com.minimax.admin.controller;
 
 import com.minimax.admin.entity.AdminAuditLog;
+import com.minimax.admin.service.ApiKeyStatsService;
 import com.minimax.admin.service.AuditService;
 import com.minimax.admin.service.HealthAggregator;
 import com.minimax.admin.service.ModelMgmtService;
@@ -54,6 +55,7 @@ public class AdminController {
     private final StatsService stats;
     private final HealthAggregator health;
     private final AuditService audit;
+    private final ApiKeyStatsService apiKeyStats;
 
     // ---------- 用户管理 ----------
 
@@ -137,6 +139,20 @@ public class AdminController {
     @GetMapping("/stats/dashboard")
     public Result<Map<String, Object>> dashboard() {
         return Result.ok(stats.dashboard());
+    }
+
+    /** V5.9 Day 20: API Key 全局用量统计 */
+    @Operation(summary = "API Key 全局统计摘要 (Day 20)")
+    @GetMapping("/stats/apikey")
+    public Result<Map<String, Object>> apiKeyStats() {
+        return Result.ok(apiKeyStats.summary());
+    }
+
+    /** V5.9 Day 20: API Key 近 N 天新增趋势 */
+    @Operation(summary = "API Key 新增趋势 (Day 20)")
+    @GetMapping("/stats/apikey/trend")
+    public Result<List<Map<String, Object>>> apiKeyTrend(@RequestParam(defaultValue = "7") int days) {
+        return Result.ok(apiKeyStats.newKeysTrend(days));
     }
 
     // ---------- 监控 ----------

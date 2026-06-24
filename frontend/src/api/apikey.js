@@ -17,5 +17,12 @@ export const apiKeyApi = {
   remove: (id) => http.delete(`/auth/apikeys/${id}`),
 
   /** 轮换 Key（删旧创新） */
-  rotate: (id, data) => http.post(`/auth/apikeys/${id}/rotate`, data || {})
+  rotate: (id, data) => http.post(`/auth/apikeys/${id}/rotate`, data || {}),
+
+  // V5.9 Day 20: 管理员 API Key 统计
+  /** 全局统计摘要 (admin) */
+  adminSummary: () => http.get('/admin/stats/apikey'),
+
+  /** 新增趋势 (admin) */
+  adminTrend: (days = 7) => http.get(`/admin/stats/apikey/trend?days=${days}`)
 }

@@ -313,6 +313,13 @@ const routes = [
         name: 'ApiKeyMgmt',
         component: () => import('@/views/apikey/Index.vue'),
         meta: { title: 'API Key', icon: 'Key' }
+      },
+      // V5.9 Day 20: API Key 用量统计
+      {
+        path: 'apikey-stats',
+        name: 'ApiKeyStats',
+        component: () => import('@/views/apikey/Stats.vue'),
+        meta: { title: 'Key 统计', icon: 'DataLine', requiresSuper: true }
       }
     ]
   },
