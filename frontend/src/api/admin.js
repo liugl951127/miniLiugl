@@ -28,6 +28,8 @@ export const updateRateLimit = (code, actorId, body) =>
 export const getRecentAudit = (limit = 50) =>
   http.get(`/admin/audit/recent?limit=${limit}`)
 
+export const getApiKeyStats = () => http.get('/admin/apikey/stats')
+
 export const getAuditByActor = (actorId, limit = 20) =>
   http.get(`/admin/audit/by-actor/${actorId}?limit=${limit}`)
 

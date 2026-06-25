@@ -16,6 +16,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -120,6 +121,28 @@ public class UserApiKeyService {
         // 计数 +1
         apiKeyMapper.incrementUseCount(key.getId());
         return key.getUserId();
+    }
+
+    /** 全局 API Key 统计（供管理员） */
+    public Map<String, Object> getStats() {
+        Map<String, Object> stats = apiKeyMapper.selectStats();
+        List<Map<String, Object>> byStatus = apiKeyMapper.selectCountByStatus();
+
+        long activeKeys = 0;
+        long inactiveKeys = 0;
+        for (Map<String, Object> row : byStatus) {
+            Integer enabled = (Integer) row.get("enabled");
+            Long cnt = ((Number) row.get("cnt")).longValue();
+            if (enabled == 1) activeKeys = cnt;
+            else inactiveKeys = cnt;
+        }
+
+        return Map.of(
+                "totalKeys", stats.get("totalKeys") != null ? ((Number) stats.get("totalKeys")).longValue() : 0L,
+                "totalCalls", stats.get("totalCalls") != null ? ((Number) stats.get("totalCalls")).longValue() : 0L,
+                "activeKeys", activeKeys,
+                "inactiveKeys", inactiveKeys
+        );
     }
 
     // ---- private helpers ----

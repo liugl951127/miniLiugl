@@ -1,7 +1,7 @@
 <!--
   Admin 后台容器 (V5.24)
   - 提供侧边栏子导航 + 主内容 router-view
-  - 子页: Dashboard / Metrics / Traces / Monitor / Provider / Leaderboard
+  - 子页: Dashboard / Metrics / Traces / Monitor / Provider / Leaderboard / ApiKeyStats
 -->
 <template>
   <div class="admin-container">
@@ -34,6 +34,10 @@
         <el-menu-item index="/admin/leaderboard">
           <el-icon><Trophy /></el-icon>
           <span>模型排行榜 <el-tag size="small" type="success">V5.24</el-tag></span>
+        </el-menu-item>
+        <el-menu-item index="/admin/apikey-stats">
+          <el-icon><Key /></el-icon>
+          <span>API Key 配额 <el-tag size="small" type="success">Day 20</el-tag></span>
         </el-menu-item>
         <el-menu-item index="/admin/wechat">
           <el-icon><ChatDotRound /></el-icon>

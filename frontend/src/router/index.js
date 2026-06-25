@@ -145,6 +145,12 @@ const routes = [
             component: () => import('@/views/admin/Leaderboard.vue'),
             meta: { title: '模型排行榜 (V5.24)', icon: 'Trophy' }
           },
+          {
+            path: 'apikey-stats',
+            name: 'AdminApiKeyStats',
+            component: () => import('@/views/admin/ApiKeyStats.vue'),
+            meta: { title: 'API Key 配额统计 (Day 20)', icon: 'Key' }
+          },
         ]
       },
       {

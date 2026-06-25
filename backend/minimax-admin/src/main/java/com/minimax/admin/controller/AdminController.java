@@ -200,4 +200,12 @@ public class AdminController {
         java.time.LocalDateTime since = java.time.LocalDateTime.now().minusDays(days);
         return Result.ok(audit.countByDay(since.toString(), action));
     }
+
+    // ---------- API Key 统计 (Day 20) ----------
+
+    @Operation(summary = "API Key 全局统计 (Day 20)")
+    @GetMapping("/apikey/stats")
+    public Result<Map<String, Object>> apiKeyStats() {
+        return Result.ok(apiKeyStats.getStats());
+    }
 }

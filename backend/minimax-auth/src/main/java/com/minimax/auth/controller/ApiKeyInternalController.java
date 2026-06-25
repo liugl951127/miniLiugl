@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 /**
- * API Key 内部验证接口 (V5.33 Day 19).
+ * API Key 内部验证接口 (V5.33 Day 20 - 新增统计端点).
  *
  * 供网关 Gateway 调用，用于验证外部用户的 Bearer mmx_xxxx Token。
  * 仅内网访问，不对外暴露。
@@ -44,5 +44,11 @@ public class ApiKeyInternalController {
 
         log.debug("API Key 验证成功: userId={}", userId);
         return Map.of("userId", userId);
+    }
+
+    @Operation(summary = "API Key 全局统计（供管理后台）")
+    @GetMapping("/stats")
+    public Map<String, Object> stats() {
+        return apiKeyService.getStats();
     }
 }

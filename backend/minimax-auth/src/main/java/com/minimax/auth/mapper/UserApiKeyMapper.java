@@ -20,4 +20,12 @@ public interface UserApiKeyMapper extends BaseMapper<UserApiKey> {
 
     @Update("UPDATE user_api_key SET use_count = use_count + 1, last_used_at = NOW() WHERE id = #{id}")
     void incrementUseCount(@Param("id") Long id);
+
+    /** 全量聚合统计 */
+    @Select("SELECT COUNT(*) AS totalKeys, SUM(use_count) AS totalCalls FROM user_api_key WHERE deleted = 0")
+    java.util.Map<String, Object> selectStats();
+
+    /** 按 enabled 统计 */
+    @Select("SELECT enabled, COUNT(*) AS cnt FROM user_api_key WHERE deleted = 0 GROUP BY enabled")
+    java.util.List<java.util.Map<String, Object>> selectCountByStatus();
 }
