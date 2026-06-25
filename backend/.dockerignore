@@ -1,0 +1,75 @@
+# =============================================================
+# Docker 镜像构建忽略列表 (V2.0) - 减小上下文, 加快构建
+# =============================================================
+
+# Git
+.git
+.gitignore
+.gitattributes
+.github
+
+# IDE
+.idea
+.vscode
+*.iml
+*.iws
+*.ipr
+.project
+.classpath
+.settings
+*.swp
+.DS_Store
+
+# Maven
+**/target/
+**/pom.xml.tag
+**/pom.xml.releaseBackup
+**/pom.xml.versionsBackup
+**/pom.xml.next
+**/release.properties
+**/dependency-reduced-pom.xml
+**/buildNumber.properties
+**/.mvn/timing.properties
+**/.mvn/wrapper/maven-wrapper.jar
+
+# Java
+*.class
+*.log
+hs_err_pid*
+replay_pid*
+
+# Node
+frontend/node_modules
+frontend/dist
+frontend/.npm
+frontend/.next
+frontend/out
+
+# Docs
+*.md
+docs/
+README*
+LICENSE
+
+# Logs
+*.log
+logs/
+
+# Test
+**/test-output/
+**/target/test-*
+**/src/test/resources/snapshots/
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Backup
+*.bak
+*.tmp
+*.swp
+
+# Specific to MiniMax
+**/.flattened-pom.xml
+**/dependency-reduced-pom.xml

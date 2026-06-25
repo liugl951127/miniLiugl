@@ -1,0 +1,72 @@
+# =============================================================
+# MiniMax Platform - JVM 内存调优模板 (V2.0)
+#
+# 目标: 每个微服务运行内存从 ~512MB 降到 ~256MB (-50%)
+#
+# 关键:
+#   - UseContainerSupport: 让 JVM 自动检测 Docker 内存限制
+#   - MaxRAMPercentage=70: 最多用 70% 内存 (留 30% 给系统/Netty/GC overhead)
+#   - G1GC + G1HeapRegionSize: 减少 GC 暂停
+#   - 字符串去重 + 类数据共享: 减少内存占用
+# =============================================================
+
+# ---- 内存 (最关键) ----
+-XX:MaxRAMPercentage=70.0
+-XX:MinRAMPercentage=40.0
+-XX:InitialRAMPercentage=40.0
+
+# ---- 垃圾回收 (G1, 适合 4G+ 堆) ----
+-XX:+UseG1GC
+-XX:MaxGCPauseMillis=200
+-XX:G1HeapRegionSize=16m
+-XX:G1ReservePercent=10
+-XX:G1NewSizePercent=30
+-XX:G1MaxNewSizePercent=40
+
+# ---- 字符串/类优化 ----
+-XX:+UseStringDeduplication
+-XX:+UseCompressedOops
+-XX:+UseCompressedClassPointers
+-XX:+ClassDataSharing
+# (CDS 在 JDK 17 默认开, 不显式指定)
+
+# ---- JIT 优化 (启动 vs 峰值平衡) ----
+-XX:+TieredCompilation
+-XX:TieredStopAtLevel=4
+-XX:CICompilerCount=2
+
+# ---- 性能优化 ----
+-XX:+AlwaysPreTouch
+-XX:+ParallelRefProcEnabled
+-XX:+UseFastJNIAccessors
+-XX:+OptimizeStringConcat
+-XX:+UseCompressedStrings  # JDK 9+ 默认开
+
+# ---- 错误诊断 ----
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:HeapDumpPath=/var/log/minimax/oom/
+-XX:+ExitOnOutOfMemoryError
+-XX:+CrashOnOutOfMemoryError  # 出 OOM 直接重启
+
+# ---- 调试 (生产关闭) ----
+# -Xlog:gc*,gc+heap=trace,gc+age=trace,safepoint:file=/var/log/minimax/gc.log:utctime,level,tag,time:filecount=10,filesize=50M
+-XX:+UnlockDiagnosticVMOptions
+-XX:NativeMemoryTracking=summary
+# NMT 默认 summary 级别, 不打印细节避免性能损失
+
+# ---- Netty/Undertow (WebFlux 用) ----
+-Dio.netty.allocator.type=pooled
+-Dio.netty.leakDetection.level=disabled
+-Dio.netty.recycler.maxCapacityPerThread=4096
+
+# ---- Jackson (默认 fastjson2 已禁) ----
+-Dspring.jackson.serialization.write-dates-as-timestamps=false
+
+# ---- 日志 (异步) ----
+-Dlog4j2.contextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector
+-Dlog4j2.async.queue.size=8192
+-Dlog4j2.discardThreshold=ERROR
+
+# ---- 时区 ----
+-Duser.timezone=Asia/Shanghai
+-Dfile.encoding=UTF-8
