@@ -38,23 +38,40 @@ done
 
 # 2. Java 编译检查 (mvn compile)
 info "2. Maven 编译"
-if cd backend && mvn compile -q -DskipTests -Dspotless.skip=true > /tmp/mvn_compile.log 2>&1; then
-  pass "Maven 编译 — 通过"
+if command -v mvn &>/dev/null; then
+  if cd backend && mvn compile -q -DskipTests -Dspotless.skip=true > /tmp/mvn_compile.log 2>&1; then
+    pass "Maven 编译 — 通过"
+  else
+    fail "Maven 编译 — 失败"
+    cat /tmp/mvn_compile.log | tail -20
+  fi
+  cd ..
 else
-  fail "Maven 编译 — 失败"
-  cat /tmp/mvn_compile.log | tail -20
+  info "Maven 编译 — 跳过 (mvn 未安装)"
 fi
-cd ..
 
 # 3. 前端构建检查
 info "3. 前端构建"
-if cd frontend && npm run build > /tmp/npm_build.log 2>&1; then
-  pass "前端构建 — 通过"
+if command -v npm &>/dev/null; then
+  if [ -d frontend/node_modules ]; then
+    if npm --prefix frontend run build > /tmp/npm_build.log 2>&1; then
+      pass "前端构建 — 通过"
+    else
+      fail "前端构建 — 失败"
+      cat /tmp/npm_build.log | tail -20
+    fi
+  else
+    if npm --prefix frontend install -q > /tmp/npm_install.log 2>&1 && \
+       npm --prefix frontend run build > /tmp/npm_build.log 2>&1; then
+      pass "前端构建 — 通过 (含 npm install)"
+    else
+      fail "前端构建 — 失败"
+      cat /tmp/npm_build.log | tail -20
+    fi
+  fi
 else
-  fail "前端构建 — 失败"
-  cat /tmp/npm_build.log | tail -20
+  info "前端构建 — 跳过 (npm 未安装)"
 fi
-cd ..
 
 # 4. 关键配置文件检查
 info "4. 关键配置文件"

@@ -1,0 +1,3007 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "MiniMax AI Platform API",
+    "description": "MiniMax 大模型平台完整 REST API 规范（V5.9）。\n\n## Base URL\n- Gateway: `http://localhost:7080`\n- Auth: `http://localhost:8081`\n- Chat: `http://localhost:8082`\n- Model: `http://localhost:8083`\n- Memory: `http://localhost:8084`\n- RAG: `http://localhost:8085`\n- Function: `http://localhost:8086`\n- Admin: `http://localhost:8087`\n- Multimodal: `http://localhost:8088`\n- Monitor: `http://localhost:8089`\n\n## 认证\n除公开端点外，所有请求需携带 `Authorization: Bearer <accessToken>`。\n\n## 统一响应格式\n```json\n{\n  \"code\": 0,\n  \"message\": \"OK\",\n  \"data\": {},\n  \"timestamp\": 1234567890\n}\n```\n\n## 错误码\n- `0` 成功\n- `1000` 业务异常\n- `1001` 参数校验失败\n- `1002` 未登录\n- `1003` 无权限\n- `1500` 服务降级 / 限流\n",
+    "version": "5.9.0",
+    "contact": {
+      "name": "MiniMax Platform Team",
+      "url": "https://github.com/liugl951127/miniLiugl"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:7080",
+      "description": "API Gateway (生产环境替换为真实域名)"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "认证鉴权（登录/注册/Token 管理）"
+    },
+    {
+      "name": "Chat",
+      "description": "对话会话管理"
+    },
+    {
+      "name": "Model",
+      "description": "模型管理与调用"
+    },
+    {
+      "name": "Memory",
+      "description": "短期/长期记忆与偏好"
+    },
+    {
+      "name": "RAG",
+      "description": "知识库检索增强"
+    },
+    {
+      "name": "Function",
+      "description": "工具函数管理"
+    },
+    {
+      "name": "Admin",
+      "description": "管理后台"
+    },
+    {
+      "name": "Multimodal",
+      "description": "多模态（图片理解）"
+    },
+    {
+      "name": "Monitor",
+      "description": "健康检查与指标监控"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT Access Token（登录后获取）"
+      }
+    },
+    "schemas": {
+      "Result": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "description": "状态码，0=成功"
+          },
+          "message": {
+            "type": "string",
+            "description": "状态消息"
+          },
+          "data": {
+            "type": "object",
+            "nullable": true,
+            "description": "响应数据"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "时间戳"
+          }
+        }
+      },
+      "UserInfo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "username": {
+            "type": "string"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "properties": {
+          "username": {
+            "type": "string",
+            "example": "admin"
+          },
+          "password": {
+            "type": "string",
+            "example": "admin@123"
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "properties": {
+          "username": {
+            "type": "string",
+            "example": "alice"
+          },
+          "password": {
+            "type": "string",
+            "example": "alice@123"
+          },
+          "nickname": {
+            "type": "string",
+            "example": "Alice"
+          },
+          "email": {
+            "type": "string",
+            "example": "alice@example.com"
+          }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "Access Token（30分钟有效）"
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "Refresh Token（7天有效）"
+          },
+          "expiresIn": {
+            "type": "integer",
+            "description": "有效期（秒）"
+          },
+          "userInfo": {
+            "$ref": "#/components/schemas/UserInfo"
+          }
+        }
+      },
+      "RefreshRequest": {
+        "type": "object",
+        "required": [
+          "refreshToken"
+        ],
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          }
+        }
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          },
+          "modelCode": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sessionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant",
+              "system",
+              "function"
+            ]
+          },
+          "content": {
+            "type": "string"
+          },
+          "modelCode": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ChatRequest": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "default": "user"
+          },
+          "content": {
+            "type": "string"
+          },
+          "modelCode": {
+            "type": "string",
+            "example": "gpt-4o"
+          }
+        }
+      },
+      "StreamChatRequest": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "default": "user"
+          },
+          "content": {
+            "type": "string"
+          },
+          "modelCode": {
+            "type": "string",
+            "example": "gpt-4o"
+          },
+          "temperature": {
+            "type": "number",
+            "format": "double",
+            "default": 0.7
+          },
+          "maxTokens": {
+            "type": "integer",
+            "default": 2048
+          }
+        }
+      },
+      "Model": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "gpt-4o"
+          },
+          "name": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "chat",
+              "embedding",
+              "image",
+              "audio"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "rateLimit": {
+            "type": "integer",
+            "description": "每分钟请求数"
+          }
+        }
+      },
+      "RAGKnowledgeBase": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "ownerId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "isPublic": {
+            "type": "boolean"
+          },
+          "docCount": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RAGAskRequest": {
+        "type": "object",
+        "required": [
+          "kbId",
+          "question"
+        ],
+        "properties": {
+          "kbId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "question": {
+            "type": "string"
+          },
+          "topK": {
+            "type": "integer",
+            "default": 5
+          }
+        }
+      },
+      "RAGAskResponse": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "type": "string"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "chunkId": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "docTitle": {
+                  "type": "string"
+                },
+                "score": {
+                  "type": "number",
+                  "format": "float"
+                },
+                "snippet": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "FunctionTool": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "parameters": {
+            "type": "string",
+            "description": "JSON Schema 格式"
+          },
+          "endpoint": {
+            "type": "string",
+            "format": "uri"
+          },
+          "httpMethod": {
+            "type": "string",
+            "enum": [
+              "GET",
+              "POST",
+              "PUT",
+              "DELETE"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MemoryEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sessionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "role": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "HealthStatus": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "UP",
+              "DOWN",
+              "DEGRADED"
+            ]
+          },
+          "service": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "Page": {
+        "type": "object",
+        "properties": {
+          "records": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "total": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "current": {
+            "type": "integer"
+          },
+          "pages": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "注册新用户",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              },
+              "example": {
+                "username": "alice",
+                "password": "alice@123",
+                "nickname": "Alice",
+                "email": "alice@example.com"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "注册成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                },
+                "example": {
+                  "code": 0,
+                  "message": "OK",
+                  "data": {
+                    "id": 2,
+                    "username": "alice",
+                    "nickname": "Alice"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "用户登录（获取双 Token）",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "登录成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                },
+                "example": {
+                  "code": 0,
+                  "data": {
+                    "accessToken": "eyJ...",
+                    "refreshToken": "eyJ...",
+                    "expiresIn": 1800,
+                    "userInfo": {
+                      "id": 1,
+                      "username": "admin",
+                      "nickname": "管理员",
+                      "roles": [
+                        "ADMIN"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "用 Refresh Token 续期",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "续期成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "登出（使 Token 失效）",
+        "responses": {
+          "200": {
+            "description": "登出成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "获取当前用户信息",
+        "responses": {
+          "200": {
+            "description": "用户信息",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                },
+                "example": {
+                  "code": 0,
+                  "data": {
+                    "id": 1,
+                    "username": "admin",
+                    "nickname": "管理员",
+                    "roles": [
+                      "ADMIN"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/users": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "用户列表（管理员）",
+        "responses": {
+          "200": {
+            "description": "分页用户列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "创建用户（管理员）",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  },
+                  "nickname": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "创建成功"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/users/{id}": {
+      "put": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "更新用户信息",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新成功"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/health": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Auth 服务健康检查（公开）",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "健康",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "列出当前用户的会话列表",
+        "responses": {
+          "200": {
+            "description": "会话列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "创建新会话",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "modelCode": {
+                    "type": "string",
+                    "example": "gpt-4o"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "创建成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{id}": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "获取会话详情",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "会话详情",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "删除会话",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "删除成功"
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{id}/messages": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "获取会话的所有消息",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "消息列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "非流式发消息",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "消息响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{id}/messages/stream": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "流式发消息（SSE）",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "streamId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "流 ID（客户端生成，用于停止）"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StreamChatRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "SSE 流",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "chunk": {
+                    "summary": "内容片段",
+                    "value": "data: {\"type\":\"chunk\",\"content\":\"你\"}\n"
+                  },
+                  "done": {
+                    "summary": "结束",
+                    "value": "data: {\"type\":\"done\"}\n"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/stop-stream": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "停止流式响应",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "streamId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "已停止"
+          }
+        }
+      }
+    },
+    "/api/v1/models": {
+      "get": {
+        "tags": [
+          "Model"
+        ],
+        "summary": "列出所有可用模型",
+        "responses": {
+          "200": {
+            "description": "模型列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Model"
+        ],
+        "summary": "OpenAI 兼容 Chat 接口",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "model": {
+                    "type": "string",
+                    "example": "gpt-4o"
+                  },
+                  "messages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "system",
+                            "user",
+                            "assistant"
+                          ]
+                        },
+                        "content": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "temperature": {
+                    "type": "number",
+                    "format": "double",
+                    "default": 0.7
+                  },
+                  "maxTokens": {
+                    "type": "integer",
+                    "default": 2048
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Chat 响应"
+          }
+        }
+      }
+    },
+    "/api/v1/models/providers": {
+      "get": {
+        "tags": [
+          "Model"
+        ],
+        "summary": "列出所有模型 Provider",
+        "responses": {
+          "200": {
+            "description": "Provider 列表"
+          }
+        }
+      }
+    },
+    "/api/v1/models/{code}": {
+      "get": {
+        "tags": [
+          "Model"
+        ],
+        "summary": "获取模型详情",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "模型详情"
+          }
+        }
+      }
+    },
+    "/api/v1/models/chat/stream": {
+      "post": {
+        "tags": [
+          "Model"
+        ],
+        "summary": "流式 Chat（SSE）",
+        "parameters": [
+          {
+            "name": "streamId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "model": {
+                    "type": "string"
+                  },
+                  "messages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    }
+                  },
+                  "temperature": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "SSE 流"
+          }
+        }
+      }
+    },
+    "/api/v1/models/chat/cancel": {
+      "post": {
+        "tags": [
+          "Model"
+        ],
+        "summary": "取消流式响应",
+        "parameters": [
+          {
+            "name": "streamId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "已取消"
+          }
+        }
+      }
+    },
+    "/api/v1/models/imagegen": {
+      "post": {
+        "tags": [
+          "Model"
+        ],
+        "summary": "图片生成",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "model": {
+                    "type": "string"
+                  },
+                  "prompt": {
+                    "type": "string"
+                  },
+                  "n": {
+                    "type": "integer",
+                    "default": 1
+                  },
+                  "size": {
+                    "type": "string",
+                    "example": "1024x1024"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "图片生成结果"
+          }
+        }
+      }
+    },
+    "/api/v1/memory/short-term/{sid}": {
+      "get": {
+        "tags": [
+          "Memory"
+        ],
+        "summary": "拉取短期记忆",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "记忆内容"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Memory"
+        ],
+        "summary": "追加短期记忆",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "追加成功"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Memory"
+        ],
+        "summary": "清空短期记忆",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "已清空"
+          }
+        }
+      }
+    },
+    "/api/v1/memory/short-term/{sid}/size": {
+      "get": {
+        "tags": [
+          "Memory"
+        ],
+        "summary": "短期记忆容量统计",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "容量统计"
+          }
+        }
+      }
+    },
+    "/api/v1/memory/cross-context": {
+      "post": {
+        "tags": [
+          "Memory"
+        ],
+        "summary": "跨会话上下文整合",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "sessionId": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "systemPrompt": {
+                    "type": "string"
+                  },
+                  "maxContext": {
+                    "type": "integer",
+                    "default": 4096
+                  },
+                  "recallTopK": {
+                    "type": "integer",
+                    "default": 5
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "整合后的上下文"
+          }
+        }
+      }
+    },
+    "/api/v1/memory/summarize/{sid}": {
+      "post": {
+        "tags": [
+          "Memory"
+        ],
+        "summary": "触发会话摘要",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "摘要生成中"
+          }
+        }
+      }
+    },
+    "/api/v1/memory/summary/{sid}": {
+      "get": {
+        "tags": [
+          "Memory"
+        ],
+        "summary": "读取会话摘要",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "摘要内容"
+          }
+        }
+      }
+    },
+    "/api/v1/memory/long-term": {
+      "post": {
+        "tags": [
+          "Memory"
+        ],
+        "summary": "存储长期记忆",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "sessionId": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "role": {
+                    "type": "string"
+                  },
+                  "content": {
+                    "type": "string"
+                  },
+                  "tags": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "存储成功"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Memory"
+        ],
+        "summary": "列出最近长期记忆",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "记忆列表"
+          }
+        }
+      }
+    },
+    "/api/v1/memory/long-term/recall": {
+      "post": {
+        "tags": [
+          "Memory"
+        ],
+        "summary": "召回长期记忆",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "query": {
+                    "type": "string"
+                  },
+                  "topK": {
+                    "type": "integer",
+                    "default": 5
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "召回结果"
+          }
+        }
+      }
+    },
+    "/api/v1/memory/long-term/{id}": {
+      "delete": {
+        "tags": [
+          "Memory"
+        ],
+        "summary": "删除长期记忆",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "已删除"
+          }
+        }
+      }
+    },
+    "/api/v1/memory/pref/{key}": {
+      "get": {
+        "tags": [
+          "Memory"
+        ],
+        "summary": "读取用户偏好",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "偏好值"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Memory"
+        ],
+        "summary": "设置用户偏好",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "设置成功"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Memory"
+        ],
+        "summary": "删除用户偏好",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "已删除"
+          }
+        }
+      }
+    },
+    "/api/v1/rag/kb": {
+      "post": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "创建知识库",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "isPublic": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "创建成功"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "列出我的知识库",
+        "parameters": [
+          {
+            "name": "ownerId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "知识库列表"
+          }
+        }
+      }
+    },
+    "/api/v1/rag/kb/public": {
+      "get": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "列出公开知识库",
+        "responses": {
+          "200": {
+            "description": "公开知识库列表"
+          }
+        }
+      }
+    },
+    "/api/v1/rag/kb/{id}": {
+      "get": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "知识库详情",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "ownerId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "知识库详情"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "删除知识库",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "ownerId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "已删除"
+          }
+        }
+      }
+    },
+    "/api/v1/rag/doc": {
+      "get": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "列出知识库中的文档",
+        "parameters": [
+          {
+            "name": "kbId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "文档列表"
+          }
+        }
+      }
+    },
+    "/api/v1/rag/doc/upload": {
+      "post": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "上传文档到知识库",
+        "parameters": [
+          {
+            "name": "ownerId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "kbId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "上传成功"
+          }
+        }
+      }
+    },
+    "/api/v1/rag/doc/{id}/chunks": {
+      "get": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "获取文档切片",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "切片列表"
+          }
+        }
+      }
+    },
+    "/api/v1/rag/doc/{id}": {
+      "delete": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "删除文档",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "ownerId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "已删除"
+          }
+        }
+      }
+    },
+    "/api/v1/rag/retrieve": {
+      "post": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "纯检索（无生成）",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kbId": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "query": {
+                    "type": "string"
+                  },
+                  "topK": {
+                    "type": "integer",
+                    "default": 5
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "检索结果"
+          }
+        }
+      }
+    },
+    "/api/v1/rag/ask": {
+      "post": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "RAG 问答",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RAGAskRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "RAG 问答结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                },
+                "example": {
+                  "code": 0,
+                  "data": {
+                    "answer": "支持微信、支付宝...",
+                    "sources": [
+                      {
+                        "chunkId": 10,
+                        "docTitle": "产品手册",
+                        "score": 0.92,
+                        "snippet": "支付方式包括..."
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/function/tools": {
+      "get": {
+        "tags": [
+          "Function"
+        ],
+        "summary": "列出所有可用工具",
+        "responses": {
+          "200": {
+            "description": "工具列表"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Function"
+        ],
+        "summary": "注册新工具",
+        "parameters": [
+          {
+            "name": "ownerId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FunctionTool"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "注册成功"
+          }
+        }
+      }
+    },
+    "/api/v1/function/tools/{id}": {
+      "get": {
+        "tags": [
+          "Function"
+        ],
+        "summary": "工具详情",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "工具详情"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Function"
+        ],
+        "summary": "更新工具",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "ownerId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新成功"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Function"
+        ],
+        "summary": "删除工具",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "ownerId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "已删除"
+          }
+        }
+      }
+    },
+    "/api/v1/function/invoke/{name}": {
+      "post": {
+        "tags": [
+          "Function"
+        ],
+        "summary": "直接调用工具",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用结果"
+          }
+        }
+      }
+    },
+    "/api/v1/function/logs": {
+      "get": {
+        "tags": [
+          "Function"
+        ],
+        "summary": "调用历史",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "调用日志"
+          }
+        }
+      }
+    },
+    "/api/v1/function/chat": {
+      "post": {
+        "tags": [
+          "Function"
+        ],
+        "summary": "Chat + 工具循环调用",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "enableTools": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "toolNames": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "带工具调用的回复"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "用户管理（分页）",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "分页用户列表"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "创建用户（管理员）",
+        "parameters": [
+          {
+            "name": "actorId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  },
+                  "nickname": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "创建成功"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{id}/reset-password": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "重置用户密码",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "actorId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "重置成功"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{id}/status": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "启用/禁用用户",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "actorId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "enabled",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "更新成功"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/stats/ops": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "运营统计概览",
+        "responses": {
+          "200": {
+            "description": "统计数据"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/stats/dashboard": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Dashboard 数据",
+        "responses": {
+          "200": {
+            "description": "Dashboard 指标"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/health": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "跨服务健康检查",
+        "responses": {
+          "200": {
+            "description": "各服务健康状态"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/ping": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "快速 ping 检查",
+        "responses": {
+          "200": {
+            "description": "pong"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/audit/recent": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "最近审计日志",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "审计日志"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/audit/by-actor/{id}": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "按操作者查审计日志",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "审计日志"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/apikey/stats": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "API Key 配额统计",
+        "responses": {
+          "200": {
+            "description": "统计概览"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/models/providers": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "管理端列出模型",
+        "responses": {
+          "200": {
+            "description": "模型列表"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/models/{code}/rate-limit": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "修改模型限流",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "actorId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "rateLimit": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新成功"
+          }
+        }
+      }
+    },
+    "/api/v1/multimodal/upload": {
+      "post": {
+        "tags": [
+          "Multimodal"
+        ],
+        "summary": "上传图片",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "上传成功"
+          }
+        }
+      }
+    },
+    "/api/v1/multimodal/describe": {
+      "post": {
+        "tags": [
+          "Multimodal"
+        ],
+        "summary": "图片理解（Vision）",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "imageBase64": {
+                    "type": "string"
+                  },
+                  "mimeType": {
+                    "type": "string",
+                    "example": "image/png"
+                  },
+                  "prompt": {
+                    "type": "string",
+                    "description": "可选提示词"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "图片描述"
+          }
+        }
+      }
+    },
+    "/api/v1/multimodal/info": {
+      "get": {
+        "tags": [
+          "Multimodal"
+        ],
+        "summary": "多模态模型信息",
+        "responses": {
+          "200": {
+            "description": "模型信息"
+          }
+        }
+      }
+    },
+    "/api/v1/monitor/health": {
+      "get": {
+        "tags": [
+          "Monitor"
+        ],
+        "summary": "深度健康检查",
+        "responses": {
+          "200": {
+            "description": "健康状态"
+          }
+        }
+      }
+    },
+    "/api/v1/monitor/health/database": {
+      "get": {
+        "tags": [
+          "Monitor"
+        ],
+        "summary": "数据库健康",
+        "responses": {
+          "200": {
+            "description": "DB 健康"
+          }
+        }
+      }
+    },
+    "/api/v1/monitor/health/jvm": {
+      "get": {
+        "tags": [
+          "Monitor"
+        ],
+        "summary": "JVM 健康",
+        "responses": {
+          "200": {
+            "description": "JVM 健康"
+          }
+        }
+      }
+    },
+    "/api/v1/monitor/health/disk": {
+      "get": {
+        "tags": [
+          "Monitor"
+        ],
+        "summary": "磁盘健康",
+        "responses": {
+          "200": {
+            "description": "磁盘使用情况"
+          }
+        }
+      }
+    },
+    "/api/v1/monitor/metrics": {
+      "get": {
+        "tags": [
+          "Monitor"
+        ],
+        "summary": "业务指标",
+        "responses": {
+          "200": {
+            "description": "指标快照"
+          }
+        }
+      }
+    },
+    "/api/v1/monitor/metrics/snapshot": {
+      "get": {
+        "tags": [
+          "Monitor"
+        ],
+        "summary": "指标快照",
+        "responses": {
+          "200": {
+            "description": "快照数据"
+          }
+        }
+      }
+    },
+    "/api/v1/monitor/metrics/trend": {
+      "get": {
+        "tags": [
+          "Monitor"
+        ],
+        "summary": "指标趋势",
+        "parameters": [
+          {
+            "name": "metric",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "趋势数据"
+          }
+        }
+      }
+    },
+    "/api/v1/monitor/metrics/inc": {
+      "post": {
+        "tags": [
+          "Monitor"
+        ],
+        "summary": "自助计数",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "metric": {
+                    "type": "string"
+                  },
+                  "delta": {
+                    "type": "integer",
+                    "default": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "计数成功"
+          }
+        }
+      }
+    },
+    "/api/v1/monitor/alerts": {
+      "get": {
+        "tags": [
+          "Monitor"
+        ],
+        "summary": "最近告警",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "告警列表"
+          }
+        }
+      }
+    },
+    "/api/v1/monitor/alerts/firing": {
+      "get": {
+        "tags": [
+          "Monitor"
+        ],
+        "summary": "正在 firing 的告警",
+        "responses": {
+          "200": {
+            "description": "firing 告警"
+          }
+        }
+      }
+    },
+    "/api/v1/monitor/alerts/rules": {
+      "get": {
+        "tags": [
+          "Monitor"
+        ],
+        "summary": "告警规则列表",
+        "responses": {
+          "200": {
+            "description": "规则列表"
+          }
+        }
+      }
+    },
+    "/api/v1/monitor/alerts/summary": {
+      "get": {
+        "tags": [
+          "Monitor"
+        ],
+        "summary": "告警摘要",
+        "responses": {
+          "200": {
+            "description": "告警摘要"
+          }
+        }
+      }
+    },
+    "/actuator/health": {
+      "get": {
+        "tags": [
+          "Monitor"
+        ],
+        "summary": "Spring Actuator 健康检查",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Actuator 健康"
+          }
+        }
+      }
+    },
+    "/actuator/prometheus": {
+      "get": {
+        "tags": [
+          "Monitor"
+        ],
+        "summary": "Prometheus 指标端点",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Prometheus metrics"
+          }
+        }
+      }
+    }
+  }
+}

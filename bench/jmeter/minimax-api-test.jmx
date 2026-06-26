@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.4" jmeter="5.6.3">
+  <hashTree>
+    <!-- ==================== MiniMax Platform — 压测计划 (V5.9 Day 21) ==================== -->
+    <!-- 使用方法: jmeter -n -t minimax-api-test.jmx -l result.jtl -e -o html-report -->
+
+    <TestPlan name="MiniMax API 性能压测" enabled="true" uuid="minimax-2026-06-26">
+      <property name="TestPlan.comments">覆盖核心 API: 登录/会话/模型/RAG/管理。并发梯度: 10/50/100/200。</property>
+      <stringProp name="TestPlan.user_defined_variables">${__setProperty(GATEWAY_URL,${GATEWAY_URL},)}</stringProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
+      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testname="User Defined Variables">
+        <collectionProp name="Arguments.arguments">
+          <elementProp name="GATEWAY_URL" elementType="Argument">
+            <stringProp name="Argument.name">GATEWAY_URL</stringProp>
+            <stringProp name="Argument.value">http://localhost:7080</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="USERNAME" elementType="Argument">
+            <stringProp name="Argument.name">USERNAME</stringProp>
+            <stringProp name="Argument.value">admin</stringProp>
+          </elementProp>
+          <elementProp name="PASSWORD" elementType="Argument">
+            <stringProp name="Argument.name">PASSWORD</stringProp>
+            <stringProp name="Argument.value">admin@123</stringProp>
+          </elementProp>
+          <elementProp name="MODEL_CODE" elementType="Argument">
+            <stringProp name="Argument.name">MODEL_CODE</stringProp>
+            <stringProp name="Argument.value">gpt-4o</stringProp>
+          </elementProp>
+        </collectionProp>
+      </elementProp>
+      <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
+    </TestPlan>
+
+    <!-- ==================== Thread Group 1: 基准测试 (10 并发) ==================== -->
+    <ThreadGroup name="TG-10-并发-基准" enabled="true" uuid="tg-baseline">
+      <stringProp name="ThreadGroup.num_threads">10</stringProp>
+      <stringProp name="ThreadGroup.ramp_time">5</stringProp>
+      <stringProp name="ThreadGroup.duration">60</stringProp>
+      <stringProp name="ThreadGroup.delay">0</stringProp>
+      <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+      <boolProp name="ThreadGroup.scheduler">true</boolProp>
+
+      <hashTree>
+        <AuthManager guiclass="AuthPanel" testname="HTTP Authorization Manager" enabled="true">
+          <collectionProp name="AuthManager.auth_list">
+            <!-- 动态 Token 通过登录请求获取后注入 -->
+          </collectionProp>
+        </AuthManager>
+
+        <HeaderManager guiclass="HeaderPanel" testname="HTTP Header Manager" enabled="true">
+          <collectionProp name="HeaderManager.headers">
+            <elementProp name="Content-Type" elementType="Header">
+              <stringProp name="Header.name">Content-Type</stringProp>
+              <stringProp name="Header.value">application/json</stringProp>
+            </elementProp>
+            <elementProp name="X-Request-Source" elementType="Header">
+              <stringProp name="Header.name">X-Request-Source</stringProp>
+              <stringProp name="Header.value">jmeter</stringProp>
+            </elementProp>
+          </collectionProp>
+        </HeaderManager>
+
+        <CookieManager guiclass="CookiePanel" testname="HTTP Cookie Manager" enabled="true">
+          <collectionProp name="CookieManager.cookies"/>
+          <boolProp name="CookieManager.clearEachIteration">true</boolProp>
+        </CookieManager>
+
+        <!-- 登录 (获取 Token) -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testname="01-登录获取Token" enabled="true">
+          <stringProp name="HTTPSampler.domain">${__urlDecode(${__base64Decode(${__split(${GATEWAY_URL},//,1)},)})}</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <stringProp name="HTTPSampler.path">/api/v1/auth/login</stringProp>
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.encoded">false</boolProp>
+                <stringProp name="Argument.value">{"username":"${USERNAME}","password":"${PASSWORD}"}</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <stringProp name="HTTPSampler.connect_timeout">5000</stringProp>
+          <stringProp name="HTTPSampler.response_timeout">30000</stringProp>
+        </HTTPSamplerProxy>
+
+        <!-- 创建会话 -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testname="02-创建会话" enabled="true">
+          <stringProp name="HTTPSampler.domain">localhost</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <stringProp name="HTTPSampler.path">/api/v1/sessions</stringProp>
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.encoded">false</boolProp>
+                <stringProp name="Argument.value">{"title":"Jmeter压测会话","modelCode":"${MODEL_CODE}"}</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.connect_timeout">5000</stringProp>
+          <stringProp name="HTTPSampler.response_timeout">30000</stringProp>
+        </HTTPSamplerProxy>
+
+        <!-- 模型列表 -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testname="03-模型列表" enabled="true">
+          <stringProp name="HTTPSampler.domain">localhost</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <stringProp name="HTTPSampler.path">/api/v1/models</stringProp>
+          <stringProp name="HTTPSampler.connect_timeout">5000</stringProp>
+          <stringProp name="HTTPSampler.response_timeout">15000</stringProp>
+        </HTTPSamplerProxy>
+
+        <!-- 知识库列表 -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testname="04-RAG知识库列表" enabled="true">
+          <stringProp name="HTTPSampler.domain">localhost</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <stringProp name="HTTPSampler.path">/api/v1/rag/kb?ownerId=1</stringProp>
+          <stringProp name="HTTPSampler.connect_timeout">5000</stringProp>
+          <stringProp name="HTTPSampler.response_timeout">15000</stringProp>
+        </HTTPSamplerProxy>
+
+        <!-- 管理端健康检查 -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testname="05-Admin健康检查" enabled="true">
+          <stringProp name="HTTPSampler.domain">localhost</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <stringProp name="HTTPSampler.path">/api/v1/admin/health</stringProp>
+          <stringProp name="HTTPSampler.connect_timeout">5000</stringProp>
+          <stringProp name="HTTPSampler.response_timeout">15000</stringProp>
+        </HTTPSamplerProxy>
+
+        <!-- 监控指标 -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testname="06-Monitor指标" enabled="true">
+          <stringProp name="HTTPSampler.domain">localhost</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <stringProp name="HTTPSampler.path">/api/v1/monitor/metrics</stringProp>
+          <stringProp name="HTTPSampler.connect_timeout">5000</stringProp>
+          <stringProp name="HTTPSampler.response_timeout">15000</stringProp>
+        </HTTPSamplerProxy>
+
+      </hashTree>
+    </ThreadGroup>
+
+    <!-- ==================== Thread Group 2: 负载测试 (50 并发) ==================== -->
+    <ThreadGroup name="TG-50-并发-负载" enabled="false" uuid="tg-load">
+      <stringProp name="ThreadGroup.num_threads">50</stringProp>
+      <stringProp name="ThreadGroup.ramp_time">10</stringProp>
+      <stringProp name="ThreadGroup.duration">120</stringProp>
+      <stringProp name="ThreadGroup.delay">0</stringProp>
+      <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+      <boolProp name="ThreadGroup.scheduler">true</boolProp>
+      <hashTree>
+        <!-- 同上，复制关键采样器 -->
+        <HeaderManager guiclass="HeaderPanel" testname="HTTP Header Manager" enabled="true">
+          <collectionProp name="HeaderManager.headers">
+            <elementProp name="Content-Type" elementType="Header">
+              <stringProp name="Header.name">Content-Type</stringProp>
+              <stringProp name="Header.value">application/json</stringProp>
+            </elementProp>
+          </collectionProp>
+        </HeaderManager>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testname="登录" enabled="true">
+          <stringProp name="HTTPSampler.domain">localhost</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <stringProp name="HTTPSampler.path">/api/v1/auth/login</stringProp>
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <stringProp name="Argument.value">{"username":"admin","password":"admin@123"}</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.connect_timeout">5000</stringProp>
+          <stringProp name="HTTPSampler.response_timeout">30000</stringProp>
+        </HTTPSamplerProxy>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testname="模型列表" enabled="true">
+          <stringProp name="HTTPSampler.domain">localhost</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <stringProp name="HTTPSampler.path">/api/v1/models</stringProp>
+        </HTTPSamplerProxy>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testname="会话列表" enabled="true">
+          <stringProp name="HTTPSampler.domain">localhost</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <stringProp name="HTTPSampler.path">/api/v1/sessions?page=1&amp;size=20</stringProp>
+        </HTTPSamplerProxy>
+      </hashTree>
+    </ThreadGroup>
+
+    <!-- ==================== Thread Group 3: 压力测试 (200 并发) ==================== -->
+    <ThreadGroup name="TG-200-并发-压力" enabled="false" uuid="tg-stress">
+      <stringProp name="ThreadGroup.num_threads">200</stringProp>
+      <stringProp name="ThreadGroup.ramp_time">20</stringProp>
+      <stringProp name="ThreadGroup.duration">180</stringProp>
+      <stringProp name="ThreadGroup.delay">0</stringProp>
+      <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+      <boolProp name="ThreadGroup.scheduler">true</boolProp>
+      <hashTree>
+        <HeaderManager guiclass="HeaderPanel" testname="HTTP Header Manager" enabled="true">
+          <collectionProp name="HeaderManager.headers">
+            <elementProp name="Content-Type" elementType="Header">
+              <stringProp name="Header.name">Content-Type</stringProp>
+              <stringProp name="Header.value">application/json</stringProp>
+            </elementProp>
+          </collectionProp>
+        </HeaderManager>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testname="健康检查" enabled="true">
+          <stringProp name="HTTPSampler.domain">localhost</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <stringProp name="HTTPSampler.path">/api/v1/auth/health</stringProp>
+          <stringProp name="HTTPSampler.connect_timeout">3000</stringProp>
+          <stringProp name="HTTPSampler.response_timeout">10000</stringProp>
+        </HTTPSamplerProxy>
+      </hashTree>
+    </ThreadGroup>
+
+    <!-- ==================== 汇总报告 ==================== -->
+    <ResultCollector guiclass="StatVisualizer" testname="Aggregate Report" enabled="true">
+      <boolProp name="ResultCollector.error_logging">false</boolProp>
+      <objProp>
+        <name>saveConfig</name>
+        <value class="SampleSaveConfiguration">
+          <stringProp name="timestampFormat">ms</stringProp>
+          <stringProp name="connectTime">true</stringProp>
+          <stringProp name="url">true</stringProp>
+          <stringProp name="responseHeaders">false</stringProp>
+          <stringProp name="requestHeaders">false</stringProp>
+          <stringProp name="responseDataOnError">true</stringProp>
+          <stringProp name="saveAssertionResultsFailureMessage">true</stringProp>
+          <stringProp name="saveResponseData">false</stringProp>
+          <stringProp name="responseCode">true</stringProp>
+          <stringProp name="label">true</stringProp>
+          <stringProp name="elapsedTime">true</stringProp>
+          <stringProp name="responseMessage">true</stringProp>
+          <stringProp name="threadName">true</stringProp>
+        </value>
+      </objProp>
+      <stringProp name="filename">result.jtl</stringProp>
+    </ResultCollector>
+
+    <ResultCollector guiclass="TableVisualizer" testname="View Results in Table" enabled="true">
+      <boolProp name="ResultCollector.error_logging">false</boolProp>
+      <objProp>
+        <name>saveConfig</name>
+        <value class="SampleSaveConfiguration">
+          <stringProp name="timestampFormat">ms</stringProp>
+          <stringProp name="connectTime">true</stringProp>
+          <stringProp name="url">true</stringProp>
+          <stringProp name="responseHeaders">false</stringProp>
+          <stringProp name="responseDataOnError">true</stringProp>
+          <stringProp name="saveResponseData">false</stringProp>
+          <stringProp name="responseCode">true</stringProp>
+          <stringProp name="label">true</stringProp>
+          <stringProp name="elapsedTime">true</stringProp>
+          <stringProp name="responseMessage">true</stringProp>
+          <stringProp name="threadName">true</stringProp>
+        </value>
+      </objProp>
+      <stringProp name="filename">result-table.jtl</stringProp>
+    </ResultCollector>
+
+  </hashTree>
+</jmeterTestPlan>

@@ -476,3 +476,21 @@
 - V5.6: Dashboard 真实数据 + KG ECharts + 监控面板 + yml 清理
 - V5.7: Nacos 服务发现 + Resilience4j + lb:// 转发
 - V5.8: TraceFilter + 智能分包 + nginx gzip/br + http X-Trace-Id
+
+## Day 21 - 2026-06-26 ✅ API 文档体系 + 压测模板
+
+**今日完成：**
+- [x] **OpenAPI 3.0 规范**：`docs/openapi.yaml`（~42KB，92+ 端点，10 模块全覆盖）+ `docs/openapi.json`
+- [x] **Postman Collection**：`docs/postman/MiniMax-Platform.postman_collection.json`（45+ 请求，Token 自动注入）
+- [x] **E2E 健康检查脚本**：`scripts/health-check.sh`（18 项检查，14 服务全覆盖，自动获取 Token）
+- [x] **压测模板**：`bench/wrk/`（Lua 脚本）+ `bench/jmeter/minimax-api-test.jmx`（3 梯度）+ `bench/run.sh` + `bench/README.md`
+- [x] **自检脚本升级**：环境感知版（mvn 缺失不误报）
+
+**关键数据：** +7 新文件 / 前端构建 1m20s ✅ / 静态体检 0 错误 ✅
+
+**明日计划 Day 22：**
+- [ ] WebSocket 端到端联调
+- [ ] RAG 完整链路测试（上传/切片/检索）
+- [ ] API Key 鉴权单元测试
+- [ ] CI/CD 压测 stage
+
