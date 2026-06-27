@@ -47,6 +47,29 @@ CREATE TABLE IF NOT EXISTS model_quota (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 训练任务表 (Day 23)
+CREATE TABLE IF NOT EXISTS training_task (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  model_name VARCHAR(64) NOT NULL,
+  corpus_path VARCHAR(512) NOT NULL,
+  n_layer INT DEFAULT 12,
+  n_head INT DEFAULT 12,
+  n_embd INT DEFAULT 768,
+  block_size INT DEFAULT 128,
+  max_iters INT DEFAULT 100,
+  batch_size INT DEFAULT 32,
+  learning_rate DOUBLE DEFAULT 0.0003,
+  status VARCHAR(16) NOT NULL DEFAULT 'PENDING',
+  progress INT DEFAULT 0,
+  current_loss DOUBLE,
+  current_iter INT DEFAULT 0,
+  error_message VARCHAR(512),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  completed_at TIMESTAMP
+);
+
 -- 初始数据
 INSERT INTO model_provider (id, code, name, base_url, protocol, enabled, sort, description) VALUES
 (1, 'openai',  'OpenAI',  'https://api.openai.com/v1', 'openai', 1, 1, 'OpenAI 官方'),

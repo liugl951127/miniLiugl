@@ -179,6 +179,13 @@ const routes = [
         component: () => import('@/views/showcase/SingleChatPlayground.vue'),
         meta: { title: '单模型 PlayGround', icon: 'Lightning' }
       },
+      // V1: Day 23 模型训练控制台
+      {
+        path: 'training',
+        name: 'TrainingConsole',
+        component: () => import('@/views/training/Console.vue'),
+        meta: { title: '模型训练', icon: 'Cpu' }
+      },
       {
         path: 'showcase/imagegen',
         name: 'ImageGenShowcase',

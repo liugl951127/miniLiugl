@@ -108,6 +108,8 @@ const menuRoutes = computed(() => {
     { path: '/kg', title: '知识图谱', icon: 'Share' },
     { path: '/collab', title: '实时协作', icon: 'UserFilled' },
     { path: '/plugins', title: '插件市场', icon: 'Grid' },
+    // Day 23: 模型训练控制台
+    { path: '/training', title: '模型训练', icon: 'Cpu' },
     // V1.8: V5.31 数据分析入口
     { path: '/analytics/datasource', title: '数据源', icon: 'Coin' },
     { path: '/analytics/nlsql', title: 'NL2SQL 实验室', icon: 'ChatLineRound' },
@@ -152,6 +154,7 @@ const activeMenu = computed(() => {
   if (p.startsWith('/pipeline/runs')) return '/pipeline/runs'
   if (p.startsWith('/pipeline')) return '/pipeline'
   if (p.startsWith('/apikey')) return '/apikey'
+  if (p.startsWith('/training')) return '/training'
   return p
 })
 
