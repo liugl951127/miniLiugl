@@ -49,6 +49,7 @@ const routes = [
         component: () => import('@/views/memory/Index.vue'),
         meta: { title: '记忆', icon: 'Memory' }
       },
+      // Agent 路由 (V5.16-V5.17, V5.22: 修复路由缺 Layout 包装导致页面跳转失败)
       {
         path: 'agent',
         name: 'Agent',

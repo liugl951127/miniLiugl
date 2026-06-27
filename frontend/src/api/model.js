@@ -1,5 +1,6 @@
-// 模型管理 API (V5.24 扩展 Provider + Leaderboard)
+// 模型管理 API (V5.24 扩展 Provider + Leaderboard, V5.23 修复 localStorage→Pinia)
 import http from './http'
+import { useUserStore } from '@/store/user'
 
 export const modelApi = {
   list: () => http.get('/api/v1/models'),
@@ -48,7 +49,8 @@ export function streamChat(messages, model, onChunk) {
   const ctrl = new AbortController()
   const streamId = 'web_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8)
   const baseURL = import.meta.env.VITE_API_BASE || ''
-  const accessToken = JSON.parse(localStorage.getItem('minimax-user') || '{}')?.accessToken || ''
+  const userStore = useUserStore()
+  const accessToken = userStore.accessToken || ''
 
   fetch(`${baseURL}/api/v1/models/chat/stream?streamId=${streamId}`, {
     method: 'POST',

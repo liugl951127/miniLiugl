@@ -251,10 +251,12 @@ import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { CircleCheck, CircleClose } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
+import { useUserStore } from '@/store/user'
 import { getMonitorAlertRules, createMonitorAlertRule, updateMonitorAlertRule, deleteMonitorAlertRule } from '@/api/monitor'
 
+const userStore = useUserStore()
 const API = import.meta.env.VITE_API_BASE || 'http://localhost'
-const token = localStorage.getItem('access_token') || ''
+const token = userStore.accessToken || ''
 function auth() { return { headers: { Authorization: `Bearer ${token}` } } }
 
 const autoRefresh = ref(true)

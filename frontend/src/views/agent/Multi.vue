@@ -112,6 +112,9 @@
 import { ref, onMounted } from 'vue'
 import http from '@/api/http'
 import { ElMessage } from 'element-plus'
+import { useUserStore } from '@/store/user'
+
+const userStore = useUserStore()
 
 const goal = ref('给我公司生成一份 MiniMax 平台的竞品分析报告, 包含 3 个核心竞品的功能对比、优劣势分析、市场定位')
 const tools = ref([])
@@ -161,7 +164,7 @@ async function runSync() {
   running.value = true
   try {
     const r = await http.post('/agent/multi/run', {
-      userId: Number(localStorage.getItem('user_id') || 1),
+      userId: userStore.profile?.id || 1,
       goal: goal.value,
       tools: tools.value,
     })
@@ -204,11 +207,11 @@ async function runStream() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + (localStorage.getItem('access_token') || ''),
+        'Authorization': 'Bearer ' + (userStore.accessToken || ''),
         'Accept': 'text/event-stream',
       },
       body: JSON.stringify({
-        userId: Number(localStorage.getItem('user_id') || 1),
+        userId: userStore.profile?.id || 1,
         goal: goal.value,
         tools: tools.value,
       }),

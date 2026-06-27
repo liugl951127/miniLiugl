@@ -173,7 +173,7 @@ async function runStreamMode() {
         'Accept': 'text/event-stream',
       },
       body: JSON.stringify({
-        userId: Number(localStorage.getItem('user_id') || 1),
+        userId: userStore.profile?.id || 1,
         goal: goal.value,
         tools: tools.value.length ? tools.value : null,
       }),

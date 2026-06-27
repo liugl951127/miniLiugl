@@ -96,9 +96,7 @@
             </el-form-item>
             <el-form-item v-if="['llm'].includes(selectedNode.type)" label="模型">
               <el-select v-model="selectedNode.cfg.model" style="width: 100%">
-                <el-option label="mock" value="mock" />
-                <el-option label="gpt-4o-mini" value="gpt-4o-mini" />
-                <el-option label="qwen-max" value="qwen-max" />
+                <el-option v-for="m in availableModels" :key="m" :label="m" :value="m" />
               </el-select>
             </el-form-item>
             <el-form-item v-if="['llm'].includes(selectedNode.type)" label="Prompt">
@@ -148,6 +146,27 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { CircleCheckFilled, Loading, WarningFilled } from '@element-plus/icons-vue'
+import { listProviders } from '@/api/model'
+
+const availableModels = ref(['mock', 'gpt-4o-mini', 'qwen-max', 'deepseek-chat'])
+
+async function loadModelOptions() {
+  try {
+    const r = await listProviders(1, 50)
+    const providers = r?.data?.records || r?.data || []
+    if (providers.length) {
+      const models = new Set(availableModels.value)
+      providers.forEach(p => {
+        if (p.models) {
+          JSON.parse(p.models).forEach(m => models.add(m))
+        }
+      })
+      availableModels.value = Array.from(models)
+    }
+  } catch {
+    // 拉取失败用默认列表
+  }
+}
 
 const nodeTypes = [
   { type: 'input', icon: '📥', label: '输入', desc: '起始输入' },
@@ -294,9 +313,13 @@ function clearCanvas() {
   execSteps.value = []
 }
 function loadTemplate(tpl) {
-  nodes.value = JSON.parse(JSON.stringify(tpl.nodes))
-  edges.value = JSON.parse(JSON.stringify(tpl.edges))
-  ElMessage.success(`已加载模板: ${tpl.name}`)
+  try {
+    nodes.value = JSON.parse(JSON.stringify(tpl.nodes))
+    edges.value = JSON.parse(JSON.stringify(tpl.edges))
+    ElMessage.success(`已加载模板: ${tpl.name}`)
+  } catch (e) {
+    ElMessage.error('模板格式错误, 加载失败: ' + e.message)
+  }
 }
 function exportJson() {
   const data = { nodes: nodes.value, edges: edges.value }
@@ -371,8 +394,9 @@ function stepTag(status) {
   return { done: 'success', running: 'warning', error: 'danger', idle: 'info' }[status]
 }
 
-onMounted(() => {
-  loadTemplate(templates[0])
+onMounted(async () => {
+  await loadModelOptions()
+  try { loadTemplate(templates[0]) } catch {}
 })
 </script>
 
