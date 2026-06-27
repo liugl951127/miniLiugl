@@ -111,8 +111,9 @@
 <script setup>
 import { ref, computed, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useUserStore } from '@/store/user'
 
-const prompt = ref('你好, 请介绍一下 MiniMax 平台')
+const userStore = useUserStore()
 const connected = ref(false)
 const streaming = ref(false)
 const paused = ref(false)
@@ -136,16 +137,21 @@ function log(type, msg) {
 
 function connect() {
   if (connected.value) return
-  // 同源 ws: 走 nginx 80 → gateway 8080 → ws 8095 (V1 一体化部署)
+  if (!userStore.isLogin) {
+    ElMessage.warning('请先登录后再使用 WebSocket 聊天')
+    return
+  }
+  const token = userStore.accessToken || ''
   const wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const url = `${wsProto}//${location.host}/api/v1/ws/bidi?type=chat&model=${selectedModel.value}`
-  // 通过 nginx (端口 80) 走 gateway lb://minimax-ws
+  const base = `${wsProto}//${location.host}`
+  // 走 /api/v1/ws/bidi (nginx → gateway → minimax-ws via lb:ws://)
+  const url = `${base}/api/v1/ws/bidi?type=chat&model=${selectedModel.value}&token=${encodeURIComponent(token)}`
   ws = new WebSocket(url)
 
   ws.onopen = () => {
     connected.value = true
     streaming.value = true
-    log('open', 'WebSocket 连接成功')
+    log('open', 'WebSocket 已连接 (token=' + (token ? '✓' : '✗') + ')')
   }
 
   ws.onmessage = (ev) => {
@@ -163,8 +169,8 @@ function connect() {
   }
 
   ws.onerror = (e) => {
-    log('error', '连接错误')
-    ElMessage.error('WebSocket 连接失败')
+    log('error', 'WS 连接错误, 请检查登录状态')
+    ElMessage.error('WebSocket 连接失败, 请先登录')
   }
 }
 

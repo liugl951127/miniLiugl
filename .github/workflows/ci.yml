@@ -281,12 +281,130 @@ jobs:
           mysql -h 127.0.0.1 -uroot -prootpass -e "SHOW TABLES" minimax_platform | wc -l
 
   # ============================================================
-  # 5. 最终汇总
+  # 5. 性能压测 (V5.22 Day 22)
+  # 依赖 backend job 构建的 JAR，启动服务后运行压测脚本
+  # 注意: 此 stage 为参考级，不阻塞合并
+  # ============================================================
+  perf-test:
+    name: 🚀 Perf Test (wrk + ab)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    needs: [backend]
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐳 Docker Compose 启动后端服务
+        run: |
+          # 仅启动必要的基础设施 + gateway
+          docker compose -f docker-compose.yml up -d mysql redis
+          echo "等 MySQL 就绪..."
+          for i in $(seq 1 30); do
+            if docker exec minimax-mysql mysqladmin ping -h localhost -uroot -prootpass &>/dev/null; then
+              echo "✓ MySQL 就绪"
+              break
+            fi
+            echo "  等 MySQL... ($i/30)"
+            sleep 2
+          done
+          # 初始化 DB
+          docker exec minimax-mysql mysql -uroot -prootpass < sql/init-minimax.sql
+
+      - name: 🐳 构建 Gateway JAR (跳过测试，加速)
+        run: |
+          cd backend
+          mvn -B -DskipTests -Dspotless.skip=true -Djacoco.skip=true \
+            -pl minimax-gateway -am clean package -DoutputDirectory=../dist \
+            2>&1 | tail -5
+
+      - name: 🐳 启动 Gateway + Auth
+        run: |
+          java -jar backend/dist/minimax-gateway/target/minimax-gateway-*.jar &
+          java -jar backend/dist/minimax-auth/target/minimax-auth-*.jar &
+          sleep 15
+          # 健康检查
+          for i in 1 2 3; do
+            HC=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 http://localhost:8080/actuator/health 2>/dev/null || echo "000")
+            if [ "$HC" = "200" ]; then
+              echo "✓ Gateway 就绪 (HTTP $HC)"
+              break
+            fi
+            echo "等 Gateway... (HTTP $HC)"
+            sleep 5
+          done
+
+      - name: 🔧 安装压测工具
+        run: |
+          # wrk (推荐)
+          if ! command -v wrk &>/dev/null; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq wrk 2>/dev/null || \
+            (sudo apt-get install -y -qq libssl-dev && \
+             git clone --depth=1 https://github.com/wg/wrk.git /tmp/wrk && \
+             cd /tmp/wrk && make -j$(nproc) && sudo cp wrk /usr/local/bin/) || \
+             echo "wrk 安装失败，跳过 wrk 测试"
+          fi
+          # Apache Bench
+          sudo apt-get install -y -qq apache2-utils 2>/dev/null || true
+          command -v wrk &>/dev/null && echo "✓ wrk installed" || echo "✗ wrk not found"
+          command -v ab &>/dev/null && echo "✓ ab installed" || echo "✗ ab not found"
+
+      - name: 🚀 运行压测
+        env:
+          GATEWAY: 'http://localhost:8080'
+          DURATION: '30'
+          CONNECTIONS: '50'
+          THREADS: '4'
+        run: |
+          cd bench
+          # wrk
+          if command -v wrk &>/dev/null; then
+            echo "━━━ wrk 登录 API 压测 ━━━━━━━━━━━━━━━━━━━━━━━"
+            wrk -t${THREADS} -c${CONNECTIONS} -d${DURATION}s \
+              -s wrk/login.lua "${GATEWAY}" \
+              --latency 2>&1 | tee "$GITHUB_OUTPUT"
+            echo "wrk_output=$(cat)" >> $GITHUB_OUTPUT
+          fi
+          # Apache Bench
+          if command -v ab &>/dev/null; then
+            echo "━━━ ab 登录 API 压测 ━━━━━━━━━━━━━━━━━━━━━━━━━"
+            ab -n 500 -c ${CONNECTIONS} -g ab-login.tsv \
+              -p <(echo '{"username":"admin","password":"admin@123"}') \
+              -T "application/json" \
+              "${GATEWAY}/api/v1/auth/login" 2>&1 | tee ab-output.txt
+          fi
+
+      - name: 📊 压测结果摘要
+        run: |
+          echo "## 🚀 性能压测结果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if command -v wrk &>/dev/null; then
+            echo "**wrk 可用**: 详见 Artifacts" >> $GITHUB_STEP_SUMMARY
+          fi
+          if command -v ab &>/dev/null; then
+            echo "**ab 可用**: 详见 Artifacts" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "_注意: 压测在 CI 容器中运行，结果仅供参考_ " >> $GITHUB_STEP_SUMMARY
+        continue-on-error: true
+
+      - name: 📤 Upload 压测结果
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-test-results
+          path: |
+            bench/*.txt
+            bench/*.tsv
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # ============================================================
+  # 6. 最终汇总
   # ============================================================
   summary:
     name: 📋 Summary
     runs-on: ubuntu-22.04
-    needs: [backend, frontend, deploy-scripts, sql-check]
+    needs: [backend, frontend, deploy-scripts, sql-check, perf-test]
     if: always()
     steps:
       - name: 📊 结果汇总
@@ -299,6 +417,7 @@ jobs:
           echo "| 🎨 Frontend | ${{ needs.frontend.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| 🐚 Deploy Scripts | ${{ needs.deploy-scripts.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| 🗄️ SQL Check | ${{ needs.sql-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🚀 Perf Test | ${{ needs.perf-test.result }} |" >> $GITHUB_STEP_SUMMARY
 
       - name: ❌ 检查是否有失败
         if: needs.backend.result != 'success' || needs.frontend.result != 'success' || needs.deploy-scripts.result != 'success' || needs.sql-check.result != 'success'

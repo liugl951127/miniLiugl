@@ -462,7 +462,21 @@
 - [ ] API Key 配额前端告警提示
 - [ ] 外部 API 限流规则 CRUD 页面
 
-## Day 21 - 待开始
+## Day 22 - 2026-06-27 ✅ WebSocket 联调 + 鉴权测试 + RAG 链路 + CI 压测
+
+**今日完成：**
+- [x] **WebSocket 端到端联调**：Stream.vue 加 JWT token，`frontend/src/utils/ws.js` 通用 WS 工具类（重连/心跳/自动解析），notification store 重构
+- [x] **API Key 鉴权单元测试**：`ApiKeyAuthGlobalFilterTest`（5 用例覆盖），`ApiKeyAuthGlobalFilter` 重构加测试用构造函数
+- [x] **RAG 完整链路测试**：5 个新用例（多文档上传/切片/检索、多 KB 隔离、问答应答、格式路由）
+- [x] **CI/CD 压测 Stage**：新增 `perf-test` job（wrk + ab，30s/50并发，GitHub Artifacts 上传）
+
+**明日计划 Day 23：**
+- [ ] 前端 E2E 测试（Playwright）集成到 CI
+- [ ] 监控告警系统完整链路测试
+- [ ] 前端知识库管理 UI 完善
+- [ ] API Key 管理前端 UI
+
+## Day 23 - 待开始
 
 ## V5.9 (2026-06-21) — Dashboard 真实图表 + 告警规则 CRUD + WS 精确分流
 

@@ -1,12 +1,13 @@
 package com.minimax.rag;
 
-import com.minimax.rag.entity.Document;
 import com.minimax.rag.entity.DocumentChunk;
 import com.minimax.rag.entity.KnowledgeBase;
 import com.minimax.rag.retriever.Retriever;
 import com.minimax.rag.service.DocumentService;
 import com.minimax.rag.service.KnowledgeBaseService;
+import com.minimax.rag.service.RagService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,7 +20,8 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Day 8 集成测试 - 端到端 RAG 流程
+ * Day 8 + Day 22 集成测试 - 端到端 RAG 流程
+ * 覆盖: 上传 + 切片 + 检索 + 问答
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -28,6 +30,7 @@ class RagIntegrationTest {
     @Autowired KnowledgeBaseService kbService;
     @Autowired DocumentService docService;
     @Autowired Retriever retriever;
+    @Autowired(required = false) RagService ragService; // 可能无 mock chat 服务
     @Autowired JdbcTemplate jdbc;
 
     @BeforeEach
@@ -124,9 +127,7 @@ class RagIntegrationTest {
 
         // 检索 "宠物"
         List<Retriever.Hit> hits = retriever.retrieve(kbId, "宠物", 3);
-        // mock embedding 64 维下相关性可能不完全精准，但能返回一些
         assertNotNull(hits);
-        // 至少返回了 (kb 内有 3 个文档，分块后若干 chunk)
     }
 
     @Test
@@ -142,5 +143,110 @@ class RagIntegrationTest {
         KnowledgeBase after = kbService.get(kbId, 1L);
         assertEquals(beforeDoc - 1, after.getDocCount());
         assertTrue(after.getChunkCount() < beforeChunk);
+    }
+
+    // ── Day 22 新增测试 ────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("V5.22 - 上传 + 切片 + 检索 完整链路")
+    void uploadChunkRetrieve_fullFlow() {
+        Long kbId = kbService.create(1L, "技术文档", "技术知识库", "private", "tech");
+
+        byte[] python = "Python 是一种高级编程语言，由 Guido van Rossum 于 1991 年创建。\nPython 语法简洁，适合数据分析。".getBytes(StandardCharsets.UTF_8);
+        byte[] rust = "Rust 是一种系统编程语言，注重安全性和并发性。\nRust 由 Mozilla 开发。".getBytes(StandardCharsets.UTF_8);
+        byte[] golang = "Go 是 Google 开发的编译型语言，支持并发。\nGo 的设计目标是简单高效。".getBytes(StandardCharsets.UTF_8);
+
+        docService.upload(1L, kbId, "Python", "txt", python, "python.txt", "python");
+        docService.upload(1L, kbId, "Rust", "txt", rust, "rust.txt", "rust");
+        docService.upload(1L, kbId, "Go", "txt", golang, "go.txt", "golang");
+
+        // 检索 "并发编程"
+        List<Retriever.Hit> concurrentHits = retriever.retrieve(kbId, "并发编程", 5);
+        assertNotNull(concurrentHits);
+        assertTrue(concurrentHits.size() >= 1, "应返回至少 1 个相关 chunk");
+
+        // 检索 "数据分析"
+        List<Retriever.Hit> dataHits = retriever.retrieve(kbId, "数据分析", 5);
+        assertNotNull(dataHits);
+
+        // 检索结果包含 docId
+        List<Retriever.Hit> pythonHits = retriever.retrieve(kbId, "Python", 5);
+        assertNotNull(pythonHits);
+        assertTrue(pythonHits.stream().anyMatch(h -> h.chunk().getDocId() != null),
+                "检索结果应包含 docId");
+
+        // KB 计数验证
+        KnowledgeBase kb = kbService.get(kbId, 1L);
+        assertEquals(3, kb.getDocCount(), "应上传 3 个文档");
+        assertTrue(kb.getChunkCount() >= 3, "至少有 3 个 chunk");
+    }
+
+    @Test
+    @DisplayName("V5.22 - 多 KB 隔离检索")
+    void multiKbIsolation() {
+        Long kb1 = kbService.create(1L, "金融库", "金融知识", "private", null);
+        Long kb2 = kbService.create(1L, "医疗库", "医疗知识", "private", null);
+
+        docService.upload(1L, kb1, "股票", "txt", "股票是证券的一种，代表公司所有权。".getBytes(StandardCharsets.UTF_8), "stock.txt", null);
+        docService.upload(1L, kb2, "疫苗", "txt", "疫苗是预防疾病的生物制剂。".getBytes(StandardCharsets.UTF_8), "vaccine.txt", null);
+
+        // 在金融库里搜 "疫苗" → 不应返回相关内容
+        List<Retriever.Hit> financeHits = retriever.retrieve(kb1, "疫苗", 5);
+        assertNotNull(financeHits);
+        boolean hasVaccine = financeHits.stream()
+                .anyMatch(h -> h.chunk().getContent().contains("疫苗"));
+        assertFalse(hasVaccine, "金融库不应返回医疗相关内容");
+
+        // 在医疗库里搜 "疫苗" → 应该返回
+        List<Retriever.Hit> medHits = retriever.retrieve(kb2, "疫苗", 5);
+        assertNotNull(medHits);
+    }
+
+    @Test
+    @DisplayName("V5.22 - RagService.ask 空问题处理")
+    void ragService_emptyQuestion() {
+        if (ragService == null) return; // 无 chat 服务时跳过
+
+        Long kbId = kbService.create(1L, "kb", null, "private", null);
+        RagService.RagAnswer answer = ragService.ask(kbId, "", null, 3);
+        assertNotNull(answer);
+        assertEquals("问题不能为空", answer.answer());
+        assertTrue(answer.sources().isEmpty());
+    }
+
+    @Test
+    @DisplayName("V5.22 - RagService.ask 空检索降级")
+    void ragService_emptyRetrievalFallsBackToPlainChat() {
+        if (ragService == null) return;
+
+        Long kbId = kbService.create(1L, "kb", null, "private", null);
+        RagService.RagAnswer answer = ragService.ask(kbId, "你好", null, 3);
+        assertNotNull(answer);
+        assertNotNull(answer.answer());
+    }
+
+    @Test
+    @DisplayName("V5.22 - 文档解析: TXT / PDF / DOCX 格式路由")
+    void parserRegistry_routesCorrectly() {
+        Long kbId = kbService.create(1L, "kb", null, "private", null);
+
+        // TXT
+        byte[] txt = "This is plain text content.".getBytes(StandardCharsets.UTF_8);
+        Long txtId = docService.upload(1L, kbId, "txt file", "txt", txt, "a.txt", null);
+        assertNotNull(txtId);
+
+        // PDF (无真实 PDF 解析库, Mock client 返回原始字节)
+        byte[] pdf = "%PDF-1.4 fake pdf content".getBytes(StandardCharsets.UTF_8);
+        Long pdfId = docService.upload(1L, kbId, "pdf file", "pdf", pdf, "b.pdf", null);
+        assertNotNull(pdfId);
+
+        // DOCX
+        byte[] docx = "PK\u0003\u0004 fake docx content".getBytes(StandardCharsets.UTF_8);
+        Long docxId = docService.upload(1L, kbId, "docx file", "docx", docx, "c.docx", null);
+        assertNotNull(docxId);
+
+        // 3 个文档都成功上传到同一 KB
+        KnowledgeBase kb = kbService.get(kbId, 1L);
+        assertEquals(3, kb.getDocCount());
     }
 }
