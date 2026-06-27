@@ -118,6 +118,12 @@
             <el-form-item label="Top K">
               <el-input-number v-model="retrieveForm.topK" :min="1" :max="20" />
             </el-form-item>
+            <el-form-item label="Prompt 模板">
+              <el-select v-model="selectedPromptTpl" placeholder="默认模板" clearable
+                style="width: 200px" value-key="id">
+                <el-option v-for="t in promptTemplates" :key="t.id" :label="t.name" :value="t" />
+              </el-select>
+            </el-form-item>
           </el-form>
 
           <el-input
@@ -268,6 +274,7 @@ import { ref, computed, onMounted, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Files, Document, Reading, Histogram, Plus, FolderOpened, Delete, Search, MagicStick, Upload } from '@element-plus/icons-vue'
 import * as ragApi from '@/api/rag'
+import { promptApi } from '@/api/prompt'
 import { useUserStore } from '@/store/user'
 
 const userStore = useUserStore()
@@ -293,6 +300,18 @@ const newKb = reactive({ name: '', description: '', visibility: 'private', tags:
 const retrieveForm = reactive({ kbId: null, query: '', topK: 5 })
 const retrieveHits = ref([])
 const askAnswer = ref(null)
+
+// Day 23: Prompt 模板选择 (用于 RAG 自定义 system prompt)
+const promptTemplates = ref([])
+const selectedPromptTpl = ref(null)
+
+async function loadPromptTemplates() {
+  try {
+    const r = await promptApi.list({ size: 50 })
+    const list = r?.data?.records || r?.data || []
+    promptTemplates.value = list
+  } catch { /* 模板加载失败不影响 RAG 问答 */ }
+}
 
 const loading = reactive({
   kbs: false, public: false, docs: false, upload: false,
@@ -490,11 +509,16 @@ async function handleAsk() {
   if (!retrieveForm.query.trim()) return ElMessage.warning('请输入问题')
   loading.ask = true
   try {
-    const res = await ragApi.ask({
+    const payload = {
       kbId: retrieveForm.kbId,
       question: retrieveForm.query,
-      topK: retrieveForm.topK
-    })
+      topK: retrieveForm.topK,
+    }
+    // Day 23: 如果选了 Prompt 模板, 用模板 content 作为 system prompt
+    if (selectedPromptTpl.value?.content) {
+      payload.systemPrompt = selectedPromptTpl.value.content
+    }
+    const res = await ragApi.ask(payload)
     askAnswer.value = res.data?.data || res.data || null
     retrieveCount.value++
   } catch (e) {
@@ -503,7 +527,7 @@ async function handleAsk() {
 }
 
 onMounted(async () => {
-  await Promise.all([loadKbs(), loadPublicKbs()])
+  await Promise.all([loadKbs(), loadPublicKbs(), loadPromptTemplates()])
 })
 </script>
 

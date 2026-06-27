@@ -314,8 +314,15 @@ function clearCanvas() {
 }
 function loadTemplate(tpl) {
   try {
-    nodes.value = JSON.parse(JSON.stringify(tpl.nodes))
-    edges.value = JSON.parse(JSON.stringify(tpl.edges))
+    if (!tpl || !tpl.nodes || !tpl.edges) {
+      ElMessage.error('模板数据不完整, 缺少 nodes 或 edges 字段')
+      return
+    }
+    // 兼容后端返回字符串 或 前端直接返回对象
+    const parsedNodes = typeof tpl.nodes === 'string' ? JSON.parse(tpl.nodes) : tpl.nodes
+    const parsedEdges = typeof tpl.edges === 'string' ? JSON.parse(tpl.edges) : tpl.edges
+    nodes.value = JSON.parse(JSON.stringify(parsedNodes))
+    edges.value = JSON.parse(JSON.stringify(parsedEdges))
     ElMessage.success(`已加载模板: ${tpl.name}`)
   } catch (e) {
     ElMessage.error('模板格式错误, 加载失败: ' + e.message)

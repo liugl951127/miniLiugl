@@ -46,7 +46,16 @@ public class RagService {
     private final ObjectMapper json = new ObjectMapper();
     private final HttpClient client = HttpClient.newHttpClient();
 
+    /** 向后兼容旧签名 */
     public RagAnswer ask(Long kbId, String question, String history, int topK) {
+        return ask(kbId, question, history, topK, null);
+    }
+
+    /**
+     * RAG 问答 (Day 23: 支持自定义 systemPrompt 模板).
+     * @param systemPrompt 若不为空, 替换默认的上下文拼接逻辑, 直接用作 system 消息
+     */
+    public RagAnswer ask(Long kbId, String question, String history, int topK, String systemPrompt) {
         if (question == null || question.isBlank()) {
             return new RagAnswer("问题不能为空", List.of());
         }
@@ -54,26 +63,14 @@ public class RagService {
         List<Retriever.Hit> hits = retriever.retrieve(kbId, question, topK);
         if (hits.isEmpty()) {
             log.info("RAG: 检索为空 kbId={} 走普通 chat", kbId);
-            String plain = plainChat(question, history);
+            String plain = plainChat(question, history, systemPrompt);
             return new RagAnswer(plain, List.of());
         }
-        // 2) 拼 context
-        StringBuilder ctx = new StringBuilder();
-        ctx.append("你是基于知识库回答问题的助手。请根据以下参考资料回答，引用处标注 [来源 N]。\n");
-        ctx.append("若资料不足以回答，请直接说'我不知道'或'参考资料未覆盖'。\n\n参考资料:\n");
-        for (int i = 0; i < hits.size(); i++) {
-            Retriever.Hit h = hits.get(i);
-            ctx.append("[来源 ").append(i+1).append("] ")
-               .append(h.docTitle == null ? "(未知文档)" : h.docTitle)
-               .append(" - 片段 #").append(h.chunkIndex)
-               .append(" (相似度 ").append(String.format("%.2f", h.score)).append(")\n")
-               .append(h.content).append("\n\n");
-        }
+
         // 3) 拼 messages
         List<Map<String, String>> messages = new ArrayList<>();
-        messages.add(Map.of("role","system","content", ctx.toString()));
+        messages.add(Map.of("role","system","content", ctxContent));
         if (history != null && !history.isBlank()) {
-            // 简化: 把 history 当作 user 补充
             messages.add(Map.of("role","user","content", history));
         }
         messages.add(Map.of("role","user","content", question));
@@ -100,15 +97,34 @@ public class RagService {
         return new RagAnswer(answer, sources);
     }
 
-    private String plainChat(String question, String history) {
+    private String plainChat(String question, String history, String systemPrompt) {
         List<Map<String, String>> messages = new ArrayList<>();
-        messages.add(Map.of("role","system","content","你是助手。"));
+        String sysContent = (systemPrompt != null && !systemPrompt.isBlank())
+                ? systemPrompt.replace("{{question}}", question)
+                : "你是助手。";
+        messages.add(Map.of("role","system","content", sysContent));
         if (history != null && !history.isBlank()) {
             messages.add(Map.of("role","user","content", history));
         }
         messages.add(Map.of("role","user","content", question));
         try { return callChat(messages); }
-        catch (Exception e) { return "(无知识库命中 + LLM 不可用) 你的问题: " + question; }
+        catch (Exception e) { return "(LLM 不可用) 你的问题: " + question; }
+    }
+
+    /** 构建带引用的上下文内容 */
+    private String buildContext(List<Retriever.Hit> hits) {
+        StringBuilder ctx = new StringBuilder();
+        ctx.append("你是基于知识库回答问题的助手。请根据以下参考资料回答，引用处标注 [来源 N]。\n");
+        ctx.append("若资料不足以回答，请直接说'我不知道'或'参考资料未覆盖'。\n\n参考资料:\n");
+        for (int i = 0; i < hits.size(); i++) {
+            Retriever.Hit h = hits.get(i);
+            ctx.append("[来源 ").append(i + 1).append("] ")
+               .append(h.docTitle == null ? "(未知文档)" : h.docTitle)
+               .append(" - 片段 #").append(h.chunkIndex)
+               .append(" (相似度 ").append(String.format("%.2f", h.score)).append(")\n")
+               .append(h.content).append("\n\n");
+        }
+        return ctx.toString();
     }
 
     private String callChat(List<Map<String, String>> messages) throws Exception {

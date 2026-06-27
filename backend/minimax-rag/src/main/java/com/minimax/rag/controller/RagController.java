@@ -129,13 +129,14 @@ public class RagController {
         return Result.ok(retriever.retrieve(kbId, query, topK));
     }
 
-    @Operation(summary = "RAG问答")
+    @Operation(summary = "RAG问答 (Day 23: 支持 systemPrompt 自定义模板)")
     @PostMapping("/ask")
     public Result<RagService.RagAnswer> ask(@RequestBody Map<String, Object> body) {
         Long kbId = body.get("kbId") == null ? null : ((Number) body.get("kbId")).longValue();
         String question = (String) body.get("question");
         String history = (String) body.get("history");
         Integer topK = (Integer) body.getOrDefault("topK", 5);
-        return Result.ok(ragService.ask(kbId, question, history, topK));
+        String systemPrompt = (String) body.get("systemPrompt");
+        return Result.ok(ragService.ask(kbId, question, history, topK, systemPrompt));
     }
 }
