@@ -185,7 +185,14 @@
 
         <div class="doc-toolbar">
           <h4>📄 文档 ({{ docs.length }})</h4>
+          <!-- V5.22: 上传进度条 + 取消按钮 -->
+          <div v-if="uploadProgress > 0 && uploadProgress < 100" class="upload-progress-bar">
+            <span class="upload-name">{{ uploadingFileName }}</span>
+            <el-progress :percentage="uploadProgress" :stroke-width="8" style="flex:1;margin:0 12px" />
+            <el-button size="small" type="danger" @click="cancelUpload">取消</el-button>
+          </div>
           <el-upload
+            v-else
             :show-file-list="false"
             :before-upload="beforeUpload"
             :http-request="customUpload"
@@ -292,6 +299,11 @@ const loading = reactive({
   retrieve: false, ask: false, create: false
 })
 
+// V5.22: 上传进度状态
+const uploadProgress = ref(0)
+const uploadingFileName = ref('')
+let uploadCancel = null
+
 const filteredKbs = computed(() => {
   if (!kbSearch.value) return kbs.value
   const q = kbSearch.value.toLowerCase()
@@ -397,14 +409,53 @@ function beforeUpload(file) {
 }
 
 async function customUpload({ file }) {
+  uploadProgress.value = 0
+  uploadingFileName.value = file.name
   loading.upload = true
+  let cancelled = false
   try {
-    await ragApi.uploadDoc(ownerId.value, currentKb.value.id, file, { title: file.name, sourceType: 'upload' })
-    ElMessage.success('上传成功')
-    await loadDocs()
+    const { promise, cancel } = ragApi.uploadDocWithCancel(
+      ownerId.value,
+      currentKb.value.id,
+      file,
+      {
+        title: file.name,
+        sourceType: 'upload',
+        onProgress: (pct) => {
+          if (!cancelled) uploadProgress.value = pct
+        }
+      }
+    )
+    uploadCancel = () => {
+      cancelled = true
+      cancel()
+    }
+    await promise
+    if (!cancelled) {
+      ElMessage.success('上传成功')
+      uploadProgress.value = 0
+      uploadingFileName.value = ''
+      await loadDocs()
+    }
   } catch (e) {
-    ElMessage.error('上传失败: ' + (e.response?.data?.message || e.message))
-  } finally { loading.upload = false }
+    if (e?.__cancelled || e?.message?.includes('cancel') || e?.name === 'CanceledError') {
+      ElMessage.info('上传已取消')
+    } else {
+      ElMessage.error('上传失败: ' + (e.response?.data?.message || e.message))
+    }
+    uploadProgress.value = 0
+    uploadingFileName.value = ''
+  } finally {
+    loading.upload = false
+    uploadCancel = null
+  }
+}
+
+function cancelUpload() {
+  if (uploadCancel) {
+    uploadCancel()
+    uploadCancel = null
+  }
 }
 
 async function viewChunks(row) {
@@ -467,6 +518,8 @@ onMounted(async () => {
 .kb-detail { padding: 0 8px; }
 .doc-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .doc-toolbar h4 { margin: 0; }
+.upload-progress-bar { display: flex; align-items: center; flex: 1; gap: 8px; padding: 6px 12px; background: #f0f9ff; border-radius: 6px; border: 1px solid #d0e8ff; }
+.upload-name { font-size: 12px; color: #409eff; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hit-section, .answer-section { margin-top: 20px; }
 .hit-section h4, .answer-section h4 { margin-bottom: 12px; color: #303133; }
 .hit-card { margin-bottom: 12px; }

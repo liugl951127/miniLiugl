@@ -91,9 +91,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { use } from 'echarts/core'  // 占位避免编译错
 import http from '@/api/http'
 import { ElMessage } from 'element-plus'
+import { useUserStore } from '@/store/user'
 
 const goal = ref('查明天上海天气, 然后用计算器算 (123+456)*789, 最后把结果发邮件给 admin@minimax.com')
 const tools = ref([])
@@ -105,8 +105,8 @@ const planSteps = ref([])
 const finalAnswer = ref('')
 const rounds = ref(0)
 const duration = ref(0)
-let eventSource = null
-let esController = null
+const userStore = useUserStore()
+let esController = new AbortController()
 
 async function loadTools() {
   try {
@@ -161,13 +161,15 @@ async function execute() {
 
 async function runStreamMode() {
   running.value = true
+  esController = new AbortController()
   try {
-    // 用 fetch + ReadableStream 接收 SSE (EventSource 不能 POST)
+    // V5.22: 用 userStore.accessToken 代替 localStorage
+    const token = userStore.accessToken || ''
     const resp = await fetch('/api/v1/agent/run-stream', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + (localStorage.getItem('access_token') || ''),
+        'Authorization': 'Bearer ' + token,
         'Accept': 'text/event-stream',
       },
       body: JSON.stringify({
@@ -230,7 +232,7 @@ async function runPlanMode() {
   running.value = true
   try {
     const r = await http.post('/agent/plan', {
-      userId: Number(localStorage.getItem('user_id') || 1),
+      userId: userStore.profile?.id || 1,
       goal: goal.value,
     })
     if (r && r.data) {
@@ -250,7 +252,7 @@ async function runPlan() {
   events.value = []
   try {
     const r = await http.post('/agent/run-plan', {
-      userId: Number(localStorage.getItem('user_id') || 1),
+      userId: userStore.profile?.id || 1,
       goal: goal.value,
       planSteps: planSteps.value,
     })
@@ -272,7 +274,7 @@ async function runWithMemory() {
   events.value = []
   try {
     const r = await http.post('/agent/run-with-memory', {
-      userId: Number(localStorage.getItem('user_id') || 1),
+      userId: userStore.profile?.id || 1,
       goal: goal.value,
       tools: tools.value.length ? tools.value : null,
     })
@@ -290,8 +292,10 @@ async function runWithMemory() {
 }
 
 function cancel() {
-  // fetch reader 不能直接 cancel, 用 AbortController
-  if (esController) esController.abort()
+  if (esController) {
+    esController.abort()
+    esController = new AbortController()
+  }
   running.value = false
   ElMessage.info('已停止')
 }

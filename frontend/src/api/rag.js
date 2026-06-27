@@ -1,4 +1,4 @@
-// RAG 知识库 API (V5.24)
+// RAG 知识库 API (V5.24 + V5.22 进度 + 可取消)
 import http from './http'
 
 // 知识库 (KB)
@@ -18,6 +18,8 @@ export const deleteKb = (id, ownerId) =>
   http.delete(`/rag/kb/${id}?ownerId=${ownerId}`)
 
 // 文档 (Document)
+// V5.22: uploadDoc 返回 { promise, cancel }
+// opts: { title, sourceType, tags, onProgress(pct, loaded, total) }
 export const uploadDoc = (ownerId, kbId, file, opts = {}) => {
   const form = new FormData()
   form.append('file', file)
@@ -25,9 +27,49 @@ export const uploadDoc = (ownerId, kbId, file, opts = {}) => {
   if (opts.title) params.append('title', opts.title)
   if (opts.sourceType) params.append('sourceType', opts.sourceType)
   if (opts.tags) params.append('tags', opts.tags)
-  return http.post(`/rag/doc/upload?${params}`, form, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  })
+
+  const cfg = {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }
+
+  // V5.22: 支持进度回调
+  if (typeof opts.onProgress === 'function') {
+    cfg.onUploadProgress = (e) => {
+      const pct = e.total > 0 ? Math.round((e.loaded / e.total) * 100) : 0
+      opts.onProgress(pct, e.loaded, e.total)
+    }
+  }
+
+  const promise = http.post(`/rag/doc/upload?${params}`, form, cfg)
+  return { promise, cancel: null } // cancel 由调用方通过 AbortController 管理
+}
+
+// 使用 AbortController 的上传版本
+export const uploadDocWithCancel = (ownerId, kbId, file, opts = {}) => {
+  const controller = new AbortController()
+  const form = new FormData()
+  form.append('file', file)
+  const params = new URLSearchParams({ ownerId, kbId })
+  if (opts.title) params.append('title', opts.title)
+  if (opts.sourceType) params.append('sourceType', opts.sourceType)
+  if (opts.tags) params.append('tags', opts.tags)
+
+  const cfg = {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    signal: controller.signal,
+  }
+
+  if (typeof opts.onProgress === 'function') {
+    cfg.onUploadProgress = (e) => {
+      const pct = e.total > 0 ? Math.round((e.loaded / e.total) * 100) : 0
+      opts.onProgress(pct, e.loaded, e.total)
+    }
+  }
+
+  return {
+    promise: http.post(`/rag/doc/upload?${params}`, form, cfg),
+    cancel: () => controller.abort(),
+  }
 }
 
 export const listDocs = (kbId, limit = 50) =>

@@ -78,10 +78,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import http from '@/api/http'
 import { ElMessage } from 'element-plus'
 import MarkdownView from '@/components/MarkdownView.vue'
 import { t } from '@/i18n'
+import { useUserStore } from '@/store/user'
+
+const userStore = useUserStore()
 
 const goal = ref('查一下北京今天的天气, 然后给出一个旅游建议')
 const tools = ref<string[]>([])
@@ -93,12 +96,10 @@ const duration = ref(0)
 const finalAnswer = ref('')
 const availableTools = ref<any[]>([])
 
-const API = import.meta.env.VITE_API_BASE || 'http://localhost'
-
 async function loadTools() {
   try {
-    const { data } = await axios.get(`${API}/api/v1/function/tools`)
-    availableTools.value = (data?.data || []).filter((t: any) => t.enabled)
+    const r = await http.get('/function/tools')
+    availableTools.value = ((r?.data || []) as any[]).filter((t: any) => t.enabled)
   } catch (e) {
     // ignore - 可用工具列表不影响运行
     availableTools.value = [
@@ -119,14 +120,15 @@ async function run() {
   steps.value = []
   finalAnswer.value = ''
   try {
-    const token = localStorage.getItem('access_token')
-    const userId = localStorage.getItem('user_id') || '1'
-    const { data } = await axios.post(`${API}/api/v1/agent/run`,
-      { userId, goal: goal.value, tools: tools.value },
-      { headers: { Authorization: `Bearer ${token}` } })
-    const result = data?.data
+    const userId = userStore.profile?.id || 1
+    const r = await http.post('/agent/run', {
+      userId,
+      goal: goal.value,
+      tools: tools.value,
+    })
+    const result = r?.data
     if (!result) {
-      ElMessage.error(t('agent.execFailed') + (data?.message || t('agent.noResponse')))
+      ElMessage.error(t('agent.execFailed') + (r?.message || t('agent.noResponse')))
       return
     }
     steps.value = result.steps || []
@@ -137,7 +139,7 @@ async function run() {
       ? result.answer
       : '❌ ' + (result.answer || '执行失败')
   } catch (e: any) {
-    ElMessage.error(t('agent.requestFailed') + (e?.response?.data?.message || e?.message))
+    ElMessage.error(t('agent.requestFailed') + (e?.message || ''))
   } finally {
     running.value = false
   }

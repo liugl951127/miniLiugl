@@ -18,11 +18,24 @@ export const profileTable = (dsId, db, table) =>
   http.get(`/analytics/datasources/${dsId}/databases/${db}/tables/${table}/profile`)
 
 // ===== 文件导入 =====
-export const uploadIngestFile = (formData, onUploadProgress) =>
-  http.post('/analytics/ingest/upload', formData, {
+// V5.22: 返回 { promise, cancel } 支持可取消上传
+export const uploadIngestFile = (formData, opts = {}) => {
+  const controller = new AbortController()
+  const cfg = {
     headers: { 'Content-Type': 'multipart/form-data' },
-    onUploadProgress
-  })
+  }
+  if (typeof opts?.onProgress === 'function') {
+    cfg.onUploadProgress = opts.onProgress
+  }
+  if (opts?.signal) {
+    cfg.signal = opts.signal
+  }
+  return {
+    promise: http.post('/analytics/ingest/upload', formData, cfg),
+    cancel: () => controller.abort(),
+    signal: controller.signal,
+  }
+}
 export const getIngestTask = (taskId) => http.get(`/analytics/ingest/tasks/${taskId}`)
 export const getIngestQuality = (taskId) => http.get(`/analytics/ingest/tasks/${taskId}/quality`)
 
