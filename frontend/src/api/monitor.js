@@ -28,3 +28,10 @@ export const createMonitorAlertRule = (body) => http.post('/monitor/alerts/rules
 export const updateMonitorAlertRule = (id, body) => http.put(`/monitor/alerts/rules/${id}`, body)
 export const deleteMonitorAlertRule = (id) => http.delete(`/monitor/alerts/rules/${id}`)
 export const getMonitorAlertSummary = () => http.get('/monitor/alerts/summary')
+
+// V5.33 Day 24: 告警通知渠道 CRUD
+export const getAlertChannels = () => http.get('/monitor/alerts/channels')
+export const getAlertChannel = (id) => http.get(`/monitor/alerts/channels/${id}`)
+export const createAlertChannel = (body) => http.post('/monitor/alerts/channels', body)
+export const updateAlertChannel = (id, body) => http.put(`/monitor/alerts/channels/${id}`, body)
+export const deleteAlertChannel = (id) => http.delete(`/monitor/alerts/channels/${id}`)

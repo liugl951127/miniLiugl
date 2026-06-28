@@ -1,6 +1,6 @@
 # MiniMax Platform — 性能压测报告模板
 
-> V5.9 Day 21 | Gateway: `http://localhost:7080`
+> V5.33 Day 24 | Gateway: `http://localhost:7080` | 后端: 14 模块 | 前端: 35 Vue 页面
 
 ---
 
@@ -154,3 +154,39 @@ GATEWAY=http://prod-api.example.com CONNECTIONS=200 DURATION=120 ./bench/run.sh 
 - [ ] 数据库连接池参数优化
 - [ ] 网关 filter 链精简
 - [ ] Nacos 服务发现延迟优化
+
+---
+
+## E2E 测试（Playwright）
+
+> V5.33 Day 24 新增
+
+### 本地运行
+```bash
+cd frontend
+npm run test:e2e        # headless
+npm run test:e2e:ui     # GUI 调试
+npm run test:e2e:debug  # 断点调试
+```
+
+### CI 运行
+Playwright E2E 测试已集成到 GitHub Actions CI（`.github/workflows/ci.yml` job `e2e`）：
+- 依赖 `frontend` job（等待 dist 构建完成）
+- 自动安装 Chromium 浏览器
+- `serve@14` 启动静态服务（端口 5173）
+- Playwright 执行 `e2e/*.spec.js`
+- HTML + JUnit XML 报告上传为 Artifact
+- **non-blocking**：`continue-on-error: true`，不影响 PR 合并
+
+### 测试用例
+
+| Spec 文件 | 覆盖页面 | 关键验证 |
+|-----------|----------|----------|
+| `e2e/login.spec.js` | 登录页 | 标题/Tab/默认凭证/表单验证/微信扫码 |
+| `e2e/navigation.spec.js` | 全局导航 | 侧边栏/知识库/监控/无JS崩溃 |
+| `e2e/chat.spec.js` | 对话页 | 输入框/发送按钮/会话列表/无JS崩溃 |
+
+### 配置
+- 配置文件: `frontend/playwright.config.js`
+- 浏览器: Chromium (Playwright 内置)
+- Base URL: `http://localhost:5173`（CI）/ `http://localhost:5173`（本地 dev）

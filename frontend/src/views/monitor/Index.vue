@@ -242,6 +242,109 @@
         <el-button type="primary" :loading="ruleSaving" @click="saveRule">保存</el-button>
       </template>
     </el-dialog>
+
+    <!-- V5.33 Day 24: 告警通知渠道管理 -->
+    <el-row :gutter="16" class="row">
+      <el-col :span="24">
+        <el-card>
+          <template #header>
+            <span>📬 告警通知渠道 (V5.33)</span>
+            <el-button-group style="margin-left:12px">
+              <el-button size="small" @click="loadChannels">刷新</el-button>
+              <el-button size="small" type="primary" @click="openChannelDialog()">+ 新增渠道</el-button>
+            </el-button-group>
+          </template>
+          <el-table :data="channels" stripe size="small" empty-text="暂无告警渠道">
+            <el-table-column prop="id" label="ID" width="60" />
+            <el-table-column prop="name" label="名称" min-width="140" />
+            <el-table-column prop="channelType" label="类型" width="100">
+              <template #default="s">
+                <el-tag :type="channelTypeTag(s.row.channelType)" size="small">{{ s.row.channelType }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="配置" min-width="200">
+              <template #default="s">
+                <code style="font-size:11px; color:#666; word-break:break-all;">{{ channelConfigPreview(s.row.config) }}</code>
+              </template>
+            </el-table-column>
+            <el-table-column prop="priority" label="优先级" width="80" align="center" />
+            <el-table-column label="状态" width="80">
+              <template #default="s">
+                <el-tag :type="s.row.enabled ? 'success' : 'info'" size="small">
+                  {{ s.row.enabled ? '启用' : '禁用' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="180">
+              <template #default="s">
+                <el-button size="small" text type="primary" @click="openChannelDialog(s.row)">编辑</el-button>
+                <el-popconfirm :title="`确认删除 [${s.row.name}]?`" @confirm="removeChannel(s.row)">
+                  <template #reference>
+                    <el-button size="small" text type="danger">删除</el-button>
+                  </template>
+                </el-popconfirm>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 告警渠道编辑弹窗 -->
+    <el-dialog v-model="channelDialog" :title="channelForm.id ? '编辑渠道' : '新增渠道'" width="520px">
+      <el-form :model="channelForm" label-width="100px" size="default">
+        <el-form-item label="名称" required>
+          <el-input v-model="channelForm.name" placeholder="e.g. 运维告警组" clearable />
+        </el-form-item>
+        <el-form-item label="类型" required>
+          <el-select v-model="channelForm.channelType" placeholder="选择渠道类型" style="width:100%">
+            <el-option label="📧 邮件 (EMAIL)" value="EMAIL" />
+            <el-option label="💬 钉钉 (DINGTALK)" value="DINGTALK" />
+            <el-option label="🌐 Webhook" value="WEBHOOK" />
+          </el-select>
+        </el-form-item>
+        <!-- EMAIL 配置 -->
+        <template v-if="channelForm.channelType === 'EMAIL'">
+          <el-form-item label="收件人">
+            <el-input v-model="channelForm.configEmail" placeholder="oncall@company.com" clearable />
+            <div style="font-size:11px; color:#999; margin-top:4px">告警触发后发送邮件到此地址</div>
+          </el-form-item>
+        </template>
+        <!-- DINGTALK 配置 -->
+        <template v-else-if="channelForm.channelType === 'DINGTALK'">
+          <el-form-item label="WebHook">
+            <el-input v-model="channelForm.configWebhook" placeholder="https://oapi.dingtalk.com/robot/send?access_token=xxx" clearable />
+          </el-form-item>
+          <el-form-item label="签名密钥">
+            <el-input v-model="channelForm.configSecret" placeholder="SEC... (可选)" clearable />
+            <div style="font-size:11px; color:#999; margin-top:4px">HMAC-SHA256 签名密钥（钉钉机器人安全设置）</div>
+          </el-form-item>
+        </template>
+        <!-- WEBHOOK 配置 -->
+        <template v-else-if="channelForm.channelType === 'WEBHOOK'">
+          <el-form-item label="URL">
+            <el-input v-model="channelForm.configWebhook" placeholder="https://your-webhook-url/notify" clearable />
+          </el-form-item>
+          <el-form-item label="Method">
+            <el-select v-model="channelForm.configMethod" style="width:100%">
+              <el-option label="POST (默认)" value="POST" />
+              <el-option label="PUT" value="PUT" />
+            </el-select>
+          </el-form-item>
+        </template>
+        <el-form-item label="优先级">
+          <el-input-number v-model="channelForm.priority" :min="1" :max="100" style="width:100%" />
+          <div style="font-size:11px; color:#999; margin-top:4px">数字越小优先级越高</div>
+        </el-form-item>
+        <el-form-item label="启用">
+          <el-switch v-model="channelForm.enabled" :active-value="1" :inactive-value="0" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="channelDialog = false">取消</el-button>
+        <el-button type="primary" :loading="channelSaving" @click="saveChannel">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -252,7 +355,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { CircleCheck, CircleClose } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { useUserStore } from '@/store/user'
-import { getMonitorAlertRules, createMonitorAlertRule, updateMonitorAlertRule, deleteMonitorAlertRule } from '@/api/monitor'
+import { getMonitorAlertRules, createMonitorAlertRule, updateMonitorAlertRule, deleteMonitorAlertRule, getAlertChannels, createAlertChannel, updateAlertChannel, deleteAlertChannel } from '@/api/monitor'
 
 const userStore = useUserStore()
 const API = import.meta.env.VITE_API_BASE || 'http://localhost'
@@ -386,7 +489,7 @@ async function loadAlerts() {
 }
 
 async function loadAll() {
-  await Promise.all([loadHealth(), loadMetrics(), loadJvm(), loadDb(), loadDisk(), loadAlerts(), loadRules()])
+  await Promise.all([loadHealth(), loadMetrics(), loadJvm(), loadDb(), loadDisk(), loadAlerts(), loadRules(), loadChannels()])
 }
 
 // V5.9: 加载告警规则
@@ -448,6 +551,109 @@ async function removeRule(row: any) {
     ElMessage.success('已删除')
     await loadRules()
   } catch (_) { /* cancel */ }
+}
+
+// V5.33 Day 24: 告警渠道管理
+const channels = ref<any[]>([])
+const channelDialog = ref(false)
+const channelSaving = ref(false)
+const channelForm = reactive<any>({
+  id: null, name: '', channelType: 'EMAIL',
+  enabled: 1, priority: 10,
+  // 临时字段
+  configEmail: '', configWebhook: '', configSecret: '', configMethod: 'POST',
+})
+
+async function loadChannels() {
+  try {
+    const { data } = await getAlertChannels()
+    channels.value = data.data || []
+  } catch (_) { channels.value = [] }
+}
+
+function channelConfigPreview(cfg: any) {
+  if (!cfg) return '-'
+  if (typeof cfg === 'string') {
+    try { cfg = JSON.parse(cfg) } catch (_) { return cfg }
+  }
+  if (cfg.email) return `收件人: ${cfg.email}`
+  if (cfg.webhook) return cfg.webhook.length > 60 ? cfg.webhook.slice(0, 60) + '...' : cfg.webhook
+  return JSON.stringify(cfg)
+}
+
+function channelTypeTag(type: string) {
+  if (type === 'EMAIL') return 'primary'
+  if (type === 'DINGTALK') return 'success'
+  return 'warning'
+}
+
+function openChannelDialog(row?: any) {
+  if (row) {
+    channelForm.id = row.id
+    channelForm.name = row.name
+    channelForm.channelType = row.channelType
+    channelForm.enabled = row.enabled
+    channelForm.priority = row.priority || 10
+    // 解析 config JSON
+    let cfg: any = row.config
+    if (typeof cfg === 'string') { try { cfg = JSON.parse(cfg) } catch (_) { cfg = {} } }
+    channelForm.configEmail = cfg?.email || ''
+    channelForm.configWebhook = cfg?.webhook || ''
+    channelForm.configSecret = cfg?.secret || ''
+    channelForm.configMethod = cfg?.method || 'POST'
+  } else {
+    channelForm.id = null; channelForm.name = ''; channelForm.channelType = 'EMAIL'
+    channelForm.enabled = 1; channelForm.priority = 10
+    channelForm.configEmail = ''; channelForm.configWebhook = ''
+    channelForm.configSecret = ''; channelForm.configMethod = 'POST'
+  }
+  channelDialog.value = true
+}
+
+async function saveChannel() {
+  if (!channelForm.name?.trim()) return ElMessage.warning('请输入名称')
+  channelSaving.value = true
+  try {
+    let config: any = {}
+    if (channelForm.channelType === 'EMAIL') {
+      if (!channelForm.configEmail?.trim()) return ElMessage.warning('请输入收件人邮箱')
+      config = { email: channelForm.configEmail.trim() }
+    } else if (channelForm.channelType === 'DINGTALK') {
+      if (!channelForm.configWebhook?.trim()) return ElMessage.warning('请输入 WebHook URL')
+      config = { webhook: channelForm.configWebhook.trim(), secret: channelForm.configSecret?.trim() || undefined }
+    } else {
+      if (!channelForm.configWebhook?.trim()) return ElMessage.warning('请输入 WebHook URL')
+      config = { webhook: channelForm.configWebhook.trim(), method: channelForm.configMethod }
+    }
+    const body = {
+      name: channelForm.name.trim(),
+      channelType: channelForm.channelType,
+      config: JSON.stringify(config),
+      enabled: channelForm.enabled,
+      priority: channelForm.priority,
+    }
+    if (channelForm.id) {
+      await updateAlertChannel(channelForm.id, body)
+      ElMessage.success('渠道已更新')
+    } else {
+      await createAlertChannel(body)
+      ElMessage.success('渠道已创建')
+    }
+    channelDialog.value = false
+    await loadChannels()
+  } catch (e: any) {
+    ElMessage.error('保存失败: ' + (e?.response?.data?.msg || e?.message || '未知错误'))
+  } finally {
+    channelSaving.value = false
+  }
+}
+
+async function removeChannel(row: any) {
+  try {
+    await deleteAlertChannel(row.id)
+    ElMessage.success('已删除')
+    await loadChannels()
+  } catch (_) {}
 }
 
 function toggleAuto(v: boolean) {

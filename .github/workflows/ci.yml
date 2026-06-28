@@ -456,9 +456,10 @@ jobs:
           echo "## 🧪 E2E 测试结果" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ -f frontend/e2e-report/results.xml ]; then
-            PASSED=$(grep -c 'time="0"' frontend/e2e-report/results.xml 2>/dev/null || echo 0)
-            FAILED=$(grep -c 'failure' frontend/e2e-report/results.xml 2>/dev/null || echo 0)
-            echo "通过: $PASSED | 失败: $FAILED" >> $GITHUB_STEP_SUMMARY
+            TOTAL=$(grep -c '<testcase' frontend/e2e-report/results.xml 2>/dev/null || echo 0)
+            FAILED=$(grep -c '<failure' frontend/e2e-report/results.xml 2>/dev/null || echo 0)
+            PASSED=$((TOTAL - FAILED))
+            echo "总计: $TOTAL | 通过: $PASSED | 失败: $FAILED" >> $GITHUB_STEP_SUMMARY
           else
             echo "报告文件不存在，跳过" >> $GITHUB_STEP_SUMMARY
           fi
@@ -493,9 +494,15 @@ jobs:
           echo "| 🐚 Deploy Scripts | ${{ needs.deploy-scripts.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| 🗄️ SQL Check | ${{ needs.sql-check.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| 🚀 Perf Test | ${{ needs.perf-test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 E2E Tests | ${{ needs.e2e.result }} |" >> $GITHUB_STEP_SUMMARY
 
       - name: ❌ 检查是否有失败
-        if: needs.backend.result != 'success' || needs.frontend.result != 'success' || needs.deploy-scripts.result != 'success' || needs.sql-check.result != 'success'
+        if: needs.backend.result != 'success' || needs.frontend.result != 'success' || needs.deploy-scripts.result != 'success' || needs.sql-check.result != 'success' || needs.e2e.result == 'failure'
         run: |
           echo "⚠️ 部分 Job 失败"
           exit 0  # 允许合并但标记
+
+      - name: ✅ 全部 Job 完成
+        if: needs.backend.result == 'success' && needs.frontend.result == 'success' && needs.deploy-scripts.result == 'success' && needs.sql-check.result == 'success' && needs.e2e.result != 'failure'
+        run: |
+          echo "✅ 全部 Job 通过"
