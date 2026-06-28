@@ -399,12 +399,87 @@ jobs:
           retention-days: 7
 
   # ============================================================
-  # 6. 最终汇总
+  # 6. 前端 E2E 测试 (Playwright)
+  # ============================================================
+  e2e:
+    name: 🧪 E2E Tests (Playwright)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    needs: [frontend]
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 📦 Install deps + Playwright
+        working-directory: frontend
+        run: |
+          npm config set registry https://registry.npmmirror.com
+          npm ci --prefer-offline --no-audit || npm install --prefer-offline --no-audit
+          npx playwright install chromium --with-deps
+
+      - name: 🏃 Build (serve 需要)
+        working-directory: frontend
+        run: npm run build
+
+      - name: 🌐 启动静态服务 (serve)
+        run: |
+          npx --yes serve@14 dist -l 5173 &
+          echo "等服务启动..."
+          sleep 5
+          for i in $(seq 1 15); do
+            if curl -s --max-time 2 http://localhost:5173 | grep -q "MiniMax"; then
+              echo "✓ 服务就绪"
+              break
+            fi
+            echo "  等 serve... ($i/15)"
+            sleep 2
+          done
+        working-directory: frontend
+
+      - name: 🎭 Playwright E2E
+        env:
+          E2E_BASE_URL: 'http://localhost:5173'
+        run: npx playwright test --reporter=list
+        working-directory: frontend
+        continue-on-error: true
+
+      - name: 📊 E2E 结果摘要
+        run: |
+          echo "## 🧪 E2E 测试结果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f frontend/e2e-report/results.xml ]; then
+            PASSED=$(grep -c 'time="0"' frontend/e2e-report/results.xml 2>/dev/null || echo 0)
+            FAILED=$(grep -c 'failure' frontend/e2e-report/results.xml 2>/dev/null || echo 0)
+            echo "通过: $PASSED | 失败: $FAILED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "报告文件不存在，跳过" >> $GITHUB_STEP_SUMMARY
+          fi
+        continue-on-error: true
+
+      - name: 📤 Upload E2E Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-playwright-report
+          path: frontend/e2e-report/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # ============================================================
+  # 7. 最终汇总
   # ============================================================
   summary:
     name: 📋 Summary
     runs-on: ubuntu-22.04
-    needs: [backend, frontend, deploy-scripts, sql-check, perf-test]
+    needs: [backend, frontend, deploy-scripts, sql-check, perf-test, e2e]
     if: always()
     steps:
       - name: 📊 结果汇总

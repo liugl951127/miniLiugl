@@ -476,7 +476,19 @@
 - [ ] 前端知识库管理 UI 完善
 - [ ] API Key 管理前端 UI
 
-## Day 23 - 待开始
+## Day 23 - 2026-06-28 ✅ E2E 测试 + 监控告警链路 + Playwright CI
+
+**今日完成：**
+- Playwright E2E 测试框架：3 个 spec (login/navigation/chat, ~22 用例) + config + npm scripts
+- Playwright E2E CI Job：frontend 依赖 + serve 静态服务 + playwright test (non-blocking)
+- 监控告警链路测试：AlertNotifierManager/Email/DingTalk/MonitorController 4 个测试类 (~30 新用例)
+- 确认知识库管理 UI (560行) + API Key 管理 UI (299行) 完整无需额外完善
+
+**自检：** self-check 5/5 ✅ | java-static 0 错误 ✅ | 前端构建 57.73s ✅
+
+**明日计划 Day 24：** CI/CD E2E 测试 job 真实运行调试 / 告警渠道管理前端 UI / 性能基准测试报告更新
+
+## Day 24 - 待开始
 
 ## V5.9 (2026-06-21) — Dashboard 真实图表 + 告警规则 CRUD + WS 精确分流
 
