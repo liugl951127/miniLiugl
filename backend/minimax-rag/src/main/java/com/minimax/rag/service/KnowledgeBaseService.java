@@ -3,6 +3,7 @@ package com.minimax.rag.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.minimax.rag.entity.KnowledgeBase;
 import com.minimax.rag.mapper.KnowledgeBaseMapper;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -68,6 +69,27 @@ public class KnowledgeBaseService {
         if (!kb.getOwnerId().equals(ownerId)) return false;
         mapper.deleteById(id);
         return true;
+    }
+
+    /** V5.33 Day 23: 更新知识库（元数据编辑） */
+    public KnowledgeBase updateKb(Long id, Long ownerId, Map<String, String> patch) {
+        KnowledgeBase kb = mapper.selectById(id);
+        if (kb == null) throw new IllegalArgumentException("知识库不存在: " + id);
+        if (!kb.getOwnerId().equals(ownerId)) throw new SecurityException("无权修改此知识库");
+        if (patch.containsKey("name") && !patch.get("name").isBlank()) {
+            kb.setName(patch.get("name"));
+        }
+        if (patch.containsKey("description")) {
+            kb.setDescription(patch.get("description"));
+        }
+        if (patch.containsKey("visibility") && (patch.get("visibility").equals("public") || patch.get("visibility").equals("private"))) {
+            kb.setVisibility(patch.get("visibility"));
+        }
+        if (patch.containsKey("tags")) {
+            kb.setTags(patch.get("tags"));
+        }
+        mapper.updateById(kb);
+        return kb;
     }
 
     public void incDocCount(Long id, int delta) {

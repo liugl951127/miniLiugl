@@ -17,6 +17,14 @@ export const getKb = (id, ownerId) =>
 export const deleteKb = (id, ownerId) =>
   http.delete(`/rag/kb/${id}?ownerId=${ownerId}`)
 
+// V5.33 Day 23: 更新知识库（元数据编辑）
+export const updateKb = (id, ownerId, patch) =>
+  http.put(`/rag/kb/${id}?ownerId=${ownerId}`, patch)
+
+// V5.33 Day 23: 重命名文档
+export const renameDoc = (id, ownerId, title) =>
+  http.put(`/rag/doc/${id}?ownerId=${ownerId}`, { title })
+
 // 文档 (Document)
 // V5.22: uploadDoc 返回 { promise, cancel }
 // opts: { title, sourceType, tags, onProgress(pct, loaded, total) }

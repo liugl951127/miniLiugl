@@ -76,6 +76,7 @@
           <el-table-column label="操作" width="280" fixed="right">
             <template #default="{ row }">
               <el-button size="small" @click="selectKb(row)"><el-icon><FolderOpened /></el-icon> 进入</el-button>
+              <el-button size="small" @click="editKb(row)"><el-icon><Edit /></el-icon> 编辑</el-button>
               <el-button size="small" type="danger" @click="handleDeleteKb(row)">
                 <el-icon><Delete /></el-icon>
               </el-button>
@@ -222,6 +223,7 @@
           <el-table-column label="操作" width="180" fixed="right">
             <template #default="{ row }">
               <el-button size="small" @click="viewChunks(row)">切片</el-button>
+              <el-button size="small" @click="renameDoc(row)">重命名</el-button>
               <el-button size="small" type="danger" @click="handleDeleteDoc(row)">删除</el-button>
             </template>
           </el-table-column>
@@ -254,6 +256,44 @@
       </template>
     </el-dialog>
 
+    <!-- 编辑知识库对话框 -->
+    <el-dialog v-model="editKbVisible" title="编辑知识库" width="500px">
+      <el-form :model="editKbForm" label-width="80">
+        <el-form-item label="名称" required>
+          <el-input v-model="editKbForm.name" placeholder="e.g. 产品手册" maxlength="50" clearable />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="editKbForm.description" type="textarea" :rows="3" maxlength="200" />
+        </el-form-item>
+        <el-form-item label="可见性">
+          <el-radio-group v-model="editKbForm.visibility">
+            <el-radio value="private">私有</el-radio>
+            <el-radio value="public">公开</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="标签">
+          <el-input v-model="editKbForm.tags" placeholder="逗号分隔, e.g. AI,产品" clearable />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="editKbVisible = false">取消</el-button>
+        <el-button type="primary" :loading="loading.editKb" @click="doEditKb">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 重命名文档对话框 -->
+    <el-dialog v-model="renameDocVisible" title="重命名文档" width="420px">
+      <el-form label-width="70">
+        <el-form-item label="新名称">
+          <el-input v-model="renameDocTitle" placeholder="输入文档新名称" maxlength="200" clearable autofocus />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="renameDocVisible = false">取消</el-button>
+        <el-button type="primary" :loading="loading.renameDoc" @click="doRenameDoc">确认</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 切片查看对话框 -->
     <el-dialog v-model="showChunks" :title="`文档切片: ${currentDoc?.title || ''}`" width="700px">
       <el-scrollbar height="500px">
@@ -272,7 +312,7 @@
 <script setup>
 import { ref, computed, onMounted, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Files, Document, Reading, Histogram, Plus, FolderOpened, Delete, Search, MagicStick, Upload } from '@element-plus/icons-vue'
+import { Files, Document, Reading, Histogram, Plus, FolderOpened, Delete, Search, MagicStick, Upload, Edit, EditPen } from '@element-plus/icons-vue'
 import * as ragApi from '@/api/rag'
 import { promptApi } from '@/api/prompt'
 import { useUserStore } from '@/store/user'
@@ -293,6 +333,12 @@ const retrieveCount = ref(0)
 const drawerVisible = ref(false)
 const showCreateKb = ref(false)
 const showChunks = ref(false)
+const editKbVisible = ref(false)
+const editKbForm = reactive({ id: null, name: '', description: '', visibility: 'private', tags: '' })
+const renameDocVisible = ref(false)
+const renameDocTitle = ref('')
+const renameDocId = ref(null)
+const currentEditingKb = ref(null)
 const kbSearch = ref('')
 
 const newKb = reactive({ name: '', description: '', visibility: 'private', tags: '' })
@@ -315,7 +361,7 @@ async function loadPromptTemplates() {
 
 const loading = reactive({
   kbs: false, public: false, docs: false, upload: false,
-  retrieve: false, ask: false, create: false
+  retrieve: false, ask: false, create: false, editKb: false, renameDoc: false
 })
 
 // V5.22: 上传进度状态
@@ -389,6 +435,57 @@ async function handleDeleteKb(row) {
     await loadKbs()
   } catch (e) {
     ElMessage.error('删除失败: ' + (e.response?.data?.message || e.message))
+  }
+}
+
+function editKb(row) {
+  currentEditingKb.value = row
+  Object.assign(editKbForm, {
+    id: row.id,
+    name: row.name || '',
+    description: row.description || '',
+    visibility: row.visibility || 'private',
+    tags: row.tags || '',
+  })
+  editKbVisible.value = true
+}
+
+async function doEditKb() {
+  if (!editKbForm.name.trim()) return ElMessage.warning('请输入名称')
+  loading.editKb = true
+  try {
+    await ragApi.updateKb(editKbForm.id, ownerId.value, { ...editKbForm })
+    ElMessage.success('保存成功')
+    editKbVisible.value = false
+    await loadKbs()
+    if (currentKb.value?.id === editKbForm.id) {
+      currentKb.value = { ...currentKb.value, ...editKbForm }
+    }
+  } catch (e) {
+    ElMessage.error('保存失败: ' + (e.response?.data?.message || e.message))
+  } finally {
+    loading.editKb = false
+  }
+}
+
+function renameDoc(row) {
+  renameDocId.value = row.id
+  renameDocTitle.value = row.title || ''
+  renameDocVisible.value = true
+}
+
+async function doRenameDoc() {
+  if (!renameDocTitle.value.trim()) return ElMessage.warning('请输入新名称')
+  loading.renameDoc = true
+  try {
+    await ragApi.renameDoc(renameDocId.value, ownerId.value, renameDocTitle.value.trim())
+    ElMessage.success('重命名成功')
+    renameDocVisible.value = false
+    await loadDocs()
+  } catch (e) {
+    ElMessage.error('重命名失败: ' + (e.response?.data?.message || e.message))
+  } finally {
+    loading.renameDoc = false
   }
 }
 

@@ -142,6 +142,16 @@ public class DocumentService {
         return chunkMapper.selectByDoc(docId);
     }
 
+    /** V5.33 Day 23: 重命名文档 */
+    public Document renameDoc(Long docId, Long ownerId, String newTitle) {
+        Document d = docMapper.selectById(docId);
+        if (d == null) throw new IllegalArgumentException("文档不存在: " + docId);
+        if (!d.getOwnerId().equals(ownerId)) throw new SecurityException("无权修改此文档");
+        d.setTitle(newTitle);
+        docMapper.updateById(d);
+        return d;
+    }
+
     private String detect(String filename) {
         if (filename == null) return "txt";
         String lower = filename.toLowerCase(Locale.ROOT);

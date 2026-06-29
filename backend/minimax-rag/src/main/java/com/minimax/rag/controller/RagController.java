@@ -18,24 +18,26 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * RAG 控制器 (Day 8 完整版).
+ * RAG 控制器 (V5.33 Day 23 扩充).
  *
  * 知识库 (KB):
  *   POST   /rag/kb                          建库
  *   GET    /rag/kb                          列出我的
  *   GET    /rag/kb/public                   列出公开的
  *   GET    /rag/kb/{id}                     详情
+ *   PUT    /rag/kb/{id}                     更新知识库 (V5.33 Day 23)
  *   DELETE /rag/kb/{id}                     删除
  *
  * 文档 (Document):
  *   POST   /rag/doc/upload?kbId=1           上传 (multipart file)
  *   GET    /rag/doc?kbId=1                  列出
  *   GET    /rag/doc/{id}/chunks             切片列表
+ *   PUT    /rag/doc/{id}                    重命名文档 (V5.33 Day 23)
  *   DELETE /rag/doc/{id}                    删除
  *
  * 检索 + 问答:
  *   POST   /rag/retrieve                    纯检索 (返回 topK chunks)
- *   POST   /rag/ask                         RAG 问答 (检索+LLM+引用)
+ *   POST   /rag/ask                         RAG 问答 (检索+LLM+引用，支持 systemPrompt)
  */
 @Tag(name = "RAG知识库")
 @RestController
@@ -83,6 +85,15 @@ public class RagController {
         return Result.ok(kbService.delete(id, ownerId));
     }
 
+    // V5.33 Day 23: PUT /rag/kb/{id} 更新知识库
+    @Operation(summary = "更新知识库")
+    @PutMapping("/kb/{id}")
+    public Result<KnowledgeBase> updateKb(@PathVariable Long id,
+                                          @RequestParam Long ownerId,
+                                          @RequestBody Map<String, String> patch) {
+        return Result.ok(kbService.updateKb(id, ownerId, patch));
+    }
+
     // ---------- Document ----------
 
     @Operation(summary = "上传文档")
@@ -116,6 +127,19 @@ public class RagController {
     @DeleteMapping("/doc/{id}")
     public Result<Boolean> deleteDoc(@PathVariable Long id, @RequestParam Long ownerId) {
         return Result.ok(docService.delete(id, ownerId));
+    }
+
+    // V5.33 Day 23: PUT /rag/doc/{id} 重命名文档
+    @Operation(summary = "重命名文档")
+    @PutMapping("/doc/{id}")
+    public Result<Document> renameDoc(@PathVariable Long id,
+                                      @RequestParam Long ownerId,
+                                      @RequestBody Map<String, String> body) {
+        String newTitle = body.get("title");
+        if (newTitle == null || newTitle.isBlank()) {
+            return Result.fail("title 不能为空");
+        }
+        return Result.ok(docService.renameDoc(id, ownerId, newTitle));
     }
 
     // ---------- 检索 + 问答 ----------
