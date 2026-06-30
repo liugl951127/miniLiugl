@@ -24,7 +24,7 @@ export function isMobile() {
 
 export function isMiniProgram() {
   // 小程序标识
-  return typeof wx !== 'undefined' && wx.miniprogram
+  return !!(typeof wx !== 'undefined' && wx?.miniprogram)
 }
 
 /**

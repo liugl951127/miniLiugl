@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import AutoImport from 'unplugin-auto-import/vite'
@@ -5,22 +6,47 @@ import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import { fileURLToPath, URL } from 'node:url'
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, command }) => {
+  const isTest = command === 'test'
   const env = loadEnv(mode, process.cwd(), '')
   const isProd = mode === 'production'
 
-  // V5.3: 默认走 nginx 端口 3000 (同源访问, 无 CORS)
   const useGateway = env.VITE_USE_GATEWAY !== 'false'
   const gatewayTarget = env.VITE_GATEWAY_URL || 'http://localhost:8080'
   const directTarget = env.VITE_API_BASE || 'http://localhost:8080'
+
+  if (isTest) {
+    return {
+      plugins: [
+        vue(),
+        AutoImport({ resolvers: [ElementPlusResolver()] }),
+        Components({ resolvers: [ElementPlusResolver()] })
+      ],
+      resolve: {
+        alias: {
+          '@': fileURLToPath(new URL('./src', import.meta.url))
+        }
+      },
+      test: {
+        environment: 'happy-dom',
+        globals: true,
+        include: ['src/**/*.{test,spec}.{js,ts}'],
+        exclude: ['**/e2e/**/*.spec.js', '**/e2e/**/*.test.js'],  // Playwright E2E excluded
+        setupFiles: ['src/test/setup.js'],
+        coverage: {
+          provider: 'v8',
+          reporter: ['text', 'lcov'],
+          include: ['src/api/*.js', 'src/store/*.js', 'src/utils/*.js']
+        }
+      }
+    }
+  }
 
   return {
     plugins: [
       vue(),
       AutoImport({ resolvers: [ElementPlusResolver()] }),
       Components({ resolvers: [ElementPlusResolver()] })
-      // V5.8 优化: 移除 vite-plugin-compression (含 brotli native 依赖, 沙箱装不上)
-      // nginx 端已配置运行时 gzip + br 压缩 (scripts/nginx-minimax-3000.conf)
     ],
     resolve: {
       alias: {
@@ -33,7 +59,6 @@ export default defineConfig(({ mode }) => {
       open: false,
       cors: true,
       proxy: useGateway ? {
-        // 走 gateway (端口 8080) — 12 个微服务在 gateway 后
         '/api': {
           target: gatewayTarget,
           changeOrigin: true,
@@ -44,7 +69,7 @@ export default defineConfig(({ mode }) => {
         '/sse': {
           target: gatewayTarget,
           changeOrigin: true,
-          proxyTimeout: 60000,  // SSE 长连接
+          proxyTimeout: 60000,
           timeout: 60000,
         },
         '/ws': {
@@ -53,7 +78,6 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
         }
       } : {
-        // 直连微服务 (开发调试用)
         '/api/v1/auth': { target: 'http://localhost:8081', changeOrigin: true, proxyTimeout: 30000 },
         '/api/v1/sessions': { target: 'http://localhost:8082', changeOrigin: true },
         '/api/v1/messages': { target: 'http://localhost:8082', changeOrigin: true },
@@ -81,10 +105,8 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       target: 'es2018',
-      // V5.8: sourcemap 关闭 (生产不暴露源码)
       sourcemap: isProd ? false : 'eval',
       chunkSizeWarningLimit: 1500,
-      // V5.8: 智能分包 (按依赖 + 路由)
       rollupOptions: {
         output: {
           manualChunks(id) {
@@ -101,13 +123,11 @@ export default defineConfig(({ mode }) => {
             if (id.includes('/src/views/kg/')) return 'kg'
             if (id.includes('/src/views/showcase/')) return 'showcase'
           },
-          // hash 文件名长期缓存
           entryFileNames: 'assets/[name].[hash].js',
           chunkFileNames: 'assets/[name].[hash].js',
           assetFileNames: 'assets/[name].[hash].[ext]',
         }
       },
-      // V5.8: terser 压缩 (生产)
       minify: isProd ? 'terser' : false,
       terserOptions: isProd ? {
         compress: {
@@ -117,7 +137,6 @@ export default defineConfig(({ mode }) => {
         },
       } : undefined,
     },
-    // V5.8: esbuild 优化
     esbuild: {
       target: 'es2018',
       drop: isProd ? ['console', 'debugger'] : [],
