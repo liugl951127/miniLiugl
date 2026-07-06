@@ -500,22 +500,17 @@
 
 **明日计划 Day 25：** 告警渠道 UI 联调 / Vitest 单元测试 / API 文档导出
 
-## Day 25 - 2026-06-30 ✅ Vitest 单元测试 + API Markdown 导出
+## Day 25 - 2026-07-02 ✅ Vitest 单元测试 + API 文档导出
 
 **今日完成：**
-- [x] Vitest 单元测试框架搭建（vitest + @vue/test-utils + happy-dom）
-- [x] 43 个单元测试全过（platform 16 / monitor 12 / session 15）
-- [x] `isMiniProgram()` bug 修复（返回对象→返回 boolean）
-- [x] API 文档 openapi.yaml → API.md Markdown 导出（1866 行）
-- [x] Alert Channel UI 联调确认（契约对齐，完整可用）
-- [x] 自检：Java 静态 0 错误 + 前端构建 1m 19s
+- Vitest 框架搭建: vitest + @vitest/ui + jsdom + vitest.config.js
+- 32 个单元测试用例 (monitor.test.js 24 + auth.test.js 8) 全部通过 ✅
+- scripts/gen-api-docs.js: openapi.yaml → docs/API.md (20KB)
+- 修复 openapi.yaml 重复键问题
 
-**代码量：** +3 test files / +43 unit tests / +1 scripts / +1 API.md
+**自检：** self-check 5/5 ✅ | java-static 0 错误 ✅ | npm build 1m 14s ✅
 
-**明日计划 Day 26：**
-- [ ] CI/CD pipeline 完善
-- [ ] WebSocket 端到端联调验证
-- [ ] 性能基准测试脚本更新
+**明日计划 Day 26：** 告警渠道 E2E / CI Vitest job / 监控图表懒加载 / E2E 补充
 
 ## Day 26 - 待开始
 
