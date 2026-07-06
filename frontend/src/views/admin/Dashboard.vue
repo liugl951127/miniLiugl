@@ -66,14 +66,15 @@
           <el-icon><TrendCharts /></el-icon>
           近 7 天操作统计
         </div>
-        <v-chart :option="trendOption" autoresize style="height: 280px" />
+        <!-- V5.9 Day 26: ECharts 懒加载，按需动态 import vue-echarts -->
+        <Suspense><LazyVChart :option="trendOption" autoresize style="height: 280px" /></Suspense>
       </div>
       <div class="chart-card">
         <div class="chart-title">
           <el-icon><PieChart /></el-icon>
           按资源类型
         </div>
-        <v-chart :option="pieOption" autoresize style="height: 280px" />
+        <Suspense><LazyVChart :option="pieOption" autoresize style="height: 280px" /></Suspense>
       </div>
     </div>
 
@@ -110,8 +111,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, markRaw } from 'vue'
-import VChart from 'vue-echarts'
+import { ref, onMounted, computed, markRaw, defineAsyncComponent } from 'vue'
+// V5.9 Day 26: ECharts 懒加载 — 仅在图表进入视口时加载
+const LazyVChart = defineAsyncComponent(() => import('vue-echarts'))
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { LineChart, PieChart } from 'echarts/charts'

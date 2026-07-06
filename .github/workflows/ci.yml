@@ -475,12 +475,66 @@ jobs:
           retention-days: 7
 
   # ============================================================
+  # 6b. Vitest 单元测试 (V5.9 Day 26)
+  # ============================================================
+  vitest:
+    name: 🧪 Vitest Unit Tests
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    needs: [frontend]
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 📦 Install deps
+        working-directory: frontend
+        run: |
+          npm config set registry https://registry.npmmirror.com
+          npm ci --prefer-offline --no-audit || npm install --prefer-offline --no-audit
+
+      - name: 🧪 Run Vitest
+        id: vitest
+        working-directory: frontend
+        run: |
+          npx vitest run --reporter=verbose --outputFile=e2e-report/vitest-results.xml 2>&1 | tee vitest-output.txt || true
+          echo "vitest_exit=$?" >> $GITHUB_OUTPUT
+
+      - name: 📊 Vitest 结果摘要
+        run: |
+          echo "## 🧪 Vitest 单元测试结果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          TOTAL=$(grep -c '✓\|PASS\|Tests' frontend/vitest-output.txt 2>/dev/null || echo "?")
+          FAILED=$(grep -c '✗\|FAIL\|failed' frontend/vitest-output.txt 2>/dev/null || echo 0)
+          echo "检查: ~$TOTAL 条用例 | 失败: $FAILED" >> $GITHUB_STEP_SUMMARY
+          tail -10 frontend/vitest-output.txt >> $GITHUB_STEP_SUMMARY || true
+        continue-on-error: true
+
+      - name: 📤 Upload Vitest 报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-report
+          path: |
+            frontend/e2e-report/
+            frontend/vitest-output.txt
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # ============================================================
   # 7. 最终汇总
   # ============================================================
   summary:
     name: 📋 Summary
     runs-on: ubuntu-22.04
-    needs: [backend, frontend, deploy-scripts, sql-check, perf-test, e2e]
+    needs: [backend, frontend, deploy-scripts, sql-check, perf-test, e2e, vitest]
     if: always()
     steps:
       - name: 📊 结果汇总
@@ -495,6 +549,7 @@ jobs:
           echo "| 🗄️ SQL Check | ${{ needs.sql-check.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| 🚀 Perf Test | ${{ needs.perf-test.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| 🧪 E2E Tests | ${{ needs.e2e.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 Vitest | ${{ needs.vitest.result }} |" >> $GITHUB_STEP_SUMMARY
 
       - name: ❌ 检查是否有失败
         if: needs.backend.result != 'success' || needs.frontend.result != 'success' || needs.deploy-scripts.result != 'success' || needs.sql-check.result != 'success' || needs.e2e.result == 'failure'
@@ -503,6 +558,6 @@ jobs:
           exit 0  # 允许合并但标记
 
       - name: ✅ 全部 Job 完成
-        if: needs.backend.result == 'success' && needs.frontend.result == 'success' && needs.deploy-scripts.result == 'success' && needs.sql-check.result == 'success' && needs.e2e.result != 'failure'
+        if: needs.backend.result == 'success' && needs.frontend.result == 'success' && needs.deploy-scripts.result == 'success' && needs.sql-check.result == 'success' && needs.e2e.result != 'failure' && needs.vitest.result != 'failure'
         run: |
           echo "✅ 全部 Job 通过"

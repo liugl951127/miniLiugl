@@ -512,7 +512,19 @@
 
 **明日计划 Day 26：** 告警渠道 E2E / CI Vitest job / 监控图表懒加载 / E2E 补充
 
-## Day 26 - 待开始
+## Day 26 - 2026-07-06 ✅ CI Vitest Job / 告警渠道 E2E / ECharts 懒加载 / E2E 补充
+
+**今日完成：**
+- [x] **CI Vitest Job**：新增 `vitest` job in `.github/workflows/ci.yml`，运行 `npx vitest run` + XML + txt 双格式输出 + GitHub Artifacts 上传
+- [x] **告警渠道 E2E 测试**：`frontend/e2e/alert-channel.spec.js`（8 用例：EMAIL/DINGTALK/WEBHOOK 三类型表单验证 + 弹窗 + 刷新）
+- [x] **ECharts 懒加载**：`admin/Dashboard.vue` 用 `defineAsyncComponent` + `<Suspense>` 懒加载 vue-echarts，首屏不阻塞
+- [x] **E2E 补充测试**：`frontend/e2e/admin-dashboard.spec.js`（8 用例：健康/KPI/图表/审计/导航）
+
+**自检：** self-check 5/5 ✅ | java-static 0 错误 ✅ | npm build 1m 15s ✅
+
+**明日计划 Day 27：** Playwright CI 调试 / Vitest 覆盖率提升 / API Key 配额前端 / 移动端适配
+
+## Day 27 - 待开始
 
 ## V5.9 (2026-06-21) — Dashboard 真实图表 + 告警规则 CRUD + WS 精确分流
 
