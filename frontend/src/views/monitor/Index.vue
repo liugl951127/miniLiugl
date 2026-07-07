@@ -61,7 +61,8 @@
       </el-col>
     </el-row>
 
-    <el-row :gutter="16" class="row">
+    <!-- JVM + DB (懒加载) -->
+    <el-row :gutter="16" class="row" ref="jvmSectionRef">
       <!-- JVM -->
       <el-col :span="12">
         <el-card>
@@ -155,7 +156,8 @@
     </el-row>
 
     <!-- V5.9: 告警规则管理 -->
-    <el-row :gutter="16" class="row" v-if="canEditRules">
+    <!-- 告警规则 + 渠道 (懒加载) -->
+    <el-row :gutter="16" class="row" v-if="canEditRules" ref="advancedSectionRef">
       <el-col :span="24">
         <el-card>
           <template #header>
@@ -665,9 +667,63 @@ function toggleAuto(v: boolean) {
   }
 }
 
+// Day 26: 懒加载 — IntersectionObserver 延迟加载 below-fold 内容
+const jvmSectionRef = ref<HTMLElement | null>(null)
+const advancedSectionRef = ref<HTMLElement | null>(null)
+let jvmLoaded = false
+let advancedLoaded = false
+
+function setupIntersectionObserver(el: HTMLElement, onVisible: () => void) {
+  const observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting) {
+        onVisible()
+        observer.disconnect()
+      }
+    },
+    { rootMargin: '100px' }
+  )
+  observer.observe(el)
+  return observer
+}
+
+// 关键指标立即加载，below-fold 区域懒加载
+async function loadCritical() {
+  await Promise.all([loadHealth(), loadMetrics()])
+}
+
+async function loadJvmData() {
+  if (jvmLoaded) return
+  jvmLoaded = true
+  await Promise.all([loadJvm(), loadDb(), loadDisk(), loadAlerts()])
+}
+
+async function loadAdvancedData() {
+  if (advancedLoaded) return
+  advancedLoaded = true
+  await Promise.all([loadRules(), loadChannels()])
+}
+
 onMounted(async () => {
-  await loadAll()
-  if (autoRefresh.value) timer = window.setInterval(loadAll, refreshSec * 1000)
+  // 关键内容立即加载
+  await loadCritical()
+
+  // 定时刷新只刷关键指标
+  if (autoRefresh.value) {
+    timer = window.setInterval(loadCritical, refreshSec * 1000)
+  }
+
+  // below-fold 懒加载 (IntersectionObserver)
+  if (jvmSectionRef.value) {
+    setupIntersectionObserver(jvmSectionRef.value, loadJvmData)
+  } else {
+    await loadJvmData()
+  }
+  if (advancedSectionRef.value) {
+    setupIntersectionObserver(advancedSectionRef.value, loadAdvancedData)
+  } else {
+    await loadAdvancedData()
+  }
 })
 onUnmounted(() => { if (timer) clearInterval(timer) })
 </script>

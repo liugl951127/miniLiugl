@@ -524,7 +524,20 @@
 
 **明日计划 Day 27：** Playwright CI 调试 / Vitest 覆盖率提升 / API Key 配额前端 / 移动端适配
 
-## Day 27 - 待开始
+## Day 27 - 2026-07-07 ✅ Monitor 懒加载 / channel.spec.js E2E / 自检全通过
+
+**今日完成：**
+- [x] **Monitor 图表懒加载**：`monitor/Index.vue` IntersectionObserver 分层加载
+  - `loadCritical()` → health + metrics 立即加载
+  - `loadJvmData()` → JVM/DB/disk/alerts IntersectionObserver 触发
+  - `loadAdvancedData()` → rules/channels IntersectionObserver 触发
+  - 自动刷新只轮询 critical 指标，不打扰 below-fold 内容
+- [x] **Playwright E2E 补 channel.spec.js**：独立于 alert-channel.spec.js，专注真实登录+表单 CRUD 流程（6 用例）
+- [x] 自检全通过：self-check 5/5 ✅ | java-static 0 错误 ✅ | npm build 1m 19s ✅
+
+**明日计划 Day 28：** Vitest 覆盖率报告 CI 集成 / 监控 ECharts 折线图 / API 限流前端 UI
+
+## Day 28 - 待开始
 
 ## V5.9 (2026-06-21) — Dashboard 真实图表 + 告警规则 CRUD + WS 精确分流
 
