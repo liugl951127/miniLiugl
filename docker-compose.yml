@@ -188,6 +188,13 @@ services:
           memory: 512M
         reservations:
           memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:7080/actuator/health/liveness || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+      start_interval: 5s
     logging: *default-logging
 
   # ========== auth 微服务 (8081) ==========
@@ -237,6 +244,13 @@ services:
           memory: 384M
         reservations:
           memory: 384M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8081/actuator/health/liveness || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+      start_interval: 5s
     logging: *default-logging
 
   # ========== chat 微服务 (8082) ==========
@@ -286,6 +300,13 @@ services:
           memory: 256M
         reservations:
           memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8082/actuator/health/liveness || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+      start_interval: 5s
     logging: *default-logging
 
   # ========== model 微服务 (8083) ==========
@@ -335,6 +356,13 @@ services:
           memory: 256M
         reservations:
           memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8084/actuator/health/liveness || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+      start_interval: 5s
     logging: *default-logging
 
   # ========== memory 微服务 (8084) ==========
@@ -384,6 +412,13 @@ services:
           memory: 256M
         reservations:
           memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8083/actuator/health/liveness || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+      start_interval: 5s
     logging: *default-logging
 
   # ========== rag 微服务 (8085) ==========
@@ -433,6 +468,13 @@ services:
           memory: 256M
         reservations:
           memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8085/actuator/health/liveness || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+      start_interval: 5s
     logging: *default-logging
 
   # ========== function 微服务 (8086) ==========
@@ -482,6 +524,13 @@ services:
           memory: 256M
         reservations:
           memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8086/actuator/health/liveness || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+      start_interval: 5s
     logging: *default-logging
 
   # ========== admin 微服务 (8087) ==========
@@ -531,6 +580,13 @@ services:
           memory: 256M
         reservations:
           memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8090/actuator/health/liveness || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+      start_interval: 5s
     logging: *default-logging
 
   # ========== multimodal 微服务 (8088) ==========
@@ -580,6 +636,13 @@ services:
           memory: 256M
         reservations:
           memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8087/actuator/health/liveness || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+      start_interval: 5s
     logging: *default-logging
 
   # ========== monitor 微服务 (8089) ==========
@@ -629,6 +692,13 @@ services:
           memory: 256M
         reservations:
           memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8089/actuator/health/liveness || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+      start_interval: 5s
     logging: *default-logging
 
   # ========== agent 微服务 (8090) ==========
@@ -678,6 +748,13 @@ services:
           memory: 256M
         reservations:
           memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8088/actuator/health/liveness || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+      start_interval: 5s
     logging: *default-logging
 
   # ========== prompt 微服务 (8091) ==========
@@ -727,6 +804,13 @@ services:
           memory: 256M
         reservations:
           memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8091/actuator/health/liveness || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+      start_interval: 5s
     logging: *default-logging
 
   # ========== ws 微服务 (8095) ==========
@@ -776,6 +860,13 @@ services:
           memory: 256M
         reservations:
           memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8095/actuator/health/liveness || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+      start_interval: 5s
     logging: *default-logging
 
   # ========== analytics 微服务 (8096, V5.31 新增) ==========
@@ -825,6 +916,13 @@ services:
           memory: 256M
         reservations:
           memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8092/actuator/health/liveness || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+      start_interval: 5s
     logging: *default-logging
 
   # ========== pipeline 微服务 (8097, V5.32 新增) ==========
@@ -874,6 +972,13 @@ services:
           memory: 256M
         reservations:
           memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8093/actuator/health/liveness || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+      start_interval: 5s
     logging: *default-logging
 
   # ========== OpenTelemetry Collector (分布式追踪 + 指标聚合) ==========

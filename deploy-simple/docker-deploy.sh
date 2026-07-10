@@ -28,6 +28,8 @@
 #   sudo ./deploy-simple/docker-deploy.sh frontend DOMAIN EMAIL  # 配置公网域名 + HTTPS
 #   sudo ./deploy-simple/docker-deploy.sh verify [DOMAIN]       # 验证链路
 #   sudo ./deploy-simple/docker-deploy.sh fix-80                # 修 80 端口冲突
+#   sudo ./deploy-simple/docker-deploy.sh status                # 状态检查 (开箱即用)
+#   sudo ./deploy-simple/docker-deploy.sh backup [--keep=7]     # 自动备份
 #
 # 前置:
 #   - Docker 20+ (含 docker compose v2)
@@ -449,8 +451,10 @@ case "$ACTION" in
   domain)     exec "$SCRIPT_DIR/setup-public-domain.sh" "${@:2}" ;;
   verify)     exec "$SCRIPT_DIR/verify-public-domain.sh" "${@:2}" ;;
   fix-80)     exec "$SCRIPT_DIR/fix-port-80.sh" ;;
+  status)     exec "$SCRIPT_DIR/status.sh" ;;
+  backup)     exec "$SCRIPT_DIR/backup.sh" "${@:2}" ;;
   *)
-    echo "用法: $0 {up|down|logs [svc]|ps|rebuild [svc]|restart <svc>|frontend DOMAIN EMAIL|domain DOMAIN EMAIL|verify [DOMAIN]|fix-80}"
+    echo "用法: $0 {up|down|logs [svc]|ps|rebuild [svc]|restart <svc>|frontend DOMAIN EMAIL|domain DOMAIN EMAIL|verify [DOMAIN]|fix-80|status|backup}"
     echo ""
     echo "up 参数:"
     echo "  --host-nginx    用宿主机 nginx (默认 V1.9.7)"

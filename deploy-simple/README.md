@@ -1,160 +1,178 @@
-# MiniMax Platform — 一体化部署 (V1)
+# MiniMax Platform - 部署脚本 (V2.1)
 
-> **目标: 一份脚本, 一个端口 (80), 前后端一体化访问**
-> **不需要 Docker / K8s, 不需要 3000 端口映射**
+> 一键部署 / 运维 / 备份 / 状态检查
 
-```
-                    ┌─────────────────────────┐
-                    │   浏览器                │
-                    │   http://<server-ip>/   │
-                    └────────────┬────────────┘
-                                 │
-                                 ▼  80 端口
-                    ┌─────────────────────────┐
-                    │  nginx (反代 + 静态)    │
-                    │  /opt/minimax/nginx     │
-                    └────────────┬────────────┘
-                                 │
-       ┌─────────────────────────┼─────────────────────────┐
-       ▼                         ▼                         ▼
-  / (SPA 静态)             /api/**                       /ws/**
-  frontend/dist            gateway :8080                 gateway/auth
-       │                         │                         │
-       ▼                         ▼                         ▼
-   index.html             12 个微服务 (jar)             WebSocket
-                          + ws/function
-```
+## 📋 脚本清单
 
----
+| 脚本 | 作用 | 使用频率 |
+|------|------|----------|
+| `docker-deploy.sh` ⭐ | **主入口** - 一键启动 | 每次 |
+| `status.sh` | 状态检查 (开箱即用) | 经常 |
+| `backup.sh` | 自动备份 MySQL + 数据 | 每天 |
+| `fix-port-80.sh` | 修 80 端口冲突 | 偶尔 |
+| `setup-frontend-via-host-nginx.sh` | 配置域名 + HTTPS | 一次 |
+| `verify-public-domain.sh` | 验证完整链路 | 偶尔 |
+| `os-detect.sh` | OS 适配层 | (内部) |
+| `setup-data-dir.sh` | 创建数据目录 | (内部) |
 
-## 📁 目录结构
+## 🚀 快速开始
 
-```
-/opt/minimax/
-├── nginx/                          # nginx 配置 + 日志
-│   ├── conf.d/minimax.conf         # 入口配置 (端口 80)
-│   └── html/                       # 前端 dist (软链或拷贝)
-├── backend/                        # 后端 jar + 启动脚本
-│   ├── minimax-gateway.jar         # :8080  (入口)
-│   ├── minimax-auth.jar            # :8081
-│   ├── minimax-chat.jar            # :8082
-│   ├── minimax-memory.jar          # :8083
-│   ├── minimax-model.jar           # :8084
-│   ├── minimax-rag.jar             # :8085
-│   ├── minimax-function.jar        # :8086
-│   ├── minimax-multimodal.jar      # :8087
-│   ├── minimax-agent.jar           # :8088
-│   ├── minimax-monitor.jar         # :8089
-│   ├── minimax-admin.jar           # :8090
-│   ├── minimax-ws.jar              # :8095
-│   ├── logs/                       # 每个服务的日志
-│   ├── pids/                       # 每个服务的 pid
-│   └── start-all.sh / stop-all.sh  # 启停脚本
-└── README                          # (本文件)
-```
-
----
-
-## 🚀 一键部署 (3 步)
-
-### 前提
-- Linux (CentOS 7+ / Ubuntu 20+ / Debian 11+)
-- JDK 17 (`java -version` 验证)
-- nginx 已装 (`nginx -v` 验证, 1.18+ 推荐)
-- MySQL 8.0 已运行 (`init-db.sh` 初始化)
-- Nacos 2.x 已运行 (`docker run -d -p 8848:8848 nacos/nacos-server`)
-- Redis 已运行 (可选, 短期记忆)
-- 至少 4 GB 内存 (12 个 jar 进程)
-
-### 步骤
+### 一键启动
 
 ```bash
-# 1. 在项目根目录执行 (Mac/Linux/WSL)
-chmod +x deploy-simple/deploy.sh
-./deploy-simple/deploy.sh
-
-# 2. 等待 3-5 分钟 (mvn install + npm install + 打包)
-# 输出:
-#   ✓ 后端 jar: 13/13
-#   ✓ 前端 dist 已生成
-#   ✓ nginx 配置已部署
-#   ✓ 所有服务已启动 (1/13 ... 13/13)
-
-# 3. 浏览器访问
-http://<server-ip>/
-# 默认账号: admin / admin123
+sudo ./docker-deploy.sh up
 ```
 
----
-
-## 🛠️ 常用命令
+### 配置域名 + HTTPS
 
 ```bash
-# 启动所有服务
-/opt/minimax/backend/start-all.sh
-
-# 停止所有服务
-/opt/minimax/backend/stop-all.sh
-
-# 查看某个服务日志
-tail -f /opt/minimax/backend/logs/minimax-gateway.log
-
-# 重启单个服务
-/opt/minimax/backend/restart.sh minimax-chat
-
-# nginx 重载
-sudo nginx -t && sudo systemctl reload nginx
-
-# 查看所有服务状态
-/opt/minimax/backend/status.sh
+sudo ./docker-deploy.sh frontend liugeliang.com admin@liugeliang.com
 ```
 
----
+### 状态检查
 
-## ⚙️ 关键配置
-
-### 端口规划 (V1)
-| 端口 | 角色 | 暴露? |
-|------|------|-------|
-| **80** | nginx (前后端统一入口) | ✅ 公网 |
-| 8080 | gateway (内部) | ❌ 仅 127.0.0.1 |
-| 8081-8090 | 业务微服务 | ❌ 仅 127.0.0.1 |
-| 8095 | WebSocket | ❌ 仅 127.0.0.1 |
-| 8848 | Nacos | ❌ 仅 127.0.0.1 |
-
-### 环境变量
 ```bash
-# /opt/minimax/backend/env.sh (自动生成)
-export NACOS_SERVER=127.0.0.1:8848
-export MYSQL_URL=jdbc:mysql://127.0.0.1:3306/minimax?...
-export REDIS_HOST=127.0.0.1
-export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
-export SERVER_PORT=8081  # 每个服务独立
+sudo ./docker-deploy.sh status
 ```
 
----
+**输出**:
+```
+═══════════════════════════════════════════════════════
+   MiniMax Platform - 状态检查
+═══════════════════════════════════════════════════════
 
-## 🔄 与 V5.30 原方案的区别
+[1/7] 系统信息
+  OS:      CentOS Stream 9
+  Memory:  7.6G (used: 4.2G, 55%)
+  Disk:    28G free of 50G
 
-| 维度 | V5.30 (旧) | V1 (本方案) |
-|------|------------|-------------|
-| 入口端口 | 3000 (nginx) + 8080 (gateway) | **80 (统一)** |
-| 部署方式 | Docker / K8s / Compose | **纯 jar + nginx** |
-| 前端服务 | vite dev (3000) 或 nginx (3000) | **打包进 nginx html** |
-| CORS | 需要 (跨端口) | **不需要 (同源)** |
-| 用户访问 | http://host:3000 | **http://host** |
-| 资源占用 | Docker 多层镜像 | **直接 jar, 内存省 30%** |
+[2/7] Docker
+  ✓ Docker 24.0.7
+  ✓ Compose 2.21.0
 
----
+[3/7] 容器状态
+  总计: 16 / 运行: 16
+  minimax-mysql         Up (healthy)        0.0.0.0:3306
+  minimax-gateway       Up (healthy)        0.0.0.0:7080
+  ...
 
-## ⚠️ 已知问题
+[4/7] 内存占用 Top 5
+  minimax-gateway       312MB   4.0%
+  ...
 
-1. **首次启动慢** — 13 个 jar 同时启, 大约 30-60s, 健康检查有 ready check
-2. **日志清理** — 建议加 logrotate, 见 `deploy-simple/logrotate-minimax`
-3. **HTTPS** — 当前是 HTTP, 生产建议加 certbot + Let's Encrypt
+[5/7] 关键端口
+  ● :80 (nginx)
+  ● :443 (nginx)
+  ● :7080 (docker-proxy)
+  ● :8081 (docker-proxy)
+  ...
 
----
+[6/7] 健康检查
+  ✓ http://localhost/actuator/health/liveness (200)
+  ✓ http://localhost:7080/actuator/health (200)
+  ...
 
-## 📝 更新记录
+[7/7] 数据卷
+  1.2G /opt/minimax/data/mysql
+  120M /opt/minimax/data/redis
+  45M /opt/minimax/data/nacos
+  ...
+```
 
-- **V1.0** (2026-06-22): 初版, 一键部署 + 单端口 80
+### 自动备份
+
+```bash
+# 备份 (默认保留 7 天)
+sudo ./docker-deploy.sh backup
+
+# 备份 + 保留 30 天
+sudo ./docker-deploy.sh backup --keep=30
+```
+
+**输出**:
+```
+==== 1. MySQL 备份 ====
+✓ MySQL 备份完成: 23M
+==== 2. 数据目录备份 ====
+✓ 数据目录备份完成: 1.2G
+==== 3. 应用配置备份 ====
+✓ 配置备份完成: 12M
+```
+
+### 添加定时备份 (cron)
+
+```bash
+# 每天凌晨 3 点自动备份
+echo "0 3 * * * root /opt/miniLiugl/deploy-simple/docker-deploy.sh backup --keep=7" | \
+  sudo tee /etc/cron.d/minimax-backup
+sudo chmod 644 /etc/cron.d/minimax-backup
+
+# 验证
+ls -la /etc/cron.d/minimax-backup
+```
+
+## 🛠️ 故障排查
+
+### 80 端口被占用
+
+```bash
+sudo ./docker-deploy.sh fix-80
+```
+
+### 服务启动失败
+
+```bash
+# 看具体错误
+docker compose logs gateway --tail=50
+
+# 重启
+docker compose restart gateway
+
+# 完全重建
+./docker-deploy.sh rebuild gateway
+```
+
+### 完整链路不通
+
+```bash
+sudo ./docker-deploy.sh verify your-domain.com
+```
+
+## 📖 进阶
+
+### 强制用宿主机 nginx (避免 docker nginx)
+
+```bash
+./docker-deploy.sh up --host-nginx    # 默认
+./docker-deploy.sh up --docker-nginx  # 老路径
+./docker-deploy.sh up --no-nginx      # 不配 nginx
+./docker-deploy.sh up --ip            # IP 模式
+```
+
+### 跳过各种校验
+
+```bash
+SKIP_NGINX_CHECK=1 ./docker-deploy.sh up
+SKIP_PORT_CHECK=1 ./docker-deploy.sh up
+SKIP_DOMAIN_CHECK=1 ./docker-deploy.sh up
+```
+
+### 高级内存调优
+
+详见 [OPERATIONS.md](../OPERATIONS.md)
+
+## 📊 性能基准 (V2.1)
+
+| 维度 | 数值 |
+|------|------|
+| 启动时间 | ~5 分钟 (并行编译) |
+| 16 微服务内存 | ~4.5GB |
+| 单服务平均 | ~280MB |
+| 镜像构建 | ~3 分钟 (缓存后) |
+| API 响应 | < 100ms (P95) |
+
+## 🔗 相关文档
+
+- [OPERATIONS.md](../OPERATIONS.md) - 运维手册
+- [README.md](../README.md) - 项目说明
+- [PRODUCTION-DEPLOY.md](../PRODUCTION-DEPLOY.md) - 生产部署

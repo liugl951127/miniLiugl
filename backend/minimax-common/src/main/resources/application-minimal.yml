@@ -196,6 +196,57 @@ spring.codec.max-in-memory-size: 2MB
 # =============================================================
 # Spring Task 执行器
 # =============================================================
+# =============================================================
+# Spring Cloud LoadBalancer 优化 (V2.1) - 减少服务发现心跳
+# =============================================================
+spring.cloud.loadbalancer:
+  cache:
+    enabled: true
+    capacity: 1000
+  health-check:
+    enabled: true
+    interval: 30s
+  ribbon:
+    enabled: false
+
+# =============================================================
+# Knife4j / OpenAPI 3 文档 (V2.1) - API 文档开箱即用
+# 访问: http://localhost:8081/doc.html
+# =============================================================
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+  packages-to-scan: com.minimax.${spring.application.name:minimax-platform}
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+    enable-version: true
+    enable-swagger-models: true
+    swagger-model-name: 实体类列表
+  basic:
+    enable: false
+  cors:
+    enable: true
+    url: /*
+  production: false
+  openapi:
+    title: ${spring.application.name} - MiniMax Platform
+    version: 2.0.0
+    description: |
+      MiniMax 大模型平台 - ${spring.application.name} 服务
+      自动生成的 API 文档, 包含所有 Controller 端点
+    concat: dev@minimax.ai
+    group:
+      default:
+        group-name: default
+        api-rule: package
+        api-rule-resources:
+          - com.minimax.${spring.application.name:minimax-platform}
+
 spring.task.execution:
   pool:
     core-size: 4

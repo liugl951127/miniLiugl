@@ -12,6 +12,27 @@
 
 ---
 
+## 🚀 30 秒快速开始
+
+```bash
+# 一键启动 (宿主机 nginx + 公网 IP 访问)
+sudo /opt/miniLiugl/deploy-simple/docker-deploy.sh up
+
+# 状态检查 (开箱即用)
+sudo /opt/miniLiugl/deploy-simple/docker-deploy.sh status
+
+# 配域名 + HTTPS
+sudo /opt/miniLiugl/deploy-simple/docker-deploy.sh frontend your-domain.com admin@your-domain.com
+
+# 登录
+http://你的服务器IP/
+账号: adminLiugl / Liugl@2026
+```
+
+详细文档: [OPERATIONS.md](./OPERATIONS.md) · [deploy-simple/README.md](./deploy-simple/README.md)
+
+---
+
 ## 🎯 项目亮点
 
 | 能力 | 落地方式 |
