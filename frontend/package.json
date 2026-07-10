@@ -36,6 +36,7 @@
   "devDependencies": {
     "@playwright/test": "^1.61.1",
     "@vitejs/plugin-vue": "^5.0.4",
+    "@vitest/coverage-v8": "^4.1.10",
     "@vitest/ui": "^4.1.9",
     "jsdom": "^29.1.1",
     "sass": "^1.71.1",

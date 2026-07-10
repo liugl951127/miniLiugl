@@ -43,9 +43,9 @@ public class TrainingService extends ServiceImpl<TrainingTaskMapper, TrainingTas
     task.setUserId(dto.getUserId() != null ? dto.getUserId() : 1L);
     task.setModelName(dto.getModelName());
     task.setCorpusPath(dto.getCorpusPath());
-    task.setnLayer(dto.getNLayer() != null ? dto.getNLayer() : 12);
-    task.setnHead(dto.getNHead() != null ? dto.getNHead() : 12);
-    task.setnEmbd(dto.getNEmbd() != null ? dto.getNEmbd() : 768);
+    task.setNLayer(dto.getNLayer() != null ? dto.getNLayer() : 12);
+    task.setNHead(dto.getNHead() != null ? dto.getNHead() : 12);
+    task.setNEmbd(dto.getNEmbd() != null ? dto.getNEmbd() : 768);
     task.setBlockSize(dto.getBlockSize() != null ? dto.getBlockSize() : 128);
     task.setMaxIters(dto.getMaxIters() != null ? dto.getMaxIters() : 100);
     task.setBatchSize(dto.getBatchSize() != null ? dto.getBatchSize() : 32);

@@ -69,6 +69,8 @@ public class RagService {
 
         // 3) 拼 messages
         List<Map<String, String>> messages = new ArrayList<>();
+        String ctxContent = systemPrompt != null ? systemPrompt : "";
+        for (var h : hits) ctxContent += "\n- " + h.content;
         messages.add(Map.of("role","system","content", ctxContent));
         if (history != null && !history.isBlank()) {
             messages.add(Map.of("role","user","content", history));

@@ -202,10 +202,9 @@ public class AdminController {
     }
 
     // ---------- API Key 统计 (Day 20) ----------
-
     @Operation(summary = "API Key 全局统计 (Day 20)")
     @GetMapping("/apikey/stats")
-    public Result<Map<String, Object>> apiKeyStats() {
-        return Result.ok(apiKeyStats.getStats());
+    public Result<Map<String, Object>> apikeyStats() {
+        return Result.ok(apiKeyStats.summary());
     }
 }
