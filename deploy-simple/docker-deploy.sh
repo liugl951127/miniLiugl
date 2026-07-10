@@ -30,6 +30,9 @@
 #   sudo ./deploy-simple/docker-deploy.sh fix-80                # 修 80 端口冲突
 #   sudo ./deploy-simple/docker-deploy.sh status                # 状态检查 (开箱即用)
 #   sudo ./deploy-simple/docker-deploy.sh backup [--keep=7]     # 自动备份
+#   sudo ./deploy-simple/docker-deploy.sh upgrade [--no-backup] # 一键升级
+#   sudo ./deploy-simple/docker-deploy.sh logs-tail [svc|error|slow]  # 智能日志
+#   sudo ./deploy-simple/docker-deploy.sh seed [--clean]         # 生成测试数据
 #
 # 前置:
 #   - Docker 20+ (含 docker compose v2)
@@ -453,8 +456,11 @@ case "$ACTION" in
   fix-80)     exec "$SCRIPT_DIR/fix-port-80.sh" ;;
   status)     exec "$SCRIPT_DIR/status.sh" ;;
   backup)     exec "$SCRIPT_DIR/backup.sh" "${@:2}" ;;
+  upgrade)    exec "$SCRIPT_DIR/upgrade.sh" "${@:2}" ;;
+  logs-tail)  exec "$SCRIPT_DIR/tail-logs.sh" "${@:2}" ;;
+  seed)       exec "$SCRIPT_DIR/seed-data.sh" "${@:2}" ;;
   *)
-    echo "用法: $0 {up|down|logs [svc]|ps|rebuild [svc]|restart <svc>|frontend DOMAIN EMAIL|domain DOMAIN EMAIL|verify [DOMAIN]|fix-80|status|backup}"
+    echo "用法: $0 {up|down|logs [svc]|ps|rebuild [svc]|restart <svc>|frontend DOMAIN EMAIL|domain DOMAIN EMAIL|verify [DOMAIN]|fix-80|status|backup|upgrade|logs-tail|seed}"
     echo ""
     echo "up 参数:"
     echo "  --host-nginx    用宿主机 nginx (默认 V1.9.7)"

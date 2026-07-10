@@ -197,6 +197,56 @@ spring.codec.max-in-memory-size: 2MB
 # Spring Task 执行器
 # =============================================================
 # =============================================================
+# 统一 CORS (V2.2) - gateway + 各服务全局
+# =============================================================
+minimax.cors:
+  allowed-origins:
+    - http://localhost
+    - http://localhost:80
+    - http://localhost:3000      # Vite dev
+    - http://localhost:5173      # Vite dev
+    - http://127.0.0.1
+    - http://127.0.0.1:80
+    - http://127.0.0.1:3000
+    - http://127.0.0.1:5173
+    # 生产域名 (部署时覆盖)
+    # - https://your-domain.com
+  allowed-methods: "*"
+  allowed-headers: "*"
+  exposed-headers:
+    - X-Trace-Id
+    - X-User-Id
+    - X-Request-Source
+    - X-Response-Source
+    - Content-Disposition
+  allow-credentials: true
+  max-age: 3600
+
+# =============================================================
+# 限流 (V2.2) - 整个平台统一桶
+# =============================================================
+minimax.rate-limit:
+  default:
+    replenish-rate: 50        # 每秒令牌补充
+    burst-capacity: 100       # 桶容量
+  per-user:
+    replenish-rate: 20        # 每用户每秒
+    burst-capacity: 40
+  per-ip:
+    replenish-rate: 100       # 每 IP 每秒
+    burst-capacity: 200
+  exempted-paths:
+    - /api/v1/auth/login
+    - /api/v1/auth/register
+    - /api/v1/auth/refresh
+    - /api/v1/health
+    - /health
+    - /actuator
+    - /v3/api-docs
+    - /swagger-ui
+    - /doc.html
+
+# =============================================================
 # Spring Cloud LoadBalancer 优化 (V2.1) - 减少服务发现心跳
 # =============================================================
 spring.cloud.loadbalancer:
