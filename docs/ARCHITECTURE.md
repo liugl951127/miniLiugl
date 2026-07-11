@@ -1,6 +1,60 @@
-# MiniMax Platform 架构文档 (V2.8.6)
+# MiniMax Platform 架构文档 (V2.8.7)
 
-> **企业级 AI 平台架构设计** · 17 微服务 · 92K 行代码 · 206 测试通过
+> **企业级 AI 平台架构设计** · 17 微服务 · 92K 行代码 · 224 测试通过
+
+## 零、V2.8.7 新增 (实时协作 + TensorBoard)
+
+### 实时协作架构
+
+```
+┌────────────────┐   WebSocket    ┌─────────────────┐
+│  Frontend      │◀────/ws/collab────▶│  CollabHandler  │
+│  CollabRoom.vue │   (roomId)     │  (minimax-ws)   │
+└────────────────┘                 └────────┬────────┘
+                                            │
+                  ┌─────────────────────────┼──────────────────────┐
+                  │                         │                      │
+            ┌─────▼──────┐          ┌───────▼────────┐    ┌────────▼────────┐
+            │ CollabRoom │          │ CollabParticipant│   │ CollabMessage  │
+            │ Mapper     │          │ Mapper          │   │ Mapper         │
+            └────────────┘          └─────────────────┘   └─────────────────┘
+            collab_room             collab_participant    collab_message
+```
+
+**能力**:
+- 房间 CRUD (公开/私有, 类型: AI_CHAT/DOC/TRAINING/DASHBOARD/CODE)
+- 实时聊天 / AI 协作流式输出
+- 实时光标同步 (50ms 节流, 8 色随机)
+- 在线状态 (ONLINE/AWAY/OFFLINE)
+- 历史消息回放 (CHAT/AI/EDIT)
+
+### TensorBoard 协议集成
+
+```
+┌────────────────────┐
+│  TrainingTracker   │
+│  (loss/acc/lr)     │
+└─────────┬──────────┘
+          │ @Autowired
+          ▼
+┌────────────────────┐         ┌──────────────────┐
+│  TfEventWriter     │────────▶│ events.tfevents  │
+│  (protobuf 序列化) │         │ /tmp/minimax-... │
+└────────────────────┘         └─────────┬────────┘
+                                          │
+                                          ▼
+                              ┌────────────────────┐
+                              │  TfEventReader     │
+                              │  (反序列化+过滤)   │
+                              └─────────┬──────────┘
+                                        │
+                              ┌─────────▼──────────┐
+                              │  TensorBoard UI    │
+                              │  / WandB / Aim     │
+                              └────────────────────┘
+```
+
+**协议**: 32 字节 magic 头 + 变长 record (varint length + protobuf Event + CRC32)
 
 ![部署架构](screenshots/07-deployment.png)
 

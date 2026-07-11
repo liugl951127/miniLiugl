@@ -1,207 +1,635 @@
 <template>
   <div class="collab-container">
     <div class="collab-header">
-      <h1>👥 {{ t('collab.title') }} <span class="badge">V2.0</span></h1>
-      <p class="sub">{{ t('collab.subtitle') }}</p>
+      <h1>👥 实时协作 <span class="badge">V2.8.7</span></h1>
+      <p class="sub">多人协同 AI 对话 / 文档编辑 / 训练监控 · WebSocket 实时同步</p>
     </div>
 
-    <el-card v-if="!joined">
-      <el-button type="primary" @click="createRoom">🚀 {{ t('collab.createSession') }}</el-button>
-      <el-divider>{{ t('collab.orJoin') }}</el-divider>
-      <el-input v-model="joinSessionId" :placeholder="t('collab.enterSessionId')" style="width:300px">
-        <template #append><el-button @click="joinRoom">{{ t('collab.join') }}</el-button></template>
-      </el-input>
-    </el-card>
+    <!-- 未加入: 选择房间 -->
+    <el-row v-if="!joined" :gutter="20">
+      <el-col :span="14">
+        <el-card>
+          <template #header><span>🚀 创建新房间</span></template>
+          <el-form :model="createForm" label-width="100px">
+            <el-form-item label="房间名称">
+              <el-input v-model="createForm.name" placeholder="例: 产品需求评审" />
+            </el-form-item>
+            <el-form-item label="房间类型">
+              <el-select v-model="createForm.type" style="width:100%">
+                <el-option label="AI 对话协作" value="AI_CHAT" />
+                <el-option label="文档协作" value="DOC" />
+                <el-option label="训练监控" value="TRAINING" />
+                <el-option label="仪表盘协作" value="DASHBOARD" />
+                <el-option label="代码协作" value="CODE" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="最大人数">
+              <el-input-number v-model="createForm.maxParticipants" :min="2" :max="100" />
+            </el-form-item>
+            <el-form-item label="是否公开">
+              <el-switch v-model="createForm.isPublic" />
+              <span class="hint">公开房间任何登录用户可加入</span>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="onCreate" :loading="creating">创建并加入</el-button>
+            </el-form-item>
+          </el-form>
+        </el-card>
+      </el-col>
 
-    <el-row v-else :gutter="20">
-      <el-col :span="16">
+      <el-col :span="10">
         <el-card>
           <template #header>
-            <div class="card-header">
-              <span>💬 {{ t('collab.room') }} {{ sessionId }}</span>
-              <div>
-                <el-tag type="success">{{ status }}</el-tag>
-                <el-tag type="info" style="margin-left:8px">👥 {{ users.length }} {{ t('collab.users') }}</el-tag>
-                <el-button size="small" type="danger" text @click="leave" style="margin-left:8px">{{ t('collab.leave') }}</el-button>
-              </div>
-            </div>
+            <span>🌐 公开房间</span>
+            <el-button size="small" text @click="loadPublicRooms" style="float:right">刷新</el-button>
           </template>
-
-          <div class="messages" ref="msgBox">
-            <div v-for="(m, i) in messages" :key="i" class="message">
-              <strong>U{{ m.userId }}:</strong> {{ m.content }}
-              <span class="ts">{{ formatTime(m.ts) }}</span>
+          <div v-if="publicRooms.length === 0" class="empty-tip">暂无公开房间</div>
+          <div v-else class="public-room-list">
+            <div v-for="r in publicRooms" :key="r.id" class="public-room-item" @click="quickJoin(r)">
+              <div class="info">
+                <div class="name">
+                  <span class="type-tag" :class="'type-' + r.type">{{ r.type }}</span>
+                  {{ r.name }}
+                </div>
+                <div class="meta">
+                  👤 {{ r.ownerName }} · 👥 {{ r.currentParticipants }}/{{ r.maxParticipants }}
+                  · {{ formatTime(r.lastActivityAt) }}
+                </div>
+              </div>
+              <el-button size="small" type="primary" plain>加入</el-button>
             </div>
           </div>
+        </el-card>
 
-          <div class="typing" v-if="typingUsers.length">
-            <em>{{ typingUsers.join(', ') }} {{ t('collab.typing') }}...</em>
-          </div>
-
-          <el-input v-model="input" @keydown="onTyping" @keyup.enter="send"
-                    :placeholder="t('collab.enterToSend')" style="margin-top:12px">
-            <template #append><el-button type="primary" @click="send">{{ t('collab.send') }}</el-button></template>
+        <el-card style="margin-top: 16px">
+          <template #header><span>🔗 通过房间号加入</span></template>
+          <el-input v-model="joinSessionId" placeholder="输入 8 位房间号" style="width: 100%">
+            <template #append>
+              <el-button @click="onJoinById" :disabled="!joinSessionId">加入</el-button>
+            </template>
           </el-input>
         </el-card>
       </el-col>
-
-      <el-col :span="8">
-        <el-card>
-          <template #header><span>{{ t('collab.online') }}</span></template>
-          <div v-for="u in users" :key="u" class="user">
-            <el-avatar :size="32" style="background:#409eff">U{{ u }}</el-avatar>
-            <span style="margin-left:8px">{{ t('collab.user') }} {{ u }}</span>
-          </div>
-          <el-empty v-if="!users.length" :description="t('collab.noOneOnline')" :image-size="60" />
-        </el-card>
-
-        <el-card style="margin-top:16px">
-          <template #header><span>{{ t('collab.connectionInfo') }}</span></template>
-          <p>{{ t('collab.session') }}: <code>{{ sessionId }}</code></p>
-          <p>{{ t('collab.status') }}: <el-tag size="small">{{ status }}</el-tag></p>
-          <p>{{ t('collab.messageCount') }}: {{ messages.length }}</p>
-          <el-button size="small" @click="ping">{{ t('collab.ping') }}</el-button>
-        </el-card>
-      </el-col>
     </el-row>
+
+    <!-- 已加入: 实时协作界面 -->
+    <div v-else>
+      <el-card class="room-card">
+        <template #header>
+          <div class="room-header">
+            <div>
+              <span class="type-tag" :class="'type-' + (roomInfo?.type || 'AI_CHAT')">{{ roomInfo?.type }}</span>
+              <span class="room-name">{{ roomInfo?.name }}</span>
+              <span class="room-id">#{{ roomId }}</span>
+              <el-tag :type="wsStatus === 'open' ? 'success' : 'danger'" size="small" style="margin-left: 8px">
+                {{ wsStatus === 'open' ? '● 已连接' : '○ ' + wsStatus }}
+              </el-tag>
+            </div>
+            <div>
+              <el-button size="small" @click="copyInviteLink">
+                <el-icon><Link /></el-icon> 复制邀请
+              </el-button>
+              <el-button v-if="isOwner" size="small" type="danger" @click="onCloseRoom">关闭房间</el-button>
+              <el-button size="small" @click="onLeave">离开</el-button>
+            </div>
+          </div>
+        </template>
+
+        <el-row :gutter="20">
+          <!-- 左侧: 参与者 + 光标地图 -->
+          <el-col :span="6">
+            <div class="participants-panel">
+              <h4>👥 在线 ({{ participants.length }})</h4>
+              <div class="participant-list">
+                <div
+                  v-for="p in participants"
+                  :key="p.userId"
+                  class="participant"
+                  :class="{ 'is-you': p.userId === currentUserId }"
+                >
+                  <el-avatar :size="32" :src="p.avatar">{{ (p.nickname || p.username).charAt(0) }}</el-avatar>
+                  <div class="info">
+                    <div class="name">
+                      {{ p.nickname || p.username }}
+                      <span v-if="p.userId === currentUserId" class="me-tag">我</span>
+                      <el-tag v-if="p.role === 'OWNER'" size="small" type="warning" effect="plain">创建者</el-tag>
+                    </div>
+                    <div class="status">
+                      <span :class="['status-dot', p.status?.toLowerCase()]"></span>
+                      {{ p.status }}
+                      <span v-if="p.cursorX != null" class="cursor-info">📍 {{ p.cursorX }},{{ p.cursorY }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 实时光标地图 -->
+              <h4 style="margin-top: 20px">🖱️ 实时光标</h4>
+              <div
+                ref="cursorCanvas"
+                class="cursor-canvas"
+                @mousemove="onCursorMove"
+                @mouseleave="onCursorLeave"
+              >
+                <div
+                  v-for="p in cursorUsers"
+                  :key="p.userId"
+                  class="remote-cursor"
+                  :style="{
+                    left: (p.cursorX || 0) + 'px',
+                    top: (p.cursorY || 0) + 'px',
+                    color: p.color
+                  }"
+                >
+                  <svg width="20" height="20" viewBox="0 0 20 20">
+                    <path d="M3,3 L3,17 L8,12 L11,17 L14,16 L11,11 L17,11 Z" :fill="p.color" stroke="#fff" stroke-width="1" />
+                  </svg>
+                  <span class="cursor-label" :style="{ background: p.color }">
+                    {{ p.nickname || p.username }}
+                  </span>
+                </div>
+                <div class="canvas-hint">移动鼠标 → 其他参与者会看到你的光标</div>
+              </div>
+            </div>
+          </el-col>
+
+          <!-- 中间: 聊天 / AI 协作 -->
+          <el-col :span="18">
+            <div class="chat-area">
+              <div class="messages" ref="msgBox">
+                <div
+                  v-for="m in messages"
+                  :key="m.id"
+                  :class="['message', m.messageType === 'AI' ? 'ai' : '', m.userId === currentUserId ? 'mine' : '']"
+                >
+                  <div class="msg-header">
+                    <el-avatar :size="24">{{ (m.nickname || m.username || 'S').charAt(0) }}</el-avatar>
+                    <span class="msg-author">{{ m.nickname || m.username || 'System' }}</span>
+                    <span class="msg-time">{{ formatTime(m.createdAt) }}</span>
+                  </div>
+                  <div class="msg-body" v-if="m.messageType === 'CHAT' || m.messageType === 'AI'">
+                    {{ m.content }}
+                  </div>
+                  <div class="msg-body edit" v-else-if="m.messageType === 'EDIT'">
+                    <el-tag size="small">📝 编辑操作</el-tag> {{ m.content }}
+                  </div>
+                </div>
+                <div v-if="aiTyping" class="ai-typing">
+                  <span></span><span></span><span></span> AI 正在思考...
+                </div>
+              </div>
+
+              <!-- 输入区 -->
+              <div class="composer">
+                <el-input
+                  v-model="inputText"
+                  type="textarea"
+                  :rows="2"
+                  placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
+                  @keydown.enter.exact.prevent="sendChat"
+                />
+                <div class="composer-actions">
+                  <el-button @click="triggerAi" :loading="aiTyping" type="primary" plain>
+                    🤖 AI 协作
+                  </el-button>
+                  <el-button type="primary" @click="sendChat" :disabled="!inputText.trim()">发送</el-button>
+                </div>
+              </div>
+            </div>
+          </el-col>
+        </el-row>
+      </el-card>
+    </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, nextTick } from 'vue'
-import axios from 'axios'
-import { ElMessage } from 'element-plus'
-import { t } from '@/i18n'
+<script setup>
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Link } from '@element-plus/icons-vue'
+import {
+  createRoom, getRoom, listPublicRooms, closeRoom,
+  buildCollabWsUrl
+} from '@/api/collab'
 import { useUserStore } from '@/store/user'
 
+const { t } = useI18n()
+const router = useRouter()
 const userStore = useUserStore()
-const API = import.meta.env.VITE_API_BASE || 'http://localhost'
-// 同源 ws: 走 nginx 80 → gateway 8080 (V1 一体化部署)
-const WS_BASE = (import.meta.env.VITE_WS_BASE || `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}`)
-const token = userStore.accessToken || ''
-const userId = String(userStore.profile?.id || 1)
 
 const joined = ref(false)
-const sessionId = ref('')
+const roomId = ref('')
+const roomInfo = ref(null)
+const currentUserId = computed(() => userStore.profile?.id || 0)
+const isOwner = computed(() => roomInfo.value?.ownerId === currentUserId.value)
+
 const joinSessionId = ref('')
-const status = ref('disconnected')
-const users = ref<number[]>([])
-const messages = ref<any[]>([])
-const input = ref('')
-const typingUsers = ref<number[]>([])
-let ws: WebSocket | null = null
-let typingTimeout: any = null
+const creating = ref(false)
+const publicRooms = ref([])
 
-function auth() { return { headers: { Authorization: `Bearer ${token}` } } }
+// WebSocket
+let ws = null
+const wsStatus = ref('closed')
+const participants = ref([])
+const messages = ref([])
+const inputText = ref('')
+const aiTyping = ref(false)
+const msgBox = ref(null)
+const cursorCanvas = ref(null)
+const cursorThrottle = { last: 0 }
 
-async function createRoom() {
+// 光标 (其他用户)
+const remoteCursors = ref(new Map()) // userId -> {x, y, nickname, color, ts}
+const cursorColors = ['#f56c6c', '#67c23a', '#409eff', '#e6a23c', '#909399', '#9b59b6', '#1abc9c', '#e74c3c']
+
+const cursorUsers = computed(() => {
+  const now = Date.now()
+  const list = []
+  for (const [uid, c] of remoteCursors.value.entries()) {
+    if (now - c.ts < 30000) { // 30s 内有效
+      list.push({
+        userId: uid,
+        x: c.x, y: c.y,
+        nickname: c.nickname,
+        username: c.username,
+        color: c.color
+      })
+    }
+  }
+  return list
+})
+
+// 创建房间
+const createForm = reactive({
+  name: '',
+  type: 'AI_CHAT',
+  maxParticipants: 20,
+  isPublic: true
+})
+
+const onCreate = async () => {
+  if (!userStore.isLogin) {
+    ElMessage.warning('请先登录')
+    return router.push('/login')
+  }
+  creating.value = true
   try {
-    const { data } = await axios.post(`${API}/api/v1/agent/collab/sessions`,
-      { ownerId: userId, title: '新协作', maxUsers: 10 }, auth())
-    const collabId = data.data
-    // 拿到 collabSession 的 sessionId (字符串) 需另查, 这里用 ID 替代
-    sessionId.value = String(collabId)
-    connectWs(sessionId.value)
-  } catch (e: any) { ElMessage.error(e?.message) }
-}
-
-async function joinRoom() {
-  if (!joinSessionId.value) { ElMessage.warning('请输入 sessionId'); return }
-  try {
-    await axios.post(`${API}/api/v1/agent/collab/${joinSessionId.value}/join?userId=${userId}`, {}, auth())
-    sessionId.value = joinSessionId.value
-    connectWs(sessionId.value)
-  } catch (e: any) { ElMessage.error(e?.response?.data?.message || e?.message) }
-}
-
-function connectWs(sid: string) {
-  // V1.8: gateway ws 路由是 /api/v1/ws/** (原 /ws/collab 会被 gateway StripPrefix=2 错误拑截)
-  const url = `${WS_BASE}/api/v1/ws/collab/${sid}?userId=${userId}`
-  ws = new WebSocket(url)
-  status.value = 'connecting'
-  ws.onopen = () => {
-    status.value = 'connected'
-    joined.value = true
-    ElMessage.success(t('collab.joinedRoom'))
-  }
-  ws.onmessage = (e) => {
-    const msg = JSON.parse(e.data)
-    handleMsg(msg)
-  }
-  ws.onclose = () => {
-    status.value = 'disconnected'
-  }
-  ws.onerror = () => { status.value = 'error' }
-}
-
-function handleMsg(msg: any) {
-  switch (msg.type) {
-    case 'join': case 'leave':
-      users.value = msg.users || []
-      break
-    case 'msg':
-      messages.value.push(msg)
-      nextTick(() => scrollToBottom())
-      break
-    case 'typing':
-      if (!typingUsers.value.includes(msg.userId)) typingUsers.value.push(msg.userId)
-      setTimeout(() => {
-        typingUsers.value = typingUsers.value.filter(u => u !== msg.userId)
-      }, 3000)
-      break
+    const res = await createRoom({
+      name: createForm.name || '新房间',
+      type: createForm.type,
+      ownerId: currentUserId.value,
+      ownerName: userStore.profile.username,
+      isPublic: createForm.isPublic,
+      maxParticipants: createForm.maxParticipants
+    })
+    const room = res.data.data
+    ElMessage.success(`房间已创建: ${room.roomId}`)
+    doJoin(room.roomId)
+  } catch (e) {
+    ElMessage.error('创建失败: ' + (e.response?.data?.message || e.message))
+  } finally {
+    creating.value = false
   }
 }
 
-function send() {
-  if (!input.value.trim() || !ws) return
-  ws.send(JSON.stringify({ type: 'msg', content: input.value }))
-  input.value = ''
+const onJoinById = () => {
+  if (!joinSessionId.value.trim()) return
+  doJoin(joinSessionId.value.trim().toUpperCase())
 }
 
-function onTyping() {
-  if (!ws) return
-  ws.send(JSON.stringify({ type: 'typing' }))
-  if (typingTimeout) clearTimeout(typingTimeout)
+const quickJoin = (r) => doJoin(r.roomId)
+
+const doJoin = (rid) => {
+  roomId.value = rid
+  joined.value = true
+  connectWs(rid)
 }
 
-function ping() {
-  if (ws) ws.send(JSON.stringify({ type: 'ping' }))
-}
-
-function leave() {
-  if (ws) ws.close()
+const onLeave = () => {
+  if (ws) {
+    ws.send(JSON.stringify({ action: 'leave' }))
+    ws.close()
+  }
   joined.value = false
-  status.value = 'disconnected'
-  users.value = []
+  roomId.value = ''
+  roomInfo.value = null
+  participants.value = []
   messages.value = []
+  remoteCursors.value.clear()
 }
 
-function scrollToBottom() {
-  const box: any = document.querySelector('.messages')
-  if (box) box.scrollTop = box.scrollHeight
+const onCloseRoom = async () => {
+  try {
+    await ElMessageBox.confirm('确定关闭房间? 所有参与者将被踢出', '确认', { type: 'warning' })
+    await closeRoom(roomId.value, currentUserId.value)
+    ElMessage.success('房间已关闭')
+    onLeave()
+  } catch (e) {
+    if (e !== 'cancel') ElMessage.error('关闭失败: ' + (e.response?.data?.message || e.message))
+  }
 }
 
-function formatTime(ts: number) {
-  return new Date(ts).toLocaleTimeString()
+const copyInviteLink = () => {
+  const url = `${window.location.origin}/collab?roomId=${roomId.value}`
+  navigator.clipboard.writeText(url).then(() => {
+    ElMessage.success('邀请链接已复制')
+  }).catch(() => {
+    ElMessage.info('房间号: ' + roomId.value)
+  })
 }
+
+// ============= WebSocket =============
+
+const connectWs = async (rid) => {
+  // 先拉房间信息
+  try {
+    const res = await getRoom(rid)
+    if (res.data?.code === 0 && res.data?.data) {
+      roomInfo.value = res.data.data
+    } else {
+      ElMessage.error('房间不存在')
+      joined.value = false
+      return
+    }
+  } catch (e) {
+    ElMessage.error('房间查询失败')
+    joined.value = false
+    return
+  }
+
+  if (!userStore.profile) {
+    ElMessage.warning('请先登录')
+    joined.value = false
+    return router.push('/login')
+  }
+
+  const user = {
+    id: currentUserId.value,
+    username: userStore.profile.username,
+    nickname: userStore.profile.nickname,
+    avatar: userStore.profile.avatar
+  }
+
+  const url = buildCollabWsUrl(rid, user)
+  wsStatus.value = 'connecting'
+  ws = new WebSocket(url)
+
+  ws.onopen = () => {
+    wsStatus.value = 'open'
+    ElMessage.success('已连接到协作房间')
+  }
+
+  ws.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data)
+      handleWsMessage(msg)
+    } catch (e) {
+      console.warn('[collab] parse error:', e)
+    }
+  }
+
+  ws.onerror = () => {
+    wsStatus.value = 'error'
+  }
+
+  ws.onclose = () => {
+    wsStatus.value = 'closed'
+  }
+}
+
+const handleWsMessage = (msg) => {
+  switch (msg.type) {
+    case 'ROOM_STATE': {
+      roomInfo.value = msg.room
+      participants.value = (msg.participants || []).map((p, i) => ({
+        ...p,
+        color: cursorColors[i % cursorColors.length]
+      }))
+      break
+    }
+    case 'MESSAGE': {
+      messages.value.push({
+        id: msg.id,
+        userId: msg.userId,
+        username: msg.username,
+        nickname: msg.nickname,
+        messageType: msg.messageType,
+        content: msg.content,
+        op: msg.op,
+        payload: msg.payload,
+        createdAt: msg.createdAt
+      })
+      scrollToBottom()
+      break
+    }
+    case 'PARTICIPANT_UPDATE': {
+      participants.value = (msg.participants || []).map((p, i) => ({
+        ...p,
+        color: cursorColors[i % cursorColors.length]
+      }))
+      break
+    }
+    case 'CURSOR': {
+      const color = participants.value.find(p => p.userId === msg.userId)?.color || '#409eff'
+      remoteCursors.value.set(msg.userId, {
+        x: msg.x, y: msg.y,
+        nickname: msg.nickname, username: msg.username,
+        selectionId: msg.selectionId,
+        color,
+        ts: Date.now()
+      })
+      // 触发响应式更新
+      remoteCursors.value = new Map(remoteCursors.value)
+      break
+    }
+    case 'AI_CHUNK': {
+      aiTyping.value = !msg.finished
+      // 把 AI 流式输出合并到消息列表
+      const last = messages.value[messages.value.length - 1]
+      if (last && last.messageType === 'AI' && last._streaming) {
+        last.content = (last.content || '') + msg.content
+      } else {
+        messages.value.push({
+          id: msg.msgId || Date.now(),
+          userId: null,
+          nickname: 'AI Assistant',
+          messageType: 'AI',
+          content: msg.content,
+          _streaming: !msg.finished,
+          createdAt: new Date().toISOString()
+        })
+      }
+      scrollToBottom()
+      break
+    }
+    case 'ERROR': {
+      ElMessage.error(msg.message)
+      break
+    }
+    case 'PONG':
+    case 'HEARTBEAT_ACK':
+      break
+    default:
+      console.debug('[collab] unknown message type:', msg.type)
+  }
+}
+
+const sendChat = () => {
+  if (!inputText.value.trim() || !ws) return
+  ws.send(JSON.stringify({
+    action: 'chat',
+    content: inputText.value.trim(),
+    clientMsgId: `c-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  }))
+  inputText.value = ''
+}
+
+const triggerAi = () => {
+  if (aiTyping.value) return
+  const prompt = inputText.value.trim() || '介绍一下自己'
+  if (inputText.value.trim()) inputText.value = ''
+  aiTyping.value = true
+  ws?.send(JSON.stringify({ action: 'ai', prompt }))
+}
+
+const onCursorMove = (e) => {
+  const now = Date.now()
+  if (now - cursorThrottle.last < 50) return // 50ms 节流
+  cursorThrottle.last = now
+  const rect = cursorCanvas.value.getBoundingClientRect()
+  const x = Math.round(e.clientX - rect.left)
+  const y = Math.round(e.clientY - rect.top)
+  ws?.send(JSON.stringify({ action: 'cursor', x, y, selectionId: '' }))
+}
+
+const onCursorLeave = () => {
+  // 可选: 发送 cursor 离开
+}
+
+const scrollToBottom = () => {
+  nextTick(() => {
+    if (msgBox.value) {
+      msgBox.value.scrollTop = msgBox.value.scrollHeight
+    }
+  })
+}
+
+const formatTime = (iso) => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const now = new Date()
+  const diff = (now - d) / 1000
+  if (diff < 60) return '刚刚'
+  if (diff < 3600) return Math.floor(diff / 60) + '分钟前'
+  if (diff < 86400) return Math.floor(diff / 3600) + '小时前'
+  return d.toLocaleString('zh-CN', { hour12: false })
+}
+
+const loadPublicRooms = async () => {
+  try {
+    const res = await listPublicRooms(50)
+    publicRooms.value = res.data?.data || []
+  } catch (e) {
+    console.warn('[collab] load public rooms failed:', e)
+  }
+}
+
+let heartbeatTimer = null
+onMounted(() => {
+  loadPublicRooms()
+  // 心跳 (30s)
+  heartbeatTimer = setInterval(() => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ action: 'heartbeat' }))
+    }
+  }, 30000)
+})
+
+onUnmounted(() => {
+  clearInterval(heartbeatTimer)
+  if (ws) ws.close()
+})
 </script>
 
 <style scoped>
-.collab-container { padding: 20px; max-width: 1200px; margin: 0 auto; }
-.collab-header h1 { display:flex; align-items:center; gap:10px; }
-.badge {
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-  color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;
+.collab-container { padding: 20px; }
+.collab-header h1 { margin: 0 0 4px 0; font-size: 24px; }
+.badge { background: #409eff; color: #fff; font-size: 12px; padding: 2px 8px; border-radius: 4px; margin-left: 8px; }
+.sub { color: #909399; margin: 0 0 16px 0; font-size: 13px; }
+
+.empty-tip { color: #909399; text-align: center; padding: 40px 0; }
+
+.public-room-list { max-height: 400px; overflow-y: auto; }
+.public-room-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px; border: 1px solid #ebeef5; border-radius: 6px; margin-bottom: 8px;
+  cursor: pointer; transition: all 0.2s;
 }
-.sub { color: #666; margin-bottom: 20px; }
-.card-header { display: flex; justify-content: space-between; align-items: center; }
-.messages {
-  height: 400px; overflow-y: auto; padding: 10px; background: #fafbfc;
-  border-radius: 4px; border: 1px solid #ebeef5;
+.public-room-item:hover { border-color: #409eff; background: #f5f7fa; }
+.public-room-item .name { font-weight: 500; }
+.public-room-item .meta { font-size: 12px; color: #909399; margin-top: 4px; }
+
+.type-tag { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 3px; margin-right: 6px; color: #fff; }
+.type-AI_CHAT { background: #409eff; }
+.type-DOC { background: #67c23a; }
+.type-TRAINING { background: #e6a23c; }
+.type-DASHBOARD { background: #9b59b6; }
+.type-CODE { background: #1abc9c; }
+
+.room-card { min-height: 600px; }
+.room-header { display: flex; justify-content: space-between; align-items: center; }
+.room-name { font-weight: 500; margin-left: 6px; }
+.room-id { color: #909399; font-size: 12px; margin-left: 8px; }
+
+.participants-panel { padding: 8px; }
+.participants-panel h4 { margin: 0 0 8px 0; font-size: 14px; }
+.participant-list { max-height: 300px; overflow-y: auto; }
+.participant {
+  display: flex; align-items: center; padding: 6px 4px; border-radius: 4px;
 }
-.message { padding: 6px 0; border-bottom: 1px dashed #ebeef5; }
-.message .ts { color: #999; font-size: 11px; margin-left: 8px; }
-.typing { color: #999; font-size: 12px; margin-top: 8px; font-style: italic; }
-.user { display: flex; align-items: center; padding: 8px 0; }
-code { background: #f5f7fa; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+.participant.is-you { background: #ecf5ff; }
+.participant .info { margin-left: 8px; flex: 1; }
+.participant .name { font-size: 13px; }
+.participant .name .me-tag { font-size: 11px; color: #fff; background: #409eff; padding: 1px 4px; border-radius: 2px; margin-left: 4px; }
+.participant .status { font-size: 11px; color: #909399; margin-top: 2px; }
+.cursor-info { margin-left: 8px; }
+
+.status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; }
+.status-dot.online { background: #67c23a; box-shadow: 0 0 4px #67c23a; }
+.status-dot.away { background: #e6a23c; }
+.status-dot.offline { background: #c0c4cc; }
+
+.cursor-canvas {
+  position: relative; height: 200px; background: #fafafa; border: 1px dashed #dcdfe6;
+  border-radius: 6px; overflow: hidden;
+}
+.canvas-hint { position: absolute; top: 8px; left: 8px; font-size: 11px; color: #c0c4cc; pointer-events: none; }
+.remote-cursor { position: absolute; pointer-events: none; transition: all 0.1s ease; z-index: 10; }
+.cursor-label {
+  display: inline-block; margin-left: 4px; padding: 1px 6px; border-radius: 3px;
+  color: #fff; font-size: 11px; white-space: nowrap;
+}
+
+.chat-area { display: flex; flex-direction: column; height: 600px; }
+.messages { flex: 1; overflow-y: auto; padding: 12px; background: #fafafa; border-radius: 6px; }
+.message { margin-bottom: 12px; padding: 8px 12px; background: #fff; border-radius: 6px; max-width: 80%; }
+.message.mine { margin-left: auto; background: #ecf5ff; }
+.message.ai { background: #f0f9ff; border-left: 3px solid #409eff; }
+.msg-header { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #909399; }
+.msg-author { font-weight: 500; color: #303133; }
+.msg-time { margin-left: auto; }
+.msg-body { margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
+.msg-body.edit { color: #e6a23c; font-family: monospace; font-size: 12px; }
+
+.ai-typing { padding: 8px 12px; color: #909399; font-size: 12px; }
+.ai-typing span { display: inline-block; width: 6px; height: 6px; background: #409eff; border-radius: 50%; margin-right: 3px; animation: typing 1.4s infinite; }
+.ai-typing span:nth-child(2) { animation-delay: 0.2s; }
+.ai-typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-6px); opacity: 1; } }
+
+.composer { margin-top: 12px; }
+.composer-actions { margin-top: 8px; display: flex; justify-content: flex-end; gap: 8px; }
+.hint { color: #909399; font-size: 12px; margin-left: 12px; }
 </style>
