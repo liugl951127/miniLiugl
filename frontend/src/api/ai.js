@@ -222,6 +222,11 @@ export const generateImage = (req) => http.post('/api/ai/image/generate', req)
 export const listImageTypes = () => http.post('/api/ai/image/types')
 export const inferImageType = (prompt) => http.get('/api/ai/image/infer', { params: { prompt } })
 
+/** 视频流式生成 (SSE) */
+export const listVideoStreams = () => http.get('/api/ai/video/stream/list')
+export const getVideoStream = (id) => http.get(`/api/ai/video/stream/${id}`)
+export const cancelVideoStream = (id) => http.post(`/api/ai/video/stream/cancel/${id}`)
+
 // ==================== 工具函数 ====================
 
 async function blobToBase64(blob) {

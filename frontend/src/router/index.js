@@ -141,6 +141,12 @@ const routes = [
             meta: { title: 'AIGC 图片生成', icon: 'PictureFilled' }
           },
           {
+            path: 'ai-video-stream',
+            name: 'AiVideoStream',
+            component: () => import('@/views/ai/VideoStream.vue'),
+            meta: { title: '视频流式生成', icon: 'VideoCamera' }
+          },
+          {
             path: 'alerts',
             name: 'Alerts',
             component: () => import('@/views/admin/Alerts.vue'),
