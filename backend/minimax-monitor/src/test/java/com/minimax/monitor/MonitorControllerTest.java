@@ -83,14 +83,14 @@ class MonitorControllerTest {
 
     @Test
     void alertsReturnsList() {
-        var r = controller.alerts();
+        var r = controller.alerts(20);
         assertNotNull(r.getData());
         assertTrue(r.getData() instanceof List);
     }
 
     @Test
     void alertsFiringReturnsList() {
-        var r = controller.firing();
+        var r = controller.firing(20);
         assertNotNull(r.getData());
     }
 
@@ -113,7 +113,8 @@ class MonitorControllerTest {
     void monitorInfoReturnsVersion() {
         var r = controller.info();
         assertNotNull(r.getData());
-        assertNotNull(r.getData().get("version") || r.getData().get("name"));
+        java.util.Map<String, Object> data = r.getData();
+        assertTrue(data.containsKey("version") || data.containsKey("name"));
     }
 
     @Test

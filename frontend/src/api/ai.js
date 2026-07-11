@@ -237,6 +237,12 @@ export const listMusicStreams = () => http.get('/api/ai/music/stream/list')
 export const getMusicStream = (id) => http.get(`/api/ai/music/stream/${id}`)
 export const cancelMusicStream = (id) => http.post(`/api/ai/music/stream/cancel/${id}`)
 
+/** AI 会话 (V2.8.2) */
+export const listAiSessions = (userId) => http.get('/api/ai/chat/sessions', { params: { userId } })
+export const getAiSession = (id) => http.get(`/api/ai/chat/sessions/${id}`)
+export const createAiSession = (data) => http.post('/api/ai/chat/sessions', data)
+export const deleteAiSession = (id) => http.delete(`/api/ai/chat/sessions/${id}`)
+
 // ==================== 工具函数 ====================
 
 async function blobToBase64(blob) {

@@ -35,7 +35,7 @@ class EmailAlertNotifierTest {
         e.setSeverity("warning");
         e.setFiredAt(LocalDateTime.now());
         e.setMessage("CPU usage exceeded 80%");
-        e.setResolved(0);
+        e.setStatus("firing");
         return e;
     }
 

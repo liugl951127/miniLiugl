@@ -59,6 +59,22 @@
       </div>
     </div>
 
+    <!-- 快捷操作 (V2.8.2) -->
+    <div class="quick-actions">
+      <h3 class="section-title">⚡ 快捷操作</h3>
+      <el-row :gutter="12">
+        <el-col :span="3" v-for="qa in quickActions" :key="qa.path">
+          <div class="quick-card" @click="$router.push(qa.path)">
+            <div class="quick-icon">{{ qa.icon }}</div>
+            <div class="quick-label">{{ qa.label }}</div>
+            <div class="quick-desc">{{ qa.desc }}</div>
+          </div>
+        </el-col>
+      </el-row>
+    </div>
+
+    <!-- 图表区 -->
+
     <!-- 图表区 -->
     <div class="chart-row">
       <div class="chart-card">
@@ -127,6 +143,18 @@ use([CanvasRenderer, LineChart, PieChart, TitleComponent, TooltipComponent, Lege
 
 const health = ref({})
 const stats = ref({ userCount: 0, sessionCount: 0, callCount: 0, toolCount: 0 })
+
+// 快捷操作 (V2.8.2)
+const quickActions = ref([
+  { path: '/admin/ai-chat',       icon: '🤖', label: 'AI 助手',     desc: '智能问答' },
+  { path: '/admin/ai-image',      icon: '🎨', label: 'AIGC 图片',   desc: '一键生成' },
+  { path: '/admin/ai-workflow',   icon: '🔗', label: '工作流',      desc: 'DAG 编排' },
+  { path: '/admin/ai-training',   icon: '📈', label: '训练可视化',  desc: '实时曲线' },
+  { path: '/admin/ai-video-stream', icon: '🎬', label: '视频流式',  desc: 'SSE 推送' },
+  { path: '/admin/ai-music-stream', icon: '🎵', label: '音乐流式',  desc: 'MIDI 块' },
+  { path: '/admin/ai-tools',      icon: '🛠', label: 'AI 工具',     desc: '工具管理' },
+  { path: '/admin/alerts',        icon: '🚨', label: '告警',        desc: '实时监控' }
+])
 const auditLogs = ref([])
 const trendData = ref({})
 
@@ -438,6 +466,23 @@ function actionLabel(a) {
   border-radius: 4px;
 }
 .kpi-trend.up { background: #d1fae5; color: #065f46; }
+
+/* V2.8.2 快捷操作 */
+.quick-actions { margin-bottom: 20px; }
+.section-title { font-size: 15px; font-weight: 600; color: #303133; margin: 0 0 12px; }
+.quick-card {
+  background: white;
+  border-radius: 8px;
+  padding: 16px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.quick-card:hover { transform: translateY(-4px); box-shadow: 0 8px 16px rgba(0,0,0,0.1); border-color: #409EFF; }
+.quick-icon { font-size: 28px; margin-bottom: 4px; }
+.quick-label { font-size: 14px; font-weight: 600; color: #303133; }
+.quick-desc { font-size: 11px; color: #909399; margin-top: 2px; }
 
 .chart-row {
   display: grid;

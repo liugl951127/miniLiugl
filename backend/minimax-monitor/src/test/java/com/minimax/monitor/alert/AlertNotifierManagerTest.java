@@ -43,7 +43,7 @@ class AlertNotifierManagerTest {
         e.setSeverity("warning");
         e.setFiredAt(LocalDateTime.now());
         e.setMessage("test alert");
-        e.setResolved(0);
+        e.setStatus("firing");
         return e;
     }
 

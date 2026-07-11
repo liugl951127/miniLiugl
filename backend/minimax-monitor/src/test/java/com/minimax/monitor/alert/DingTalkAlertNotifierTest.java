@@ -29,7 +29,7 @@ class DingTalkAlertNotifierTest {
         e.setSeverity("warning");
         e.setFiredAt(LocalDateTime.now());
         e.setMessage("Memory usage high");
-        e.setResolved(0);
+        e.setStatus("firing");
         return e;
     }
 

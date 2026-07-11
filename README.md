@@ -815,3 +815,17 @@ docker compose down -v       # 停止 + 删数据
 - ARG MODULE 指定构建模块
 - 健康检查 `/actuator/health`
 - JVM 优化: G1GC + MaxRAMPercentage=70
+
+## 📚 企业级文档 (V2.8.2)
+
+完整文档位于 [docs/](docs/) 目录:
+
+| 文档 | 描述 | 适用对象 |
+|------|------|---------|
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | 架构白皮书 (微服务拓扑, AI 引擎, 流式协议, 安全模型) | 架构师 / 高级开发 |
+| [USER_GUIDE.md](docs/USER_GUIDE.md) | 用户手册 (快速开始, 14 意图 AI 助手, AIGC 工具使用) | 终端用户 / 业务人员 |
+| [API.md](docs/API.md) | API 参考 (REST + SSE + WebSocket, 错误码, 限流) | 后端 / 前端开发 |
+| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | 部署指南 (开发/测试/生产, Nginx, HTTPS, 性能调优) | 运维 / SRE |
+| [OPERATIONS.md](docs/OPERATIONS.md) | 运维手册 (健康检查, 故障应急, 备份恢复) | 运维工程师 |
+| [CHANGELOG.md](docs/CHANGELOG.md) | 完整更新日志 (V1.9 - V2.8.2) | 所有人 |
+

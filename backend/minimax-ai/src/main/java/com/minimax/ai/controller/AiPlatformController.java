@@ -19,6 +19,8 @@ import com.minimax.ai.mapper.AiGenerationLogMapper;
 import com.minimax.ai.mapper.AiToolMapper;
 import com.minimax.ai.mapper.DataSourceMapper;
 import com.minimax.ai.mapper.MultimediaFileMapper;
+import com.minimax.ai.mapper.AiChatSessionMapper;
+import com.minimax.ai.mapper.AiChatMessageMapper;
 import com.minimax.ai.tool.AiToolExecutor;
 import com.minimax.ai.tool.AiToolRegistry;
 import com.minimax.common.result.Result;
@@ -67,6 +69,8 @@ public class AiPlatformController {
     private final DynamicDataSource dynamicDataSource;
     private final AiToolRegistry toolRegistry;
     private final AiToolMapper toolMapper;
+    private final AiChatSessionMapper aiChatSessionMapper;
+    private final AiChatMessageMapper aiChatMessageMapper;
     private final DataSourceMapper dataSourceMapper;
     private final MultimediaFileMapper fileMapper;
     private final AiGenerationLogMapper generationLogMapper;
@@ -462,6 +466,56 @@ public class AiPlatformController {
             try { cfg.style = MusicGenerator.Style.valueOf(params.get("style").toUpperCase()); } catch (Exception ignore) {}
         }
         return cfg;
+    }
+
+    // ==================== AI 会话管理 (V2.8.2) ====================
+
+    /**
+     * 列出某用户会话
+     */
+    @GetMapping("/chat/sessions")
+    public Result<List<com.minimax.ai.entity.AiChatSession>> listSessions(
+            @RequestParam(required = false) Long userId) {
+        Long uid = userId != null ? userId : 1L;  // 默认 demo user
+        return Result.ok(aiChatSessionMapper.findByUserOrderByUpdatedDesc(uid));
+    }
+
+    /**
+     * 获取会话详情 (含消息)
+     */
+    @GetMapping("/chat/sessions/{id}")
+    public Result<Map<String, Object>> getSession(@PathVariable Long id) {
+        com.minimax.ai.entity.AiChatSession s = aiChatSessionMapper.selectById(id);
+        if (s == null) return Result.fail("会话不存在");
+        List<com.minimax.ai.entity.AiChatMessage> msgs = aiChatMessageMapper.findBySessionOrderByCreatedAsc(id);
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("session", s);
+        m.put("messages", msgs);
+        return Result.ok(m);
+    }
+
+    /**
+     * 创建会话
+     */
+    @PostMapping("/chat/sessions")
+    public Result<com.minimax.ai.entity.AiChatSession> createSession(@RequestBody Map<String, Object> body) {
+        com.minimax.ai.entity.AiChatSession s = new com.minimax.ai.entity.AiChatSession();
+        s.setTitle((String) body.getOrDefault("title", "新会话"));
+        Object uid = body.get("userId");
+        s.setUserId(uid != null ? ((Number) uid).longValue() : 1L);
+        s.setSessionId("sess-" + System.currentTimeMillis() + "-" + Math.abs(s.getTitle().hashCode() % 1000));
+        s.setCreatedAt(java.time.LocalDateTime.now());
+        s.setUpdatedAt(java.time.LocalDateTime.now());
+        aiChatSessionMapper.insert(s);
+        return Result.ok(s);
+    }
+
+    /**
+     * 删除会话
+     */
+    @DeleteMapping("/chat/sessions/{id}")
+    public Result<Boolean> deleteSession(@PathVariable Long id) {
+        return Result.ok(aiChatSessionMapper.deleteById(id) > 0);
     }
 
     // ==================== 工具调用 (通用) ====================

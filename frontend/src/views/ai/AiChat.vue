@@ -1,220 +1,284 @@
 <template>
-  <div class="ai-chat">
-    <el-card>
-      <template #header>
-        <div class="header">
-          <span>🤖 AI 智能助手 (V2.7)</span>
-          <el-tag size="small" type="success">自研 · 0 外部依赖</el-tag>
-        </div>
-      </template>
-
-      <div class="quick-actions">
-        <el-button-group>
-          <el-button @click="fillExample('统计 user 表前 10 条, 柱状图')" size="small">📊 统计图表</el-button>
-          <el-button @click="fillExample('生成 C 大调 120bpm 8 小节的音乐')" size="small">🎵 音乐生成</el-button>
-          <el-button @click="fillExample('生成一个 Spring Boot 项目, 叫 demo')" size="small">💻 代码生成</el-button>
-          <el-button @click="fillExample('转人工')" size="small">🙋 转人工</el-button>
-          <el-button @click="fillExample('画一个产品销量饼图, 苹果香蕉橙子, 占比 50/30/20')" size="small">🥧 饼图</el-button>
-        </el-button-group>
-      </div>
-
-      <el-input
-        v-model="userInput"
-        type="textarea"
-        :rows="3"
-        placeholder="试试输入: 画一个统计 user 表的柱状图 / 生成一段 8 小节 C 大调音乐 / 转人工 / 生成 Spring Boot 项目"
-        @keydown.ctrl.enter="handleSend"
-      />
-      <div class="actions">
-        <el-button type="primary" :loading="loading" @click="handleSend">
-          🚀 智能路由 ({{ shortcut }})
-        </el-button>
-        <el-button @click="clearAll">清空</el-button>
-      </div>
-
-      <div v-if="lastResult" class="result">
-        <el-alert
-          :type="lastResult.intent === 'UNKNOWN' ? 'warning' : 'success'"
-          :closable="false"
-          show-icon
-        >
-          <template #title>
-            意图识别: <b>{{ lastResult.intent }}</b>
-            <span style="margin-left: 12px">处理函数: <code>{{ lastResult.handler }}</code></span>
+  <PageContainer title="AI 智能助手" subtitle="自研 AI 引擎 · 0 外部依赖 · 13 种意图识别" icon="🤖">
+    <el-row :gutter="16">
+      <!-- 左侧: 历史会话 -->
+      <el-col :span="6">
+        <el-card shadow="never" class="chat-side">
+          <template #header>
+            <div style="display: flex; justify-content: space-between; align-items: center">
+              <span>💬 会话</span>
+              <el-button size="small" type="primary" @click="newSession">+ 新建</el-button>
+            </div>
           </template>
-        </el-alert>
+          <StateBlock v-if="loadingSessions" type="loading" message="加载中..." />
+          <div v-else class="session-list">
+            <div
+              v-for="s in sessions"
+              :key="s.id"
+              :class="['session-item', { active: currentSessionId === s.id }]"
+              @click="loadSession(s)"
+            >
+              <div class="session-title">{{ s.title || '新会话' }}</div>
+              <div class="session-time">{{ formatTime(s.updatedAt) }}</div>
+            </div>
+            <el-empty v-if="!sessions.length" description="暂无会话" :image-size="60" />
+          </div>
+        </el-card>
+      </el-col>
 
-        <div v-if="lastResult.params && Object.keys(lastResult.params).length" class="params">
-          <h4>提取的参数:</h4>
-          <el-tag v-for="(v, k) in lastResult.params" :key="k" style="margin: 4px">
-            {{ k }} = {{ v }}
-          </el-tag>
-        </div>
+      <!-- 主区: 对话 -->
+      <el-col :span="18">
+        <el-card shadow="never">
+          <template #header>
+            <div class="chat-header">
+              <span>🚀 智能路由 (Ctrl+Enter 发送)</span>
+              <el-tag size="small" :type="lastResult ? 'success' : 'info'">
+                {{ lastResult ? `意图: ${lastResult.intent}` : '等待输入' }}
+              </el-tag>
+            </div>
+          </template>
 
-        <!-- 图表预览 -->
-        <div v-if="chartUrl" class="chart-preview">
-          <h4>📊 图表预览</h4>
-          <img :src="chartUrl" alt="chart" />
-        </div>
+          <div class="quick-actions">
+            <span class="quick-label">快捷:</span>
+            <el-tag v-for="ex in examples" :key="ex.text" class="quick-tag" effect="plain" @click="fillExample(ex.text)">
+              {{ ex.icon }} {{ ex.label }}
+            </el-tag>
+          </div>
 
-        <!-- 音乐预览 -->
-        <div v-if="musicUrl" class="music-preview">
-          <h4>🎵 音乐生成结果</h4>
-          <audio :src="musicUrl" controls></audio>
-          <el-link :href="musicUrl" download="music.mid">下载 MIDI</el-link>
-        </div>
+          <div class="messages" ref="messagesRef">
+            <div v-for="(m, i) in messages" :key="i" :class="['message', `msg-${m.role}`]">
+              <div class="message-avatar">
+                {{ m.role === 'user' ? '👤' : '🤖' }}
+              </div>
+              <div class="message-content">
+                <div class="message-bubble" v-html="formatMsg(m.content)"></div>
+                <div v-if="m.intent" class="message-meta">
+                  <el-tag size="small" :type="m.intent === 'UNKNOWN' ? 'warning' : 'success'">
+                    {{ m.intent }}
+                  </el-tag>
+                  <span v-if="m.handler" class="meta-handler">{{ m.handler }}</span>
+                </div>
+                <div v-if="m.data" class="message-extra">
+                  <pre>{{ JSON.stringify(m.data, null, 2) }}</pre>
+                </div>
+              </div>
+            </div>
+            <StateBlock v-if="loading" type="loading" message="AI 思考中..." />
+            <el-empty v-if="!messages.length && !loading" description="开始你的第一次对话吧 🚀" :image-size="80" />
+          </div>
 
-        <!-- 错误 -->
-        <el-alert v-if="lastResult.error" :title="lastResult.error" type="error" :closable="false" />
-      </div>
-    </el-card>
-
-    <el-card style="margin-top: 16px">
-      <template #header>📚 支持的意图</template>
-      <el-table :data="intents" stripe size="small">
-        <el-table-column prop="intent" label="意图" width="200" />
-        <el-table-column prop="keywords" label="触发关键词" />
-        <el-table-column prop="handler" label="处理函数" width="200" />
-        <el-table-column prop="api" label="对应接口" width="260" />
-      </el-table>
-    </el-card>
-  </div>
+          <el-input
+            v-model="userInput"
+            type="textarea"
+            :rows="3"
+            placeholder="试试: 画一个统计 user 表的柱状图 / 生成 8 小节 C 大调音乐 / 转人工 / 生成 Spring Boot 项目"
+            @keydown.ctrl.enter="handleSend"
+            :disabled="loading"
+          />
+          <div class="actions">
+            <el-button :disabled="!messages.length" @click="clearAll">🗑 清空</el-button>
+            <el-button type="primary" :loading="loading" @click="handleSend" size="large">
+              🚀 发送
+            </el-button>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+  </PageContainer>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
-import { dispatchPrompt, renderChart, generateMusic, nl2chart } from '@/api/ai'
+import PageContainer from '@/components/PageContainer.vue'
+import StateBlock from '@/components/StateBlock.vue'
+import { dispatchPrompt, listAiSessions, createAiSession } from '@/api/ai'
+
+const examples = [
+  { icon: '📊', label: '统计图表', text: '统计 user 表前 10 条, 柱状图' },
+  { icon: '🥧', label: '饼图', text: '画一个产品销量饼图, 苹果香蕉橙子, 占比 50/30/20' },
+  { icon: '🎵', label: '音乐', text: '生成 C 大调 120bpm 8 小节音乐' },
+  { icon: '💻', label: '代码', text: '生成一个 Spring Boot 项目, 叫 demo' },
+  { icon: '🙋', label: '转人工', text: '转人工' },
+  { icon: '🎨', label: 'AIGC', text: '生成一张蓝色渐变背景图' },
+  { icon: '📄', label: '文档', text: '解析文档提取关键词' },
+  { icon: '🎬', label: '视频', text: '生成一个 5 秒的视频' }
+]
 
 const userInput = ref('')
 const loading = ref(false)
+const messages = ref([])
 const lastResult = ref(null)
-const chartUrl = ref('')
-const musicUrl = ref('')
-const shortcut = ref('Ctrl+Enter')
+const messagesRef = ref()
 
-const intents = [
-  { intent: 'GENERATE_CHART', keywords: '图表, 柱状图, 折线图, 饼图, 雷达图, 热力图, 散点图, 桑基图, chart, graph, bar, line, pie, radar', handler: 'ChartGenerator.render', api: '/api/ai/chart/render' },
-  { intent: 'GENERATE_MUSIC', keywords: '音乐, 旋律, 曲子, MIDI, 作曲, 和弦, 节拍, music, melody, song', handler: 'MusicGenerator.generate', api: '/api/ai/music/generate' },
-  { intent: 'GENERATE_ANIMATION', keywords: '动画, GIF, 动图, 进度条动画, 过渡动画, animation', handler: 'AnimationGenerator.generate', api: '/api/ai/animation/*' },
-  { intent: 'GENERATE_CODE', keywords: '代码, Spring Boot, Vue, React, Python, Flask, code, scaffold', handler: 'ProjectCodeGenerator.generate', api: '/api/ai/admin/codegen' },
-  { intent: 'QUERY_DATA', keywords: '查询, SELECT, FROM, SQL, 数据, 记录, 表, query, select', handler: 'Nl2SqlTool.execute', api: '/api/ai/admin/tools/sql.query/invoke' },
-  { intent: 'ANALYZE_DATA', keywords: '统计, 平均, 求和, 最大, 最小, 分组, 趋势, 异常, analyze', handler: 'DataAnalyzer.execute', api: '/api/ai/admin/tools/data.analyze.stats/invoke' },
-  { intent: 'TTS', keywords: '朗读, 语音播报, TTS, 读出来, 发声, 合成语音', handler: 'AudioAnalyzer.synthesize', api: '/api/ai/multimodal/tts' },
-  { intent: 'STT', keywords: '听写, 语音识别, STT, transcribe', handler: 'AudioAnalyzer.transcribe', api: '/api/ai/multimodal/audio/upload' },
-  { intent: 'TRANSFER_HUMAN', keywords: '转人工, 真人, 人工客服, 转接, human, agent', handler: 'TransferToHumanEvent', api: '/api/ai/route (transfer event)' },
-  { intent: 'IMAGE_ANALYZE', keywords: '分析图片, 看图, 识别图片, analyze image', handler: 'ImageAnalyzer.analyze', api: '/api/ai/multimodal/image/upload' },
-  { intent: 'CHAT', keywords: '你好, 请问, 什么是, 怎么, 如何, hello, hi, what, how', handler: 'TextGenerator.generate', api: '/api/ai/generate' }
-]
+// 会话管理
+const sessions = ref([])
+const currentSessionId = ref(null)
+const loadingSessions = ref(false)
+
+async function refreshSessions() {
+  loadingSessions.value = true
+  try {
+    const res = await listAiSessions()
+    sessions.value = res.data || []
+  } catch (e) {
+    // 静默
+  } finally {
+    loadingSessions.value = false
+  }
+}
+
+async function newSession() {
+  try {
+    const res = await createAiSession({ title: '新会话 ' + new Date().toLocaleString() })
+    currentSessionId.value = res.data?.id
+    messages.value = []
+    lastResult.value = null
+    await refreshSessions()
+    ElMessage.success('新会话已创建')
+  } catch (e) {
+    // 失败也允许继续
+    currentSessionId.value = null
+    messages.value = []
+  }
+}
+
+function loadSession(s) {
+  currentSessionId.value = s.id
+  messages.value = s.messages || []
+  lastResult.value = null
+}
+
+function formatTime(t) {
+  if (!t) return ''
+  const d = new Date(t)
+  const now = new Date()
+  const diff = (now - d) / 1000
+  if (diff < 60) return '刚刚'
+  if (diff < 3600) return Math.floor(diff / 60) + ' 分钟前'
+  if (diff < 86400) return Math.floor(diff / 3600) + ' 小时前'
+  return d.toLocaleDateString()
+}
 
 function fillExample(text) {
   userInput.value = text
-}
-
-function clearAll() {
-  userInput.value = ''
-  lastResult.value = null
-  chartUrl.value = ''
-  musicUrl.value = ''
+  ElMessage.info('已填入, 按 Ctrl+Enter 发送')
 }
 
 async function handleSend() {
-  if (!userInput.value.trim()) {
-    ElMessage.warning('请输入提示词')
+  const text = userInput.value.trim()
+  if (!text) {
+    ElMessage.warning('请输入内容')
     return
   }
   loading.value = true
-  chartUrl.value = ''
-  musicUrl.value = ''
-  try {
-    // 1. 智能分发
-    const res = await dispatchPrompt({ text: userInput.value })
-    lastResult.value = res.data
+  messages.value.push({ role: 'user', content: text })
+  userInput.value = ''
+  await nextTick()
+  scrollToBottom()
 
-    // 2. 如果是图表, 自动生成预览
-    if (res.data.intent === 'GENERATE_CHART') {
-      // 简单示例数据
-      const chartData = {
-        type: getChartType(userInput.value),
-        title: '示例图表',
-        categories: ['A', 'B', 'C', 'D', 'E'],
-        series: [{ name: '数值', values: [12, 25, 18, 30, 22] }]
-      }
-      try {
-        const chart = await renderChart(chartData)
-        chartUrl.value = chart.blobUrl
-      } catch (e) {
-        console.warn('Chart render failed', e)
-      }
-    } else if (res.data.intent === 'GENERATE_MUSIC') {
-      // 解析音乐配置
-      const music = await generateMusic({
-        key: 'C',
-        bpm: 120,
-        bars: 4,
-        style: 'pop'
-      })
-      musicUrl.value = music.blobUrl
-    }
+  try {
+    const res = await dispatchPrompt(text, currentSessionId.value)
+    const r = res.data
+    lastResult.value = r
+    messages.value.push({
+      role: 'assistant',
+      content: r.message || `已处理 (${r.intent})`,
+      intent: r.intent,
+      handler: r.handler,
+      data: r.data
+    })
+    if (r.sessionId) currentSessionId.value = r.sessionId
+    await refreshSessions()
   } catch (e) {
-    ElMessage.error('处理失败: ' + (e.message || '未知错误'))
-    lastResult.value = { intent: 'ERROR', error: e.message }
+    messages.value.push({ role: 'assistant', content: '❌ 错误: ' + (e.message || '未知') })
   } finally {
     loading.value = false
+    await nextTick()
+    scrollToBottom()
   }
 }
 
-function getChartType(text) {
-  if (text.includes('饼图')) return 'PIE'
-  if (text.includes('折线图') || text.includes('趋势')) return 'LINE'
-  if (text.includes('雷达图')) return 'RADAR'
-  if (text.includes('热力图')) return 'HEATMAP'
-  if (text.includes('散点图')) return 'SCATTER'
-  if (text.includes('桑基图')) return 'SANKEY'
-  return 'BAR'
+function scrollToBottom() {
+  if (messagesRef.value) {
+    messagesRef.value.scrollTop = messagesRef.value.scrollHeight
+  }
 }
+
+function clearAll() {
+  messages.value = []
+  lastResult.value = null
+  ElMessage.success('已清空')
+}
+
+function formatMsg(c) {
+  if (!c) return ''
+  return c.replace(/\n/g, '<br>')
+}
+
+refreshSessions()
 </script>
 
 <style scoped>
-.ai-chat {
-  padding: 16px;
+.chat-side { height: 600px; }
+.session-list { max-height: 500px; overflow-y: auto; }
+.session-item {
+  padding: 10px 12px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
 }
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.quick-actions {
+.session-item:hover { background: #f5f7fa; }
+.session-item.active { background: #ecf5ff; border-left: 3px solid #409EFF; }
+.session-title { font-size: 14px; color: #303133; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.session-time { font-size: 11px; color: #909399; margin-top: 2px; }
+
+.chat-header { display: flex; justify-content: space-between; align-items: center; }
+.quick-actions { margin-bottom: 12px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.quick-label { font-size: 13px; color: #909399; margin-right: 4px; }
+.quick-tag { cursor: pointer; }
+.quick-tag:hover { transform: scale(1.05); }
+
+.messages {
+  height: 400px;
+  overflow-y: auto;
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 6px;
   margin-bottom: 12px;
 }
-.actions {
-  margin-top: 12px;
-  text-align: right;
+.message { display: flex; gap: 8px; margin-bottom: 16px; }
+.message-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
 }
-.result {
-  margin-top: 16px;
-  padding: 12px;
-  background: #f5f7fa;
-  border-radius: 4px;
+.message-content { flex: 1; min-width: 0; }
+.msg-user .message-bubble { background: #409EFF; color: white; }
+.msg-assistant .message-bubble { background: white; border: 1px solid #ebeef5; }
+.message-bubble {
+  display: inline-block;
+  padding: 10px 14px;
+  border-radius: 8px;
+  max-width: 80%;
+  word-break: break-word;
+  line-height: 1.6;
 }
-.params {
-  margin-top: 12px;
+.message-meta { margin-top: 4px; font-size: 12px; }
+.meta-handler { color: #909399; margin-left: 8px; }
+.message-extra {
+  margin-top: 8px;
+  background: #f5f5f5;
   padding: 8px;
-  background: #fff;
   border-radius: 4px;
+  font-size: 11px;
+  max-height: 200px;
+  overflow: auto;
 }
-.params h4 {
-  margin: 0 0 8px 0;
-  font-size: 14px;
-}
-.chart-preview img {
-  max-width: 100%;
-  margin-top: 8px;
-  border: 1px solid #eee;
-  border-radius: 4px;
-}
-.music-preview audio {
-  width: 100%;
-  margin-top: 8px;
-}
+.message-extra pre { margin: 0; white-space: pre-wrap; }
+.actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 </style>
