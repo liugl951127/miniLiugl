@@ -294,10 +294,22 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import axios from 'axios'
+import {
+  listTools as apiListTools,
+  getTool as apiGetTool,
+  createTool as apiCreateTool,
+  updateTool as apiUpdateTool,
+  deleteTool as apiDeleteTool,
+  invokeTool as apiInvokeTool,
+  listDataSources as apiListDataSources,
+  createDataSource as apiCreateDataSource,
+  updateDataSource as apiUpdateDataSource,
+  deleteDataSource as apiDeleteDataSource,
+  testDataSource as apiTestDataSource,
+  generateProject as apiGenerateProject
+} from '@/api/ai'
 
 const activeTab = ref('tools')
-const api = axios.create({ baseURL: '/api/ai/admin', timeout: 60000 })
 
 // 工具列表
 const tools = ref([])
@@ -306,8 +318,8 @@ const filterCategory = ref(null)
 async function loadTools() {
   loading.value = true
   try {
-    const res = await api.get('/tools', { params: { category: filterCategory.value } })
-    tools.value = res.data.list
+    const res = await apiListTools({ category: filterCategory.value })
+    tools.value = (res.data || []).filter(t => !filterCategory.value || t.category === filterCategory.value)
   } catch (e) {
     ElMessage.error('加载工具失败: ' + e.message)
   } finally {
@@ -346,13 +358,13 @@ async function doInvoke() {
     if (needsDs(currentTool.value)) input.dataSourceId = invokeForm.value.dataSourceId
     if (needsTable(currentTool.value)) input.table = invokeForm.value.table
     if (needsColumn(currentTool.value)) input.column = invokeForm.value.column
-    const res = await api.post(`/tools/${currentTool.value.code}/invoke`, input)
-    if (res.data.success) {
-      ElMessage.success(`调用成功 (${res.data.durationMs}ms)`)
-      ElMessageBox.alert(JSON.stringify(res.data.data, null, 2), '结果', { type: 'success' })
+    const res = await apiInvokeTool(currentTool.value.code, input)
+    if (res.data && res.data.success) {
+      ElMessage.success(`调用成功 (${res.data.durationMs || 0}ms)`)
+      ElMessageBox.alert(JSON.stringify(res.data.data || res.data, null, 2), '结果', { type: 'success' })
       invokeVisible.value = false
     } else {
-      ElMessage.error('调用失败: ' + res.data.message)
+      ElMessage.error('调用失败: ' + (res.data?.message || '未知错误'))
     }
   } catch (e) {
     ElMessage.error('调用失败: ' + e.message)
@@ -371,9 +383,9 @@ function openEdit(t) {
 async function saveTool() {
   try {
     if (editForm.value.id) {
-      await api.put(`/tools/${editForm.value.id}`, editForm.value)
+      await apiUpdateTool(editForm.value.id, editForm.value)
     } else {
-      await api.post('/tools', editForm.value)
+      await apiCreateTool(editForm.value)
     }
     ElMessage.success('保存成功')
     editVisible.value = false
@@ -384,7 +396,7 @@ async function saveTool() {
 }
 async function toggleTool(t) {
   try {
-    await api.put(`/tools/${t.id}`, t)
+    await apiUpdateTool(t.id, t)
     ElMessage.success('已更新')
   } catch (e) {
     ElMessage.error('更新失败: ' + e.message)
@@ -393,7 +405,7 @@ async function toggleTool(t) {
 async function del(t) {
   await ElMessageBox.confirm(`确定删除工具 ${t.name}?`, '确认', { type: 'warning' })
   try {
-    await api.delete(`/tools/${t.id}`)
+    await apiDeleteTool(t.id)
     ElMessage.success('已删除')
     loadTools()
   } catch (e) {
@@ -407,7 +419,7 @@ const dsLoading = ref(false)
 async function loadDatasources() {
   dsLoading.value = true
   try {
-    const res = await api.get('/datasources')
+    const res = await apiListDataSources()
     datasources.value = res.data.list
   } catch (e) {
     ElMessage.error('加载数据源失败: ' + e.message)
@@ -417,7 +429,7 @@ async function loadDatasources() {
 }
 async function testDs(ds) {
   try {
-    const res = await api.post(`/datasources/${ds.id}/test`)
+    const res = await apiTestDataSource(ds.id)
     if (res.data.success) {
       ElMessage.success('连接成功: ' + res.data.message)
     } else {
@@ -437,9 +449,9 @@ function openDsEdit(ds) {
 async function saveDs() {
   try {
     if (dsEdit.value.id) {
-      await api.put(`/datasources/${dsEdit.value.id}`, dsEdit.value)
+      await apiUpdateDataSource(dsEdit.value.id, dsEdit.value)
     } else {
-      await api.post('/datasources', dsEdit.value)
+      await apiCreateDataSource(dsEdit.value)
     }
     ElMessage.success('保存成功')
     dsEditVisible.value = false
@@ -450,7 +462,7 @@ async function saveDs() {
 }
 async function delDs(ds) {
   await ElMessageBox.confirm(`确定删除数据源 ${ds.name}?`, '确认', { type: 'warning' })
-  await api.delete(`/datasources/${ds.id}`)
+  await apiDeleteDataSource(ds.id)
   ElMessage.success('已删除')
   loadDatasources()
 }
@@ -463,7 +475,7 @@ const selectedFile = ref(null)
 async function generate() {
   genLoading.value = true
   try {
-    const res = await api.post('/codegen', genForm.value)
+    const res = await apiGenerateProject(genForm.value)
     genResult.value = res.data
     selectedFile.value = res.data.keyFiles[0] || Object.keys(res.data.files)[0]
     ElMessage.success(`生成 ${res.data.totalFiles} 个文件`)
@@ -494,7 +506,7 @@ async function runAnalysis() {
   }
   analysisLoading.value = true
   try {
-    const res = await api.post(`/tools/${analysisForm.value.tool}/invoke`, {
+    const res = await apiInvokeTool(analysisForm.value.tool, {
       dataSourceId: analysisForm.value.dataSourceId,
       table: analysisForm.value.table,
       column: analysisForm.value.column

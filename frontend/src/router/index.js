@@ -123,6 +123,24 @@ const routes = [
             meta: { title: 'AI 智能助手', icon: 'ChatDotRound' }
           },
           {
+            path: 'alerts',
+            name: 'Alerts',
+            component: () => import('@/views/admin/Alerts.vue'),
+            meta: { title: '告警中心', icon: 'Bell' }
+          },
+          {
+            path: 'audit',
+            name: 'Audit',
+            component: () => import('@/views/admin/Audit.vue'),
+            meta: { title: '审计日志', icon: 'Document' }
+          },
+          {
+            path: 'mask-tool',
+            name: 'MaskTool',
+            component: () => import('@/views/compliance/MaskTool.vue'),
+            meta: { title: '数据脱敏工具', icon: 'Lock' }
+          },
+          {
             path: '',
             name: 'AdminDashboard',
             component: () => import('@/views/admin/Dashboard.vue'),

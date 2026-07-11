@@ -124,6 +124,12 @@ export const getTool = (code) => http.get(`/api/ai/admin/tools/${code}`)
 /** 创建工具 */
 export const createTool = (data) => http.post('/api/ai/admin/tools', data)
 
+/** 更新工具 */
+export const updateTool = (id, data) => http.put(`/api/ai/admin/tools/${id}`, data)
+
+/** 删除工具 */
+export const deleteTool = (id) => http.delete(`/api/ai/admin/tools/${id}`)
+
 /** 调用工具 */
 export const invokeTool = (code, input) =>
   http.post(`/api/ai/admin/tools/${code}/invoke`, { input })
@@ -133,6 +139,12 @@ export const listDataSources = () => http.get('/api/ai/admin/datasources')
 
 /** 创建数据源 */
 export const createDataSource = (data) => http.post('/api/ai/admin/datasources', data)
+
+/** 更新数据源 */
+export const updateDataSource = (id, data) => http.put(`/api/ai/admin/datasources/${id}`, data)
+
+/** 删除数据源 */
+export const deleteDataSource = (id) => http.delete(`/api/ai/admin/datasources/${id}`)
 
 /** 测试数据源连接 */
 export const testDataSource = (id) => http.post(`/api/ai/admin/datasources/${id}/test`)
