@@ -232,6 +232,11 @@ export const getMyPermissions = () => http.get('/api/ai/permission/me')
 export const listAllRoles = () => http.get('/api/ai/permission/roles')
 export const checkPermissions = (role, permissions) => http.post('/api/ai/permission/check', { role, permissions })
 
+/** 音乐流式生成 (V2.8.1) */
+export const listMusicStreams = () => http.get('/api/ai/music/stream/list')
+export const getMusicStream = (id) => http.get(`/api/ai/music/stream/${id}`)
+export const cancelMusicStream = (id) => http.post(`/api/ai/music/stream/cancel/${id}`)
+
 // ==================== 工具函数 ====================
 
 async function blobToBase64(blob) {

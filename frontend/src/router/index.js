@@ -147,6 +147,12 @@ const routes = [
             meta: { title: '视频流式生成', icon: 'VideoCamera' }
           },
           {
+            path: 'ai-music-stream',
+            name: 'AiMusicStream',
+            component: () => import('@/views/ai/MusicStream.vue'),
+            meta: { title: '音乐流式生成', icon: 'Headset' }
+          },
+          {
             path: 'alerts',
             name: 'Alerts',
             component: () => import('@/views/admin/Alerts.vue'),
