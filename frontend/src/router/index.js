@@ -123,6 +123,12 @@ const routes = [
             meta: { title: 'AI 智能助手', icon: 'ChatDotRound' }
           },
           {
+            path: 'ai-workflow',
+            name: 'AiWorkflow',
+            component: () => import('@/views/ai/Workflow.vue'),
+            meta: { title: 'AI 工作流编排', icon: 'Share' }
+          },
+          {
             path: 'alerts',
             name: 'Alerts',
             component: () => import('@/views/admin/Alerts.vue'),

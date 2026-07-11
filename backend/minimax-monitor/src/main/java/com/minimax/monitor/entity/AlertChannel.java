@@ -3,37 +3,29 @@ package com.minimax.monitor.entity;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
-import java.io.Serial;
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
-/**
- * 告警通知渠道配置 (V5.33 Day 18).
- *
- * channel_type: EMAIL / DINGTALK
- * config JSON 格式:
- *   EMAIL:    {"email": "oncall@company.com", "smtpHost": "smtp.company.com", "smtpPort": 465}
- *   DINGTALK: {"webhook": "https://oapi.dingtalk.com/robot/send?access_token=xxx", "secret": "SEC..."}
- */
 @Data
 @TableName("alert_channel")
-public class AlertChannel implements Serializable {
-
-    @Serial
-    private static final long serialVersionUID = 1L;
-
+public class AlertChannel {
     @TableId(type = IdType.AUTO)
     private Long id;
 
     private String name;
-    private String channelType;  // EMAIL / DINGTALK
-    private String config;        // JSON
+    private String channelType;       // email/dingtalk/wechat/webhook/sms
+    private String type;               // 别名 (兼容)
+    private String target;
+    private String config;
     private Integer enabled;
-    private Integer priority;     // 越小优先级越高
+    private Integer priority;          // 通知优先级
+    private String description;
+
+    @TableField(fill = FieldFill.INSERT)
+    private Long createdBy;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updatedAt;
+    public String getChannelType() { return channelType != null ? channelType : type; }
+    public void setChannelType(String t) { this.channelType = t; this.type = t; }
 }

@@ -205,6 +205,10 @@ export const dispatchPrompt = (data) => http.post('/api/ai/dispatch', data)
 export const nl2chart = (dataSourceId, question) =>
   http.post('/api/ai/nl2chart', { dataSourceId, question }, { responseType: 'blob' })
 
+/** AI 工作流 (DAG) */
+export const executeWorkflow = (workflow) => http.post('/api/ai/workflow/execute', workflow)
+export const validateWorkflow = (workflow) => http.post('/api/ai/workflow/validate', workflow)
+
 // ==================== 工具函数 ====================
 
 async function blobToBase64(blob) {
