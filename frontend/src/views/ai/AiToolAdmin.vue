@@ -340,13 +340,33 @@ const invokeLoading = ref(false)
 const currentTool = ref(null)
 const invokeForm = ref({ dataSourceId: 1, table: '', column: '', json: '{}' })
 
-function needsDs(t) { return t?.category !== 'CHAT' && t?.category !== 'CUSTOM' }
-function needsTable(t) { return needsDs(t) }
-function needsColumn(t) { return t?.code?.includes('stats') || t?.code?.includes('anomaly') || t?.code?.includes('clean') }
+function needsDs(t) {
+  if (!t) return false
+  if (t.category === 'CHAT' || t.category === 'CUSTOM') return false
+  return true
+}
+function needsTable(t) {
+  if (!t) return false
+  return needsDs(t) && t.code !== 'code.gen.from-schema'
+}
+function needsColumn(t) {
+  if (!t) return false
+  const code = t.code || ''
+  return code.includes('stats') || code.includes('anomaly') || code.includes('clean') || code.includes('distribution')
+}
+function needsLimit(t) {
+  if (!t) return false
+  const code = t.code || ''
+  return code.includes('analyze') || code.includes('clean') || code.includes('deduplicate')
+}
 
 function openInvoke(t) {
   currentTool.value = t
-  invokeForm.value = { dataSourceId: 1, table: '', column: '', json: '{}' }
+  invokeForm.value = {
+    dataSourceId: 1, table: '', column: '', buckets: 10, limit: 10000,
+    message: '', sessionId: '', question: '', projectName: '', basePackage: 'com.example',
+    json: '{}'
+  }
   invokeVisible.value = true
 }
 
@@ -354,20 +374,51 @@ async function doInvoke() {
   invokeLoading.value = true
   try {
     let input = {}
-    try { input = JSON.parse(invokeForm.value.json) } catch {}
-    if (needsDs(currentTool.value)) input.dataSourceId = invokeForm.value.dataSourceId
-    if (needsTable(currentTool.value)) input.table = invokeForm.value.table
-    if (needsColumn(currentTool.value)) input.column = invokeForm.value.column
-    const res = await apiInvokeTool(currentTool.value.code, input)
+    try { input = JSON.parse(invokeForm.value.json || '{}') } catch {}
+    const t = currentTool.value
+    if (needsDs(t)) {
+      input.dataSourceId = invokeForm.value.dataSourceId
+      if (needsTable(t) && invokeForm.value.table) input.table = invokeForm.value.table
+      if (needsColumn(t) && invokeForm.value.column) input.column = invokeForm.value.column
+      if (t.code === 'data.analyze.distribution' && invokeForm.value.buckets) input.buckets = invokeForm.value.buckets
+      if (needsLimit(t) && invokeForm.value.limit) input.limit = invokeForm.value.limit
+    } else if (t.code === 'chat.assistant') {
+      if (invokeForm.value.message) input.message = invokeForm.value.message
+      if (invokeForm.value.sessionId) input.sessionId = invokeForm.value.sessionId
+    } else if (t.code === 'sql.query') {
+      if (invokeForm.value.dataSourceId) input.dataSourceId = invokeForm.value.dataSourceId
+      if (invokeForm.value.question) input.question = invokeForm.value.question
+    } else if (t.code === 'code.gen.from-schema') {
+      if (invokeForm.value.dataSourceId) input.dataSourceId = invokeForm.value.dataSourceId
+      if (invokeForm.value.table) input.table = invokeForm.value.table
+      if (invokeForm.value.projectName) input.projectName = invokeForm.value.projectName
+      if (invokeForm.value.basePackage) input.basePackage = invokeForm.value.basePackage
+    }
+    const res = await apiInvokeTool(t.code, input)
     if (res.data && res.data.success) {
       ElMessage.success(`调用成功 (${res.data.durationMs || 0}ms)`)
-      ElMessageBox.alert(JSON.stringify(res.data.data || res.data, null, 2), '结果', { type: 'success' })
+      let body = res.data.data || res.data
+      if (body && body.zipBase64) {
+        try {
+          const bin = atob(body.zipBase64)
+          const bytes = new Uint8Array(bin.length)
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+          const blob = new Blob([bytes], { type: 'application/zip' })
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = (body.projectName || 'project') + '.zip'
+          a.click()
+          URL.revokeObjectURL(url)
+        } catch (e) { /* noop */ }
+      }
+      ElMessageBox.alert(JSON.stringify(body, null, 2), '结果', { type: 'success' })
       invokeVisible.value = false
     } else {
       ElMessage.error('调用失败: ' + (res.data?.message || '未知错误'))
     }
   } catch (e) {
-    ElMessage.error('调用失败: ' + e.message)
+    ElMessage.error('调用失败: ' + (e.message || e))
   } finally {
     invokeLoading.value = false
   }
