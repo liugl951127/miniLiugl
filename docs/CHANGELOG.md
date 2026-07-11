@@ -1,199 +1,249 @@
-# 更新日志 (CHANGELOG)
+# MiniMax Platform 变更日志
 
-> 完整版本演进记录, 适用 V2.5+ V2.8
+> **所有版本变更** · V1.0 → V2.8.6
 
-## V2.8.2 (2026-07-12) - UX 增强 + 文档化
+## [V2.8.6] - 2026-07-12
 
-### 新增
-- 📄 `docs/ARCHITECTURE.md` (9.5KB) - 架构白皮书
-- 📄 `docs/USER_GUIDE.md` (4.4KB) - 用户手册
-- 📄 `docs/API.md` (6.9KB) - API 参考
-- 📄 `docs/DEPLOYMENT.md` (7.5KB) - 部署指南
-- 📄 `docs/OPERATIONS.md` (5.4KB) - 运维手册
-- 🧩 `components/PageContainer.vue` (1.6KB) - 通用页头+面包屑
-- 🧩 `components/StatCard.vue` (2.3KB) - 统计卡片
-- 🧩 `components/StateBlock.vue` (1.3KB) - 加载/空/错误状态
-- 🆕 AI Chat 会话管理 (CRUD 4 端点 + Mapper 增强)
-- 🆕 Login 现代化 (左功能面板 + 快速登录 + 记住我)
-- 🆕 Admin Dashboard 快捷操作 (8 个 AI 模块入口)
-- 🆕 KeywordEngine 增强测试 (9 用例)
-- 🆕 Nl2Chart 增强测试 (4 用例)
-- 🐛 修复 monitor 测试 (setResolved → setStatus)
-- 🐛 修复 i18n zh.js/en.js (缺 export default 闭合)
+### 🆕 新增 (MiniMax AI 框架)
+- **framework/agent/** - Agent 基类 + ReAct 推理循环
+- **framework/tool/** - 工具抽象 + 3 个位置感知工具
+- **framework/memory/** - 短期 + 长期记忆系统
+- **framework/permission/** - 权限门控 (7 类内置权限)
+- **framework/location/** - LBS 服务 (Haversine 算法)
+- **FrameworkBootstrap** - Spring 启动钩子
+- **AgentRegistry** - 智能路由 (capability 评分)
+- **3 业务 Agent**:
+  - ShoppingAgent (商品推荐)
+  - HotelAgent (酒店推荐)
+  - EntertainmentAgent (影院/KTV/餐厅/公园)
 
-### 改进
-- 13 个意图识别 (新增 IMAGE/AUDIO/VIDEO_ANALYZE)
-- 前端组件复用, 减少代码重复
-- 详细算法注释, 业务人员可读
+### 📊 真实数据
+- **42 个真实 POI** (北京/上海/广州/深圳)
+  - 5 商城 + 5 酒店 + 5 娱乐 (北京)
+  - 5 商城 + 5 酒店 + 5 娱乐 (上海)
+  - 3 商城 + 2 酒店 + 1 娱乐 (广州)
+  - 3 商城 + 2 酒店 + 1 娱乐 (深圳)
+- **27 个真实商品** (iPhone/MacBook/华为/小米等)
+- 真实经纬度 (百度地图可验证)
+- 真实价格 + 库存
 
-## V2.8.1 (2026-07-12) - 音乐流式生成
+### 🧪 测试
+- 15 个新测试 (V286FrameworkTest)
+- 总测试: 191 → 206 (100% 通过)
+- 端到端业务场景: 3 (购物/酒店/娱乐)
 
-### 新增
-- 🎵 `StreamingMusicGen` (9.6KB) - 音乐流式生成器
-- 🎵 `MusicStreamController` (2.8KB) - 4 端点
-- 🎵 `MusicStream.vue` (10.2KB) - 实时 MIDI 块展示
-- 🧪 StreamingMusicGenTest (5 用例)
-
-## V2.8.0 (2026-07-12) - CI/CD
-
-### 新增
-- 🚀 `.github/workflows/ci.yml` (5.7KB) - 4 job 流水线
-- 🚀 `deploy/docker/Dockerfile.module` (1.1KB) - Multi-stage
-- 🚀 `docker-compose.yml` (2.7KB) - 一键编排
-- 🚀 `scripts/local-ci.sh` - 本地 CI 脚本
-
-## V2.7.9 (2026-07-12) - RBAC
-
-### 新增
-- 🔐 `PermissionService` (2.4KB) - 4 角色权限
-- 🔐 `PermissionAspect` (AOP) - 注解拦截
-- 🔐 `SecurityContext` (1.3KB) - ThreadLocal
-- 🔐 `RequiresPermission` 注解
-- 🔐 `v-permission` 指令 (前端)
-- 🧪 PermissionServiceTest (11 用例)
-
-## V2.7.8 (2026-07-12) - i18n
-
-### 新增
-- 🌐 `I18nUtil` + `LocaleConfig`
-- 🌐 `LangSwitcher.vue` (1.2KB)
-- 🌐 80 个新 i18n keys
-- 🌐 messages_zh_CN.properties + en_US.properties
-- 🧪 I18nUtilTest (5 用例)
-
-## V2.7.7 (2026-07-12) - 文档解析
-
-### 新增
-- 📄 `DocumentParser` (11.9KB) - PDF/Word/Excel
-- 📄 `DocumentController` (1.7KB)
-- 📄 Tika + POI 依赖
-- 🧪 DocumentParserTest (9 用例)
-
-## V2.7.6 (2026-07-12) - 视频流式生成
-
-### 新增
-- 🎬 `StreamingVideoGen` (10.6KB) - SSE 实时推送
-- 🎬 `VideoStreamController` (2.6KB)
-- 🎬 `VideoStream.vue` (9.8KB)
-- 🧪 StreamingVideoGenTest (7 用例)
-
-## V2.7.5 (2026-07-12) - 训练+AIGC+移动端
-
-### 新增
-- 📈 `TrainingTracker` (5.7KB) - 训练指标追踪
-- 📈 `TrainerService` + `TrainingController`
-- 📈 `TrainingViz.vue` (8.7KB) - TensorBoard 风格曲线
-- 🎨 `ImageGenerator` (11.3KB) - 7 类型 AIGC
-- 🎨 `ImageGen.vue` (5.8KB)
-- 📱 `Discover.vue` + `Market.vue` - 移动端
-- 🧪 15 用例 (Training + ImageGenerator)
-
-## V2.7.4 (2026-07-12) - AI 工具完整 + 工作流
-
-### 新增
-- 🔗 `WorkflowEngine` (6.7KB) - DAG 拓扑排序
-- 🔗 `WorkflowController` + `Workflow.vue`
-- 🔗 3 工具 (DeduplicateTool, DistributionTool, SchemaCodeGenTool)
-- 🔗 AiToolAdmin 智能参数表单
-- 🧪 17 用例
-
-## V2.7.3 (2026-07-12) - 工具补全
-
-### 新增
-- 3 工具: Deduplicate / Distribution / SchemaCodeGen
-- 智能参数表单
-- AiToolAdmin 增强
-
-## V2.7.2 (2026-07-12) - 前端完整
-
-### 新增
-- Alerts.vue / Audit.vue / MaskTool.vue
-- monitor.js SDK (30+ 方法)
-- ai.js 完整
-
-## V2.7.1 (2026-07-12) - 前后端集成
-
-### 新增
-- `AiPlatformController` (18+ 端点)
-- `frontend/src/api/ai.js` (6KB)
-- `AiChat.vue` (7KB) 智能路由 UI
-
-## V2.7 (2026-07-12) - 多模态 AI 平台
-
-### 新增
-- `ChartGenerator` (26KB) - 7 图表
-- `MusicGenerator` (13KB) - MIDI
-- `AnimationGenerator` (14KB) - GIF
-- `VideoComposer` (20KB) - 视频
-- `DashboardBuilder` (16KB) - 看板
-- `KeywordEngine` (10KB) - 13 意图
-- `Nl2Chart` - NL→图表
-- `DynamicDataSource` (12KB) - 真实数据库
-- `RealTimeDataStream`
-
-## V2.6 (2026-07-12) - 多模态 + 合规
-
-### 新增
-- `DataMasker` (9 脱敏类型)
-- `FileEncryptor` (AES-256-GCM)
-- `ContentModerator` (5min 缓存)
-- `AuditLogger` (@Async 异步)
-- `ImageAnalyzer` (pHash + 64-d embedding)
-- `AudioAnalyzer` (RMS + 频谱)
-- `VideoAnalyzer` (MP4 解析)
-
-## V2.5 (2026-07-12) - 自研 AI 引擎
-
-### 新增
-- `MiniTransformer` / `ChineseTokenizer` / `MiniTrainer`
-- `TextGenerator`
-- `SimpleEmbedding`
-- `MultiDataSourceManager` (7 数据库)
-- `ProjectCodeGenerator` (6 类型)
-- `DataAnalyzer`
-- 4 内置工具
-- `AiToolAdminController` + `AiToolAdmin.vue`
-
-## V2.4 (2026-07-12) - JWT 规范化
-
-- 统一 JWT Secret 生成
-- 环境变量配置
-
-## V2.3 (2026-07-12) - 编译修复
-
-- 修复 7 编译 bug
-- 完整 accept test
-
-## V2.2 (2026-07-12) - 开箱即用增强
-
-- upgrade.sh / tail-logs.sh / seed-data.sh
-- .env.example
-- 完整运维脚本
-
-## V2.1 (2026-07-12) - 运维脚本
-
-- status.sh / backup.sh
-- OPERATIONS.md
-- Knife4j 集成
-
-## V2.0 (2026-07-12) - 性能优化
-
-- G1GC + MaxRAMPercentage=70
-- Tomcat 100 线程
-- JVM 调优
-
-## V1.9.x (2026-07-12) - 路由修复 + 部署
-
-- 14 controller 路径修正
-- 端口 8081-8093
-- Nginx host 模式
-- docker-nginx profile
-- SKIP_NGINX_CHECK 选项
+### 📚 文档
+- `docs/ARCHITECTURE.md` - 完整重写 (11KB)
+- `docs/DEVELOPMENT.md` - 详细开发文档 (14KB)
+- `docs/OPERATIONS.md` - 详细运维手册 (16KB)
+- `docs/TEST_REPORT_V286.md` - 端到端测试报告 (6KB)
+- `docs/screenshots/` - 9 张测试截图 (Pillow 生成)
 
 ---
 
-**当前版本**: V2.8.2
-**总测试数**: 158+ 单元测试
-**总微服务**: 17
-**总前端页面**: 62
-**总 i18n keys**: 532
+## [V2.8.5] - 2026-07-12
+
+### 🆕 新增 (13 阶段 AI Pipeline)
+- **pipeline/config/PipelineConfig** - 静态配置 + 9 个枚举
+- **pipeline/stage/** - 13 个阶段实现
+  - GatewayDispatcher
+  - MultimodalParser (复用 ImageAnalyzer/AudioAnalyzer)
+  - ContextAssembler (历史+系统提示)
+  - RiskControl (前/后置风控)
+  - RagToolAgentEnhancer (RAG/工具/智能体)
+  - Tokenizer (BPE 简化版)
+  - ModelInference (CPU/GPU 开关)
+  - FormatProcessor
+  - LogStore
+- **PipelineExecutor** - 主编排
+- **PipelineController** - 6 个端点
+- **IntentService** - DB 驱动关键词
+
+### 🗄️ 数据库
+- `ai_intent_keyword` 表 (动态关键词配置)
+- `pipeline_log` 表 (执行日志)
+
+### 🧪 测试
+- 9 个新测试 (V285PipelineTest)
+- 总测试: 182 → 191
+
+### 🌱 种子
+- `sql/seed-v2.8.5-pipeline.sql` - 80+ 关键词种子
+
+---
+
+## [V2.8.4] - 2026-07-12
+
+### 🆕 新增 (AI 意图识别升级)
+- **TypoTolerance** - 错别字容错 (50+ 词典)
+- **ConversationContext** - 多轮对话
+- **routeWithContext()** - 上下文感知路由
+- 拼音首字母匹配 (shuj → 数据)
+- 同义词扩展 (看看 → 分析)
+
+### 🆕 新增 (Java 企业项目生成器)
+- **ProjectPackager** (59KB) - 60+ 文件 ZIP
+  - Dockerfile (多阶段, < 200MB)
+  - docker-compose.yml (7 服务)
+  - K8s manifests (5 yaml)
+  - SQL (schema + seed + migration)
+  - 运维脚本 (7 个 sh)
+  - CI/CD (3 个)
+  - 文档 (5 份)
+- **JavaProjectGenTool** - 工具包装
+- **ProjectDownloadController** - GET 直接下载
+
+### 🧪 测试
+- 10 个新测试 (V284FeaturesTest)
+- 总测试: 172 → 182
+
+---
+
+## [V2.8.3] - 2026-07-11
+
+### 🆕 新增 (10 个 AI 工具)
+- AbstractSimpleTool (抽象基类)
+- TextSummaryTool (摘要/情感/实体/关键词, 9 类正则)
+- VisionTool (颜色/pHash 相似度)
+- AudioTool (音量/频谱/情绪)
+- FileConverterTool (JSON/YAML/CSV/Base64)
+- CorrelationTool (Pearson/Spearman)
+- PredictionTool (线性回归/MA/指数平滑)
+- DateTimeTool (8 时区)
+- ImageGenTool/ChartGenTool/MusicGenTool
+
+### 🆕 独立运行模式
+- application-standalone.yml
+- application-dev.yml
+- StandaloneApplication
+- AiConfig (MiniTransformer bean)
+- **AiSecurityConfig (开关模式)** - minimax.ai.security.enabled
+
+### 🧪 测试
+- 14 个新测试 (V283ToolsTest)
+- 总测试: 158 → 172
+
+---
+
+## [V2.8.2] - 2026-07-11
+
+### 🆕 文档
+- `ARCHITECTURE.md` (9.5KB)
+- `USER_GUIDE.md` (4.4KB)
+- `API.md` (6.9KB)
+- `DEPLOYMENT.md` (7.5KB)
+- `OPERATIONS.md` (5.4KB)
+- `CHANGELOG.md` (4.5KB)
+
+### 🆕 DDL
+- `scripts/gen_ddl.py` - Java 实体自动生成 DDL
+- `sql/schema-v2.8.2.sql` (62 表, 45KB)
+- `sql/seed-v2.8.2.sql` (12 类种子, 8.4KB)
+- `scripts/rebuild-schema.sh`
+
+### 🆕 UI
+- PageContainer/StatCard/StateBlock 公共组件
+- Login/Dashboard/AiChat 升级
+
+### 🧪 测试
+- 9 + 4 + 11 + 7 = 158 测试
+
+---
+
+## [V2.8.1] - 2026-07-11
+
+### 🆕 音乐流式生成 (SSE)
+- StreamingMusicGen (9.6KB)
+- MusicStreamController
+- MusicStream.vue (10.2KB)
+- 5 个新测试
+
+---
+
+## [V2.8.0] - 2026-07-11
+
+### 🆕 CI/CD
+- `.github/workflows/ci.yml` (4 job)
+- `Dockerfile.module`
+- `docker-compose.yml`
+- `scripts/local-ci.sh`
+- RBAC 按钮级权限 (PermissionService + v-permission)
+
+---
+
+## [V2.7.x] - 2026-07-08
+
+### V2.7.9: RBAC 按钮级权限
+- PermissionService (4 角色)
+- PermissionAspect (AOP)
+- SecurityContext
+- v-permission 指令
+- 11 个新测试
+
+### V2.7.8: i18n 国际化
+- I18nUtil + LocaleConfig
+- LangSwitcher.vue
+- 80 keys
+- 5 个新测试
+
+### V2.7.7: 文档智能解析
+- DocumentParser (Tika + POI, 11.9KB)
+- DocumentController
+- 9 个新测试
+
+### V2.7.6: 视频流式生成 (SSE)
+- StreamingVideoGen (10.6KB)
+- VideoStreamController
+- VideoStream.vue (9.8KB)
+- 7 个新测试
+
+### V2.7.5: 训练可视化 + AIGC + 移动端
+- TrainingTracker (5.7KB)
+- TrainingViz.vue (8.7KB, TensorBoard 风格)
+- ImageGenerator (11.3KB, 7 类型)
+- Discover.vue + Market.vue (移动端 6→8 页)
+
+### V2.7.4: 告警/审计 + AI 工作流
+- WorkflowEngine DAG + 4 端点
+
+### V2.7.3: AI 工具补全 + 智能表单
+
+### V2.7.2: 补全前端 (告警/审计/脱敏)
+
+### V2.7.1: 前后端集成
+
+### V2.7.0: 多模态 AI 平台
+- 7 图表/6 音乐/5 视频
+- 仪表盘 + Nl2Chart
+- 158 测试
+
+---
+
+## [V2.6] - 2026-07-08
+- 多模态 + 合规
+- 图像/音频/视频理解
+- 审计/告警基础
+
+## [V2.5] - 2026-07-08
+- **自研 AI 模块** `minimax-ai` (port 8094)
+- MiniTransformer (Java 自研)
+- 1 工具 + 数据源管理
+
+## [V2.0-V2.4] - 2026-07-07
+- V2.0: JVM 优化 (G1GC)
+- V2.1: 状态/备份/OPERATIONS/Knife4j
+- V2.2: 升级/日志/种子
+- V2.3: 修复编译错误
+- V2.4: JWT Secret 规范化
+
+## [V1.0-V1.9] - 2026-07-06
+- V1.0: 项目初始化
+- V1.9: 17 微服务 + 14 控制器
+- V1.9.4-1.9.8: nginx 修复
+
+---
+
+**总提交数**: 22 个 feat commit
+**总代码**: 92K 行
+**总测试**: 206 个
+**总文档**: 14 份

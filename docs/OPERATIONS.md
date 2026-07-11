@@ -1,321 +1,836 @@
-# MiniMax Platform 运维手册 (V2.8.2)
+# MiniMax Platform 运维操作手册 (V2.8.6)
 
-> 日常运维 / 故障处理 / 性能调优
+> **完整运维指南** · 部署 / 监控 / 备份 / 扩容 / 故障排查 / 性能调优
 
-## 1. 日常巡检
+## 一、部署架构总览
 
-### 1.1 健康检查脚本
+### 1.1 部署模式
 
-`/opt/minimax/scripts/health-check.sh`:
+| 模式 | 适用 | 复杂度 | 高可用 |
+|------|------|--------|--------|
+| **单机 Docker Compose** | 开发/测试/小规模 | ⭐ | ❌ |
+| **多机 Docker Compose** | 中小企业生产 | ⭐⭐ | ⚠️ 手动 |
+| **K8s 单集群** | 中大型企业 | ⭐⭐⭐ | ✅ 自动 |
+| **K8s 多集群** | 跨国大型企业 | ⭐⭐⭐⭐ | ✅ 自动 + 灾备 |
+
+### 1.2 推荐配置
+
+| 规模 | 用户数 | QPS | 服务器 | 配置 |
+|------|--------|-----|--------|------|
+| 小 | < 100 | < 50 | 1 台 | 8C16G 500G |
+| 中 | < 1000 | < 500 | 3 台 | 8C16G 500G × 3 |
+| 大 | < 10000 | < 5000 | 10+ 台 | 16C32G 1T × 10 |
+| 超大 | > 10000 | > 5000 | 50+ 台 | 32C64G 2T × 50 |
+
+## 二、单机部署 (1 台主机)
+
+### 2.1 硬件要求
+
+| 资源 | 最小 | 推荐 |
+|------|------|------|
+| CPU | 4 核 | 8 核 (含 AI 推理) |
+| 内存 | 8 GB | 16 GB |
+| 磁盘 | 100 GB SSD | 500 GB SSD |
+| 网络 | 100 Mbps | 1 Gbps |
+| 操作系统 | CentOS Stream 9 / Ubuntu 20+ | CentOS 9 |
+
+### 2.2 安装 Docker
+
+**CentOS 9**:
 ```bash
-#!/bin/bash
-echo "=== 服务健康 ==="
-for svc in gateway auth chat ai monitor admin; do
-  status=$(docker inspect --format='{{.State.Health.Status}}' minimax-$svc 2>/dev/null)
-  echo "  $svc: $status"
-done
+# 1. 卸载旧版
+sudo dnf remove -y docker docker-client docker-client-latest \
+    docker-common docker-latest docker-engine
 
-echo "=== 资源使用 ==="
-docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}"
+# 2. 安装 yum-utils
+sudo dnf install -y yum-utils
 
-echo "=== 磁盘 ==="
-df -h /opt/minimax
+# 3. 添加 repo
+sudo yum-config-manager --add-repo \
+    https://download.docker.com/linux/centos/docker-ce.repo
 
-echo "=== 数据库连接数 ==="
-docker exec minimax-mariadb mariadb -uroot -proot123456 -e "SHOW STATUS LIKE 'Threads_connected'"
+# 4. 安装
+sudo dnf install -y docker-ce docker-ce-cli containerd.io \
+    docker-buildx-plugin docker-compose-plugin
 
-echo "=== Redis 内存 ==="
-docker exec minimax-redis redis-cli -a minimax_redis_2024 --no-auth-warning INFO memory | grep used_memory_human
+# 5. 启动
+sudo systemctl enable --now docker
+sudo systemctl status docker
+
+# 6. 验证
+docker --version
+docker compose version
 ```
 
-### 1.2 关键指标
+### 2.3 一键部署
 
-| 指标 | 阈值 | 监控方式 |
-|------|------|---------|
-| CPU 使用率 | < 70% | docker stats |
-| 内存使用率 | < 80% | docker stats |
-| 磁盘使用率 | < 80% | df -h |
-| DB 连接数 | < 400 (max 500) | SHOW STATUS |
-| API P99 延迟 | < 1s | Prometheus |
-| 错误率 | < 1% | 审计日志 |
-
-## 2. 日志管理
-
-### 2.1 日志位置
-
-容器日志: `docker logs <container>`
-应用日志: `/opt/minimax/data/<service>/logs/`
-Nginx 访问日志: `/var/log/nginx/access.log`
-Nginx 错误日志: `/var/log/nginx/error.log`
-
-### 2.2 日志轮转
-
-`/etc/logrotate.d/minimax`:
-```
-/opt/minimax/data/*/logs/*.log {
-    daily
-    rotate 7
-    compress
-    delaycompress
-    missingok
-    notifempty
-    create 0644 root root
-    postrotate
-        docker kill --signal=HUP minimax-gateway
-    endscript
-}
-```
-
-### 2.3 关键日志模式
-
+**下载代码**:
 ```bash
-# 错误日志
-docker logs minimax-gateway 2>&1 | grep -E "ERROR|Exception" | tail -50
-
-# 慢请求 (>1s)
-docker logs minimax-gateway 2>&1 | grep "cost=[0-9]{4,}ms"
-
-# SSE 连接
-docker logs minimax-ai 2>&1 | grep "SSE"
-
-# JWT 验证失败
-docker logs minimax-auth 2>&1 | grep "JWT"
+cd /opt
+sudo git clone https://github.com/liugl951127/miniLiugl.git
+cd miniLiugl
 ```
 
-## 3. 备份策略
-
-### 3.1 备份周期
-- 每日凌晨 2:00 全量备份
-- 每 6 小时增量备份
-- 30 天滚动保留
-
-### 3.2 备份验证
+**配置环境变量**:
 ```bash
-# 模拟恢复
-docker run --rm -v /tmp/test:/backup alpine \
-  sh -c "cd /backup && tar tzf latest.tar.gz > /dev/null && echo OK"
+# 生成 JWT 密钥
+JWT_SECRET=$(openssl rand -hex 32)
+echo "JWT_SECRET=$JWT_SECRET" > .env
+
+# 数据库密码
+echo "MYSQL_ROOT_PASSWORD=root123456" >> .env
+echo "REDIS_PASSWORD=minimax_redis_2024" >> .env
+
+# 域名
+echo "DOMAIN=liugeliang.com" >> .env
 ```
 
-## 4. 监控告警
-
-### 4.1 告警接收
-- 钉钉机器人: `${DINGTALK_WEBHOOK}`
-- 邮件: `ops@minimax.com`
-- 企业微信: `${WECHAT_WEBHOOK}`
-
-### 4.2 告警级别
-
-| 级别 | 触发条件 | 通知方式 |
-|------|---------|---------|
-| Critical | 服务不可用 | 钉钉 + 短信 + 邮件 |
-| Warning | 指标超阈值 | 钉钉 + 邮件 |
-| Info | 重大变更 | 邮件 |
-
-### 4.3 告警抑制
-- 同类告警 5min 内不重复
-- 维护窗口自动抑制
-
-## 5. 故障应急 Runbook
-
-### 5.1 服务宕机
+**启动所有服务**:
 ```bash
-# 1. 看状态
+# 启动 (首次会下载镜像, 约 5-10 分钟)
+docker compose up -d
+
+# 查看状态
 docker compose ps
 
-# 2. 看日志
-docker logs --tail=100 minimax-<service>
+# 查看日志
+docker compose logs -f minimax-ai
+```
 
-# 3. 重启
-docker compose restart minimax-<service>
+**访问**:
+```
+http://your-ip
+默认账户: adminLiugl / Liugl@2026
+```
+
+### 2.4 HTTPS 配置 (Let's Encrypt)
+
+```bash
+# 1. 安装 certbot
+sudo dnf install -y certbot
+
+# 2. 申请证书
+sudo certbot certonly --standalone -d liugeliang.com -d www.liugeliang.com
+
+# 3. 复制到 nginx 目录
+sudo cp /etc/letsencrypt/live/liugeliang.com/fullchain.pem /opt/miniLiugl/certs/
+sudo cp /etc/letsencrypt/live/liugeliang.com/privkey.pem /opt/miniLiugl/certs/
+
+# 4. 自动续期 (cron)
+echo "0 3 * * * certbot renew --quiet && cp /etc/letsencrypt/live/liugeliang.com/*.pem /opt/miniLiugl/certs/ && docker compose restart nginx" | sudo crontab -
+```
+
+## 三、K8s 生产部署
+
+### 3.1 前置条件
+
+- K8s 1.27+ 集群 (3 master + 3 worker)
+- Helm 3+
+- Ingress-Nginx 已安装
+- cert-manager 已安装 (HTTPS)
+- Prometheus Operator (可选)
+
+### 3.2 部署步骤
+
+**1. 创建命名空间**:
+```bash
+kubectl create namespace minimax
+```
+
+**2. 配置 Secret**:
+```bash
+# JWT 密钥
+kubectl create secret generic minimax-secret \
+  --from-literal=jwt-secret=$(openssl rand -hex 32) \
+  --from-literal=mysql-password=root123456 \
+  --from-literal=redis-password=minimax_redis_2024 \
+  -n minimax
+```
+
+**3. 部署 MySQL + Redis** (使用 Operator):
+```bash
+helm install mysql bitnami/mysql -n minimax \
+  --set auth.rootPassword=root123456 \
+  --set primary.persistence.size=100Gi
+
+helm install redis bitnami/redis -n minimax \
+  --set auth.password=minimax_redis_2024 \
+  --set master.persistence.size=50Gi
+```
+
+**4. 部署应用**:
+```bash
+kubectl apply -f k8s/ -n minimax
+
+# 17 个微服务
+for svc in gateway auth chat memory model rag function multimodal \
+           agent monitor admin prompt analytics pipeline ai ws; do
+    kubectl apply -f k8s/$svc/ -n minimax
+done
+```
+
+**5. 配置 Ingress**:
+```bash
+kubectl apply -f k8s/ingress.yaml -n minimax
+```
+
+**6. 验证**:
+```bash
+kubectl get pods -n minimax
+kubectl get svc -n minimax
+kubectl get ingress -n minimax
+```
+
+### 3.3 自动扩缩容 (HPA)
+
+```yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: minimax-chat-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: minimax-chat
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+```
+
+```bash
+kubectl apply -f hpa.yaml -n minimax
+```
+
+## 四、监控告警
+
+### 4.1 Prometheus 指标
+
+**已集成** (Spring Boot Actuator + Micrometer):
+- `jvm_memory_used_bytes` - JVM 堆内存
+- `jvm_gc_pause_seconds` - GC 暂停
+- `http_server_requests_seconds_count` - HTTP 请求数
+- `http_server_requests_seconds_sum` - 总耗时
+- `hikaricp_connections_active` - DB 连接池
+- `tomcat_threads_busy` - Tomcat 线程
+- 自定义业务指标: AI 调用次数 / Token 数 / 风控拦截数
+
+**抓取配置** (`ops/prometheus.yml`):
+```yaml
+scrape_configs:
+  - job_name: 'minimax-ai'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['minimax-ai:8094']
+```
+
+### 4.2 告警规则 (Prometheus Alertmanager)
+
+**位置**: `ops/alerts.yml`
+
+```yaml
+groups:
+- name: minimax-alerts
+  rules:
+  - alert: HighErrorRate
+    expr: |
+      sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m]))
+      / sum(rate(http_server_requests_seconds_count[5m])) > 0.05
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "高错误率 ({{ $value | humanizePercentage }})"
+  
+  - alert: HighMemory
+    expr: jvm_memory_used_bytes{area="heap"} > 1.5e9
+    for: 5m
+    labels:
+      severity: warning
+  
+  - alert: HighLatency
+    expr: |
+      histogram_quantile(0.99,
+        rate(http_server_requests_seconds_bucket[5m])
+      ) > 1
+    for: 5m
+    labels:
+      severity: warning
+  
+  - alert: ServiceDown
+    expr: up{job=~"minimax-.*"} == 0
+    for: 1m
+    labels:
+      severity: critical
+```
+
+### 4.3 Grafana 仪表盘
+
+**导入**: `ops/grafana/dashboard.json`
+
+**4 个核心仪表盘**:
+1. **总览**: CPU/内存/磁盘/QPS/错误率
+2. **JVM**: 堆/GC/线程/类加载
+3. **HTTP**: 状态码/P99/Top 10 慢请求
+4. **业务**: AI 调用/Token/风控/订单
+
+**告警渠道**:
+```yaml
+# alertmanager.yml
+receivers:
+- name: ops-team
+  email_configs:
+  - to: ops@liugeliang.com
+    send_resolved: true
+  webhook_configs:
+  - url: 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx'
+    send_resolved: true
+```
+
+### 4.4 链路追踪 (OpenTelemetry)
+
+**配置** (`application.yml`):
+```yaml
+management:
+  tracing:
+    sampling:
+      probability: 0.1  # 采样 10%
+  otlp:
+    tracing:
+      endpoint: http://otel-collector:4318/v1/traces
+```
+
+**Tempo 查询**:
+```
+{service.name="minimax-ai"} && trace_id="abc123"
+```
+
+**前端 traceId 透传**:
+```js
+config.headers['X-Trace-Id'] = 'fe-' + Date.now().toString(36)
+```
+
+## 五、备份与恢复
+
+### 5.1 自动备份脚本
+
+**MySQL 全量备份** (`scripts/backup.sh`):
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+BACKUP_ROOT="/var/backups/minimax"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BACKUP_DIR="${BACKUP_ROOT}/daily/${TIMESTAMP}"
+MYSQL_HOST=${MYSQL_HOST:-127.0.0.1}
+MYSQL_USER=${MYSQL_USER:-root}
+MYSQL_PASS=${MYSQL_PASS:-root123456}
+DB_NAME=${DB_NAME:-minimax_platform}
+
+mkdir -p "${BACKUP_DIR}"
+
+# 1. MySQL 全量备份
+mysqldump -h "${MYSQL_HOST}" -P 3306 \
+          -u "${MYSQL_USER}" -p"${MYSQL_PASS}" \
+          --single-transaction --routines --triggers --events \
+          "${DB_NAME}" | gzip > "${BACKUP_DIR}/${DB_NAME}.sql.gz"
+
+# 2. Redis 备份 (RDB)
+redis-cli -h ${REDIS_HOST:-127.0.0.1} -a "${REDIS_PASS}" BGSAVE
+cp /var/lib/redis/dump.rdb "${BACKUP_DIR}/redis.rdb"
+
+# 3. 上传到 MinIO/S3
+mc cp "${BACKUP_DIR}/${DB_NAME}.sql.gz" minio/backups/$(date +%Y/%m/%d)/
+
+# 4. 清理 30 天前的备份
+find "${BACKUP_ROOT}" -mindepth 2 -maxdepth 2 -type d \
+    -mtime +30 -exec rm -rf {} \;
+
+echo "[backup] OK, size=$(du -h ${BACKUP_DIR} | tail -1)"
+```
+
+**定时任务** (crontab):
+```bash
+# 每天凌晨 2 点备份
+echo "0 2 * * * /opt/miniLiugl/scripts/backup.sh" | sudo crontab -
+```
+
+### 5.2 恢复
+
+**MySQL 恢复** (`scripts/restore.sh`):
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+BACKUP_FILE=${1:?"usage: restore.sh <backup-file.sql.gz>"}
+gunzip -c "${BACKUP_FILE}" | mysql -h ${MYSQL_HOST} \
+                                   -u ${MYSQL_USER} -p"${MYSQL_PASS}" \
+                                   ${DB_NAME}
+echo "[restore] done"
+```
+
+**使用**:
+```bash
+# 1. 停止应用
+docker compose stop minimax-gateway minimax-chat
+
+# 2. 恢复数据库
+./scripts/restore.sh /var/backups/minimax/daily/20260712_020000/minimax_platform.sql.gz
+
+# 3. 启动应用
+docker compose start minimax-gateway minimax-chat
+```
+
+### 5.3 Redis 备份
+
+Redis 持久化 (RDB + AOF):
+```bash
+# 配置 (/etc/redis/redis.conf)
+save 900 1
+save 300 10
+save 60 10000
+appendonly yes
+```
+
+恢复: 启动 Redis 自动加载 `dump.rdb`
+
+### 5.4 灾备演练
+
+**每季度 1 次**:
+1. 模拟数据库故障
+2. 切换到从库
+3. 验证应用可用
+4. 回切
+5. 记录 RTO / RPO
+
+## 六、扩容
+
+### 6.1 垂直扩容 (Scale Up)
+
+**步骤**:
+1. 停服: `docker compose stop`
+2. 调整资源: 修改 `docker-compose.yml` 的 `mem_limit` / `cpus`
+3. 启动: `docker compose up -d`
+4. 验证: `docker stats`
+
+**示例** (minimax-ai 从 2G 升到 4G):
+```yaml
+minimax-ai:
+  mem_limit: 4g
+  cpus: '4'
+  environment:
+    JAVA_OPTS: "-Xmx3g -XX:MaxRAMPercentage=70"
+```
+
+### 6.2 水平扩容 (Scale Out)
+
+**Docker Compose** (多机):
+```bash
+# 在第 2 台机器上
+DOCKER_HOST=tcp://node1:2376 docker compose up -d minimax-ai
+
+# Nginx upstream 自动加入
+```
+
+**K8s**:
+```bash
+# 扩容到 5 副本
+kubectl scale deployment minimax-chat --replicas=5 -n minimax
+
+# 自动扩缩容 (HPA)
+kubectl autoscale deployment minimax-chat \
+    --min=2 --max=10 --cpu-percent=70 -n minimax
+```
+
+### 6.3 数据库扩容
+
+**MySQL 主从**:
+```bash
+# 1. 主库配置 (my.cnf)
+[mysqld]
+server-id=1
+log-bin=mysql-bin
+binlog-format=ROW
+
+# 2. 从库配置
+[mysqld]
+server-id=2
+relay-log=mysql-relay-bin
+read-only=1
+
+# 3. 从库同步
+CHANGE MASTER TO
+  MASTER_HOST='master.minimax.local',
+  MASTER_USER='repl',
+  MASTER_PASSWORD='replpass',
+  MASTER_LOG_FILE='mysql-bin.000001',
+  MASTER_LOG_POS=4;
+START SLAVE;
+```
+
+**Redis Cluster** (6 节点):
+```bash
+redis-cli --cluster create \
+  10.0.1.1:6379 10.0.1.2:6379 10.0.1.3:6379 \
+  10.0.2.1:6379 10.0.2.2:6379 10.0.2.3:6379 \
+  --cluster-replicas 1
+```
+
+## 七、故障排查
+
+### 7.1 常见故障
+
+#### 故障 1: 服务无法启动
+
+**症状**: `docker compose up -d` 后 `minimax-ai` 一直 Restarting
+
+**排查**:
+```bash
+# 1. 查看日志
+docker compose logs minimax-ai
+
+# 2. 常见原因
+# - 数据库连不上: 检查 DB_HOST, ping $DB_HOST
+# - 端口被占用: netstat -lntp | grep 8094
+# - 内存不足: docker stats
+# - 配置错误: 检查 application.yml
+```
+
+**解决**:
+```bash
+# 内存不足 → 调整 limit
+vim docker-compose.yml  # mem_limit: 2g
+docker compose up -d minimax-ai
+
+# 端口占用 → 杀掉旧进程
+lsof -ti:8094 | xargs kill -9
+```
+
+#### 故障 2: API 响应 502
+
+**症状**: 前端调接口返回 502 Bad Gateway
+
+**排查**:
+```bash
+# 1. Gateway 日志
+docker compose logs minimax-gateway
+
+# 2. 后端服务状态
+docker compose ps
+
+# 3. 服务是否健康
+curl http://localhost:8081/actuator/health
+```
+
+**解决**:
+```bash
+# 重启后端
+docker compose restart minimax-auth
+
+# 检查 Nacos 服务列表
+curl http://localhost:8848/nacos/v1/ns/instance/list?serviceName=minimax-auth
+```
+
+#### 故障 3: 登录慢 / 失败
+
+**症状**: 登录接口 5 秒超时
+
+**排查**:
+```bash
+# 1. 检查 Auth 服务
+docker compose logs minimax-auth | tail -100
+
+# 2. 检查数据库
+docker exec minimax-mysql mysqladmin ping
+
+# 3. 检查慢 SQL
+docker exec minimax-mysql mysql -uroot -proot123456 -e "
+  SELECT * FROM information_schema.PROCESSLIST
+  WHERE COMMAND='Query' AND TIME > 5;
+"
+```
+
+**解决**:
+```sql
+-- 杀掉慢查询
+KILL <id>;
+
+-- 加索引
+CREATE INDEX idx_username ON user(username);
+```
+
+#### 故障 4: AI 响应慢
+
+**症状**: chat 接口 P99 > 5s
+
+**排查**:
+```bash
+# 1. AI 服务日志
+docker compose logs minimax-ai | grep "cost"
+
+# 2. 模型是否加载
+curl http://localhost:8094/api/ai/info
+
+# 3. GPU 状态
+nvidia-smi
+```
+
+**优化**:
+```java
+// 1. 启用 KV cache
+PipelineConfig.ENABLE_KV_CACHE = true;
+
+// 2. 减少生成 token
+PipelineConfig.MAX_GENERATE_TOKENS = 100;
+
+// 3. 批处理
+PipelineConfig.BATCH_SIZE = 4;
+```
+
+#### 故障 5: 数据库连接耗尽
+
+**症状**: `HikariPool-1 - Connection is not available`
+
+**排查**:
+```bash
+docker exec minimax-mysql mysql -uroot -proot123456 -e "SHOW PROCESSLIST;" | wc -l
+```
+
+**解决**:
+```yaml
+# application.yml
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+```
+
+### 7.2 应急响应 SOP
+
+#### 服务整体宕机
+
+**5 分钟内恢复**:
+```bash
+# 1. 确认故障
+curl http://localhost:7080/actuator/health
+
+# 2. 重启所有
+docker compose restart
+
+# 3. 等待 30s
+sleep 30
 
 # 4. 验证
-curl http://localhost:7080/actuator/health
+for svc in gateway auth chat memory model rag function multimodal \
+           agent monitor admin prompt analytics pipeline ai ws; do
+    curl -fsS http://localhost:8080/actuator/health/$svc 2>&1 | head -1
+done
+
+# 5. 通知用户
 ```
 
-### 5.2 数据库故障
+#### 数据损坏
+
+**30 分钟内恢复**:
 ```bash
-# 1. 检查主从
-docker exec minimax-mariadb mariadb -uroot -proot123456 -e "SHOW SLAVE STATUS"
+# 1. 停止应用
+docker compose stop minimax-gateway minimax-chat minimax-ai
 
-# 2. 提升从库为主
-docker exec minimax-mariadb mariadb -uroot -proot123456 -e "STOP SLAVE; RESET MASTER"
+# 2. 恢复最新备份
+ls -t /var/backups/minimax/daily/*/minimax_platform.sql.gz | head -1 | xargs \
+  ./scripts/restore.sh
 
-# 3. 更新应用配置 (Nacos)
-# 修改 DB_HOST
+# 3. 重启应用
+docker compose start minimax-gateway minimax-chat minimax-ai
+
+# 4. 验证数据
+docker exec minimax-mysql mysql -uroot -proot123456 -e "
+  SELECT COUNT(*) FROM chat_message;
+  SELECT COUNT(*) FROM ai_tool;
+"
+
+# 5. 通知用户
 ```
 
-### 5.3 Redis 故障
+#### 安全事件
+
+**立即响应**:
 ```bash
-# 1. 重启
-docker compose restart minimax-redis
+# 1. 隔离
+docker network disconnect minimax-net minimax-ai
 
-# 2. 如果数据丢失, 重新加载
-docker exec minimax-redis redis-cli -a minimax_redis_2024 FLUSHDB
+# 2. 收集证据
+docker logs minimax-ai > /tmp/ai-logs.txt
+tar czf /tmp/evidence.tgz /opt/miniLiugl/logs/ /var/log/
+
+# 3. 改密钥
+NEW_JWT=$(openssl rand -hex 32)
+kubectl create secret generic minimax-secret \
+    --from-literal=jwt-secret=$NEW_JWT --dry-run=client -o yaml | kubectl apply -f -
+docker compose restart
+
+# 4. 报告
 ```
 
-### 5.4 磁盘满
+## 八、性能调优
+
+### 8.1 JVM 调优
+
+**默认配置** (V2.0):
+```
+-Xms512m
+-Xmx2g
+-XX:+UseG1GC
+-XX:MaxRAMPercentage=70.0
+-XX:+UseStringDeduplication
+-XX:MaxGCPauseMillis=200
+```
+
+**调优命令**:
 ```bash
-# 1. 清理日志
-docker system prune -a --volumes
-journalctl --vacuum-time=2d
+# 查看当前 GC
+docker exec minimax-ai jstat -gc <pid>
 
-# 2. 清理备份
-find /opt/minimax/backups -mtime +7 -delete
+# 查看堆转储
+docker exec minimax-ai jmap -dump:live,format=b,file=/tmp/heap.hprof <pid>
+docker cp minimax-ai:/tmp/heap.hprof ./
 
-# 3. 扩容
-df -h /opt/minimax
+# MAT 分析: https://www.eclipse.org/mat/
 ```
 
-### 5.5 Nacos 故障
-```bash
-# 1. 重启
-docker compose restart minimax-nacos
+### 8.2 数据库调优
 
-# 2. 备份配置
-docker exec minimax-nacos bash -c "cd /home/nacos/conf && tar czf /tmp/conf.tar.gz ."
-
-# 3. 恢复
-docker cp /tmp/conf.tar.gz minimax-nacos:/home/nacos/conf/
+**MySQL 关键参数**:
+```ini
+# /etc/my.cnf
+[mysqld]
+innodb_buffer_pool_size = 4G
+innodb_log_file_size = 1G
+max_connections = 500
+query_cache_type = 0
+slow_query_log = 1
+long_query_time = 1
 ```
 
-## 6. 容量规划
-
-### 6.1 用户数与资源
-| 用户数 | CPU | 内存 | 存储 |
-|--------|-----|------|------|
-| 100 | 4 核 | 8 GB | 50 GB |
-| 1000 | 8 核 | 16 GB | 200 GB |
-| 10000 | 16 核 | 32 GB | 1 TB |
-| 100000 | 64 核 | 128 GB | 10 TB |
-
-### 6.2 数据库容量
-- 用户表: 每用户 1KB, 100万用户 ≈ 1GB
-- 聊天记录: 每条 5KB, 日均 100条/用户, 100万用户 ≈ 500GB/年
-- 审计日志: 每条 2KB, 6个月 ≈ 100GB
-
-## 7. 升级流程
-
-### 7.1 应用升级
-1. 备份 (4.2)
-2. 拉新代码: `git pull`
-3. 编译: `mvn package -DskipTests`
-4. 滚动重启 (从 gateway 开始)
-5. 验证: `/actuator/health`
-6. 监控 30min
-
-### 7.2 数据库迁移
-1. 备份当前库
-2. 写迁移脚本 (V*.sql)
-3. 在测试环境演练
-4. 生产库执行: `mariadb < V*.sql`
-5. 验证表结构: `DESCRIBE table_name`
-
-### 7.3 重大变更
-- 提前 24h 通知所有用户
-- 选择低峰期 (凌晨 2-6 点)
-- 准备回滚方案
-- 运维在场
-
-## 8. 安全运维
-
-### 8.1 定期审计
-- 每周: 查看异常登录, 异常 IP
-- 每月: 审计日志分析, 权限复查
-- 每季: 密码轮换, 漏洞扫描
-
-### 8.2 漏洞响应
-1. 收到漏洞报告 → 评估严重性
-2. Critical (24h) / High (7d) / Medium (30d)
-3. 修复 → 测试 → 生产部署
-4. 用户告知 (如数据泄露)
-
-### 8.3 密钥轮换
-- JWT Secret: 每年
-- 数据库密码: 每季
-- 钉钉 Webhook: 每年
-- TLS 证书: 90天 (Let's Encrypt 自动)
-
-## 9. 应急预案
-
-### 9.1 通讯录
-- 技术负责人: <name> <phone>
-- DBA: <name> <phone>
-- 运维: <name> <phone>
-- 客服: <name> <phone>
-- 7x24 紧急: <hotline>
-
-### 9.2 升级路径
-P0 (Critical): 5min 决策, 30min 修复
-P1 (High): 1h 决策, 4h 修复
-P2 (Medium): 4h 决策, 24h 修复
-P3 (Low): 24h 决策, 7d 修复
-
-### 9.3 沟通模板
-```
-【MiniMax P0 事故】 2026-07-12 04:30
-
-现象: xxx
-影响: 100% 用户无法登录
-当前: 已止血 (gateway 重启), 根因排查中
-负责人: @张三 @李四
-预计恢复: 30min
-下次更新: 5min 后
-```
-
-## 10. 性能调优
-
-### 10.1 慢 SQL
+**SQL 优化**:
 ```sql
--- 开启慢日志
-SET GLOBAL slow_query_log = 'ON';
-SET GLOBAL long_query_time = 1;
+-- 1. 加索引
+CREATE INDEX idx_session ON chat_message(session_id, created_at);
 
--- 查慢 SQL
-SELECT * FROM mysql.slow_log ORDER BY start_time DESC LIMIT 20;
+-- 2. 分析执行计划
+EXPLAIN SELECT * FROM chat_message WHERE session_id = 'xxx' ORDER BY created_at DESC LIMIT 20;
+
+-- 3. 慢查询统计
+SELECT * FROM mysql.slow_log ORDER BY start_time DESC LIMIT 10;
 ```
 
-### 10.2 热点接口
-```bash
-# Nginx access 日志分析
-awk '{print $7}' /var/log/nginx/access.log | sort | uniq -c | sort -rn | head -20
-```
-
-### 10.3 JVM 调优
-```bash
-# 远程调试
-docker exec minimax-gateway jcmd 1 VM.flags
-
-# 堆转储
-docker exec minimax-gateway jcmd 1 GC.heap_dump /tmp/heap.hprof
-docker cp minimax-gateway:/tmp/heap.hprof .
-```
-
-## 11. 常用命令
+### 8.3 Redis 调优
 
 ```bash
-# 查看所有容器
-docker ps -a
+# 内存优化
+maxmemory 4gb
+maxmemory-policy allkeys-lru
 
-# 资源使用
-docker stats
-
-# 实时日志
-docker compose logs -f
-
-# 进入容器
-docker exec -it minimax-gateway sh
-
-# 镜像列表
-docker images | grep minimax
-
-# 删除悬空镜像
-docker image prune
-
-# 磁盘占用
-docker system df
+# 持久化
+save 900 1
+save 300 10
+appendonly yes
+appendfsync everysec
 ```
+
+### 8.4 Tomcat 调优
+
+```yaml
+server:
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 50
+    accept-count: 100
+    max-connections: 10000
+```
+
+### 8.5 AI 模型调优
+
+**CPU 模式**:
+```java
+PipelineConfig.BATCH_SIZE = 4;
+PipelineConfig.ENABLE_KV_CACHE = true;
+```
+
+**GPU 模式** (需 NVIDIA 驱动):
+```bash
+# 1. 安装驱动
+sudo dnf install -y nvidia-driver nvidia-container-toolkit
+
+# 2. 重启 Docker
+sudo systemctl restart docker
+
+# 3. 验证
+docker run --gpus all nvidia/cuda:11.8.0-base nvidia-smi
+
+# 4. 启用
+curl -X POST http://ai:8094/api/ai/pipeline/config/compute-mode?mode=GPU
+```
+
+## 九、运维工具脚本
+
+| 脚本 | 用途 |
+|------|------|
+| `scripts/status.sh` | 查看所有服务状态 |
+| `scripts/start.sh` | 启动服务 |
+| `scripts/stop.sh` | 停止服务 |
+| `scripts/backup.sh` | 备份 |
+| `scripts/restore.sh` | 恢复 |
+| `scripts/deploy.sh` | 部署 |
+| `scripts/upgrade.sh` | 升级 |
+| `scripts/tail-logs.sh` | 实时日志 |
+| `scripts/seed-data.sh` | 初始化种子 |
+| `scripts/local-ci.sh` | 本地 CI |
+| `scripts/test-e2e.sh` | 端到端测试 |
+| `scripts/gen-test-screenshots.py` | 生成测试截图 |
+| `scripts/gen_ddl.py` | DDL 自动生成 |
+
+## 十、SLA 承诺
+
+| 指标 | 目标 |
+|------|------|
+| 可用性 | 99.9% (年宕机 < 8.76h) |
+| P99 延迟 | < 1s (API), < 3s (AI Pipeline) |
+| 数据持久性 | 99.999% (RPO < 1min) |
+| 故障恢复 RTO | < 30min |
+| 备份保留 | 30 天 |
+| 升级窗口 | < 10min (滚动升级) |
+
+## 十一、联系与升级
+
+- **GitHub**: https://github.com/liugl951127/miniLiugl
+- **Issues**: 提 issue
+- **邮件**: ops@liugeliang.com
+- **微信群**: 扫码加入
+
+**版本升级检查清单**:
+- [ ] 备份数据
+- [ ] 查看 CHANGELOG.md
+- [ ] 在测试环境验证
+- [ ] 滚动升级 (先 1 副本)
+- [ ] 监控 30 分钟
+- [ ] 全部升级
 
 ---
 
-**版本**: V2.8.2
-**最后更新**: 2026-07-12
+**最后更新**: 2026-07-12 (V2.8.6)
