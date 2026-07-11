@@ -1,6 +1,59 @@
 # MiniMax Platform 变更日志
 
-> **所有版本变更** · V1.0 → V2.8.6
+> **所有版本变更** · V1.0 → V2.8.7
+
+## [V2.8.7] - 2026-07-12
+
+### 🆕 实时协作 (核心)
+- **CollabRoom / CollabParticipant / CollabMessage** 3 实体 + 3 表 (DDL: `sql/ddl-v2.8.7-collab.sql`)
+- **CollabService** - 房间生命周期 / 参与者 / 消息持久化
+- **CollabWebSocketHandler** - 实时 WebSocket 处理器
+  - 端点: `/ws/collab?roomId=XXX&userId=N&username=...`
+  - 消息: chat / cursor / edit / ai / heartbeat / leave
+  - 广播: 房间内 (排除自己可选)
+  - 限制: 单消息 2000 字, 50 字符
+- **CollabController** - REST API
+  - POST /rooms / GET /rooms/{id} / GET /rooms/public / DELETE /rooms/{id}
+  - GET /rooms/{id}/participants / GET /rooms/{id}/messages
+- **前端**: 重写 `Index.vue` (21KB)
+  - 公开房间列表 + 创建房间表单
+  - 实时在线参与者面板 (头像+状态点+光标位置)
+  - 实时光标地图 (彩色光标 + 名称标签)
+  - 聊天 / AI 协作 / 流式输出
+  - WebSocket 自动重连 / 心跳 (30s)
+- **18 个测试** (V287TensorBoardTest 7 + V287CollabTest 11)
+
+### 🆕 TensorBoard 协议集成
+- **TfEventWriter** - 手写 events.tfevents 二进制格式
+  - 魔数 0xA55A0001 + 32 字节头 + 变长记录 + CRC32
+  - 支持 ScalarEvent (loss/accuracy/lr) + TextEvent
+- **TfEventReader** - 解析回读
+  - 反向工程 protobuf 字段
+  - 支持按 tag 过滤 / 最近 N 个点
+- **TensorBoardController** - 8 个端点
+  - GET /runs / GET /runs/{id}/tags / GET /runs/{id}/scalars
+  - POST /runs/{id}/scalars/{tag} (供训练回调)
+  - GET /runs/{id}/events (WandB 兼容)
+  - GET /health
+- **TrainingTracker 集成** - 训练指标自动同步到 events.tfevents
+  - loss / val_loss / accuracy / learning_rate 4 个 tag
+  - TensorBoard 可直接可视化 (`tensorboard --logdir /tmp/minimax-runs`)
+
+### 📊 数据
+- **3 张表** (collab_room / collab_participant / collab_message)
+- **8 个 HTTP 端点** (TF 兼容)
+- **1 个 WebSocket 端点** (/ws/collab)
+- **公开房间示例数据** (3 房间: AI/TRAINING/DOC)
+
+### 🧪 测试统计
+- 213 (ai) + 11 (ws) = **224 tests**, 0 失败
+- V2.8.6: 206 → V2.8.7: 224 (+18)
+
+### 📚 文档
+- CHANGELOG.md 更新 (V2.8.7)
+- DDL: `sql/ddl-v2.8.7-collab.sql`
+
+---
 
 ## [V2.8.6] - 2026-07-12
 

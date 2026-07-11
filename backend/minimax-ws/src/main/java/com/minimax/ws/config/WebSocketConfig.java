@@ -14,6 +14,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
 
     private final StreamGatewayHandler streamHandler;
     private final com.minimax.ws.handler.BidirectionalStreamHandler bidirectionalHandler;
+    private final com.minimax.ws.handler.CollabWebSocketHandler collabHandler;
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
@@ -22,6 +23,9 @@ public class WebSocketConfig implements WebSocketConfigurer {
                 .setAllowedOriginPatterns("*");
         // V5.19: 双向流 (新)
         registry.addHandler(bidirectionalHandler, "/ws/bidi")
+                .setAllowedOriginPatterns("*");
+        // V2.8.7: 实时协作
+        registry.addHandler(collabHandler, "/ws/collab")
                 .setAllowedOriginPatterns("*");
     }
 }

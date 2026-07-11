@@ -1,6 +1,8 @@
 package com.minimax.ai.training;
 
+import com.minimax.ai.tensorboard.TfEventWriter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -108,6 +110,12 @@ public class TrainingTracker {
 
     private final Map<String, TaskInfo> tasks = new ConcurrentHashMap<>();
 
+    /**
+     * V2.8.7: TensorBoard 写入器 (可空, 启动时注入)
+     */
+    @Autowired(required = false)
+    private TfEventWriter tfEventWriter;
+
     public String createTask(String name, String model, int totalEpochs, String config) {
         String id = "train-" + System.currentTimeMillis() + "-" + Math.abs(name.hashCode() % 10000);
         TaskInfo t = new TaskInfo();
@@ -118,6 +126,10 @@ public class TrainingTracker {
         t.config = config;
         t.startTimeMs = System.currentTimeMillis();
         tasks.put(id, t);
+        // V2.8.7: 写入 TensorBoard 文本 (config)
+        if (tfEventWriter != null) {
+            tfEventWriter.writeText(id, "config", 0, config == null ? "" : config);
+        }
         log.info("Created training task: {}", id);
         return id;
     }
@@ -132,6 +144,20 @@ public class TrainingTracker {
         if (t == null) return;
         t.history.add(p);
         t.currentEpoch = p.epoch;
+        // V2.8.7: 同步写入 TensorBoard events.tfevents (可供 TensorBoard/WandB 读取)
+        if (tfEventWriter != null) {
+            int step = p.step > 0 ? p.step : p.epoch;
+            tfEventWriter.writeScalar(taskId, "loss", step, p.loss);
+            if (p.valLoss > 0) {
+                tfEventWriter.writeScalar(taskId, "val_loss", step, p.valLoss);
+            }
+            if (p.accuracy > 0) {
+                tfEventWriter.writeScalar(taskId, "accuracy", step, p.accuracy);
+            }
+            if (p.learningRate > 0) {
+                tfEventWriter.writeScalar(taskId, "learning_rate", step, p.learningRate);
+            }
+        }
     }
 
     public void complete(String taskId) {
