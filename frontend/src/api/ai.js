@@ -209,6 +209,19 @@ export const nl2chart = (dataSourceId, question) =>
 export const executeWorkflow = (workflow) => http.post('/api/ai/workflow/execute', workflow)
 export const validateWorkflow = (workflow) => http.post('/api/ai/workflow/validate', workflow)
 
+/** 训练可视化 */
+export const startTraining = (config) => http.post('/api/ai/training/start', config)
+export const demoTraining = () => http.post('/api/ai/training/demo')
+export const listTrainingTasks = () => http.get('/api/ai/training/tasks')
+export const getTrainingTask = (id) => http.get(`/api/ai/training/tasks/${id}`)
+export const getTrainingHistory = (id) => http.get(`/api/ai/training/tasks/${id}/history`)
+export const deleteTrainingTask = (id) => http.delete(`/api/ai/training/tasks/${id}`)
+
+/** AIGC 图片生成 */
+export const generateImage = (req) => http.post('/api/ai/image/generate', req)
+export const listImageTypes = () => http.post('/api/ai/image/types')
+export const inferImageType = (prompt) => http.get('/api/ai/image/infer', { params: { prompt } })
+
 // ==================== 工具函数 ====================
 
 async function blobToBase64(blob) {

@@ -52,7 +52,8 @@
       <van-tabbar-item to="/mobile/chat" icon="comment-o">对话</van-tabbar-item>
       <van-tabbar-item to="/mobile/agent" icon="aiming">Agent</van-tabbar-item>
       <van-tabbar-item to="/mobile/kg" icon="cluster-o">图谱</van-tabbar-item>
-      <van-tabbar-item to="/mobile/plugins" icon="apps-o">插件</van-tabbar-item>
+      <van-tabbar-item to="/mobile/discover" icon="fire-o">发现</van-tabbar-item>
+      <van-tabbar-item to="/mobile/market" icon="gem-o">市场</van-tabbar-item>
       <van-tabbar-item to="/mobile/me" icon="user-o">我的</van-tabbar-item>
     </van-tabbar>
   </div>

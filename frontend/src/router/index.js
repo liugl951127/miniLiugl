@@ -129,6 +129,18 @@ const routes = [
             meta: { title: 'AI 工作流编排', icon: 'Share' }
           },
           {
+            path: 'ai-training',
+            name: 'AiTraining',
+            component: () => import('@/views/ai/TrainingViz.vue'),
+            meta: { title: '训练可视化', icon: 'TrendCharts' }
+          },
+          {
+            path: 'ai-image',
+            name: 'AiImage',
+            component: () => import('@/views/ai/ImageGen.vue'),
+            meta: { title: 'AIGC 图片生成', icon: 'PictureFilled' }
+          },
+          {
             path: 'alerts',
             name: 'Alerts',
             component: () => import('@/views/admin/Alerts.vue'),
@@ -409,6 +421,18 @@ const routes = [
         name: 'MMe',
         component: () => import('@/views/mobile/Me.vue'),
         meta: { title: '我的' }
+      },
+      {
+        path: 'discover',
+        name: 'MDiscover',
+        component: () => import('@/views/mobile/Discover.vue'),
+        meta: { title: '发现' }
+      },
+      {
+        path: 'market',
+        name: 'MMarket',
+        component: () => import('@/views/mobile/Market.vue'),
+        meta: { title: '工具市场' }
       },
     ]
   },
