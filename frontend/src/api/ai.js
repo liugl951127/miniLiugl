@@ -270,6 +270,34 @@ export const generateChartTool = (req) => http.post('/api/ai/admin/tools/chart.g
 /** 音乐生成 (via tool) */
 export const generateMusicTool = (req) => http.post('/api/ai/admin/tools/music.generate/invoke', req)
 
+// ============== V2.8.4 企业项目生成 ==============
+
+/** Java 企业项目生成 (完整 ZIP, 返回 Base64) */
+export const generateJavaProject = (req) => http.post('/api/ai/admin/tools/java.project.gen/invoke', req)
+
+/** 直接下载项目 ZIP (浏览器) */
+export const downloadJavaProject = (projectName = 'minimax-app', version = '1.0.0', type = 'spring-boot', packageName = '', database = 'mysql') => {
+  const params = new URLSearchParams({ projectName, version, type, database })
+  if (packageName) params.append('packageName', packageName)
+  return `/api/ai/project/download?${params.toString()}`
+}
+
+/** 解码 Base64 ZIP 并下载 (JSON 接口) */
+export const downloadJavaProjectFromBase64 = (base64, filename) => {
+  const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0))
+  const blob = new Blob([bytes], { type: 'application/zip' })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = filename || 'minimax-app.zip'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(link.href)
+}
+
+/** 智能对话 (上下文感知) */
+export const aiChatWithContext = (data) => http.post('/api/ai/dispatch', { ...data, withContext: true })
+
 /** AI 会话 (V2.8.2) */
 export const listAiSessions = (userId) => http.get('/api/ai/chat/sessions', { params: { userId } })
 export const getAiSession = (id) => http.get(`/api/ai/chat/sessions/${id}`)

@@ -48,6 +48,9 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class KeywordEngine {
 
+    /** 错别字容错 (V2.8.4) */
+    private final TypoTolerance typoTolerance = new TypoTolerance();
+
     /** 意图定义 */
     public enum Intent {
         GENERATE_CHART,        // 生成图表
@@ -127,7 +130,7 @@ public class KeywordEngine {
         KEYWORDS.put(Intent.VIDEO_ANALYZE, List.of(
                 "分析视频", "看视频", "识别视频", "analyze video", "video description"));
         KEYWORDS.put(Intent.AUDIO_ANALYZE, List.of(
-                "分析音频", "分析声音", "听声音", "analyze audio"));
+                "分析音频", "音频识别", "语音", "听声音", "声音", "音频", "analyze audio", "audio analysis"));
     }
 
     /** 高级正则模式 (优先级最高) */
@@ -153,41 +156,71 @@ public class KeywordEngine {
     private final AiToolRegistry toolRegistry;
 
     /**
-     * 识别用户意图
+     * 识别用户意图 (V2.8.4 升级)
      *
-     * @param text 用户输入 (中文 / 英文)
-     * @return Intent 枚举
+     * <h3>三级匹配</h3>
+     * <ol>
+     *   <li><b>正则</b>: 高精度 (如 "生成.*?柱状图" → 图表)</li>
+     *   <li><b>错别字纠正</b>: "表个" → "表格", "统记" → "统计"</li>
+     *   <li><b>模糊匹配</b>: 编辑距离 ≤ 1 或 2 (处理拼音/输入错)</li>
+     *   <li><b>关键词 TF</b>: 命中数最多的意图</li>
+     * </ol>
+     *
+     * @param text 用户输入
+     * @return Intent
      */
     public Intent recognize(String text) {
         if (text == null || text.trim().isEmpty()) return Intent.UNKNOWN;
-        String lower = text.toLowerCase();
 
-        // 1. 正则匹配 (高精度)
+        // V2.8.4: 错别字纠正
+        String corrected = typoTolerance.correct(text);
+        // V2.8.4: 拼音首字母扩展 (例: "shuj tubiao" → "数据 图表")
+        corrected = typoTolerance.expandPinyin(corrected);
+
+        String lower = corrected.toLowerCase();
+        log.debug("[intent] 原文='{}' → 纠正后='{}'", text, corrected);
+
+        // 1. 正则匹配 (最高优先级)
         for (Map.Entry<Intent, List<Pattern>> entry : REGEX_PATTERNS.entrySet()) {
             for (Pattern p : entry.getValue()) {
-                if (p.matcher(text).find()) {
+                if (p.matcher(corrected).find()) {
                     log.debug("Intent matched by regex: {} -> {}", p.pattern(), entry.getKey());
                     return entry.getKey();
                 }
             }
         }
 
-        // 2. 关键词匹配 (TF 简化: 计每个意图命中数)
+        // 2. 关键词 + 模糊匹配
         Map<Intent, Integer> scores = new HashMap<>();
         for (Map.Entry<Intent, List<String>> entry : KEYWORDS.entrySet()) {
             int count = 0;
             for (String kw : entry.getValue()) {
-                if (lower.contains(kw.toLowerCase())) count++;
+                if (typoTolerance.fuzzyMatch(lower, kw.toLowerCase())) {
+                    count++;
+                }
             }
             if (count > 0) scores.put(entry.getKey(), count);
         }
 
-        // 取最高分
+        // 3. 取最高分
         if (!scores.isEmpty()) {
+            // 3a. 生成/创建类意图优先 (用户明确表达要生成)
+            int generateScore = (scores.getOrDefault(Intent.GENERATE_CHART, 0)
+                    + scores.getOrDefault(Intent.GENERATE_MUSIC, 0)
+                    + scores.getOrDefault(Intent.GENERATE_ANIMATION, 0)
+                    + scores.getOrDefault(Intent.GENERATE_CODE, 0));
+            int analyzeScore = scores.getOrDefault(Intent.ANALYZE_DATA, 0);
+            int queryScore = scores.getOrDefault(Intent.QUERY_DATA, 0);
+
+            // 3b. 平手时: ANALYZE > QUERY
+            if (analyzeScore > 0 && queryScore > 0 && analyzeScore >= queryScore && generateScore == 0) {
+                log.debug("Intent priority: ANALYZE_DATA over QUERY_DATA");
+                return Intent.ANALYZE_DATA;
+            }
             Intent best = scores.entrySet().stream()
                     .max(Map.Entry.comparingByValue())
                     .get().getKey();
-            log.debug("Intent matched by keyword: {} (score {})", best, scores.get(best));
+            log.debug("Intent matched by keyword/fuzzy: {} (score {})", best, scores.get(best));
             return best;
         }
 
@@ -252,6 +285,88 @@ public class KeywordEngine {
         result.handler = suggestHandler(intent, params, context);
 
         return result;
+    }
+
+    /**
+     * 路由到处理函数 (V2.8.4 上下文感知)
+     *
+     * <p>同 session 多轮对话能力:
+     * <ul>
+     *   <li>上下文会话跟踪: 记录每轮意图 + 参数</li>
+     *   <li>指代消解: "再画一个" → 继承上轮图表类型</li>
+     *   <li>参数合并: 本轮 params 覆盖上轮</li>
+     *   <li>意图复判: 纯修饰性输入 (如 "好看点") 沿用上轮意图</li>
+     * </ul>
+     *
+     * @param text      用户输入
+     * @param context   包含 sessionId 的上下文
+     * @return RouteResult (含继承参数)
+     */
+    public RouteResult routeWithContext(String text, Map<String, Object> context, ConversationContext ctxManager) {
+        if (ctxManager == null) return route(text, context);
+
+        String sessionId = context != null && context.get("sessionId") != null
+                ? context.get("sessionId").toString() : null;
+
+        // 1. 识别意图
+        Intent intent = recognize(text);
+        Map<String, String> params = extractParams(text);
+
+        // 2. 上下文补忕: 短输入且未识别出新意图 → 沿用上轮
+        boolean isFollowUp = isFollowUpInput(text, intent);
+        KeywordEngine.Intent effectiveIntent = intent;
+        Map<String, Object> inheritedParams = new LinkedHashMap<>();
+
+        if (isFollowUp) {
+            List<KeywordEngine.Intent> recent = ctxManager.recentIntents(sessionId, 3);
+            if (!recent.isEmpty()) {
+                // 取上轮意图 (过滤 UNKNOWN)
+                for (int i = recent.size() - 1; i >= 0; i--) {
+                    KeywordEngine.Intent ri = recent.get(i);
+                    if (ri != KeywordEngine.Intent.UNKNOWN && ri != KeywordEngine.Intent.CHAT) {
+                        effectiveIntent = ri;
+                        log.debug("[ctx] 上下文补忕: 本轮输入 '{}' → 沿用上轮意图 {}", text, effectiveIntent);
+                        break;
+                    }
+                }
+            }
+            // 继承上轮参数
+            Map<String, Object> lastParams = ctxManager.mergeParams(sessionId, null);
+            if (lastParams != null) inheritedParams.putAll(lastParams);
+        }
+
+        // 3. 本轮参数覆盖上轮
+        for (Map.Entry<String, String> e : params.entrySet()) {
+            inheritedParams.put(e.getKey(), e.getValue());
+        }
+
+        // 4. 记录到上下文
+        ctxManager.record(sessionId, text, effectiveIntent, inheritedParams);
+
+        // 5. 包装 RouteResult
+        RouteResult result = new RouteResult();
+        result.intent = effectiveIntent;
+        result.params = params;
+        result.originalText = text;
+        result.handler = suggestHandler(effectiveIntent, params, context);
+        result.confidence = isFollowUp ? 0.85 : 0.95;
+        return result;
+    }
+
+    /**
+     * 判断是否为后续输入 (如 "再画一个", "改个颜色", "好看点")
+     */
+    private boolean isFollowUpInput(String text, Intent recognized) {
+        if (text == null) return false;
+        String t = text.trim();
+        // 短输入 且 未识别到明确意图
+        if (t.length() <= 8 && recognized == Intent.CHAT) return true;
+        // 纯修饰词
+        String[] modWords = {"再", "又", "还", "也", "改", "换", "变", "调整", "换成", "改成", "调成", "调一下", "弄", "整"};
+        for (String w : modWords) {
+            if (t.startsWith(w) && t.length() <= 12) return true;
+        }
+        return false;
     }
 
     private String suggestHandler(Intent intent, Map<String, String> params, Map<String, Object> context) {

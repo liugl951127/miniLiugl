@@ -120,6 +120,7 @@ import {
   analyzeText, analyzeVision, analyzeAudio, convertFile,
   analyzeCorrelation, predictData, timeConvert,
   generateImageTool, generateChartTool, generateMusicTool,
+  generateJavaProject, downloadJavaProject, downloadJavaProjectFromBase64,
   listTools
 } from '@/api/ai'
 
@@ -223,6 +224,19 @@ const toolDefs = [
     ],
     example: { task: 'analyze', imageBase64: '' },
     invoke: analyzeVision
+  },
+  {
+    code: 'java.project.gen', name: 'Java 企业项目', description: '生成完整 Spring Boot 项目 ZIP, 含 Docker/K8s/SQL/运维', category: 'code',
+    fields: [
+      { name: 'projectName', label: '项目名', type: 'input', component: Input, props: { placeholder: 'minimax-erp' } },
+      { name: 'version', label: '版本', type: 'input', component: Input, props: { placeholder: '1.0.0' } },
+      { name: 'type', label: '项目类型', type: 'select', component: Select, options: ['spring-boot', 'vue', 'react', 'python-flask', 'node-express', 'html'], props: {} },
+      { name: 'packageName', label: '包名', type: 'input', component: Input, props: { placeholder: 'com.minimax.erp' } },
+      { name: 'database', label: '数据库', type: 'select', component: Select, options: ['mysql', 'postgresql', 'h2', 'none'], props: {} }
+    ],
+    example: { projectName: 'minimax-erp', version: '1.0.0', type: 'spring-boot', packageName: 'com.minimax.erp', database: 'mysql' },
+    invoke: generateJavaProject,
+    isProject: true
   }
 ]
 
@@ -302,6 +316,12 @@ async function invoke() {
     result.value = res.data || res
     if (result.value.success !== false) ElMessage.success('调用成功')
     else ElMessage.error(result.value.message || '调用失败')
+
+    // Java 项目生成: 自动弹出下载
+    if (currentTool.value.isProject && result.value.zipBase64) {
+      downloadJavaProjectFromBase64(result.value.zipBase64, result.value.downloadName)
+      ElMessage.success(`项目已生成 (${result.value.fileCount} 个文件, ${result.value.sizeKB}KB), 下载已开始`)
+    }
   } catch (e) {
     result.value = { success: false, message: e.message || '调用失败' }
     ElMessage.error(e.message || '调用失败')

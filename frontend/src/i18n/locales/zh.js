@@ -459,6 +459,8 @@ export default {
     videoStream: '视频流式生成',
     musicStream: '音乐流式生成',
     playground: 'AI 工具演练场',
+    javaProjectGen: 'Java 企业项目生成',
+    contextChat: '智能对话 (上下文)',
     documentParse: '文档智能解析',
     tools: 'AI 工具管理',
     generate: '生成',

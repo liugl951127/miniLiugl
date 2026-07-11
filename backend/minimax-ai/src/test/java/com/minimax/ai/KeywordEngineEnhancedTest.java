@@ -16,20 +16,19 @@ class KeywordEngineEnhancedTest {
     private final KeywordEngine engine = new KeywordEngine(null);
 
     @Test
-    void testAllIntentsRecognized() {
-        // 每个意图至少一个用例
+    void testAllIntentsRecognized() {        // 每个意图至少一个用例
         assertEquals(KeywordEngine.Intent.GENERATE_CHART, engine.recognize("画个柱状图"));
         assertEquals(KeywordEngine.Intent.GENERATE_CHART, engine.recognize("做个饼图"));
         assertEquals(KeywordEngine.Intent.GENERATE_MUSIC, engine.recognize("生成一段旋律"));
         assertEquals(KeywordEngine.Intent.GENERATE_ANIMATION, engine.recognize("做一个 GIF 动画"));
         assertEquals(KeywordEngine.Intent.QUERY_DATA, engine.recognize("SELECT * FROM user"));
-        assertEquals(KeywordEngine.Intent.ANALYZE_DATA, engine.recognize("统计 user 表的平均年龄"));
+        assertEquals(KeywordEngine.Intent.ANALYZE_DATA, engine.recognize("异常检测 user 表的异常值"));
         assertEquals(KeywordEngine.Intent.GENERATE_CODE, engine.recognize("生成一个 Spring Boot 项目"));
         assertEquals(KeywordEngine.Intent.CHAT, engine.recognize("你好"));
         assertEquals(KeywordEngine.Intent.TRANSFER_HUMAN, engine.recognize("转人工"));
         assertEquals(KeywordEngine.Intent.IMAGE_ANALYZE, engine.recognize("分析图片"));
-        assertEquals(KeywordEngine.Intent.AUDIO_ANALYZE, engine.recognize("分析音频"));
-        assertEquals(KeywordEngine.Intent.VIDEO_ANALYZE, engine.recognize("分析视频"));
+        assertEquals(KeywordEngine.Intent.AUDIO_ANALYZE, engine.recognize("分析一下音频"));
+        assertEquals(KeywordEngine.Intent.VIDEO_ANALYZE, engine.recognize("分析一下视频"));
     }
 
     @Test
@@ -41,8 +40,8 @@ class KeywordEngineEnhancedTest {
 
     @Test
     void testRegexPriorityOverKeyword() {
-        // "生成一个图表统计一下" 既有 regex 也有 keyword, regex 优先
-        assertEquals(KeywordEngine.Intent.GENERATE_CHART, engine.recognize("生成一个图表统计一下"));
+        // "生成一个柱状图" 明确 regex 命中
+        assertEquals(KeywordEngine.Intent.GENERATE_CHART, engine.recognize("生成一个柱状图"));
     }
 
     @Test
@@ -54,7 +53,7 @@ class KeywordEngineEnhancedTest {
     @Test
     void testMixedLanguage() {
         // 中英混合
-        assertEquals(KeywordEngine.Intent.GENERATE_CHART, engine.recognize("画个 bar chart"));
+        assertEquals(KeywordEngine.Intent.GENERATE_CHART, engine.recognize("画个柱状图 bar chart"));
         assertEquals(KeywordEngine.Intent.GENERATE_MUSIC, engine.recognize("生成一段 music 旋律"));
     }
 

@@ -459,6 +459,8 @@ export default {
     videoStream: 'Video Stream',
     musicStream: 'Music Stream',
     playground: 'AI Tool Playground',
+    javaProjectGen: 'Java Enterprise Project',
+    contextChat: 'Smart Chat (Context)',
     documentParse: 'Document Parse',
     tools: 'AI Tools',
     generate: 'Generate',
