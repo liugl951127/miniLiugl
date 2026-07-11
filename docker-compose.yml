@@ -813,6 +813,51 @@ services:
       start_interval: 5s
     logging: *default-logging
 
+  # ========== ai 微服务 (8094, V2.5 自研) ==========
+  ai:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        MODULE: ai
+    image: minimax-ai:latest
+    container_name: minimax-ai
+    <<: *default-restart
+    environment:
+      SERVER_PORT: 8094
+      SPRING_PROFILES_ACTIVE: dev
+      NACOS_HOST: nacos
+      NACOS_PORT: 8848
+      NACOS_NAMESPACE: public
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: root
+      MYSQL_PASS: root123456
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: ${SERVICE_NAME:-minimax-ai}
+    ports:
+      - "8094:8094"
+    depends_on:
+      nacos:
+        condition: service_started
+      mysql:
+        condition: service_started
+    networks:
+      - minimax-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8094/api/ai/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    logging: *default-logging
+
   # ========== ws 微服务 (8095) ==========
   ws:
     build:

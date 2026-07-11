@@ -167,6 +167,14 @@ spring.cloud.gateway:
       filters:
         - StripPrefix=2
 
+    # V2.5: 自研 AI 路由
+    - id: ai
+      uri: lb://minimax-ai
+      predicates:
+        - Path=/api/ai/**
+      filters:
+        - StripPrefix=0
+
     - id: ws
       uri: lb:ws://minimax-ws
       predicates:

@@ -111,6 +111,12 @@ const routes = [
         meta: { title: '管理后台', icon: 'Setting' },
         children: [
           {
+            path: 'ai-tools',
+            name: 'AiToolAdmin',
+            component: () => import('@/views/ai/AiToolAdmin.vue'),
+            meta: { title: 'AI 工具中心', icon: 'MagicStick' }
+          },
+          {
             path: '',
             name: 'AdminDashboard',
             component: () => import('@/views/admin/Dashboard.vue'),
