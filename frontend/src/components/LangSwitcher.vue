@@ -1,7 +1,7 @@
 <template>
   <el-dropdown @command="onSwitch" trigger="click">
     <span class="lang-trigger">
-      <el-icon><Globe /></el-icon>
+      <el-icon><Position /></el-icon>
       <span class="lang-text">{{ currentLabel }}</span>
     </span>
     <template #dropdown>
@@ -15,7 +15,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { Globe } from '@element-plus/icons-vue'
+import { Position } from '@element-plus/icons-vue'
 import { currentLang, setLang } from '@/i18n'
 
 const lang = computed(() => currentLang())

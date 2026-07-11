@@ -20,6 +20,10 @@ app.use(router)
 app.use(ElementPlus, { locale: zhCn, size: 'default' })
 app.use(i18n)
 
+// V2.7.9: 注册权限指令
+import permission from '@/directives/permission'
+app.directive('permission', permission)
+
 // 全局注册 Element Plus 图标
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)

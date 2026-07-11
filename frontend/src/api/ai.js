@@ -227,6 +227,11 @@ export const listVideoStreams = () => http.get('/api/ai/video/stream/list')
 export const getVideoStream = (id) => http.get(`/api/ai/video/stream/${id}`)
 export const cancelVideoStream = (id) => http.post(`/api/ai/video/stream/cancel/${id}`)
 
+/** 权限 (V2.7.9) */
+export const getMyPermissions = () => http.get('/api/ai/permission/me')
+export const listAllRoles = () => http.get('/api/ai/permission/roles')
+export const checkPermissions = (role, permissions) => http.post('/api/ai/permission/check', { role, permissions })
+
 // ==================== 工具函数 ====================
 
 async function blobToBase64(blob) {
