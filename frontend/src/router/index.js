@@ -141,6 +141,12 @@ const routes = [
             meta: { title: 'AIGC 图片生成', icon: 'PictureFilled' }
           },
           {
+            path: 'ai-playground',
+            name: 'AiPlayground',
+            component: () => import('@/views/ai/ToolPlayground.vue'),
+            meta: { title: 'AI 工具演练场', icon: 'Tools' }
+          },
+          {
             path: 'ai-video-stream',
             name: 'AiVideoStream',
             component: () => import('@/views/ai/VideoStream.vue'),

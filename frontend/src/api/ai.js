@@ -237,6 +237,39 @@ export const listMusicStreams = () => http.get('/api/ai/music/stream/list')
 export const getMusicStream = (id) => http.get(`/api/ai/music/stream/${id}`)
 export const cancelMusicStream = (id) => http.post(`/api/ai/music/stream/cancel/${id}`)
 
+// ============== V2.8.3 新工具 SDK ==============
+// 后端端点: POST /api/ai/admin/tools/{code}/invoke
+
+/** 文本分析 (摘要/情感/实体/关键词) */
+export const analyzeText = (req) => http.post('/api/ai/admin/tools/text.analyze/invoke', req)
+
+/** 视觉分析 (颜色/风格/相似度) */
+export const analyzeVision = (req) => http.post('/api/ai/admin/tools/vision.analyze/invoke', req)
+
+/** 音频分析 (音量/频谱/情绪) */
+export const analyzeAudio = (req) => http.post('/api/ai/admin/tools/audio.analyze/invoke', req)
+
+/** 文件转换 (JSON/YAML/CSV/Base64) */
+export const convertFile = (req) => http.post('/api/ai/admin/tools/file.convert/invoke', req)
+
+/** 相关性分析 (Pearson/Spearman) */
+export const analyzeCorrelation = (req) => http.post('/api/ai/admin/tools/data.analyze.correlation/invoke', req)
+
+/** 线性预测 (回归/移动平均/指数平滑) */
+export const predictData = (req) => http.post('/api/ai/admin/tools/data.predict.linear/invoke', req)
+
+/** 时间工具 (格式/计算/时区) */
+export const timeConvert = (req) => http.post('/api/ai/admin/tools/time.convert/invoke', req)
+
+/** AIGC 图片生成 (via tool) */
+export const generateImageTool = (req) => http.post('/api/ai/admin/tools/image.generate/invoke', req)
+
+/** 图表生成 (via tool) */
+export const generateChartTool = (req) => http.post('/api/ai/admin/tools/chart.generate/invoke', req)
+
+/** 音乐生成 (via tool) */
+export const generateMusicTool = (req) => http.post('/api/ai/admin/tools/music.generate/invoke', req)
+
 /** AI 会话 (V2.8.2) */
 export const listAiSessions = (userId) => http.get('/api/ai/chat/sessions', { params: { userId } })
 export const getAiSession = (id) => http.get(`/api/ai/chat/sessions/${id}`)

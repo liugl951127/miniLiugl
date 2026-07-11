@@ -287,7 +287,6 @@
                     </jvmArguments>
                     <!-- V2.0: 镜像瘦身 - 排除 spring-boot-loader, 减小 5MB -->
                     <excludeDevtools>true</excludeDevtools>
-                    <excludeGroupIds>org.springframework.boot,org.springframework,org.springframework.cloud</excludeGroupIds>
                     <layers>
                         <enabled>true</enabled>
                     </layers>

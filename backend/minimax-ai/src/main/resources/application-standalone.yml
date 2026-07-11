@@ -1,0 +1,58 @@
+# =============================================================
+# AI 独立运行模式 (V2.8.3)
+# 不依赖 Nacos, 直接连 MariaDB + Redis
+# 适合: 演示 / 嵌入式 / 单机部署
+# 用法: java -jar minimax-ai.jar --spring.profiles.active=standalone
+# =============================================================
+
+server:
+  port: ${SERVER_PORT:8094}
+
+spring:
+  application:
+    name: minimax-ai
+  profiles:
+    active: standalone
+  main:
+    allow-bean-definition-overriding: true
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/${DB_NAME:minimax}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: ${DB_USER:root}
+    password: ${DB_PASS:root123456}
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASS:minimax_redis_2024}
+      timeout: 5000ms
+  # 关闭 Nacos 自动配置
+  cloud:
+    nacos:
+      discovery:
+        enabled: false
+      config:
+        enabled: false
+
+minimax:
+  ai:
+    type: transformer-small
+    vocab-size: 8192
+    hidden-dim: 128
+    num-heads: 4
+    num-layers: 2
+    max-seq-len: 128
+    temperature: 0.8
+    top-k: 40
+    top-p: 0.9
+    # 独立模式开关
+    mode: standalone
+    crossModule: false  # 不调用其他业务模块
+    security:
+      enabled: false  # 独立模式不需要鉴权 (如需鉴权设为 true, 走主模式)
+
+logging:
+  level:
+    com.minimax.ai: INFO
+    com.alibaba.nacos: WARN
+    org.springframework.cloud: WARN

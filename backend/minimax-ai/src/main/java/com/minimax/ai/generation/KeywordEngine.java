@@ -90,6 +90,29 @@ public class KeywordEngine {
         KEYWORDS.put(Intent.GENERATE_CODE, List.of(
                 "代码", "Spring Boot", "Vue", "React", "Python", "Flask", "Node", "Express",
                 "code", "generate project", "scaffold", "template"));
+
+        // V2.8.3 新增
+        KEYWORDS.put(Intent.CHAT, List.of(
+                "你好", "你是谁", "叫什么", "介绍", "你好啊", "能做什么", "幫我",
+                "hello", "hi", "what", "who", "help", "introduce"));
+        KEYWORDS.put(Intent.IMAGE_ANALYZE, List.of(
+                "分析图片", "图片识别", "看图", "这张图", "图片里", "图像",
+                "analyze image", "image analysis", "what is in"));
+        KEYWORDS.put(Intent.AUDIO_ANALYZE, List.of(
+                "分析音频", "音频识别", "语音", "听", "声音", "这段音",
+                "analyze audio", "speech", "voice"));
+        KEYWORDS.put(Intent.VIDEO_ANALYZE, List.of(
+                "分析视频", "视频识别", "这个视频", "视频里",
+                "analyze video", "video analysis"));
+        KEYWORDS.put(Intent.TTS, List.of(
+                "语音合成", "TTS", "读出来", "朗读", "声音说", "说话",
+                "text to speech", "tts", "speak"));
+        KEYWORDS.put(Intent.STT, List.of(
+                "语音识别", "STT", "转文字", "语音转文字", "录音转文字",
+                "speech to text", "stt", "transcribe"));
+        KEYWORDS.put(Intent.TRANSFER_HUMAN, List.of(
+                "转人工", "真人", "人工", "客服", "人工服务", "坐席",
+                "transfer", "human", "agent", "operator"));
         KEYWORDS.put(Intent.CHAT, List.of(
                 "你好", "请问", "什么是", "怎么", "如何", "为什么", "介绍", "讲讲",
                 "hello", "hi", "what", "how", "why", "tell me", "explain"));

@@ -1,0 +1,58 @@
+# =============================================================
+# AI 本地开发模式 (V2.8.3)
+# 用 H2 内存数据库, 不需要 MySQL
+# 用法: java -jar minimax-ai.jar --spring.profiles.active=dev
+# =============================================================
+
+server:
+  port: ${SERVER_PORT:8094}
+
+spring:
+  application:
+    name: minimax-ai-dev
+  main:
+    allow-bean-definition-overriding: true
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:minimax_ai_dev;MODE=MySQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: false
+  sql:
+    init:
+      mode: never
+  cloud:
+    nacos:
+      discovery:
+        enabled: false
+      config:
+        enabled: false
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASS:}
+
+minimax:
+  ai:
+    type: transformer-small
+    vocab-size: 8192
+    hidden-dim: 128
+    num-heads: 4
+    num-layers: 2
+    max-seq-len: 128
+    temperature: 0.8
+    top-k: 40
+    top-p: 0.9
+    # dev 模式默认不鉴权 (独立运行)
+    security:
+      enabled: false
+
+logging:
+  level:
+    com.minimax.ai: DEBUG
+    com.alibaba.nacos: WARN
+    org.springframework.cloud: WARN
+    com.zaxxer.hikari: WARN
