@@ -1,41 +1,30 @@
-<!--
-  语言切换器 (V4.2)
-  - 中/英 双语
-  - 持久化到 localStorage
--->
 <template>
-  <el-dropdown trigger="click" @command="switchLang">
+  <el-dropdown @command="onSwitch" trigger="click">
     <span class="lang-trigger">
-      <el-icon><Position /></el-icon>
-      {{ currentLabel }}
-      <el-icon><ArrowDown /></el-icon>
+      <el-icon><Globe /></el-icon>
+      <span class="lang-text">{{ currentLabel }}</span>
     </span>
     <template #dropdown>
       <el-dropdown-menu>
-        <el-dropdown-item command="zh" :disabled="current === 'zh'">
-          🇨🇳 中文
-        </el-dropdown-item>
-        <el-dropdown-item command="en" :disabled="current === 'en'">
-          🇺🇸 English
-        </el-dropdown-item>
+        <el-dropdown-item command="zh" :disabled="lang === 'zh'">🇨🇳 简体中文</el-dropdown-item>
+        <el-dropdown-item command="en" :disabled="lang === 'en'">🇺🇸 English</el-dropdown-item>
       </el-dropdown-menu>
     </template>
   </el-dropdown>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
-import { Position, ArrowDown } from '@element-plus/icons-vue'
-import { setLang, currentLang } from '@/i18n'
+import { computed } from 'vue'
+import { Globe } from '@element-plus/icons-vue'
+import { currentLang, setLang } from '@/i18n'
 
-const current = ref(currentLang())
-const currentLabel = computed(() => current.value === 'zh' ? '中文' : 'EN')
+const lang = computed(() => currentLang())
+const currentLabel = computed(() => lang.value === 'zh' ? '中文' : 'EN')
 
-function switchLang(lang) {
-  setLang(lang)
-  current.value = lang
-  // 触发 router 重渲染
-  setTimeout(() => location.reload(), 100)
+function onSwitch(cmd) {
+  setLang(cmd)
+  // 提示
+  setTimeout(() => location.reload(), 100)  // 简单实现, 让所有组件刷新
 }
 </script>
 
@@ -45,10 +34,14 @@ function switchLang(lang) {
   align-items: center;
   gap: 4px;
   cursor: pointer;
-  padding: 6px 10px;
-  border-radius: 6px;
-  color: #64748b;
-  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #666;
+  transition: all 0.2s;
 }
-.lang-trigger:hover { background: #f1f5f9; color: #334155; }
+.lang-trigger:hover {
+  background: #f0f0f0;
+  color: #409EFF;
+}
+.lang-text { font-size: 13px; }
 </style>

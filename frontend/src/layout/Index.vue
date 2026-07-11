@@ -43,6 +43,8 @@
           <el-tooltip content="刷新">
             <el-button text @click="reload"><el-icon><Refresh /></el-icon></el-button>
           </el-tooltip>
+          <!-- V2.7.8: 语言切换 -->
+          <LangSwitcher />
           <el-dropdown @command="onCommand">
             <span class="user-info">
               <el-avatar :size="28" :src="userStore.profile?.avatar">
@@ -90,6 +92,7 @@ import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'
 import { useNotificationStore } from '@/store/notification'
 import { systemApi } from '@/api/system'
+import LangSwitcher from '@/components/LangSwitcher.vue'
 
 const route = useRoute()
 const router = useRouter()
