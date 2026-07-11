@@ -117,6 +117,12 @@ const routes = [
             meta: { title: 'AI 工具中心', icon: 'MagicStick' }
           },
           {
+            path: 'ai-chat',
+            name: 'AiChat',
+            component: () => import('@/views/ai/AiChat.vue'),
+            meta: { title: 'AI 智能助手', icon: 'ChatDotRound' }
+          },
+          {
             path: '',
             name: 'AdminDashboard',
             component: () => import('@/views/admin/Dashboard.vue'),
