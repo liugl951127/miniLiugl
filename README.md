@@ -772,3 +772,46 @@ MIT
 - 部署一键化 (`./scripts/deploy-minimax.sh install` + `./scripts/deploy-minimax.sh test`)
 
 **这是一个完整可投产的企业级大模型平台。**
+
+## 🚀 V2.8.0 CI/CD 流水线 (本期重点)
+
+### GitHub Actions
+
+CI workflow 文件: `.github/workflows/ci.yml`, 包含 4 个 Job:
+
+| Job | 触发 | 内容 |
+|------|------|------|
+| `backend` | 每次 push | JDK 17 + Maven 编译 + 单元测试 (MariaDB + Redis 服务) |
+| `frontend` | 每次 push | Node 18 + npm ci + vite build + 上传 dist |
+| `docker` | 仅 main 分支 | 4 个模块构建镜像 (gateway/auth/chat/ai) |
+| `notify` | 总是 | 汇总状态 |
+
+服务: MariaDB 10.11 + Redis 7 自带 health check.
+
+### 本地 CI
+
+```bash
+# 不构建 docker
+./scripts/local-ci.sh
+
+# 含 docker
+./scripts/local-ci.sh --docker
+```
+
+### Docker Compose 一键启动
+
+```bash
+docker compose up -d        # 启动 mariadb + redis + nacos + gateway + auth + ai
+docker compose logs -f       # 查看日志
+docker compose down -v       # 停止 + 删数据
+```
+
+### Dockerfile (Multi-stage)
+
+文件: `deploy/docker/Dockerfile.module`
+
+- 阶段 1: `maven:3.9-eclipse-temurin-17` 构建 JAR
+- 阶段 2: `eclipse-temurin:17-jre-alpine` 运行时
+- ARG MODULE 指定构建模块
+- 健康检查 `/actuator/health`
+- JVM 优化: G1GC + MaxRAMPercentage=70

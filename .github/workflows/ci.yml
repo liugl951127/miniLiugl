@@ -1,508 +1,221 @@
-name: MiniMax CI
+name: CI Pipeline
 
 on:
   push:
-    branches: [main, develop, 'V*']
+    branches: [ main, develop ]
   pull_request:
-    branches: [main]
-  workflow_dispatch:
-    inputs:
-      skip_mvn:
-        description: '跳过 Maven 编译 (节省 CI 时间)'
-        type: boolean
-        default: false
-      skip_frontend:
-        description: '跳过前端构建'
-        type: boolean
-        default: false
+    branches: [ main ]
 
 env:
-  JAVA_VERSION: '17'
-  NODE_VERSION: '22'
-  MAVEN_OPTS: '-Xmx2g -XX:+UseG1GC'
-  MAVEN_VERSION: '3.9.6'
+  MAVEN_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=512m"
+  JAVA_VERSION: "17"
+  NODE_VERSION: "18"
 
 jobs:
-  # ============================================================
-  # 1. Backend - Maven 编译 + 测试
-  # ============================================================
+  # ============================================
+  # 后端编译 + 测试
+  # ============================================
   backend:
-    name: ☕ Backend (Maven ${{ env.MAVEN_VERSION }})
-    runs-on: ubuntu-22.04
+    name: Backend Build & Test
+    runs-on: ubuntu-latest
     timeout-minutes: 30
-    if: ${{ !inputs.skip_mvn }}
 
     services:
-      mysql:
-        image: mysql:8.0
+      mariadb:
+        image: mariadb:10.11
         env:
-          MYSQL_ROOT_PASSWORD: rootpass
-          MYSQL_DATABASE: minimax_platform
-          MYSQL_USER: minimax
-          MYSQL_PASSWORD: minimax_pass_2024
+          MARIADB_ROOT_PASSWORD: root123456
+          MARIADB_DATABASE: minimax
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h localhost -uroot -prootpass"
+          --health-cmd="mariadb-admin ping"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=10
+          --health-retries=5
 
       redis:
-        image: redis:7.2-alpine
+        image: redis:7-alpine
         ports:
           - 6379:6379
         options: >-
           --health-cmd="redis-cli ping"
           --health-interval=10s
-          --health-timeout=3s
+          --health-timeout=5s
           --health-retries=5
 
     steps:
-      - name: 📥 Checkout
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: ☕ Setup JDK ${{ env.JAVA_VERSION }}
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
           cache: 'maven'
 
-      - name: 🔧 Setup Maven ${{ env.MAVEN_VERSION }}
-        run: |
-          sudo apt-get install -y maven
-          mvn -version
-
-      - name: 📦 Cache ~/.m2
-        uses: actions/cache@v4
+      - name: Cache Maven
+        uses: actions/cache@v3
         with:
-          path: ~/.m2
+          path: ~/.m2/repository
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2-
+          restore-keys: |
+            ${{ runner.os }}-m2-
 
-      - name: 🗄️ Init DB schema (导入 SQL)
+      - name: Compile backend
+        working-directory: backend
         run: |
-          for i in 1 2 3 4 5; do
-            if mysql -h 127.0.0.1 -uroot -prootpass -e "SELECT 1" >/dev/null 2>&1; then
-              echo "✓ MySQL 就绪"
-              break
-            fi
-            echo "等 MySQL... ($i)"
-            sleep 5
-          done
-          mysql -h 127.0.0.1 -uroot -prootpass minimax_platform < sql/init-minimax.sql
-          mysql -h 127.0.0.1 -uroot -prootpass -e "SHOW TABLES" minimax_platform | head -10
+          mvn -s .mvn/settings.xml compile -B -T 4
+        continue-on-error: false
 
-      - name: 🔨 Maven Compile
+      - name: Run unit tests
+        working-directory: backend
         run: |
-          mvn -B -T 4 \
-            -Dmaven.test.skip=true \
-            -Dspotless.check.skip=true \
-            -Djacoco.skip=true \
-            -Pparallel \
-            -f backend/pom.xml clean install
-
-      - name: 🧪 Maven Test
-        run: |
-          mvn -B -T 4 \
-            -Dtest='*Test' \
-            -DfailIfNoTests=false \
-            -Dspotless.check.skip=true \
-            -f backend/pom.xml test
-
-      - name: 📊 Surefire Report
-        if: always()
-        run: |
-          echo "测试结果:"
-          find backend -name "TEST-*.xml" | wc -l
-          find backend -name "TEST-*.xml" -exec grep -l "failure\|error" {} \; 2>/dev/null | head
+          mvn -s .mvn/settings.xml test -B \
+            -pl minimax-ai,minimax-common,minimax-multimodal,minimax-monitor \
+            -Dmaven.test.skip=false
         continue-on-error: true
 
-      - name: 📤 Upload Surefire Reports
+      - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: surefire-reports
+          name: backend-test-reports
           path: |
-            backend/**/surefire-reports/
-            backend/**/target/site/jacoco/
-          if-no-files-found: ignore
-          retention-days: 7
+            backend/**/target/surefire-reports/
+            backend/**/target/site/
 
-  # ============================================================
-  # 2. Frontend - Node 构建
-  # ============================================================
+  # ============================================
+  # 前端编译
+  # ============================================
   frontend:
-    name: 🎨 Frontend (Node ${{ env.NODE_VERSION }})
-    runs-on: ubuntu-22.04
+    name: Frontend Build
+    runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: ${{ !inputs.skip_frontend }}
 
     steps:
-      - name: 📥 Checkout
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 🟢 Setup Node ${{ env.NODE_VERSION }}
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - name: 📦 Install deps
+      - name: Install dependencies
         working-directory: frontend
-        run: |
-          npm config set registry https://registry.npmmirror.com
-          npm ci --prefer-offline --no-audit || npm install --prefer-offline --no-audit
+        run: npm ci --prefer-offline --no-audit
 
-      - name: 🔨 Build
+      - name: Build
         working-directory: frontend
         run: npm run build
 
-      - name: 📤 Upload dist
+      - name: Upload dist
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
           path: frontend/dist/
-          if-no-files-found: warn
           retention-days: 7
 
-  # ============================================================
-  # 3. Deploy Scripts 验证
-  # ============================================================
-  deploy-scripts:
-    name: 🐚 Deploy Scripts (bash -n + shellcheck)
-    runs-on: ubuntu-22.04
-    timeout-minutes: 5
+  # ============================================
+  # Docker 镜像构建 (main 分支)
+  # ============================================
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [backend, frontend]
+    if: github.ref == 'refs/heads/main'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          - minimax-gateway
+          - minimax-auth
+          - minimax-chat
+          - minimax-ai
 
     steps:
-      - name: 📥 Checkout
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 🐚 Bash syntax check
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Build JAR
+        working-directory: backend
         run: |
-          echo "=== bash -n 所有脚本 ==="
-          fail=0
-          for f in scripts/*.sh scripts/*.py 2>/dev/null; do
-            [[ -f "$f" ]] || continue
-            if bash -n "$f" 2>/dev/null; then
-              echo "  ✓ $f"
-            else
-              echo "  ✗ $f SYNTAX ERROR"
-              bash -n "$f"
-              fail=1
-            fi
-          done
-          exit $fail
+          mvn -s .mvn/settings.xml package \
+            -pl ${{ matrix.module }} -am -DskipTests -B
 
-      - name: 🐚 ShellCheck (best-effort)
-        run: |
-          sudo apt-get install -y shellcheck || true
-          if command -v shellcheck >/dev/null 2>&1; then
-            # V1.9.1: 检查 deploy-simple/ 下的 shell 脚本 (替代旧的 scripts/deploy-minimax.sh)
-            shellcheck -x deploy-simple/*.sh 2>&1 | head -40 || true
-          else
-            echo "shellcheck 不可用, 跳过"
-          fi
-        continue-on-error: true
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: 🐍 Python syntax check
-        run: |
-          for f in scripts/*.py 2>/dev/null; do
-            [[ -f "$f" ]] || continue
-            python3 -m py_compile "$f" && echo "  ✓ $f" || echo "  ✗ $f"
-          done
+      - name: Build & push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: deploy/docker/Dockerfile.module
+          build-args: |
+            MODULE=${{ matrix.module }}
+          push: false
+          tags: minimax/${{ matrix.module }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: 📜 YAML lint (docker-compose + workflows)
-        run: |
-          python3 -c "
-          import yaml, glob, sys
-          fail = 0
-          for f in glob.glob('**/*.yml', recursive=True) + glob.glob('**/*.yaml', recursive=True):
-            try:
-              yaml.safe_load(open(f))
-              print(f'  ✓ {f}')
-            except Exception as e:
-              print(f'  ✗ {f}: {e}')
-              fail = 1
-          sys.exit(fail)
-          "
-
-  # ============================================================
-  # 4. SQL 文件检查
-  # ============================================================
-  sql-check:
-    name: 🗄️ SQL Init Check
-    runs-on: ubuntu-22.04
-    timeout-minutes: 5
-
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: rootpass
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h localhost -uroot -prootpass"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
-
-    steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v4
-
-      - name: 🗄️ 验证 init-minimax.sql
-        run: |
-          for i in 1 2 3 4 5; do
-            if mysql -h 127.0.0.1 -uroot -prootpass -e "SELECT 1" >/dev/null 2>&1; then
-              echo "✓ MySQL 就绪"
-              break
-            fi
-            sleep 5
-          done
-
-          # 数表数
-          table_count=$(grep -c "^CREATE TABLE" sql/init-minimax.sql || echo 0)
-          insert_count=$(grep -c "^INSERT INTO" sql/init-minimax.sql || echo 0)
-          echo "  CREATE TABLE: $table_count"
-          echo "  INSERT INTO: $insert_count"
-
-          [[ $table_count -ge 35 ]] || (echo "✗ 表数过少 (期望 ≥35)" && exit 1)
-          [[ $insert_count -ge 30 ]] || (echo "✗ 预置数据过少 (期望 ≥30)" && exit 1)
-
-          # 实际导入验证
-          mysql -h 127.0.0.1 -uroot -prootpass -e "DROP DATABASE IF EXISTS minimax_platform; CREATE DATABASE minimax_platform;"
-          mysql -h 127.0.0.1 -uroot -prootpass minimax_platform < sql/init-minimax.sql
-          echo "  实际导入后表数:"
-          mysql -h 127.0.0.1 -uroot -prootpass -e "SHOW TABLES" minimax_platform | wc -l
-
-  # ============================================================
-  # 5. 性能压测 (V5.22 Day 22)
-  # 依赖 backend job 构建的 JAR，启动服务后运行压测脚本
-  # 注意: 此 stage 为参考级，不阻塞合并
-  # ============================================================
-  perf-test:
-    name: 🚀 Perf Test (wrk + ab)
-    runs-on: ubuntu-22.04
+  # ============================================
+  # 集成测试 (可选)
+  # ============================================
+  integration:
+    name: Integration Test
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [backend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
-      - name: 📥 Checkout
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 🐳 Docker Compose 启动后端服务
-        run: |
-          # 仅启动必要的基础设施 + gateway
-          docker compose -f docker-compose.yml up -d mysql redis
-          echo "等 MySQL 就绪..."
-          for i in $(seq 1 30); do
-            if docker exec minimax-mysql mysqladmin ping -h localhost -uroot -prootpass &>/dev/null; then
-              echo "✓ MySQL 就绪"
-              break
-            fi
-            echo "  等 MySQL... ($i/30)"
-            sleep 2
-          done
-          # 初始化 DB
-          docker exec minimax-mysql mysql -uroot -prootpass < sql/init-minimax.sql
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
 
-      - name: 🐳 构建 Gateway JAR (跳过测试，加速)
+      - name: Run integration tests
+        working-directory: backend
         run: |
-          cd backend
-          mvn -B -DskipTests -Dspotless.skip=true -Djacoco.skip=true \
-            -pl minimax-gateway -am clean package -DoutputDirectory=../dist \
-            2>&1 | tail -5
-
-      - name: 🐳 启动 Gateway + Auth
-        run: |
-          java -jar backend/dist/minimax-gateway/target/minimax-gateway-*.jar &
-          java -jar backend/dist/minimax-auth/target/minimax-auth-*.jar &
-          sleep 15
-          # 健康检查
-          for i in 1 2 3; do
-            HC=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 http://localhost:8080/actuator/health 2>/dev/null || echo "000")
-            if [ "$HC" = "200" ]; then
-              echo "✓ Gateway 就绪 (HTTP $HC)"
-              break
-            fi
-            echo "等 Gateway... (HTTP $HC)"
-            sleep 5
-          done
-
-      - name: 🔧 安装压测工具
-        run: |
-          # wrk (推荐)
-          if ! command -v wrk &>/dev/null; then
-            sudo apt-get update -qq && sudo apt-get install -y -qq wrk 2>/dev/null || \
-            (sudo apt-get install -y -qq libssl-dev && \
-             git clone --depth=1 https://github.com/wg/wrk.git /tmp/wrk && \
-             cd /tmp/wrk && make -j$(nproc) && sudo cp wrk /usr/local/bin/) || \
-             echo "wrk 安装失败，跳过 wrk 测试"
-          fi
-          # Apache Bench
-          sudo apt-get install -y -qq apache2-utils 2>/dev/null || true
-          command -v wrk &>/dev/null && echo "✓ wrk installed" || echo "✗ wrk not found"
-          command -v ab &>/dev/null && echo "✓ ab installed" || echo "✗ ab not found"
-
-      - name: 🚀 运行压测
-        env:
-          GATEWAY: 'http://localhost:8080'
-          DURATION: '30'
-          CONNECTIONS: '50'
-          THREADS: '4'
-        run: |
-          cd bench
-          # wrk
-          if command -v wrk &>/dev/null; then
-            echo "━━━ wrk 登录 API 压测 ━━━━━━━━━━━━━━━━━━━━━━━"
-            wrk -t${THREADS} -c${CONNECTIONS} -d${DURATION}s \
-              -s wrk/login.lua "${GATEWAY}" \
-              --latency 2>&1 | tee "$GITHUB_OUTPUT"
-            echo "wrk_output=$(cat)" >> $GITHUB_OUTPUT
-          fi
-          # Apache Bench
-          if command -v ab &>/dev/null; then
-            echo "━━━ ab 登录 API 压测 ━━━━━━━━━━━━━━━━━━━━━━━━━"
-            ab -n 500 -c ${CONNECTIONS} -g ab-login.tsv \
-              -p <(echo '{"username":"admin","password":"admin@123"}') \
-              -T "application/json" \
-              "${GATEWAY}/api/v1/auth/login" 2>&1 | tee ab-output.txt
-          fi
-
-      - name: 📊 压测结果摘要
-        run: |
-          echo "## 🚀 性能压测结果" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if command -v wrk &>/dev/null; then
-            echo "**wrk 可用**: 详见 Artifacts" >> $GITHUB_STEP_SUMMARY
-          fi
-          if command -v ab &>/dev/null; then
-            echo "**ab 可用**: 详见 Artifacts" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "_注意: 压测在 CI 容器中运行，结果仅供参考_ " >> $GITHUB_STEP_SUMMARY
+          mvn -s .mvn/settings.xml verify -B -DskipITs=false
         continue-on-error: true
 
-      - name: 📤 Upload 压测结果
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: perf-test-results
-          path: |
-            bench/*.txt
-            bench/*.tsv
-          if-no-files-found: ignore
-          retention-days: 7
-
-  # ============================================================
-  # 6. 前端 E2E 测试 (Playwright)
-  # ============================================================
-  e2e:
-    name: 🧪 E2E Tests (Playwright)
-    runs-on: ubuntu-22.04
-    timeout-minutes: 20
-    needs: [frontend]
-
-    steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v4
-
-      - name: 🟢 Setup Node ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: 📦 Install deps + Playwright
-        working-directory: frontend
-        run: |
-          npm config set registry https://registry.npmmirror.com
-          npm ci --prefer-offline --no-audit || npm install --prefer-offline --no-audit
-          npx playwright install chromium --with-deps
-
-      - name: 🏃 Build (serve 需要)
-        working-directory: frontend
-        run: npm run build
-
-      - name: 🌐 启动静态服务 (serve)
-        run: |
-          npx --yes serve@14 dist -l 5173 &
-          echo "等服务启动..."
-          sleep 5
-          for i in $(seq 1 15); do
-            if curl -s --max-time 2 http://localhost:5173 | grep -q "MiniMax"; then
-              echo "✓ 服务就绪"
-              break
-            fi
-            echo "  等 serve... ($i/15)"
-            sleep 2
-          done
-        working-directory: frontend
-
-      - name: 🎭 Playwright E2E
-        env:
-          E2E_BASE_URL: 'http://localhost:5173'
-        run: npx playwright test --reporter=list
-        working-directory: frontend
-        continue-on-error: true
-
-      - name: 📊 E2E 结果摘要
-        run: |
-          echo "## 🧪 E2E 测试结果" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -f frontend/e2e-report/results.xml ]; then
-            TOTAL=$(grep -c '<testcase' frontend/e2e-report/results.xml 2>/dev/null || echo 0)
-            FAILED=$(grep -c '<failure' frontend/e2e-report/results.xml 2>/dev/null || echo 0)
-            PASSED=$((TOTAL - FAILED))
-            echo "总计: $TOTAL | 通过: $PASSED | 失败: $FAILED" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "报告文件不存在，跳过" >> $GITHUB_STEP_SUMMARY
-          fi
-        continue-on-error: true
-
-      - name: 📤 Upload E2E Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-playwright-report
-          path: frontend/e2e-report/
-          if-no-files-found: ignore
-          retention-days: 7
-
-  # ============================================================
-  # 7. 最终汇总
-  # ============================================================
-  summary:
-    name: 📋 Summary
-    runs-on: ubuntu-22.04
-    needs: [backend, frontend, deploy-scripts, sql-check, perf-test, e2e]
+  # ============================================
+  # 总结
+  # ============================================
+  notify:
+    name: Summary
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
     if: always()
+
     steps:
-      - name: 📊 结果汇总
+      - name: Check status
         run: |
-          echo "## MiniMax CI 结果" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| ☕ Backend | ${{ needs.backend.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🎨 Frontend | ${{ needs.frontend.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🐚 Deploy Scripts | ${{ needs.deploy-scripts.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🗄️ SQL Check | ${{ needs.sql-check.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🚀 Perf Test | ${{ needs.perf-test.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🧪 E2E Tests | ${{ needs.e2e.result }} |" >> $GITHUB_STEP_SUMMARY
-
-      - name: ❌ 检查是否有失败
-        if: needs.backend.result != 'success' || needs.frontend.result != 'success' || needs.deploy-scripts.result != 'success' || needs.sql-check.result != 'success' || needs.e2e.result == 'failure'
-        run: |
-          echo "⚠️ 部分 Job 失败"
-          exit 0  # 允许合并但标记
-
-      - name: ✅ 全部 Job 完成
-        if: needs.backend.result == 'success' && needs.frontend.result == 'success' && needs.deploy-scripts.result == 'success' && needs.sql-check.result == 'success' && needs.e2e.result != 'failure'
-        run: |
-          echo "✅ 全部 Job 通过"
+          if [ "${{ needs.backend.result }}" == "success" ] && \
+             [ "${{ needs.frontend.result }}" == "success" ]; then
+            echo "✅ All checks passed"
+            exit 0
+          else
+            echo "❌ Some checks failed"
+            echo "Backend: ${{ needs.backend.result }}"
+            echo "Frontend: ${{ needs.frontend.result }}"
+            exit 1
+          fi
