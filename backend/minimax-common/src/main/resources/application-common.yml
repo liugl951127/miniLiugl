@@ -145,13 +145,32 @@ otel:
 # V1.9.1: MiniMax 平台全局配置 (16 个微服务 + gateway 共用)
 # secret 直接写入 application.yml, mvn 打包后无需环境变量即可启动
 # =============================================================
+# =============================================================
+# V2.4 JWT Secret 安全规范
+# =============================================================
+# 1. 算法: HS256 (HMAC SHA-256), 要求 secret >= 256 bit (32 字节)
+# 2. 编码: 64 字符十六进制 (256 bit / 32 字节)
+# 3. 来源: openssl rand -hex 32 (加密随机源)
+# 4. 跨服务: 所有 16 个微服务必须用同一个 secret (HS256 跨服务验证)
+# 5. 验证: ls -la deploy-simple/generate-jwt-secret.sh 一键生成 + 替换
+# 6. 环境变量: 支持 MINIMAX_JWT_SECRET 覆盖 (生产环境推荐)
+# 7. 轮转: 重新生成后, 所有已签发 token 失效, 用户需重新登录
+# 8. 存储: 永远不要提交到 git (生成后用 .env 覆盖)
+# =============================================================
 minimax:
   jwt:
-    # 统一 HMAC SHA-256 签名密钥 (64 字符 hex, 跨服务验证 token 必须一致)
-    secret: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
+    # 统一 HMAC SHA-256 签名密钥 (64 字符 hex / 256 bit)
+    # 默认值: openssl rand -hex 32 生成
+    # 生产环境覆盖: MINIMAX_JWT_SECRET 环境变量
+    secret: ${MINIMAX_JWT_SECRET:a9b33d29b5e2728699fc02fe5f1aad70d2a0eb95c4313b786005573f6b913478}
     issuer: minimax-platform
     header: Authorization
     prefix: "Bearer "
+    # Token 过期时间
+    expire-minutes: 10080        # 7 天
+    refresh-expire-minutes: 43200  # 30 天
   # 通用加密 key (AES / SM4 / 签名 / IV 派生)
+  # 默认值: openssl rand -hex 32 生成
+  # 生产环境覆盖: MINIMAX_COMMON_SECRET 环境变量
   common:
-    secret: 7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6
+    secret: ${MINIMAX_COMMON_SECRET:a9b33d29b5e2728699fc02fe5f1aad70d2a0eb95c4313b786005573f6b913478}
