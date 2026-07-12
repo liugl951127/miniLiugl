@@ -1,6 +1,6 @@
 -- ===================================================================
 -- MiniMax Platform V3.0.0 全量 DDL (单文件汇总)
--- 表数: 62
+-- 表数: 84
 -- 字符集: utf8mb4 / 引擎: InnoDB
 -- ===================================================================
 
@@ -26,6 +26,59 @@ CREATE TABLE IF NOT EXISTS `admin_audit_log` (
     `userAgent` VARCHAR(255) DEFAULT NULL COMMENT 'userAgent',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AdminAuditLog (auto-generated V3.0.0)';
+
+-- AgentGroup -> agent_group
+CREATE TABLE IF NOT EXISTS `agent_group` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
+    `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
+    `groupId` VARCHAR(255) DEFAULT NULL COMMENT 'groupId',
+    `name` VARCHAR(255) DEFAULT NULL COMMENT 'name',
+    `description` TEXT DEFAULT NULL COMMENT 'description',
+    `strategy` VARCHAR(255) DEFAULT NULL COMMENT 'strategy',
+    `membersJson` VARCHAR(255) DEFAULT NULL COMMENT 'membersJson',
+    `status` VARCHAR(255) DEFAULT NULL COMMENT 'status',
+    `ownerId` BIGINT NOT NULL DEFAULT 0 COMMENT 'ownerId',
+    `tags` VARCHAR(255) DEFAULT NULL COMMENT 'tags',
+    `lastRunAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'lastRunAt',
+    `runCount` INT NOT NULL DEFAULT 0 COMMENT 'runCount',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AgentGroup (auto-generated V3.0.0)';
+
+-- MarketplaceAgent -> agent_marketplace
+CREATE TABLE IF NOT EXISTS `agent_marketplace` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `agentKey` VARCHAR(255) DEFAULT NULL COMMENT 'agentKey',
+    `name` TEXT DEFAULT NULL COMMENT 'name',
+    `category` VARCHAR(255) DEFAULT NULL COMMENT 'category',
+    `icon` BIGINT NOT NULL DEFAULT 0 COMMENT 'icon',
+    `authorId` VARCHAR(255) DEFAULT NULL COMMENT 'authorId',
+    `definitionJson` VARCHAR(255) DEFAULT NULL COMMENT 'definitionJson',
+    `version` VARCHAR(255) DEFAULT NULL COMMENT 'version',
+    `status` VARCHAR(255) DEFAULT NULL COMMENT 'status',
+    `usageCount` DOUBLE NOT NULL DEFAULT 0.0 COMMENT 'usageCount',
+    `avgRating` BIGINT NOT NULL DEFAULT 0 COMMENT 'avgRating',
+    `ratingCount` VARCHAR(255) DEFAULT NULL COMMENT 'ratingCount',
+    `tags` VARCHAR(255) DEFAULT NULL COMMENT 'tags',
+    `capabilities` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'capabilities',
+    `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
+    `publishedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'publishedAt',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_agent_marketplace_agentKey` (`agentKey`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='MarketplaceAgent (auto-generated V3.0.0)';
+
+-- AgentRating -> agent_rating
+CREATE TABLE IF NOT EXISTS `agent_rating` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `agentKey` VARCHAR(255) DEFAULT NULL COMMENT 'agentKey',
+    `userId` VARCHAR(255) DEFAULT NULL COMMENT 'userId',
+    `username` INT NOT NULL DEFAULT 0 COMMENT 'username',
+    `rating` VARCHAR(255) DEFAULT NULL COMMENT 'rating',
+    `comment` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'comment',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_agent_rating_agentKey` (`agentKey`),
+    UNIQUE KEY `uk_agent_rating_userId` (`userId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AgentRating (auto-generated V3.0.0)';
 
 -- AgentTask -> agent_task
 CREATE TABLE IF NOT EXISTS `agent_task` (
@@ -202,6 +255,7 @@ CREATE TABLE IF NOT EXISTS `alert_rule` (
     `metricName` VARCHAR(255) DEFAULT NULL COMMENT 'metricName',
     `service` VARCHAR(255) DEFAULT NULL COMMENT 'service',
     `operator` VARCHAR(255) DEFAULT NULL COMMENT 'operator',
+    `threshold` DECIMAL(20,4) DEFAULT NULL COMMENT 'threshold',
     `severity` VARCHAR(255) DEFAULT NULL COMMENT 'severity',
     `cooldownMinutes` INT NOT NULL DEFAULT 0 COMMENT 'cooldownMinutes',
     `enabled` INT NOT NULL DEFAULT 0 COMMENT 'enabled',
@@ -258,6 +312,25 @@ CREATE TABLE IF NOT EXISTS `analytics_report` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_analytics_report_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Report (auto-generated V3.0.0)';
+
+-- AsyncTask -> async_task
+CREATE TABLE IF NOT EXISTS `async_task` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
+    `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
+    `startedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'startedAt',
+    `finishedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'finishedAt',
+    `taskId` VARCHAR(255) DEFAULT NULL COMMENT 'taskId',
+    `taskType` VARCHAR(255) DEFAULT NULL COMMENT 'taskType',
+    `status` VARCHAR(255) DEFAULT NULL COMMENT 'status',
+    `params` VARCHAR(255) DEFAULT NULL COMMENT 'params',
+    `result` VARCHAR(255) DEFAULT NULL COMMENT 'result',
+    `errorMsg` VARCHAR(255) DEFAULT NULL COMMENT 'errorMsg',
+    `retryCount` INT NOT NULL DEFAULT 0 COMMENT 'retryCount',
+    `latencyMs` BIGINT NOT NULL DEFAULT 0 COMMENT 'latencyMs',
+    `submitterId` BIGINT NOT NULL DEFAULT 0 COMMENT 'submitterId',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AsyncTask (auto-generated V3.0.0)';
 
 -- AuditLog -> audit_log
 CREATE TABLE IF NOT EXISTS `audit_log` (
@@ -334,6 +407,26 @@ CREATE TABLE IF NOT EXISTS `auth_refresh_token` (
     UNIQUE KEY `uk_auth_refresh_token_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AuthRefreshToken (auto-generated V3.0.0)';
 
+-- BillingRecord -> billing_record
+CREATE TABLE IF NOT EXISTS `billing_record` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
+    `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
+    `recordId` VARCHAR(255) DEFAULT NULL COMMENT 'recordId',
+    `userId` BIGINT NOT NULL DEFAULT 0 COMMENT 'userId',
+    `licenseId` BIGINT NOT NULL DEFAULT 0 COMMENT 'licenseId',
+    `modelEntryId` BIGINT NOT NULL DEFAULT 0 COMMENT 'modelEntryId',
+    `recordType` VARCHAR(255) DEFAULT NULL COMMENT 'recordType',
+    `amountCents` BIGINT NOT NULL DEFAULT 0 COMMENT 'amountCents',
+    `currency` VARCHAR(255) DEFAULT NULL COMMENT 'currency',
+    `status` VARCHAR(255) DEFAULT NULL COMMENT 'status',
+    `paymentMethod` VARCHAR(255) DEFAULT NULL COMMENT 'paymentMethod',
+    `externalTransactionId` VARCHAR(255) DEFAULT NULL COMMENT 'externalTransactionId',
+    `description` TEXT DEFAULT NULL COMMENT 'description',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_billing_record_userId` (`userId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='BillingRecord (auto-generated V3.0.0)';
+
 -- ChatMessage -> chat_message
 CREATE TABLE IF NOT EXISTS `chat_message` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
@@ -366,6 +459,31 @@ CREATE TABLE IF NOT EXISTS `chat_session` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_chat_session_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='ChatSession (auto-generated V3.0.0)';
+
+-- ClusterNode -> cluster_node
+CREATE TABLE IF NOT EXISTS `cluster_node` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
+    `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
+    `nodeId` VARCHAR(255) DEFAULT NULL COMMENT 'nodeId',
+    `name` VARCHAR(255) DEFAULT NULL COMMENT 'name',
+    `address` VARCHAR(255) DEFAULT NULL COMMENT 'address',
+    `region` VARCHAR(255) DEFAULT NULL COMMENT 'region',
+    `zone` VARCHAR(255) DEFAULT NULL COMMENT 'zone',
+    `capabilities` VARCHAR(255) DEFAULT NULL COMMENT 'capabilities',
+    `totalCores` INT NOT NULL DEFAULT 0 COMMENT 'totalCores',
+    `totalMemoryMb` BIGINT NOT NULL DEFAULT 0 COMMENT 'totalMemoryMb',
+    `totalGpus` INT NOT NULL DEFAULT 0 COMMENT 'totalGpus',
+    `cpuUsage` DOUBLE NOT NULL DEFAULT 0.0 COMMENT 'cpuUsage',
+    `memoryUsage` DOUBLE NOT NULL DEFAULT 0.0 COMMENT 'memoryUsage',
+    `gpuUsage` DOUBLE NOT NULL DEFAULT 0.0 COMMENT 'gpuUsage',
+    `activeTasks` INT NOT NULL DEFAULT 0 COMMENT 'activeTasks',
+    `status` VARCHAR(255) DEFAULT NULL COMMENT 'status',
+    `isLeader` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'isLeader',
+    `lastHeartbeat` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'lastHeartbeat',
+    `startedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'startedAt',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='ClusterNode (auto-generated V3.0.0)';
 
 -- CollabMember -> collab_member
 CREATE TABLE IF NOT EXISTS `collab_member` (
@@ -443,6 +561,17 @@ CREATE TABLE IF NOT EXISTS `collab_session` (
     `status` VARCHAR(255) DEFAULT NULL COMMENT 'status',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CollabSession (auto-generated V3.0.0)';
+
+-- DashboardMetric -> dashboard_metric
+CREATE TABLE IF NOT EXISTS `dashboard_metric` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `timestamp` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'timestamp',
+    `metric` VARCHAR(255) DEFAULT NULL COMMENT 'metric',
+    `dimension` VARCHAR(255) DEFAULT NULL COMMENT 'dimension',
+    `value` DOUBLE NOT NULL DEFAULT 0.0 COMMENT 'value',
+    `tags` VARCHAR(255) DEFAULT NULL COMMENT 'tags',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='DashboardMetric (auto-generated V3.0.0)';
 
 -- DbDataSource -> data_source
 CREATE TABLE IF NOT EXISTS `data_source` (
@@ -594,6 +723,40 @@ CREATE TABLE IF NOT EXISTS `knowledge_base` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='KnowledgeBase (auto-generated V3.0.0)';
 
+-- LongTermMemory -> memory_long_term
+CREATE TABLE IF NOT EXISTS `memory_long_term` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
+    `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
+    `userId` BIGINT NOT NULL DEFAULT 0 COMMENT 'userId',
+    `sessionId` BIGINT NOT NULL DEFAULT 0 COMMENT 'sessionId',
+    `content` TEXT DEFAULT NULL COMMENT 'content',
+    `summary` VARCHAR(255) DEFAULT NULL COMMENT 'summary',
+    `role` VARCHAR(255) DEFAULT NULL COMMENT 'role',
+    `dim` INT NOT NULL DEFAULT 0 COMMENT 'dim',
+    `importance` DECIMAL(20,4) NOT NULL DEFAULT 0 COMMENT 'importance',
+    `tags` VARCHAR(255) DEFAULT NULL COMMENT 'tags',
+    `accessCount` INT NOT NULL DEFAULT 0 COMMENT 'accessCount',
+    `lastAccessAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'lastAccessAt',
+    `expiresAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'expiresAt',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_memory_long_term_userId` (`userId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='LongTermMemory (auto-generated V3.0.0)';
+
+-- UserPref -> memory_user_pref
+CREATE TABLE IF NOT EXISTS `memory_user_pref` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
+    `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
+    `userId` BIGINT NOT NULL DEFAULT 0 COMMENT 'userId',
+    `prefKey` VARCHAR(255) DEFAULT NULL COMMENT 'prefKey',
+    `prefValue` VARCHAR(255) DEFAULT NULL COMMENT 'prefValue',
+    `weight` DECIMAL(20,4) NOT NULL DEFAULT 0 COMMENT 'weight',
+    `source` VARCHAR(255) DEFAULT NULL COMMENT 'source',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_memory_user_pref_userId` (`userId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='UserPref (auto-generated V3.0.0)';
+
 -- MetricSnapshot -> metric_snapshot
 CREATE TABLE IF NOT EXISTS `metric_snapshot` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
@@ -645,6 +808,52 @@ CREATE TABLE IF NOT EXISTS `model_config` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='ModelConfig (auto-generated V3.0.0)';
 
+-- ModelLicense -> model_license
+CREATE TABLE IF NOT EXISTS `model_license` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
+    `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
+    `licenseKey` VARCHAR(255) DEFAULT NULL COMMENT 'licenseKey',
+    `modelEntryId` BIGINT NOT NULL DEFAULT 0 COMMENT 'modelEntryId',
+    `modelVersionId` BIGINT NOT NULL DEFAULT 0 COMMENT 'modelVersionId',
+    `userId` BIGINT NOT NULL DEFAULT 0 COMMENT 'userId',
+    `licenseType` VARCHAR(255) DEFAULT NULL COMMENT 'licenseType',
+    `status` VARCHAR(255) DEFAULT NULL COMMENT 'status',
+    `quotaCalls` BIGINT NOT NULL DEFAULT 0 COMMENT 'quotaCalls',
+    `usedCalls` BIGINT NOT NULL DEFAULT 0 COMMENT 'usedCalls',
+    `startAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'startAt',
+    `expireAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'expireAt',
+    `priceCents` BIGINT NOT NULL DEFAULT 0 COMMENT 'priceCents',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_model_license_userId` (`userId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='ModelLicense (auto-generated V3.0.0)';
+
+-- ModelEntry -> model_market
+CREATE TABLE IF NOT EXISTS `model_market` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `modelKey` VARCHAR(255) DEFAULT NULL COMMENT 'modelKey',
+    `name` TEXT DEFAULT NULL COMMENT 'name',
+    `modelType` VARCHAR(255) DEFAULT NULL COMMENT 'modelType',
+    `taskType` VARCHAR(255) DEFAULT NULL COMMENT 'taskType',
+    `baseModel` VARCHAR(255) DEFAULT NULL COMMENT 'baseModel',
+    `version` VARCHAR(255) DEFAULT NULL COMMENT 'version',
+    `filePath` VARCHAR(255) DEFAULT NULL COMMENT 'filePath',
+    `fileName` BIGINT NOT NULL DEFAULT 0 COMMENT 'fileName',
+    `fileSize` VARCHAR(255) DEFAULT NULL COMMENT 'fileSize',
+    `license` VARCHAR(255) DEFAULT NULL COMMENT 'license',
+    `authorId` VARCHAR(255) DEFAULT NULL COMMENT 'authorId',
+    `authorName` VARCHAR(255) DEFAULT NULL COMMENT 'authorName',
+    `tags` VARCHAR(255) DEFAULT NULL COMMENT 'tags',
+    `status` VARCHAR(255) DEFAULT NULL COMMENT 'status',
+    `downloadCount` DOUBLE NOT NULL DEFAULT 0.0 COMMENT 'downloadCount',
+    `avgRating` BIGINT NOT NULL DEFAULT 0 COMMENT 'avgRating',
+    `ratingCount` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'ratingCount',
+    `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
+    `publishedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'publishedAt',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_model_market_modelKey` (`modelKey`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='ModelEntry (auto-generated V3.0.0)';
+
 -- ModelProvider -> model_provider
 CREATE TABLE IF NOT EXISTS `model_provider` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
@@ -676,6 +885,41 @@ CREATE TABLE IF NOT EXISTS `model_quota` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_model_quota_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='ModelQuota (auto-generated V3.0.0)';
+
+-- ModelRating -> model_rating
+CREATE TABLE IF NOT EXISTS `model_rating` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `modelKey` VARCHAR(255) DEFAULT NULL COMMENT 'modelKey',
+    `userId` VARCHAR(255) DEFAULT NULL COMMENT 'userId',
+    `username` INT NOT NULL DEFAULT 0 COMMENT 'username',
+    `rating` VARCHAR(255) DEFAULT NULL COMMENT 'rating',
+    `comment` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'comment',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_model_rating_modelKey` (`modelKey`),
+    UNIQUE KEY `uk_model_rating_userId` (`userId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='ModelRating (auto-generated V3.0.0)';
+
+-- ModelVersion -> model_version
+CREATE TABLE IF NOT EXISTS `model_version` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
+    `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
+    `versionId` VARCHAR(255) DEFAULT NULL COMMENT 'versionId',
+    `modelEntryId` BIGINT NOT NULL DEFAULT 0 COMMENT 'modelEntryId',
+    `version` VARCHAR(255) DEFAULT NULL COMMENT 'version',
+    `changelog` VARCHAR(255) DEFAULT NULL COMMENT 'changelog',
+    `filePath` VARCHAR(255) DEFAULT NULL COMMENT 'filePath',
+    `sizeBytes` BIGINT NOT NULL DEFAULT 0 COMMENT 'sizeBytes',
+    `sha256` VARCHAR(255) DEFAULT NULL COMMENT 'sha256',
+    `inputSchema` VARCHAR(255) DEFAULT NULL COMMENT 'inputSchema',
+    `outputSchema` VARCHAR(255) DEFAULT NULL COMMENT 'outputSchema',
+    `status` VARCHAR(255) DEFAULT NULL COMMENT 'status',
+    `isLatest` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'isLatest',
+    `uploaderId` BIGINT NOT NULL DEFAULT 0 COMMENT 'uploaderId',
+    `backwardCompatible` VARCHAR(255) DEFAULT NULL COMMENT 'backwardCompatible',
+    `metadata` VARCHAR(255) DEFAULT NULL COMMENT 'metadata',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='ModelVersion (auto-generated V3.0.0)';
 
 -- ModerationRecord -> moderation_record
 CREATE TABLE IF NOT EXISTS `moderation_record` (
@@ -905,6 +1149,80 @@ CREATE TABLE IF NOT EXISTS `prompt_template` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='PromptTemplate (auto-generated V3.0.0)';
 
+-- PushMessage -> push_message
+CREATE TABLE IF NOT EXISTS `push_message` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
+    `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
+    `messageId` VARCHAR(255) DEFAULT NULL COMMENT 'messageId',
+    `title` VARCHAR(255) DEFAULT NULL COMMENT 'title',
+    `body` VARCHAR(255) DEFAULT NULL COMMENT 'body',
+    `icon` VARCHAR(255) DEFAULT NULL COMMENT 'icon',
+    `clickAction` VARCHAR(255) DEFAULT NULL COMMENT 'clickAction',
+    `data` VARCHAR(255) DEFAULT NULL COMMENT 'data',
+    `targetType` VARCHAR(255) DEFAULT NULL COMMENT 'targetType',
+    `targetValue` VARCHAR(255) DEFAULT NULL COMMENT 'targetValue',
+    `status` VARCHAR(255) DEFAULT NULL COMMENT 'status',
+    `successCount` INT NOT NULL DEFAULT 0 COMMENT 'successCount',
+    `failureCount` INT NOT NULL DEFAULT 0 COMMENT 'failureCount',
+    `error` VARCHAR(255) DEFAULT NULL COMMENT 'error',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='PushMessage (auto-generated V3.0.0)';
+
+-- PushSubscription -> push_subscription
+CREATE TABLE IF NOT EXISTS `push_subscription` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
+    `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
+    `subscriptionId` VARCHAR(255) DEFAULT NULL COMMENT 'subscriptionId',
+    `userId` BIGINT NOT NULL DEFAULT 0 COMMENT 'userId',
+    `platform` VARCHAR(255) DEFAULT NULL COMMENT 'platform',
+    `endpoint` VARCHAR(255) DEFAULT NULL COMMENT 'endpoint',
+    `p256dhKey` VARCHAR(255) DEFAULT NULL COMMENT 'p256dhKey',
+    `authKey` VARCHAR(255) DEFAULT NULL COMMENT 'authKey',
+    `userAgent` VARCHAR(255) DEFAULT NULL COMMENT 'userAgent',
+    `status` VARCHAR(255) DEFAULT NULL COMMENT 'status',
+    `lastActiveAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'lastActiveAt',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_push_subscription_userId` (`userId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='PushSubscription (auto-generated V3.0.0)';
+
+-- RateLimitRule -> rate_limit_rule
+CREATE TABLE IF NOT EXISTS `rate_limit_rule` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `key` VARCHAR(255) DEFAULT NULL COMMENT 'key',
+    `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
+    `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
+    `scope` VARCHAR(255) DEFAULT NULL COMMENT 'scope',
+    `description` TEXT DEFAULT NULL COMMENT 'description',
+    `capacity` INT NOT NULL DEFAULT 0 COMMENT 'capacity',
+    `refillTokens` INT NOT NULL DEFAULT 0 COMMENT 'refillTokens',
+    `periodSeconds` INT NOT NULL DEFAULT 0 COMMENT 'periodSeconds',
+    `enabled` INT NOT NULL DEFAULT 0 COMMENT 'enabled',
+    `priority` INT NOT NULL DEFAULT 0 COMMENT 'priority',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='RateLimitRule (auto-generated V3.0.0)';
+
+-- RequestLog -> request_log
+CREATE TABLE IF NOT EXISTS `request_log` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
+    `traceId` VARCHAR(255) DEFAULT NULL COMMENT 'traceId',
+    `method` VARCHAR(255) DEFAULT NULL COMMENT 'method',
+    `path` VARCHAR(255) DEFAULT NULL COMMENT 'path',
+    `queryString` VARCHAR(255) DEFAULT NULL COMMENT 'queryString',
+    `clientIp` VARCHAR(255) DEFAULT NULL COMMENT 'clientIp',
+    `userAgent` VARCHAR(255) DEFAULT NULL COMMENT 'userAgent',
+    `userId` BIGINT NOT NULL DEFAULT 0 COMMENT 'userId',
+    `status` INT NOT NULL DEFAULT 0 COMMENT 'status',
+    `latencyMs` BIGINT NOT NULL DEFAULT 0 COMMENT 'latencyMs',
+    `slow` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'slow',
+    `error` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'error',
+    `module` VARCHAR(255) DEFAULT NULL COMMENT 'module',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_request_log_userId` (`userId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='RequestLog (auto-generated V3.0.0)';
+
 -- SensitiveWord -> sensitive_word
 CREATE TABLE IF NOT EXISTS `sensitive_word` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
@@ -996,6 +1314,65 @@ CREATE TABLE IF NOT EXISTS `tenant` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Tenant (auto-generated V3.0.0)';
 
+-- TrainingCheckpoint -> training_checkpoint
+CREATE TABLE IF NOT EXISTS `training_checkpoint` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
+    `taskId` VARCHAR(255) DEFAULT NULL COMMENT 'taskId',
+    `checkpointId` VARCHAR(255) DEFAULT NULL COMMENT 'checkpointId',
+    `name` VARCHAR(255) DEFAULT NULL COMMENT 'name',
+    `epoch` INT NOT NULL DEFAULT 0 COMMENT 'epoch',
+    `step` INT NOT NULL DEFAULT 0 COMMENT 'step',
+    `filePath` VARCHAR(255) DEFAULT NULL COMMENT 'filePath',
+    `sizeBytes` BIGINT NOT NULL DEFAULT 0 COMMENT 'sizeBytes',
+    `sha256` VARCHAR(255) DEFAULT NULL COMMENT 'sha256',
+    `valLoss` DOUBLE NOT NULL DEFAULT 0.0 COMMENT 'valLoss',
+    `accuracy` DOUBLE NOT NULL DEFAULT 0.0 COMMENT 'accuracy',
+    `tags` VARCHAR(255) DEFAULT NULL COMMENT 'tags',
+    `metadata` VARCHAR(255) DEFAULT NULL COMMENT 'metadata',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='TrainingCheckpoint (auto-generated V3.0.0)';
+
+-- TrainingJob -> training_job
+CREATE TABLE IF NOT EXISTS `training_job` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
+    `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
+    `taskId` VARCHAR(255) DEFAULT NULL COMMENT 'taskId',
+    `name` VARCHAR(255) DEFAULT NULL COMMENT 'name',
+    `model` VARCHAR(255) DEFAULT NULL COMMENT 'model',
+    `status` VARCHAR(255) DEFAULT NULL COMMENT 'status',
+    `totalEpochs` INT NOT NULL DEFAULT 0 COMMENT 'totalEpochs',
+    `currentEpoch` INT NOT NULL DEFAULT 0 COMMENT 'currentEpoch',
+    `currentStep` INT NOT NULL DEFAULT 0 COMMENT 'currentStep',
+    `startTimeMs` BIGINT NOT NULL DEFAULT 0 COMMENT 'startTimeMs',
+    `endTimeMs` BIGINT NOT NULL DEFAULT 0 COMMENT 'endTimeMs',
+    `config` TEXT DEFAULT NULL COMMENT 'config',
+    `error` VARCHAR(255) DEFAULT NULL COMMENT 'error',
+    `ownerId` BIGINT NOT NULL DEFAULT 0 COMMENT 'ownerId',
+    `tags` VARCHAR(255) DEFAULT NULL COMMENT 'tags',
+    `lastLoss` DOUBLE NOT NULL DEFAULT 0.0 COMMENT 'lastLoss',
+    `lastValLoss` DOUBLE NOT NULL DEFAULT 0.0 COMMENT 'lastValLoss',
+    `lastAccuracy` DOUBLE NOT NULL DEFAULT 0.0 COMMENT 'lastAccuracy',
+    `totalSteps` INT NOT NULL DEFAULT 0 COMMENT 'totalSteps',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='TrainingJob (auto-generated V3.0.0)';
+
+-- TrainingMetric -> training_metric
+CREATE TABLE IF NOT EXISTS `training_metric` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `timestamp` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'timestamp',
+    `taskId` VARCHAR(255) DEFAULT NULL COMMENT 'taskId',
+    `epoch` INT NOT NULL DEFAULT 0 COMMENT 'epoch',
+    `step` INT NOT NULL DEFAULT 0 COMMENT 'step',
+    `loss` DOUBLE NOT NULL DEFAULT 0.0 COMMENT 'loss',
+    `valLoss` DOUBLE NOT NULL DEFAULT 0.0 COMMENT 'valLoss',
+    `accuracy` DOUBLE NOT NULL DEFAULT 0.0 COMMENT 'accuracy',
+    `learningRate` DOUBLE NOT NULL DEFAULT 0.0 COMMENT 'learningRate',
+    `elapsedMs` BIGINT NOT NULL DEFAULT 0 COMMENT 'elapsedMs',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='TrainingMetric (auto-generated V3.0.0)';
+
 -- TrainingTask -> training_task
 CREATE TABLE IF NOT EXISTS `training_task` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
@@ -1048,6 +1425,45 @@ CREATE TABLE IF NOT EXISTS `user_api_key` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_user_api_key_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='UserApiKey (auto-generated V3.0.0)';
+
+-- Webhook -> webhook
+CREATE TABLE IF NOT EXISTS `webhook` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `webhookId` VARCHAR(255) DEFAULT NULL COMMENT 'webhookId',
+    `name` TEXT DEFAULT NULL COMMENT 'name',
+    `description` VARCHAR(255) DEFAULT NULL COMMENT 'description',
+    `url` VARCHAR(255) DEFAULT NULL COMMENT 'url',
+    `events` VARCHAR(255) DEFAULT NULL COMMENT 'events',
+    `secret` VARCHAR(255) DEFAULT NULL COMMENT 'secret',
+    `customHeaders` INT NOT NULL DEFAULT 0 COMMENT 'customHeaders',
+    `enabled` VARCHAR(255) DEFAULT NULL COMMENT 'enabled',
+    `status` BIGINT NOT NULL DEFAULT 0 COMMENT 'status',
+    `deliveryCount` BIGINT NOT NULL DEFAULT 0 COMMENT 'deliveryCount',
+    `successCount` BIGINT NOT NULL DEFAULT 0 COMMENT 'successCount',
+    `failCount` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'failCount',
+    `lastDeliveryAt` INT NOT NULL DEFAULT 0 COMMENT 'lastDeliveryAt',
+    `lastStatus` BIGINT NOT NULL DEFAULT 0 COMMENT 'lastStatus',
+    `ownerId` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'ownerId',
+    `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_webhook_webhookId` (`webhookId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Webhook (auto-generated V3.0.0)';
+
+-- WebhookDelivery -> webhook_delivery
+CREATE TABLE IF NOT EXISTS `webhook_delivery` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `webhookId` VARCHAR(255) DEFAULT NULL COMMENT 'webhookId',
+    `eventType` VARCHAR(255) DEFAULT NULL COMMENT 'eventType',
+    `eventId` MEDIUMTEXT DEFAULT NULL COMMENT 'eventId',
+    `payload` INT NOT NULL DEFAULT 0 COMMENT 'payload',
+    `responseStatus` VARCHAR(255) DEFAULT NULL COMMENT 'responseStatus',
+    `responseBody` BIGINT NOT NULL DEFAULT 0 COMMENT 'responseBody',
+    `status` VARCHAR(255) DEFAULT NULL COMMENT 'status',
+    `retryCount` VARCHAR(255) DEFAULT NULL COMMENT 'retryCount',
+    `errorMsg` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'errorMsg',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_webhook_delivery_webhookId` (`webhookId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='WebhookDelivery (auto-generated V3.0.0)';
 
 -- WechatConfig -> wechat_config
 CREATE TABLE IF NOT EXISTS `wechat_config` (
@@ -1104,107 +1520,7 @@ CREATE TABLE IF NOT EXISTS `wechat_user_binding` (
 
 SET FOREIGN_KEY_CHECKS = 1;
 
--- ========================================================
--- V3.2.1: 看板指标 (dashboard_metric)
--- ========================================================
-CREATE TABLE IF NOT EXISTS `dashboard_metric` (
-    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
-    `metric` VARCHAR(64) NOT NULL COMMENT '指标名 (e.g. user.total, ai.call.count)',
-    `dimension` VARCHAR(64) NOT NULL DEFAULT 'global' COMMENT '维度 (global/tool:ppt.gen)',
-    `value` DOUBLE NOT NULL DEFAULT 0 COMMENT '指标值',
-    `tags` VARCHAR(512) DEFAULT NULL COMMENT '额外标签JSON',
-    `timestamp` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '快照时间',
-    PRIMARY KEY (`id`),
-    KEY `idx_dashboard_metric_metric_ts` (`metric`, `timestamp`),
-    KEY `idx_dashboard_metric_dimension` (`dimension`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='DashboardMetric (V3.2.1 看板指标历史)';
-
--- ========================================================
--- V3.2.0: 训练可视化 (training_job / training_metric / training_checkpoint)
--- ========================================================
-CREATE TABLE IF NOT EXISTS `training_job` (
-    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
-    `taskId` VARCHAR(64) NOT NULL COMMENT '业务taskId (UUID)',
-    `name` VARCHAR(255) NOT NULL COMMENT '任务名',
-    `model` VARCHAR(255) DEFAULT NULL COMMENT '模型名',
-    `status` VARCHAR(32) NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING/RUNNING/COMPLETED/FAILED/CANCELLED',
-    `totalEpochs` INT NOT NULL DEFAULT 0 COMMENT '总epoch数',
-    `currentEpoch` INT NOT NULL DEFAULT 0 COMMENT '当前epoch',
-    `currentStep` INT NOT NULL DEFAULT 0 COMMENT '当前step',
-    `startTimeMs` BIGINT NOT NULL DEFAULT 0 COMMENT '起始时间戳ms',
-    `endTimeMs` BIGINT NOT NULL DEFAULT 0 COMMENT '结束时间戳ms (0=未结束)',
-    `config` TEXT DEFAULT NULL COMMENT '配置JSON',
-    `error` TEXT DEFAULT NULL COMMENT '错误信息',
-    `ownerId` BIGINT DEFAULT NULL COMMENT '创建人ID',
-    `tags` VARCHAR(255) DEFAULT NULL COMMENT '标签',
-    `lastLoss` DOUBLE DEFAULT NULL COMMENT '最新loss',
-    `lastValLoss` DOUBLE DEFAULT NULL COMMENT '最新val_loss',
-    `lastAccuracy` DOUBLE DEFAULT NULL COMMENT '最新accuracy',
-    `totalSteps` INT NOT NULL DEFAULT 0 COMMENT '总步数',
-    `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_training_job_taskId` (`taskId`),
-    KEY `idx_training_job_status` (`status`),
-    KEY `idx_training_job_ownerId` (`ownerId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='TrainingJob (V3.2.0 训练任务)';
-
-CREATE TABLE IF NOT EXISTS `training_metric` (
-    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
-    `taskId` VARCHAR(64) NOT NULL COMMENT '业务taskId',
-    `epoch` INT NOT NULL DEFAULT 0 COMMENT '当前epoch',
-    `step` INT NOT NULL DEFAULT 0 COMMENT '当前step',
-    `loss` DOUBLE NOT NULL DEFAULT 0 COMMENT '训练loss',
-    `valLoss` DOUBLE NOT NULL DEFAULT 0 COMMENT '验证loss',
-    `accuracy` DOUBLE NOT NULL DEFAULT 0 COMMENT '准确率',
-    `learningRate` DOUBLE NOT NULL DEFAULT 0 COMMENT '学习率',
-    `elapsedMs` BIGINT NOT NULL DEFAULT 0 COMMENT '累计耗时ms',
-    `timestamp` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '上报时间',
-    PRIMARY KEY (`id`),
-    KEY `idx_training_metric_taskId_step` (`taskId`, `step`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='TrainingMetric (V3.2.0 训练指标历史)';
-
-CREATE TABLE IF NOT EXISTS `training_checkpoint` (
-    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
-    `taskId` VARCHAR(64) NOT NULL COMMENT '业务taskId',
-    `checkpointId` VARCHAR(64) NOT NULL COMMENT 'checkpoint业务ID',
-    `name` VARCHAR(255) DEFAULT NULL COMMENT 'checkpoint名称 (e.g. best-val-loss)',
-    `epoch` INT NOT NULL DEFAULT 0 COMMENT 'epoch',
-    `step` INT NOT NULL DEFAULT 0 COMMENT 'step',
-    `filePath` VARCHAR(512) NOT NULL COMMENT '文件路径',
-    `sizeBytes` BIGINT NOT NULL DEFAULT 0 COMMENT '文件大小 (字节)',
-    `sha256` VARCHAR(64) DEFAULT NULL COMMENT 'SHA256校验',
-    `valLoss` DOUBLE DEFAULT NULL COMMENT 'val_loss (排序用)',
-    `accuracy` DOUBLE DEFAULT NULL COMMENT 'accuracy (排序用)',
-    `tags` VARCHAR(255) DEFAULT NULL COMMENT '标签 (best/latest/milestone)',
-    `metadata` TEXT DEFAULT NULL COMMENT '元数据JSON',
-    `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_training_checkpoint_checkpointId` (`checkpointId`),
-    KEY `idx_training_checkpoint_taskId` (`taskId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='TrainingCheckpoint (V3.2.0 检查点)';
-
--- ========================================================
--- V3.0.3: agent_group 智能体群组表
--- ========================================================
-CREATE TABLE IF NOT EXISTS `agent_group` (
-    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
-    `groupId` VARCHAR(64) NOT NULL COMMENT '群组业务ID (UUID)',
-    `name` VARCHAR(255) NOT NULL COMMENT '群组名',
-    `description` TEXT DEFAULT NULL COMMENT '群组描述',
-    `strategy` VARCHAR(32) NOT NULL DEFAULT 'PIPELINE' COMMENT '协作策略: PIPELINE/DEBATE/VOTE/SWARM',
-    `membersJson` TEXT DEFAULT NULL COMMENT '群成员JSON: [{agentName, role, weight, capability, order}]',
-    `status` VARCHAR(32) NOT NULL DEFAULT 'CREATED' COMMENT '状态: CREATED/RUNNING/COMPLETED/FAILED',
-    `ownerId` BIGINT DEFAULT NULL COMMENT '创建人ID',
-    `tags` VARCHAR(255) DEFAULT NULL COMMENT '标签 (逗号分隔)',
-    `lastRunAt` DATETIME DEFAULT NULL COMMENT '最后运行时间',
-    `runCount` INT NOT NULL DEFAULT 0 COMMENT '总运行次数',
-    `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_agent_group_groupId` (`groupId`),
-    KEY `idx_agent_group_ownerId` (`ownerId`),
-    KEY `idx_agent_group_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AgentGroup (V3.0.3 智能体群组)';
-
--- 全部 DDL 生成完毕
+-- 全部 DDL 生成完毕 (种子见 init_seeds.sql)
+-- 部署步骤:
+--   1. mysql -u root -p minimax_platform < sql/init.sql       (建表)
+--   2. mysql -u root -p minimax_platform < sql/init_seeds.sql  (种子)

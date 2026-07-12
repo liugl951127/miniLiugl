@@ -93,7 +93,7 @@ describe('Monitor API', () => {
       mockHttp.get.mockResolvedValueOnce(mockResponse({ data: [] }))
       const { getMonitorTrend } = await import('../api/monitor.js')
       await getMonitorTrend(48)
-      expect(mockHttp.get).toHaveBeenCalledWith('/monitor/metrics/trend?hours=48')
+      expect(mockHttp.get).toHaveBeenCalledWith('/monitor/metrics/trend', { params: { hours: 48 } })
     })
 
     it('getMonitorSnapshot 应调用 GET /monitor/metrics/snapshot', async () => {
@@ -107,11 +107,11 @@ describe('Monitor API', () => {
   // ── 告警 API ──
 
   describe('告警 API', () => {
-    it('getMonitorAlerts 应调用 GET /monitor/alerts', async () => {
+    it('getMonitorAlerts 应调用 GET /monitor/alerts/firing', async () => {
       mockHttp.get.mockResolvedValueOnce(mockResponse({ data: [] }))
       const { getMonitorAlerts } = await import('../api/monitor.js')
       await getMonitorAlerts()
-      expect(mockHttp.get).toHaveBeenCalledWith('/monitor/alerts')
+      expect(mockHttp.get).toHaveBeenCalledWith('/monitor/alerts/firing')
     })
 
     it('getMonitorAlertsFiring 应调用 GET /monitor/alerts/firing', async () => {

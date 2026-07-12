@@ -14,15 +14,6 @@ export const getMetricsSnapshot = () => http.get('/monitor/metrics/snapshot')
 
 // ==================== 告警 (V2.7.1 新增) ====================
 
-// 别名 (兼容 monitor/Index.vue 旧 API)
-export const getMonitorAlertRules = listAlertRules
-export const createMonitorAlertRule = createAlertRule
-export const updateMonitorAlertRule = updateAlertRule
-export const deleteMonitorAlertRule = deleteAlertRule
-
-export const getAlertChannels = listAlertChannels
-export const updateAlertChannel = (id, ch) => http.put(`/monitor/alerts/channels/${id}`, ch)
-
 /** 触发中的告警 */
 export const getFiringAlerts = () => http.get('/monitor/alerts/firing')
 
@@ -51,8 +42,14 @@ export const acknowledgeAlert = (id) => http.post(`/monitor/alerts/${id}/ack`)
 /** 通知渠道列表 */
 export const listAlertChannels = () => http.get('/monitor/alerts/channels')
 
+/** 查通知渠道 */
+export const getAlertChannel = (id) => http.get(`/monitor/alerts/channels/${id}`)
+
 /** 创建通知渠道 */
 export const createAlertChannel = (channel) => http.post('/monitor/alerts/channels', channel)
+
+/** 更新通知渠道 */
+export const updateAlertChannel = (id, channel) => http.put(`/monitor/alerts/channels/${id}`, channel)
 
 /** 删除通知渠道 */
 export const deleteAlertChannel = (id) => http.delete(`/monitor/alerts/channels/${id}`)
@@ -90,3 +87,38 @@ const monitorApi = {
 }
 export default monitorApi
 export { monitorApi }
+
+// 别名 (兼容 monitor/Index.vue 旧 API) - 必须在定义后导出
+export const getMonitorAlertRules = listAlertRules
+export const createMonitorAlertRule = createAlertRule
+export const updateMonitorAlertRule = updateAlertRule
+export const deleteMonitorAlertRule = deleteAlertRule
+export const getAlertChannels = listAlertChannels
+export const getMonitorJvm = getJvmHealth
+export const getMonitorDisk = getDiskHealth
+export const getMonitorDb = getDbHealth
+export const getMonitorMetrics = getMetrics
+export const getMonitorTrend = (hours) => http.get('/monitor/metrics/trend', { params: { hours } })
+export const getMonitorSnapshot = getMetricsSnapshot
+export const getMonitorAlerts = getFiringAlerts
+export const getMonitorAlertsFiring = getFiringAlerts
+export const getMonitorAlertSummary = getAlertSummary
+
+// ==================== 知识图谱 (Agent 模块) ====================
+
+/** 搜索实体 */
+export const kgSearchEntities = (userId, keyword, limit = 20) =>
+  http.get('/agent/kg/entities/search', { params: { userId, keyword, limit } })
+
+/** 查实体 */
+export const kgGetEntity = (id) => http.get(`/agent/kg/entities/${id}`)
+
+/** 邻居 (1跳) */
+export const kgNeighbors = (id) => http.get(`/agent/kg/entities/${id}/neighbors`)
+
+/** 2跳 */
+export const kgTwoHop = (id) => http.get(`/agent/kg/entities/${id}/2hop`)
+
+/** 路径 */
+export const kgPath = (userId, fromId, toId) =>
+  http.get('/agent/kg/path', { params: { userId, fromId, toId } })

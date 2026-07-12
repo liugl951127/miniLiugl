@@ -27,9 +27,9 @@ from pathlib import Path
 from collections import OrderedDict
 
 # 项目根 (允许命令行参数)
-DEFAULT_ROOT = Path('/workspace/miniLiugl-v300/backend')
+DEFAULT_ROOT = Path('/workspace/miniLiugl/backend')
 ROOT = DEFAULT_ROOT
-OUT_FILE = Path('/workspace/miniLiugl-v300/sql/init.sql')
+OUT_FILE = Path('/workspace/miniLiugl/sql/init.sql')
 
 # Java -> MySQL 类型映射
 # 第一个元素: MySQL 类型
@@ -72,15 +72,19 @@ def parse_args():
 
 
 def find_entity_files(root: Path, module: str = None) -> list:
-    """查找所有实体类文件"""
-    pattern = '**/entity/*.java'
+    """查找所有实体类文件 (V3.0.0+ 扫全部, 不只 entity/)"""
     files = []
     modules = [module] if module else [d for d in os.listdir(root) if d.startswith('minimax-')]
     for mod in modules:
         mod_path = root / mod / 'src' / 'main' / 'java'
         if not mod_path.exists():
             continue
-        for f in mod_path.glob(pattern):
+        # V3.0.0+: 扫全部 (含 marketplace/longterm/...)
+        for f in mod_path.rglob('*.java'):
+            # 排除 DTO/VO/Controller
+            path_str = str(f)
+            if 'dto/' in path_str or '/vo/' in path_str or '/controller/' in path_str or '/dto\\' in path_str or '\\vo\\' in path_str:
+                continue
             files.append(f)
     return sorted(files)
 

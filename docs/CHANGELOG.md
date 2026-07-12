@@ -1,6 +1,40 @@
 # MiniMax Platform 变更日志
 
-> **所有版本变更** · V1.0 → V3.2.1
+> **所有版本变更** · V1.0 → V3.3.4
+
+## [V3.3.4] - 2026-07-13
+
+### V3.3.4 全面复测 + Bug 修复 + 企业文档体系
+
+**复测结果**:
+- 后端 16 个微服务单元测试: **435 个, 0 错误** (含 multimodal 1 个 ONNX 软跳过)
+- 前端 vitest: **44 个, 0 错误**
+- Vite build: 成功 (1m 42s, 4.7M 产物)
+- H2 验证 SQL: **84 张表, 12 种子表, 0 错误**
+
+**修复的 Bug**:
+1. **前端 monitor.js (24 个测试)**:
+   - 别名引用顺序问题 (TDZ): `getMonitorAlertRules = listAlertRules` 在定义前引用
+   - 重写别名块到文件末尾, 必须在定义后导出
+   - 补全 5 个缺失 API: `getAlertChannel`, `updateAlertChannel`, `kgSearchEntities`, `kgGetEntity`, `kgNeighbors`, `kgTwoHop`, `kgPath`
+   - 修测试期望: `'/monitor/metrics/trend?hours=48'` → `'/monitor/metrics/trend', {params:{hours:48}}`
+   - 修别名路径: `getMonitorAlerts` 调 `/monitor/alerts/firing` (firing 是准确描述)
+2. **SQL 重构 (init.sql + init_seeds.sql)**:
+   - 拆分为 2 个脚本: `init.sql` (仅 DDL) + `init_seeds.sql` (仅种子)
+   - gen_ddl.py 增强: 扫全部类 (不只 entity/), 共 **84 张表** (从 73 增加到 84)
+   - 补 11 个缺失表: agent_marketplace, agent_rating, async_task, memory_long_term, memory_user_pref, model_market, model_rating, rate_limit_rule, request_log, webhook, webhook_delivery
+   - 补 alert_rule 表的 threshold 列 (gen_ddl 漏了)
+   - 修种子列名: 匹配实际实体字段 (category → isRegex, metric → metricName, type → protocol, jdbcUrl 等驼峰 → 实际列)
+   - 移除 ON DUPLICATE KEY UPDATE (H2 不完整支持), 直接用 INSERT
+
+**企业文档体系** (中文命名, docs/企业文档/):
+1. `README.md` - 文档总览索引
+2. `用户操作手册.md` - 8.4KB, 6 章, 含 ASCII 截图占位
+3. `功能操作手册.md` - 16KB, 12 个功能模块
+4. `初级开发手册.md` - 18.5KB, 9 章
+5. `docs/screenshots/截图索引.md` - 9 张实际截图 + 35 张待补清单
+
+**总测试量**: 435 + 44 = **479** 个, 通过率 100%
 
 ## [V3.2.1] - 2026-07-12
 
