@@ -1,6 +1,76 @@
 # MiniMax Platform 变更日志
 
-> **所有版本变更** · V1.0 → V2.8.9
+> **所有版本变更** · V1.0 → V2.9.0
+
+## [V2.9.0] - 2026-07-12 (大版本)
+
+### 🆕 完整 Admin 治理后台 (主)
+- **GovernanceService** (12KB) - 治理核心
+  - **overview()**: 总操作/成功/失败/失败率/独立用户/资源分布/Top 10 操作
+  - **timeline()**: 按小时聚合时间线 (总 + 失败)
+  - **anomalies()**: 4 类异常检测
+    - 高频失败用户 (失败 >10)
+    - 异常 IP (单 IP >1000)
+    - 越权删除尝试
+    - 短时间突发 (同用户 1分钟 >50)
+  - **compliance()**: 5 项合规检查 (审计完整性/敏感词/保留/加密/RBAC)
+  - **retentionPolicies()**: 3 表保留策略
+- **GovernanceController** 5 个端点
+  - GET /api/v1/admin/governance/overview
+  - GET /api/v1/admin/governance/timeline
+  - GET /api/v1/admin/governance/anomalies
+  - GET /api/v1/admin/governance/compliance
+  - GET /api/v1/admin/governance/retention
+- **AdminGovernance.vue** (10KB) 前端面板
+  - 6 KPI 卡片 (总操作/成功/失败/失败率/独立用户/合规评分)
+  - 24h 时间线 (ECharts LineChart + areaStyle)
+  - Top 10 操作表格 (带进度条)
+  - 资源分布环图 (PieChart)
+  - 异常检测 3 列表
+  - 合规 5 卡片 (带 PASS/WARN/FAIL 状态)
+  - 保留策略表格
+
+### 🆕 AI Agent Marketplace (辅)
+- **MarketplaceAgent** 实体 (2.5KB)
+  - 字段: agentKey/name/description/category/icon
+  - authorId/authorName/definitionJson/version
+  - visibility (PUBLIC/PRIVATE/UNLISTED)
+  - status (PENDING/APPROVED/PUBLISHED/REJECTED)
+  - usageCount/avgRating/ratingCount/tags/capabilities
+- **AgentRating** 实体 + 评分记录
+- **MarketplaceService** (7.4KB)
+  - upload(): 验证 JSON + 自动 agentKey
+  - browse(): 分类/搜索/排序 (最新/评分/使用)
+  - detail() + recordUsage(): 自增计数
+  - rate(): 1-5 星, 自动更新聚合
+  - approve(): 状态机 PENDING → PUBLISHED/REJECTED
+  - stats(): 总数/已发布/待审/总使用
+- **MarketplaceController** 9 个端点
+  - GET/POST /agents, GET /agents/{key}
+  - POST /agents/{key}/rate, GET /agents/{key}/ratings
+  - POST /agents/{key}/use, POST /agents/{key}/approve
+  - GET /my, GET /stats
+- **Marketplace.vue** (12.4KB) 前端
+  - 4 KPI 卡片
+  - 筛选: 分类/搜索/排序
+  - Agent 卡片网格 (图标/作者/分类/描述/标签/统计)
+  - 上传对话框 (7 字段 + JSON 编辑)
+  - 详情对话框 (评分 1-5 星 + 评论)
+
+### 🆕 DDL (4 表 + 5 异常规则 + 3 示例 Agent)
+- agent_marketplace (主表, 13 字段, 8 索引)
+- agent_rating (评分记录)
+- data_retention_policy (保留策略)
+- anomaly_rule (异常检测规则)
+- 3 示例公开 Agent (旅行/代码/诗词)
+- 5 异常检测规则种子
+
+### 🧪 测试统计
+- 256 (V2.8.9) → **274** (+18)
+- V290GovernanceTest 7: overview/empty/timeline/高频失败/越权/compliance/retention
+- V290MarketplaceTest 11: upload基本/PUBLIC/无效JSON/browse/rate新/更新/无效/不存在/approve/不存在/use
+
+---
 
 ## [V2.8.9] - 2026-07-12
 
