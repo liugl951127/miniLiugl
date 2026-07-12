@@ -29,7 +29,7 @@ import java.util.Map;
 @Slf4j
 @Tag(name = "认证授权")
 @RestController
-@RequestMapping("/auth/super")
+@RequestMapping("/api/v1/auth/super")
 @RequiredArgsConstructor
 public class SuperAdminController {
 

@@ -41,7 +41,7 @@ import java.util.Map;
  */
 @Tag(name = "RAG知识库")
 @RestController
-@RequestMapping("/rag")
+@RequestMapping("/api/v1/rag")
 @RequiredArgsConstructor
 public class RagController {
 

@@ -31,7 +31,7 @@ import java.util.concurrent.*;
 @Slf4j
 @Tag(name = "AI模型测试")
 @RestController
-@RequestMapping("/test")
+@RequestMapping("/api/v1/test")
 @RequiredArgsConstructor
 public class RealAiTestController {
 

@@ -114,16 +114,39 @@ public class CrdtEngine {
 
     /**
      * 重建文档文本 (按 CRDT 顺序遍历 items, 跳过 tombstone)
+     *
+     * <p><b>CRDT 排序规则</b> (三键复合排序):
+     * <ol>
+     *   <li><b>parentId</b>: 树状文档的父节点, root 节点 parentId 为 null
+     *       — nullsFirst, 保证根节点优先</li>
+     *   <li><b>id.clientId</b>: 同 parent 下, clientId 小的先</li>
+     *   <li><b>id.clock</b>: 同 client 下, clock 递增</li>
+     * </ol>
+     *
+     * <p><b>三键排序保证的并发插入顺序确定性</b>:
+     *   两个客户端并发在同一位置插入时, 无论接收顺序如何,
+     *   重建后顺序一致 — 这是 CRDT "强最终一致性" 的核心.
+     *
+     * <p><b>Tombstone 跳过</b>: 已删除的 item 仍保留在 items 中 (供回放),
+     *   但不输出到文本. 后续如复活 (undo) 可重新可见.
+     *
+     * <p><b>复杂度</b>: O(N log N) (N=item 数)
      */
     public String renderText(String roomId) {
         DocState state = docs.get(roomId);
         if (state == null) return "";
+        // 1. 收集所有 items
         List<CrdtItem> ordered = new ArrayList<>(state.getItems().values());
+
+        // 2. 三键复合排序: (parentId, clientId, clock)
+        //    nullsFirst: parentId 为 null 的排最前 (即根级)
         ordered.sort(Comparator
             .comparing((CrdtItem i) -> i.getParentId() == null ? "" : i.getParentId().toKey(),
                 Comparator.nullsFirst(String::compareTo))
-            .thenComparing(i -> i.getId().getClientId())
-            .thenComparingLong(i -> i.getId().getClock()));
+            .thenComparing(i -> i.getId().getClientId())     // 同 parent, clientId 升序
+            .thenComparingLong(i -> i.getId().getClock()));  // 同 client, clock 递增
+
+        // 3. 拼接文本, 跳过 tombstone
         StringBuilder sb = new StringBuilder();
         for (CrdtItem item : ordered) {
             if (!state.getTombstones().contains(item.getId().toKey())) {

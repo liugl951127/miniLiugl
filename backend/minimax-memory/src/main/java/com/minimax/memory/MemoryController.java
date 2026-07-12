@@ -47,7 +47,7 @@ import java.util.Map;
  */
 @Tag(name = "记忆管理")
 @RestController
-@RequestMapping("/memory")
+@RequestMapping("/api/v1/memory")
 @RequiredArgsConstructor
 public class MemoryController {
 

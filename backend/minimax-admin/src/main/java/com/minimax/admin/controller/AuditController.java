@@ -21,7 +21,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/admin/audit")
+@RequestMapping("/api/v1/admin/audit")
 @RequiredArgsConstructor
 public class AuditController {
 

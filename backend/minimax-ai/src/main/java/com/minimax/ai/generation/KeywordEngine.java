@@ -230,6 +230,24 @@ public class KeywordEngine {
 
     /**
      * 提取参数 (从文本中提取配置参数)
+     *
+     * <p><b>抽取策略</b> (顺序执行, 覆盖模式):
+     * <ol>
+     *   <li><b>调式 key</b>: 正则 {@code [CDEFGAB][#b]?\s*(大调|小调|major|minor)?}
+     *       — 例: "C大调" → key="C 大调", "F#minor" → key="F# minor"</li>
+     *   <li><b>BPM</b>: 正则 {@code \d{2,3}\s*bpm} (不区分大小写)
+     *       — 例: "120 bpm" → bpm="120"</li>
+     *   <li><b>小节数 bars</b>: 正则 {@code \d+\s*(小节|bar|小节数)}</li>
+     *   <li><b>风格 style</b>: 包含检查, 优先取中英文表中的首个命中</li>
+     *   <li><b>图表类型 chartType</b>: 包含检查 (中文 7 种)</li>
+     *   <li><b>表名 table</b>: 正则 {@code (FROM|from|查询|统计)\s+(\w+)}
+     *       — 例: "查询 user" → table="user"</li>
+     * </ol>
+     *
+     * <p><b>复杂度</b>: O(N) (N=text 长度, 多次正则扫描)
+     *
+     * @param text 用户输入
+     * @return key-value 参数表 (如 {"key": "C 大调", "bpm": "120"})
      */
     public Map<String, String> extractParams(String text) {
         Map<String, String> params = new HashMap<>();

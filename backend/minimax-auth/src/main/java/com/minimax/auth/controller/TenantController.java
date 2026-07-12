@@ -29,7 +29,7 @@ import java.util.Map;
  */
 @Tag(name = "认证授权")
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class TenantController {
 

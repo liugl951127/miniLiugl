@@ -175,7 +175,7 @@ List<MemoryItem> prefs = memory.recallLongTerm(100L, USER_PREFERENCE, 10);
 **输出** (60 个文件):
 - ✓ 源码 (src/main/java)
 - ✓ Dockerfile + docker-compose.yml
-- ✓ k8s manifests (5 个 yaml)
+- ✓ k8s manifests (5 个 yaml) — 文档保留说明, 项目已去 k8s 化
 - ✓ SQL (schema.sql + seed.sql + migration/)
 - ✓ 运维脚本 (7 个 sh)
 - ✓ CI/CD (3 个)

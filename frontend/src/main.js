@@ -10,6 +10,10 @@ import App from './App.vue'
 import router from './router'
 import './styles/global.scss'
 import { i18n } from './i18n'
+import { initBrowserCompat } from '@/composables/useBrowserCompat'
+
+// V3.0.0: 浏览器兼容层初始化 (检测 + polyfill)
+initBrowserCompat()
 
 const app = createApp(App)
 const pinia = createPinia()

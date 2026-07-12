@@ -22,7 +22,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/ai/music/stream")
+@RequestMapping("/api/v1/ai/music/stream")
 @RequiredArgsConstructor
 public class MusicStreamController {
 

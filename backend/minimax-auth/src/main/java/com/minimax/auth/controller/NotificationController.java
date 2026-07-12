@@ -17,7 +17,7 @@ import java.util.Map;
 @Tag(name = "通知管理")
 @RestController
 // V1.9.1: 改为 /auth/notifications (放在 auth 模块里, 跟随 auth 路由)
-@RequestMapping("/auth/notifications")
+@RequestMapping("/api/v1/auth/notifications")
 @RequiredArgsConstructor
 public class NotificationController {
 

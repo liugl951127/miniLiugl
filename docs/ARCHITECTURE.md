@@ -130,7 +130,7 @@
 | 日志 | Loki + Promtail | 2.9 | 日志聚合查询 |
 | 链路追踪 | OpenTelemetry | 1.32 | 替代 Zipkin/SkyWalking |
 | 容器化 | Docker | 24.x | 多阶段构建, 镜像 < 200MB |
-| 编排 | Docker Compose / K8s | - | 1.27+ / 1.28+ |
+| 编排 | Docker Compose (单机 / 多机 + LB) | - | 24+ |
 | CI/CD | GitHub Actions | - | 4 阶段流水线 (test/build/push/deploy) |
 | 前端 | Vue 3 + Vite | 3.4 / 5.0 | Composition API |
 | UI 库 | Element Plus | 2.4 | 后台管理标准 |
@@ -308,10 +308,10 @@ services:
   grafana:            { ports: ["3000:3000"] }
 ```
 
-### 4.2 K8s 生产部署
+### 4.2 Docker Compose 集群部署
 
 ```
-Deployment (3 副本) + Service (ClusterIP) + Ingress (Nginx) + ConfigMap + Secret
+多机 Docker Compose + Nginx LB + MySQL 主从 + Redis 哨兵
 ```
 
 详见 [DEPLOYMENT.md](DEPLOYMENT.md)

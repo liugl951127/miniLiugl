@@ -35,7 +35,7 @@ import java.util.*;
 @Slf4j
 @Tag(name = "模型管理")
 @RestController
-@RequestMapping("/audio")
+@RequestMapping("/api/v1/audio")
 @RequiredArgsConstructor
 public class AudioController {
 

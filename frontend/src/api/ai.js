@@ -21,11 +21,11 @@ import http from './http'
 // ==================== 基础 AI ====================
 
 /** 文本生成 */
-export const generateText = (data) => http.post('/api/ai/generate', data)
+export const generateText = (data) => http.post('/ai/generate', data)
 
 /** 流式生成 (SSE) */
 export const generateTextStream = (data, onChunk, onError, onComplete) => {
-  return http.post('/api/ai/generate/stream', data, {
+  return http.post('/ai/generate/stream', data, {
     responseType: 'stream',
     onDownloadProgress: (e) => {
       // 处理 SSE 流
@@ -49,108 +49,108 @@ export const generateTextStream = (data, onChunk, onError, onComplete) => {
 }
 
 /** Embedding 向量化 */
-export const embed = (data) => http.post('/api/ai/embed', data)
+export const embed = (data) => http.post('/ai/embed', data)
 
 /** 相似度计算 */
-export const similarity = (data) => http.post('/api/ai/similarity', data)
+export const similarity = (data) => http.post('/ai/similarity', data)
 
 /** 中文分词 */
-export const tokenize = (data) => http.post('/api/ai/tokenize', data)
+export const tokenize = (data) => http.post('/ai/tokenize', data)
 
 /** AI 模型信息 */
-export const getAiInfo = () => http.get('/api/ai/info')
+export const getAiInfo = () => http.get('/ai/info')
 
 /** 健康检查 */
-export const aiHealth = () => http.get('/api/ai/health')
+export const aiHealth = () => http.get('/ai/health')
 
 // ==================== 多模态 ====================
 
 /** 上传图片 (自动分析: 主色调/pHash/embedding) */
 export const uploadImage = (formData, onProgress) =>
-  http.post('/api/ai/multimodal/image/upload', formData, {
+  http.post('/ai/multimodal/image/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     onUploadProgress: onProgress
   })
 
 /** 上传语音 (自动转写 + 情感分析) */
 export const uploadAudio = (formData, onProgress) =>
-  http.post('/api/ai/multimodal/audio/upload', formData, {
+  http.post('/ai/multimodal/audio/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     onUploadProgress: onProgress
   })
 
 /** 上传视频 (元数据提取) */
 export const uploadVideo = (formData, onProgress) =>
-  http.post('/api/ai/multimodal/video/upload', formData, {
+  http.post('/ai/multimodal/video/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     onUploadProgress: onProgress
   })
 
 /** 我的文件列表 */
-export const listFiles = (userId) => http.get('/api/ai/multimodal/files', { params: { userId } })
+export const listFiles = (userId) => http.get('/ai/multimodal/files', { params: { userId } })
 
 /** 文件详情 */
-export const getFileInfo = (fileId) => http.get(`/api/ai/multimodal/file/${fileId}/info`)
+export const getFileInfo = (fileId) => http.get(`/ai/multimodal/file/${fileId}/info`)
 
 /** 文本转语音 (TTS) */
-export const textToSpeech = (data) => http.post('/api/ai/multimodal/tts', data)
+export const textToSpeech = (data) => http.post('/ai/multimodal/tts', data)
 
 /** 图片对比 (pHash + cosine) */
 export const compareImages = (formData) =>
-  http.post('/api/ai/multimodal/image/compare', formData, {
+  http.post('/ai/multimodal/image/compare', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
 
 /** 合规: 文本审核 */
 export const moderateText = (text) =>
-  http.post('/api/ai/multimodal/compliance/moderate-text', { text })
+  http.post('/ai/multimodal/compliance/moderate-text', { text })
 
 /** 合规: 数据脱敏 */
 export const maskText = (text) =>
-  http.post('/api/ai/multimodal/compliance/mask', { text })
+  http.post('/ai/multimodal/compliance/mask', { text })
 
 /** 合规: 刷新敏感词缓存 */
 export const refreshSensitiveWords = () =>
-  http.post('/api/ai/multimodal/compliance/refresh-sensitive-words')
+  http.post('/ai/multimodal/compliance/refresh-sensitive-words')
 
 // ==================== AI 工具管理 ====================
 
 /** 工具列表 */
-export const listTools = (params) => http.get('/api/ai/admin/tools', { params })
+export const listTools = (params) => http.get('/ai/admin/tools', { params })
 
 /** 工具详情 */
-export const getTool = (code) => http.get(`/api/ai/admin/tools/${code}`)
+export const getTool = (code) => http.get(`/ai/admin/tools/${code}`)
 
 /** 创建工具 */
-export const createTool = (data) => http.post('/api/ai/admin/tools', data)
+export const createTool = (data) => http.post('/ai/admin/tools', data)
 
 /** 更新工具 */
-export const updateTool = (id, data) => http.put(`/api/ai/admin/tools/${id}`, data)
+export const updateTool = (id, data) => http.put(`/ai/admin/tools/${id}`, data)
 
 /** 删除工具 */
-export const deleteTool = (id) => http.delete(`/api/ai/admin/tools/${id}`)
+export const deleteTool = (id) => http.delete(`/ai/admin/tools/${id}`)
 
 /** 调用工具 */
 export const invokeTool = (code, input) =>
-  http.post(`/api/ai/admin/tools/${code}/invoke`, { input })
+  http.post(`/ai/admin/tools/${code}/invoke`, { input })
 
 /** 数据源列表 */
-export const listDataSources = () => http.get('/api/ai/admin/datasources')
+export const listDataSources = () => http.get('/ai/admin/datasources')
 
 /** 创建数据源 */
-export const createDataSource = (data) => http.post('/api/ai/admin/datasources', data)
+export const createDataSource = (data) => http.post('/ai/admin/datasources', data)
 
 /** 更新数据源 */
-export const updateDataSource = (id, data) => http.put(`/api/ai/admin/datasources/${id}`, data)
+export const updateDataSource = (id, data) => http.put(`/ai/admin/datasources/${id}`, data)
 
 /** 删除数据源 */
-export const deleteDataSource = (id) => http.delete(`/api/ai/admin/datasources/${id}`)
+export const deleteDataSource = (id) => http.delete(`/ai/admin/datasources/${id}`)
 
 /** 测试数据源连接 */
-export const testDataSource = (id) => http.post(`/api/ai/admin/datasources/${id}/test`)
+export const testDataSource = (id) => http.post(`/ai/admin/datasources/${id}/test`)
 
 /** 项目代码生成 */
-export const generateProject = (data) => http.post('/api/ai/admin/codegen', data)
+export const generateProject = (data) => http.post('/ai/admin/codegen', data)
 
 // ==================== 报表 (图表 PNG) ====================
 
@@ -162,7 +162,7 @@ export const generateProject = (data) => http.post('/api/ai/admin/codegen', data
 export const renderChart = async (chartData) => {
   // 实际请求后端, 这里用 mock 返回 (后端尚未实现此接口, 后续补)
   // 临时: 前端用 canvas 渲染或后端 AI 模块实现
-  const response = await http.post('/api/ai/chart/render', chartData, { responseType: 'blob' })
+  const response = await http.post('/ai/chart/render', chartData, { responseType: 'blob' })
   const blob = response.data
   return {
     blob,
@@ -173,7 +173,7 @@ export const renderChart = async (chartData) => {
 
 /** 音乐生成 (返回 MIDI blob) */
 export const generateMusic = async (config) => {
-  const response = await http.post('/api/ai/music/generate', config, { responseType: 'blob' })
+  const response = await http.post('/ai/music/generate', config, { responseType: 'blob' })
   const blob = response.data
   return {
     blob,
@@ -183,103 +183,103 @@ export const generateMusic = async (config) => {
 
 /** 数据看板 (返回 PNG) */
 export const renderDashboard = async (config) => {
-  const response = await http.post('/api/ai/dashboard/render', config, { responseType: 'blob' })
+  const response = await http.post('/ai/dashboard/render', config, { responseType: 'blob' })
   const blob = response.data
   return { blob, blobUrl: URL.createObjectURL(blob) }
 }
 
 /** 视频合成 (返回 ZIP 包含所有帧) */
 export const composeVideo = async (config) => {
-  const response = await http.post('/api/ai/video/compose', config, { responseType: 'blob' })
+  const response = await http.post('/ai/video/compose', config, { responseType: 'blob' })
   return URL.createObjectURL(response.data)
 }
 
 /** 关键词路由 (智能意图识别) */
 export const routeByKeyword = (text) =>
-  http.post('/api/ai/route', { text })
+  http.post('/ai/route', { text })
 
 /** 智能分发 (V2.7 核心) */
-export const dispatchPrompt = (data) => http.post('/api/ai/dispatch', data)
+export const dispatchPrompt = (data) => http.post('/ai/dispatch', data)
 
 /** NL2Chart (自然语言生成图表) */
 export const nl2chart = (dataSourceId, question) =>
-  http.post('/api/ai/nl2chart', { dataSourceId, question }, { responseType: 'blob' })
+  http.post('/ai/nl2chart', { dataSourceId, question }, { responseType: 'blob' })
 
 /** AI 工作流 (DAG) */
-export const executeWorkflow = (workflow) => http.post('/api/ai/workflow/execute', workflow)
-export const validateWorkflow = (workflow) => http.post('/api/ai/workflow/validate', workflow)
+export const executeWorkflow = (workflow) => http.post('/ai/workflow/execute', workflow)
+export const validateWorkflow = (workflow) => http.post('/ai/workflow/validate', workflow)
 
 /** 训练可视化 */
-export const startTraining = (config) => http.post('/api/ai/training/start', config)
-export const demoTraining = () => http.post('/api/ai/training/demo')
-export const listTrainingTasks = () => http.get('/api/ai/training/tasks')
-export const getTrainingTask = (id) => http.get(`/api/ai/training/tasks/${id}`)
-export const getTrainingHistory = (id) => http.get(`/api/ai/training/tasks/${id}/history`)
-export const deleteTrainingTask = (id) => http.delete(`/api/ai/training/tasks/${id}`)
+export const startTraining = (config) => http.post('/ai/training/start', config)
+export const demoTraining = () => http.post('/ai/training/demo')
+export const listTrainingTasks = () => http.get('/ai/training/tasks')
+export const getTrainingTask = (id) => http.get(`/ai/training/tasks/${id}`)
+export const getTrainingHistory = (id) => http.get(`/ai/training/tasks/${id}/history`)
+export const deleteTrainingTask = (id) => http.delete(`/ai/training/tasks/${id}`)
 
 /** AIGC 图片生成 */
-export const generateImage = (req) => http.post('/api/ai/image/generate', req)
-export const listImageTypes = () => http.post('/api/ai/image/types')
-export const inferImageType = (prompt) => http.get('/api/ai/image/infer', { params: { prompt } })
+export const generateImage = (req) => http.post('/ai/image/generate', req)
+export const listImageTypes = () => http.post('/ai/image/types')
+export const inferImageType = (prompt) => http.get('/ai/image/infer', { params: { prompt } })
 
 /** 视频流式生成 (SSE) */
-export const listVideoStreams = () => http.get('/api/ai/video/stream/list')
-export const getVideoStream = (id) => http.get(`/api/ai/video/stream/${id}`)
-export const cancelVideoStream = (id) => http.post(`/api/ai/video/stream/cancel/${id}`)
+export const listVideoStreams = () => http.get('/ai/video/stream/list')
+export const getVideoStream = (id) => http.get(`/ai/video/stream/${id}`)
+export const cancelVideoStream = (id) => http.post(`/ai/video/stream/cancel/${id}`)
 
 /** 权限 (V2.7.9) */
-export const getMyPermissions = () => http.get('/api/ai/permission/me')
-export const listAllRoles = () => http.get('/api/ai/permission/roles')
-export const checkPermissions = (role, permissions) => http.post('/api/ai/permission/check', { role, permissions })
+export const getMyPermissions = () => http.get('/ai/permission/me')
+export const listAllRoles = () => http.get('/ai/permission/roles')
+export const checkPermissions = (role, permissions) => http.post('/ai/permission/check', { role, permissions })
 
 /** 音乐流式生成 (V2.8.1) */
-export const listMusicStreams = () => http.get('/api/ai/music/stream/list')
-export const getMusicStream = (id) => http.get(`/api/ai/music/stream/${id}`)
-export const cancelMusicStream = (id) => http.post(`/api/ai/music/stream/cancel/${id}`)
+export const listMusicStreams = () => http.get('/ai/music/stream/list')
+export const getMusicStream = (id) => http.get(`/ai/music/stream/${id}`)
+export const cancelMusicStream = (id) => http.post(`/ai/music/stream/cancel/${id}`)
 
 // ============== V2.8.3 新工具 SDK ==============
 // 后端端点: POST /api/ai/admin/tools/{code}/invoke
 
 /** 文本分析 (摘要/情感/实体/关键词) */
-export const analyzeText = (req) => http.post('/api/ai/admin/tools/text.analyze/invoke', req)
+export const analyzeText = (req) => http.post('/ai/admin/tools/text.analyze/invoke', req)
 
 /** 视觉分析 (颜色/风格/相似度) */
-export const analyzeVision = (req) => http.post('/api/ai/admin/tools/vision.analyze/invoke', req)
+export const analyzeVision = (req) => http.post('/ai/admin/tools/vision.analyze/invoke', req)
 
 /** 音频分析 (音量/频谱/情绪) */
-export const analyzeAudio = (req) => http.post('/api/ai/admin/tools/audio.analyze/invoke', req)
+export const analyzeAudio = (req) => http.post('/ai/admin/tools/audio.analyze/invoke', req)
 
 /** 文件转换 (JSON/YAML/CSV/Base64) */
-export const convertFile = (req) => http.post('/api/ai/admin/tools/file.convert/invoke', req)
+export const convertFile = (req) => http.post('/ai/admin/tools/file.convert/invoke', req)
 
 /** 相关性分析 (Pearson/Spearman) */
-export const analyzeCorrelation = (req) => http.post('/api/ai/admin/tools/data.analyze.correlation/invoke', req)
+export const analyzeCorrelation = (req) => http.post('/ai/admin/tools/data.analyze.correlation/invoke', req)
 
 /** 线性预测 (回归/移动平均/指数平滑) */
-export const predictData = (req) => http.post('/api/ai/admin/tools/data.predict.linear/invoke', req)
+export const predictData = (req) => http.post('/ai/admin/tools/data.predict.linear/invoke', req)
 
 /** 时间工具 (格式/计算/时区) */
-export const timeConvert = (req) => http.post('/api/ai/admin/tools/time.convert/invoke', req)
+export const timeConvert = (req) => http.post('/ai/admin/tools/time.convert/invoke', req)
 
 /** AIGC 图片生成 (via tool) */
-export const generateImageTool = (req) => http.post('/api/ai/admin/tools/image.generate/invoke', req)
+export const generateImageTool = (req) => http.post('/ai/admin/tools/image.generate/invoke', req)
 
 /** 图表生成 (via tool) */
-export const generateChartTool = (req) => http.post('/api/ai/admin/tools/chart.generate/invoke', req)
+export const generateChartTool = (req) => http.post('/ai/admin/tools/chart.generate/invoke', req)
 
 /** 音乐生成 (via tool) */
-export const generateMusicTool = (req) => http.post('/api/ai/admin/tools/music.generate/invoke', req)
+export const generateMusicTool = (req) => http.post('/ai/admin/tools/music.generate/invoke', req)
 
 // ============== V2.8.4 企业项目生成 ==============
 
 /** Java 企业项目生成 (完整 ZIP, 返回 Base64) */
-export const generateJavaProject = (req) => http.post('/api/ai/admin/tools/java.project.gen/invoke', req)
+export const generateJavaProject = (req) => http.post('/ai/admin/tools/java.project.gen/invoke', req)
 
 /** 直接下载项目 ZIP (浏览器) */
 export const downloadJavaProject = (projectName = 'minimax-app', version = '1.0.0', type = 'spring-boot', packageName = '', database = 'mysql') => {
   const params = new URLSearchParams({ projectName, version, type, database })
   if (packageName) params.append('packageName', packageName)
-  return `/api/ai/project/download?${params.toString()}`
+  return `/ai/project/download?${params.toString()}`
 }
 
 /** 解码 Base64 ZIP 并下载 (JSON 接口) */
@@ -296,13 +296,13 @@ export const downloadJavaProjectFromBase64 = (base64, filename) => {
 }
 
 /** 智能对话 (上下文感知) */
-export const aiChatWithContext = (data) => http.post('/api/ai/dispatch', { ...data, withContext: true })
+export const aiChatWithContext = (data) => http.post('/ai/dispatch', { ...data, withContext: true })
 
 /** AI 会话 (V2.8.2) */
-export const listAiSessions = (userId) => http.get('/api/ai/chat/sessions', { params: { userId } })
-export const getAiSession = (id) => http.get(`/api/ai/chat/sessions/${id}`)
-export const createAiSession = (data) => http.post('/api/ai/chat/sessions', data)
-export const deleteAiSession = (id) => http.delete(`/api/ai/chat/sessions/${id}`)
+export const listAiSessions = (userId) => http.get('/ai/chat/sessions', { params: { userId } })
+export const getAiSession = (id) => http.get(`/ai/chat/sessions/${id}`)
+export const createAiSession = (data) => http.post('/ai/chat/sessions', data)
+export const deleteAiSession = (id) => http.delete(`/ai/chat/sessions/${id}`)
 
 // ==================== 工具函数 ====================
 

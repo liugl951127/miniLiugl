@@ -40,7 +40,7 @@ import java.util.*;
 @Slf4j
 @Tag(name = "OpenAI兼容网关")
 @RestController
-@RequestMapping("/openai")
+@RequestMapping("/api/v1/openai")
 @RequiredArgsConstructor
 public class OpenAIGatewayController {
 

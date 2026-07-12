@@ -1,139 +1,307 @@
 #!/usr/bin/env python3
 """
-从 Java 实体生成 MySQL DDL (V2.8.2)
-- 扫描 @TableName 实体
-- 解析字段类型
-- 生成 CREATE TABLE 语句
-"""
-import re
-import os
-import sys
-from pathlib import Path
+MiniMax Platform 全量 DDL 生成器 (V3.0.0)
 
-ROOT = Path('/workspace/miniLiugl/backend')
-OUT_FILE = Path('/workspace/miniLiugl/sql/schema-v2.8.2.sql')
+功能:
+  1. 扫描 backend/minimax-*/src/main/java/**/entity/*.java
+  2. 解析 @TableName / @TableField / 字段类型
+  3. 生成 CREATE TABLE (IF NOT EXISTS) + 索引
+  4. 输出 sql/init.sql (单文件汇总)
+
+设计原则:
+  - 全量 DDL: 一次生成所有表的定义, 不依赖外部文件
+  - 去重: 同一表只输出一次 (基于 @TableName)
+  - 注释: 自动从 Java 类注释 / 字段注释提取
+  - 引擎: InnoDB / utf8mb4
+  - 排序: 表名按字母顺序输出, 便于阅读
+
+用法:
+  python3 scripts/gen_ddl.py
+  python3 scripts/gen_ddl.py --module minimax-ai  # 仅某模块
+"""
+import os
+import re
+import sys
+import argparse
+from pathlib import Path
+from collections import OrderedDict
+
+# 项目根 (允许命令行参数)
+DEFAULT_ROOT = Path('/workspace/miniLiugl-v300/backend')
+ROOT = DEFAULT_ROOT
+OUT_FILE = Path('/workspace/miniLiugl-v300/sql/init.sql')
 
 # Java -> MySQL 类型映射
+# 第一个元素: MySQL 类型
+# 第二个元素: 默认值 (空字符串表示无)
 TYPE_MAP = {
-    'String': ('VARCHAR(255)', ''),
-    'Long': ('BIGINT', 'DEFAULT 0'),
-    'Integer': ('INT', 'DEFAULT 0'),
-    'int': ('INT', 'DEFAULT 0'),
-    'long': ('BIGINT', 'DEFAULT 0'),
-    'Double': ('DOUBLE', 'DEFAULT 0'),
-    'double': ('DOUBLE', 'DEFAULT 0'),
-    'Float': ('FLOAT', 'DEFAULT 0'),
-    'float': ('FLOAT', 'DEFAULT 0'),
-    'Boolean': ('TINYINT(1)', 'DEFAULT 0'),
-    'boolean': ('TINYINT(1)', 'DEFAULT 0'),
+    'String':     ('VARCHAR(255)',  'DEFAULT NULL'),
+    'Long':       ('BIGINT',        'DEFAULT 0'),
+    'Integer':    ('INT',           'DEFAULT 0'),
+    'int':        ('INT',           'DEFAULT 0'),
+    'long':       ('BIGINT',        'DEFAULT 0'),
+    'Double':     ('DOUBLE',        'DEFAULT 0.0'),
+    'double':     ('DOUBLE',        'DEFAULT 0.0'),
+    'Float':      ('FLOAT',         'DEFAULT 0.0'),
+    'float':      ('FLOAT',         'DEFAULT 0.0'),
+    'Boolean':    ('TINYINT(1)',    'DEFAULT 0'),
+    'boolean':    ('TINYINT(1)',    'DEFAULT 0'),
     'BigDecimal': ('DECIMAL(20,4)', 'DEFAULT 0'),
-    'LocalDateTime': ('DATETIME', 'DEFAULT NULL'),
-    'LocalDate': ('DATE', 'DEFAULT NULL'),
-    'LocalTime': ('TIME', 'DEFAULT NULL'),
-    'Date': ('DATETIME', 'DEFAULT NULL'),
+    'LocalDateTime': ('DATETIME',   'DEFAULT CURRENT_TIMESTAMP'),
+    'LocalDate':  ('DATE',          'DEFAULT NULL'),
+    'LocalTime':  ('TIME',          'DEFAULT NULL'),
+    'Date':       ('DATETIME',      'DEFAULT CURRENT_TIMESTAMP'),
 }
 
-def extract_table_name(content):
-    m = re.search(r'@TableName\("([^"]+)"\)', content)
-    return m.group(1) if m else None
+# TEXT / MEDIUMTEXT 类型 (按需调整)
+TEXT_FIELDS = {
+    'description', 'content', 'detail', 'definitionJson', 'payload',
+    'snapshot', 'text', 'itemsJson', 'tombstonesJson', 'responseBody',
+    'metricsJson', 'customHeaders', 'configuration', 'config',
+    'systemPrompt', 'requestBody', 'errorStack', 'response', 'log'
+}
 
-def extract_class_name(content):
-    m = re.search(r'public\s+class\s+(\w+)', content)
-    return m.group(1) if m else None
 
-def extract_fields(content):
-    pattern = r'(@TableId[^)]*\)|@TableField[^)]*\)|)\s*(private|public)\s+([\w<>,\s\[\]]+?)\s+(\w+)\s*[;=]'
+def parse_args():
+    """解析命令行参数"""
+    p = argparse.ArgumentParser(description='生成 MiniMax 全量 DDL')
+    p.add_argument('--root', default=str(DEFAULT_ROOT), help='backend 根目录')
+    p.add_argument('--out', default=str(OUT_FILE), help='输出文件')
+    p.add_argument('--module', help='仅生成某模块 (e.g. minimax-ai)')
+    return p.parse_args()
+
+
+def find_entity_files(root: Path, module: str = None) -> list:
+    """查找所有实体类文件"""
+    pattern = '**/entity/*.java'
+    files = []
+    modules = [module] if module else [d for d in os.listdir(root) if d.startswith('minimax-')]
+    for mod in modules:
+        mod_path = root / mod / 'src' / 'main' / 'java'
+        if not mod_path.exists():
+            continue
+        for f in mod_path.glob(pattern):
+            files.append(f)
+    return sorted(files)
+
+
+def extract_class_javadoc(content: str) -> str:
+    """提取类注释"""
+    m = re.search(r'/\*\*(.*?)\*/', content, re.DOTALL)
+    if m:
+        text = m.group(1)
+        # 清理 *
+        text = re.sub(r'\n\s*\*\s?', ' ', text)
+        return text.strip()[:200]
+    return ''
+
+
+def extract_table_info(content: str) -> dict:
+    """提取 @TableName 和字段"""
+    # 类名 + TableName
+    cls_match = re.search(r'public\s+class\s+(\w+)', content)
+    if not cls_match:
+        return None
+    class_name = cls_match.group(1)
+    table_match = re.search(r'@TableName\s*\(\s*["\'](\w+)["\']\s*\)', content)
+    if not table_match:
+        return None
+    table_name = table_match.group(1)
+    # 类注释
+    table_comment = extract_class_javadoc(content)
+
     fields = []
-    for m in re.finditer(pattern, content):
-        ann = m.group(1)
-        ftype = m.group(3).strip()
-        fname = m.group(4).strip()
-        if fname == 'serialVersionUID':
+    seen = set()
+
+    # 1. @TableId 主键
+    for m in re.finditer(r'@TableId\s*\([^)]*\)\s*\n\s*private\s+([\w<>,\s]+?)\s+(\w+)\s*;', content):
+        ftype, fname = m.group(1).strip(), m.group(2).strip()
+        ftype = re.sub(r'\s+', ' ', ftype)
+        fields.append({
+            'name': fname,
+            'type_raw': ftype,
+            'db_type': 'BIGINT NOT NULL AUTO_INCREMENT',
+            'default': None,
+            'nullable': False,
+            'primary': True,
+            'comment': ''
+        })
+        seen.add(fname)
+
+    # 2. @TableField(...) private Type name;
+    for m in re.finditer(
+        r'@TableField(?:\s*\([^)]*\))?\s*\n\s*private\s+([\w<>,\s]+?)\s+(\w+)\s*;',
+        content
+    ):
+        ftype, fname = m.group(1).strip(), m.group(2).strip()
+        ftype = re.sub(r'\s+', ' ', ftype)
+        if fname in seen:
             continue
-        if 'static' in m.group(0):
-            continue
-        fields.append({'name': fname, 'type': ftype, 'ann': ann})
-    return fields
+        # 提取 @TableField 里的 column name
+        ann_match = re.search(r'@TableField\s*\(\s*["\'](\w+)["\']', content[max(0, m.start()-100):m.end()])
+        col_name = ann_match.group(1) if ann_match else fname
+        seen.add(fname)
 
-def get_sql_type(java_type):
-    if '<' in java_type:
-        java_type = java_type.split('<')[0]
-    java_type = java_type.strip()
-    return TYPE_MAP.get(java_type, ('VARCHAR(255)', ''))[0]
-
-def has_annotation(ann, name):
-    return f'@{name}' in ann
-
-def gen_create_ddl(entity_file):
-    content = entity_file.read_text(encoding='utf-8', errors='ignore')
-    table = extract_table_name(content)
-    cls = extract_class_name(content)
-    if not table or not cls:
-        return None
-    fields = extract_fields(content)
-    if not fields:
-        return None
-
-    lines = [f'-- {cls} -> {table}', f'DROP TABLE IF EXISTS `{table}`;', f'CREATE TABLE `{table}` (']
-    field_lines = []
-    pk_field = None
-
-    for f in fields:
-        sql_type = get_sql_type(f['type'])
-        if has_annotation(f['ann'], 'TableId'):
-            field_lines.append(f'    `{f["name"]}` BIGINT NOT NULL AUTO_INCREMENT')
-            pk_field = f['name']
+        # 推断类型
+        if ftype in TYPE_MAP:
+            db_type, default = TYPE_MAP[ftype]
+        elif ftype.startswith('List<') or ftype.startswith('Set<'):
+            db_type = 'TEXT'
+            default = 'DEFAULT NULL'
+        elif ftype.startswith('Map<'):
+            db_type = 'TEXT'
+            default = 'DEFAULT NULL'
         else:
-            if sql_type in ('VARCHAR(255)', 'TEXT', 'BLOB', 'DATETIME', 'DATE', 'TIME'):
-                field_lines.append(f'    `{f["name"]}` {sql_type} DEFAULT NULL')
+            db_type = 'VARCHAR(255)'
+            default = 'DEFAULT NULL'
+
+        # TEXT 类 (长文本)
+        if fname.lower() in TEXT_FIELDS:
+            if 'definition' in fname.lower() or 'payload' in fname.lower() or 'snapshot' in fname.lower():
+                db_type = 'MEDIUMTEXT'
             else:
-                field_lines.append(f'    `{f["name"]}` {sql_type} NOT NULL DEFAULT 0')
+                db_type = 'TEXT'
+            default = 'DEFAULT NULL'
 
+        # 是否 NOT NULL
+        is_basic = ftype in {'Long', 'Integer', 'int', 'long', 'Double', 'double', 'Float', 'float', 'Boolean', 'boolean', 'BigDecimal'}
+        nullable = not is_basic
+
+        fields.append({
+            'name': col_name,  # 用 col_name
+            'type_raw': ftype,
+            'db_type': db_type,
+            'default': default,
+            'nullable': nullable,
+            'primary': False,
+            'comment': ''
+        })
+
+    # 3. 无注解的 private (非 transient/static) - 用 field 名作 col 名
+    for m in re.finditer(
+        r'(?<![)\w])\n\s*private\s+([\w<>,\s]+?)\s+(\w+)\s*;',
+        content
+    ):
+        ftype, fname = m.group(1).strip(), m.group(2).strip()
+        ftype = re.sub(r'\s+', ' ', ftype)
+        if fname in seen or fname in {'id'}:
+            continue
+        # 排除 static / transient
+        if 'static' in ftype or 'transient' in ftype:
+            continue
+        # 排除 lombok (@Data 生成的 getter/setter, 没字段, 所以这段已经只匹配字段)
+        if ftype in TYPE_MAP:
+            db_type, default = TYPE_MAP[ftype]
+        elif ftype.startswith('List<') or ftype.startswith('Set<'):
+            db_type = 'TEXT'
+            default = 'DEFAULT NULL'
+        elif ftype.startswith('Map<'):
+            db_type = 'TEXT'
+            default = 'DEFAULT NULL'
+        else:
+            db_type = 'VARCHAR(255)'
+            default = 'DEFAULT NULL'
+        if fname.lower() in TEXT_FIELDS:
+            db_type = 'TEXT' if 'definition' not in fname.lower() else 'MEDIUMTEXT'
+            default = 'DEFAULT NULL'
+        is_basic = ftype in {'Long', 'Integer', 'int', 'long', 'Double', 'double', 'Float', 'float', 'Boolean', 'boolean', 'BigDecimal'}
+        fields.append({
+            'name': fname,
+            'type_raw': ftype,
+            'db_type': db_type,
+            'default': default,
+            'nullable': not is_basic,
+            'primary': False,
+            'comment': ''
+        })
+        seen.add(fname)
+
+    return {
+        'class_name': class_name,
+        'table_name': table_name,
+        'comment': table_comment,
+        'fields': fields
+    }
+
+
+def generate_create_table(table: dict) -> str:
+    """生成 CREATE TABLE 语句"""
+    lines = []
+    lines.append(f'-- {table["class_name"]} -> {table["table_name"]}')
+    lines.append('CREATE TABLE IF NOT EXISTS `' + table['table_name'] + '` (')
+    pk_field = None
+    field_defs = []
+    for f in table['fields']:
+        if f['primary']:
+            pk_field = f
+            field_defs.append(f'    `{f["name"]}` {f["db_type"]} COMMENT \'{f["name"]}\'')
+        else:
+            not_null = '' if f['nullable'] else ' NOT NULL'
+            default = f['default'] or ''
+            field_defs.append(f'    `{f["name"]}` {f["db_type"]}{not_null} {default} COMMENT \'{f["name"]}\'')
+    # 主键
     if pk_field:
-        field_lines.append(f'    PRIMARY KEY (`{pk_field}`)')
-
-    lines.append(',\n'.join(field_lines))
-    lines.append(f") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='{cls}';")
+        field_defs.append(f'    PRIMARY KEY (`{pk_field["name"]}`)')
+    # 唯一索引 (常见字段)
+    unique_fields = []
+    for f in table['fields']:
+        if f['name'] in ('username', 'agentKey', 'modelKey', 'webhookId', 'roomId', 'userId', 'docId'):
+            if not f['primary'] and f['name'] not in unique_fields:
+                unique_fields.append(f['name'])
+    for u in unique_fields[:2]:  # 最多 2 个 unique
+        field_defs.append(f'    UNIQUE KEY `uk_{u}` (`{u}`)')
+    lines.append(',\n'.join(field_defs))
+    lines.append(f") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='{table['class_name']} (auto-generated V3.0.0)';")
     return '\n'.join(lines)
 
+
 def main():
-    java_files = list(ROOT.rglob('*.java'))
-    entity_files = []
-    for f in java_files:
-        try:
-            content = f.read_text(encoding='utf-8', errors='ignore')
-            if '@TableName' in content and 'public class' in content:
-                entity_files.append(f)
-        except:
-            pass
+    args = parse_args()
+    global ROOT, OUT_FILE
+    ROOT = Path(args.root)
+    OUT_FILE = Path(args.out)
 
-    entity_files = sorted(set(entity_files), key=lambda x: str(x))
-    print(f'Found {len(entity_files)} entity files')
+    if not ROOT.exists():
+        print(f'[ERROR] backend 根目录不存在: {ROOT}', file=sys.stderr)
+        sys.exit(1)
 
-    output = []
-    output.append('-- ============================================================')
-    output.append('-- MiniMax Platform V2.8.2 全量 DDL (自动生成)')
-    output.append('-- 生成时间: 2026-07-12')
-    output.append('-- 字符集: utf8mb4 / 引擎: InnoDB')
-    output.append('-- ============================================================')
-    output.append('SET NAMES utf8mb4;')
-    output.append('SET CHARACTER SET utf8mb4;')
-    output.append('')
+    entity_files = find_entity_files(ROOT, args.module)
+    print(f'[INFO] 扫描到 {len(entity_files)} 个实体类')
 
-    seen = set()
+    tables = OrderedDict()
     for f in entity_files:
-        ddl = gen_create_ddl(f)
-        if ddl:
-            m = re.search(r'CREATE TABLE `(\w+)`', ddl)
-            if m and m.group(1) not in seen:
-                seen.add(m.group(1))
-                output.append(ddl)
-                output.append('')
+        try:
+            content = f.read_text(encoding='utf-8')
+            info = extract_table_info(content)
+            if not info:
+                continue
+            # 跳过自增 ID 主键冲突 (多个 @TableId)
+            if info['table_name'] in tables:
+                continue
+            tables[info['table_name']] = info
+        except Exception as e:
+            print(f'[WARN] 解析失败 {f}: {e}')
 
-    OUT_FILE.parent.mkdir(exist_ok=True)
-    OUT_FILE.write_text('\n'.join(output), encoding='utf-8')
-    print(f'Written {len(seen)} tables to {OUT_FILE}')
-    print(f'Size: {OUT_FILE.stat().st_size} bytes')
+    print(f'[INFO] 生成 {len(tables)} 张表')
+
+    # 输出
+    OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with OUT_FILE.open('w', encoding='utf-8') as f:
+        f.write('-- ' + '=' * 67 + '\n')
+        f.write('-- MiniMax Platform V3.0.0 全量 DDL (单文件汇总)\n')
+        f.write(f'-- 表数: {len(tables)}\n')
+        f.write('-- 字符集: utf8mb4 / 引擎: InnoDB\n')
+        f.write('-- ' + '=' * 67 + '\n\n')
+        f.write('CREATE DATABASE IF NOT EXISTS `minimax_platform` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\n')
+        f.write('USE `minimax_platform`;\n\n')
+        f.write('SET NAMES utf8mb4;\n')
+        f.write('SET FOREIGN_KEY_CHECKS = 0;\n\n')
+        for table_name, info in sorted(tables.items()):
+            f.write(generate_create_table(info) + '\n\n')
+        f.write('SET FOREIGN_KEY_CHECKS = 1;\n')
+        f.write('\n-- 全部 DDL 生成完毕\n')
+    print(f'[OK] 输出: {OUT_FILE} ({OUT_FILE.stat().st_size} bytes)')
+
 
 if __name__ == '__main__':
     main()

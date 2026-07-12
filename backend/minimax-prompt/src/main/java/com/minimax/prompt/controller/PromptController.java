@@ -31,7 +31,7 @@ import java.util.Map;
  */
 @Tag(name = "Prompt模板")
 @RestController
-@RequestMapping("/prompts")
+@RequestMapping("/api/v1/prompts")
 @RequiredArgsConstructor
 public class PromptController {
 

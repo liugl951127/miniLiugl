@@ -19,7 +19,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/ai/document")
+@RequestMapping("/api/v1/ai/document")
 @RequiredArgsConstructor
 public class DocumentController {
 

@@ -23,7 +23,7 @@ import java.util.Map;
 @Tag(name = "画布工作流 (V5.32)")
 @RestController
 // V1.9.1: 改为相对路径, gateway StripPrefix=2 后转发到 /pipeline/workflows/...
-@RequestMapping("/pipeline/workflows")
+@RequestMapping("/api/v1/pipeline/workflows")
 @RequiredArgsConstructor
 public class WorkflowController {
 

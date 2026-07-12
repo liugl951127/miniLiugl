@@ -30,7 +30,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/ai/project")
+@RequestMapping("/api/v1/ai/project")
 @RequiredArgsConstructor
 @Tag(name = "项目下载", description = "直接下载生成的项目 ZIP")
 public class ProjectDownloadController {

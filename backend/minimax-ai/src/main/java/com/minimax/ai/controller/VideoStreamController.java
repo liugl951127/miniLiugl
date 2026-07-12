@@ -22,7 +22,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/ai/video/stream")
+@RequestMapping("/api/v1/ai/video/stream")
 @RequiredArgsConstructor
 public class VideoStreamController {
 

@@ -17,7 +17,7 @@ import java.util.Map;
 @Tag(name = "工作流执行 (V5.32)")
 @RestController
 // V1.9.1: 改为相对路径, gateway StripPrefix=2 后转发到 /pipeline/runs/...
-@RequestMapping("/pipeline/runs")
+@RequestMapping("/api/v1/pipeline/runs")
 @RequiredArgsConstructor
 public class RunController {
 

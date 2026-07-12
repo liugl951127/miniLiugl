@@ -54,7 +54,7 @@ import java.util.zip.ZipOutputStream;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/ai")
+@RequestMapping("/api/v1/ai")
 @RequiredArgsConstructor
 public class AiPlatformController {
 

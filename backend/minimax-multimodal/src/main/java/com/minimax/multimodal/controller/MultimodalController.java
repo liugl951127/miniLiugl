@@ -22,7 +22,7 @@ import java.util.Map;
  */
 @Tag(name = "多模态")
 @RestController
-@RequestMapping("/multimodal")
+@RequestMapping("/api/v1/multimodal")
 @RequiredArgsConstructor
 public class MultimodalController {
 

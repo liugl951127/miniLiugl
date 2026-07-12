@@ -10,8 +10,7 @@
 |------|------|--------|--------|
 | **单机 Docker Compose** | 开发/测试/小规模 | ⭐ | ❌ |
 | **多机 Docker Compose** | 中小企业生产 | ⭐⭐ | ⚠️ 手动 |
-| **K8s 单集群** | 中大型企业 | ⭐⭐⭐ | ✅ 自动 |
-| **K8s 多集群** | 跨国大型企业 | ⭐⭐⭐⭐ | ✅ 自动 + 灾备 |
+| **集群 Docker Compose + LB** | 中大型企业 | ⭐⭐⭐ | ✅ 半自动 |
 
 ### 1.2 推荐配置
 
@@ -119,104 +118,6 @@ sudo cp /etc/letsencrypt/live/liugeliang.com/privkey.pem /opt/miniLiugl/certs/
 # 4. 自动续期 (cron)
 echo "0 3 * * * certbot renew --quiet && cp /etc/letsencrypt/live/liugeliang.com/*.pem /opt/miniLiugl/certs/ && docker compose restart nginx" | sudo crontab -
 ```
-
-## 三、K8s 生产部署
-
-### 3.1 前置条件
-
-- K8s 1.27+ 集群 (3 master + 3 worker)
-- Helm 3+
-- Ingress-Nginx 已安装
-- cert-manager 已安装 (HTTPS)
-- Prometheus Operator (可选)
-
-### 3.2 部署步骤
-
-**1. 创建命名空间**:
-```bash
-kubectl create namespace minimax
-```
-
-**2. 配置 Secret**:
-```bash
-# JWT 密钥
-kubectl create secret generic minimax-secret \
-  --from-literal=jwt-secret=$(openssl rand -hex 32) \
-  --from-literal=mysql-password=root123456 \
-  --from-literal=redis-password=minimax_redis_2024 \
-  -n minimax
-```
-
-**3. 部署 MySQL + Redis** (使用 Operator):
-```bash
-helm install mysql bitnami/mysql -n minimax \
-  --set auth.rootPassword=root123456 \
-  --set primary.persistence.size=100Gi
-
-helm install redis bitnami/redis -n minimax \
-  --set auth.password=minimax_redis_2024 \
-  --set master.persistence.size=50Gi
-```
-
-**4. 部署应用**:
-```bash
-kubectl apply -f k8s/ -n minimax
-
-# 17 个微服务
-for svc in gateway auth chat memory model rag function multimodal \
-           agent monitor admin prompt analytics pipeline ai ws; do
-    kubectl apply -f k8s/$svc/ -n minimax
-done
-```
-
-**5. 配置 Ingress**:
-```bash
-kubectl apply -f k8s/ingress.yaml -n minimax
-```
-
-**6. 验证**:
-```bash
-kubectl get pods -n minimax
-kubectl get svc -n minimax
-kubectl get ingress -n minimax
-```
-
-### 3.3 自动扩缩容 (HPA)
-
-```yaml
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: minimax-chat-hpa
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: minimax-chat
-  minReplicas: 2
-  maxReplicas: 10
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 80
-```
-
-```bash
-kubectl apply -f hpa.yaml -n minimax
-```
-
-## 四、监控告警
-
-### 4.1 Prometheus 指标
 
 **已集成** (Spring Boot Actuator + Micrometer):
 - `jvm_memory_used_bytes` - JVM 堆内存
@@ -444,18 +345,7 @@ DOCKER_HOST=tcp://node1:2376 docker compose up -d minimax-ai
 # Nginx upstream 自动加入
 ```
 
-**K8s**:
-```bash
-# 扩容到 5 副本
-kubectl scale deployment minimax-chat --replicas=5 -n minimax
-
-# 自动扩缩容 (HPA)
-kubectl autoscale deployment minimax-chat \
-    --min=2 --max=10 --cpu-percent=70 -n minimax
-```
-
-### 6.3 数据库扩容
-
+**Docker Compose (扩缩容)**:
 **MySQL 主从**:
 ```bash
 # 1. 主库配置 (my.cnf)
@@ -679,26 +569,12 @@ tar czf /tmp/evidence.tgz /opt/miniLiugl/logs/ /var/log/
 
 # 3. 改密钥
 NEW_JWT=$(openssl rand -hex 32)
-kubectl create secret generic minimax-secret \
-    --from-literal=jwt-secret=$NEW_JWT --dry-run=client -o yaml | kubectl apply -f -
+echo "JWT_SECRET=$NEW_JWT" > .env
 docker compose restart
 
 # 4. 报告
 ```
 
-## 八、性能调优
-
-### 8.1 JVM 调优
-
-**默认配置** (V2.0):
-```
--Xms512m
--Xmx2g
--XX:+UseG1GC
--XX:MaxRAMPercentage=70.0
--XX:+UseStringDeduplication
--XX:MaxGCPauseMillis=200
-```
 
 **调优命令**:
 ```bash

@@ -22,7 +22,7 @@ import java.util.List;
 @Tag(name = "聊天消息")
 @Tag(name = "对话管理")
 @RestController
-@RequestMapping("/sessions/{sessionId}/messages")
+@RequestMapping("/api/v1/sessions/{sessionId}/messages")
 @RequiredArgsConstructor
 public class MessageController {
 

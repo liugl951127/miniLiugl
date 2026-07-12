@@ -19,7 +19,7 @@ import java.util.*;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/ai/permission")
+@RequestMapping("/api/v1/ai/permission")
 @RequiredArgsConstructor
 public class PermissionController {
 

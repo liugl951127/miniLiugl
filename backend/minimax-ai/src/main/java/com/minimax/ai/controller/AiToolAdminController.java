@@ -41,7 +41,7 @@ import java.util.*;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/ai/admin")
+@RequestMapping("/api/v1/ai/admin")
 @RequiredArgsConstructor
 @Tag(name = "AI 工具管理", description = "AI 工具注册 / 数据源管理 / 代码生成")
 public class AiToolAdminController {

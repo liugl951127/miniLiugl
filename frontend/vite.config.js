@@ -80,9 +80,14 @@ export default defineConfig(({ mode }) => {
       }
     },
     build: {
-      target: 'es2018',
+      // V3.0.0: target 降为 es2015, 兼容 Chrome 63+/Edge 79+/Firefox 60+/Safari 12+
+      // package.json 中 browserslist 会覆盖
+      target: 'es2015',
       // V5.8: sourcemap 关闭 (生产不暴露源码)
       sourcemap: isProd ? false : 'eval',
+      // V3.0.0: 浏览器 polyfill 支持
+      polyfillModulePreload: true,
+      cssCodeSplit: true,
       chunkSizeWarningLimit: 1500,
       // V5.8: 智能分包 (按依赖 + 路由)
       rollupOptions: {
