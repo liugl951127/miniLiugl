@@ -2,6 +2,7 @@ package com.minimax.ws;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.minimax.ws.collab.CollabService;
+import com.minimax.ws.collab.CrdtEngine;
 import com.minimax.ws.entity.CollabMessage;
 import com.minimax.ws.entity.CollabParticipant;
 import com.minimax.ws.entity.CollabRoom;
@@ -51,7 +52,8 @@ class V287CollabTest {
         objectMapper = new ObjectMapper();
 
         service = new CollabService(roomMapper, participantMapper, messageMapper, objectMapper);
-        handler = new CollabWebSocketHandler(service, objectMapper);
+        CrdtEngine crdt = new CrdtEngine(messageMapper, objectMapper);
+        handler = new CollabWebSocketHandler(service, crdt, objectMapper);
     }
 
     @Test

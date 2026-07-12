@@ -1,6 +1,64 @@
 # MiniMax Platform 变更日志
 
-> **所有版本变更** · V1.0 → V2.8.7
+> **所有版本变更** · V1.0 → V2.8.8
+
+## [V2.8.8] - 2026-07-12
+
+### 🆕 CRDT 真实多人编辑 (主功能)
+- **CrdtEngine** (8KB) - 后端 CRDT 引擎
+  - 每个字符有唯一 ID: (clientId, clock)
+  - Insert/Delete 操作, 树状 parentId 引用
+  - Tombstone 删除历史保留
+  - 字典序排序 (parent, clientId, clock)
+  - Snapshot/Diff/Render 文本
+- **CollabWebSocketHandler.handleEdit()** 替换为 CRDT op 批量
+  - 6 种客户端消息 → 7 种服务端推送 + DOC_UPDATE
+  - 冲突解决: clientId 大的排前
+  - 删除总是 win
+- **前端 CrdtDoc** (4.3KB) - Y.js 协议子集兼容
+  - IdFactory: 唯一 clientId + 递增 clock
+  - 本地 insertAt(pos)/deleteAt(pos) 生成 op
+  - observe() 订阅变更
+  - 文本位置 ⇄ CRDT id 互转
+- **前端 Index.vue** 集成 CRDT 编辑器 (Doc tab)
+  - 自动检测增删字符, 生成对应 op
+  - 远程 DOC_UPDATE 自动合并
+  - 显示 CRDT 版本号/客户端 ID/AI 来源
+- **9 个新测试** (V288CrdtTest): 单/并发/删除/批量/diff/snapshot
+
+### 🆕 AI 协作接入真实 Pipeline
+- **AiCollabBridge** - 软依赖 minimax-ai 服务
+  - 配置: `minimax.ai.enabled=true` + `minimax.ai.url=http://...`
+  - HTTP 调 PipelineExecutor: `POST /api/v1/pipeline/execute`
+  - Fallback: minimax-ai 未启时走 mock (V2.8.7 行为)
+- **handleAi()** 增强: 优先真实 Pipeline, 失败 fallback
+  - 真实响应会显示 "AI 接入真实 Pipeline" 标签
+  - 流式输出保留 15ms/token
+
+### 🆕 TensorBoard 自托管可视化 (前端)
+- **TensorBoard.vue** (10.5KB) - ECharts 渲染多 run 标量
+  - 左侧 runs 列表 (切换显示)
+  - 右侧多 tag 多选 (颜色编码)
+  - 折线图: X=Step, Y=Value
+  - 平滑 (EMA 0-0.99)
+  - Y 轴: 线性 / 对数
+  - 实时刷新: 3s 轮询 (可关)
+  - 数据缩放 (dataZoom)
+  - 数据表: 最新点
+- **tensorboard.js** SDK: 6 端点 (listRuns/listTags/readScalar/readEvents/health/writeScalar)
+- **4 个新测试** (V288TensorBoardSelfHostedTest): 多 run 对比/多 tag/实时刷新/health
+
+### 🆕 DDL (3 表)
+- `collab_doc` - CRDT 文档快照 (roomId+docId 唯一)
+- `collab_op` - CRDT 操作日志 (供回放, 24h 保留)
+- `tensorboard_run` - TB runs 缓存 (避免重读文件系统)
+
+### 🧪 测试统计
+- 224 (V2.8.7) → **248** (+24)
+- V288CrdtTest: 9 (CRDT 引擎/插入/删除/批量/diff/snapshot)
+- V288TensorBoardSelfHostedTest: 4 (多 run/多 tag/实时/health)
+
+---
 
 ## [V2.8.7] - 2026-07-12
 
