@@ -1,6 +1,97 @@
 # MiniMax Platform 变更日志
 
-> **所有版本变更** · V1.0 → V3.0.3
+> **所有版本变更** · V1.0 → V3.1.1
+
+## [V3.1.1] - 2026-07-12
+
+### V3.1.1 Capacitor 移动端封装 (iOS/Android)
+
+**背景**: V3.1.0 ONNX 真实模型后, V3.1.1 把 Vue 3 PWA 拓展为原生 App。同一份 dist, 浏览器+原生双平台。
+
+**依赖** (10 个 @capacitor/*):
+- `@capacitor/core` + `cli` + `android` + `ios` (跨平台运行时)
+- `@capacitor/preferences` (偏好存储, 跨平台)
+- `@capacitor/splash-screen` (启动屏)
+- `@capacitor/status-bar` (状态栏主题)
+- `@capacitor/haptics` (触觉反馈)
+- `@capacitor/keyboard` (键盘控制)
+- `@capacitor/network` (网络状态)
+- `@capacitor/app` (生命周期)
+
+**文件清单**:
+- `frontend/capacitor.config.ts` (App ID: com.minimax.platform, 启动屏 2s, 状态栏 #409EFF)
+- `frontend/src/composables/useCapacitor.js` (统一 API: preferences/haptics/splash/statusBar/network/keyboard)
+- `frontend/src/composables/useSafeArea.js` (刘海/底部安全区, env() 变量动态设置)
+- `frontend/src/main.js` (initCapacitor 接入)
+- `frontend/src/__tests__/useCapacitor.test.js` (12 单元测试)
+- `frontend/package.json` (8 个 npm scripts: cap:open/cap:add/cap:copy/cap:build)
+- `scripts/build-mobile.sh` (一键构建 ios/android/both/sync, 含 JDK17 + Xcode 检测)
+- `frontend/resources/README.md` (启动屏/图标尺寸规范)
+- `docs/MOBILE.md` (完整指南: 架构/集成/平台差异/常见问题)
+
+**设计**:
+- Web 端降级: localStorage / navigator.onLine / navigator.vibrate
+- 原生端: @capacitor/* 插件
+- 业务代码统一调 useCapacitor(), 无需关心平台
+- 动态 import @capacitor/* (避免 Web 端 bundle 打包)
+
+**测试**:
+- useCapacitor.test.js 12 单元测试全过
+- 平台检测 (Web/iOS/Android) + preferences/haptics/splash/statusBar/keyboard 静默失败
+
+**一键构建**:
+```bash
+./scripts/build-mobile.sh both    # iOS + Android
+./scripts/build-mobile.sh ios     # iOS (需 macOS + Xcode)
+./scripts/build-mobile.sh android # Android (需 JDK 17 + Android SDK)
+```
+
+## [V3.1.0] - 2026-07-12
+
+### V3.1.0 ONNX 真实模型加载
+
+**背景**: V3.0.1 多模态插件架构下, LocalOnnxVisionProvider 只接了占位符。V3.1.0 接入 ONNX Runtime Java 1.17.0 真实推理。
+
+**依赖**:
+- `com.microsoft.onnxruntime:onnxruntime:1.17.0` (跨平台 ONNX 推理)
+
+**文件清单**:
+- `provider/OnnxRuntimeService.java` (OrtEnvironment 单例, ThreadLocal<OrtSession>, preprocessImage NCHW 归一化, classify 分类推理, embed 特征提取, softmax 数值稳定)
+- `provider/LocalOnnxVisionProvider.java` (重写, 接入 OnnxRuntimeService, @PostConstruct/@PreDestroy 生命周期)
+- `OnnxRuntimeServiceTest.java` (10 单元测试, 1 软跳过需预生成模型)
+- `scripts/gen_onnx_test_model.py` (Python onnx 脚本生成 add_one.onnx + simple_classify.onnx)
+- `minimax-multimodal/pom.xml` (onnxruntime 1.17.0 依赖)
+
+**能力**:
+- 加载本地 .onnx 模型 (MobileNetV3 / CLIP / ResNet / YOLO 均可)
+- 图像预处理: resize + 中心裁剪 + ImageNet 归一化 (mean/std) + NCHW float
+- 推理: 分类 (logits → softmax → top-K) + 特征提取 (embeddings)
+- 模型元信息: 输入/输出节点名/类型
+- ThreadLocal session:  OrtSession 非线程安全, 服务端多线程并发安全
+
+**配置** (application.yml):
+```yaml
+minimax.multimodal.local:
+  model-dir: /var/minimax/models/vision
+  model-file: mobilenetv3.onnx
+  input-name: input
+  input-size: 224
+```
+
+**启用方法**:
+1. 下载预训练模型 (.onnx)
+2. 放到 model-dir
+3. 重启服务, isReady() 自动变 true
+
+**测试**: 
+- OnnxRuntimeServiceTest 10 单元测试 (9 通过 + 1 软跳过需 Python onnx 包生成)
+- multimodal 总测试: 16 → 26 (+10)
+
+**依赖 Python (生成测试模型)**:
+```bash
+pip install onnx onnxruntime
+python3 scripts/gen_onnx_test_model.py
+```
 
 ## [V3.0.3] - 2026-07-12
 

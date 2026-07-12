@@ -52,6 +52,13 @@
             <artifactId>mysql-connector-j</artifactId>
             <version>8.0.33</version>
         </dependency>
+
+        <!-- V3.1.0 ONNX Runtime (本地模型推理) -->
+        <dependency>
+            <groupId>com.microsoft.onnxruntime</groupId>
+            <artifactId>onnxruntime</artifactId>
+            <version>1.17.0</version>
+        </dependency>
     </dependencies>
 
     <build>

@@ -4,51 +4,43 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.io.File;
+import java.util.Base64;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
- * 本地 ONNX 模型提供者 (V3.0.1 框架, V3.1+ 接入真实模型)
+ * 本地 ONNX 模型提供者 (V3.1.0 真实模型接入)
  *
- * <p>设计: 加载本地 .onnx 模型文件, 用 ONNX Runtime Java SDK 推理.
- *   适合场景:
- *     - 隐私数据 (不出网)
- *     - 离线环境
- *     - 高频调用 (无网络延迟)
+ * <p>V3.0.1 框架, V3.1.0 接入真实 ONNX Runtime Java 推理.
  *
- * <p>当前实现: 框架就绪, 但未加载真实模型 (因为 .onnx 文件 ~100MB+ 需另外下载)
- *   默认 isReady() 返回 false, 调用方会自动降级到 builtin/mock
+ * <p>设计:
+ *   - 加载本地 .onnx 模型 (e.g. MobileNetV3, CLIP-ViT-B/32, ResNet50)
+ *   - 走 {@link OnnxRuntimeService} 推理管线
+ *   - 适合隐私数据 / 离线环境 / 高频调用
  *
- * <h3>启用方法 (V3.1+ 计划)</h3>
+ * <h3>启用方法</h3>
  * <ol>
- *   <li>下载预训练 ONNX 模型 (e.g. MobileNetV3 / CLIP-ViT-B/32)</li>
+ *   <li>下载预训练 ONNX 模型 (.onnx 文件)</li>
  *   <li>放到 {@code ${MINIMAX_MODEL_DIR:-/var/minimax/models}/vision/}</li>
- *   <li>引入依赖: {@code ai.onnxruntime:onnxruntime:1.17.0}</li>
- *   <li>实现 {@link #runOnnxInference(byte[])} 调用 OrtSession</li>
+ *   <li>配置 {@code minimax.multimodal.local.model-file=mobilenetv3.onnx}</li>
+ *   <li>配置 {@code minimax.multimodal.local.input-name=input} (默认)</li>
+ *   <li>配置 {@code minimax.multimodal.local.input-size=224} (默认)</li>
  * </ol>
  *
  * <h3>线程安全</h3>
- * OrtEnvironment 是线程安全的; OrtSession 建议每个线程一个.
- * V3.1+ 实现会用 ThreadLocal<OrtSession> 模式.
+ * OnnxRuntimeService 内含 ThreadLocal<OrtSession>, 支持多线程并发.
  */
 @Slf4j
 @Component
 public class LocalOnnxVisionProvider implements MultimodalModelProvider {
 
     /** Provider 名 */
-    @Override
-    public String name() {
-        return "local-onnx";
-    }
+    private static final String PROVIDER_NAME = "local-onnx";
 
-    @Override
-    public String description() {
-        return "本地 ONNX 模型 (V3.1+ 接入, 当前为占位符)";
-    }
-
-    /** ONNX 模型文件目录 */
+    /** ONNX 模型目录 */
     @Value("${minimax.multimodal.local.model-dir:/var/minimax/models/vision}")
     private String modelDir;
 
@@ -56,56 +48,122 @@ public class LocalOnnxVisionProvider implements MultimodalModelProvider {
     @Value("${minimax.multimodal.local.model-file:mobilenetv3.onnx}")
     private String modelFile;
 
+    /** 输入节点名 */
+    @Value("${minimax.multimodal.local.input-name:input}")
+    private String inputName;
+
+    /** 输入尺寸 (默认 224x224) */
+    @Value("${minimax.multimodal.local.input-size:224}")
+    private int inputSize;
+
+    /** 推理服务 (懒加载) */
+    private volatile OnnxRuntimeService runtimeService;
+
+    /** 是否启用 (模型就绪 + 加载成功) */
+    private volatile boolean enabled = false;
+
     /**
-     * 是否就绪: 模型文件存在 + 可加载
+     * 启动时尝试加载模型
      */
-    @Override
-    public boolean isReady() {
-        // 0. 防御: 路径未配置 (单元测试场景) 时返回 false
+    @PostConstruct
+    public void init() {
+        // 1. 检查路径
         if (modelDir == null || modelFile == null) {
-            return false;
+            log.info("[{}] 未配置 modelDir/modelFile, 跳过加载", PROVIDER_NAME);
+            return;
         }
-        // 1. 拼装完整路径
+        // 2. 检查文件存在
         File f = new File(modelDir, modelFile);
-        // 2. 检查文件存在性
-        return f.exists() && f.isFile() && f.length() > 0;
+        if (!f.exists() || !f.isFile() || f.length() == 0) {
+            log.info("[{}] 模型文件不存在: {} (fallback 到 builtin/mock)", PROVIDER_NAME, f.getAbsolutePath());
+            return;
+        }
+        // 3. 尝试加载
+        try {
+            this.runtimeService = new OnnxRuntimeService(f.getAbsolutePath());
+            this.enabled = true;
+            log.info("[{}] 模型加载成功: {} ({} MB)", PROVIDER_NAME, f.getAbsolutePath(), f.length() / 1024 / 1024);
+        } catch (Exception e) {
+            log.warn("[{}] 模型加载失败: {}, fallback 到 builtin", PROVIDER_NAME, e.getMessage());
+            this.enabled = false;
+        }
     }
 
     /**
-     * 调用本地模型
-     *
-     * <p>V3.1+ TODO: 实际 ONNX Runtime 调用
-     * <pre>
-     *   OrtEnvironment env = OrtEnvironment.getEnvironment();
-     *   try (OrtSession session = env.createSession(modelPath)) {
-     *       // 1. 预处理: 缩放到 224x224, 归一化 (mean/std), NCHW 格式
-     *       float[][][][] input = preprocess(image);
-     *       // 2. 构造输入 tensor
-     *       try (OnnxTensor tensor = OnnxTensor.createTensor(env, input)) {
-     *           Map<String, OnnxTensor> inputs = Map.of("input", tensor);
-     *           // 3. 推理
-     *           try (OrtSession.Result result = session.run(inputs)) {
-     *               // 4. 解析输出 (e.g. ImageNet 1000 类概率)
-     *               float[][] probs = (float[][]) result.get(0).getValue();
-     *               return decodeLabels(probs);
-     *           }
-     *       }
-     *   }
-     * </pre>
+     * 关闭时释放资源
+     */
+    @PreDestroy
+    public void destroy() {
+        if (runtimeService != null) {
+            runtimeService.close();
+            log.info("[{}] 已关闭", PROVIDER_NAME);
+        }
+    }
+
+    @Override
+    public String name() {
+        return PROVIDER_NAME;
+    }
+
+    @Override
+    public String description() {
+        return "本地 ONNX 模型 (V3.1.0 真实推理)";
+    }
+
+    /**
+     * 是否就绪: 模型加载成功
+     */
+    @Override
+    public boolean isReady() {
+        return enabled && runtimeService != null;
+    }
+
+    /**
+     * 调用本地模型描述图像
      */
     @Override
     public String describe(String imageBase64, String mimeType, String prompt) throws Exception {
-        // 1. 检查模型是否就绪
+        // 1. 检查就绪
         if (!isReady()) {
-            // 2. 未就绪时, 返回明确指引, 而不是抛异常
             return "【本地 ONNX】模型未就绪\n" +
-                   "路径: " + modelDir + "/" + modelFile + "\n" +
+                   "路径: " + (modelDir == null ? "(null)" : new File(modelDir, modelFile).getAbsolutePath()) + "\n" +
                    "请下载 ONNX 模型后放置到此目录, 或切换 builtin/openai provider";
         }
-        // 3. V3.1+ TODO: 实际 ONNX Runtime 推理
-        //    当前仅返回占位符
-        return "【本地 ONNX】模型就绪 (" + new File(modelDir, modelFile).length() / 1024 / 1024 + " MB)\n" +
-               "推理能力 V3.1+ 启用, 当前为占位符";
+        // 2. 解码 base64
+        byte[] imageBytes = decodeBase64(imageBase64);
+        // 3. 分类推理
+        Map<String, Object> result = runtimeService.classify(imageBytes, inputName, inputSize);
+        // 4. 提取结果
+        if (result.containsKey("error")) {
+            return "【本地 ONNX】推理失败: " + result.get("error");
+        }
+        int topClass = (int) result.getOrDefault("topClassIdx", -1);
+        float topProb = (float) result.getOrDefault("topProb", 0f);
+        int numClasses = (int) result.getOrDefault("numClasses", 0);
+        // 5. 拼装输出
+        StringBuilder sb = new StringBuilder();
+        sb.append("【本地 ONNX 推理】\n");
+        sb.append("模型: ").append(modelFile).append("\n");
+        sb.append("Top 类别: ").append(topClass).append("\n");
+        sb.append("置信度: ").append(String.format("%.4f", topProb)).append("\n");
+        sb.append("类别总数: ").append(numClasses).append("\n");
+        if (prompt != null && !prompt.isEmpty()) {
+            sb.append("用户提示: ").append(prompt).append("\n");
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 解码 base64 (支持 data:image/...;base64, 前缀)
+     */
+    private byte[] decodeBase64(String base64) {
+        // 1. 剥前缀
+        String data = base64;
+        if (data.contains(",")) {
+            data = data.substring(data.indexOf(",") + 1);
+        }
+        // 2. Base64 解码
+        return Base64.getDecoder().decode(data);
     }
 
     /** inspect 委托 */
@@ -115,23 +173,33 @@ public class LocalOnnxVisionProvider implements MultimodalModelProvider {
     }
 
     /**
-     * 模型文件元信息 (用于 /api/v1/multimodal/info 展示)
+     * 模型元信息
      */
     public Map<String, Object> modelInfo() {
         Map<String, Object> info = new HashMap<>();
-        // 防御: 路径未配置时返回基本信息
+        // 1. 路径信息
         if (modelDir == null || modelFile == null) {
-            info.put("path", "(not configured)");       // 未配置
-            info.put("exists", false);                  // 不存在
-            info.put("sizeBytes", 0);                   // 0 字节
-            info.put("ready", false);                   // 未就绪
+            info.put("path", "(not configured)");
+            info.put("exists", false);
+            info.put("sizeBytes", 0);
+            info.put("ready", false);
             return info;
         }
         File f = new File(modelDir, modelFile);
-        info.put("path", f.getAbsolutePath());          // 完整路径
-        info.put("exists", f.exists());                 // 是否存在
-        info.put("sizeBytes", f.exists() ? f.length() : 0);  // 文件大小
-        info.put("ready", isReady());                   // 是否就绪
+        info.put("path", f.getAbsolutePath());
+        info.put("exists", f.exists());
+        info.put("sizeBytes", f.exists() ? f.length() : 0);
+        info.put("ready", isReady());
+        // 2. 模型结构信息 (加载成功时)
+        if (isReady() && runtimeService != null) {
+            try {
+                info.put("metadata", runtimeService.modelMetadata());
+                info.put("inputName", inputName);
+                info.put("inputSize", inputSize);
+            } catch (Exception e) {
+                info.put("metadataError", e.getMessage());
+            }
+        }
         return info;
     }
 }

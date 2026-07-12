@@ -11,9 +11,13 @@ import router from './router'
 import './styles/global.scss'
 import { i18n } from './i18n'
 import { initBrowserCompat } from '@/composables/useBrowserCompat'
+import { initCapacitor } from '@/composables/useCapacitor'
 
 // V3.0.0: 浏览器兼容层初始化 (检测 + polyfill)
 initBrowserCompat()
+
+// V3.1.1: 移动端 Capacitor 初始化 (状态栏/启动屏)
+initCapacitor()
 
 const app = createApp(App)
 const pinia = createPinia()
