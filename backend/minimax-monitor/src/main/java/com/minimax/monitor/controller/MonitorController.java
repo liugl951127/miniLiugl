@@ -54,7 +54,7 @@ import java.util.Map;
  */
 @Tag(name = "系统监控")
 @RestController
-@RequestMapping("/monitor")
+@RequestMapping("/api/v1/monitor")
 @RequiredArgsConstructor
 @Slf4j
 public class MonitorController {

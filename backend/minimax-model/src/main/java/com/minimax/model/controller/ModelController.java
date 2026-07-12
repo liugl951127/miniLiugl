@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 @Tag(name = "模型管理")
 @RestController
-@RequestMapping("/models")
+@RequestMapping("/api/v1/models")
 @RequiredArgsConstructor
 public class ModelController {
 

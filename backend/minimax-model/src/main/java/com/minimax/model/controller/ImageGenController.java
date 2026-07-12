@@ -33,7 +33,7 @@ import java.util.*;
 @Slf4j
 @Tag(name = "模型管理")
 @RestController
-@RequestMapping("/imagegen")
+@RequestMapping("/api/v1/imagegen")
 @RequiredArgsConstructor
 public class ImageGenController {
 

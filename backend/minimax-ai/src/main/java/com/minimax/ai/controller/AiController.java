@@ -35,7 +35,7 @@ import java.util.*;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/ai")
+@RequestMapping("/api/v1/ai")
 @RequiredArgsConstructor
 @Tag(name = "自研 AI", description = "MiniMax 自研 AI (Transformer 简化版, 不依赖外部大模型)")
 public class AiController {

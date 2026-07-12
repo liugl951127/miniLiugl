@@ -46,7 +46,7 @@ import java.util.Map;
  */
 @Tag(name = "系统管理")
 @RestController
-@RequestMapping("/admin")
+@RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor
 public class AdminController {
 

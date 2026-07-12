@@ -34,7 +34,7 @@ import java.util.*;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/ai/framework")
+@RequestMapping("/api/v1/ai/framework")
 @RequiredArgsConstructor
 @Tag(name = "MiniMax AI 框架", description = "自研类 LangChain4j/Spring AI 框架")
 public class FrameworkController {

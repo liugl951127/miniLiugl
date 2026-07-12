@@ -195,13 +195,36 @@ public class TrainingTracker {
     }
 
     /**
-     * EMA 平滑 (alpha=0.1), 用于图表展示
+     * EMA (Exponential Moving Average) 平滑
+     *
+     * <p><b>公式</b>: {@code EMA_t = α * value_t + (1 - α) * EMA_{t-1}}
+     *
+     * <p><b>直觉</b>:
+     *   简单滑动平均对窗口内所有值等权; EMA 对近期值赋高权重, 远期值指数衰减.
+     *   α 越大越敏感 (跟震荡), α 越小越平滑 (延迟高).
+     *
+     * <p><b>应用</b>: 训练 loss 曲线平滑, 去除 batch 噪点.
+     *
+     * <p><b>参数效应</b>:
+     * <ul>
+     *   <li>α = 0.1 — 强平滑 (推荐, 默认)</li>
+     *   <li>α = 0.3 — 中等平滑</li>
+     *   <li>α = 0.9 — 几乎不平滑 (接近原始曲线)</li>
+     * </ul>
+     *
+     * <p><b>复杂度</b>: O(N)
+     *
+     * @param values 原始值序列
+     * @param alpha 平滑因子, [0, 1]
+     * @return 平滑后的序列
      */
     public static List<Double> ema(List<Double> values, double alpha) {
         if (values.isEmpty()) return List.of();
         List<Double> out = new ArrayList<>(values.size());
+        // EMA_0 = value_0 (种子值, 可换成前 N 项平均更准)
         double prev = values.get(0);
         for (double v : values) {
+            // 递推公式: prev ← α·v + (1-α)·prev
             prev = alpha * v + (1 - alpha) * prev;
             out.add(prev);
         }

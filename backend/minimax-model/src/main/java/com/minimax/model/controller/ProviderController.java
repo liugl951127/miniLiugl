@@ -28,7 +28,7 @@ import java.util.Map;
  */
 @Tag(name = "模型管理-Provider")
 @RestController
-@RequestMapping("/model/providers")
+@RequestMapping("/api/v1/model/providers")
 @RequiredArgsConstructor
 public class ProviderController {
 

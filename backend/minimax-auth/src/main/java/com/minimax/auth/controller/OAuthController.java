@@ -31,7 +31,7 @@ import java.util.*;
 @Slf4j
 @Tag(name = "认证授权")
 @RestController
-@RequestMapping("/auth/oauth")
+@RequestMapping("/api/v1/auth/oauth")
 @RequiredArgsConstructor
 public class OAuthController {
 

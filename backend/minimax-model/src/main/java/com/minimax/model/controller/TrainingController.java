@@ -16,7 +16,7 @@ import java.util.Map;
 /** 训练任务 Controller (Day 23) */
 @Tag(name = "模型训练", description = "训练任务管理 + 实时指标")
 @RestController
-@RequestMapping("/training")
+@RequestMapping("/api/v1/training")
 @RequiredArgsConstructor
 public class TrainingController {
 

@@ -30,7 +30,7 @@ import java.util.*;
 @Slf4j
 @Tag(name = "模型管理")
 @RestController
-@RequestMapping("/leaderboard")
+@RequestMapping("/api/v1/leaderboard")
 @RequiredArgsConstructor
 public class LeaderboardController {
 

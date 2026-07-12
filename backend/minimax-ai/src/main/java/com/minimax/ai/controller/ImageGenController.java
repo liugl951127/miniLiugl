@@ -17,7 +17,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/ai/image")
+@RequestMapping("/api/v1/ai/image")
 @RequiredArgsConstructor
 public class ImageGenController {
 

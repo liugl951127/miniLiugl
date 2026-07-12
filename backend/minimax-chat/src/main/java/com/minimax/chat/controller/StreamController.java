@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Tag(name = "对话流控制")
 @Slf4j
 @RestController
-@RequestMapping("/sessions")
+@RequestMapping("/api/v1/sessions")
 @RequiredArgsConstructor
 public class StreamController {
 

@@ -26,7 +26,7 @@ import java.util.List;
  */
 @Tag(name = "用户 API Key")
 @RestController
-@RequestMapping("/auth/apikeys")
+@RequestMapping("/api/v1/auth/apikeys")
 @RequiredArgsConstructor
 public class UserApiKeyController {
 

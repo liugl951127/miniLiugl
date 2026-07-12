@@ -18,7 +18,7 @@ import java.util.Set;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/ai/workflow")
+@RequestMapping("/api/v1/ai/workflow")
 @RequiredArgsConstructor
 public class WorkflowController {
 

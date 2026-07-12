@@ -20,7 +20,7 @@ import java.util.List;
 @Tag(name = "聊天会话")
 @Tag(name = "对话管理")
 @RestController
-@RequestMapping("/sessions")
+@RequestMapping("/api/v1/sessions")
 @RequiredArgsConstructor
 public class SessionController {
 

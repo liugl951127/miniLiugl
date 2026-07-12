@@ -24,7 +24,7 @@ import java.util.*;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/ai/training")
+@RequestMapping("/api/v1/ai/training")
 @RequiredArgsConstructor
 public class TrainingController {
 

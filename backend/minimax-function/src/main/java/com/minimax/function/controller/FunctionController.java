@@ -37,7 +37,7 @@ import java.util.Map;
  */
 @Tag(name = "函数工具")
 @RestController
-@RequestMapping("/function")
+@RequestMapping("/api/v1/function")
 @RequiredArgsConstructor
 public class FunctionController {
 

@@ -29,7 +29,7 @@ import java.util.Map;
 @Slf4j
 @Tag(name = "微信扫码登录")
 @RestController
-@RequestMapping("/auth/wechat")
+@RequestMapping("/api/v1/auth/wechat")
 @RequiredArgsConstructor
 public class WechatController {
 

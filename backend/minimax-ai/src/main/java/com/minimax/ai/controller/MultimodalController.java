@@ -45,7 +45,7 @@ import java.util.*;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/ai/multimodal")
+@RequestMapping("/api/v1/ai/multimodal")
 @RequiredArgsConstructor
 public class MultimodalController {
 

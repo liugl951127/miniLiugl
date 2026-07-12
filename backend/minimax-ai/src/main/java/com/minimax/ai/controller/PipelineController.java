@@ -29,7 +29,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/ai/pipeline")
+@RequestMapping("/api/v1/ai/pipeline")
 @RequiredArgsConstructor
 @Tag(name = "AI Pipeline", description = "13 阶段 AI 推理流水线")
 public class PipelineController {
