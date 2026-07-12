@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS `agent_task` (
     `errorMsg` VARCHAR(255) DEFAULT NULL COMMENT 'errorMsg',
     `latencyMs` BIGINT NOT NULL DEFAULT 0 COMMENT 'latencyMs',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_agent_task_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AgentTask (auto-generated V3.0.0)';
 
 -- AiChatMessage -> ai_chat_message
@@ -70,8 +70,8 @@ CREATE TABLE IF NOT EXISTS `ai_chat_session` (
     `username` VARCHAR(255) DEFAULT NULL COMMENT 'username',
     `title` VARCHAR(255) DEFAULT NULL COMMENT 'title',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`),
-    UNIQUE KEY `uk_username` (`username`)
+    UNIQUE KEY `uk_ai_chat_session_userId` (`userId`),
+    UNIQUE KEY `uk_ai_chat_session_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AiChatSession (auto-generated V3.0.0)';
 
 -- AiGenerationLog -> ai_generation_log
@@ -97,8 +97,8 @@ CREATE TABLE IF NOT EXISTS `ai_generation_log` (
     `status` VARCHAR(255) DEFAULT NULL COMMENT 'status',
     `errorMsg` VARCHAR(255) DEFAULT NULL COMMENT 'errorMsg',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`),
-    UNIQUE KEY `uk_username` (`username`)
+    UNIQUE KEY `uk_ai_generation_log_userId` (`userId`),
+    UNIQUE KEY `uk_ai_generation_log_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AiGenerationLog (auto-generated V3.0.0)';
 
 -- AiIntentKeyword -> ai_intent_keyword
@@ -159,8 +159,8 @@ CREATE TABLE IF NOT EXISTS `ai_tool_invocation` (
     `userAgent` VARCHAR(255) DEFAULT NULL COMMENT 'userAgent',
     `dataSourceId` BIGINT NOT NULL DEFAULT 0 COMMENT 'dataSourceId',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`),
-    UNIQUE KEY `uk_username` (`username`)
+    UNIQUE KEY `uk_ai_tool_invocation_userId` (`userId`),
+    UNIQUE KEY `uk_ai_tool_invocation_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AiToolInvocation (auto-generated V3.0.0)';
 
 -- AlertChannel -> alert_channel
@@ -220,7 +220,7 @@ CREATE TABLE IF NOT EXISTS `analytics_datasource` (
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_analytics_datasource_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='DataSource (auto-generated V3.0.0)';
 
 -- IngestTask -> analytics_ingest_task
@@ -231,7 +231,7 @@ CREATE TABLE IF NOT EXISTS `analytics_ingest_task` (
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     `finishedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'finishedAt',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_analytics_ingest_task_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IngestTask (auto-generated V3.0.0)';
 
 -- Nl2SqlHistory -> analytics_nlsql_history
@@ -245,7 +245,7 @@ CREATE TABLE IF NOT EXISTS `analytics_nlsql_history` (
     `feedbackRating` INT NOT NULL DEFAULT 0 COMMENT 'feedbackRating',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_analytics_nlsql_history_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Nl2SqlHistory (auto-generated V3.0.0)';
 
 -- Report -> analytics_report
@@ -256,7 +256,7 @@ CREATE TABLE IF NOT EXISTS `analytics_report` (
     `format` VARCHAR(255) DEFAULT NULL COMMENT 'format',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_analytics_report_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Report (auto-generated V3.0.0)';
 
 -- AuditLog -> audit_log
@@ -279,8 +279,8 @@ CREATE TABLE IF NOT EXISTS `audit_log` (
     `errorMsg` VARCHAR(255) DEFAULT NULL COMMENT 'errorMsg',
     `durationMs` INT NOT NULL DEFAULT 0 COMMENT 'durationMs',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`),
-    UNIQUE KEY `uk_username` (`username`)
+    UNIQUE KEY `uk_audit_log_userId` (`userId`),
+    UNIQUE KEY `uk_audit_log_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AuditLog (auto-generated V3.0.0)';
 
 -- AuditLogFull -> audit_log_full
@@ -303,8 +303,8 @@ CREATE TABLE IF NOT EXISTS `audit_log_full` (
     `errorMsg` VARCHAR(255) DEFAULT NULL COMMENT 'errorMsg',
     `durationMs` INT NOT NULL DEFAULT 0 COMMENT 'durationMs',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`),
-    UNIQUE KEY `uk_username` (`username`)
+    UNIQUE KEY `uk_audit_log_full_userId` (`userId`),
+    UNIQUE KEY `uk_audit_log_full_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AuditLogFull (auto-generated V3.0.0)';
 
 -- AuthLoginLog -> auth_login_log
@@ -318,8 +318,8 @@ CREATE TABLE IF NOT EXISTS `auth_login_log` (
     `status` INT NOT NULL DEFAULT 0 COMMENT 'status',
     `message` VARCHAR(255) DEFAULT NULL COMMENT 'message',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`),
-    UNIQUE KEY `uk_username` (`username`)
+    UNIQUE KEY `uk_auth_login_log_userId` (`userId`),
+    UNIQUE KEY `uk_auth_login_log_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AuthLoginLog (auto-generated V3.0.0)';
 
 -- AuthRefreshToken -> auth_refresh_token
@@ -331,7 +331,7 @@ CREATE TABLE IF NOT EXISTS `auth_refresh_token` (
     `expiresAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'expiresAt',
     `revoked` INT NOT NULL DEFAULT 0 COMMENT 'revoked',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_auth_refresh_token_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AuthRefreshToken (auto-generated V3.0.0)';
 
 -- ChatMessage -> chat_message
@@ -346,7 +346,7 @@ CREATE TABLE IF NOT EXISTS `chat_message` (
     `finishReason` VARCHAR(255) DEFAULT NULL COMMENT 'finishReason',
     `errorMessage` VARCHAR(255) DEFAULT NULL COMMENT 'errorMessage',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_chat_message_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='ChatMessage (auto-generated V3.0.0)';
 
 -- ChatSession -> chat_session
@@ -364,7 +364,7 @@ CREATE TABLE IF NOT EXISTS `chat_session` (
     `lastMessageAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'lastMessageAt',
     `tenantId` BIGINT NOT NULL DEFAULT 0 COMMENT 'tenantId',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_chat_session_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='ChatSession (auto-generated V3.0.0)';
 
 -- CollabMember -> collab_member
@@ -376,32 +376,29 @@ CREATE TABLE IF NOT EXISTS `collab_member` (
     `joinedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'joinedAt',
     `lastActiveAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'lastActiveAt',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_collab_member_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CollabMember (auto-generated V3.0.0)';
 
 -- CollabMessage -> collab_message
 CREATE TABLE IF NOT EXISTS `collab_message` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `roomId` VARCHAR(255) DEFAULT NULL COMMENT 'roomId',
-    `roomId` BIGINT NOT NULL DEFAULT 0 COMMENT 'roomId',
     `userId` VARCHAR(255) DEFAULT NULL COMMENT 'userId',
     `username` VARCHAR(255) DEFAULT NULL COMMENT 'username',
     `type` VARCHAR(255) DEFAULT NULL COMMENT 'type',
-    `type` TEXT DEFAULT NULL COMMENT 'type',
     `content` VARCHAR(255) DEFAULT NULL COMMENT 'content',
     `metadata` VARCHAR(255) DEFAULT NULL COMMENT 'metadata',
     `clientMsgId` INT NOT NULL DEFAULT 0 COMMENT 'clientMsgId',
     `broadcast` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'broadcast',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_roomId` (`roomId`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_collab_message_roomId` (`roomId`),
+    UNIQUE KEY `uk_collab_message_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CollabMessage (auto-generated V3.0.0)';
 
 -- CollabParticipant -> collab_participant
 CREATE TABLE IF NOT EXISTS `collab_participant` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `roomId` VARCHAR(255) DEFAULT NULL COMMENT 'roomId',
-    `roomId` BIGINT NOT NULL DEFAULT 0 COMMENT 'roomId',
     `userId` VARCHAR(255) DEFAULT NULL COMMENT 'userId',
     `username` VARCHAR(255) DEFAULT NULL COMMENT 'username',
     `nickname` VARCHAR(255) DEFAULT NULL COMMENT 'nickname',
@@ -410,32 +407,28 @@ CREATE TABLE IF NOT EXISTS `collab_participant` (
     `cursorX` INT NOT NULL DEFAULT 0 COMMENT 'cursorX',
     `cursorY` VARCHAR(255) DEFAULT NULL COMMENT 'cursorY',
     `status` VARCHAR(255) DEFAULT NULL COMMENT 'status',
-    `status` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'status',
     `joinedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'joinedAt',
     `leftAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'leftAt',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_roomId` (`roomId`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_collab_participant_roomId` (`roomId`),
+    UNIQUE KEY `uk_collab_participant_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CollabParticipant (auto-generated V3.0.0)';
 
 -- CollabRoom -> collab_room
 CREATE TABLE IF NOT EXISTS `collab_room` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `roomId` VARCHAR(255) DEFAULT NULL COMMENT 'roomId',
-    `roomId` VARCHAR(255) DEFAULT NULL COMMENT 'roomId',
     `type` VARCHAR(255) DEFAULT NULL COMMENT 'type',
-    `type` BIGINT NOT NULL DEFAULT 0 COMMENT 'type',
     `ownerId` VARCHAR(255) DEFAULT NULL COMMENT 'ownerId',
     `ownerName` TEXT DEFAULT NULL COMMENT 'ownerName',
     `description` INT NOT NULL DEFAULT 0 COMMENT 'description',
     `isPublic` INT NOT NULL DEFAULT 0 COMMENT 'isPublic',
     `status` VARCHAR(255) DEFAULT NULL COMMENT 'status',
-    `status` INT NOT NULL DEFAULT 0 COMMENT 'status',
     `currentParticipants` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'currentParticipants',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     `lastActivityAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'lastActivityAt',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_roomId` (`roomId`)
+    UNIQUE KEY `uk_collab_room_roomId` (`roomId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CollabRoom (auto-generated V3.0.0)';
 
 -- CollabSession -> collab_session
@@ -473,7 +466,7 @@ CREATE TABLE IF NOT EXISTS `data_source` (
     `description` TEXT DEFAULT NULL COMMENT 'description',
     `tags` VARCHAR(255) DEFAULT NULL COMMENT 'tags',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_username` (`username`)
+    UNIQUE KEY `uk_data_source_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='DbDataSource (auto-generated V3.0.0)';
 
 -- Document -> document
@@ -513,7 +506,7 @@ CREATE TABLE IF NOT EXISTS `document_chunk` (
     `accessCount` INT NOT NULL DEFAULT 0 COMMENT 'accessCount',
     `lastAccessAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'lastAccessAt',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_docId` (`docId`)
+    UNIQUE KEY `uk_document_chunk_docId` (`docId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='DocumentChunk (auto-generated V3.0.0)';
 
 -- FunctionCallLog -> function_call_log
@@ -531,7 +524,7 @@ CREATE TABLE IF NOT EXISTS `function_call_log` (
     `ip` VARCHAR(255) DEFAULT NULL COMMENT 'ip',
     `userAgent` VARCHAR(255) DEFAULT NULL COMMENT 'userAgent',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_function_call_log_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='FunctionCallLog (auto-generated V3.0.0)';
 
 -- FunctionTool -> function_tool
@@ -565,7 +558,7 @@ CREATE TABLE IF NOT EXISTS `kg_entity` (
     `source` VARCHAR(255) DEFAULT NULL COMMENT 'source',
     `refCount` INT NOT NULL DEFAULT 0 COMMENT 'refCount',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_kg_entity_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='KgEntity (auto-generated V3.0.0)';
 
 -- KgRelation -> kg_relation
@@ -582,7 +575,7 @@ CREATE TABLE IF NOT EXISTS `kg_relation` (
     `source` VARCHAR(255) DEFAULT NULL COMMENT 'source',
     `refCount` INT NOT NULL DEFAULT 0 COMMENT 'refCount',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_kg_relation_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='KgRelation (auto-generated V3.0.0)';
 
 -- KnowledgeBase -> knowledge_base
@@ -616,10 +609,8 @@ CREATE TABLE IF NOT EXISTS `metric_snapshot` (
 CREATE TABLE IF NOT EXISTS `model_battle_log` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `battle_id` VARCHAR(255) DEFAULT NULL COMMENT 'battle_id',
-    `battle_id` BIGINT NOT NULL DEFAULT 0 COMMENT 'battle_id',
     `user_id` BIGINT NOT NULL DEFAULT 0 COMMENT 'user_id',
     `model_id` VARCHAR(255) DEFAULT NULL COMMENT 'model_id',
-    `prompt_tokens` INT NOT NULL DEFAULT 0 COMMENT 'prompt_tokens',
     `prompt_tokens` INT NOT NULL DEFAULT 0 COMMENT 'prompt_tokens',
     `completion_tokens` INT NOT NULL DEFAULT 0 COMMENT 'completion_tokens',
     `latency_ms` VARCHAR(255) DEFAULT NULL COMMENT 'latency_ms',
@@ -683,7 +674,7 @@ CREATE TABLE IF NOT EXISTS `model_quota` (
     `limitTokens` BIGINT NOT NULL DEFAULT 0 COMMENT 'limitTokens',
     `limitRequests` INT NOT NULL DEFAULT 0 COMMENT 'limitRequests',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_model_quota_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='ModelQuota (auto-generated V3.0.0)';
 
 -- ModerationRecord -> moderation_record
@@ -704,8 +695,8 @@ CREATE TABLE IF NOT EXISTS `moderation_record` (
     `moderator` VARCHAR(255) DEFAULT NULL COMMENT 'moderator',
     `rejectionReason` VARCHAR(255) DEFAULT NULL COMMENT 'rejectionReason',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`),
-    UNIQUE KEY `uk_username` (`username`)
+    UNIQUE KEY `uk_moderation_record_userId` (`userId`),
+    UNIQUE KEY `uk_moderation_record_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='ModerationRecord (auto-generated V3.0.0)';
 
 -- MultimediaFile -> multimedia_file
@@ -739,8 +730,8 @@ CREATE TABLE IF NOT EXISTS `multimedia_file` (
     `accessCount` INT NOT NULL DEFAULT 0 COMMENT 'accessCount',
     `expireAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'expireAt',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`),
-    UNIQUE KEY `uk_username` (`username`)
+    UNIQUE KEY `uk_multimedia_file_userId` (`userId`),
+    UNIQUE KEY `uk_multimedia_file_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='MultimediaFile (auto-generated V3.0.0)';
 
 -- Notification -> notification
@@ -754,7 +745,7 @@ CREATE TABLE IF NOT EXISTS `notification` (
     `content` TEXT DEFAULT NULL COMMENT 'content',
     `isRead` INT NOT NULL DEFAULT 0 COMMENT 'isRead',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_notification_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Notification (auto-generated V3.0.0)';
 
 -- OAuthAppConfig -> oauth_app_config
@@ -791,7 +782,7 @@ CREATE TABLE IF NOT EXISTS `oauth_binding` (
     `boundAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'boundAt',
     `lastLoginAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'lastLoginAt',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_oauth_binding_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='OAuthBinding (auto-generated V3.0.0)';
 
 -- PipelineLog -> pipeline_log
@@ -816,7 +807,7 @@ CREATE TABLE IF NOT EXISTS `pipeline_log` (
     `errorMessage` VARCHAR(255) DEFAULT NULL COMMENT 'errorMessage',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_pipeline_log_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='PipelineLog (auto-generated V3.0.0)';
 
 -- PipelineNodeLog -> pipeline_node_log
@@ -974,14 +965,14 @@ CREATE TABLE IF NOT EXISTS `sys_user` (
     `alipayAvatar` VARCHAR(255) DEFAULT NULL COMMENT 'alipayAvatar',
     `alipayBoundAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'alipayBoundAt',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_username` (`username`)
+    UNIQUE KEY `uk_sys_user_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='SysUser (auto-generated V3.0.0)';
 
 -- SysUserRole -> sys_user_role
 CREATE TABLE IF NOT EXISTS `sys_user_role` (
     `userId` BIGINT NOT NULL DEFAULT 0 COMMENT 'userId',
     `roleId` BIGINT NOT NULL DEFAULT 0 COMMENT 'roleId',
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_sys_user_role_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='SysUserRole (auto-generated V3.0.0)';
 
 -- Tenant -> tenant
@@ -1024,7 +1015,7 @@ CREATE TABLE IF NOT EXISTS `training_task` (
     `errorMessage` VARCHAR(255) DEFAULT NULL COMMENT 'errorMessage',
     `completedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'completedAt',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_training_task_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='TrainingTask (auto-generated V3.0.0)';
 
 -- UnionidRelations -> unionid_relations
@@ -1037,7 +1028,7 @@ CREATE TABLE IF NOT EXISTS `unionid_relations` (
     `lastSeenAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'lastSeenAt',
     `bindingCount` INT NOT NULL DEFAULT 0 COMMENT 'bindingCount',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_unionid_relations_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='UnionidRelations (auto-generated V3.0.0)';
 
 -- UserApiKey -> user_api_key
@@ -1055,7 +1046,7 @@ CREATE TABLE IF NOT EXISTS `user_api_key` (
     `useCount` BIGINT NOT NULL DEFAULT 0 COMMENT 'useCount',
     `enabled` INT NOT NULL DEFAULT 0 COMMENT 'enabled',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_user_api_key_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='UserApiKey (auto-generated V3.0.0)';
 
 -- WechatConfig -> wechat_config
@@ -1094,7 +1085,7 @@ CREATE TABLE IF NOT EXISTS `wechat_scan_session` (
     `expiresAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'expiresAt',
     `confirmedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'confirmedAt',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_wechat_scan_session_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='WechatScanSession (auto-generated V3.0.0)';
 
 -- WechatUserBinding -> wechat_user_binding
@@ -1108,181 +1099,9 @@ CREATE TABLE IF NOT EXISTS `wechat_user_binding` (
     `avatar` VARCHAR(255) DEFAULT NULL COMMENT 'avatar',
     `lastLoginAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'lastLoginAt',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_userId` (`userId`)
+    UNIQUE KEY `uk_wechat_user_binding_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='WechatUserBinding (auto-generated V3.0.0)';
 
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- 全部 DDL 生成完毕
-
--- ============================================================
--- V3.0.0 种子数据 (合并自 V2.8.2 / V2.8.3 / V2.8.5 / V2.9.0 / V2.9.1)
--- ============================================================
--- 默认账号 (BCrypt 加密, 密码 adminLiugl)
--- 密码: adminLiugl (实际 BCrypt 加密存储)
--- $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
-INSERT INTO `sys_user` (`id`, `username`, `password`, `nickname`, `email`, `status`, `superAdmin`, `createdAt`) VALUES
-(1, 'adminLiugl', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '超级管理员', 'admin@minimax.local', 1, 1, NOW());
-
-INSERT INTO `sys_user` (`id`, `username`, `password`, `nickname`, `email`, `status`, `superAdmin`, `createdAt`) VALUES
-(2, 'admin', '$2a$10$DkS7W.6Av9MqAYHnxqG.BuM4t5hqRn.i3fvmW.z9q.WjrGcRJ5YMC', '管理员', 'admin2@minimax.local', 1, 0, NOW());
-
-INSERT INTO `sys_user` (`id`, `username`, `password`, `nickname`, `email`, `status`, `superAdmin`, `createdAt`) VALUES
-(3, 'user', '$2a$10$Ws.PgP/.DHJ5CyEcy.kc0.lnH/f.HQR/UTOP9ZQX.MnXp.5mJFF1S', '演示用户', 'user@minimax.local', 1, 0, NOW());
-
--- 角色
-INSERT INTO `sys_role` (`id`, `code`, `name`, `description`, `createdAt`) VALUES
-(1, 'SUPER_ADMIN', '超级管理员', '拥有全部权限', NOW()),
-(2, 'ADMIN', '管理员', '管理用户/内容/审计', NOW()),
-(3, 'USER', '普通用户', '使用平台基础功能', NOW()),
-(4, 'VIEWER', '访客', '只读访问', NOW());
-
--- 用户-角色
-INSERT INTO `sys_user_role` (`userId`, `roleId`) VALUES (1, 1), (2, 2), (3, 3);
-
--- AI 工具 (19 个 V2.8.3)
-INSERT INTO `ai_tool` (`id`, `code`, `name`, `description`, `category`, `builtin`, `enabled`, `createdAt`) VALUES
-(1, 'text.analyze', '文本分析', '摘要/情感/实体/关键词', 'text', 1, 1, NOW()),
-(2, 'vision.analyze', '图像分析', 'pHash + 颜色直方图', 'vision', 1, 1, NOW()),
-(3, 'audio.analyze', '音频分析', '音量/频谱/情绪', 'audio', 1, 1, NOW()),
-(4, 'file.convert', '文件转换', 'JSON/YAML/CSV/Base64', 'file', 1, 1, NOW()),
-(5, 'data.analyze.correlation', '相关性分析', 'Pearson + Spearman', 'data', 1, 1, NOW()),
-(6, 'data.predict.linear', '线性预测', '线性回归/MA/指数平滑', 'data', 1, 1, NOW()),
-(7, 'time.convert', '时间转换', '8 时区', 'time', 1, 1, NOW()),
-(8, 'image.generate', '图像生成', '7 类型 (柱状图/折线图/热力图...)', 'image', 1, 1, NOW()),
-(9, 'chart.generate', '图表生成', '柱/折/饼/雷达/散点', 'chart', 1, 1, NOW()),
-(10, 'music.generate', '音乐生成', 'MIDI 流式输出', 'music', 1, 1, NOW());
-
--- Pipeline 关键词 (88 个 V2.8.5)
-INSERT INTO `ai_intent_keyword` (`intent`, `keyword`, `weight`, `category`, `enabled`, `createdAt`) VALUES
-('GENERATE_CHART', 'chart', 1.0, 'create', 1, NOW()),
-('GENERATE_CHART', '图表', 1.0, 'create', 1, NOW()),
-('GENERATE_MUSIC', 'music', 1.0, 'create', 1, NOW()),
-('GENERATE_MUSIC', '音乐', 1.0, 'create', 1, NOW()),
-('GENERATE_IMAGE', 'image', 1.0, 'create', 1, NOW()),
-('GENERATE_IMAGE', '图像', 1.0, 'create', 1, NOW()),
-('GENERATE_VIDEO', 'video', 1.0, 'create', 1, NOW()),
-('GENERATE_VIDEO', '视频', 1.0, 'create', 1, NOW()),
-('ANALYZE_DATA', 'analyze', 1.0, 'analyze', 1, NOW()),
-('ANALYZE_DATA', '分析', 1.0, 'analyze', 1, NOW()),
-('SUMMARY', 'summary', 1.0, 'process', 1, NOW()),
-('SUMMARY', '摘要', 1.0, 'process', 1, NOW()),
-('TRANSLATE', 'translate', 1.0, 'process', 1, NOW()),
-('TRANSLATE', '翻译', 1.0, 'process', 1, NOW()),
-('SENTIMENT', 'sentiment', 1.0, 'analyze', 1, NOW()),
-('SENTIMENT', '情感', 1.0, 'analyze', 1, NOW()),
-('OCR', 'ocr', 1.0, 'process', 1, NOW()),
-('OCR', '识别', 1.0, 'process', 1, NOW()),
-('ASR', 'asr', 1.0, 'process', 1, NOW()),
-('ASR', '语音', 1.0, 'process', 1, NOW()),
-('TTS', 'tts', 1.0, 'process', 1, NOW()),
-('TTS', '朗读', 1.0, 'process', 1, NOW()),
-('CHAT', 'chat', 0.8, 'process', 1, NOW()),
-('CHAT', '聊天', 0.8, 'process', 1, NOW()),
-('CODE_GEN', 'code', 0.8, 'create', 1, NOW()),
-('CODE_GEN', '代码', 0.8, 'create', 1, NOW()),
-('QA', 'question', 0.8, 'process', 1, NOW()),
-('QA', '问题', 0.8, 'process', 1, NOW()),
-('TRANSFER_HUMAN', '人工', 1.0, 'control', 1, NOW()),
-('TRANSFER_HUMAN', '客服', 0.8, 'control', 1, NOW());
-
--- 协作示例房间
-INSERT INTO `collab_room` (`id`, `roomId`, `name`, `type`, `ownerId`, `ownerName`, `isPublic`, `maxParticipants`, `status`, `currentParticipants`, `createdAt`, `lastActivityAt`) VALUES
-(1, 'DEMO0001', 'AI 协作演示房间', 'AI_CHAT', 1, 'adminLiugl', 1, 20, 'ACTIVE', 0, NOW(), NOW()),
-(2, 'TRAIN001', '训练任务协作监控', 'TRAINING', 1, 'adminLiugl', 1, 10, 'ACTIVE', 0, NOW(), NOW()),
-(3, 'DOCEDIT01', '产品需求文档协同', 'DOC', 1, 'adminLiugl', 0, 5, 'ACTIVE', 0, NOW(), NOW());
-
--- AI Agent Marketplace 示例
-INSERT INTO `agent_marketplace` (`id`, `agentKey`, `name`, `description`, `category`, `icon`, `authorId`, `authorName`, `definitionJson`, `version`, `visibility`, `status`, `usageCount`, `avgRating`, `ratingCount`, `tags`, `capabilities`, `publishedAt`) VALUES
-(1, 'travel-planner-1234', '智能旅行规划师', '基于 LBS 推荐景点/酒店/餐厅, 行程自动优化', 'TRAVEL', '✈️', 1, 'adminLiugl',
- '{"capabilities":["travel_plan","poi_search","hotel_search"],"tools":["LocationAwareTool","GeoUtils"],"systemPrompt":"你是专业旅行规划师"}',
- '1.0.0', 'PUBLIC', 'PUBLISHED', 0, 4.8, 0, '旅行,LBS,推荐', 'travel_plan,poi_search', NOW()),
-(2, 'code-reviewer-5678', 'AI 代码审查', '自动审查 PR, 提示潜在 bug / 性能 / 安全', 'PRODUCTIVITY', '🔍', 1, 'adminLiugl',
- '{"capabilities":["code_review","static_analysis"],"tools":["AbstractSimpleTool"],"systemPrompt":"你是高级代码审查员"}',
- '1.0.0', 'PUBLIC', 'PUBLISHED', 0, 4.5, 0, '代码,审查,自动化', 'code_review,static_analysis', NOW()),
-(3, 'chinese-poet-9999', '古诗词助手', '古典诗词创作/赏析/典故解释', 'EDUCATION', '📜', 1, 'adminLiugl',
- '{"capabilities":["poem_create","poem_analyze","allusion_explain"],"tools":[],"systemPrompt":"你是古诗词大师"}',
- '1.0.0', 'PUBLIC', 'PUBLISHED', 0, 4.9, 0, '诗词,教育,文化', 'poem_create,poem_analyze', NOW());
-
--- AI 模型市场示例
-INSERT INTO `model_market` (`id`, `modelKey`, `name`, `description`, `modelType`, `taskType`, `baseModel`, `version`, `fileSize`, `license`, `authorId`, `authorName`, `tags`, `status`, `downloadCount`, `avgRating`, `publishedAt`) VALUES
-(1, 'chinese-sentiment-bert-1234', '中文情感分析 BERT', '基于 bert-base-chinese 微调, 准确率 95%', 'PYTORCH', 'TEXT_CLASSIFICATION', 'bert-base-chinese', '1.0.0', 411000000, 'MIT', 1, 'adminLiugl', 'BERT,情感,中文,NLP', 'PUBLISHED', 152, 4.8, NOW()),
-(2, 'minimax-7b-gguf-5678', 'MiniMax-7B 量化版', 'GGUF 量化 (Q4_K_M), 4GB 显存即可推理', 'GGUF', 'TEXT_GENERATION', 'minimax-7b', '1.0.0', 4100000000, 'APACHE_2_0', 1, 'adminLiugl', 'LLM,量化,7B,CPU', 'PUBLISHED', 89, 4.6, NOW()),
-(3, 'product-ner-roberta-9999', '电商商品 NER', 'RoBERTa 微调, 识别品牌/型号/价格', 'SAFETENSORS', 'NER', 'hfl/chinese-roberta-wwm-ext', '1.0.0', 408000000, 'MIT', 1, 'adminLiugl', 'NER,电商,RoBERTa', 'PUBLISHED', 67, 4.5, NOW());
-
--- Webhook 示例
-INSERT INTO `webhook` (`id`, `webhookId`, `name`, `description`, `url`, `events`, `secret`, `enabled`, `status`, `ownerId`) VALUES
-(1, 'wh_demo01xxxxxxxx', 'Demo Notifier', '示例: 事件发到通知频道', 'https://example.com/webhook-receiver', 'MODEL_TRAINED,AGENT_PUBLISHED,ALERT_TRIGGERED', 'wh_secret_demo_placeholder', 1, 'ACTIVE', 1);
-
--- 异常检测规则
-INSERT INTO `anomaly_rule` (`id`, `name`, `type`, `threshold`, `timeWindow`, `severity`, `enabled`, `action`) VALUES
-(1, '高频失败用户', 'HIGH_FAIL_USER', 10, 3600, 'HIGH', 1, 'ALERT'),
-(2, '异常 IP 高频', 'SUSPICIOUS_IP', 1000, 3600, 'CRITICAL', 1, 'ALERT'),
-(3, '短时间突发', 'BURST_USER', 50, 60, 'MEDIUM', 1, 'LOG'),
-(4, '越权删除尝试', 'UNAUTHORIZED_DELETE', 3, 600, 'HIGH', 1, 'ALERT'),
-(5, '异地登录', 'ABNORMAL_LOCATION', 1, 60, 'MEDIUM', 1, 'ALERT');
-
--- 数据保留策略
-INSERT INTO `data_retention_policy` (`id`, `tableName`, `displayName`, `retentionDays`, `archiveEnabled`, `enabled`) VALUES
-(1, 'audit_log_full', '审计日志', 90, 1, 1),
-(2, 'chat_message', '聊天记录', 365, 1, 1),
-(3, 'auth_login_log', '登录日志', 180, 0, 1),
-(4, 'collab_message', '协作消息', 180, 1, 1),
-(5, 'tensorboard_run', 'TensorBoard runs', 30, 0, 1);
-
--- ============================================================
--- 初始化完成
--- ============================================================
-
--- ============================================================
--- V3.0.0 种子数据
--- ============================================================
-INSERT INTO `sys_user` (`id`, `username`, `password`, `nickname`, `email`, `status`, `superAdmin`, `createdAt`) VALUES
-(1, 'adminLiugl', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '超级管理员', 'admin@minimax.local', 1, 1, NOW());
-
-INSERT INTO `sys_role` (`id`, `code`, `name`, `description`, `createdAt`) VALUES
-(1, 'SUPER_ADMIN', '超级管理员', '拥有全部权限', NOW()),
-(2, 'ADMIN', '管理员', '管理用户/内容/审计', NOW()),
-(3, 'USER', '普通用户', '使用平台基础功能', NOW()),
-(4, 'VIEWER', '访客', '只读访问', NOW());
-
-INSERT INTO `sys_user_role` (`userId`, `roleId`) VALUES (1, 1);
-
-INSERT INTO `collab_room` (`id`, `roomId`, `name`, `type`, `ownerId`, `ownerName`, `isPublic`, `maxParticipants`, `status`, `currentParticipants`, `createdAt`, `lastActivityAt`) VALUES
-(1, 'DEMO0001', 'AI 协作演示房间', 'AI_CHAT', 1, 'adminLiugl', 1, 20, 'ACTIVE', 0, NOW(), NOW()),
-(2, 'TRAIN001', '训练任务协作监控', 'TRAINING', 1, 'adminLiugl', 1, 10, 'ACTIVE', 0, NOW(), NOW());
-
-INSERT INTO `agent_marketplace` (`id`, `agentKey`, `name`, `description`, `category`, `icon`, `authorId`, `authorName`, `definitionJson`, `version`, `visibility`, `status`, `usageCount`, `avgRating`, `ratingCount`, `tags`, `capabilities`, `publishedAt`) VALUES
-(1, 'travel-planner-1234', '智能旅行规划师', '基于 LBS 推荐景点/酒店/餐厅', 'TRAVEL', '✈️', 1, 'adminLiugl',
- '{"capabilities":["travel_plan","poi_search"],"tools":["LocationAwareTool"],"systemPrompt":"你是专业旅行规划师"}',
- '1.0.0', 'PUBLIC', 'PUBLISHED', 0, 4.8, 0, '旅行,LBS', 'travel_plan,poi_search', NOW()),
-(2, 'code-reviewer-5678', 'AI 代码审查', '自动审查 PR, 提示潜在 bug', 'PRODUCTIVITY', '🔍', 1, 'adminLiugl',
- '{"capabilities":["code_review"],"systemPrompt":"你是高级代码审查员"}',
- '1.0.0', 'PUBLIC', 'PUBLISHED', 0, 4.5, 0, '代码,审查', 'code_review', NOW()),
-(3, 'chinese-poet-9999', '古诗词助手', '古典诗词创作/赏析', 'EDUCATION', '📜', 1, 'adminLiugl',
- '{"capabilities":["poem_create","poem_analyze"],"systemPrompt":"你是古诗词大师"}',
- '1.0.0', 'PUBLIC', 'PUBLISHED', 0, 4.9, 0, '诗词,教育', 'poem_create', NOW());
-
-INSERT INTO `model_market` (`id`, `modelKey`, `name`, `description`, `modelType`, `taskType`, `baseModel`, `version`, `fileSize`, `license`, `authorId`, `authorName`, `tags`, `status`, `downloadCount`, `avgRating`, `publishedAt`) VALUES
-(1, 'chinese-sentiment-bert-1234', '中文情感分析 BERT', 'bert-base-chinese 微调, 准确率 95%', 'PYTORCH', 'TEXT_CLASSIFICATION', 'bert-base-chinese', '1.0.0', 411000000, 'MIT', 1, 'adminLiugl', 'BERT,情感,中文', 'PUBLISHED', 152, 4.8, NOW()),
-(2, 'minimax-7b-gguf-5678', 'MiniMax-7B 量化版', 'GGUF 量化 (Q4_K_M)', 'GGUF', 'TEXT_GENERATION', 'minimax-7b', '1.0.0', 4100000000, 'APACHE_2_0', 1, 'adminLiugl', 'LLM,量化,7B', 'PUBLISHED', 89, 4.6, NOW()),
-(3, 'product-ner-roberta-9999', '电商商品 NER', 'RoBERTa 微调', 'SAFETENSORS', 'NER', 'hfl/chinese-roberta-wwm-ext', '1.0.0', 408000000, 'MIT', 1, 'adminLiugl', 'NER,电商', 'PUBLISHED', 67, 4.5, NOW());
-
-INSERT INTO `webhook` (`id`, `webhookId`, `name`, `description`, `url`, `events`, `secret`, `enabled`, `status`, `ownerId`) VALUES
-(1, 'wh_demo01xxxxxxxx', 'Demo Notifier', '示例: 事件发到通知频道', 'https://example.com/webhook-receiver', 'MODEL_TRAINED,AGENT_PUBLISHED,ALERT_TRIGGERED', 'wh_secret_demo_placeholder', 1, 'ACTIVE', 1);
-
-INSERT INTO `anomaly_rule` (`id`, `name`, `type`, `threshold`, `timeWindow`, `severity`, `enabled`, `action`) VALUES
-(1, '高频失败用户', 'HIGH_FAIL_USER', 10, 3600, 'HIGH', 1, 'ALERT'),
-(2, '异常 IP 高频', 'SUSPICIOUS_IP', 1000, 3600, 'CRITICAL', 1, 'ALERT'),
-(3, '短时间突发', 'BURST_USER', 50, 60, 'MEDIUM', 1, 'LOG'),
-(4, '越权删除尝试', 'UNAUTHORIZED_DELETE', 3, 600, 'HIGH', 1, 'ALERT'),
-(5, '异地登录', 'ABNORMAL_LOCATION', 1, 60, 'MEDIUM', 1, 'ALERT');
-
-INSERT INTO `data_retention_policy` (`id`, `tableName`, `displayName`, `retentionDays`, `archiveEnabled`, `enabled`) VALUES
-(1, 'audit_log_full', '审计日志', 90, 1, 1),
-(2, 'chat_message', '聊天记录', 365, 1, 1),
-(3, 'auth_login_log', '登录日志', 180, 0, 1),
-(4, 'collab_message', '协作消息', 180, 1, 1),
-(5, 'tensorboard_run', 'TensorBoard runs', 30, 0, 1);
-
--- 初始化完成

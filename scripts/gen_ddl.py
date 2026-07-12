@@ -231,7 +231,12 @@ def generate_create_table(table: dict) -> str:
     lines.append('CREATE TABLE IF NOT EXISTS `' + table['table_name'] + '` (')
     pk_field = None
     field_defs = []
+    seen_cols = set()  # V3.0.1: 去重已生成列名
     for f in table['fields']:
+        # 跳过重复列 (同一个 col_name 多次出现, 只保留第一个)
+        if f['name'] in seen_cols:
+            continue
+        seen_cols.add(f['name'])
         if f['primary']:
             pk_field = f
             field_defs.append(f'    `{f["name"]}` {f["db_type"]} COMMENT \'{f["name"]}\'')
@@ -249,7 +254,8 @@ def generate_create_table(table: dict) -> str:
             if not f['primary'] and f['name'] not in unique_fields:
                 unique_fields.append(f['name'])
     for u in unique_fields[:2]:  # 最多 2 个 unique
-        field_defs.append(f'    UNIQUE KEY `uk_{u}` (`{u}`)')
+        # V3.0.1 修复: 加表名前缀避免 H2 跨表冲突 (MySQL 表内唯一, 但 H2 全局唯一)
+        field_defs.append(f'    UNIQUE KEY `uk_{table["table_name"]}_{u}` (`{u}`)')
     lines.append(',\n'.join(field_defs))
     lines.append(f") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='{table['class_name']} (auto-generated V3.0.0)';")
     return '\n'.join(lines)
