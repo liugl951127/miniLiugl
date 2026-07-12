@@ -1,6 +1,64 @@
 # MiniMax Platform 变更日志
 
-> **所有版本变更** · V1.0 → V2.9.0
+> **所有版本变更** · V1.0 → V2.9.1
+
+## [V2.9.1] - 2026-07-12
+
+### 🆕 AI 模型市场 (主)
+- **ModelEntry** 实体 (3KB) - 21 字段
+  - modelKey/name/description/modelType/taskType
+  - baseModel/version/filePath/fileName/fileSize
+  - sha256 (自动计算)/license (6 种)
+  - authorId/authorName/tags/metricsJson
+  - status (DRAFT/PUBLISHED/DEPRECATED)
+- **ModelRating** 实体 + 评分
+- **ModelMarketService** (11KB)
+  - upload(): multipart + SHA256 + 元数据
+  - uploadMetadata(): 仅元数据发布
+  - browse(): 分类/任务/搜索/排序
+  - rate(): 1-5 星 + 评论
+  - recordDownload/downloadPath: 路径 + 计数
+  - changeStatus: 状态机
+  - stats(): 总数/已发布/总下载/总大小/类型分布
+- **ModelMarketController** 9 端点
+  - POST /upload (multipart), POST /publish
+  - GET /models, GET /models/{key}, GET /models/{key}/download
+  - POST /models/{key}/rate, GET /models/{key}/ratings
+  - GET /my, POST /models/{key}/status, GET /stats
+- 3 示例模型: 中文情感 BERT / MiniMax-7B GGUF / 电商 NER
+
+### 🆕 Webhook 集成 (辅)
+- **Webhook** 实体 (2.5KB) + **WebhookDelivery** 投递日志
+- **WebhookService** (12KB)
+  - 订阅 CRUD (URL 验证 + webhookId/secret 生成)
+  - 事件总线 publish(eventType, payload)
+  - 异步投递: HTTP POST + HMAC-SHA256 签名
+  - 4 个 Header: X-Webhook-Id/Event/Timestamp/Delivery
+  - 指数退避重试 (3 次, 0/1/4/16s)
+  - 投递日志 (status/duration/error)
+  - 测试 webhook (Ping)
+  - 事件计数器
+- **8 事件类型**:
+  - USER_LOGIN/USER_REGISTER
+  - MODEL_TRAINED/AGENT_PUBLISHED
+  - COLLAB_MESSAGE/AUDIT_FAILED
+  - ALERT_TRIGGERED/WEBHOOK_TEST
+- **WebhookController** 10 端点
+- 1 示例 webhook (Slack 通知)
+
+### 🆕 DDL (4 表 + 4 种子)
+- model_market: 主表 (8 索引)
+- model_rating: 评分
+- webhook: 订阅
+- webhook_delivery: 投递日志
+- 3 示例模型 + 1 示例 webhook
+
+### 🧪 测试统计
+- 274 (V2.9.0) → **297** (+23)
+- V291ModelMarketTest 13: upload/empty/emptyName/metadata/browse/rate*3/invalid/notFound/download/status/notFound/stats
+- V291WebhookTest 10: create/invalidURL/update/delete/publish/hmac/stats/deliveries/recent
+
+---
 
 ## [V2.9.0] - 2026-07-12 (大版本)
 
