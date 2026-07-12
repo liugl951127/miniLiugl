@@ -113,6 +113,16 @@ public class AiToolRegistry {
         executors.put(executor.getCode(), executor);
     }
 
+    /**
+     * 获取工具执行器 (V3.0.2)
+     *
+     * @param code 工具 code
+     * @return AiToolExecutor 或 null (未注册)
+     */
+    public AiToolExecutor getExecutor(String code) {
+        return executors.get(code);
+    }
+
     public Set<String> getAllCodes() {
         return executors.keySet();
     }
@@ -139,5 +149,10 @@ public class AiToolRegistry {
             r.message = msg;
             return r;
         }
+
+        // V3.0.2: 便捷方法
+        public boolean isSuccess() { return success; }
+        public String getError() { return message; }
+        public Object getOutput() { return data; }
     }
 }
