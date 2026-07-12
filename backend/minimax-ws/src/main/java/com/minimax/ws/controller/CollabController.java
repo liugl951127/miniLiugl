@@ -1,6 +1,7 @@
 package com.minimax.ws.controller;
 
 import com.minimax.ws.collab.CollabService;
+import com.minimax.ws.collab.CrdtEngine;
 import com.minimax.ws.entity.CollabMessage;
 import com.minimax.ws.entity.CollabParticipant;
 import com.minimax.ws.entity.CollabRoom;
@@ -37,6 +38,7 @@ import java.util.Map;
 public class CollabController {
 
     private final CollabService collabService;
+    private final CrdtEngine crdtEngine;
 
     /**
      * 创建协作房间
@@ -126,6 +128,40 @@ public class CollabController {
                 "message", "ok",
                 "data", messages,
                 "total", messages.size()
+        ));
+    }
+
+    /**
+     * V2.8.8: CRDT 文档快照 (供客户端初始同步)
+     */
+    @GetMapping("/rooms/{roomId}/doc")
+    public ResponseEntity<Map<String, Object>> getDocSnapshot(@PathVariable String roomId) {
+        Map<String, Object> snapshot = crdtEngine.snapshot(roomId);
+        String text = crdtEngine.renderText(roomId);
+        return ResponseEntity.ok(Map.of(
+                "code", 0,
+                "data", Map.of(
+                    "snapshot", snapshot,
+                    "text", text,
+                    "length", text.length()
+                )
+        ));
+    }
+
+    /**
+     * V2.8.8: 应用 CRDT op (HTTP 模式, 供不支持 WebSocket 的客户端)
+     */
+    @PostMapping("/rooms/{roomId}/doc/ops")
+    public ResponseEntity<Map<String, Object>> applyDocOps(
+            @PathVariable String roomId,
+            @RequestBody java.util.List<CrdtEngine.CrdtOperation> ops) {
+        CrdtEngine.DocState state = crdtEngine.applyBatch(roomId, ops);
+        return ResponseEntity.ok(Map.of(
+                "code", 0,
+                "data", Map.of(
+                    "version", state.getVersion(),
+                    "text", crdtEngine.renderText(roomId)
+                )
         ));
     }
 

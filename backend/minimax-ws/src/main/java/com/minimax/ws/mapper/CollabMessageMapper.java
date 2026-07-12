@@ -2,7 +2,9 @@ package com.minimax.ws.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.minimax.ws.entity.CollabMessage;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
@@ -37,4 +39,12 @@ public interface CollabMessageMapper extends BaseMapper<CollabMessage> {
      */
     @Select("SELECT COUNT(*) FROM collab_message WHERE roomId = #{roomId}")
     long countByRoom(@Param("roomId") String roomId);
+
+    /**
+     * 插入并返回 ID (用于快照)
+     */
+    @Insert("INSERT INTO collab_message (roomId, userId, username, type, content, broadcast, createdAt) " +
+            "VALUES (#{roomId}, #{userId}, #{username}, #{type}, #{content}, #{broadcast}, NOW())")
+    @Options(useGeneratedKeys = true, keyProperty = "id")
+    int insertReturnId(CollabMessage msg);
 }

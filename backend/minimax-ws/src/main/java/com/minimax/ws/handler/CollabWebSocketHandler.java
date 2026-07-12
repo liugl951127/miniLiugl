@@ -4,11 +4,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.minimax.ws.collab.CollabService;
+import com.minimax.ws.collab.CrdtEngine;
+import com.minimax.ws.collab.CrdtEngine.CrdtId;
+import com.minimax.ws.collab.CrdtEngine.CrdtOperation;
 import com.minimax.ws.entity.CollabMessage;
 import com.minimax.ws.entity.CollabParticipant;
 import com.minimax.ws.entity.CollabRoom;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -16,9 +20,7 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.net.URI;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -59,7 +61,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class CollabWebSocketHandler extends TextWebSocketHandler {
 
     private final CollabService collabService;
+    private final CrdtEngine crdtEngine;
     private final ObjectMapper objectMapper;
+
+    /**
+     * V2.8.8: AI 协作可调用 minimax-ai 的真实 Pipeline
+     * 用 Optional + lazy resolve 避免循环依赖
+     */
+    @Autowired(required = false)
+    private AiCollabBridge aiBridge;
 
     // session → 房间+用户元数据
     private final Map<String, SessionContext> sessionContexts = new java.util.concurrent.ConcurrentHashMap<>();
@@ -254,25 +264,78 @@ public class CollabWebSocketHandler extends TextWebSocketHandler {
     }
 
     private void handleEdit(WebSocketSession session, SessionContext ctx, JsonNode req) throws Exception {
-        String op = req.path("op").asText("");
-        JsonNode payload = req.path("payload");
-        if (op.isEmpty()) {
-            sendError(session, "edit op 不能为空");
+        // V2.8.8: CRDT 真实多人编辑 (Y.js 协议子集)
+        JsonNode ops = req.path("ops");
+        if (!ops.isArray() || ops.size() == 0) {
+            sendError(session, "edit ops 必须是非空数组");
             return;
         }
-        // 持久化编辑操作 (用于回放)
+
+        List<CrdtOperation> appliedOps = new ArrayList<>();
+        for (JsonNode opNode : ops) {
+            CrdtOperation op = parseCrdtOp(opNode);
+            if (op != null) appliedOps.add(op);
+        }
+
+        // 应用到 CRDT engine
+        crdtEngine.applyBatch(ctx.roomId, appliedOps);
+
+        // 渲染当前文档
+        String currentText = crdtEngine.renderText(ctx.roomId);
+
+        // 持久化 (合并的快照, 不每 op 存)
         CollabMessage msg = collabService.saveMessage(ctx.roomId, ctx.userId, ctx.username, ctx.nickname,
-                "EDIT", op, payload.toString(), req.path("clientMsgId").asText(null));
-        // 广播给其他用户
+                "EDIT", currentText.length() > 200 ? currentText.substring(0, 200) + "..." : currentText,
+                objectMapper.writeValueAsString(appliedOps),
+                req.path("clientMsgId").asText(null));
+
+        // 广播给其他用户 (含完整 doc 状态)
         broadcastToRoom(ctx.roomId, Map.of(
-            "type", "MESSAGE",
-            "id", msg.getId(),
+            "type", "DOC_UPDATE",
+            "version", crdtEngine.getDoc(ctx.roomId).getVersion(),
+            "ops", appliedOps,
+            "snapshot", crdtEngine.snapshot(ctx.roomId),
+            "text", currentText,
             "userId", ctx.userId,
-            "messageType", "EDIT",
-            "op", op,
-            "payload", payload,
-            "createdAt", msg.getCreatedAt().toString()
+            "username", ctx.username,
+            "msgId", msg.getId()
         ), ctx.userId);
+
+        // 同时回个 ack 给发送者
+        try {
+            session.sendMessage(toJson(Map.of(
+                "type", "DOC_UPDATE_ACK",
+                "version", crdtEngine.getDoc(ctx.roomId).getVersion(),
+                "clientMsgId", req.path("clientMsgId").asText("")
+            )));
+        } catch (Exception ignore) {}
+    }
+
+    private CrdtOperation parseCrdtOp(JsonNode opNode) {
+        try {
+            String type = opNode.path("type").asText("");
+            JsonNode idNode = opNode.path("id");
+            if (idNode.isMissingNode()) return null;
+            CrdtId id = new CrdtId(
+                idNode.path("clientId").asLong(0),
+                idNode.path("clock").asLong(0)
+            );
+            CrdtId parentId = null;
+            JsonNode parentNode = opNode.path("parent");
+            if (!parentNode.isMissingNode() && parentNode.has("clientId")) {
+                parentId = new CrdtId(
+                    parentNode.path("clientId").asLong(0),
+                    parentNode.path("clock").asLong(0)
+                );
+            }
+            String content = opNode.path("content").asText("");
+            return CrdtOperation.builder()
+                .type(type).id(id).parentId(parentId).content(content)
+                .build();
+        } catch (Exception e) {
+            log.warn("[collab] 解析 CRDT op 失败: {}", e.getMessage());
+            return null;
+        }
     }
 
     private void handleAi(WebSocketSession session, SessionContext ctx, JsonNode req) throws Exception {
@@ -282,15 +345,30 @@ public class CollabWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        // 简化版: 直接返回 mock 答案
-        // 实际应注入 minimax-ai 的 MiniTransformer / AI Pipeline
-        String aiAnswer = "[AI 协作] 收到: " + prompt + "\n\n这是模拟的协作 AI 响应. " +
-                "生产环境会调用 minimax-ai 模块的 13 阶段 Pipeline 生成真实回复. " +
-                "(V2.8.7 mock, 后续接入 minimax-ai)";
+        // V2.8.8: 优先调真实 minimax-ai Pipeline, fallback 到 mock
+        String aiAnswer;
+        boolean fromRealPipeline = false;
+        if (aiBridge != null) {
+            try {
+                aiAnswer = aiBridge.generate(ctx.roomId, ctx.userId, ctx.username, prompt);
+                fromRealPipeline = true;
+            } catch (Exception e) {
+                log.warn("[collab] AI Pipeline 调用失败, fallback 到 mock: {}", e.getMessage());
+                aiAnswer = null;
+            }
+        } else {
+            aiAnswer = null;
+        }
+
+        if (aiAnswer == null) {
+            // Fallback: 简化版
+            aiAnswer = "[AI 协作] 收到: " + prompt + "\n\n这是模拟响应. " +
+                "(V2.8.8: 启动 minimax-ai 服务后调真实 13 阶段 Pipeline)";
+        }
 
         // 持久化 AI 回复
         CollabMessage aiMsg = collabService.saveMessage(ctx.roomId, null, "ai", "AI Assistant",
-                "AI", aiAnswer, null, null);
+                "AI", aiAnswer, "{\"source\":\"" + (fromRealPipeline ? "pipeline" : "mock") + "\"}", null);
 
         // 流式推送给所有参与者
         String[] tokens = aiAnswer.split("(?<=\\s)|(?=\\s)");
@@ -300,7 +378,8 @@ public class CollabWebSocketHandler extends TextWebSocketHandler {
                 "type", "AI_CHUNK",
                 "content", token,
                 "finished", (i == tokens.length - 1),
-                "msgId", aiMsg.getId()
+                "msgId", aiMsg.getId(),
+                "source", fromRealPipeline ? "pipeline" : "mock"
             ), -1L);
             Thread.sleep(15); // 模拟流式延迟
         }

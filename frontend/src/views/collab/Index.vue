@@ -156,6 +156,8 @@
           <!-- 中间: 聊天 / AI 协作 -->
           <el-col :span="18">
             <div class="chat-area">
+              <el-tabs v-model="activeTab" class="tb">
+                <el-tab-pane label="💬 聊天" name="chat">
               <div class="messages" ref="msgBox">
                 <div
                   v-for="m in messages"
@@ -195,6 +197,26 @@
                   <el-button type="primary" @click="sendChat" :disabled="!inputText.trim()">发送</el-button>
                 </div>
               </div>
+                </el-tab-pane>
+
+                <el-tab-pane :label="`📝 协作文档 (${docText.length} 字)`" name="doc">
+                  <div class="doc-toolbar">
+                    <span class="doc-info">CRDT 版本: v{{ docVersion }}</span>
+                    <span class="doc-info">客户端 ID: {{ clientId }}</span>
+                    <el-tag v-if="docSource === 'pipeline'" size="small" type="success">AI 接入真实 Pipeline</el-tag>
+                    <el-tag v-else size="small" type="info">AI Fallback (Mock)</el-tag>
+                  </div>
+                  <textarea
+                    v-model="docText"
+                    class="crdt-editor"
+                    placeholder="多人同时编辑这个文本框, 实时同步给所有参与者 (V2.8.8 CRDT 真实多人编辑)..."
+                    @input="onDocInput"
+                  ></textarea>
+                  <div class="doc-helper">
+                    <small>输入即同步, 换行符也支持. 所有参与者的编辑按 CRDT 顺序合并, 不会互相覆盖.</small>
+                  </div>
+                </el-tab-pane>
+              </el-tabs>
             </div>
           </el-col>
         </el-row>
@@ -204,7 +226,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -213,6 +235,7 @@ import {
   createRoom, getRoom, listPublicRooms, closeRoom,
   buildCollabWsUrl
 } from '@/api/collab'
+import { CrdtDoc, CrdtIdFactory } from '@/utils/crdt'
 import { useUserStore } from '@/store/user'
 
 const { t } = useI18n()
@@ -239,6 +262,16 @@ const aiTyping = ref(false)
 const msgBox = ref(null)
 const cursorCanvas = ref(null)
 const cursorThrottle = { last: 0 }
+
+// V2.8.8: CRDT 协作文档
+const activeTab = ref('chat')
+const docText = ref('')
+const docVersion = ref(0)
+const docSource = ref('mock')  // 'pipeline' / 'mock'
+const clientId = ref(Math.floor(Math.random() * 1e9))
+let crdtDoc = null
+let crdtIdFactory = null
+let isApplyingRemote = false  // 防止远程更新触发本地 echo
 
 // 光标 (其他用户)
 const remoteCursors = ref(new Map()) // userId -> {x, y, nickname, color, ts}
@@ -304,7 +337,105 @@ const quickJoin = (r) => doJoin(r.roomId)
 const doJoin = (rid) => {
   roomId.value = rid
   joined.value = true
+  // V2.8.8: 初始化 CRDT
+  crdtIdFactory = new CrdtIdFactory(clientId.value)
+  crdtDoc = new CrdtDoc(crdtIdFactory)
+  crdtDoc.observe((op) => {
+    if (!isApplyingRemote) {
+      // 本地操作 -> 发送到服务端
+      sendDocOps([op])
+    }
+  })
+  // 拉初始快照
+  loadDocSnapshot(rid)
   connectWs(rid)
+}
+
+const loadDocSnapshot = async (rid) => {
+  try {
+    const res = await fetch(`/api/v1/collab/rooms/${rid}/doc`).then(r => r.json())
+    if (res.code === 0) {
+      const snapshot = res.data.snapshot
+      // 应用快照到本地 CRDT (重建)
+      isApplyingRemote = true
+      try {
+        crdtDoc.items.clear()
+        crdtDoc.tombstones.clear()
+        for (const it of snapshot.items) {
+          crdtDoc.applyOp({
+            type: 'insert',
+            id: it.id,
+            parentId: it.parent,
+            content: it.content
+          })
+        }
+        for (const tk of snapshot.tombstones) {
+          const [cid, clk] = tk.split(':')
+          crdtDoc.applyOp({
+            type: 'delete',
+            id: { clientId: parseInt(cid), clock: parseInt(clk) }
+          })
+        }
+        docText.value = crdtDoc.toText()
+        docVersion.value = snapshot.version || 0
+      } finally {
+        isApplyingRemote = false
+      }
+    }
+  } catch (e) {
+    console.warn('loadDocSnapshot failed:', e)
+  }
+}
+
+const onDocInput = (e) => {
+  // 简化: 检测增删字符, 生成对应 op
+  if (isApplyingRemote || !crdtDoc || !ws) return
+  const oldText = crdtDoc.toText()
+  const newText = docText.value
+
+  // 找到第一个差异位置
+  let commonPrefix = 0
+  while (commonPrefix < oldText.length && commonPrefix < newText.length
+         && oldText[commonPrefix] === newText[commonPrefix]) {
+    commonPrefix++
+  }
+  // 找到公共后缀
+  let commonSuffix = 0
+  while (commonSuffix < oldText.length - commonPrefix
+         && commonSuffix < newText.length - commonPrefix
+         && oldText[oldText.length - 1 - commonSuffix] === newText[newText.length - 1 - commonSuffix]) {
+    commonSuffix++
+  }
+
+  const ops = []
+  // 删除中间部分
+  for (let i = 0; i < oldText.length - commonPrefix - commonSuffix; i++) {
+    const op = crdtDoc.deleteAt(commonPrefix)
+    if (op) ops.push(op)
+  }
+  // 插入新字符
+  const inserted = newText.substring(commonPrefix, newText.length - commonSuffix)
+  if (inserted) {
+    // 逐字符插入 (简化)
+    for (const ch of inserted) {
+      const op = crdtDoc.insertAt(commonPrefix, ch)
+      ops.push(op)
+      commonPrefix++
+    }
+  }
+
+  if (ops.length > 0) {
+    sendDocOps(ops)
+  }
+}
+
+const sendDocOps = (ops) => {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return
+  ws.send(JSON.stringify({
+    action: 'edit',
+    ops: ops,
+    clientMsgId: `doc-${Date.now()}`
+  }))
 }
 
 const onLeave = () => {
@@ -446,6 +577,8 @@ const handleWsMessage = (msg) => {
     }
     case 'AI_CHUNK': {
       aiTyping.value = !msg.finished
+      // V2.8.8: 记录 AI 来源 (pipeline 真实 / mock fallback)
+      if (msg.source) docSource.value = msg.source
       // 把 AI 流式输出合并到消息列表
       const last = messages.value[messages.value.length - 1]
       if (last && last.messageType === 'AI' && last._streaming) {
@@ -462,6 +595,23 @@ const handleWsMessage = (msg) => {
         })
       }
       scrollToBottom()
+      break
+    }
+    case 'DOC_UPDATE': {
+      // V2.8.8: 应用远程 CRDT op
+      isApplyingRemote = true
+      try {
+        if (msg.ops) crdtDoc.applyBatch(msg.ops)
+        docText.value = crdtDoc.toText()
+        docVersion.value = msg.version || docVersion.value
+      } finally {
+        isApplyingRemote = false
+      }
+      break
+    }
+    case 'DOC_UPDATE_ACK': {
+      // 收到服务端 ack, 更新版本
+      if (msg.version) docVersion.value = msg.version
       break
     }
     case 'ERROR': {
@@ -632,4 +782,21 @@ onUnmounted(() => {
 .composer { margin-top: 12px; }
 .composer-actions { margin-top: 8px; display: flex; justify-content: flex-end; gap: 8px; }
 .hint { color: #909399; font-size: 12px; margin-left: 12px; }
+
+/* V2.8.8: 协作文档 */
+.tb :deep(.el-tabs__header) { margin-bottom: 8px; }
+.doc-toolbar {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 8px;
+  padding: 6px 12px; background: #fafafa; border-radius: 4px; font-size: 12px;
+}
+.doc-info { color: #909399; font-family: monospace; }
+.crdt-editor {
+  width: 100%; min-height: 400px; padding: 12px;
+  border: 1px solid #dcdfe6; border-radius: 4px;
+  font-family: 'Monaco', 'Consolas', monospace; font-size: 13px; line-height: 1.6;
+  resize: vertical; outline: none; transition: border-color 0.2s;
+  background: #fff;
+}
+.crdt-editor:focus { border-color: #409eff; box-shadow: 0 0 0 2px rgba(64,158,255,0.1); }
+.doc-helper { color: #909399; font-size: 11px; margin-top: 8px; padding: 0 4px; }
 </style>
