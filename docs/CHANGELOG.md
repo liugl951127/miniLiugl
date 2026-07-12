@@ -1,6 +1,57 @@
 # MiniMax Platform 变更日志
 
-> **所有版本变更** · V1.0 → V2.8.8
+> **所有版本变更** · V1.0 → V2.8.9
+
+## [V2.8.9] - 2026-07-12
+
+### 🆕 PWA 离线支持 (主)
+- **manifest.json** 完整配置 (display_override/shortcuts/share_target)
+  - 4 个快捷入口: AI对话/工具/协作/TensorBoard
+  - share_target: 图片/视频/音频/文本/PDF 接收
+  - 多图标 (192/512 + SVG fallback)
+- **sw.js** (8KB) 企业级 Service Worker
+  - 5 类策略: PRECACHE/RUNTIME/API_GET/NAV/WRITE
+  - API GET NetworkFirst + 3s 超时 + 缓存降级
+  - 写操作 (POST/PUT) NetworkOnly, 失败返 503
+  - WebSocket 透传不缓存
+  - 运行时缓存容量限制 (50 资源 FIFO)
+  - Push 通知 + notificationclick 路由
+  - 消息协议: SKIP_WAITING/CLEAR_CACHE/GET_VERSION/CACHE_URLS
+- **offline.html** 优雅离线页面
+  - 自动检测网络恢复 (online 事件)
+  - 列出可访问的已缓存页面
+- **usePwa.js** Vue composable (4.8KB)
+  - install/clearCache/update 三件套
+  - 缓存统计 (static/api/runtime 三类)
+  - online/offline 事件自动提示
+- **PwaStatusBar.vue** 顶部状态条
+  - 离线时:橙色警告条 + 回首页
+  - 可安装时:紫色提示条 + 安装按钮
+
+### 🆕 TensorBoard 分布面板 (辅)
+- **TfEventReader.computeStats()** - 10 个统计指标
+  - count/min/max/mean/std/median/p25/p75/p95/p99
+  - 线性插值计算百分位
+- **TfEventReader.computeHistogram()** - 直方图
+  - 默认 20 bins, 可配置 5-100
+  - 返回 binEdges + counts
+- **TfEventReader.compareRunsStats()** - 多 run 对比
+- **TensorBoardController** 3 个新端点
+  - GET /runs/{id}/stats/{tag}
+  - GET /runs/{id}/histogram/{tag}?bins=20
+  - POST /runs/compare
+- **TensorBoardStats.vue** (10KB) 前端面板
+  - 左侧: 统计指标 (10 字段描述列表)
+  - 右侧: 直方图 (ECharts BarChart)
+  - 趋势 + ±1σ 阴影 (均值线, 上下1σ)
+  - 多 run 对比表格 (8 列)
+- **tensorboard.js** SDK 3 新方法 (readStats/readHistogram/compareRuns)
+
+### 🧪 测试统计
+- 248 (V2.8.8) → **256** (+8)
+- V289TensorBoardStatsTest 8: 基础统计/空/单值/直方图基础/直方图同值/bins限制/多run/百分位插值
+
+---
 
 ## [V2.8.8] - 2026-07-12
 
