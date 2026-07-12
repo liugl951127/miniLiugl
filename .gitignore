@@ -62,3 +62,4 @@ logs/cron.log
 coverage/
 node_modules/
 .jwt-backup-*/
+scripts/__pycache__/
