@@ -1,6 +1,65 @@
 # MiniMax Platform 变更日志
 
-> **所有版本变更** · V1.0 → V2.9.1
+> **所有版本变更** · V1.0 → V3.0.0
+
+## [V3.0.0] - 2026-07-12
+
+### 🆕 重大重构 (主)
+- **去除 K8s 全部依赖**
+  - 删除 OPERATIONS.md 中 K8s 部署章节
+  - 替换 kubectl 为 docker 命令
+  - 清理 ARCHITECTURE/TEST_REPORT K8s 表格
+- **SQL 汇总单文件** (`sql/init.sql`)
+  - 重写 `gen_ddl.py`, 从 Java 实体扫描 `@TableName`
+  - 62 表, 1288 行, 60KB
+  - 删除 16 个旧 SQL 文件
+  - 9 段种子数据 (用户/角色/AI工具/意图/协作/Agent/Model/Webhook/异常/保留)
+- **后端 API 路径标准化** (`/api/v1/...`)
+  - 56 controllers 全部 `@RequestMapping` 加 `/api/v1` 前缀
+  - 修复前端 `http.js`: 避免双前缀
+  - 替换前端 `ai.js`: `/api/ai/...` → `/ai/...` (55 处)
+- **前端浏览器兼容** (V3.0.0)
+  - `vite.config.js`: target 降为 `es2015`
+  - `package.json`: 添加 `browserslist` (Chrome 63+/Edge 79+/FF 60+/Safari 12+)
+  - 新增 `useBrowserCompat.js`: 7 类 polyfill
+    - structuredClone / crypto.randomUUID
+    - Array.flat / Object.fromEntries
+    - String.replaceAll / requestIdleCallback
+    - AbortController
+  - `main.js` 初始化 `detectFeatures` + `installPolyfills`
+- **AI 算法逐行详细注释**
+  - `ModelInference.sampleTopKTopP`: Top-K-P 采样完整说明
+  - `ModelInference.isRepeating`: Bigram 重复检测
+  - `ModelInference.currentContext`: Sliding window
+  - `CrdtEngine.renderText`: 三键复合排序
+  - `GeoUtils.haversine`: 球面距离推导
+  - `KeywordEngine.recognize`: 三级匹配
+  - `KeywordEngine.extractParams`: 参数提取
+  - `TrainingTracker.ema`: EMA 公式推导
+  - 新增 `docs/AI-ALGORITHMS.md` 算法详解
+- **接口链路 E2E 准生产测试**
+  - `scripts/test-e2e-v300.sh`: 15 大类 60+ 接口
+    - 健康/登录/AI 24接口/Model Market/Agent/Webhook/治理/PWA/SLA/兼容/SQL/路径/算法/文档/K8s
+  - `scripts/test-perf.sh`: 12 接口 P50/P95/P99
+  - `docs/TEST_REPORT.md`: 准生产测试报告
+  - 验证结果: **28 PASS / 0 FAIL / 44 SKIP**
+- **封装性重构**
+  - 各 controller/service 接口对齐
+  - 算法复杂度 + 副作用详细文档化
+  - 详细 javadoc (`@param` / `@return` / `<b>` / 复杂度 / 公式)
+
+### 🐛 修复
+- 修复 `http.js` 双前缀错误
+- 修复 `ai.js` 55 处路径
+- 修复 vite target ES2015+ 不兼容老浏览器
+
+### 📊 统计
+- **总提交数**: 24
+- **代码行数**: 105K+
+- **测试总数**: 297 单元 + 60+ E2E
+- **DDL 表数**: 62 (单文件)
+- **Controllers**: 56 (全部 /api/v1)
+- **文档**: 16 份 (新增 TEST_REPORT / AI-ALGORITHMS)
 
 ## [V2.9.1] - 2026-07-12
 
