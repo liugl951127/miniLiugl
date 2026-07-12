@@ -1105,6 +1105,86 @@ CREATE TABLE IF NOT EXISTS `wechat_user_binding` (
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ========================================================
+-- V3.2.1: 看板指标 (dashboard_metric)
+-- ========================================================
+CREATE TABLE IF NOT EXISTS `dashboard_metric` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `metric` VARCHAR(64) NOT NULL COMMENT '指标名 (e.g. user.total, ai.call.count)',
+    `dimension` VARCHAR(64) NOT NULL DEFAULT 'global' COMMENT '维度 (global/tool:ppt.gen)',
+    `value` DOUBLE NOT NULL DEFAULT 0 COMMENT '指标值',
+    `tags` VARCHAR(512) DEFAULT NULL COMMENT '额外标签JSON',
+    `timestamp` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '快照时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_dashboard_metric_metric_ts` (`metric`, `timestamp`),
+    KEY `idx_dashboard_metric_dimension` (`dimension`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='DashboardMetric (V3.2.1 看板指标历史)';
+
+-- ========================================================
+-- V3.2.0: 训练可视化 (training_job / training_metric / training_checkpoint)
+-- ========================================================
+CREATE TABLE IF NOT EXISTS `training_job` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `taskId` VARCHAR(64) NOT NULL COMMENT '业务taskId (UUID)',
+    `name` VARCHAR(255) NOT NULL COMMENT '任务名',
+    `model` VARCHAR(255) DEFAULT NULL COMMENT '模型名',
+    `status` VARCHAR(32) NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING/RUNNING/COMPLETED/FAILED/CANCELLED',
+    `totalEpochs` INT NOT NULL DEFAULT 0 COMMENT '总epoch数',
+    `currentEpoch` INT NOT NULL DEFAULT 0 COMMENT '当前epoch',
+    `currentStep` INT NOT NULL DEFAULT 0 COMMENT '当前step',
+    `startTimeMs` BIGINT NOT NULL DEFAULT 0 COMMENT '起始时间戳ms',
+    `endTimeMs` BIGINT NOT NULL DEFAULT 0 COMMENT '结束时间戳ms (0=未结束)',
+    `config` TEXT DEFAULT NULL COMMENT '配置JSON',
+    `error` TEXT DEFAULT NULL COMMENT '错误信息',
+    `ownerId` BIGINT DEFAULT NULL COMMENT '创建人ID',
+    `tags` VARCHAR(255) DEFAULT NULL COMMENT '标签',
+    `lastLoss` DOUBLE DEFAULT NULL COMMENT '最新loss',
+    `lastValLoss` DOUBLE DEFAULT NULL COMMENT '最新val_loss',
+    `lastAccuracy` DOUBLE DEFAULT NULL COMMENT '最新accuracy',
+    `totalSteps` INT NOT NULL DEFAULT 0 COMMENT '总步数',
+    `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_training_job_taskId` (`taskId`),
+    KEY `idx_training_job_status` (`status`),
+    KEY `idx_training_job_ownerId` (`ownerId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='TrainingJob (V3.2.0 训练任务)';
+
+CREATE TABLE IF NOT EXISTS `training_metric` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `taskId` VARCHAR(64) NOT NULL COMMENT '业务taskId',
+    `epoch` INT NOT NULL DEFAULT 0 COMMENT '当前epoch',
+    `step` INT NOT NULL DEFAULT 0 COMMENT '当前step',
+    `loss` DOUBLE NOT NULL DEFAULT 0 COMMENT '训练loss',
+    `valLoss` DOUBLE NOT NULL DEFAULT 0 COMMENT '验证loss',
+    `accuracy` DOUBLE NOT NULL DEFAULT 0 COMMENT '准确率',
+    `learningRate` DOUBLE NOT NULL DEFAULT 0 COMMENT '学习率',
+    `elapsedMs` BIGINT NOT NULL DEFAULT 0 COMMENT '累计耗时ms',
+    `timestamp` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '上报时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_training_metric_taskId_step` (`taskId`, `step`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='TrainingMetric (V3.2.0 训练指标历史)';
+
+CREATE TABLE IF NOT EXISTS `training_checkpoint` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `taskId` VARCHAR(64) NOT NULL COMMENT '业务taskId',
+    `checkpointId` VARCHAR(64) NOT NULL COMMENT 'checkpoint业务ID',
+    `name` VARCHAR(255) DEFAULT NULL COMMENT 'checkpoint名称 (e.g. best-val-loss)',
+    `epoch` INT NOT NULL DEFAULT 0 COMMENT 'epoch',
+    `step` INT NOT NULL DEFAULT 0 COMMENT 'step',
+    `filePath` VARCHAR(512) NOT NULL COMMENT '文件路径',
+    `sizeBytes` BIGINT NOT NULL DEFAULT 0 COMMENT '文件大小 (字节)',
+    `sha256` VARCHAR(64) DEFAULT NULL COMMENT 'SHA256校验',
+    `valLoss` DOUBLE DEFAULT NULL COMMENT 'val_loss (排序用)',
+    `accuracy` DOUBLE DEFAULT NULL COMMENT 'accuracy (排序用)',
+    `tags` VARCHAR(255) DEFAULT NULL COMMENT '标签 (best/latest/milestone)',
+    `metadata` TEXT DEFAULT NULL COMMENT '元数据JSON',
+    `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_training_checkpoint_checkpointId` (`checkpointId`),
+    KEY `idx_training_checkpoint_taskId` (`taskId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='TrainingCheckpoint (V3.2.0 检查点)';
+
+-- ========================================================
 -- V3.0.3: agent_group 智能体群组表
 -- ========================================================
 CREATE TABLE IF NOT EXISTS `agent_group` (

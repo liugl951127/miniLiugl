@@ -1,6 +1,52 @@
 # MiniMax Platform 变更日志
 
-> **所有版本变更** · V1.0 → V3.1.1
+> **所有版本变更** · V1.0 → V3.2.1
+
+## [V3.2.1] - 2026-07-12
+
+### V3.2.1 数据看板 (Dashboard)
+
+**背景**: V3.2.0 训练任务可视化后, V3.2.1 面向业务运营场景: 实时看 AI 调用/用户/工具使用/任务状态。
+
+**代元**:
+- `DashboardService`: 指标计算 + 5s 内存缓存 + 60s 定时 snapshot + @Scheduled 定时清理
+- 11 个核心指标: user.total / user.active / ai.call.count / ai.token.total / ai.tool.usage / training.running / training.completed / api.requests / api.errors / cache.hit / cache.miss
+- 复合指标: errorRate / cacheHitRate (依赖多个原子指标)
+- 外部注入: setUserTotal/setApiRequests/incrementToolUsage (业务业务代码调)
+- 缓存策略: ConcurrentHashMap + 5s TTL + setter 自动失效
+- 趋势查询: 近 N 小时 (默认 24h, 可选 1h/24h/7d)
+- REST API (10 个): /api/v1/ai/dashboard/{metrics/all, metrics/{name}, metrics (POST setter), tools/track, tools/top, trend/{name}, cache/stats, cache/clear, health, stream}
+- SSE 实时流: 立即推 + 每 5s 推一次
+- 定时任务: 60s 快照 (落地 dashboard_metric 表) + 3am 清理 7d 前历史
+- DDL: dashboard_metric 表 (metric + dimension + value + timestamp)
+
+**测试**: 12 个单元测试全过
+- getMetric / 未知指标 / 缓存 TTL / 工具累加 / 命中率 / 错误率 / 全量聚合 / 健康 / 清缓存 / setter 失效
+
+**总测试量**: minimax-ai 194 → 218 (+24) / 17 个微服务总计: **437 个**
+
+## [V3.2.0] - 2026-07-12
+
+### V3.2.0 训练任务可视化
+
+**背景**: V3.1.x ONNX/Capacitor 后, V3.2.0 面向 AI 研发场景: 训练任务 + 实时曲线 + Checkpoint 管理。
+
+**代元**:
+- 3 实体: `TrainingJob` (任务) / `TrainingMetric` (历史) / `TrainingCheckpoint` (检查点)
+- 3 Mapper: MyBatis BaseMapper + 5 个自定义查询 (按 taskId/status/ownerId/findBest)
+- `TrainingVizService`: CRUD + 指标上报 + EMA 平滑 + checkpoint 保存/加载 + SHA256 校验
+- `TrainingStream`: SSE 广播, 3 事件类型 (metric/status/checkpoint), 多订阅者
+- `TrainingVizController`: 16 个 REST API (创建/列表/详情/开始/上报/完成/失败/取消/历史/EMA/SSE/checkpoint CRUD/下载)
+- 3 DDL: training_job / training_metric / training_checkpoint
+- Checkpoint 文件系统: ${MINIMAX_MODEL_DIR}/checkpoints/{taskId}/{checkpointId}/model.bin
+- EMA 公式: EMA_t = α·v + (1-α)·EMA_{t-1} (V2.7.5 已存在, V3.2.0 加强, 加入 controller 独立端点)
+
+**测试**: 12 单元测试全过
+- EMA 基础 / 数学 / 边界 (α=0/0.5/1) / 性能 (10000点<100ms) / 收敛性 / α 对比
+- TrainingStream 订阅/广播/事件名/广播空订阅不抛
+- 12 个业务场景覆盖
+
+**总测试量**: 194 → 218 (+24) / 17 个微服务总计: **437 个**
 
 ## [V3.1.1] - 2026-07-12
 
