@@ -51,7 +51,7 @@ class ApiKeyAuthGlobalFilterTest {
         // mock Redis (永不使用)
         var redis = mockRedisTemplate(null);
         var webClient = mockWebClient();
-        var f = new ApiKeyAuthGlobalFilter(redis, webClient, "http://auth:8081");
+        var f = new ApiKeyAuthGlobalFilter(webClient, redis, "http://auth:8081");
 
         when(mockChain.filter(exchange)).thenReturn(Mono.empty());
 
@@ -72,7 +72,7 @@ class ApiKeyAuthGlobalFilterTest {
 
         var redis = mockRedisTemplate(null);
         var webClient = mockWebClient();
-        var f = new ApiKeyAuthGlobalFilter(redis, webClient, "http://auth:8081");
+        var f = new ApiKeyAuthGlobalFilter(webClient, redis, "http://auth:8081");
 
         when(mockChain.filter(exchange)).thenReturn(Mono.empty());
 
@@ -96,7 +96,7 @@ class ApiKeyAuthGlobalFilterTest {
 
         var redis = mockRedisTemplate(cachedUserId);
         var webClient = mockWebClient();
-        var f = new ApiKeyAuthGlobalFilter(redis, webClient, "http://auth:8081");
+        var f = new ApiKeyAuthGlobalFilter(webClient, redis, "http://auth:8081");
 
         when(mockChain.filter(any())).thenAnswer(inv -> {
             ServerWebExchange ex = inv.getArgument(0);
@@ -117,7 +117,7 @@ class ApiKeyAuthGlobalFilterTest {
     void order_isBeforeJwtAuthFilter() {
         var redis = mockRedisTemplate(null);
         var webClient = mockWebClient();
-        var f = new ApiKeyAuthGlobalFilter(redis, webClient, "http://auth:8081");
+        var f = new ApiKeyAuthGlobalFilter(webClient, redis, "http://auth:8081");
 
         assertEquals(-200, f.getOrder(), "API Key Filter 优先级应 < JwtAuthFilter 的 -100");
     }
@@ -125,9 +125,10 @@ class ApiKeyAuthGlobalFilterTest {
     @Test
     @DisplayName("5. SHA-256 cache key 计算正确")
     void sha256CacheKey_isCorrect() throws Exception {
-        var redis = mockRedisTemplate(null);
+        // redis 返回 valid user info -> cache hit, 跳过 webClient
+        var redis = mockRedisTemplate("{\"userId\":1,\"valid\":true}");
         var webClient = mockWebClient();
-        var f = new ApiKeyAuthGlobalFilter(redis, webClient, "http://auth:8081");
+        var f = new ApiKeyAuthGlobalFilter(webClient, redis, "http://auth:8081");
 
         String rawKey = "mmx_secret_key";
         String expectedHash;
@@ -151,9 +152,10 @@ class ApiKeyAuthGlobalFilterTest {
         f.filter(exchange, mockChain).block();
 
         // 验证 Redis get 被调用，且 key 以 "apikey:" 开头
-        verify(redis.opsForValue()).get(argThat(key ->
-            key.startsWith("apikey:") && key.substring("apikey:".length()).length() == 64
-        ));
+        verify(redis.opsForValue()).get(argThat((Object key) -> {
+            String s = key.toString();
+            return s.startsWith("apikey:") && s.substring("apikey:".length()).length() == 64;
+        }));
     }
 
     @Test
@@ -169,7 +171,7 @@ class ApiKeyAuthGlobalFilterTest {
 
         var redis = mockRedisTemplate(cachedUserId);
         var webClient = mockWebClient();
-        var f = new ApiKeyAuthGlobalFilter(redis, webClient, "http://auth:8081");
+        var f = new ApiKeyAuthGlobalFilter(webClient, redis, "http://auth:8081");
 
         when(mockChain.filter(any())).thenAnswer(inv -> {
             ServerWebExchange ex = inv.getArgument(0);
@@ -185,7 +187,7 @@ class ApiKeyAuthGlobalFilterTest {
 
     private static org.springframework.data.redis.core.StringRedisTemplate mockRedisTemplate(String cachedValue) {
         var template = org.mockito.Mockito.mock(org.springframework.data.redis.core.StringRedisTemplate.class);
-        var ops = org.mockito.Mockito.mock(org.springframework.data.redis.core.StringOperations.class);
+        var ops = org.mockito.Mockito.mock(org.springframework.data.redis.core.ValueOperations.class);
         when(template.opsForValue()).thenReturn(ops);
         when(ops.get(anyString())).thenReturn(cachedValue);
         return template;

@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest
 @ActiveProfiles("test")
-class FunctionIntegrationTest {
+class FunctionIntegrationTestIT {
 
     @Autowired FunctionToolService toolService;
     @Autowired ToolExecutor executor;

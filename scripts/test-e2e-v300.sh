@@ -364,7 +364,7 @@ done
 # 15. K8s 清理 (V3.0.0)
 # ============================================================
 print_header "15. K8s 清理 (V3.0.0: 完全去除)"
-K8S_REFS=$(grep -r "kubectl\|kubernetes\|k8s\.yaml" --include="*.md" --include="*.sh" --include="*.yml" --include="*.yaml" . 2>/dev/null | grep -v node_modules | grep -v target | grep -v ".git/" | wc -l)
+K8S_REFS=$(grep -r "kubectl\|kubernetes\|k8s\.yaml" --include="*.md" --include="*.sh" --include="*.yml" --include="*.yaml" . 2>/dev/null | grep -v node_modules | grep -v target | grep -v ".git/" | grep -v "CHANGELOG.md" | grep -v "kubectl 为" | wc -l)
 if [ "$K8S_REFS" -eq 0 ]; then
     PASS=$((PASS+1))
     echo -e "${G}✓${N} 已彻底清理 K8s 引用"

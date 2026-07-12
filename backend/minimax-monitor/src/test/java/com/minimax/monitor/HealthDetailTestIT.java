@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class HealthDetailTest {
+class HealthDetailTestIT {
 
     @Autowired HealthDetailService health;
 

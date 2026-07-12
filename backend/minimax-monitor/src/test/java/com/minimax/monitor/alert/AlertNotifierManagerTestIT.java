@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest
 @ActiveProfiles("test")
-class AlertNotifierManagerTest {
+class AlertNotifierManagerTestIT {
 
     @Autowired AlertNotifierManager manager;
     @Autowired AlertChannelMapper channelMapper;

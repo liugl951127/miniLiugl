@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest
 @ActiveProfiles("test")
-class MonitorControllerTest {
+class MonitorControllerTestIT {
 
     @Autowired MonitorController controller;
     @Autowired SnapshotService snapshotService;

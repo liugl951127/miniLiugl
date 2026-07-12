@@ -300,6 +300,16 @@
                     <classifier>spring-boot</classifier>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- V3.0.0: IT 集成测试需 Spring 容器 + MySQL/Redis/Nacos, 沙箱跑不了, 默认跳过 -->
+                    <excludes>
+                        <exclude>**/*IT.java</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

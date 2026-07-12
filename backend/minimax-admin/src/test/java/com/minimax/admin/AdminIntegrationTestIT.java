@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest
 @ActiveProfiles("test")
-class AdminIntegrationTest {
+class AdminIntegrationTestIT {
 
     @Autowired AuditService audit;
     @Autowired StatsService stats;

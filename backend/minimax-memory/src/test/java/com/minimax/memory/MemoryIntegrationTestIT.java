@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest
 @ActiveProfiles("test")
-class MemoryIntegrationTest {
+class MemoryIntegrationTestIT {
 
     @Autowired LongTermMemoryService longTerm;
     @Autowired LongTermMemoryMapper longTermMapper;

@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest
 @ActiveProfiles("test")
-class AlertEngineTest {
+class AlertEngineTestIT {
 
     @Autowired AlertEngine engine;
     @Autowired AlertRuleMapper ruleMapper;
