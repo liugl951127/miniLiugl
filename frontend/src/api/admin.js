@@ -36,3 +36,12 @@ export const getAuditByActor = (actorId, limit = 20) =>
 // V5.9: 按天审计统计 (Dashboard 折线图)
 export const getAuditByDay = (days = 7, action) =>
   http.get(`/admin/audit/by-day?days=${days}${action ? `&action=${action}` : ''}`)
+
+// V2.9.0: 治理后台 API
+export const governance = {
+  overview: (params) => http.get('/admin/governance/overview', { params }),
+  timeline: (params) => http.get('/admin/governance/timeline', { params }),
+  anomalies: (params) => http.get('/admin/governance/anomalies', { params }),
+  compliance: () => http.get('/admin/governance/compliance'),
+  retention: () => http.get('/admin/governance/retention')
+}
