@@ -1,6 +1,95 @@
 # MiniMax Platform 变更日志
 
-> **所有版本变更** · V1.0 → V3.0.0
+> **所有版本变更** · V1.0 → V3.0.3
+
+## [V3.0.3] - 2026-07-12
+
+### V3.0.3 智能体群 (Agent Group) 框架
+
+**背景**: V3.0.2 PPT 之后, 灵现单 Agent 框架. V3.0.3 面向多 Agent 协作场景: 一个任务由多个 Agent 按不同策略协同完成。
+
+**代元**:
+- 4 角色: `MANAGER` (权重 2.0) / `WORKER` (1.0) / `CRITIC` (1.5) / `OBSERVER` (只读)
+- 4 策略: `PIPELINE` (顺序) / `DEBATE` (3 轮辩论) / `VOTE` (并行多数决) / `SWARM` (群智)
+- 共享内存: `ConcurrentHashMap` + `ReadWriteLock`, 黑板模式, 键约定 `task.{id}` / `result.{id}` / `consensus` / `history`
+- 消息总线: 每 Agent 一个 `ConcurrentLinkedQueue` 收件箱, 点对点 + 广播 + 完整历史
+- 协调器: `GroupOrchestrator` 4 策略实现, `ExecutorService` 并行 (VOTE/DEBATE/SWARM)
+- 内置 Agent: `SimpleEchoAgent` (零依赖测试 agent)
+- 持久化: `agent_group` 表 + `AgentGroupMapper` + `AgentGroupService`
+- REST API (7 个): `/api/v1/ai/group/{create,list,quick-create,strategies/list,agents/list}` + `/{groupId}` + `/{groupId}/run`
+- 预置 4 模板: `writing-team` (PIPELINE) / `debate-panel` (DEBATE) / `vote-council` (VOTE) / `swarm-mesh` (SWARM)
+- 单元测试: **GroupOrchestratorTest 17 个**全过
+- 复杂度: PIPELINE `O(N×T)` / DEBATE `O(R×N×T)` / VOTE `O(N×T)` / SWARM `O(N×T)`
+
+**文件清单**:
+- `framework/group/GroupRole.java` (4 角色枚举)
+- `framework/group/GroupStrategy.java` (4 策略枚举)
+- `framework/group/GroupMessage.java` (5 类型: TASK/RESULT/FEEDBACK/BROADCAST/SHUTDOWN)
+- `framework/group/GroupSharedMemory.java` (黑板模式)
+- `framework/group/GroupMessageBus.java` (总线路由)
+- `framework/group/GroupMember.java` (成员 + 工厂)
+- `framework/group/GroupTask.java` (含 SubTask)
+- `framework/group/GroupResult.java` (含 Status: SUCCESS/FAILED/TIMEOUT/ABORTED)
+- `framework/group/AgentExecutor.java` (执行器接口)
+- `framework/group/GroupOrchestrator.java` (核心协调引擎)
+- `framework/group/SimpleEchoAgent.java` (内置测试 agent)
+- `marketplace/AgentGroupMapper.java` (MyBatis Mapper)
+- `marketplace/AgentGroupService.java` (服务层)
+- `marketplace/AgentGroupController.java` (REST API)
+- `entity/AgentGroup.java` (实体)
+- `sql/init.sql` (+agent_group 表)
+
+**测试**: 17 单元测试全过
+- 枚举 / 共享内存读写 / 并发安全 (10 线程)
+- 消息总线 (路由 / 广播 / 历史 / peek)
+- 4 策略 (PIPELINE / VOTE / DEBATE / SWARM)
+- 失败兜底 (无 manager / 无 worker)
+- SimpleEchoAgent / GroupMessage.Type / GroupResult.isSuccess
+
+**总测试量**: minimax-ai 177 → 194 (+17)  / 17 个微服务总计: **403 个**
+
+## [V3.0.2] - 2026-07-12
+
+### V3.0.2 AI 模块 PPT 生成
+
+**背景**: V3.0.1 多模态插件架构, V3.0.2 面向企业汇报场景: 走 AI Tool 调用路径生成 PPT。
+
+**代元**:
+- `PptTheme` (4 主题: 商务蓝/暗夜/自然绿/暖橙, 5 色调色板)
+- `OutlineParser` (3 格式: Markdown/JSON/纯文本, auto-detect, autoGenerate topic+N 页)
+- `PptRenderer` (Apache POI 5.2.5 XSLF, 16:9 1280×720, 4 slide 类型: cover/title/content/closing)
+- `PptGenTool` (code=ppt.gen, 21 号 AI 工具, @Component 自动注册)
+- `PptGenController` (4 端点: `/api/v1/ai/ppt/{generate,auto,parse,themes}`)
+- `AiToolRegistry.getExecutor(String code)` 新增重载
+
+**实报**:
+- `/tmp/MiniMax_Demo.pptx` 27,831 字节, Microsoft OOXML 格式, 3 slides
+- 12 单元测试全过 (主题×4 / 格式×3 / 页数 / 实际生成)
+- 21 AI 工具, 189 单元测试
+
+**总测试量**: 386 → 398 (+12)
+
+## [V3.0.1] - 2026-07-12
+
+### V3.0.1 多模态插件化模型架构
+
+**背景**: V3.0.0 重大重构后, 多模态模块需支持多模型源 (本地 / OpenAI 兼容 / ONNX)。
+
+**代元**:
+- `MultimodalModelProvider` 接口 (name/description/isReady/describe/describeMulti/inspect)
+- 4 Provider:
+  - `MockVisionProvider` (零依赖, 永远 ready)
+  - `BuiltinVisionProvider` (自研像素分析 + 颜色直方图 + 场景分类, 零依赖)
+  - `OpenAIVisionProvider` (OpenAI Chat Completions 协议, 兼容 gpt-4o / DeepSeek-VL / Qwen-VL / GLM-4V)
+  - `LocalOnnxVisionProvider` (V3.1+ 框架就绪, 需 ONNX 模型文件)
+- `ImageInspector` 共享工具 (magic number 格式识别, JPEG/PNG/GIF/WebP/BMP)
+- `MultimodalModelRegistry` (Spring 自动注册 + 降级链)
+- `VisionService` 重构 (委托 + 失败自动降级)
+- `MultimodalController` 加 model 参数 (`/describe`, `/describe/multi`, `/info`, `/providers/default`)
+
+**测试**: 16 单元测试全过 (VisionServiceTest 7 + BuiltinVisionProviderTest 9)
+
+**总测试量**: 297 → 386 (+89)
 
 ## [V3.0.0] - 2026-07-12
 

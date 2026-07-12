@@ -1104,4 +1104,27 @@ CREATE TABLE IF NOT EXISTS `wechat_user_binding` (
 
 SET FOREIGN_KEY_CHECKS = 1;
 
+-- ========================================================
+-- V3.0.3: agent_group 智能体群组表
+-- ========================================================
+CREATE TABLE IF NOT EXISTS `agent_group` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `groupId` VARCHAR(64) NOT NULL COMMENT '群组业务ID (UUID)',
+    `name` VARCHAR(255) NOT NULL COMMENT '群组名',
+    `description` TEXT DEFAULT NULL COMMENT '群组描述',
+    `strategy` VARCHAR(32) NOT NULL DEFAULT 'PIPELINE' COMMENT '协作策略: PIPELINE/DEBATE/VOTE/SWARM',
+    `membersJson` TEXT DEFAULT NULL COMMENT '群成员JSON: [{agentName, role, weight, capability, order}]',
+    `status` VARCHAR(32) NOT NULL DEFAULT 'CREATED' COMMENT '状态: CREATED/RUNNING/COMPLETED/FAILED',
+    `ownerId` BIGINT DEFAULT NULL COMMENT '创建人ID',
+    `tags` VARCHAR(255) DEFAULT NULL COMMENT '标签 (逗号分隔)',
+    `lastRunAt` DATETIME DEFAULT NULL COMMENT '最后运行时间',
+    `runCount` INT NOT NULL DEFAULT 0 COMMENT '总运行次数',
+    `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_agent_group_groupId` (`groupId`),
+    KEY `idx_agent_group_ownerId` (`ownerId`),
+    KEY `idx_agent_group_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AgentGroup (V3.0.3 智能体群组)';
+
 -- 全部 DDL 生成完毕
