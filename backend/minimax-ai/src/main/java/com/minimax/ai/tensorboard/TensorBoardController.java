@@ -163,4 +163,46 @@ public class TensorBoardController {
             "data", reader.readScalars(runId, null)
         ));
     }
+
+    /**
+     * V2.8.9: 统计信息 (min/max/mean/std/percentiles)
+     */
+    @GetMapping("/runs/{runId}/stats/{tag}")
+    public ResponseEntity<Map<String, Object>> stats(
+            @PathVariable String runId,
+            @PathVariable String tag) {
+        return ResponseEntity.ok(Map.of(
+            "code", 0,
+            "data", reader.computeStats(runId, tag)
+        ));
+    }
+
+    /**
+     * V2.8.9: 直方图 (N 个 bins)
+     */
+    @GetMapping("/runs/{runId}/histogram/{tag}")
+    public ResponseEntity<Map<String, Object>> histogram(
+            @PathVariable String runId,
+            @PathVariable String tag,
+            @RequestParam(defaultValue = "20") int bins) {
+        return ResponseEntity.ok(Map.of(
+            "code", 0,
+            "data", reader.computeHistogram(runId, tag, bins)
+        ));
+    }
+
+    /**
+     * V2.8.9: 多 run 同 tag 对比统计
+     */
+    @PostMapping("/runs/compare")
+    public ResponseEntity<Map<String, Object>> compareRuns(
+            @RequestBody Map<String, Object> body) {
+        @SuppressWarnings("unchecked")
+        List<String> runIds = (List<String>) body.getOrDefault("runIds", Collections.emptyList());
+        String tag = (String) body.getOrDefault("tag", "loss");
+        return ResponseEntity.ok(Map.of(
+            "code", 0,
+            "data", reader.compareRunsStats(runIds, tag)
+        ));
+    }
 }

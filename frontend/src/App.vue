@@ -1,9 +1,13 @@
 <template>
+  <PwaStatusBar />
   <router-view />
 </template>
 
 <script setup>
-// 根组件 - 由 router-view 渲染各页面
+import PwaStatusBar from '@/components/PwaStatusBar.vue'
+// V2.8.9: 加载 usePwa 以触发 SW 注册 (在 app 加载时)
+import { usePwa } from '@/composables/usePwa'
+const { swVersion } = usePwa()
 </script>
 
 <style lang="scss">

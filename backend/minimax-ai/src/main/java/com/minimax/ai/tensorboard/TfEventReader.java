@@ -122,6 +122,119 @@ public class TfEventReader {
         return h;
     }
 
+    // ============= V2.8.9 统计分析 =============
+
+    /**
+     * 计算 run/tag 的统计信息 (min/max/mean/std/percentiles)
+     *
+     * @param runId run ID
+     * @param tag   tag 名
+     * @return 统计 Map, 包含 count/min/max/mean/std/median/p25/p75/p95/p99
+     */
+    public Map<String, Object> computeStats(String runId, String tag) {
+        List<TfEventReader.ScalarPoint> points = readScalars(runId, tag).getOrDefault(tag, Collections.emptyList());
+        if (points.isEmpty()) {
+            return Map.of("runId", runId, "tag", tag, "count", 0);
+        }
+        double[] values = points.stream().mapToDouble(TfEventReader.ScalarPoint::getValue).toArray();
+        java.util.Arrays.sort(values);
+
+        double min = values[0];
+        double max = values[values.length - 1];
+        double sum = 0;
+        for (double v : values) sum += v;
+        double mean = sum / values.length;
+        double variance = 0;
+        for (double v : values) variance += (v - mean) * (v - mean);
+        variance /= values.length;
+        double std = Math.sqrt(variance);
+
+        Map<String, Object> stats = new LinkedHashMap<>();
+        stats.put("runId", runId);
+        stats.put("tag", tag);
+        stats.put("count", values.length);
+        stats.put("min", min);
+        stats.put("max", max);
+        stats.put("mean", mean);
+        stats.put("std", std);
+        stats.put("median", percentile(values, 0.5));
+        stats.put("p25", percentile(values, 0.25));
+        stats.put("p75", percentile(values, 0.75));
+        stats.put("p95", percentile(values, 0.95));
+        stats.put("p99", percentile(values, 0.99));
+        return stats;
+    }
+
+    /**
+     * 计算直方图 (N 个 bins)
+     *
+     * @param runId run ID
+     * @param tag   tag 名
+     * @param bins  分箱数 (默认 20)
+     * @return [binEdges, counts]
+     */
+    public Map<String, Object> computeHistogram(String runId, String tag, int bins) {
+        if (bins <= 0) bins = 20;
+        if (bins > 100) bins = 100;
+        List<TfEventReader.ScalarPoint> points = readScalars(runId, tag).getOrDefault(tag, Collections.emptyList());
+        if (points.isEmpty()) {
+            return Map.of("runId", runId, "tag", tag, "bins", new double[0], "counts", new int[0]);
+        }
+        double[] values = points.stream().mapToDouble(TfEventReader.ScalarPoint::getValue).toArray();
+        double min = values[0];
+        double max = values[values.length - 1];
+        if (min == max) {
+            int[] counts = new int[bins];
+            counts[0] = values.length;
+            return Map.of("runId", runId, "tag", tag,
+                "bins", new double[]{min, max}, "counts", counts);
+        }
+        double step = (max - min) / bins;
+        int[] counts = new int[bins];
+        double[] binEdges = new double[bins + 1];
+        for (int i = 0; i <= bins; i++) binEdges[i] = min + step * i;
+
+        for (double v : values) {
+            int idx = (int) ((v - min) / step);
+            if (idx >= bins) idx = bins - 1;
+            if (idx < 0) idx = 0;
+            counts[idx]++;
+        }
+
+        Map<String, Object> h = new LinkedHashMap<>();
+        h.put("runId", runId);
+        h.put("tag", tag);
+        h.put("bins", binEdges);
+        h.put("counts", counts);
+        h.put("min", min);
+        h.put("max", max);
+        h.put("count", values.length);
+        return h;
+    }
+
+    /**
+     * 多 run 同 tag 对比统计 (用于跨 run 表格)
+     */
+    public List<Map<String, Object>> compareRunsStats(List<String> runIds, String tag) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (String rid : runIds) {
+            result.add(computeStats(rid, tag));
+        }
+        return result;
+    }
+
+    private double percentile(double[] sorted, double q) {
+        if (sorted.length == 0) return 0;
+        if (q <= 0) return sorted[0];
+        if (q >= 1) return sorted[sorted.length - 1];
+        double pos = q * (sorted.length - 1);
+        int lo = (int) Math.floor(pos);
+        int hi = (int) Math.ceil(pos);
+        if (lo == hi) return sorted[lo];
+        double frac = pos - lo;
+        return sorted[lo] * (1 - frac) + sorted[hi] * frac;
+    }
+
     // ============= 内部实现 =============
 
     private List<TfEvent> readAllEvents(String runId) {
