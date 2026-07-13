@@ -1,48 +1,71 @@
 # ============================================================
-# Multi-stage Dockerfile (V2.8.0)
+# Multi-stage Dockerfile (V3.5.5+)
 # 用法: docker build --build-arg MODULE=minimax-ai -t image:tag .
+#
+# ⚠️  关键: Spring Boot 可执行 JAR 的文件名是 ${MODULE}-spring-boot.jar
+#   (由 spring-boot-maven-plugin 打 fat jar 生成, 110MB)
+#   不是 ${MODULE}.jar (普通 jar, 200KB, 无 main class 关联)
+#   之前用 $MODULE.jar 会让容器启动报 "no main manifest attribute"
+#
+# V3.5.5+ 改动:
+#   1. COPY 用 ${MODULE}-spring-boot.jar (不是 ${MODULE}.jar)
+#   2. 阶段 1 拆 layers (增量构建)
+#   3. minimax-common 跳过 (packaging=pom library, 没 jar)
 # ============================================================
 
-# 阶段 1: 构建
+# =============================================================
+# 阶段 1: 构建 (Maven + Spring Boot layered jar)
+# =============================================================
 FROM maven:3.9-eclipse-temurin-17 AS builder
 ARG MODULE=minimax-gateway
 WORKDIR /build
 
-# 先 copy pom 利用缓存
+# 先 copy pom 利用缓存 (pom 不变就不重下依赖)
 COPY backend/pom.xml backend/.mvn ./
 COPY backend/$MODULE ./backend/$MODULE
 
 # 构建
-# V3.5.5+: 如果 MODULE=minimax-common (packaging=pom library), 用 install 不打 jar
-#   其他 16 个可执行应用模块 (auth/ai/...) 用 package 打 spring-boot fat jar
+# V3.5.5+: minimax-common 是 packaging=pom library, 用 install 装到本地 repo
+#   其他 16 个可执行应用模块, 用 package 打 spring-boot fat jar
 RUN if [ "$MODULE" = "minimax-common" ]; then \
         echo "=== minimax-common 是 packaging=pom library, 跳过 jar 打包 ===" && \
         cd backend && mvn -s .mvn/settings.xml install -pl $MODULE -am -DskipTests -B; \
     else \
-        cd backend && mvn -s .mvn/settings.xml package -pl $MODULE -am -DskipTests -B -T 4; \
+        cd backend && mvn -s .mvn/settings.xml package -pl $MODULE -am -DskipTests -B -T 4 && \
+        # Spring Boot layered jar 拆分 (增量构建缓存)
+        cd $MODULE && \
+        java -Djarmode=layertools -jar target/${MODULE}-spring-boot.jar extract --destination target/layers; \
     fi
 
-# 阶段 2: 运行时
+# =============================================================
+# 阶段 2: 运行时 (仅 JRE, 体积小)
+# =============================================================
 FROM eclipse-temurin:17-jre-alpine
 ARG MODULE=minimax-gateway
 ENV MODULE_NAME=$MODULE
-ENV JAVA_OPTS="-XX:+UseG1GC -XX:MaxRAMPercentage=70.0 -Dfile.encoding=UTF-8"
+ENV JAVA_OPTS="-XX:+UseG1GC -XX:MaxRAMPercentage=70.0 -Dfile.encoding=UTF-8 -Djava.io.tmpdir=/tmp"
 ENV TZ=Asia/Shanghai
 
-# 健康检查
+# 健康检查工具
 RUN apk add --no-cache curl tini && \
-    mkdir -p /app/logs /app/data
+    mkdir -p /app/logs /app/data /tmp && \
+    chmod 1777 /tmp
 
 WORKDIR /app
-# V3.5.5+: minimax-common 没 jar, 跳过
-COPY --from=builder /build/backend/$MODULE/target/$MODULE.jar /app/app.jar 2>/dev/null || \
-    echo "WARN: $MODULE 没生成 jar (可能是 packaging=pom library, 如 minimax-common)" && \
-    echo "FROM scratch" > /tmp/skip && true
+
+# ⚠️  关键修复: 用 ${MODULE}-spring-boot.jar (Spring Boot fat jar, 110MB, 有 Main-Class)
+#   不是 ${MODULE}.jar (普通 jar, 200KB, 没 Main-Class 启动会失败)
+COPY --from=builder /build/backend/$MODULE/target/${MODULE}-spring-boot.jar /app/app.jar 2>/dev/null || \
+    (echo "WARN: $MODULE 没生成 ${MODULE}-spring-boot.jar (可能是 packaging=pom library, 如 minimax-common)" && \
+     echo "FROM scratch" > /tmp/skip)
 
 # 暴露端口 (各模块不同, 默认 7080)
 EXPOSE 7080
 
+# 健康检查 (gateway/chat 等可能在 80/8080, 默认 7080)
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD curl -f http://localhost:7080/actuator/health || exit 1
 
+# 用 tini 包装 (PID 1 信号处理正确, 优雅关闭)
+# Spring Boot fat jar 自带 Main-Class 指向 org.springframework.boot.loader.JarLauncher
 ENTRYPOINT ["/sbin/tini", "--", "sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]
