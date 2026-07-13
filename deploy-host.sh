@@ -173,21 +173,24 @@ cmd_install() {
         log_ok "$svc 编译完成"
     done
     
-    # 10. 配置 Nginx
-    log_step "配置 Nginx"
-    cp $PROJECT_DIR/nginx/nginx.conf /etc/nginx/conf.d/minimax.conf
-    # 改 upstream 为 127.0.0.1 (宿主机端口)
-    sed -i 's/server auth:8081/server 127.0.0.1:8081/' /etc/nginx/conf.d/minimax.conf
-    sed -i 's/server ai:8094/server 127.0.0.1:8094/' /etc/nginx/conf.d/minimax.conf
-    sed -i 's/server gateway:7080/server 127.0.0.1:7080/' /etc/nginx/conf.d/minimax.conf
-    nginx -t && systemctl reload nginx
-    log_ok "Nginx 配置已加载"
-    
-    # 11. 复制前端 dist (如果存在)
-    if [ -d "$PROJECT_DIR/frontend/dist" ]; then
-        cp -r $PROJECT_DIR/frontend/dist/* /usr/share/nginx/html/ 2>/dev/null || true
-        cp $PROJECT_DIR/frontend/dist/index-mini.html /usr/share/nginx/html/ 2>/dev/null || true
-        log_ok "前端 dist 复制到 /usr/share/nginx/html/"
+    # 10. 配置 Nginx (复用独立 install-nginx.sh)
+    log_step "配置 Nginx (使用 ./nginx/install-nginx.sh)"
+    if [ -f $PROJECT_DIR/nginx/install-nginx.sh ]; then
+        bash $PROJECT_DIR/nginx/install-nginx.sh install
+    else
+        # fallback: 手动拷贝 (老脚本兼容)
+        cp $PROJECT_DIR/nginx/nginx.conf /etc/nginx/conf.d/minimax.conf
+        sed -i 's/server auth:8081/server 127.0.0.1:8081/' /etc/nginx/conf.d/minimax.conf
+        sed -i 's/server ai:8094/server 127.0.0.1:8094/' /etc/nginx/conf.d/minimax.conf
+        sed -i 's/server gateway:7080/server 127.0.0.1:7080/' /etc/nginx/conf.d/minimax.conf
+        nginx -t && systemctl reload nginx
+        log_ok "Nginx 配置已加载"
+        # 复制前端 dist
+        if [ -d "$PROJECT_DIR/frontend/dist" ]; then
+            cp -r $PROJECT_DIR/frontend/dist/* /usr/share/nginx/html/ 2>/dev/null || true
+            cp $PROJECT_DIR/frontend/dist/index-mini.html /usr/share/nginx/html/ 2>/dev/null || true
+            log_ok "前端 dist 复制到 /usr/share/nginx/html/"
+        fi
     fi
     
     # 12. 注册 systemd 服务

@@ -86,6 +86,34 @@ build_frontend() {
   green "   ✓ 前端构建完成: $(du -sh frontend/dist 2>/dev/null | cut -f1)"
 }
 
+# 检查并提示宿主机 nginx 部署
+ensure_host_nginx() {
+  blue "📦 [2/4] 检查宿主机 nginx"
+  if command -v nginx &>/dev/null; then
+    green "   ✓ nginx 已安装: $(nginx -v 2>&1 | cut -d' ' -f3)"
+    if systemctl is-active --quiet nginx 2>/dev/null || pgrep nginx >/dev/null; then
+      green "   ✓ nginx 运行中"
+    else
+      yellow "   ⚠  nginx 未运行, 启动中..."
+      systemctl start nginx 2>/dev/null || nginx
+    fi
+    # 检查配置
+    if [ -f /etc/nginx/conf.d/minimax.conf ]; then
+      green "   ✓ minimax.conf 已部署"
+    else
+      yellow "   ⚠  minimax.conf 未部署, 运行: sudo ./nginx/install-nginx.sh install"
+    fi
+  else
+    yellow "   ⚠  nginx 未安装 (宿主 nginx 是必要的, 负责 80 端口入口 + 前端代理)"
+    yellow "   自动装: sudo ./nginx/install-nginx.sh install"
+    if [ "$EUID" -eq 0 ]; then
+      bash nginx/install-nginx.sh install
+    else
+      yellow "   非 root 用户, 跳过自动装, 请手动: sudo ./nginx/install-nginx.sh install"
+    fi
+  fi
+}
+
 # 构建后端镜像 (Maven 多模块)
 build_backend() {
   blue "📦 [2/3] 构建后端镜像 (Maven + Spring Boot layered jar)"
@@ -114,8 +142,8 @@ build_backend() {
 cmd_up() {
   check_docker
   bold ""
-  bold "🚀 MiniMax 精简部署 (前端 + 后端 + nginx 代理)"
-  bold "   内存需求: ~1.5GB / 6 容器"
+  bold "🚀 MiniMax 精简部署 (宿主 nginx + 5 后端容器)"
+  bold "   内存需求: ~1.2GB / 5 容器 (nginx 走宿主, 不占容器内存)"
   bold ""
 
   # 检查端口
@@ -128,29 +156,40 @@ cmd_up() {
   # 1. 构建前端
   build_frontend
 
-  # 2. 构建后端 (可选)
+  # 2. 检查/安装宿主机 nginx
+  ensure_host_nginx
+
+  # 3. 构建后端 (可选)
   build_backend
 
-  # 3. 启动 docker compose
-  blue "📦 [3/3] 启动 Docker Compose"
+  # 4. 启动 docker compose
+  blue "📦 [4/4] 启动 Docker Compose (5 后端容器, 不含 nginx)"
   docker compose -f $COMPOSE_FILE -p $PROJECT up -d --build
+
+  # 5. 重新加载 nginx (前端 dist 变了)
+  if command -v nginx &>/dev/null; then
+    nginx -t 2>/dev/null && systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || true
+    # 重新复制前端 dist (宿主 nginx 路径)
+    if [ -d frontend/dist ]; then
+      mkdir -p /usr/share/nginx/html
+      cp -r frontend/dist/* /usr/share/nginx/html/ 2>/dev/null || true
+    fi
+  fi
 
   echo ""
   green "✅ 部署完成!"
   echo ""
-  bold "🌐 访问入口 (单端口 80 统一入口, nginx 代理):"
+  bold "🌐 访问入口 (单端口 80 统一入口, 宿主 nginx 代理):"
   green "   前端 SPA:     http://<server-ip>/"
   green "   登录页:       http://<server-ip>/#/login"
   green "   控制台:       http://<server-ip>/#/dashboard"
   green "   健康检查:     http://<server-ip>/healthz"
-  green "   API 网关:     http://<server-ip>:7080"
-  green "   鉴权服务:     http://<server-ip>:8081/actuator/health"
-  green "   AI 服务:      http://<server-ip>:8094/actuator/health"
+  green "   API:          http://<server-ip>/api/v1/auth/* /api/v1/ai/* /api/v1/*"
   echo ""
   green "🔑 默认账号: adminLiugl / Liugl@2026"
   yellow "⏳ 首次启动约需 60-90 秒, 实时查看: ./deploy-mini.sh logs"
   echo ""
-  yellow "💡 前端路由 /dashboard 等会通过 nginx fallback 到 index.html (SPA history 模式)"
+  yellow "💡 nginx 走宿主, 后端走 Docker 容器, 防火墙只开 80/443 即可"
 }
 
 cmd_down() {
