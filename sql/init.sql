@@ -1,6 +1,6 @@
 -- ===================================================================
 -- MiniMax Platform V3.0.0 全量 DDL (单文件汇总)
--- 表数: 87
+-- 表数: 88
 -- 字符集: utf8mb4 / 引擎: InnoDB
 -- ===================================================================
 
@@ -1244,6 +1244,19 @@ CREATE TABLE IF NOT EXISTS `push_subscription` (
     UNIQUE KEY `uk_push_subscription_userId` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='PushSubscription (auto-generated V3.0.0)';
 
+-- LogEntry -> raft_log
+CREATE TABLE IF NOT EXISTS `raft_log` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
+    `term` BIGINT NOT NULL DEFAULT 0 COMMENT 'term',
+    `logIndex` BIGINT NOT NULL DEFAULT 0 COMMENT 'logIndex',
+    `nodeId` VARCHAR(255) DEFAULT NULL COMMENT 'nodeId',
+    `command` VARCHAR(255) DEFAULT NULL COMMENT 'command',
+    `committed` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'committed',
+    `committedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'committedAt',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='LogEntry (auto-generated V3.0.0)';
+
 -- RateLimitRule -> rate_limit_rule
 CREATE TABLE IF NOT EXISTS `rate_limit_rule` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
@@ -1582,7 +1595,6 @@ SET FOREIGN_KEY_CHECKS = 1;
 
 -- ====================================================================
 -- 种子数据 (合并自 init_seeds.sql V3.3.4)
--- 1 超管 + 21 AI 工具 + 3 示例 Agent + 关键配置
 -- ====================================================================
 
 -- ====================================================================

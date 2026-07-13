@@ -1,5 +1,7 @@
 package com.minimax.ai.cluster;
 
+import com.minimax.ai.cluster.raft.RaftCluster;
+import com.minimax.ai.cluster.raft.RaftNode;
 import com.minimax.ai.entity.ClusterNode;
 import com.minimax.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
@@ -160,5 +162,73 @@ public class ClusterController {
         out.put("totalMemoryMb", totalMemory);
         out.put("currentNodeId", registry.currentNodeId());
         return Result.ok(out);
+    }
+
+    // ================================================================
+    // V3.5.0 Raft 一致性 API
+    // ================================================================
+
+    private final RaftCluster raftCluster = new RaftCluster(
+            Arrays.asList("node-1", "node-2", "node-3"), 500, 100);
+
+    /**
+     * V3.5.0: 启动 Raft 集群
+     */
+    @Operation(summary = "启动 Raft 集群")
+    @PostMapping("/raft/start")
+    public Result<Void> raftStart() {
+        raftCluster.start();
+        return Result.ok();
+    }
+
+    /**
+     * V3.5.0: 停止 Raft 集群
+     */
+    @Operation(summary = "停止 Raft 集群")
+    @PostMapping("/raft/stop")
+    public Result<Void> raftStop() {
+        raftCluster.stop();
+        return Result.ok();
+    }
+
+    /**
+     * V3.5.0: 集群状态
+     */
+    @Operation(summary = "Raft 集群状态")
+    @GetMapping("/raft/state")
+    public Result<Map<String, Object>> raftState() {
+        return Result.ok(raftCluster.clusterState());
+    }
+
+    /**
+     * V3.5.0: 当前 Leader
+     */
+    @Operation(summary = "当前 Leader")
+    @GetMapping("/raft/leader")
+    public Result<String> raftLeader() {
+        RaftNode leader = raftCluster.findLeader();
+        return Result.ok(leader != null ? leader.getNodeId() : null);
+    }
+
+    /**
+     * V3.5.0: 提交命令
+     */
+    @Operation(summary = "通过 Leader 提交命令")
+    @PostMapping("/raft/submit")
+    public Result<Long> raftSubmit(@RequestBody Map<String, Object> body) {
+        Object cmd = body.get("command");
+        long idx = raftCluster.submit(cmd);
+        return Result.ok(idx);
+    }
+
+    /**
+     * V3.5.0: 已应用日志
+     */
+    @Operation(summary = "已应用的全局日志")
+    @GetMapping("/raft/applied")
+    public Result<List<Object>> raftApplied() {
+        List<Object> cmds = new ArrayList<>();
+        raftCluster.getGlobalApplied().forEach(e -> cmds.add(e.getCommand()));
+        return Result.ok(cmds);
     }
 }
