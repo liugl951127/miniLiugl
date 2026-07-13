@@ -21,7 +21,7 @@ spring:
           auth: true
           ssl:
             enable: true
-          socketFactory:
+          socket-factory:
             class: javax.net.ssl.SSLSocketFactory
 
   datasource:
