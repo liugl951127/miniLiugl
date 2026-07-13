@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns="http://maven.apache.org/MOM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/dtd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/MOM/4.0.0 http://maven.apache.org/dtd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -10,9 +10,16 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
+    <!-- V3.5.5+: common 是 library 公共依赖模块, 不是可执行应用
+         packaging=pom 标识它只编译不打包, 依赖通过 mvn dependency 传递
+         ⚠️  重要: 不要打成 jar, 不要作为 Docker 服务运行
+         ⚠️  不要加 spring-boot-maven-plugin (会生成无 main 的 fat jar)
+    -->
+    <packaging>pom</packaging>
+
     <artifactId>minimax-common</artifactId>
     <name>minimax-common</name>
-    <description>公共模块 - Result/异常/工具/限流/缓存/异步 (Day 13 升级)</description>
+    <description>公共模块 - Result/异常/工具/限流/缓存/异步 (Day 13 升级, V3.5.5 改为 packaging=pom library 模式)</description>
 
     <dependencies>
         <!-- V5.30.7: lombok 显式依赖 (传给所有子模块, 否则 @AllArgsConstructor 注解不生成构造器) -->
@@ -82,7 +89,6 @@
         </dependency>
 
         <!-- V5.30.2: Knife4j + Swagger 注解 (传递到所有 12 微服务) -->
-        <!-- 之前 V5.11 配了 yml 但没在 pom 加依赖, 导致 controller 用 @Tag/@Operation 编译失败 -->
         <dependency>
             <groupId>com.github.xiaoymin</groupId>
             <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
@@ -108,15 +114,7 @@
         </dependency>
     </dependencies>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+    <!-- ⚠️  library 模式无 build/plugins, 不打 jar, 不跑 spring-boot-maven-plugin
+         其他模块通过 maven 依赖自动拉取源代码和资源
+    -->
 </project>

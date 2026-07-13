@@ -71,16 +71,6 @@ services:
   # 用法: 每个服务 build 自己的镜像 (Dockerfile.module)
   # docker build --build-arg MODULE=minimax-ai -t minimax/ai:1.0 .
 
-  minimax-common:
-    image: minimax/common:1.0
-    build:
-      context: .
-      dockerfile: deploy/docker/Dockerfile.module
-      args: { MODULE: minimax-common }
-    container_name: minimax-common
-    restart: "no"  # lib, 不启动
-    networks: [minimax-net]
-
   minimax-gateway:
     image: minimax/gateway:1.0
     build:

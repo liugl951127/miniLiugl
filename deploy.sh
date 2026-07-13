@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # ============================================================
-# MiniMax Platform 一键部署脚本 (V3.5.3+)
+# MiniMax Platform 一键部署脚本 (V3.5.5+)
 # 用法: ./deploy.sh [up|down|build|status|logs|restart]
+#
+# ⚠️  minimax-common 是 packaging=pom library, 不会作为 Docker 服务运行
+#     其他 16 个模块都是可执行 Spring Boot 应用
 # ============================================================
 set -euo pipefail
 

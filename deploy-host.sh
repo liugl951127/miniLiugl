@@ -166,6 +166,7 @@ cmd_install() {
     # 9. 编译 Java 服务
     log_step "编译 Java 服务"
     cd $PROJECT_DIR/backend
+    # V3.5.5+: minimax-common 是 packaging=pom library, mvn install 装到本地 repo 即可 (不打 jar)
     $M2_HOME/bin/mvn -B -pl minimax-common -am install -DskipTests -Dspotless.skip -Djacoco.skip -q
     for svc in auth ai gateway; do
         log_step "编译 $svc"
@@ -421,7 +422,8 @@ cmd_bg_start() {
     for svc in "${!SERVICES[@]}"; do
         if [ ! -f $PROJECT_DIR/backend/minimax-$svc/target/minimax-$svc-spring-boot.jar ]; then
             log_step "编译 $svc"
-            $M2_HOME/bin/mvn -B -pl minimax-common,minimax-$svc -am package -DskipTests -Dspotless.skip -Djacoco.skip -q 2>&1 | tail -2
+            # V3.5.5+: -pl minimax-common,minimax-$svc -am install (common 是 pom library, install 才能传递)
+            $M2_HOME/bin/mvn -B -pl minimax-common,minimax-$svc -am install -DskipTests -Dspotless.skip -Djacoco.skip -q 2>&1 | tail -2
         fi
     done
     

@@ -123,8 +123,9 @@ build_backend() {
   fi
   if [ ! -d backend/target ] || [ ! -f backend/minimax-ai/target/minimax-ai-spring-boot.jar ]; then
     yellow "   ⚙  本地编译 minimax-auth / minimax-ai / minimax-gateway 三个核心服务..."
+    yellow "     (minimax-common 是 library packaging=pom, 由 -am 自动依赖安装)"
     cd backend
-    mvn -pl minimax-auth,minimax-ai,minimax-gateway -am clean package \
+    mvn -pl minimax-auth,minimax-ai,minimax-gateway -am clean install \
         -DskipTests -Dcheckstyle.skip -Dpmd.skip -Dmaven.javadoc.skip \
         -Dspotless.check.skip=true -q 2>&1 | tail -5 || true
     cd ..
