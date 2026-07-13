@@ -98,17 +98,18 @@ do_install() {
   mkdir -p $LOG_DIR/nginx
   green "  ✓ 目录就绪"
 
-  # 3. 部署 upstream 配置 (127.0.0.1, 因为 nginx 在宿主, 后端在 docker)
-  bold "  [3/5] 部署 upstream 配置"
+  # 3. 自动生成 upstream + 反向代理 (扫描所有后端服务, 16 个 upstream)
+  bold "  [3/5] 自动生成 upstream + 反向代理 (扫描所有后端服务)"
+  if [ -f "$PROJECT_DIR/scripts/gen-nginx-config.sh" ]; then
+    yellow "   扫描后端服务 (16 个 minimax-* 模块), 生成 nginx 配置..."
+    bash $PROJECT_DIR/scripts/gen-nginx-config.sh 2>&1 | tail -5 || true
+  fi
   if [ -f "$UPSTREAM_CONF_SRC" ]; then
     cp "$UPSTREAM_CONF_SRC" "$UPSTREAM_CONF"
-    # 替换项目根路径 (default 127.0.0.1)
-    sed -i "s|127.0.0.1:8081|127.0.0.1:8081|g" "$UPSTREAM_CONF"
-    sed -i "s|127.0.0.1:8094|127.0.0.1:8094|g" "$UPSTREAM_CONF"
-    sed -i "s|127.0.0.1:7080|127.0.0.1:7080|g" "$UPSTREAM_CONF"
-    green "  ✓ upstream: $UPSTREAM_CONF"
+    SVC_COUNT=$(grep -c "^upstream" "$UPSTREAM_CONF" 2>/dev/null || echo 0)
+    green "  ✓ upstream: $UPSTREAM_CONF ($SVC_COUNT 个 upstream)"
   else
-    yellow "  ⚠  upstream.conf 不存在, 将内联在主配置中"
+    yellow "  ⚠  upstream.conf 不存在"
   fi
 
   # 4. 部署主配置
