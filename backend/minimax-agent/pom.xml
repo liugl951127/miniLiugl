@@ -71,6 +71,9 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                    <configuration>
+                        <mainClass>com.minimax.agent.config.AgentApp</mainClass>
+                    </configuration>
                 
             </plugin>
         </plugins>

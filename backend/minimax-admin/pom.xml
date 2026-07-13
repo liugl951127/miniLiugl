@@ -59,8 +59,10 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration><skip>false</skip></configuration>
-            </plugin>
+                    <configuration>
+                        <mainClass>com.minimax.admin.AdminApplication</mainClass>
+                    </configuration>
+                </plugin>
         </plugins>
     </build>
 </project>

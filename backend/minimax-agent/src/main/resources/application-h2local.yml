@@ -1,20 +1,16 @@
 # =============================================================
-# H2 本地内存模式 (V3.5.2+ 沙箱验证用)
-# - 不依赖 MariaDB / Redis / Nacos
-# - 数据存内存, 重启丢失
-# - 启动后自动跑 init.sql 建表
+# H2 沙箱模式 (V3.5.3+ 统一注入)
+# - 不依赖 MariaDB/Redis/Nacos
+# - 启动自动跑 schema-h2.sql
 # - 用法: --spring.profiles.active=h2local
 # =============================================================
 
 spring:
-  application:
-    name: minimax-ai
   main:
     allow-bean-definition-overriding: true
-    lazy-initialization: false
   datasource:
     driver-class-name: org.h2.Driver
-    url: jdbc:h2:mem:minimax_ai;MODE=MySQL;CASE_INSENSITIVE_IDENTIFIERS=TRUE;DB_CLOSE_ON_EXIT=FALSE;DATABASE_TO_UPPER=FALSE;DB_CLOSE_DELAY=-1
+    url: jdbc:h2:mem:minimax_agent;MODE=MySQL;CASE_INSENSITIVE_IDENTIFIERS=TRUE;DB_CLOSE_DELAY=-1
     username: sa
     password: ""
     hikari:
@@ -24,15 +20,11 @@ spring:
       mode: always
       schema-locations: classpath:schema-h2.sql
       continue-on-error: false
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
   data:
     redis:
       host: 127.0.0.1
       port: 6379
-      timeout: 100ms
+      timeout: 50ms
   cloud:
     nacos:
       discovery:
@@ -42,20 +34,7 @@ spring:
     refresh:
       enabled: false
 
-# 关闭定时任务调度 (避免 Quartz 找不到数据库)
-spring.quartz:
-  job-store-type: memory
-
-# 业务日志
-logging:
-  level:
-    root: INFO
-    com.minimax: INFO
-    org.springframework: WARN
-    org.hibernate: WARN
-    org.apache.tomcat: WARN
-
-# V3.5.2 H2 沙箱: 关闭下划线命名映射 (entity field name 直接作 column)
+# MyBatis-Plus H2 兼容
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: false
@@ -63,3 +42,9 @@ mybatis-plus:
     db-config:
       table-underline: false
       column-underline: false
+
+logging:
+  level:
+    root: WARN
+    com.minimax: INFO
+    org.springframework: WARN
