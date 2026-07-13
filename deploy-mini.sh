@@ -88,12 +88,12 @@ build_frontend() {
 
 # 构建后端镜像 (Maven 多模块)
 build_backend() {
-  blue "📦 [2/3] 构建后端镜像 (Maven)"
+  blue "📦 [2/3] 构建后端镜像 (Maven + Spring Boot layered jar)"
   if ! command -v mvn &>/dev/null; then
     yellow "   ⚠  mvn 未安装, 将使用 docker 内构建 (首次慢)"
     return 0
   fi
-  if [ ! -d backend/target ]; then
+  if [ ! -d backend/target ] || [ ! -f backend/minimax-ai/target/minimax-ai-spring-boot.jar ]; then
     yellow "   ⚙  本地编译 minimax-auth / minimax-ai / minimax-gateway 三个核心服务..."
     cd backend
     mvn -pl minimax-auth,minimax-ai,minimax-gateway -am clean package \
@@ -102,6 +102,12 @@ build_backend() {
     cd ..
   else
     green "   ✓ 本地已有编译产物, 复用"
+  fi
+
+  # 验证 layered jar (Spring Boot 拆层, 增量构建)
+  if [ -f scripts/verify-layers.sh ] && command -v java &>/dev/null; then
+    green "   🔍 验证 Spring Boot layered jar 拆分..."
+    bash scripts/verify-layers.sh ai 2>&1 | tail -10 || yellow "   ⚠  layered 验证跳过"
   fi
 }
 
