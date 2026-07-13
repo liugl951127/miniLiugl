@@ -43,7 +43,7 @@
 
 ## 部署信息
 
-- **数据库**: MySQL 8.0 (脚本 `sql/init.sql` 单文件)
+- **数据库**: MySQL 8.0 (脚本 `sql/complete.sql` 单文件)
 - **服务架构**: 16 微服务 + 1 自研 AI + Vue 3 SPA
 - **部署方式**: Docker Compose / 裸机 systemd
 - **访问端口**: 80 (Nginx) / 7080 (Gateway)

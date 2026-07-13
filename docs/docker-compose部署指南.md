@@ -134,7 +134,7 @@ docker build --build-arg MODULE=minimax-ai -t minimax/ai:1.0 .
 
 ## 🛢️ 数据库初始化
 
-`./sql/init.sql` 自动挂载到 mariadb `/docker-entrypoint-initdb.d/`:
+`./sql/complete.sql` 自动挂载到 mariadb `/docker-entrypoint-initdb.d/`:
 - 87 张表
 - 59 条种子数据 (含超管 admin/admin123)
 - 单文件, 启动时自动导入

@@ -952,21 +952,21 @@ CREATE TABLE IF NOT EXISTS `plugin` (
 DROP TABLE IF EXISTS `model_battle_log`;
 CREATE TABLE IF NOT EXISTS `model_battle_log` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID(id)',
-    `battle_id` VARCHAR(255) DEFAULT NULL COMMENT 'battle_id(battle_id)',
-    `user_id` BIGINT DEFAULT 0 COMMENT 'user_id(user_id)',
-    `model_id` BIGINT DEFAULT 0 COMMENT 'model_id(model_id)',
-    `model_code` VARCHAR(255) DEFAULT NULL COMMENT 'model_code(model_code)',
+    `battleId` VARCHAR(255) DEFAULT NULL COMMENT 'battle_id(battle_id)',
+    `userId` BIGINT DEFAULT 0 COMMENT 'user_id(user_id)',
+    `modelId` BIGINT DEFAULT 0 COMMENT 'model_id(model_id)',
+    `modelCode` VARCHAR(255) DEFAULT NULL COMMENT 'model_code(model_code)',
     `prompt` VARCHAR(255) DEFAULT NULL COMMENT 'prompt(prompt)',
     `response` VARCHAR(255) DEFAULT NULL COMMENT 'response(response)',
-    `prompt_tokens` INT DEFAULT 0 COMMENT 'prompt_tokens(prompt_tokens)',
-    `completion_tokens` INT DEFAULT 0 COMMENT 'completion_tokens(completion_tokens)',
-    `latency_ms` INT DEFAULT 0 COMMENT 'latency_ms(latency_ms)',
+    `promptTokens` INT DEFAULT 0 COMMENT 'prompt_tokens(prompt_tokens)',
+    `completionTokens` INT DEFAULT 0 COMMENT 'completion_tokens(completion_tokens)',
+    `latencyMs` INT DEFAULT 0 COMMENT 'latency_ms(latency_ms)',
     `status` VARCHAR(255) DEFAULT NULL COMMENT '状态(status)',
-    `error_msg` VARCHAR(255) DEFAULT NULL COMMENT 'error_msg(error_msg)',
+    `errorMsg` VARCHAR(255) DEFAULT NULL COMMENT 'error_msg(error_msg)',
     `score` INT DEFAULT 0 COMMENT 'score(score)',
-    `judge_model` VARCHAR(255) DEFAULT NULL COMMENT 'judge_model(judge_model)',
-    `judge_reason` VARCHAR(255) DEFAULT NULL COMMENT 'judge_reason(judge_reason)',
-    `created_at` DATETIME DEFAULT NULL COMMENT 'created_at(created_at)',
+    `judgeModel` VARCHAR(255) DEFAULT NULL COMMENT 'judge_model(judge_model)',
+    `judgeReason` VARCHAR(255) DEFAULT NULL COMMENT 'judge_reason(judge_reason)',
+    `createdAt` DATETIME DEFAULT NULL COMMENT 'created_at(created_at)',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='model_battle_log (auto-generated V3.5.5)';
 

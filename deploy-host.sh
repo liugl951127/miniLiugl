@@ -275,10 +275,10 @@ EOF
         log_step "导入 sql/complete.sql (完整, 77 表)"
         mysql -uroot -p"$MYSQL_ROOT_PASS" $DB_NAME < $PROJECT_DIR/sql/complete.sql 2>&1 | head -3
         log_ok "complete.sql 导入完成"
-    elif [ -f $PROJECT_DIR/sql/init.sql ]; then
-        log_step "导入 sql/init.sql (基线, 89 表)"
-        mysql -uroot -p"$MYSQL_ROOT_PASS" $DB_NAME < $PROJECT_DIR/sql/init.sql 2>&1 | head -3
-        log_ok "init.sql 导入完成"
+    elif [ -f $PROJECT_DIR/sql/complete.sql ]; then
+        log_step "导入 sql/complete.sql (基线, 89 表)"
+        mysql -uroot -p"$MYSQL_ROOT_PASS" $DB_NAME < $PROJECT_DIR/sql/complete.sql 2>&1 | head -3
+        log_ok "complete.sql 导入完成"
     fi
     
     # 增量修复

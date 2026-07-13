@@ -31,7 +31,7 @@ services:
       - "3306:3306"
     volumes:
       - minimax_mariadb:/var/lib/mysql
-      - ./sql/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./sql/complete.sql:/docker-entrypoint-initdb.d/01-complete.sql:ro
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s

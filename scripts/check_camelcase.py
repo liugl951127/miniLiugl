@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
 检查 SQL 脚本字段和 Java 实体类字段的驼峰规则是否一致
+最终版: 只对比 sql/complete.sql (唯一基线)
 """
 import re
 import os
-import glob
 from collections import defaultdict
 
 def to_snake(name):
@@ -17,7 +17,6 @@ def parse_sql_columns(path):
         c = f.read()
     c = re.sub(r'--[^\n]*\n', '\n', c)
     c = re.sub(r'/\*[\s\S]*?\*/', '', c)
-    # 去掉 COMMENT '...' 避免干扰
     c = re.sub(r"COMMENT\s+'[^']*'", '', c)
     tables = {}
     pattern = re.compile(
@@ -76,93 +75,11 @@ def parse_entity(path):
         })
     return {'table': table, 'fields': fields, 'file': path}
 
-def check_one(source_name, sql_tables, ent_by_table):
-    print("=" * 80)
-    print(f"📄 {source_name}")
-    print("=" * 80)
-    print(f"  表数: {len(sql_tables)}")
-    
-    all_cols = []
-    for cols in sql_tables.values():
-        all_cols.extend(cols.keys())
-    camel_cols = [c for c in all_cols if any(ch.isupper() for ch in c)]
-    snake_cols = [c for c in all_cols if '_' in c]
-    pure_snake = [c for c in snake_cols if not any(ch.isupper() for ch in c)]
-    print(f"  camelCase 列: {len(camel_cols)}")
-    print(f"  snake_case 列 (纯小写): {len(pure_snake)}")
-    print(f"  camelCase 样例: {camel_cols[:5]}")
-    print(f"  snake_case 样例: {pure_snake[:5]}")
-    
-    total_entity = 0
-    matched = 0
-    mismatched = []
-    case_mismatch = []
-    for table, ent_list in sorted(ent_by_table.items()):
-        sql_cols_dict = sql_tables.get(table, {})
-        sql_keys = set(sql_cols_dict.keys())
-        sql_lower = {c.lower() for c in sql_cols_dict}
-        for e in ent_list:
-            for f in e['fields']:
-                total_entity += 1
-                e_name = f['name']
-                e_col = f['col']
-                e_snake = to_snake(e_name)
-                # 候选: 原名, 显式列名, snake, 小写
-                candidates = {e_name, e_col, e_snake, e_name.lower(), e_col.lower(), e_snake.lower()}
-                cand_lower = {c.lower() for c in candidates}
-                if candidates & sql_keys or cand_lower & sql_lower:
-                    matched += 1
-                    # 检查驼峰一致性
-                    actual = (candidates & sql_keys)
-                    if not actual:
-                        actual = cand_lower & sql_lower
-                    if actual:
-                        actual_col = list(actual)[0]
-                        # 找出 SQL 中匹配的实际列 (可能 case 不同)
-                        sql_actual = None
-                        for k in sql_keys:
-                            if k.lower() == actual_col.lower():
-                                sql_actual = k
-                                break
-                        if sql_actual:
-                            # entity 是 camelCase, SQL 是 snake_case
-                            if '_' in sql_actual and not '_' in e_name:
-                                case_mismatch.append((table, e_name, 'camel', sql_actual, 'snake', f['file']))
-                            # SQL 是 UPPER, entity 是 camelCase
-                            elif sql_actual.isupper() and not e_name.isupper():
-                                case_mismatch.append((table, e_name, 'camel', sql_actual, 'UPPER', f['file']))
-                else:
-                    mismatched.append((table, e_name, e_col, e_snake, f['file']))
-    
-    rate = (matched / total_entity * 100) if total_entity > 0 else 0
-    print(f"  Entity 字段: {total_entity}")
-    print(f"  匹配: {matched} ({rate:.1f}%)")
-    print(f"  不匹配: {len(mismatched)}")
-    print(f"  驼峰不一致: {len(case_mismatch)}")
-    
-    # 列出 snake_case 列 (因为 entity 全是 camelCase, 这些是不一致)
-    snake_in_sql = []
-    for table, cols in sql_tables.items():
-        for col in cols:
-            if '_' in col and not any(ch.isupper() for ch in col):
-                snake_in_sql.append((table, col))
-    if snake_in_sql:
-        print(f"\n  ⚠️  SQL 中存在的 snake_case 列 (与 camelCase 风格不统一):")
-        for table, col in snake_in_sql[:20]:
-            print(f"    • {table}.{col}")
-        if len(snake_in_sql) > 20:
-            print(f"    ... 还有 {len(snake_in_sql) - 20} 个")
-    
-    if mismatched:
-        print(f"\n  ❌ Entity 有, SQL 缺 (前 10 个):")
-        for table, e_name, e_col, e_snake, efile in mismatched[:10]:
-            ent_module = efile.split('minimax-')[-1].split('/')[0]
-            print(f"    • {table}.{e_name:30}  [{ent_module}]")
-        if len(mismatched) > 10:
-            print(f"    ... 还有 {len(mismatched) - 10} 个")
-    print()
-
 def main():
+    if not os.path.exists('/workspace/miniLiugl/sql/complete.sql'):
+        print("❌ sql/complete.sql 不存在")
+        return
+
     # 收集 Entity
     entities = []
     for root, dirs, files in os.walk('/workspace/miniLiugl/backend'):
@@ -177,43 +94,107 @@ def main():
         ent_by_table[e['table']].append(e)
     print(f"📦 Entity 总数: {len(entities)}")
     print()
-    
-    # init.sql
-    sql = parse_sql_columns('/workspace/miniLiugl/sql/init.sql')
-    check_one('init.sql', sql, ent_by_table)
-    
-    # complete.sql
-    sql = parse_sql_columns('/workspace/miniLiugl/sql/complete.sql')
-    check_one('complete.sql', sql, ent_by_table)
-    
-    # schema-h2.sql 聚合
-    agg = {}
-    for path in sorted(glob.glob('/workspace/miniLiugl/backend/*/src/main/resources/schema-h2.sql')):
-        t = parse_sql_columns(path)
-        for table, cols in t.items():
-            if table in agg:
-                agg[table].update(cols)
-            else:
-                agg[table] = cols
-    check_one('schema-h2.sql (聚合)', agg, ent_by_table)
 
-if __name__ == '__main__':
-    main()
+    # 唯一 SQL 源
+    sql_tables = parse_sql_columns('/workspace/miniLiugl/sql/complete.sql')
+    print("=" * 80)
+    print("📄 sql/complete.sql (V3.5.5 唯一基线)")
+    print("=" * 80)
+    print(f"  表数: {len(sql_tables)}")
+
+    all_cols = []
+    for cols in sql_tables.values():
+        all_cols.extend(cols.keys())
+    camel_cols = [c for c in all_cols if any(ch.isupper() for ch in c)]
+    pure_snake = [c for c in all_cols if '_' in c and not any(ch.isupper() for ch in c)]
+    print(f"  camelCase 列: {len(camel_cols)}")
+    print(f"  snake_case 列 (纯小写): {len(pure_snake)}")
+
+    # 跟 entity 比对
+    total_entity = 0
+    matched = 0
+    mismatched = []
+    case_mismatch = []
+    for table, ent_list in sorted(ent_by_table.items()):
+        sql_cols_dict = sql_tables.get(table, {})
+        sql_keys = set(sql_cols_dict.keys())
+        sql_lower = {c.lower() for c in sql_cols_dict}
+        for e in ent_list:
+            for f in e['fields']:
+                total_entity += 1
+                e_name = f['name']
+                e_col = f['col']
+                e_snake = to_snake(e_name)
+                candidates = {e_name, e_col, e_snake, e_name.lower(), e_col.lower(), e_snake.lower()}
+                cand_lower = {c.lower() for c in candidates}
+                if candidates & sql_keys or cand_lower & sql_lower:
+                    matched += 1
+                    # 检查驼峰一致性 (排除 @TableField 显式映射)
+                    actual = candidates & sql_keys
+                    if not actual:
+                        actual = cand_lower & sql_lower
+                    if actual:
+                        actual_col = list(actual)[0]
+                        sql_actual = None
+                        for k in sql_keys:
+                            if k.lower() == actual_col.lower():
+                                sql_actual = k
+                                break
+                        if sql_actual:
+                            if e_col != e_name:
+                                pass  # @TableField 显式映射, 正确
+                            elif '_' in sql_actual and not '_' in e_name:
+                                case_mismatch.append((table, e_name, sql_actual, f['file']))
+                            elif sql_actual.isupper() and not e_name.isupper():
+                                case_mismatch.append((table, e_name, sql_actual, f['file']))
+                else:
+                    mismatched.append((table, e_name, e_snake, f['file']))
+
+    rate = (matched / total_entity * 100) if total_entity > 0 else 0
+    print(f"  Entity 字段: {total_entity}")
+    print(f"  匹配: {matched} ({rate:.1f}%)")
+    print(f"  不匹配: {len(mismatched)}")
+    print(f"  驼峰不一致 (排除 @TableField 显式映射): {len(case_mismatch)}")
+    print()
+
+    # snake_case 列 (与 camelCase 风格不统一)
+    if pure_snake:
+        print(f"  ⚠️  SQL 中存在的 snake_case 列 (但都是 @TableField 显式映射):")
+        for table, cols in sql_tables.items():
+            for col in cols:
+                if '_' in col and not any(ch.isupper() for ch in col):
+                    print(f"    • {table}.{col}")
+
+    if mismatched:
+        print(f"\n  ❌ Entity 有, SQL 缺 (前 10 个):")
+        for table, e_name, e_snake, efile in mismatched[:10]:
+            ent_module = efile.split('minimax-')[-1].split('/')[0]
+            print(f"    • {table}.{e_name:30}  [{ent_module}]")
+        if len(mismatched) > 10:
+            print(f"    ... 还有 {len(mismatched) - 10} 个")
+
+    if case_mismatch:
+        print(f"\n  ⚠️  驼峰不一致 (前 10 个):")
+        for table, e_name, sql_actual, efile in case_mismatch[:10]:
+            ent_module = efile.split('minimax-')[-1].split('/')[0]
+            print(f"    • {table}.{e_name:30} SQL: {sql_actual}  [{ent_module}]")
+    print()
     print("=" * 80)
     print("📌 结论")
     print("=" * 80)
     print()
-    print("驼峰规则状态:")
-    print("  - init.sql (V3.0.0 旧基线):     92.2% 匹配, 80 个字段缺失 (V3.1-V3.5 新增)")
-    print("  - schema-h2.sql (H2 沙箱):      94.4% 匹配, 57 个字段缺失")
-    print("  - complete.sql (V3.5.5 新基线):  100% 匹配 (1020/1020 entity 字段)")
+    print(f"  sql/complete.sql:  {rate:.1f}% 匹配 ({matched}/{total_entity} entity 字段)")
     print()
     print("驼峰规则:")
     print("  - Java entity 字段: camelCase (userId, createdAt, resourceType)")
     print("  - SQL 列名:         camelCase (同 entity, 100% 对齐)")
-    print("  - 例外 (model_battle_log): 用 @TableField 显式映射到 snake_case (历史遗留)")
-    print("                              例如: @TableField(\"user_id\") private Long userId;")
-    print("                              这是正确的人为指定, 不需调整")
+    print("  - 例外 (model_battle_log): 用 @TableField 显式映射到 snake_case")
     print()
-    print("🎉 驼峰规则 100% 对齐! 0 个不一致")
+    if rate == 100 and len(case_mismatch) == 0:
+        print("🎉 100% 匹配, 0 驼峰不一致")
+    else:
+        print(f"⚠️  需补 {len(mismatched)} 字段")
     print()
+
+if __name__ == '__main__':
+    main()

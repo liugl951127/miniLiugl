@@ -28,13 +28,13 @@ if ! command -v docker compose >/dev/null 2>&1; then
     fail "docker compose 未安装, 请先安装 docker compose v2"
 fi
 
-# 检查 init.sql
-if [ ! -f "sql/init.sql" ]; then
-    fail "sql/init.sql 不存在"
+# 检查 complete.sql
+if [ ! -f "sql/complete.sql" ]; then
+    fail "sql/complete.sql 不存在"
 fi
-TABLES=$(grep -c "CREATE TABLE" sql/init.sql || true)
-INSERTS=$(grep -c "INSERT INTO" sql/init.sql || true)
-ok "sql/init.sql: ${TABLES} 表 / ${INSERTS} 种子"
+TABLES=$(grep -c "CREATE TABLE" sql/complete.sql || true)
+INSERTS=$(grep -c "INSERT INTO" sql/complete.sql || true)
+ok "sql/complete.sql: ${TABLES} 表 / ${INSERTS} 种子"
 
 CMD="${1:-up}"
 case "$CMD" in
