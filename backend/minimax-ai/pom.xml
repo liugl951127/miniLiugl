@@ -106,7 +106,7 @@
                         </exclude>
                     </excludes>
                     <classifier>spring-boot</classifier>
-                    <mainClass>com.minimax.ai.AiApplication</mainClass>
+                    <mainClass>com.minimax.ai.StandaloneApplication</mainClass>
                 </configuration>
             </plugin>
         </plugins>

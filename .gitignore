@@ -63,3 +63,5 @@ coverage/
 node_modules/
 .jwt-backup-*/
 scripts/__pycache__/
+ai-run.log
+ai-run.pid

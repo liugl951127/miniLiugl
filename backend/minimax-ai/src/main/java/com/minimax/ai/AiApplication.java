@@ -28,7 +28,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableDiscoveryClient
 @EnableAsync
 @SpringBootApplication
-@MapperScan("com.minimax.ai.mapper")
+@MapperScan({"com.minimax.ai.mapper", "com.minimax.ai.marketplace", "com.minimax.ai.modelmarket", "com.minimax.ai.template", "com.minimax.ai.webhook"})
 public class AiApplication {
 
     public static void main(String[] args) {
