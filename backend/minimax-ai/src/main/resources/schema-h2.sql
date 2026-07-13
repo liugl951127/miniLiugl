@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS `agent_rating` (
 
 -- AgentTask -> agent_task
 CREATE TABLE IF NOT EXISTS `agent_task` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
@@ -113,6 +114,7 @@ CREATE TABLE IF NOT EXISTS `ai_chat_message` (
 
 -- AiChatSession -> ai_chat_session
 CREATE TABLE IF NOT EXISTS `ai_chat_session` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
@@ -169,6 +171,7 @@ CREATE TABLE IF NOT EXISTS `ai_intent_keyword` (
 
 -- AiTool -> ai_tool
 CREATE TABLE IF NOT EXISTS `ai_tool` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `createdBy` BIGINT NOT NULL DEFAULT 0 COMMENT 'createdBy',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
@@ -264,6 +267,7 @@ CREATE TABLE IF NOT EXISTS `alert_rule` (
 
 -- DataSource -> analytics_datasource
 CREATE TABLE IF NOT EXISTS `analytics_datasource` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `userId` BIGINT NOT NULL DEFAULT 0 COMMENT 'userId',
     `name` VARCHAR(255) DEFAULT NULL COMMENT 'name',
@@ -427,6 +431,7 @@ CREATE TABLE IF NOT EXISTS `billing_record` (
 
 -- ChatMessage -> chat_message
 CREATE TABLE IF NOT EXISTS `chat_message` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     `sessionId` BIGINT NOT NULL DEFAULT 0 COMMENT 'sessionId',
@@ -442,6 +447,7 @@ CREATE TABLE IF NOT EXISTS `chat_message` (
 
 -- ChatSession -> chat_session
 CREATE TABLE IF NOT EXISTS `chat_session` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
@@ -549,6 +555,7 @@ CREATE TABLE IF NOT EXISTS `collab_room` (
 
 -- CollabSession -> collab_session
 CREATE TABLE IF NOT EXISTS `collab_session` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
@@ -573,6 +580,7 @@ CREATE TABLE IF NOT EXISTS `dashboard_metric` (
 
 -- DbDataSource -> data_source
 CREATE TABLE IF NOT EXISTS `data_source` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `createdBy` BIGINT NOT NULL DEFAULT 0 COMMENT 'createdBy',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
@@ -598,6 +606,7 @@ CREATE TABLE IF NOT EXISTS `data_source` (
 
 -- Document -> document
 CREATE TABLE IF NOT EXISTS `document` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
@@ -618,6 +627,7 @@ CREATE TABLE IF NOT EXISTS `document` (
 
 -- DocumentChunk -> document_chunk
 CREATE TABLE IF NOT EXISTS `document_chunk` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
@@ -656,6 +666,7 @@ CREATE TABLE IF NOT EXISTS `function_call_log` (
 
 -- FunctionTool -> function_tool
 CREATE TABLE IF NOT EXISTS `function_tool` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
@@ -730,6 +741,7 @@ CREATE TABLE IF NOT EXISTS `kb_permission` (
 
 -- KgEntity -> kg_entity
 CREATE TABLE IF NOT EXISTS `kg_entity` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
@@ -747,6 +759,7 @@ CREATE TABLE IF NOT EXISTS `kg_entity` (
 
 -- KgRelation -> kg_relation
 CREATE TABLE IF NOT EXISTS `kg_relation` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
@@ -764,6 +777,7 @@ CREATE TABLE IF NOT EXISTS `kg_relation` (
 
 -- KnowledgeBase -> knowledge_base
 CREATE TABLE IF NOT EXISTS `knowledge_base` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
@@ -865,6 +879,7 @@ CREATE TABLE IF NOT EXISTS `model_battle_log` (
 
 -- ModelConfig -> model_config
 CREATE TABLE IF NOT EXISTS `model_config` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
@@ -932,6 +947,7 @@ CREATE TABLE IF NOT EXISTS `model_market` (
 
 -- ModelProvider -> model_provider
 CREATE TABLE IF NOT EXISTS `model_provider` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
@@ -1162,6 +1178,7 @@ CREATE TABLE IF NOT EXISTS `pipeline_run` (
 
 -- PipelineWorkflow -> pipeline_workflow
 CREATE TABLE IF NOT EXISTS `pipeline_workflow` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `name` VARCHAR(255) DEFAULT NULL COMMENT 'name',
     `description` TEXT DEFAULT NULL COMMENT 'description',
@@ -1187,6 +1204,7 @@ CREATE TABLE IF NOT EXISTS `pipeline_workflow_version` (
 
 -- Plugin -> plugin
 CREATE TABLE IF NOT EXISTS `plugin` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
@@ -1210,6 +1228,7 @@ CREATE TABLE IF NOT EXISTS `plugin` (
 
 -- PromptTemplate -> prompt_template
 CREATE TABLE IF NOT EXISTS `prompt_template` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
@@ -1326,6 +1345,7 @@ CREATE TABLE IF NOT EXISTS `sensitive_word` (
 
 -- SysRole -> sys_role
 CREATE TABLE IF NOT EXISTS `sys_role` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
@@ -1339,6 +1359,7 @@ CREATE TABLE IF NOT EXISTS `sys_role` (
 
 -- SysUser -> sys_user
 CREATE TABLE IF NOT EXISTS `sys_user` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `createdBy` BIGINT NOT NULL DEFAULT 0 COMMENT 'createdBy',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
@@ -1384,6 +1405,7 @@ CREATE TABLE IF NOT EXISTS `sys_user_role` (
 
 -- Tenant -> tenant
 CREATE TABLE IF NOT EXISTS `tenant` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
@@ -1499,6 +1521,7 @@ CREATE TABLE IF NOT EXISTS `unionid_relations` (
 
 -- UserApiKey -> user_api_key
 CREATE TABLE IF NOT EXISTS `user_api_key` (
+    `deleted` INT NOT NULL DEFAULT 0 COMMENT 'deleted (logic delete)',
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
     `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
     `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',

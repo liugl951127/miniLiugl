@@ -544,3 +544,13 @@
 - [ ] API Key 鉴权单元测试
 - [ ] CI/CD 压测 stage
 
+
+## Day N+1 (2026-07-13) - V3.5.4 ✅
+- [x] Spark-style 多机并行训练框架 (3 worker, RDD-like, DAG topo, Shuffle)
+- [x] 15 单元测试全过 (parallelize/map/filter/reduce/groupByKey/multiStage/shuffle)
+- [x] Bug 修复: root stage shuffleId 必设, parentShuffleId 链式读取, groupByKey 跨 partition 合并
+- [x] 89 表 + 59 INSERT DDL H2 验证 0 错误
+- [x] 前端 npm build 4.7M dist (vite build)
+- [x] 15 服务 H2 沙箱启动 + 6 个 V3.4-V3.5 API 实测全过
+- [x] 企业文档第 13 章 (Spark 多机并行)
+- [x] push e38138b
