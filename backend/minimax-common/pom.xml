@@ -88,6 +88,13 @@
             <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
         </dependency>
 
+        <!-- V3.5.5: H2 沙箱驱动 (h2local profile 用, 供所有依赖 common 的微服务在沙箱模式启动) -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- V2.7.9: AOP 依赖 (PermissionAspect 用) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
