@@ -30,7 +30,7 @@ class JoinNodeTest {
         );
         Map<String, Object> cfg = Map.of("type", "INNER", "leftKey", "uid", "rightKey", "uid");
         ExecutionContext ctx = new ExecutionContext(1L, 1L, 1L, 1000, 100);
-        List<Map<String, Object>> out = join.execute("n1", cfg, Map.of("left", left, "right", right), ctx);
+        List<Map<String, Object>> out = join.execute("n1", cfg, new java.util.LinkedHashMap<>(java.util.Map.of("left", left, "right", right)), ctx);
         assertEquals(2, out.size());
     }
 
@@ -44,7 +44,7 @@ class JoinNodeTest {
         );
         Map<String, Object> cfg = Map.of("type", "LEFT", "leftKey", "uid", "rightKey", "uid");
         ExecutionContext ctx = new ExecutionContext(1L, 1L, 1L, 1000, 100);
-        List<Map<String, Object>> out = join.execute("n1", cfg, Map.of("left", left, "right", right), ctx);
+        List<Map<String, Object>> out = join.execute("n1", cfg, new java.util.LinkedHashMap<>(java.util.Map.of("left", left, "right", right)), ctx);
         assertEquals(2, out.size());  // Bob 也有, 右侧为 null
     }
 
@@ -52,7 +52,7 @@ class JoinNodeTest {
         Map<String, Object> cfg = Map.of("leftKey", "uid", "rightKey", "uid");
         ExecutionContext ctx = new ExecutionContext(1L, 1L, 1L, 1000, 100);
         assertThrows(Exception.class, () ->
-                join.execute("n1", cfg, Map.of("left", List.of()), ctx));
+                join.execute("n1", cfg, new java.util.LinkedHashMap<>(java.util.Map.of("left", List.of())), ctx));
     }
 
     @Test void joinRequiresKeys() {

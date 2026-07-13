@@ -1,6 +1,6 @@
 # MiniMax Platform 企业文档总览
 
-> **面向企业级生产部署的全套文档** · V3.5.1 · 2026-07-13
+> **面向企业级生产部署的全套文档** · V3.5.2 · 2026-07-13
 
 ## 文档结构
 
@@ -19,6 +19,7 @@
 | 🤖 一句话自动生成智能体群 (V3.4.2) | 输入 "写一份季报" → 自动拼装 Agent 群 | `AutoAgentGroupGenerator` (6 模板 + 3 REST API) |
 | ⚖️ Raft 分布式一致性 (V3.5.0) | Leader 选举 + 日志复制 + 多数派提交 + 状态机 | `RaftNode` + `RaftCluster` + 6 REST API |
 | 📲 推送真实集成 (V3.5.1) | Web Push (VAPID) / APNs (HTTP/2+JWT) / FCM (HTTP v1+OAuth2) | `WebPushProvider` + `ApnsProvider` + `FcmProvider` + 8 REST API |
+| 🎟️ License 模板 (V3.5.2) | 4 预置模板 (TRIAL/PERSONAL/COMMERCIAL/ENTERPRISE) + 克隆+签发+对比 | `LicenseTemplateService` (1 实体 + 12 REST API) |
 
 ## 工程文档 (开发参考)
 

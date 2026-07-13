@@ -38,10 +38,12 @@ public class JoinNode extends NodeExecutor {
         if (leftKey == null || rightKey == null) {
             throw new IllegalArgumentException("JOIN 缺 leftKey 或 rightKey");
         }
-        // inputs 是 2 个 entry: left (入度小的), right
-        Iterator<List<Map<String, Object>>> it = inputs.values().iterator();
-        List<Map<String, Object>> left = it.next();
-        List<Map<String, Object>> right = it.next();
+        // inputs 是 2 个 entry: left (key="left"), right (key="right")
+        // 按 key 排序保证顺序稳定 (HashMap/Map.of 迭代顺序 implementation-defined)
+        List<Map.Entry<String, List<Map<String, Object>>>> sortedEntries = new ArrayList<>(inputs.entrySet());
+        sortedEntries.sort(Comparator.comparing(Map.Entry::getKey));
+        List<Map<String, Object>> left = sortedEntries.get(0).getValue();
+        List<Map<String, Object>> right = sortedEntries.get(1).getValue();
 
         // Build hash index on right
         Map<Object, List<Map<String, Object>>> idx = new HashMap<>();

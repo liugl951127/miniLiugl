@@ -1,6 +1,6 @@
 -- ===================================================================
 -- MiniMax Platform V3.0.0 全量 DDL (单文件汇总)
--- 表数: 88
+-- 表数: 89
 -- 字符集: utf8mb4 / 引擎: InnoDB
 -- ===================================================================
 
@@ -779,6 +779,27 @@ CREATE TABLE IF NOT EXISTS `knowledge_base` (
     `tags` VARCHAR(255) DEFAULT NULL COMMENT 'tags',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='KnowledgeBase (auto-generated V3.0.0)';
+
+-- LicenseTemplate -> license_template
+CREATE TABLE IF NOT EXISTS `license_template` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'createdAt',
+    `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updatedAt',
+    `templateKey` VARCHAR(255) DEFAULT NULL COMMENT 'templateKey',
+    `name` VARCHAR(255) DEFAULT NULL COMMENT 'name',
+    `licenseType` VARCHAR(255) DEFAULT NULL COMMENT 'licenseType',
+    `description` TEXT DEFAULT NULL COMMENT 'description',
+    `quotaCalls` BIGINT NOT NULL DEFAULT 0 COMMENT 'quotaCalls',
+    `quotaDays` INT NOT NULL DEFAULT 0 COMMENT 'quotaDays',
+    `priceCents` BIGINT NOT NULL DEFAULT 0 COMMENT 'priceCents',
+    `features` VARCHAR(255) DEFAULT NULL COMMENT 'features',
+    `limits` VARCHAR(255) DEFAULT NULL COMMENT 'limits',
+    `isPublic` INT NOT NULL DEFAULT 0 COMMENT 'isPublic',
+    `isActive` INT NOT NULL DEFAULT 0 COMMENT 'isActive',
+    `version` INT NOT NULL DEFAULT 0 COMMENT 'version',
+    `createdBy` BIGINT NOT NULL DEFAULT 0 COMMENT 'createdBy',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='LicenseTemplate (auto-generated V3.0.0)';
 
 -- LongTermMemory -> memory_long_term
 CREATE TABLE IF NOT EXISTS `memory_long_term` (
