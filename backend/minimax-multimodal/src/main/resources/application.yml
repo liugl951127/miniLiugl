@@ -38,7 +38,7 @@ spring:
   application:
     name: minimax-multimodal
   profiles:
-    active: dev
+    active: mysql   # V3.5.5+ 默认 MySQL/MariaDB (H2 → 沙箱 h2local)
 
 # 模块特殊配置 (保留原 minimax.* 块)
 minimax:

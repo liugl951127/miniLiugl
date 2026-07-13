@@ -12,7 +12,7 @@ spring:
   application:
     name: minimax-ai
   profiles:
-    active: dev
+    active: mysql   # V3.5.5+ 默认 MySQL/MariaDB 生产连接 (H2 → 沙箱 / dev → 内存开发)
   main:
     allow-bean-definition-overriding: true
 

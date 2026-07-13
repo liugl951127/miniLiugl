@@ -38,7 +38,7 @@ spring:
   application:
     name: minimax-rag
   profiles:
-    active: dev
+    active: mysql   # V3.5.5+ 默认 MySQL/MariaDB (H2 → 沙箱 h2local)
 
 # 模块特殊配置
 minimax:
