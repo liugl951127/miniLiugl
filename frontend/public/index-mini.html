@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniMax Platform · 精简模式</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    header { text-align: center; padding: 32px 0; }
+    h1 { font-size: 32px; font-weight: 700; background: linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .subtitle { color: #94a3b8; margin-top: 8px; font-size: 14px; }
+    .badge { display: inline-block; background: #f59e0b; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 24px 0; }
+    .stat { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; }
+    .stat .label { color: #94a3b8; font-size: 13px; }
+    .stat .value { font-size: 24px; font-weight: 600; margin-top: 4px; color: #38bdf8; }
+    .stat .ok { color: #22c55e; }
+    .stat .err { color: #ef4444; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 24px 0; }
+    .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; transition: transform 0.2s, border-color 0.2s; cursor: pointer; }
+    .card:hover { transform: translateY(-2px); border-color: #38bdf8; }
+    .card .icon { font-size: 28px; margin-bottom: 8px; }
+    .card .title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    .card .desc { color: #94a3b8; font-size: 13px; line-height: 1.5; }
+    .card .tags { margin-top: 12px; }
+    .tag { display: inline-block; background: rgba(56,189,248,0.15); color: #38bdf8; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-right: 6px; }
+    .actions { text-align: center; margin: 32px 0; }
+    .btn { display: inline-block; background: #38bdf8; color: #fff; padding: 10px 24px; border-radius: 8px; text-decoration: none; font-weight: 500; margin: 0 8px; transition: background 0.2s; }
+    .btn:hover { background: #0ea5e9; }
+    .btn.ghost { background: transparent; border: 1px solid #38bdf8; }
+    footer { text-align: center; padding: 24px; color: #64748b; font-size: 12px; }
+    pre { background: #0f172a; padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 12px; line-height: 1.5; margin-top: 8px; }
+    .login-box { max-width: 400px; margin: 32px auto; background: rgba(255,255,255,0.05); padding: 24px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
+    .login-box input { width: 100%; padding: 10px; margin: 8px 0; background: rgba(0,0,0,0.3); border: 1px solid #475569; border-radius: 6px; color: #fff; }
+    .login-box button { width: 100%; padding: 12px; background: #38bdf8; border: none; color: #fff; border-radius: 6px; margin-top: 12px; cursor: pointer; font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🚀 MiniMax Platform <span class="badge">精简模式 · 6 容器</span></h1>
+      <p class="subtitle">自研 AI 平台 · 1.5GB 内存即可运行</p>
+    </header>
+
+    <!-- 服务健康状态 -->
+    <div class="stats" id="stats">
+      <div class="stat"><div class="label">AI 服务</div><div class="value" id="ai-status">检测中...</div></div>
+      <div class="stat"><div class="label">鉴权服务</div><div class="value" id="auth-status">检测中...</div></div>
+      <div class="stat"><div class="label">网关</div><div class="value" id="gateway-status">检测中...</div></div>
+      <div class="stat"><div class="label">知识库</div><div class="value" id="kb-status">--</div></div>
+    </div>
+
+    <!-- 登录 -->
+    <div class="login-box">
+      <h3 style="margin-bottom: 12px;">🔑 登录</h3>
+      <input id="username" placeholder="用户名" value="adminLiugl" />
+      <input id="password" type="password" placeholder="密码" value="Liugl@2026" />
+      <button onclick="doLogin()">登录获取 Token</button>
+      <pre id="login-result" style="display:none; margin-top: 12px;"></pre>
+    </div>
+
+    <!-- 可交互的功能卡片 -->
+    <div class="cards">
+      <div class="card" onclick="callApi('/api/v1/ai/intent/list', 'GET')">
+        <div class="icon">🧠</div>
+        <div class="title">意图识别 (V3.4.1)</div>
+        <div class="desc">8 类意图 / 5 类实体抽取 / 情感 / 紧迫度 / Agent 推荐</div>
+        <div class="tags"><span class="tag">GET /api/v1/ai/intent/list</span></div>
+      </div>
+
+      <div class="card" onclick="callApi('/api/v1/ai/cluster/raft/state', 'GET')">
+        <div class="icon">⚙️</div>
+        <div class="title">Raft 集群 (V3.5.0)</div>
+        <div class="desc">3 节点一致性 / Leader 选举 / 日志复制</div>
+        <div class="tags"><span class="tag">GET /api/v1/ai/cluster/raft/state</span></div>
+      </div>
+
+      <div class="card" onclick="callApi('/api/v1/ai/push/integration/vapid-public-key', 'GET')">
+        <div class="icon">📲</div>
+        <div class="title">推送集成 (V3.5.1)</div>
+        <div class="desc">Web Push VAPID / APNs / FCM 自动检测</div>
+        <div class="tags"><span class="tag">GET /api/v1/ai/push/integration/vapid-public-key</span></div>
+      </div>
+
+      <div class="card" onclick="callApi('/api/v1/ai/marketplace/license-template/public', 'GET')">
+        <div class="icon">📜</div>
+        <div class="title">模型市场 License (V3.5.2)</div>
+        <div class="desc">4 预置模板 / 签发 / 续费 / 退款</div>
+        <div class="tags"><span class="tag">GET /api/v1/ai/marketplace/license-template/public</span></div>
+      </div>
+
+      <div class="card" onclick="callApi('/api/v1/ai/knowledge-base/list', 'GET')">
+        <div class="icon">📚</div>
+        <div class="title">自研知识库 (V3.4.0)</div>
+        <div class="desc">文本分块 / 向量化 / 混合检索 / 余弦相似度</div>
+        <div class="tags"><span class="tag">GET /api/v1/ai/knowledge-base/list</span></div>
+      </div>
+
+      <div class="card" onclick="callApi('/api/v1/ai/agent-group/auto/templates', 'GET')">
+        <div class="icon">🤖</div>
+        <div class="title">智能体群 (V3.4.2)</div>
+        <div class="desc">6 模板 / 4 策略 / 一句话生成</div>
+        <div class="tags"><span class="tag">GET /api/v1/ai/agent-group/auto/templates</span></div>
+      </div>
+
+      <div class="card" onclick="callApi('/api/v1/ai/distribute/spark/contexts', 'GET')">
+        <div class="icon">⚡</div>
+        <div class="title">Spark 训练 (V3.5.4)</div>
+        <div class="desc">Spark 风格 / 3 worker / DAG 拓扑 / Shuffle</div>
+        <div class="tags"><span class="tag">GET /api/v1/ai/distribute/spark/contexts</span></div>
+      </div>
+
+      <div class="card" onclick="callApi('/api/v1/ai/health', 'GET')">
+        <div class="icon">❤️</div>
+        <div class="title">服务健康</div>
+        <div class="desc">AI 服务整体健康检查</div>
+        <div class="tags"><span class="tag">GET /api/v1/ai/health</span></div>
+      </div>
+    </div>
+
+    <!-- API 实时测试 -->
+    <div class="login-box" style="max-width: 800px;">
+      <h3 style="margin-bottom: 12px;">🛠️ 实时 API 测试</h3>
+      <input id="api-url" placeholder="API 路径, 例如 /api/v1/ai/intent/predict" value="/api/v1/ai/intent/predict" />
+      <input id="api-method" placeholder="方法 GET/POST" value="POST" />
+      <textarea id="api-body" placeholder="请求体 JSON" style="width:100%;min-height:80px;padding:10px;margin:8px 0;background:rgba(0,0,0,0.3);border:1px solid #475569;border-radius:6px;color:#fff;font-family:monospace;">{"text":"我要退款, 订单 #12345"}</textarea>
+      <button onclick="customCall()">调用</button>
+      <pre id="api-result" style="display:none;"></pre>
+    </div>
+
+    <div class="actions">
+      <a class="btn" href="/swagger-ui.html" target="_blank">📖 Swagger API 文档</a>
+      <a class="btn ghost" href="/v3/api-docs" target="_blank">🔧 OpenAPI JSON</a>
+      <a class="btn ghost" href="/healthz" target="_blank">❤️ 健康检查</a>
+    </div>
+
+    <footer>
+      MiniMax Platform V3.5.5+ · 精简模式 (mariadb + redis + auth + ai + gateway + nginx)
+    </footer>
+  </div>
+
+  <script>
+    let token = localStorage.getItem('mm_token') || '';
+    async function checkHealth(name, url, elId) {
+      try {
+        const r = await fetch(url);
+        const el = document.getElementById(elId);
+        if (r.ok) { el.textContent = '✅ UP'; el.className = 'value ok'; }
+        else { el.textContent = '❌ ' + r.status; el.className = 'value err'; }
+      } catch (e) {
+        const el = document.getElementById(elId);
+        el.textContent = '❌ DOWN'; el.className = 'value err';
+      }
+    }
+    checkHealth('ai', '/actuator/health', 'ai-status');
+    checkHealth('ai', '/api/v1/ai/health', 'kb-status');
+    checkHealth('auth', '/api/v1/auth/health', 'auth-status');
+    checkHealth('gw', '/actuator/health', 'gateway-status');
+
+    async function doLogin() {
+      const u = document.getElementById('username').value;
+      const p = document.getElementById('password').value;
+      try {
+        const r = await fetch('/api/v1/auth/login', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({username: u, password: p})
+        });
+        const data = await r.json();
+        const pre = document.getElementById('login-result');
+        pre.style.display = 'block';
+        pre.textContent = JSON.stringify(data, null, 2);
+        if (data.data && data.data.token) {
+          token = data.data.token;
+          localStorage.setItem('mm_token', token);
+          pre.textContent += '\n\n✅ Token 已保存 (后续调用自动带上)';
+        } else if (data.token) {
+          token = data.token;
+          localStorage.setItem('mm_token', token);
+          pre.textContent += '\n\n✅ Token 已保存';
+        }
+      } catch (e) {
+        document.getElementById('login-result').style.display = 'block';
+        document.getElementById('login-result').textContent = '❌ ' + e.message;
+      }
+    }
+
+    async function callApi(path, method) {
+      const r = await fetch(path, { method, headers: token ? {'Authorization': 'Bearer ' + token} : {} });
+      const data = await r.json();
+      alert(path + '\n\n' + JSON.stringify(data, null, 2).substring(0, 1500));
+    }
+
+    async function customCall() {
+      const path = document.getElementById('api-url').value;
+      const method = document.getElementById('api-method').value;
+      const body = document.getElementById('api-body').value;
+      const headers = {'Content-Type': 'application/json'};
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+      const opts = { method, headers };
+      if (method !== 'GET' && body) opts.body = body;
+      try {
+        const r = await fetch(path, opts);
+        const text = await r.text();
+        const pre = document.getElementById('api-result');
+        pre.style.display = 'block';
+        try { pre.textContent = 'HTTP ' + r.status + '\n' + JSON.stringify(JSON.parse(text), null, 2); }
+        catch { pre.textContent = 'HTTP ' + r.status + '\n' + text; }
+      } catch (e) {
+        document.getElementById('api-result').style.display = 'block';
+        document.getElementById('api-result').textContent = '❌ ' + e.message;
+      }
+    }
+  </script>
+</body>
+</html>
