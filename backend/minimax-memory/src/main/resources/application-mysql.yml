@@ -8,6 +8,19 @@
 server:
   port: ${SERVER_PORT:0}   # 由各服务 application.yml 默认值覆盖
 
+# 关闭 OTEL exporter (避免连 localhost:4318 失败)
+otel:
+  metrics:
+    exporter: none
+  traces:
+    exporter: none
+  logs:
+    exporter: none
+  # 关掉 javaagent 自动 attach
+  java:
+    global-autoconfigure:
+      enabled: false
+
 spring:
   main:
     allow-bean-definition-overriding: true
@@ -23,6 +36,15 @@ spring:
   sql:
     init:
       mode: never   # 生产环境不要自动跑 schema
+
+# 关闭 OTEL tracing (避免 OTLP endpoint 报错)
+management:
+  tracing:
+    enabled: false
+  otlp:
+    tracing:
+      endpoint: ''
+
   data:
     redis:
       host: ${REDIS_HOST:127.0.0.1}
@@ -43,7 +65,7 @@ spring:
 # MyBatis-Plus (MySQL 启用下划线映射)
 mybatis-plus:
   configuration:
-    map-underscore-to-camel-case: true
+    map-underscore-to-camel-case: false
     log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
   global-config:
     db-config:
@@ -51,8 +73,8 @@ mybatis-plus:
       logic-delete-field: deleted
       logic-delete-value: 1
       logic-not-delete-value: 0
-      table-underline: true
-      column-underline: true
+      table-underline: false
+      column-underline: false
 
 logging:
   level:
