@@ -40,7 +40,7 @@ public class CollabRoom {
     private Long id;
 
     /** 房间唯一标识 (UUID, 短码便于分享) */
-    @TableField("roomId")
+    @TableField("room_id")
     private String roomId;
 
     /** 房间名称 */
@@ -52,11 +52,11 @@ public class CollabRoom {
     private String type;
 
     /** 创建者用户 ID */
-    @TableField("ownerId")
+    @TableField("owner_id")
     private Long ownerId;
 
     /** 创建者用户名 (冗余便于查询) */
-    @TableField("ownerName")
+    @TableField("owner_name")
     private String ownerName;
 
     /** 房间描述 */
@@ -64,11 +64,11 @@ public class CollabRoom {
     private String description;
 
     /** 是否公开 (公开房间任何用户可加入) */
-    @TableField("isPublic")
+    @TableField("is_public")
     private Integer isPublic;
 
     /** 最大参与人数 */
-    @TableField("maxParticipants")
+    @TableField("max_participants")
     private Integer maxParticipants;
 
     /** 状态: ACTIVE / CLOSED */
@@ -76,18 +76,18 @@ public class CollabRoom {
     private String status;
 
     /** 当前参与人数 (冗余, 实时更新) */
-    @TableField("currentParticipants")
+    @TableField("current_participants")
     private Integer currentParticipants;
 
     /** 创建时间 */
-    @TableField("createdAt")
+    @TableField("created_at")
     private LocalDateTime createdAt;
 
     /** 最后活跃时间 */
-    @TableField("lastActivityAt")
+    @TableField("last_activity_at")
     private LocalDateTime lastActivityAt;
 
     /** 关闭时间 */
-    @TableField("closedAt")
+    @TableField("closed_at")
     private LocalDateTime closedAt;
 }

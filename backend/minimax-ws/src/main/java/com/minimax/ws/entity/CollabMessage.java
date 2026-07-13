@@ -42,11 +42,11 @@ public class CollabMessage {
     private Long id;
 
     /** 房间 ID */
-    @TableField("roomId")
+    @TableField("room_id")
     private String roomId;
 
     /** 发送者用户 ID (SYSTEM 消息为 null) */
-    @TableField("userId")
+    @TableField("user_id")
     private Long userId;
 
     /** 发送者用户名 */
@@ -70,7 +70,7 @@ public class CollabMessage {
     private String metadata;
 
     /** 客户端消息 ID (用于去重) */
-    @TableField("clientMsgId")
+    @TableField("client_msg_id")
     private String clientMsgId;
 
     /** 是否广播到所有参与者 */
@@ -78,6 +78,6 @@ public class CollabMessage {
     private Integer broadcast;
 
     /** 发送时间 */
-    @TableField("createdAt")
+    @TableField("created_at")
     private LocalDateTime createdAt;
 }

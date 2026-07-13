@@ -99,8 +99,11 @@ def parse_entity(path):
         is_insert_fill = 'FieldFill.INSERT' in annots
         is_update_fill = 'FieldFill.INSERT_UPDATE' in annots
 
-        # 显式列名
-        col_name = field_name
+        # SQL 列名:
+        # - 如果 @TableField("xxx") 显式映射, 用映射名
+        # - 否则 entity 字段 (camelCase) 转 snake_case
+        # 这样跟 MyBatis-Plus map-underscore-to-camel-case: true 默认行为匹配
+        col_name = to_snake(field_name)
         m_col = re.search(r'@TableField\s*\(\s*(?:value\s*=\s*)?"(\w+)"', annots)
         if m_col:
             col_name = m_col.group(1)

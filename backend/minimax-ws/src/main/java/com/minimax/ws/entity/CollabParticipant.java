@@ -37,11 +37,11 @@ public class CollabParticipant {
     private Long id;
 
     /** 房间 ID */
-    @TableField("roomId")
+    @TableField("room_id")
     private String roomId;
 
     /** 用户 ID */
-    @TableField("userId")
+    @TableField("user_id")
     private Long userId;
 
     /** 用户名 (冗余) */
@@ -61,15 +61,15 @@ public class CollabParticipant {
     private String role;
 
     /** 当前光标 X 坐标 (编辑器场景, 像素) */
-    @TableField("cursorX")
+    @TableField("cursor_x")
     private Integer cursorX;
 
     /** 当前光标 Y 坐标 */
-    @TableField("cursorY")
+    @TableField("cursor_y")
     private Integer cursorY;
 
     /** 当前选中元素 ID (DOM 元素或消息 ID) */
-    @TableField("selectionId")
+    @TableField("selection_id")
     private String selectionId;
 
     /** 在线状态: ONLINE / AWAY / OFFLINE */
@@ -77,14 +77,14 @@ public class CollabParticipant {
     private String status;
 
     /** 加入时间 */
-    @TableField("joinedAt")
+    @TableField("joined_at")
     private LocalDateTime joinedAt;
 
     /** 离开时间 (null = 在线) */
-    @TableField("leftAt")
+    @TableField("left_at")
     private LocalDateTime leftAt;
 
     /** 最后心跳时间 */
-    @TableField("lastHeartbeat")
+    @TableField("last_heartbeat")
     private LocalDateTime lastHeartbeat;
 }

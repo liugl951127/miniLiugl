@@ -22,7 +22,7 @@ spring:
   sql:
     init:
       mode: always
-      schema-locations: classpath:schema-h2.sql
+      schema-locations: classpath:complete-h2.sql
       continue-on-error: false
   h2:
     console:
@@ -58,8 +58,8 @@ logging:
 # V3.5.2 H2 沙箱: 关闭下划线命名映射 (entity field name 直接作 column)
 mybatis-plus:
   configuration:
-    map-underscore-to-camel-case: false
+    map-underscore-to-camel-case: true
   global-config:
     db-config:
-      table-underline: false
-      column-underline: false
+      table-underline: true
+      column-underline: true

@@ -65,7 +65,7 @@ management:
 # MyBatis-Plus (MySQL 启用下划线映射)
 mybatis-plus:
   configuration:
-    map-underscore-to-camel-case: false
+    map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
   global-config:
     db-config:
@@ -73,8 +73,8 @@ mybatis-plus:
       logic-delete-field: deleted
       logic-delete-value: 1
       logic-not-delete-value: 0
-      table-underline: false
-      column-underline: false
+      table-underline: true
+      column-underline: true
 
 logging:
   level:

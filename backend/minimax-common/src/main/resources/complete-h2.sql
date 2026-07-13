@@ -9,8 +9,6 @@
 --   2. 增量修复: mysql -uroot -proot123456 minimax_platform < complete.sql
 -- =============================================================
 
-CREATE DATABASE IF NOT EXISTS `minimax_platform` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `minimax_platform`;
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;

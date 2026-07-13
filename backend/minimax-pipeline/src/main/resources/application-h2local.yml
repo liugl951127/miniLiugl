@@ -18,7 +18,7 @@ spring:
   sql:
     init:
       mode: always
-      schema-locations: classpath:schema-h2.sql
+      schema-locations: classpath:complete-h2.sql
       continue-on-error: false
   data:
     redis:
@@ -37,11 +37,11 @@ spring:
 # MyBatis-Plus H2 兼容
 mybatis-plus:
   configuration:
-    map-underscore-to-camel-case: false
+    map-underscore-to-camel-case: true
   global-config:
     db-config:
-      table-underline: false
-      column-underline: false
+      table-underline: true
+      column-underline: true
 
 logging:
   level:
