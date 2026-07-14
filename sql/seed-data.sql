@@ -330,3 +330,311 @@ INSERT INTO `kg_entity` (`id`, `name`, `aliases`, `entity_type`, `description`, 
 --   知识图谱实体 3
 -- 合计: 124 条种子数据
 -- =========================================
+-- =========================================
+-- MiniMax Platform V3.5.8 增量种子数据 (18 张新表 + 50+ 条)
+-- =========================================
+-- 时间: 2026-07-14
+-- 加载: 在 sql/seed-data.sql 之后执行
+-- 兼容: MySQL 8 / MariaDB / H2 (MODE=MySQL)
+-- 字符集: UTF-8 (含中文)
+
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+
+-- =========================================
+-- 1. auth_login_log (登录日志, 5 条)
+-- =========================================
+INSERT INTO `auth_login_log` (`id`, `user_id`, `username`, `ip`, `user_agent`, `status`, `message`, `created_at`) VALUES
+(1, 1, 'adminLiugl', '192.168.1.10', 'Mozilla/5.0 Chrome/120', 1, '登录成功', '2026-07-14 10:00:00'),
+(2, 1, 'adminLiugl', '192.168.1.10', 'Mozilla/5.0 Chrome/120', 1, '登录成功', '2026-07-14 04:00:00'),
+(3, 3, 'test_user', '10.0.0.5', 'Mozilla/5.0 Safari/17', 1, '登录成功', '2026-07-14 07:00:00'),
+(4, 4, 'demo_user', '172.16.0.20', 'Mozilla/5.0 iOS/17', 1, '登录成功', '2026-07-13 09:00:00'),
+(5, 99, 'unknown', '203.0.113.50', 'curl/8.4', 0, '密码错误', '2026-07-14 11:00:00');
+
+
+-- =========================================
+-- 2. auth_refresh_token (刷新令牌, 3 条)
+-- =========================================
+INSERT INTO `auth_refresh_token` (`id`, `user_id`, `token`, `expires_at`, `revoked`, `created_at`) VALUES
+(1, 1, 'rt_adminLiugl_eyJhbGciOiJIUzI1NiJ9_refresh_a1b2c3d4e5f6', '2026-07-21 12:00:00', 0, '2026-07-14 10:00:00'),
+(2, 3, 'rt_test_user_eyJhbGciOiJIUzI1NiJ9_refresh_b2c3d4e5f6g7', '2026-07-21 12:00:00', 0, '2026-07-14 07:00:00'),
+(3, 4, 'rt_demo_user_eyJhbGciOiJIUzI1NiJ9_refresh_c3d4e5f6g7h8', '2026-07-21 12:00:00', 1, '2026-07-13 09:00:00');
+
+
+-- =========================================
+-- 3. chat_session (聊天会话, 4 条)
+-- =========================================
+INSERT INTO `chat_session` (`id`, `user_id`, `title`, `model`, `system_prompt`, `temperature`, `status`, `message_count`, `last_message_at`, `tenant_id`, `created_at`, `updated_at`, `deleted`) VALUES
+(1, 1, '产品需求讨论', 'gpt-4o', '你是专业的产品经理', 0.7000, 1, 6, '2026-07-14 11:00:00', 1, '2026-07-14 09:00:00', '2026-07-14 11:00:00', 0),
+(2, 1, '代码 Review', 'claude-3.5-sonnet', '你是资深工程师, 严格审查代码', 0.3000, 1, 4, '2026-07-14 08:00:00', 1, '2026-07-14 06:00:00', '2026-07-14 08:00:00', 0),
+(3, 3, 'SQL 优化咨询', 'deepseek-coder', '你是 SQL 优化专家', 0.5000, 1, 2, '2026-07-13 10:00:00', 1, '2026-07-13 07:00:00', '2026-07-13 10:00:00', 0),
+(4, 4, '翻译助手', 'gpt-4o-mini', '你是中英翻译', 0.3000, 1, 8, '2026-07-14 10:00:00', 2, '2026-07-14 04:00:00', '2026-07-14 10:00:00', 0);
+
+
+-- =========================================
+-- 4. chat_message (聊天消息, 10 条)
+-- =========================================
+INSERT INTO `chat_message` (`id`, `session_id`, `user_id`, `role`, `content`, `tokens`, `finish_reason`, `error_message`, `created_at`, `deleted`) VALUES
+(1, 1, 1, 'user', '我想做一个 AI 客服系统, 需要哪些模块?', 24, NULL, NULL, '2026-07-14 09:00:00', 0),
+(2, 1, 1, 'assistant', 'AI 客服系统核心模块: 1) 对话引擎 2) 知识库 RAG 3) 工单系统 4) 多轮管理 5) 人工接管...', 256, 'stop', NULL, '2026-07-14 09:00:00', 0),
+(3, 1, 1, 'user', '需要多少人力?', 12, NULL, NULL, '2026-07-14 09:00:00', 0),
+(4, 1, 1, 'assistant', '建议 3-5 人: 1 PM + 1 后端 + 1 算法 + 1 前端 + 1 测试', 86, 'stop', NULL, '2026-07-14 09:00:00', 0),
+(5, 2, 1, 'user', 'Review this Python code: def add(a, b): return a + b', 32, NULL, NULL, '2026-07-14 08:00:00', 0),
+(6, 2, 1, 'assistant', '建议加类型注解: def add(a: int, b: int) -> int: return a + b', 64, 'stop', NULL, '2026-07-14 08:00:00', 0),
+(7, 3, 3, 'user', '如何优化这条 SQL: SELECT * FROM orders WHERE date > 2025-01-01', 36, NULL, NULL, '2026-07-13 10:00:00', 0),
+(8, 3, 3, 'assistant', '建议: 1) 加索引 2) LIMIT 限制 3) 指定字段代替 *', 92, 'stop', NULL, '2026-07-13 10:00:00', 0),
+(9, 4, 4, 'user', 'Translate: Hello World', 8, NULL, NULL, '2026-07-14 10:00:00', 0),
+(10, 4, 4, 'assistant', '你好, 世界', 6, 'stop', NULL, '2026-07-14 10:00:00', 0);
+
+
+-- =========================================
+-- 5. agent_task (Agent 任务, 3 条)
+-- =========================================
+INSERT INTO `agent_task` (`id`, `task_id`, `user_id`, `goal`, `status`, `rounds`, `result`, `llm_calls`, `tool_calls`, `total_tokens`, `error_msg`, `latency_ms`, `created_at`, `updated_at`, `deleted`) VALUES
+(1, 'task_a1b2c3d4', 1, '分析上周销售数据并生成周报', 'success', 5, '已生成 8 页 PDF 周报, 包含 6 个核心指标', 12, 4, 8420, NULL, 23450, '2026-07-14 06:00:00', '2026-07-14 06:00:00', 0),
+(2, 'task_e5f6g7h8', 3, '帮我优化 5 个慢查询', 'running', 3, NULL, 6, 2, 4150, NULL, 12800, '2026-07-14 10:00:00', '2026-07-14 11:00:00', 0),
+(3, 'task_i9j0k1l2', 1, '翻译文档到 3 种语言', 'failed', 2, NULL, 4, 0, 1230, 'rate limit exceeded', 8500, '2026-07-14 04:00:00', '2026-07-14 04:00:00', 0);
+
+
+-- =========================================
+-- 6. alert_event (告警事件, 3 条)
+-- =========================================
+INSERT INTO `alert_event` (`id`, `rule_id`, `rule_name`, `severity`, `metric_name`, `message`, `status`, `fired_at`, `resolved_at`, `acked_at`, `acked_by`, `duration`) VALUES
+(1, 1, 'CPU > 80%', 'warning', 'system.cpu.usage', 'CPU 使用率达 92%', 'recovered', '2026-07-14 08:00:00', '2026-07-14 10:00:00', '2026-07-14 10:00:00', 1, 7200000),
+(2, 2, 'Memory > 90%', 'critical', 'jvm.memory.used', 'JVM 堆内存使用 95%', 'firing', '2026-07-14 11:30:00', NULL, NULL, 0, 1800000),
+(3, 3, '5xx 错误率', 'warning', 'http.error.5xx.rate', '5xx 错误率达 5.2%', 'acked', '2026-07-14 09:00:00', NULL, '2026-07-14 10:00:00', 1, 3600000);
+
+
+-- =========================================
+-- 7. model_battle_log (模型对决日志, 3 条)
+-- =========================================
+INSERT INTO `model_battle_log` (`id`, `user_id`, `prompt`, `models`, `winner`, `latency`, `tokens`, `score`, `created_at`) VALUES
+(1, 1, '解释 REST API 和 GraphQL 区别', 'gpt-4o,claude-3.5,deepseek-coder,gemini-pro', 'claude-3.5', 4520, 1820, 4.5, '2026-07-14 07:00:00'),
+(2, 3, '写一个 Python 快速排序', 'gpt-4o,deepseek-coder,claude-3.5', 'deepseek-coder', 2340, 980, 4.8, '2026-07-14 09:00:00'),
+(3, 1, '总结《百年孤独》', 'gpt-4o,claude-3.5,gemini-pro', 'gpt-4o', 5680, 2150, 4.6, '2026-07-14 11:00:00');
+
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- =========================================
+-- 8. function_call_log (函数调用日志, 5 条)
+-- =========================================
+INSERT INTO `function_call_log` (`id`, `user_id`, `session_id`, `tool_name`, `arguments`, `result`, `status`, `error_msg`, `duration_ms`, `ip`, `user_agent`, `created_at`) VALUES
+(1, 1, 1, 'sql_query', '{"sql":"SELECT COUNT(*) FROM users"}', '{"count":1234}', 'success', NULL, 120, '192.168.1.10', 'Mozilla/5.0', '2026-07-14 11:00:00'),
+(2, 1, 1, 'web_search', '{"query":"Spring Boot 3 新特性"}', '{"results":12}', 'success', NULL, 850, '192.168.1.10', 'Mozilla/5.0', '2026-07-14 11:00:00'),
+(3, 3, 2, 'code_runner', '{"code":"print(1+1)","lang":"python"}', '{"output":"2"}', 'success', NULL, 240, '10.0.0.5', 'Mozilla/5.0', '2026-07-14 10:00:00'),
+(4, 1, 3, 'sql_query', '{"sql":"DROP TABLE users"}', NULL, 'failed', '权限不足', 50, '192.168.1.10', 'Mozilla/5.0', '2026-07-14 09:00:00'),
+(5, 4, 4, 'image_gen', '{"prompt":"a cat","size":"1024x1024"}', '{"url":"https://cdn.example.com/cat.png"}', 'success', NULL, 4200, '172.16.0.20', 'Mobile/15', '2026-07-14 08:00:00');
+
+
+-- =========================================
+-- 9. analytics_datasource (数据源, 2 条)
+-- =========================================
+INSERT INTO `analytics_datasource` (`id`, `user_id`, `name`, `type`, `jdbc_url`, `username`, `password_enc`, `description`, `deleted`, `created_at`, `updated_at`) VALUES
+(1, 1, '生产订单库', 'mysql', 'jdbc:mysql://mysql-prod:3306/orders?useSSL=true', 'readonly_user', 'enc_aes256_***', '生产环境订单数据 (只读)', 0, '2026-07-13 21:00:00', '2026-07-13 21:00:00'),
+(2, 1, '日志分析库', 'clickhouse', 'jdbc:clickhouse://clickhouse:8123/logs', 'log_reader', 'enc_aes256_***', '用户行为日志 (聚合)', 0, '2026-07-14 02:00:00', '2026-07-14 02:00:00');
+
+
+-- =========================================
+-- 10. pipeline_run (工作流运行, 2 条)
+-- =========================================
+INSERT INTO `pipeline_run` (`id`, `workflow_id`, `workflow_name`, `status`, `trigger_by`, `trigger_type`, `definition_snapshot`, `start_time`, `end_time`, `duration_ms`, `error_message`, `result_summary`) VALUES
+(1, 1, '智能问答工作流', 'success', 1, 'manual', '{"nodes":5,"edges":6}', '2026-07-14 09:00:00', '2026-07-14 09:00:00', 12450, NULL, '处理 12 个问题, 成功率 92%'),
+(2, 2, '数据分析流水线', 'running', 3, 'schedule', '{"nodes":8,"edges":10}', '2026-07-14 11:45:00', NULL, 0, NULL, '执行中...');
+
+
+-- =========================================
+-- 11. ai_tool_invocation (AI 工具调用, 4 条)
+-- =========================================
+INSERT INTO `ai_tool_invocation` (`id`, `tool_code`, `user_id`, `username`, `input_json`, `output_json`, `status`, `error_message`, `duration_ms`, `ip`, `created_at`) VALUES
+(1, 'web_search', 1, 'adminLiugl', '{"q":"Vue 3 教程"}', '{"items":10}', 'success', NULL, 1200, '192.168.1.10', '2026-07-14 10:00:00'),
+(2, 'sql_query', 1, 'adminLiugl', '{"sql":"SELECT * FROM users LIMIT 5"}', '{"rows":5}', 'success', NULL, 85, '192.168.1.10', '2026-07-14 09:00:00'),
+(3, 'code_runner', 3, 'test_user', '{"code":"[x*2 for x in range(5)]","lang":"python"}', '{"output":"[0,2,4,6,8]"}', 'success', NULL, 180, '10.0.0.5', '2026-07-14 11:00:00'),
+(4, 'image_gen', 4, 'demo_user', '{"prompt":"mountain sunset"}', '{"url":"https://cdn/img/001.png"}', 'success', NULL, 3500, '172.16.0.20', '2026-07-14 08:00:00');
+
+
+-- =========================================
+-- 12. dashboard_metric (仪表盘指标, 5 条)
+-- =========================================
+INSERT INTO `dashboard_metric` (`id`, `metric`, `dimension`, `value`, `tags`, `timestamp`) VALUES
+(1, 'api.requests.count', 'endpoint=/chat', 12450, '{''tenant'':''default''}', '2026-07-14 11:55:00'),
+(2, 'api.latency.avg', 'endpoint=/chat', 235.6, '{''unit'':''ms''}', '2026-07-14 11:55:00'),
+(3, 'llm.tokens.used', 'model=gpt-4o', 845000, '{''unit'':''tokens''}', '2026-07-14 11:55:00'),
+(4, 'active.users', 'tenant=default', 234, NULL, '2026-07-14 11:55:00'),
+(5, 'error.rate', 'service=minimax-ai', 0.02, '{''unit'':''%''}', '2026-07-14 11:55:00');
+
+
+-- =========================================
+-- 13. ai_chat_session (AI 对话会话, 3 条)
+-- =========================================
+INSERT INTO `ai_chat_session` (`id`, `session_id`, `user_id`, `username`, `title`, `created_at`, `updated_at`, `deleted`) VALUES
+(1, 'sess_ai_a1b2c3', 1, 'adminLiugl', '帮我设计 API', '2026-07-14 08:00:00', '2026-07-14 09:00:00', 0),
+(2, 'sess_ai_d4e5f6', 3, 'test_user', '学习 Rust', '2026-07-14 10:00:00', '2026-07-14 11:00:00', 0),
+(3, 'sess_ai_g7h8i9', 4, 'demo_user', '健身计划', '2026-07-13 07:00:00', '2026-07-13 10:00:00', 0);
+
+
+-- =========================================
+-- 14. ai_chat_message (AI 对话消息, 8 条)
+-- =========================================
+INSERT INTO `ai_chat_message` (`id`, `session_id`, `role`, `content`, `tool_code`, `tool_input`, `tool_output`, `created_at`) VALUES
+(1, 'sess_ai_a1b2c3', 'user', '设计 RESTful API 有什么原则?', NULL, NULL, NULL, '2026-07-14 08:00:00'),
+(2, 'sess_ai_a1b2c3', 'assistant', 'RESTful 6 大原则: 1) 客户端-服务器 2) 无状态 3) 缓存 4) 分层 5) 统一接口 6) 按需代码', NULL, NULL, NULL, '2026-07-14 08:00:00'),
+(3, 'sess_ai_d4e5f6', 'user', 'Rust 所有权是什么?', NULL, NULL, NULL, '2026-07-14 10:00:00'),
+(4, 'sess_ai_d4e5f6', 'assistant', '所有权是 Rust 核心: 每个值有唯一所有者, 离开作用域自动释放, 避免内存泄漏', NULL, NULL, NULL, '2026-07-14 10:00:00'),
+(5, 'sess_ai_d4e5f6', 'user', '给我个例子', NULL, NULL, NULL, '2026-07-14 11:00:00'),
+(6, 'sess_ai_d4e5f6', 'assistant', 'let s = String::from("hello"); // s 是所有者', 'code_runner', '{"code":"fn main() { let s = String::from(\"hi\"); println!(\"{}\", s); }"}', 'compiled', '2026-07-14 11:00:00'),
+(7, 'sess_ai_g7h8i9', 'user', '一周健身计划', NULL, NULL, NULL, '2026-07-13 07:00:00'),
+(8, 'sess_ai_g7h8i9', 'assistant', '周一胸/三头, 周二背/二头, 周三腿, 周四休息, 周五肩, 周六有氧, 周日拉伸', NULL, NULL, NULL, '2026-07-13 07:00:00');
+
+
+-- =========================================
+-- 15. model_quota (模型配额, 4 条)
+-- =========================================
+INSERT INTO `model_quota` (`id`, `user_id`, `model_id`, `quota_date`, `used_tokens`, `used_requests`, `limit_tokens`, `limit_requests`, `created_at`, `updated_at`) VALUES
+(1, 1, 1, '2026-07-14', 124500, 245, 1000000, 5000, '2026-07-14 12:00:00', '2026-07-14 12:00:00'),
+(2, 1, 2, '2026-07-14', 45200, 89, 500000, 2000, '2026-07-14 12:00:00', '2026-07-14 12:00:00'),
+(3, 3, 1, '2026-07-14', 18200, 56, 100000, 500, '2026-07-14 12:00:00', '2026-07-14 12:00:00'),
+(4, 4, 3, '2026-07-14', 5400, 23, 50000, 200, '2026-07-14 12:00:00', '2026-07-14 12:00:00');
+
+
+-- =========================================
+-- 16. push_message (推送消息, 3 条)
+-- =========================================
+INSERT INTO `push_message` (`id`, `message_id`, `title`, `body`, `icon`, `click_action`, `data`, `target_type`, `target_value`, `status`) VALUES
+(1, 'msg_2026_07_a1', '新功能上线', 'V3.5.8 数据分析能力已上线, 试试 SQL 查询', '/icons/rocket.png', '/admin/ai-market', '{"feature":"data_analysis"}', 'all', '*', 'sent'),
+(2, 'msg_2026_07_b2', '系统维护', '今晚 23:00-01:00 系统维护, 请提前保存', '/icons/wrench.png', '/about', '{"maintenance":true}', 'all', '*', 'sent'),
+(3, 'msg_2026_07_c3', '优惠活动', '新用户注册即送 10000 tokens!', '/icons/gift.png', '/register', '{"promo":"new_user"}', 'role', 'guest', 'draft');
+
+
+-- =========================================
+-- 17. moderation_record (审核记录, 3 条)
+-- =========================================
+INSERT INTO `moderation_record` (`id`, `trace_id`, `user_id`, `username`, `content_type`, `content_hash`, `content_size`, `content_url`, `moderation_status`, `risk_level`) VALUES
+(1, 'trace_mod_a1b2', 1, 'adminLiugl', 'text', 'sha256_aaa111', 256, NULL, 'pass', 'low'),
+(2, 'trace_mod_c3d4', 3, 'test_user', 'image', 'sha256_bbb222', 524288, 'https://cdn/img/test.jpg', 'pass', 'low'),
+(3, 'trace_mod_e5f6', 99, 'spammer', 'text', 'sha256_ccc333', 1024, NULL, 'block', 'high');
+
+
+-- =========================================
+-- 18. multimedia_file (多媒体文件, 2 条)
+-- =========================================
+INSERT INTO `multimedia_file` (`id`, `file_id`, `user_id`, `username`, `file_name`, `original_name`, `file_type`, `mime_type`, `file_size`, `file_hash`) VALUES
+(1, 'file_a1b2c3d4', 1, 'adminLiugl', '2026_product_intro.png', '产品介绍图.png', 'image', 'image/png', 524288, 'sha256_img001'),
+(2, 'file_e5f6g7h8', 3, 'test_user', 'audio_001.mp3', 'meeting.mp3', 'audio', 'audio/mpeg', 3145728, 'sha256_aud001');
+
+
+-- =========================================
+-- 19. audit_log (审计日志, 3 条)
+-- =========================================
+INSERT INTO `audit_log` (`id`, `trace_id`, `user_id`, `username`, `user_ip`, `user_agent`, `action`, `resource_type`, `resource_id`, `method`) VALUES
+(1, 'trace_aud_a1', 1, 'adminLiugl', '192.168.1.10', 'Mozilla/5.0', 'create', 'model', '1', 'POST'),
+(2, 'trace_aud_b2', 1, 'adminLiugl', '192.168.1.10', 'Mozilla/5.0', 'update', 'alert_rule', '2', 'PUT'),
+(3, 'trace_aud_c3', 3, 'test_user', '10.0.0.5', 'Mozilla/5.0', 'delete', 'chat_session', '5', 'DELETE');
+
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- =========================================
+-- 20. kg_relation (知识图谱关系, 4 条)
+-- =========================================
+INSERT INTO `kg_relation` (`id`, `user_id`, `from_entity`, `to_entity`, `relation_type`, `description`, `weight`, `source`, `ref_count`, `created_at`) VALUES
+(1, 1, 1, 2, 'developed_by', 'Platform 由 MiniMax 开发', 1.0000, 'system', 15, '2026-07-13 06:00:1783922400'),
+(2, 1, 1, 3, 'uses', 'Platform 使用 RAG 技术', 0.9500, 'system', 12, '2026-07-13 06:00:1783922400'),
+(3, 1, 1, 4, 'supports', 'Platform 支持 17 微服务', 0.9000, 'system', 8, '2026-07-13 06:00:1783922400'),
+(4, 1, 1, 5, 'contains', 'Platform 包含 AI 模块', 0.8500, 'system', 6, '2026-07-13 06:00:1783922400');
+
+
+-- =========================================
+-- 21. collab_room (协作房间, 3 条)
+-- =========================================
+INSERT INTO `collab_room` (`id`, `roomId`, `name`, `type`, `ownerId`, `ownerName`, `description`, `isPublic`, `maxParticipants`, `status`) VALUES
+(1, 'room_a1b2c3', '产品需求讨论', 'chat', 1, 'adminLiugl', '团队产品需求实时讨论', 0, 10, 'active'),
+(2, 'room_d4e5f6', '代码审查', 'code', 1, 'adminLiugl', 'PR 实时审查', 1, 5, 'active'),
+(3, 'room_g7h8i9', '数据看板', 'dashboard', 3, 'test_user', '实时数据监控', 0, 20, 'active');
+
+
+-- =========================================
+-- 22. pipeline_node_log (工作流节点日志, 4 条)
+-- =========================================
+INSERT INTO `pipeline_node_log` (`id`, `run_id`, `node_id`, `node_type`, `node_name`, `status`, `start_time`, `end_time`, `duration_ms`, `input_rows`) VALUES
+(1, 1, 'node_input_1', 'input', '用户输入', 'success', '2026-07-14 09:00:1784019600', '2026-07-14 09:00:1784019600', 50, 1),
+(2, 1, 'node_llm_1', 'llm', 'GPT-4 推理', 'success', '2026-07-14 09:00:1784019600', '2026-07-14 09:00:1784019600', 4200, 1),
+(3, 1, 'node_output_1', 'output', '返回结果', 'success', '2026-07-14 09:00:1784019600', '2026-07-14 09:00:1784019600', 80, 1),
+(4, 2, 'node_sql_1', 'sql', '查询订单', 'running', '2026-07-14 11:45:1784029500', NULL, 0, 0);
+
+
+-- =========================================
+-- 23. model_config (模型配置, 5 条)
+-- =========================================
+INSERT INTO `model_config` (`id`, `provider_id`, `model_code`, `display_name`, `max_context`, `max_output`, `input_price`, `output_price`, `supports_vision`, `supports_tools`) VALUES
+(1, 1, 'gpt-4o', 'GPT-4o', 128000, 4096, 0.0050, 0.0150, 1, 1),
+(2, 1, 'gpt-4o-mini', 'GPT-4o Mini', 128000, 16384, 0.0002, 0.0006, 1, 1),
+(3, 2, 'claude-3.5-sonnet', 'Claude 3.5 Sonnet', 200000, 8192, 0.0030, 0.0150, 1, 1),
+(4, 3, 'deepseek-coder', 'DeepSeek Coder', 32000, 4096, 0.0001, 0.0002, 0, 1),
+(5, 4, 'gemini-pro-1.5', 'Gemini Pro 1.5', 1000000, 8192, 0.0035, 0.0105, 1, 1);
+
+
+-- =========================================
+-- 24. kb_document (知识库文档, 3 条)
+-- =========================================
+INSERT INTO `kb_document` (`id`, `doc_id`, `kb_id`, `filename`, `mime_type`, `size_bytes`, `sha256`, `file_path`, `source`, `source_url`) VALUES
+(1, 'doc_a1b2c3', '1', 'platform_intro.md', 'text/markdown', 15360, 'sha256_doc001', '/data/kb/1/doc001.md', 'upload', NULL),
+(2, 'doc_d4e5f6', '1', 'api_quickstart.md', 'text/markdown', 24576, 'sha256_doc002', '/data/kb/1/doc002.md', 'upload', NULL),
+(3, 'doc_g7h8i9', '2', 'faq.pdf', 'application/pdf', 524288, 'sha256_doc003', '/data/kb/2/doc003.pdf', 'web', 'https://docs.example.com/faq.pdf');
+
+
+-- =========================================
+-- 25. kb_chunk (知识库块, 4 条)
+-- =========================================
+INSERT INTO `kb_chunk` (`id`, `chunk_id`, `doc_id`, `kb_id`, `seq`, `content`, `char_count`, `token_count`, `embedding`, `embedding_model`) VALUES
+(1, 'chunk_a1', 'doc_a1b2c3', '1', 1, 'MiniMax Platform 是企业级 LLM 应用平台', 32, 18, 'emb_a1b2c3d4', 'text-embedding-3-small'),
+(2, 'chunk_a2', 'doc_a1b2c3', '1', 2, '支持 17 个微服务, 涵盖 AI 全场景', 28, 15, 'emb_e5f6g7h8', 'text-embedding-3-small'),
+(3, 'chunk_b1', 'doc_d4e5f6', '1', 1, 'API 调用请参考 /api/v1/*', 24, 13, 'emb_i9j0k1l2', 'text-embedding-3-small'),
+(4, 'chunk_b2', 'doc_d4e5f6', '1', 2, '鉴权用 Bearer Token', 18, 10, 'emb_m3n4o5p6', 'text-embedding-3-small');
+
+
+-- =========================================
+-- 26. agent_group (Agent 群组, 3 条)
+-- =========================================
+INSERT INTO `agent_group` (`id`, `name`, `description`, `owner_id`, `member_count`, `created_at`) VALUES
+(1, '开发组', '后端 + 前端 + 测试', 1, 8, '2026-07-13 06:00:1783922400'),
+(2, '数据组', '数据分析 + 算法', 1, 5, '2026-07-13 11:00:1783940400'),
+(3, '运维组', 'DevOps + SRE', 1, 3, '2026-07-13 16:00:1783958400');
+
+
+-- =========================================
+-- 27. training_job (训练任务, 2 条)
+-- =========================================
+INSERT INTO `training_job` (`id`, `job_name`, `model_name`, `dataset_name`, `status`, `epochs`, `batch_size`, `learning_rate`, `loss`, `accuracy`, `started_at`, `finished_at`) VALUES
+(1, 'sentiment-finetune-v1', 'bert-base-chinese', 'weibo-sentiment-100k', 'success', 3, 32, 0.00002, 0.1234, 0.9234, '2026-07-13 07:00:1783926000', '2026-07-14 10:00:1784023200'),
+(2, 'qa-finetune-v2', 'qwen-1.5b', 'custom-qa-50k', 'running', 1, 16, 0.00001, 0.4521, 0.7856, '2026-07-14 09:00:1784019600', NULL);
+
+
+-- =========================================
+-- 28. analytics_nlsql_history (NL2SQL 历史, 4 条)
+-- =========================================
+INSERT INTO `analytics_nlsql_history` (`id`, `user_id`, `question`, `generated_sql`, `data_source_id`, `status`, `row_count`, `duration_ms`, `created_at`) VALUES
+(1, 1, '上月订单总数', 'SELECT COUNT(*) FROM orders WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 MONTH)', 1, 'success', 1234, 120, '2026-07-14 10:00:1784023200'),
+(2, 1, '本周活跃用户', 'SELECT COUNT(DISTINCT user_id) FROM events WHERE ts > DATE_SUB(NOW(), INTERVAL 7 DAY)', 1, 'success', 567, 85, '2026-07-14 08:00:1784016000'),
+(3, 3, '畅销产品 TOP 10', 'SELECT product_id, SUM(qty) as total FROM order_items GROUP BY product_id ORDER BY total DESC LIMIT 10', 1, 'success', 10, 220, '2026-07-14 09:00:1784019600'),
+(4, 1, '上月营收', 'SELECT SUM(amount) FROM payments WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 MONTH)', 1, 'failed', 0, 50, '2026-07-14 11:00:1784026800');
+
+
+-- =========================================
+-- 29. analytics_report (分析报告, 3 条)
+-- =========================================
+INSERT INTO `analytics_report` (`id`, `report_name`, `report_type`, `data_source_id`, `format`, `file_path`, `file_size`, `status`, `creator_id`, `created_at`) VALUES
+(1, '2026 Q2 销售报告', 'quarterly', 1, 'pdf', '/reports/2026_q2_sales.pdf', 2048576, 'ready', 1, '2026-07-14 07:00:1784012400'),
+(2, '用户增长周报', 'weekly', 1, 'html', '/reports/weekly_growth.html', 524288, 'ready', 1, '2026-07-14 09:00:1784019600'),
+(3, '产品库存月报', 'monthly', 1, 'xlsx', '/reports/monthly_inventory.xlsx', 1048576, 'generating', 3, '2026-07-14 11:00:1784026800');
+
+
+-- =========================================
+-- 30. billing_record (计费记录, 4 条)
+-- =========================================
+INSERT INTO `billing_record` (`id`, `user_id`, `username`, `model_code`, `input_tokens`, `output_tokens`, `total_tokens`, `cost_cny`, `billing_date`, `created_at`) VALUES
+(1, 1, 'adminLiugl', 'gpt-4o', 12500, 8200, 20700, 0.4500, '2026-07-14', '2026-07-14 10:00:1784023200'),
+(2, 1, 'adminLiugl', 'claude-3.5', 8200, 5100, 13300, 0.3200, '2026-07-14', '2026-07-14 09:00:1784019600'),
+(3, 3, 'test_user', 'deepseek-coder', 15200, 9800, 25000, 0.0250, '2026-07-14', '2026-07-14 08:00:1784016000'),
+(4, 4, 'demo_user', 'gpt-4o-mini', 4500, 2100, 6600, 0.0030, '2026-07-14', '2026-07-14 07:00:1784012400');
