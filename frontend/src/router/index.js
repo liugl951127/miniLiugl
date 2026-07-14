@@ -248,8 +248,8 @@ const routes = [
       // V4: 真实 AI 对接演示
       {
         path: 'showcase/battle',
-        name: 'MiniMaxShowcase',
-        component: () => import('@/views/showcase/MiniMaxShowcase.vue'),
+        name: 'Liugl-AIShowcase',
+        component: () => import('@/views/showcase/Liugl-AIShowcase.vue'),
         meta: { title: '多模型对决', icon: 'Aim' }
       },
       {
@@ -423,55 +423,47 @@ const routes = [
     ]
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },
+  // V3.5.8: 不用精简版页面, /mobile 路径重定向到 desktop layout
+  // 所有设备 (desktop / mobile / tablet) 用同一 layout + 响应式适配
   {
-    // V3.2: 移动端 H5 路由 (/mobile/*)
     path: '/mobile',
-    component: () => import('@/views/mobile/Index.vue'),
-    redirect: '/mobile/chat',
-    children: [
-      {
-        path: 'chat',
-        name: 'MChat',
-        component: () => import('@/views/mobile/Chat.vue'),
-        meta: { title: '对话', public: false }
-      },
-      {
-        path: 'agent',
-        name: 'MAgent',
-        component: () => import('@/views/mobile/Agent.vue'),
-        meta: { title: 'Agent' }
-      },
-      {
-        path: 'kg',
-        name: 'MKg',
-        component: () => import('@/views/mobile/Kg.vue'),
-        meta: { title: '知识图谱' }
-      },
-      {
-        path: 'plugins',
-        name: 'MPlugins',
-        component: () => import('@/views/mobile/Plugins.vue'),
-        meta: { title: '插件' }
-      },
-      {
-        path: 'me',
-        name: 'MMe',
-        component: () => import('@/views/mobile/Me.vue'),
-        meta: { title: '我的' }
-      },
-      {
-        path: 'discover',
-        name: 'MDiscover',
-        component: () => import('@/views/mobile/Discover.vue'),
-        meta: { title: '发现' }
-      },
-      {
-        path: 'market',
-        name: 'MMarket',
-        component: () => import('@/views/mobile/Market.vue'),
-        meta: { title: '工具市场' }
-      },
-    ]
+    redirect: '/chat',
+    meta: { public: false }
+  },
+  {
+    path: '/mobile/chat',
+    redirect: '/chat',
+    meta: { public: false }
+  },
+  {
+    path: '/mobile/agent',
+    redirect: '/agent',
+    meta: { public: false }
+  },
+  {
+    path: '/mobile/kg',
+    redirect: '/kg',
+    meta: { public: false }
+  },
+  {
+    path: '/mobile/plugins',
+    redirect: '/plugins',
+    meta: { public: false }
+  },
+  {
+    path: '/mobile/me',
+    redirect: '/admin',
+    meta: { public: false }
+  },
+  {
+    path: '/mobile/discover',
+    redirect: '/about',
+    meta: { public: false }
+  },
+  {
+    path: '/mobile/market',
+    redirect: '/plugins',
+    meta: { public: false }
   },
 ]
 
@@ -481,7 +473,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  document.title = to.meta.title ? `${to.meta.title} - MiniMax` : 'MiniMax 大模型平台'
+  document.title = to.meta.title ? `${to.meta.title} - Liugl-AI` : 'Liugl-AI 大模型平台'
   const userStore = useUserStore()
   if (!to.meta.public && !userStore.isLogin) {
     next({ name: 'Login', query: { redirect: to.fullPath } })

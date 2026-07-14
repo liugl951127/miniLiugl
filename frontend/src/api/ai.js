@@ -1,5 +1,5 @@
 /**
- * MiniMax AI 平台前端 SDK (V2.7)
+ * Liugl-AI AI 平台前端 SDK (V2.7)
  *
  * 包含:
  *   - 基础 AI: 生成 / Embedding / 相似度 / 分词

@@ -1,6 +1,6 @@
 export default {
   app: {
-    name: 'MiniMax 大模型平台',
+    name: 'Liugl-AI 大模型平台',
     tagline: '企业级 LLM 应用平台',
   },
   nav: {

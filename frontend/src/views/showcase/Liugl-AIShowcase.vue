@@ -1,5 +1,5 @@
 <!--
-  MiniMax 实时多模型对决 (V4)
+  Liugl-AI 实时多模型对决 (V4)
   核心展示:
     - 同时并发调 4+ 个真实大模型
     - 实时流式输出, 同一 prompt 横向对比
@@ -174,15 +174,15 @@ let pollTimer = null
 const availableModels = ref([
   { code: 'gpt-4o-mini', displayName: 'GPT-4o mini', supportsVision: true },
   { code: 'gpt-4o', displayName: 'GPT-4o', supportsVision: true },
-  { code: 'MiniMax-Text-01', displayName: 'MiniMax Text', supportsVision: false },
-  { code: 'MiniMax-VL-01', displayName: 'MiniMax Vision', supportsVision: true },
+  { code: 'Liugl-AI-Text-01', displayName: 'Liugl-AI Text', supportsVision: false },
+  { code: 'Liugl-AI-VL-01', displayName: 'Liugl-AI Vision', supportsVision: true },
   { code: 'Qwen/Qwen2.5-72B-Instruct', displayName: 'Qwen2.5 72B', supportsVision: false },
   { code: 'qwen-vl-max', displayName: 'Qwen-VL Max', supportsVision: true },
   { code: 'deepseek-chat', displayName: 'DeepSeek V3', supportsVision: false },
   { code: 'deepseek-reasoner', displayName: 'DeepSeek R1', supportsVision: false },
 ])
 
-const selectedModels = ref(['gpt-4o-mini', 'MiniMax-Text-01', 'qwen-max', 'deepseek-chat'])
+const selectedModels = ref(['gpt-4o-mini', 'Liugl-AI-Text-01', 'qwen-max', 'deepseek-chat'])
 
 const quickPrompts = [
   '请用三句话解释什么是大模型的 ReAct 推理模式, 并举例',
@@ -258,8 +258,8 @@ function estimateCost(modelCode, totalTokens) {
   const rates = {
     'gpt-4o-mini': 0.00015 / 1000,
     'gpt-4o': 0.0025 / 1000,
-    'MiniMax-Text-01': 0.001 / 1000,
-    'MiniMax-VL-01': 0.002 / 1000,
+    'Liugl-AI-Text-01': 0.001 / 1000,
+    'Liugl-AI-VL-01': 0.002 / 1000,
     'qwen-max': 0.0006 / 1000,
     'qwen-vl-max': 0.001 / 1000,
     'deepseek-chat': 0.0001 / 1000,

@@ -52,7 +52,7 @@
       <!-- 空状态 -->
       <div v-if="messages.length === 0" class="chat-empty">
         <div class="empty-logo">🤖</div>
-        <h2>MiniMax 智能助手</h2>
+        <h2>Liugl-AI 智能助手</h2>
         <p>支持对话 · 记忆 · 知识库 · 工具调用 · 图片理解</p>
         <div class="quick-prompts">
           <div class="quick-prompt" @click="sendQuick('你好, 请介绍一下你自己')">
@@ -425,7 +425,7 @@ async function sendMessage() {
 
 async function mockStreamResponse(aiMsg, userText) {
   const responses = [
-    `你好! 我是 MiniMax 智能助手 ✨\n\n我支持以下能力:\n- **多轮对话** (有短期 + 长期记忆)\n- **工具调用** (时间/计算器/随机数/HTTP)\n- **知识库** (RAG 检索增强)\n- **多模态** (图片理解)\n\n你说的是: "${userText}"`,
+    `你好! 我是 Liugl-AI 智能助手 ✨\n\n我支持以下能力:\n- **多轮对话** (有短期 + 长期记忆)\n- **工具调用** (时间/计算器/随机数/HTTP)\n- **知识库** (RAG 检索增强)\n- **多模态** (图片理解)\n\n你说的是: "${userText}"`,
   ]
   const response = responses[Math.floor(Math.random() * responses.length)]
   for (let i = 0; i < response.length; i += 3) {

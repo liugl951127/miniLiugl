@@ -202,7 +202,7 @@ const pluginCode = ref(`function execute(input) {
 }`)
 const testInput = ref(JSON.stringify({
   user: 'adminLiugl',
-  message: 'MiniMax 平台真棒',
+  message: 'Liugl-AI 平台真棒',
   ctx: { time: Date.now() }
 }, null, 2))
 const executing = ref(false)

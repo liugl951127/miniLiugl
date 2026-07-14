@@ -116,7 +116,7 @@ import { ElMessage } from 'element-plus'
 import { cancelVideoStream } from '@/api/ai'
 
 const cfg = ref({
-  title: 'MiniMax Streaming Demo',
+  title: 'Liugl-AI Streaming Demo',
   width: 640,
   height: 360,
   fps: 12,

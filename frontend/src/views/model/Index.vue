@@ -78,7 +78,7 @@
             <el-option label="Google" value="google" />
             <el-option label="DeepSeek" value="deepseek" />
             <el-option label="Moonshot" value="moonshot" />
-            <el-option label="自研 (MiniMax)" value="minimax" />
+            <el-option label="自研 (Liugl-AI)" value="minimax" />
           </el-select>
         </el-form-item>
         <el-form-item label="类型" prop="type">

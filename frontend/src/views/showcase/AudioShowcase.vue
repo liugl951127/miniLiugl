@@ -252,12 +252,12 @@ const ttsVoices = ref([
 ])
 const ttsVoice = ref('zh-CN-XiaoxiaoNeural')
 const ttsSpeed = ref(1.0)
-const ttsText = ref('你好, 我是 MiniMax 智能助手. 这是 TTS 语音合成演示.')
+const ttsText = ref('你好, 我是 Liugl-AI 智能助手. 这是 TTS 语音合成演示.')
 const ttsLoading = ref(false)
 const ttsResult = ref(null)
 
 const ttsQuickPrompts = [
-  '你好, 欢迎使用 MiniMax 大模型平台',
+  '你好, 欢迎使用 Liugl-AI 大模型平台',
   '今天天气晴朗, 适合户外运动',
   'Hello, this is a text-to-speech demo',
   '人工智能正在改变世界',

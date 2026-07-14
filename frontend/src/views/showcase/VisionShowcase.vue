@@ -134,7 +134,7 @@ const results = ref([])
 const visionModels = [
   { code: 'gpt-4o-mini', name: 'GPT-4o mini', provider: 'OpenAI' },
   { code: 'gpt-4o', name: 'GPT-4o', provider: 'OpenAI' },
-  { code: 'MiniMax-VL-01', name: 'MiniMax-VL-01', provider: 'MiniMax' },
+  { code: 'Liugl-AI-VL-01', name: 'Liugl-AI-VL-01', provider: 'Liugl-AI' },
   { code: 'Qwen/Qwen2-VL-72B-Instruct', name: 'Qwen2-VL 72B', provider: 'SiliconFlow' },
   { code: 'qwen-vl-max', name: 'Qwen-VL Max', provider: 'DashScope' },
   { code: 'THUDM/glm-4v-plus', name: 'GLM-4V Plus', provider: 'SiliconFlow' },

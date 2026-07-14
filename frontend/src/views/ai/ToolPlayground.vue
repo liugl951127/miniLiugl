@@ -138,7 +138,7 @@ const toolDefs = [
       { name: 'task', label: '任务', type: 'select', component: Select, options: ['all', 'summary', 'sentiment', 'entities', 'keywords'], props: { placeholder: 'all' } },
       { name: 'topK', label: '关键词数', type: 'number', component: NumberInput, props: { min: 1, max: 50 } }
     ],
-    example: { text: 'MiniMax 是企业级 AI 平台, 性能优秀, 体验好! 我们都喜欢它.', task: 'all', topK: 5 },
+    example: { text: 'Liugl-AI 是企业级 AI 平台, 性能优秀, 体验好! 我们都喜欢它.', task: 'all', topK: 5 },
     invoke: analyzeText
   },
   {

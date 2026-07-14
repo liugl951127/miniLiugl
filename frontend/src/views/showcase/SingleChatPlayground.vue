@@ -24,8 +24,8 @@
               <el-option label="GPT-4o mini" value="gpt-4o-mini" />
             </el-option-group>
             <el-option-group label="Minimax-M3">
-              <el-option label="MiniMax-Text-01" value="MiniMax-Text-01" />
-              <el-option label="MiniMax-VL-01" value="MiniMax-VL-01" />
+              <el-option label="Liugl-AI-Text-01" value="Liugl-AI-Text-01" />
+              <el-option label="Liugl-AI-VL-01" value="Liugl-AI-VL-01" />
             </el-option-group>
             <el-option-group label="SiliconFlow">
               <el-option label="Qwen2.5 72B" value="Qwen/Qwen2.5-72B-Instruct" />
@@ -140,7 +140,7 @@ const result = reactive({
 })
 
 const examples = {
-  1: { systemPrompt: '你是一个友好的助手, 叫 MiniMax, 由 MiniMax 公司开发', prompt: '你好, 请介绍一下你自己' },
+  1: { systemPrompt: '你是一个友好的助手, 叫 Liugl-AI, 由 Liugl-AI 公司开发', prompt: '你好, 请介绍一下你自己' },
   2: { systemPrompt: '你是一个资深 Python 工程师', prompt: '写一个装饰器, 统计函数执行耗时, 支持异步函数' },
   3: { systemPrompt: '你是专业翻译', prompt: '把下面这段话翻译成英文: "大模型平台是企业 AI 转型的核心基础设施, 决定了上层应用的天花板"' },
   4: { systemPrompt: '你是一个逻辑推理专家, 一步步思考', prompt: '一个房间里, 有 3 个红帽子, 2 个蓝帽子. 3 个人依次进去戴帽子出来, 每个人能看到前面人的帽子. 已知他们看到的和说的话, 推理他们各戴的什么.' },

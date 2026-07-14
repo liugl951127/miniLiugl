@@ -2,7 +2,7 @@
   <div class="about-page">
     <div class="hero minimax-card">
       <h1 class="gradient-text" style="font-size: 36px; margin: 0 0 8px;">
-        MiniMax 大模型平台
+        Liugl-AI 大模型平台
       </h1>
       <p style="color: var(--minimax-text-secondary); margin: 0 0 24px;">
         一站式企业级大模型应用开发平台 · 对标 Minimax / OpenAI Web / Cursor

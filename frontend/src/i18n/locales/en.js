@@ -1,6 +1,6 @@
 export default {
   app: {
-    name: 'MiniMax LLM Platform',
+    name: 'Liugl-AI LLM Platform',
     tagline: 'Enterprise LLM Application Platform',
   },
   nav: {

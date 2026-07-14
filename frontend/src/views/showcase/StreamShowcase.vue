@@ -25,7 +25,7 @@
             <el-select v-model="chatModel" style="width:100%; margin-top: 8px">
               <el-option label="mock (沙箱)" value="mock" />
               <el-option label="gpt-4o-mini" value="gpt-4o-mini" />
-              <el-option label="MiniMax-Text-01" value="MiniMax-Text-01" />
+              <el-option label="Liugl-AI-Text-01" value="Liugl-AI-Text-01" />
             </el-select>
             <div class="actions">
               <el-button type="primary" @click="reconnect" :disabled="connected">
@@ -170,19 +170,19 @@ const progress = ref(0)
 
 let ws = null
 
-const chatPrompt = ref('一句话介绍 MiniMax')
+const chatPrompt = ref('一句话介绍 Liugl-AI')
 const chatModel = ref('mock')
 const chatText = ref('')
 
 const battlePrompt = ref('写一个 Python 装饰器')
-const battleModels = ['mock', 'gpt-4o-mini', 'qwen-max', 'MiniMax-Text-01']
+const battleModels = ['mock', 'gpt-4o-mini', 'qwen-max', 'Liugl-AI-Text-01']
 const battleSel = ref(['mock', 'qwen-max'])
 const battleResults = reactive({})
 
 const visionPrompt = ref('这张图里有什么?')
 const visionText = ref('')
 
-const ttsText = ref('你好 MiniMax')
+const ttsText = ref('你好 Liugl-AI')
 const ttsChunks = ref([])
 
 const agentGoal = ref('查找 3 个竞品的价格')

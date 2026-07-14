@@ -1,8 +1,13 @@
 <template>
   <el-container class="layout-container">
-    <el-aside :width="collapsed ? '64px' : '220px'" class="layout-aside">
+    <!-- V3.5.8: Desktop 侧边栏 (固定) -->
+    <el-aside
+      v-if="!isMobile"
+      :width="collapsed ? '64px' : '220px'"
+      class="layout-aside"
+    >
       <div class="layout-logo" :class="{ collapsed }">
-        <span class="logo-text gradient-text">{{ collapsed ? 'M' : 'MiniMax' }}</span>
+        <span class="logo-text gradient-text">{{ collapsed ? 'L' : 'Liugl-AI' }}</span>
       </div>
       <el-menu
         :default-active="activeMenu"
@@ -20,10 +25,41 @@
       </el-menu>
     </el-aside>
 
+    <!-- V3.5.8: Mobile 侧边栏 (抽屉式, 点击遮罩关闭) -->
+    <el-drawer
+      v-if="isMobile"
+      v-model="drawerVisible"
+      direction="ltr"
+      :with-header="false"
+      size="260px"
+      class="mobile-drawer"
+      :modal-class="'mobile-mask'"
+    >
+      <div class="layout-aside" style="width: 100%; height: 100%; display: block;">
+        <div class="layout-logo">
+          <span class="logo-text gradient-text">Liugl-AI</span>
+        </div>
+        <el-menu
+          :default-active="activeMenu"
+          background-color="#0b1220"
+          text-color="#aab4cf"
+          active-text-color="#fff"
+          router
+          class="layout-menu"
+          @select="drawerVisible = false"
+        >
+          <el-menu-item v-for="r in menuRoutes" :key="r.path" :index="r.path">
+            <el-icon><component :is="r.icon" /></el-icon>
+            <template #title>{{ r.title }}</template>
+          </el-menu-item>
+        </el-menu>
+      </div>
+    </el-drawer>
+
     <el-container>
       <el-header class="layout-header">
         <div class="header-left">
-          <el-button text @click="collapsed = !collapsed">
+          <el-button text @click="toggleSidebar">
             <el-icon><Expand v-if="collapsed" /><Fold v-else /></el-icon>
           </el-button>
           <span class="header-title">{{ activeTitle }}</span>
@@ -99,7 +135,34 @@ const router = useRouter()
 const userStore = useUserStore()
 const notifStore = useNotificationStore()
 const collapsed = ref(false)
+const isMobile = ref(false)
+const drawerVisible = ref(false)
 const platformInfo = ref({})
+
+// V3.5.8: 响应式检测 (兼容所有浏览器)
+function checkResponsive() {
+  if (typeof window === 'undefined') return
+  isMobile.value = window.innerWidth < 768
+  if (isMobile.value) collapsed.value = true
+}
+onMounted(() => {
+  checkResponsive()
+  window.addEventListener('resize', checkResponsive, { passive: true })
+})
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', checkResponsive)
+  }
+})
+
+// 切换侧边栏 (mobile 用抽屉)
+function toggleSidebar() {
+  if (isMobile.value) {
+    drawerVisible.value = !drawerVisible.value
+  } else {
+    collapsed.value = !collapsed.value
+  }
+}
 
 const menuRoutes = computed(() => {
   const base = [
@@ -167,7 +230,7 @@ const activeMenu = computed(() => {
 
 const activeTitle = computed(() => {
   const r = menuRoutes.find((m) => m.path === activeMenu.value)
-  return r?.title || 'MiniMax'
+  return r?.title || 'Liugl-AI'
 })
 
 async function reload() {
@@ -197,6 +260,8 @@ onMounted(async () => {
   if (!userStore.profile && userStore.isLogin) {
     try { await userStore.fetchProfile() } catch (e) { /* ignore */ }
   }
+  // V3.5.8: 首轮 fetchProfile 后在 mobile 下隐藏欢迎语
+  if (isMobile.value) collapsed.value = true
   // 初始化通知中心（WS 连接 + 未读数）
   if (userStore.isLogin) {
     notifStore.init()
@@ -224,7 +289,14 @@ async function refreshHealth() {
 </script>
 
 <style lang="scss" scoped>
-.layout-container { height: 100vh; }
+.layout-container { height: 100vh; height: 100dvh; height: -webkit-fill-available; }
+.mobile-drawer { width: 260px !important; }
+.mobile-mask { background: rgba(0, 0, 0, 0.5); }
+.layout-aside {
+  background: #0b1220;
+  transition: width 0.2s, transform 0.3s;
+  overflow: hidden;
+}
 .layout-aside {
   background: #0b1220;
   transition: width 0.2s;
@@ -295,4 +367,14 @@ async function refreshHealth() {
 }
 .dot-up { background: #10b981; }
 .dot-amber { background: #f59e0b; }
+
+/* V3.5.8 响应式布局: mobile 抽窗式, desktop 固定侧边栏 */
+@media (max-width: 768px) {
+  .layout-aside { display: none; }
+  .layout-main { padding: 8px; }
+  .layout-header { padding: 0 8px; height: 48px; }
+  .header-title { font-size: 14px; }
+  .user-name { display: none; } /* mobile 不显示名字 */
+  .header-right { gap: 4px; }
+}
 </style>

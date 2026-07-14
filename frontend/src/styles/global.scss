@@ -1,63 +1,85 @@
-// 全局变量
-:root {
-  --minimax-primary: #5b8def;
-  --minimax-primary-dark: #3b6dd0;
-  --minimax-accent: #b66dff;
-  --minimax-bg: #f5f7fa;
-  --minimax-bg-dark: #0b1220;
-  --minimax-text: #1f2937;
-  --minimax-text-secondary: #6b7280;
-  --minimax-border: #e5e7eb;
-  --minimax-success: #10b981;
-  --minimax-warning: #f59e0b;
-  --minimax-danger: #ef4444;
-}
+// V3.5.8 全局样式 (兼容层入口)
+// 引入顺序: 变量 (compat.scss) → 全局 (global.scss) → 业务覆盖
+@import './compat.scss';
 
-* { box-sizing: border-box; }
-
-html, body {
-  margin: 0;
-  padding: 0;
-  background: var(--minimax-bg);
-  color: var(--minimax-text);
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-a { color: var(--minimax-primary); text-decoration: none; }
-a:hover { color: var(--minimax-primary-dark); }
-
-// 滚动条
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-::-webkit-scrollbar-track { background: transparent; }
-
-// 通用工具类
-.flex { display: flex; }
-.flex-1 { flex: 1; }
-.flex-center { display: flex; align-items: center; justify-content: center; }
-.flex-between { display: flex; align-items: center; justify-content: space-between; }
-.gap-8 { gap: 8px; }
-.gap-12 { gap: 12px; }
-.gap-16 { gap: 16px; }
-.mt-8 { margin-top: 8px; }
-.mt-16 { margin-top: 16px; }
-.mt-24 { margin-top: 24px; }
-
-// 卡片
-.minimax-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
-// 渐变文字
+// 渐变文字 (业务特色, 跨浏览器兼容)
 .gradient-text {
-  background: linear-gradient(90deg, var(--minimax-primary), var(--minimax-accent));
+  background: linear-gradient(90deg, var(--liugl-primary), var(--liugl-accent));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   font-weight: 700;
+  // 降级: 不支持 background-clip:text 的浏览器显示主色
+  @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
+    color: var(--liugl-primary);
+    background: none;
+  }
+}
+
+// 卡片 (业务命名兼容旧 minimax-card)
+.liugl-card,
+.minimax-card {
+  background: var(--liugl-bg-elevated);
+  border: 1px solid var(--liugl-border);
+  border-radius: var(--liugl-radius);
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: box-shadow var(--liugl-transition);
+}
+.liugl-card:hover,
+.minimax-card:hover {
+  box-shadow: var(--liugl-shadow);
+}
+
+// 业务工具类 (兼容旧名 minimax-*)
+.mt-8 { margin-top: 8px; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-16 { margin-bottom: 16px; }
+.mb-24 { margin-bottom: 24px; }
+.gap-8 { gap: 8px; }
+.gap-12 { gap: 12px; }
+.gap-16 { gap: 16px; }
+.gap-24 { gap: 24px; }
+
+// 滚动条 (跨浏览器)
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--liugl-border-strong); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--liugl-text-secondary); }
+::-webkit-scrollbar-track { background: transparent; }
+* { scrollbar-width: thin; scrollbar-color: var(--liugl-border-strong) transparent; }
+
+// Element Plus 主题色覆盖
+:root {
+  --el-color-primary: var(--liugl-primary);
+  --el-color-primary-light-3: var(--liugl-primary-light);
+  --el-color-primary-light-5: #c4d6ff;
+  --el-color-primary-light-7: #dde9ff;
+  --el-color-primary-light-8: #ecf2ff;
+  --el-color-primary-light-9: #f5f8ff;
+  --el-color-primary-dark-2: var(--liugl-primary-dark);
+  --el-color-success: var(--liugl-success);
+  --el-color-warning: var(--liugl-warning);
+  --el-color-danger: var(--liugl-danger);
+  --el-color-info: var(--liugl-info);
+  --el-text-color-primary: var(--liugl-text);
+  --el-text-color-regular: var(--liugl-text);
+  --el-text-color-secondary: var(--liugl-text-secondary);
+  --el-border-color: var(--liugl-border);
+  --el-border-color-light: var(--liugl-border);
+  --el-border-color-lighter: #f0f2f5;
+  --el-bg-color: var(--liugl-bg-elevated);
+  --el-bg-color-page: var(--liugl-bg);
+  --el-fill-color-blank: var(--liugl-bg-elevated);
+}
+
+// Vant 主题色覆盖 (移动端)
+:root {
+  --van-primary-color: var(--liugl-primary);
+  --van-background: var(--liugl-bg);
+  --van-background-2: var(--liugl-bg-elevated);
+  --van-text-color: var(--liugl-text);
+  --van-text-color-2: var(--liugl-text-secondary);
+  --van-border-color: var(--liugl-border);
 }

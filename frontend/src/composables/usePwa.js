@@ -77,7 +77,7 @@ export function usePwa() {
     deferredPrompt.prompt()
     const { outcome } = await deferredPrompt.userChoice
     if (outcome === 'accepted') {
-      ElMessage.success('✅ MiniMax 已添加到主屏幕')
+      ElMessage.success('✅ Liugl-AI 已添加到主屏幕')
     }
     deferredPrompt = null
     isInstallable.value = false
@@ -140,7 +140,7 @@ export function usePwa() {
 
     // 监听安装成功
     window.addEventListener('appinstalled', () => {
-      ElMessage.success('🎉 MiniMax PWA 已安装')
+      ElMessage.success('🎉 Liugl-AI PWA 已安装')
       isInstallable.value = false
       deferredPrompt = null
     })

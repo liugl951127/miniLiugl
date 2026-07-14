@@ -3,7 +3,7 @@
     <div class="login-bg" />
     <div class="login-feature-panel">
       <div class="feature-content">
-        <h1 class="gradient-text">🚀 MiniMax Platform</h1>
+        <h1 class="gradient-text">🚀 Liugl-AI Platform</h1>
         <p class="feature-tagline">企业级 AI · 智能协作 · 自研大模型</p>
         <ul class="feature-list">
           <li>✅ <b>17</b> 微服务 · <b>145+</b> 单元测试</li>
@@ -24,7 +24,7 @@
 
     <div class="login-box">
       <div class="login-header">
-        <h1 class="gradient-text" style="margin: 0 0 8px; font-size: 28px;">{{ t('app.name') || 'MiniMax' }}</h1>
+        <h1 class="gradient-text" style="margin: 0 0 8px; font-size: 28px;">{{ t('app.name') || 'Liugl-AI' }}</h1>
         <p style="color: #909399; margin: 0; font-size: 13px;">{{ t('app.tagline') }}</p>
       </div>
 

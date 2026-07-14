@@ -116,7 +116,7 @@ import { useUserStore } from '@/store/user'
 
 const userStore = useUserStore()
 
-const goal = ref('给我公司生成一份 MiniMax 平台的竞品分析报告, 包含 3 个核心竞品的功能对比、优劣势分析、市场定位')
+const goal = ref('给我公司生成一份 Liugl-AI 平台的竞品分析报告, 包含 3 个核心竞品的功能对比、优劣势分析、市场定位')
 const tools = ref([])
 const availableTools = ref([])
 const running = ref(false)

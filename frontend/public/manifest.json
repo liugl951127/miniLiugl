@@ -1,6 +1,6 @@
 {
-  "name": "MiniMax 大模型平台",
-  "short_name": "MiniMax",
+  "name": "Liugl-AI 大模型平台",
+  "short_name": "Liugl-AI",
   "description": "企业级 AI 大模型平台 - 多模型对话/视觉/语音/插件/训练/协作 (V2.8.9 PWA 离线版)",
   "start_url": "/",
   "scope": "/",
@@ -38,7 +38,7 @@
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "MiniMax 仪表盘"
+      "label": "Liugl-AI 仪表盘"
     }
   ],
   "shortcuts": [

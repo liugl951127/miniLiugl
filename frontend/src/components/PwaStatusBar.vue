@@ -23,7 +23,7 @@ const barClass = computed(() => isOffline.value ? 'offline' : 'installable')
 const icon = computed(() => isOffline.value ? '📡' : '📲')
 const message = computed(() => {
   if (isOffline.value) return '当前离线 · 可访问已缓存的页面 (SW ' + swVersion.value + ')'
-  if (isInstallable.value) return 'MiniMax 支持安装到桌面, 离线也能用'
+  if (isInstallable.value) return 'Liugl-AI 支持安装到桌面, 离线也能用'
   return ''
 })
 </script>

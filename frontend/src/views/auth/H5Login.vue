@@ -9,7 +9,7 @@
   <div class="h5-login">
     <header class="header">
       <h1>🔑 登录</h1>
-      <p class="subtitle">MiniMax 大模型平台</p>
+      <p class="subtitle">Liugl-AI 大模型平台</p>
     </header>
 
     <!-- 平台按钮 -->

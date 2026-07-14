@@ -1,5 +1,5 @@
 /**
- * MiniMax PWA Service Worker (V2.8.9 完整版)
+ * Liugl-AI PWA Service Worker (V2.8.9 完整版)
  *
  * <h3>缓存策略</h3>
  * <ul>
@@ -18,14 +18,14 @@
  *   <li>GET_VERSION: 返回当前 SW 版本</li>
  * </ul>
  *
- * @author MiniMax
+ * @author Liugl-AI
  * @since V2.8.9
  */
 
 const CACHE_VERSION = 'v2.8.9'
-const CACHE_NAME = `minimax-${CACHE_VERSION}`
-const RUNTIME_CACHE = 'minimax-runtime'
-const API_CACHE = 'minimax-api'
+const CACHE_NAME = `liugl-${CACHE_VERSION}`
+const RUNTIME_CACHE = 'liugl-runtime'
+const API_CACHE = 'liugl-api'
 const OFFLINE_URL = '/offline.html'
 
 // 静态资源预缓存 (构建时由 vite-plugin-pwa 注入, 这里手工维护核心)
@@ -85,7 +85,7 @@ self.addEventListener('activate', (event) => {
       const keys = await caches.keys()
       await Promise.all(
         keys
-          .filter((key) => key.startsWith('minimax-') && key !== CACHE_NAME && key !== RUNTIME_CACHE && key !== API_CACHE)
+          .filter((key) => key.startsWith('liugl-') && key !== CACHE_NAME && key !== RUNTIME_CACHE && key !== API_CACHE)
           .map((key) => caches.delete(key))
       )
       await self.clients.claim()
@@ -250,7 +250,7 @@ self.addEventListener('push', (event) => {
   try {
     const data = event.data.json()
     event.waitUntil(
-      self.registration.showNotification(data.title || 'MiniMax', {
+      self.registration.showNotification(data.title || 'Liugl-AI', {
         body: data.body || '',
         icon: '/icons/icon-192.png',
         badge: '/icons/icon-192.png',

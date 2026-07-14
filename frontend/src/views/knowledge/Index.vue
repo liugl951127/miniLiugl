@@ -131,7 +131,7 @@
             v-model="retrieveForm.query"
             type="textarea"
             :rows="3"
-            placeholder="输入问题, e.g. 'MiniMax 平台支持哪些模型?'"
+            placeholder="输入问题, e.g. 'Liugl-AI 平台支持哪些模型?'"
             @keydown.ctrl.enter="handleRetrieve"
           />
           <div style="margin-top: 12px">
