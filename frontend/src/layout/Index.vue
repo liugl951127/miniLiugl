@@ -108,6 +108,10 @@ const menuRoutes = computed(() => {
     { path: '/memory', title: '记忆中心', icon: 'Memory' },
     { path: '/prompts', title: 'Prompt 模板', icon: 'DocumentCopy' },
     { path: '/agent', title: 'Agent 自主任务', icon: 'MagicStick' },
+    // V3.5.5+ 新增 3 个后端模块菜单 (model/function/multimodal)
+    { path: '/model', title: '模型管理', icon: 'Cpu' },
+    { path: '/function', title: 'Function 工具', icon: 'Tools' },
+    { path: '/multimodal', title: '多模态', icon: 'PictureFilled' },
     { path: '/kg', title: '知识图谱', icon: 'Share' },
     { path: '/collab', title: '实时协作', icon: 'UserFilled' },
     { path: '/plugins', title: '插件市场', icon: 'Grid' },

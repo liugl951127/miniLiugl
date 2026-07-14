@@ -68,6 +68,25 @@ const routes = [
         component: () => import('@/views/agent/Multi.vue'),
         meta: { title: '多智能体 (V5.17)', icon: 'Connection' }
       },
+      // V3.5.5+ 新增 3 个后端模块对应页面 (model / function / multimodal)
+      {
+        path: 'model',
+        name: 'Model',
+        component: () => import('@/views/model/Index.vue'),
+        meta: { title: '模型管理', icon: 'Cpu' }
+      },
+      {
+        path: 'function',
+        name: 'Function',
+        component: () => import('@/views/function/Index.vue'),
+        meta: { title: 'Function 工具', icon: 'Tools' }
+      },
+      {
+        path: 'multimodal',
+        name: 'Multimodal',
+        component: () => import('@/views/multimodal/Index.vue'),
+        meta: { title: '多模态', icon: 'PictureFilled' }
+      },
       {
         path: 'notification',
         name: 'Notification',
