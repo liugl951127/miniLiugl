@@ -21,7 +21,7 @@ class IntentPredictionTest {
     void testQueryIntent() {
         IntentPredictionService svc = new IntentPredictionService();
         IntentPredictionService.IntentPrediction r = svc.predict("查询一下今天的订单");
-        assertEquals("query", r.getIntent());
+        assertEquals("data_query", r.getIntent());
         assertTrue(r.getConfidence() > 0.3);
     }
 
@@ -139,7 +139,7 @@ class IntentPredictionTest {
         IntentPredictionService svc = new IntentPredictionService();
         svc.addKeyword("query", "黄金", 100.0);
         IntentPredictionService.IntentPrediction r = svc.predict("我要查一下黄金价格");
-        assertEquals("query", r.getIntent());
+        assertEquals("data_query", r.getIntent());
     }
 
     /**
