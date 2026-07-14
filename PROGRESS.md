@@ -531,7 +531,9 @@
 
 ## Day 28 - 2026-07-14 ✅ 告警通知模板+变量替换 / Ack写库 / 审计日志资源类型筛选
 
-## Day 29 - 待开始
+## Day 29 - 2026-07-14 ✅ 智能化提升: QueryComplexity + SmartModelRouter + IntentConfidenceScorer
+
+## Day 30 - 待开始
 
 ## Day 21 - 2026-06-26 ✅ API 文档体系 + 压测模板
 
