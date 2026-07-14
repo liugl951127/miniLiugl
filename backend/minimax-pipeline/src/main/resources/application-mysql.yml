@@ -82,3 +82,9 @@ logging:
     com.alibaba.nacos: WARN
     org.springframework.cloud: WARN
     com.zaxxer.hikari: WARN
+
+# V3.5.8: 自动加载种子数据
+spring.sql.init.mode: always
+spring.sql.init.schema-locations: classpath:complete.sql
+spring.sql.init.data-locations: classpath:seed-data.sql
+spring.sql.init.continue-on-error: false

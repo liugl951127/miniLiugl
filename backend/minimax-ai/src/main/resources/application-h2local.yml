@@ -22,7 +22,8 @@ spring:
   sql:
     init:
       mode: always
-      schema-locations: classpath:complete-h2.sql
+      schema-locations: classpath:complete-h2.sql,classpath:seed-data-h2.sql
+      encoding: UTF-8
       continue-on-error: false
   h2:
     console:
