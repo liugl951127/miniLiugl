@@ -161,7 +161,18 @@
           />
         </el-form-item>
         <el-form-item v-if="editingChannel.type === 'email'" label="收件人">
-          <el-input v-model="editingChannel.config" placeholder="ops@example.com,dev@example.com" />
+          <el-input v-model="editingChannel.config" placeholder='{"email":"ops@example.com"}' />
+        </el-form-item>
+        <el-form-item label="通知模板">
+          <el-input
+            v-model="editingChannel.template"
+            type="textarea"
+            :rows="3"
+            placeholder="支持变量替换，不填则用默认模板。&#10;可用变量: ${ruleName} ${severity} ${metricName} ${metricValue} ${threshold} ${message} ${firedAt}&#10;示例: 【${severity}】告警: ${ruleName} 当前值 ${metricValue} 超过阈值 ${threshold}"
+          />
+          <div style="color: #999; font-size: 12px; margin-top: 4px">
+            变量: ${ruleName} ${severity} ${metricName} ${metricValue} ${threshold} ${message} ${firedAt}
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -358,7 +369,8 @@ async function saveChannel() {
         name: editingChannel.value.name,
         type: editingChannel.value.type,
         target: editingChannel.value.target,
-        config: editingChannel.value.config
+        config: editingChannel.value.config,
+        template: editingChannel.value.template || null
       })
     }
     ElMessage.success('保存成功')

@@ -102,6 +102,62 @@ public class DingTalkAlertNotifier implements AlertNotifier {
         }
     }
 
+    @Override
+    public boolean send(AlertEvent event, String channelConfig, String resolvedText) {
+        try {
+            JSONObject cfg = new JSONObject(channelConfig);
+            String webhook = cfg.getStr("webhook");
+            String secret  = cfg.getStr("secret");
+
+            if (webhook == null || webhook.isBlank()) {
+                log.warn("dingtalk webhook not configured");
+                return false;
+            }
+
+            String url = buildSignedUrl(webhook, secret);
+            String body = resolvedText != null ? buildBodyWithText(event, resolvedText) : buildBody(event);
+
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("Content-Type", "application/json")
+                    .timeout(Duration.ofSeconds(10))
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+
+            HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+            boolean ok = resp.statusCode() == 200;
+            if (ok) {
+                log.info("dingtalk alert sent (templated) for rule {}", event.getRuleName());
+            } else {
+                log.warn("dingtalk alert failed: {} - {}", resp.statusCode(), resp.body());
+            }
+            return ok;
+        } catch (Exception e) {
+            log.warn("dingtalk alert exception: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    private String buildBodyWithText(AlertEvent e, String text) {
+        String color = switch (e.getSeverity() == null ? "" : e.getSeverity().toLowerCase()) {
+            case "critical" -> COLOR_FATAL;
+            case "warning"  -> COLOR_WARN;
+            default         -> COLOR_INFO;
+        };
+        JSONObject at = new JSONObject();
+        at.set("isAtAll", false);
+        JSONObject body = new JSONObject();
+        body.set("msgtype", "markdown");
+        JSONObject markdown = new JSONObject();
+        markdown.set("title", String.format("【%s】告警", e.getSeverity() != null ? e.getSeverity().toUpperCase() : ""));
+        // 把纯文本转成 markdown 格式
+        String mdContent = "### " + markdown.getStr("title") + "\n\n" + text.replace("\n", "\n> ");
+        markdown.set("content", mdContent);
+        body.set("markdown", markdown);
+        body.set("at", at);
+        return JSONUtil.toJsonStr(body);
+    }
+
     private String buildBody(AlertEvent e) {
         String color = switch (e.getSeverity() == null ? "" : e.getSeverity().toLowerCase()) {
             case "critical" -> COLOR_FATAL;

@@ -27,18 +27,20 @@ public class AuditController {
 
     private final AuditLogFullMapper auditMapper;
 
-    /** 最近审计日志 (带分页) */
+    /** 最近审计日志 (带分页) (Day 28: 新增 resourceType 筛选) */
     @GetMapping("/recent")
     public Result<Map<String, Object>> recent(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String username,
             @RequestParam(required = false) String action,
-            @RequestParam(required = false) String result) {
+            @RequestParam(required = false) String result,
+            @RequestParam(required = false) String resourceType) {
         QueryWrapper<AuditLogFull> qw = new QueryWrapper<>();
         if (username != null && !username.isEmpty()) qw.like("username", username);
         if (action != null && !action.isEmpty()) qw.eq("action", action);
         if (result != null && !result.isEmpty()) qw.eq("result", result);
+        if (resourceType != null && !resourceType.isEmpty()) qw.eq("resource_type", resourceType);
         qw.orderByDesc("created_at");
         long total = auditMapper.selectCount(qw);
         qw.last("LIMIT " + size + " OFFSET " + (page - 1) * size);
@@ -78,10 +80,12 @@ public class AuditController {
     /** 导出审计日志 (CSV) */
     @GetMapping("/export")
     public Result<String> export(@RequestParam(required = false) String username,
-                                  @RequestParam(required = false) String action) {
+                                  @RequestParam(required = false) String action,
+                                  @RequestParam(required = false) String resourceType) {
         QueryWrapper<AuditLogFull> qw = new QueryWrapper<>();
         if (username != null) qw.like("username", username);
         if (action != null) qw.eq("action", action);
+        if (resourceType != null && !resourceType.isEmpty()) qw.eq("resource_type", resourceType);
         qw.orderByDesc("created_at").last("LIMIT 10000");
         List<AuditLogFull> list = auditMapper.selectList(qw);
         // 简化: 返回 CSV 字符串 (实际生产用 ResponseEntity<byte[]>)

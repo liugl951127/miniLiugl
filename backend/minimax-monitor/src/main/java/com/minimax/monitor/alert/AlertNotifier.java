@@ -19,6 +19,19 @@ public interface AlertNotifier {
      */
     boolean send(AlertEvent event, String channelConfig);
 
+    /**
+     * 发送告警通知（带自定义文本模板）(Day 28).
+     *
+     * @param event 告警事件
+     * @param channelConfig 渠道配置 JSON
+     * @param resolvedText 模板解析后的文本（可为 null → 用默认格式）
+     * @return true 发送成功，false 失败
+     */
+    default boolean send(AlertEvent event, String channelConfig, String resolvedText) {
+        // 默认行为：忽略 resolvedText，走原有 buildBody
+        return send(event, channelConfig);
+    }
+
     /** 渠道类型标识，如 "EMAIL" / "DINGTALK" */
     String channelType();
 }

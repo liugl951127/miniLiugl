@@ -8,6 +8,7 @@ import com.minimax.monitor.client.ServiceEndpoints;
 import com.minimax.monitor.collector.MetricsCollector;
 import com.minimax.monitor.entity.AlertChannel;
 import com.minimax.monitor.entity.AlertEvent;
+import com.minimax.monitor.mapper.AlertEventMapper;
 import com.minimax.monitor.entity.AlertRule;
 import com.minimax.monitor.entity.MetricSnapshot;
 import com.minimax.monitor.health.HealthDetailService;
@@ -72,6 +73,7 @@ public class MonitorController {
     private final AlertChannelService alertChannelService;
     private final AlertNotifierManager notifierManager;
     private final AlertStreamRegistry alertStreamRegistry;
+    private final AlertEventMapper alertEventMapper;
 
     // V5.10: Java HttpClient 复用 (跨服务调 /actuator/prometheus)
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -288,8 +290,15 @@ public class MonitorController {
     @PostMapping("/alerts/{id}/ack")
     public Result<Boolean> acknowledgeAlert(@PathVariable Long id) {
         log.info("[monitor] acknowledge alert id={}", id);
-        // 实际生产: 写 audit log + 更新 alert.status = 'ack'
-        // 沙箱: 直接返回成功
+        // Day 28: 真正写库
+        AlertEvent e = alertEventMapper.selectById(id);
+        if (e == null) {
+            return Result.fail("告警事件不存在: " + id);
+        }
+        e.setStatus("acked");
+        e.setAckedAt(java.time.LocalDateTime.now());
+        alertEventMapper.updateById(e);
+        log.info("[monitor] alert {} acked", id);
         return Result.ok(true);
     }
 

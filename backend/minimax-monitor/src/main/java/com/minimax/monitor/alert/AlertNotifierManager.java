@@ -3,12 +3,12 @@ package com.minimax.monitor.alert;
 import com.minimax.monitor.entity.AlertChannel;
 import com.minimax.monitor.entity.AlertEvent;
 import com.minimax.monitor.mapper.AlertChannelMapper;
+import com.minimax.monitor.service.AlertTemplateResolver;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
-import jakarta.annotation.Resource;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -26,13 +26,12 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class AlertNotifierManager {
 
-    @Resource
-    private List<AlertNotifier> notifiers;
-
-    @Resource
-    private AlertChannelMapper channelMapper;
+    private final List<AlertNotifier> notifiers;
+    private final AlertChannelMapper channelMapper;
+    private final AlertTemplateResolver templateResolver;
 
     /** channelType → AlertNotifier 实例 */
     private Map<String, AlertNotifier> notifierMap = new ConcurrentHashMap<>();
@@ -107,7 +106,9 @@ public class AlertNotifierManager {
         String config = (channel.getConfig() != null && !channel.getConfig().isBlank())
                 ? channel.getConfig()
                 : channel.getTarget();
-        n.send(testEvent, config);
+        // Day 28: 模板替换后发送
+        String resolvedMessage = templateResolver.resolve(testEvent, channel.getTemplate());
+        n.send(testEvent, config, resolvedMessage);
         log.info("[sendTest] 渠道测试已发送: id={} name={} type={}",
                 channel.getId(), channel.getName(), channel.getChannelType());
     }

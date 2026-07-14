@@ -42,6 +42,40 @@ public class EmailAlertNotifier implements AlertNotifier {
     }
 
     @Override
+    public boolean send(AlertEvent event, String channelConfig, String resolvedText) {
+        if (mailSender == null) {
+            log.debug("mailSender not available, skip email");
+            return false;
+        }
+        try {
+            JSONObject cfg = new JSONObject(channelConfig);
+            String toEmail = cfg.getStr("email");
+            if (toEmail == null || toEmail.isBlank()) {
+                log.warn("email not configured in channel: {}", channelConfig);
+                return false;
+            }
+
+            String subject = String.format("[%s] 告警: %s",
+                    event.getSeverity() != null ? event.getSeverity().toUpperCase() : "",
+                    event.getRuleName() != null ? event.getRuleName() : "");
+            String body = resolvedText != null ? resolvedText : buildBody(event);
+
+            SimpleMailMessage msg = new SimpleMailMessage();
+            msg.setFrom(from);
+            msg.setTo(toEmail);
+            msg.setSubject(subject);
+            msg.setText(body);
+
+            mailSender.send(msg);
+            log.info("email alert sent (templated) to {} for rule {}", toEmail, event.getRuleName());
+            return true;
+        } catch (Exception e) {
+            log.warn("email alert send failed: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
     public boolean send(AlertEvent event, String channelConfig) {
         if (mailSender == null) {
             log.debug("mailSender not available, skip email");
