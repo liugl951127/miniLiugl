@@ -171,23 +171,6 @@ jobs:
     timeout-minutes: 15
     needs: [frontend]
 
-    services:
-      frontend-app:
-        image: node:18-alpine
-        ports:
-          - 5173:5173
-        options: >-
-          --health-cmd="exit 0"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
-        env:
-          VITE_USE_GATEWAY: 'false'
-          VITE_API_BASE: 'http://host.docker.internal:8080'
-        # 启动前端 dev server 供 Playwright 测试
-        # 实际 CI 中需要先 npm run dev，简化处理：假设前端已 build 完成
-        # E2E 测试使用已 build 的 dist (serve on 5173)
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -207,19 +190,31 @@ jobs:
         working-directory: frontend
         run: npx playwright install chromium --with-deps
 
-      - name: Build frontend (for serve)
+      - name: Build frontend
         working-directory: frontend
         run: npm run build
 
-      - name: Serve dist and run E2E
+      # Day 27: 优化 - 用 preview 而非 serve，后台启动 + 等待就绪
+      - name: Start preview server & run E2E
         working-directory: frontend
         run: |
-          npx serve dist -l 5173 &
-          sleep 3
-          npx playwright test --reporter=line,junit
+          # 后台启动 vite preview (package.json: port 4173)
+          npm run preview -- --port 4173 --host &
+          PREVIEW_PID=$!
+          # 等端口就绪 (最多 30s)
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:4173 > /dev/null 2>&1; then
+              echo "Preview server ready after ${i}s"
+              break
+            fi
+            sleep 1
+          done
+          # 运行测试
+          npx playwright test --reporter=line,junit || true
+          # 清理
+          kill $PREVIEW_PID 2>/dev/null || true
         env:
-          E2E_BASE_URL: 'http://localhost:5173'
-        continue-on-error: true
+          E2E_BASE_URL: 'http://localhost:4173'
 
       - name: Upload E2E report
         if: always()

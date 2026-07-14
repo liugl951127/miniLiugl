@@ -1,6 +1,7 @@
 package com.minimax.monitor.alert;
 
 import com.minimax.monitor.collector.MetricsCollector;
+import com.minimax.monitor.config.AlertStreamRegistry;
 import com.minimax.monitor.entity.AlertEvent;
 import com.minimax.monitor.entity.AlertRule;
 import com.minimax.monitor.mapper.AlertEventMapper;
@@ -35,6 +36,7 @@ public class AlertEngine {
     private final SnapshotService snapshotService;
     private final MetricsCollector collector;
     private final AlertNotifierManager notifierManager;
+    private final AlertStreamRegistry streamRegistry;
 
     /** 每 30s 检查一次 */
     @Scheduled(fixedDelay = 30_000, initialDelay = 15_000)
@@ -81,6 +83,12 @@ public class AlertEngine {
                 notifierManager.notifyAll(e);
             } catch (Exception ex) {
                 log.warn("alert notification error: {}", ex.getMessage());
+            }
+            // Day 27: 实时推送给在线前端 (SSE)
+            try {
+                streamRegistry.broadcast(e);
+            } catch (Exception ex) {
+                log.debug("alert stream error: {}", ex.getMessage());
             }
         } else {
             // 指标恢复, 解决 firing 事件

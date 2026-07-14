@@ -173,7 +173,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { monitorApi } from '@/api/monitor'
 
@@ -401,6 +401,55 @@ onMounted(() => {
   loadRules()
   loadChannels()
   loadHistory()
+  // Day 27: 订阅告警实时推送 (SSE)
+  subscribeAlertStream()
+})
+
+// -------- 实时告警 SSE (Day 27) --------
+let alertEventSource = null
+
+function subscribeAlertStream() {
+  const token = localStorage.getItem('token')
+  if (!token) return
+  const base = import.meta.env.VITE_API_BASE || 'http://localhost:8080'
+  const url = `${base}/api/v1/monitor/alerts/stream`
+  alertEventSource = new EventSource(url, { withCredentials: true })
+
+  alertEventSource.onopen = () => {
+    console.debug('[AlertStream] connected')
+  }
+
+  alertEventSource.addEventListener('alert', (e) => {
+    try {
+      const payload = JSON.parse(e.data)
+      if (payload.type === 'alert_fired' && payload.alert) {
+        const newAlert = {
+          ...payload.alert,
+          duration: '刚刚'
+        }
+        // 插入到 firing 列表顶部
+        firing.value.unshift(newAlert)
+        // 最多保留 50 条
+        if (firing.value.length > 50) firing.value.pop()
+        // 如果当前 Tab 不是 firing，提示用户
+        if (tab.value !== 'firing') {
+          ElMessage.warning(`🔔 收到新告警: ${payload.alert.ruleName}`)
+        }
+      }
+    } catch (err) {
+      console.warn('[AlertStream] parse error:', err)
+    }
+  })
+
+  alertEventSource.onerror = () => {
+    console.debug('[AlertStream] disconnected, reconnecting...')
+    // EventSource 会自动重连，无需手动处理
+  }
+}
+
+onUnmounted(() => {
+  alertEventSource?.close()
+  alertEventSource = null
 })
 </script>
 

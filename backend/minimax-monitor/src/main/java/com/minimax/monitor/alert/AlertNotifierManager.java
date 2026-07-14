@@ -82,4 +82,33 @@ public class AlertNotifierManager {
     public List<AlertChannel> channels() {
         return cachedChannels;
     }
+
+    /**
+     * 发送测试消息到指定渠道 (Day 27).
+     * 构建一个测试告警事件，发送给该渠道对应的 notifier。
+     */
+    public void sendTest(AlertChannel channel) {
+        AlertNotifier n = notifierMap.get(channel.getChannelType());
+        if (n == null) {
+            throw new IllegalStateException("不支持的渠道类型: " + channel.getChannelType());
+        }
+        AlertEvent testEvent = new AlertEvent();
+        testEvent.setId(-1L);
+        testEvent.setRuleId(-1L);
+        testEvent.setRuleName("[测试] 告警渠道连通性检测");
+        testEvent.setSeverity("info");
+        testEvent.setMetricName("test_metric");
+        testEvent.setMetricValue(java.math.BigDecimal.ZERO);
+        testEvent.setThreshold(java.math.BigDecimal.ZERO);
+        testEvent.setStatus("firing");
+        testEvent.setMessage("[测试消息] 您好，这是来自 MiniMax 平台的告警渠道测试消息。如果收到此消息，说明渠道配置正确。");
+        testEvent.setFiredAt(java.time.LocalDateTime.now());
+        // config 优先用 channel.config，其次用 channel.target
+        String config = (channel.getConfig() != null && !channel.getConfig().isBlank())
+                ? channel.getConfig()
+                : channel.getTarget();
+        n.send(testEvent, config);
+        log.info("[sendTest] 渠道测试已发送: id={} name={} type={}",
+                channel.getId(), channel.getName(), channel.getChannelType());
+    }
 }
