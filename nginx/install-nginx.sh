@@ -64,7 +64,7 @@ do_install() {
     local os=$(detect_os)
     yellow "检测系统: $os"
 
-    # 1. 装 nginx
+    # 1. 装 nginx (含 4 个子包, 适配 debian/ubuntu 和 centos)
     if ! command -v nginx &>/dev/null; then
         bold "  [1/5] 安装 nginx"
         case $os in
@@ -74,15 +74,23 @@ do_install() {
                 ;;
             debian)
                 apt-get update -qq
-                apt-get install -y -qq nginx
-                systemctl enable nginx
+                # nginx-light / nginx-core / nginx-full 都行
+                DEBIAN_FRONTEND=noninteractive apt-get install -y -qq nginx-light 2>/dev/null \
+                    || DEBIAN_FRONTEND=noninteractive apt-get install -y -qq nginx
+                systemctl enable nginx 2>/dev/null || true
                 ;;
             *)
                 red "  ❌ 未知系统, 请手动安装 nginx"
                 exit 1
                 ;;
         esac
-        green "  ✓ nginx 已安装"
+        # 验证真的安装了 (apt update 可能失败导致没装上)
+        if ! command -v nginx &>/dev/null; then
+            red "  ❌ nginx 安装失败, 请检查 apt 源是否可用"
+            red "     手动: apt-get update && apt-get install -y nginx"
+            exit 1
+        fi
+        green "  ✓ nginx 已安装: $(nginx -v 2>&1 | cut -d' ' -f3)"
     else
         green "  [1/5] nginx 已存在: $(nginx -v 2>&1 | cut -d' ' -f3)"
     fi
