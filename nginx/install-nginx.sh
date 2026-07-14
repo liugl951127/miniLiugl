@@ -111,6 +111,19 @@ do_install() {
     rm -f /etc/nginx/conf.d/minimax-locations.conf
     green "  ✓ nginx.conf → /etc/nginx/conf.d/minimax.conf (upstream + 安全 headers 全部内联)"
 
+    # 4.5 清理可能冲突的默认配置
+    if [ -f /etc/nginx/sites-enabled/default ]; then
+        rm -f /etc/nginx/sites-enabled/default
+        yellow "   移除 /etc/nginx/sites-enabled/default (避免 default server 冲突)"
+    fi
+    # 清理旧的拆分文件
+    for f in minimax-upstream.conf minimax-security.conf minimax-locations.conf; do
+        if [ -f "/etc/nginx/conf.d/$f" ]; then
+            rm -f "/etc/nginx/conf.d/$f"
+            yellow "   清理旧文件: $f"
+        fi
+    done
+
     # 5. 复制前端
     bold "  [5/5] 复制前端 dist"
     if [ -d "$PROJECT_DIR/frontend/dist" ]; then
