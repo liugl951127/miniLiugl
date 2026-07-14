@@ -1,39 +1,43 @@
-# Scripts
+# MiniMax Platform V3.5.8+ 部署脚本
 
-## audit-api.py
+## 快速开始
 
-端到端 API 审计脚本, 扫描前端 API 调用 + 后端 Controller 端点, 找出:
-- 前端调用但后端未提供的接口
-- 后端提供但前端未调用的接口
-- 未注册的 Vue 视图
-- 路由引用但文件不存在
-
-### 用法
-
+### Docker Compose (推荐)
 ```bash
-python3 scripts/audit-api.py
+./scripts/deploy.sh up        # 启动所有 17 微服务 + 3 基础设施 + Nginx
+./scripts/deploy.sh status    # 状态
+./scripts/deploy.sh logs ai   # 查看 AI 日志
+./scripts/deploy.sh down      # 停止
 ```
 
-### 集成 CI
+### 宿主机模式 (单服务)
+```bash
+./scripts/services/start-gateway.sh    # 启动 gateway
+./scripts/services/start-ai.sh        # 启动 AI
+./scripts/services/stop-gateway.sh    # 停止 gateway
+```
 
-`.github/workflows/audit.yml` 配置了 3 种触发:
-- 每次 push / PR
-- 每周一早上 9 点
-- 手动触发
+### 验证
+```bash
+./scripts/e2e-verify.sh    # 端到端验证所有 API
+```
 
-### 输出
+## 文件说明
+- `deploy.sh` - Docker 一键部署
+- `e2e-verify.sh` - 端到端验证
+- `services/start-*.sh` - 16 个服务启动脚本
+- `services/stop-*.sh` - 16 个服务停止脚本
+- `audit-api.py` - API 审计 (前端 vs 后端)
+- `verify-seed-data.py` - 种子数据验证
+- `diff_sql_entity.py` - SQL vs Entity 字段对比
+- `gen_complete_sql.py` - 从 entity 自动生成 SQL schema
+- `fix-crlf.sh` - 修复 Windows CRLF 行尾
 
-- 控制台: 人类可读报告
-- `report.json`: 详细结构化数据
-
-### 匹配规则
-
-- 精确匹配: `(path, method) == backend_endpoints`
-- 通配符: 前端 `/*` 匹配后端 `/{id}` `/{name}` `/{code}` 等
-- 路径段匹配: 关键词集合相同
-
-### 排除
-
-- `/fallback/**` (Spring 兜底)
-- `/actuator/**` (Spring Boot 监控)
-- 内部端点 (`/internal/*`)
+## 持久化目录
+```
+.docker-data/
+├── maven-repo/     Maven 仓库 (避免重复下载)
+├── mariadb/         MariaDB 数据
+├── redis/           Redis 数据
+└── logs/            17 服务日志
+```

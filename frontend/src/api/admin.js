@@ -26,16 +26,16 @@ export const updateRateLimit = (code, actorId, body) =>
   http.put(`/api/v1/admin/models/${code}/rate-limit?actorId=${actorId}`, body)
 
 export const getRecentAudit = (limit = 50) =>
-  http.get(`/api/v1/admin/audit/recent?limit=${limit}`)
+  http.get(`/api/v1/admin/audit-ops/recent?limit=${limit}`)
 
 export const getApiKeyStats = () => http.get('/api/v1/admin/apikey/stats')
 
 export const getAuditByActor = (actorId, limit = 20) =>
-  http.get(`/api/v1/admin/audit/by-actor/${actorId}?limit=${limit}`)
+  http.get(`/api/v1/admin/audit-ops/by-actor/${actorId}?limit=${limit}`)
 
 // V5.9: 按天审计统计 (Dashboard 折线图)
 export const getAuditByDay = (days = 7, action) =>
-  http.get(`/api/v1/admin/audit/by-day?days=${days}${action ? `&action=${action}` : ''}`)
+  http.get(`/api/v1/admin/audit-ops/by-day?days=${days}${action ? `&action=${action}` : ''}`)
 
 // V2.9.0: 治理后台 API
 export const governance = {

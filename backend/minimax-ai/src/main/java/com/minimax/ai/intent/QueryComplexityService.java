@@ -53,9 +53,9 @@ public class QueryComplexityService {
 
     /** 简单闲聊词汇 */
     private static final Set<String> CASUAL_TERMS = Set.of(
-            "你好", "您好", "hi", "hello", "嗨", "hi", "who", "what",
-            "你是谁", "叫什么", "介绍一下", "介绍一下", "能做什么",
-            "为什么", "怎么", "如何", "请问", "帮我", "帮我", "how",
+            "你好", "您好", "hi", "hello", "嗨", "who", "what",
+            "你是谁", "叫什么", "介绍一下", "能做什么",
+            "为什么", "怎么", "如何", "请问", "帮我", "how",
             "今天", "天气", "怎么样", "好不好", "有趣", "好玩"
     );
 
@@ -63,7 +63,7 @@ public class QueryComplexityService {
     private static final Set<String> COMPLEXITY_UP = Set.of(
             "生成", "创建", "实现", "设计", "架构", "完整", "详细",
             "一步步", "逐步", "整个", "从零", "0到1", "全栈", "端到端",
-            "生成", "create", "implement", "design", "architect"
+            "create", "implement", "design", "architect"
     );
 
     /** 后续指代词 */

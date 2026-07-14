@@ -25,6 +25,7 @@ import java.security.MessageDigest;
  * @since V5.33 Day 19
  */
 @Component("apiKeyRateLimitResolver")
+@org.springframework.context.annotation.Primary
 public class ApiKeyRateLimitResolver implements KeyResolver {
 
     private static final String API_KEY_PREFIX = "mmx_";

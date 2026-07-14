@@ -174,13 +174,13 @@ public class AdminController {
     // ---------- 审计 ----------
 
     @Operation(summary = "最近审计日志")
-    @GetMapping("/audit/recent")
+    @GetMapping("/audit-ops/recent")
     public Result<List<AdminAuditLog>> recentAudit(@RequestParam(defaultValue = "50") int limit) {
         return Result.ok(audit.recent(limit));
     }
 
     @Operation(summary = "按操作人查审计日志")
-    @GetMapping("/audit/by-actor/{id}")
+    @GetMapping("/audit-ops/by-actor/{id}")
     public Result<List<AdminAuditLog>> auditByActor(@PathVariable("id") Long actorId,
                                                      @RequestParam(defaultValue = "20") int limit) {
         return Result.ok(audit.byActor(actorId, limit));
@@ -194,7 +194,7 @@ public class AdminController {
      * </pre>
      */
     @Operation(summary = "按天审计统计 (V5.9 Dashboard 折线图)")
-    @GetMapping("/audit/by-day")
+    @GetMapping("/audit-ops/by-day")
     public Result<List<Map<String, Object>>> auditByDay(
             @RequestParam(defaultValue = "7") int days,
             @RequestParam(required = false) String action) {

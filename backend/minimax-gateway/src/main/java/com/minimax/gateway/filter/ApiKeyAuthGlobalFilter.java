@@ -50,19 +50,12 @@ public class ApiKeyAuthGlobalFilter implements GlobalFilter, Ordered {
 
     private final WebClient webClient;
     private final StringRedisTemplate redisTemplate;
+    @Value("${minimax.auth.service-url:http://minimax-auth:8081}")
     private String authServiceUrl;
 
-    /** 测试用构造函数 */
-    public ApiKeyAuthGlobalFilter(WebClient webClient, StringRedisTemplate redisTemplate, String authServiceUrl) {
-        this.webClient = webClient;
-        this.redisTemplate = redisTemplate;
-        this.authServiceUrl = authServiceUrl;
-    }
 
-    @org.springframework.beans.factory.annotation.Value("${minimax.auth.service-url:http://minimax-auth:8081}")
-    public void setAuthServiceUrl(String url) {
-        this.authServiceUrl = url;
-    }
+
+
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {

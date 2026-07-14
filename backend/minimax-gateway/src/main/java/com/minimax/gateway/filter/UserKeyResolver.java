@@ -9,7 +9,6 @@ import reactor.core.publisher.Mono;
  * 用户限流 Key 解析器 (V5.5).
  * 已登录用户按 X-User-Id 限流, 未登录回退到 IP.
  */
-@Component("userKeyResolver")
 public class UserKeyResolver implements KeyResolver {
 
     @Override
