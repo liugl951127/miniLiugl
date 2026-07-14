@@ -1,7 +1,9 @@
 package com.minimax.ai.intent;
 
 import com.minimax.ai.intent.TextNormalizer.NormalizedResult;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -10,47 +12,55 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 客户意图精准预测 V2 (V3.5.6 算法升级版)
+ * 客户意图精准预测 V2 (V3.5.7 外部化配置版)
  *
- * <h2>V3.4.1 → V3.5.6 升级内容</h2>
+ * <h2>V3.5.6 → V3.5.7 升级</h2>
  * <table border="1" cellpadding="4">
- *   <tr><th>维度</th><th>V3.4.1 (旧)</th><th>V3.5.6 (新)</th></tr>
- *   <tr><td>模型数</td><td>1 个 (单关键词)</td><td>4 个 (加权投票融合)</td></tr>
- *   <tr><td>文本归一化</td><td>无</td><td>5 步流水线 (全角/简繁/同义词/去噪)</td></tr>
- *   <tr><td>N-gram</td><td>无</td><td>2-3 字短语 + 位置权重</td></tr>
- *   <tr><td>Negation</td><td>无</td><td>否定作用域 + 情感翻转</td></tr>
- *   <tr><td>上下文</td><td>无</td><td>短时对话记忆 (L1 cache)</td></tr>
- *   <tr><td>置信度</td><td>top1/10.0</td><td>sigmoid(top1-top2) 差距</td></tr>
- *   <tr><td>情感强度</td><td>数正/负词</td><td>+ 程度副词加权 (非常/有点)</td></tr>
+ *   <tr><th>维度</th><th>V3.5.6 (硬编码)</th><th>V3.5.7 (外部化)</th></tr>
+ *   <tr><td>关键词</td><td>9 个 map 写死在 .java</td><td>yml 配 + 运行时改</td></tr>
+ *   <tr><td>短语</td><td>硬编码</td><td>yml 配置</td></tr>
+ *   <tr><td>同义词</td><td>硬编码</td><td>yml 配置</td></tr>
+ *   <tr><td>紧急词</td><td>静态 Set</td><td>yml 配置</td></tr>
+ *   <tr><td>模型权重</td><td>DEFAULT_WEIGHTS 常量</td><td>yml + 运行时调</td></tr>
+ *   <tr><td>测试用例</td><td>Controller 硬编码 20 条</td><td>yml 可扩到 100+</td></tr>
  * </table>
  *
- * <h2>4 模型加权投票</h2>
+ * <h2>3 层数据源 (优先级递减)</h2>
  * <ol>
- *   <li>关键词 TF (权重 0.4): 命中关键词 × 权重 / 文本总词数</li>
- *   <li>N-gram 短语 (权重 0.3): 关键短语 + 位置权重</li>
- *   <li>同义词扩展 (权重 0.2): 归一化扩展词命中</li>
- *   <li>上下文继承 (权重 0.1): 上一轮意图</li>
+ *   <li>运行时 API addKeyword/addPhrase 动态加</li>
+ *   <li>外部 yml (IntentConfig)</li>
+ *   <li>{@link IntentConfig#defaults()} 兜底</li>
  * </ol>
  *
- * <h2>复杂度</h2>
- * O(N*L + N*K + N*M) N=文本长度, L=关键词数, K=候选 phrase 数, M=扩展词数
- * 实测: 平均 ~1ms/句, 2000+ QPS 单核
- *
- * <h2>准确度基准 (内部测试集 100 条)</h2>
+ * <h2>运行时更新</h2>
  * <ul>
- *   <li>旧版: 76% 准确率</li>
- *   <li>新版: 91% 准确率 (+15pt, 主要提升来自同义词 + negation)</li>
+ *   <li>PUT /api/v1/ai/intent/config   - 全量替换 (rebuild)</li>
+ *   <li>POST /api/v1/ai/intent/keyword  - 加单个词 (向后兼容)</li>
+ *   <li>POST /api/v1/ai/intent/phrase   - 加单个短语</li>
+ *   <li>GET  /api/v1/ai/intent/config   - 查看当前配置</li>
  * </ul>
  *
  * @author MiniMax
- * @since V2.5 (V3.5.6 算法升级)
+ * @since V3.5.7
  */
 @Slf4j
 @Service
 public class IntentPredictionService {
 
+    /** Spring 默认无参构造 (从 yml 加载配置) */
+    public IntentPredictionService() {
+        this.config = IntentConfig.defaults();
+        reloadConfig();
+    }
+
+    /** 测试 / 热更新场景用, 显式传入配置 */
+    public IntentPredictionService(IntentConfig config) {
+        this.config = config != null ? mergeWithDefaults(config) : IntentConfig.defaults();
+        reloadConfig();
+    }
+
     // ═══════════════════════════════════════════════════════════
-    // 意图分类常量
+    // 意图分类常量 (这些是 schema, 不放 yml)
     // ═══════════════════════════════════════════════════════════
 
     public static final String INTENT_QUERY = "query";
@@ -65,43 +75,35 @@ public class IntentPredictionService {
     public static final String INTENT_OTHER = "other";
 
     // ═══════════════════════════════════════════════════════════
-    // 知识库 (运行时可热更新)
+    // 知识库 (从 IntentConfig 加载)
     // ═══════════════════════════════════════════════════════════
 
-    /** 意图关键词表 (V3.5.6 扩展: 加更多词, 短语) */
+    /** 意图关键词表 (intent -> { word -> weight }) */
     private final Map<String, Map<String, Double>> intentKeywords = new ConcurrentHashMap<>();
-    /** 关键 N-gram 短语 (2-3 字) */
+    /** 关键 N-gram 短语 (intent -> { phrase -> weight }) */
     private final Map<String, Map<String, Double>> intentPhrases = new ConcurrentHashMap<>();
-    /** 紧急词 (V3.5.6 加程度副词分类) */
-    private static final Set<String> URGENT_WORDS = Set.of(
-            "急", "紧急", "马上", "立即", "立刻", "尽快", "asap", "urgent",
-            "火", "爆炸", "故障", "宕机", "崩溃", "挂", "卡死", "卡住"
-    );
-    /** 紧急程度副词 (加权 1.5x) */
-    private static final Set<String> URGENT_DEGREE = Set.of(
-            "非常", "特别", "极其", "巨", "超", "超级"
-    );
-    /** 负面词 */
-    private static final Set<String> NEG_WORDS = Set.of(
-            "差", "烂", "垃圾", "失望", "愤怒", "投诉", "退款", "没用",
-            "坏了", "不对", "错误", "卡顿", "卡", "慢", "渣", "坑", "忽悠"
-    );
+    /** Agent 推荐映射 (intent -> agentId) */
+    private final Map<String, String> intentToAgent = new ConcurrentHashMap<>();
+    /** 紧急词 (Set 加速 contains 查询) */
+    private Set<String> urgentWords = Set.of();
+    /** 紧急程度副词 */
+    private Set<String> urgentDegreeWords = Set.of();
     /** 正面词 */
-    private static final Set<String> POS_WORDS = Set.of(
-            "好", "棒", "赞", "感谢", "谢谢", "满意", "喜欢", "推荐", "优秀", "完美",
-            "不错", "给力", "漂亮", "贴心", "迅速"
-    );
-    /** 程度副词 (加强/减弱) */
-    private static final Map<String, Double> DEGREE_ADV = Map.ofEntries(
-            Map.entry("非常", 1.5), Map.entry("特别", 1.5),
-            Map.entry("极其", 1.8), Map.entry("巨", 1.5),
-            Map.entry("很", 1.2), Map.entry("挺", 1.1),
-            Map.entry("有点", 0.7), Map.entry("稍微", 0.5),
-            Map.entry("略", 0.5), Map.entry("不太", 0.6)
-    );
+    private Set<String> positiveWords = Set.of();
+    /** 负面词 */
+    private Set<String> negativeWords = Set.of();
+    /** 程度副词 (word -> 系数) */
+    private Map<String, Double> degreeAdverbs = Map.of();
+    /** 4 模型权重 */
+    private double[] modelWeights = WeightedVotingEnsemble.DEFAULT_WEIGHTS;
+    /** sigmoid 置信度缩放 */
+    private double confidenceScale = 5.0;
+
+    /** Benchmark 测试用例 (intent -> benchmark) */
+    private List<IntentConfig.BenchmarkCase> benchmarkCases = List.of();
 
     // ═══════════════════════════════════════════════════════════
-    // 正则实体 (V3.5.6 加更多)
+    // 实体正则 (V3.5.7 保留, 这些是 schema 不是业务规则)
     // ═══════════════════════════════════════════════════════════
 
     private static final Pattern TIME_PAT = Pattern.compile(
@@ -114,10 +116,8 @@ public class IntentPredictionService {
             "(?<![\\d])(1[3-9]\\d{9})(?![\\d])");
     private static final Pattern URL_PAT = Pattern.compile(
             "https?://[\\w.-]+(?:/[\\w./?=&%-]*)?");
-    /** V3.5.6 新增: 数字 + 单位 (10 个, 5 公斤) */
     private static final Pattern QUANTITY_PAT = Pattern.compile(
             "(\\d+)\\s*(个|件|份|台|辆|条|只|张|本|瓶|块|箱)");
-    /** V3.5.6 新增: 身份证 */
     private static final Pattern ID_CARD_PAT = Pattern.compile(
             "(?<![\\d])([1-9]\\d{5}(?:18|19|20)\\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\\d|3[01])\\d{3}[\\dXx])(?![\\d])");
 
@@ -125,172 +125,99 @@ public class IntentPredictionService {
     // 上下文 (短时记忆, LRU + TTL)
     // ═══════════════════════════════════════════════════════════
 
-    /** sessionId -> 上次意图 + 时间戳 */
     private final Map<String, ContextEntry> sessionContext = new ConcurrentHashMap<>();
-    private static final long CONTEXT_TTL_MS = 5 * 60 * 1000L;  // 5 分钟
+    private static final long CONTEXT_TTL_MS = 5 * 60 * 1000L;
 
     private record ContextEntry(String intent, long timestamp) {}
 
     // ═══════════════════════════════════════════════════════════
-    // Agent 推荐映射
+    // 外部配置 (Spring 自动注入, 兜底用 defaults)
     // ═══════════════════════════════════════════════════════════
 
-    private static final Map<String, String> INTENT_TO_AGENT = Map.of(
-            INTENT_QUERY, "echo-analyzer",
-            INTENT_ORDER, "echo-writer",
-            INTENT_COMPLAINT, "echo-reviewer",
-            INTENT_CONSULT, "echo-translator",
-            INTENT_CANCEL, "echo-writer",
-            INTENT_FEEDBACK, "echo-summarizer",
-            INTENT_PAY, "echo-reviewer",
-            INTENT_LOGIN, "echo-coder",
-            INTENT_REGISTER, "echo-coder"
-    );
+    private IntentConfig config;
 
-    public IntentPredictionService() {
-        initDefaultKeywords();
-        initDefaultPhrases();
+    @Autowired
+    public void setConfig(IntentConfig config) {
+        // yml 没配 intent 段时, Spring 仍会创建空 IntentConfig
+        // 用 defaults() 兜底
+        this.config = config != null && config.getKeywords() != null
+                ? mergeWithDefaults(config)
+                : IntentConfig.defaults();
+        reloadConfig();
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // 初始化
-    // ═══════════════════════════════════════════════════════════
-
-    private void initDefaultKeywords() {
-        // query
-        Map<String, Double> q = new HashMap<>();
-        q.put("查询", 10.0); q.put("查", 8.0); q.put("看看", 6.0); q.put("显示", 5.0);
-        q.put("多少", 7.0); q.put("几个", 5.0); q.put("哪些", 5.0); q.put("有没有", 6.0);
-        q.put("select", 5.0); q.put("find", 5.0); q.put("get", 4.0);
-        addIntent(INTENT_QUERY, q);
-
-        // order
-        Map<String, Double> o = new HashMap<>();
-        o.put("下单", 10.0); o.put("订购", 9.0); o.put("买", 8.0); o.put("购买", 9.0);
-        o.put("要", 5.0); o.put("order", 8.0); o.put("buy", 7.0); o.put("purchase", 8.0);
-        addIntent(INTENT_ORDER, o);
-
-        // complaint
-        Map<String, Double> c = new HashMap<>();
-        c.put("投诉", 10.0); c.put("差评", 9.0); c.put("退款", 8.0); c.put("退货", 8.0);
-        c.put("complain", 8.0); c.put("refund", 7.0);
-        addIntent(INTENT_COMPLAINT, c);
-
-        // consult
-        Map<String, Double> co = new HashMap<>();
-        co.put("咨询", 10.0); co.put("请问", 8.0); co.put("问", 5.0); co.put("怎么", 5.0);
-        co.put("如何", 5.0); co.put("help", 5.0); co.put("?", 3.0); co.put("？", 3.0);
-        addIntent(INTENT_CONSULT, co);
-
-        // cancel
-        Map<String, Double> cc = new HashMap<>();
-        cc.put("取消", 10.0); cc.put("撤销", 9.0); cc.put("作废", 8.0); cc.put("不要了", 7.0);
-        cc.put("cancel", 8.0); cc.put("abort", 7.0);
-        addIntent(INTENT_CANCEL, cc);
-
-        // feedback
-        Map<String, Double> fb = new HashMap<>();
-        fb.put("反馈", 10.0); fb.put("建议", 8.0); fb.put("意见", 7.0); fb.put("希望", 5.0);
-        fb.put("feedback", 8.0); fb.put("suggest", 7.0);
-        addIntent(INTENT_FEEDBACK, fb);
-
-        // pay
-        Map<String, Double> p = new HashMap<>();
-        p.put("付款", 10.0); p.put("支付", 10.0); p.put("转账", 8.0); p.put("结账", 9.0);
-        p.put("充值", 7.0); p.put("pay", 8.0); p.put("checkout", 8.0);
-        addIntent(INTENT_PAY, p);
-
-        // login
-        Map<String, Double> l = new HashMap<>();
-        l.put("登录", 10.0); l.put("登入", 9.0);
-        l.put("signup", 7.0); l.put("login", 8.0);
-        addIntent(INTENT_LOGIN, l);
-
-        // register (V3.5.6 新增)
-        Map<String, Double> reg = new HashMap<>();
-        reg.put("注册", 10.0); reg.put("开账号", 9.0); reg.put("创建账号", 9.0);
-        reg.put("register", 8.0);
-        addIntent(INTENT_REGISTER, reg);
+    /** 合并 yml + defaults, yml 缺的字段用 defaults 补 */
+    private static IntentConfig mergeWithDefaults(IntentConfig yml) {
+        IntentConfig d = IntentConfig.defaults();
+        if (yml.getAlgorithm() != null) d.setAlgorithm(yml.getAlgorithm());
+        if (yml.getWeights() != null && yml.getWeights().length == 4) d.setWeights(yml.getWeights());
+        if (yml.getConfidenceScale() > 0) d.setConfidenceScale(yml.getConfidenceScale());
+        if (yml.getNegation() != null) d.setNegation(yml.getNegation());
+        if (yml.getUrgent() != null) d.setUrgent(yml.getUrgent());
+        if (yml.getSentiment() != null) d.setSentiment(yml.getSentiment());
+        if (yml.getAgents() != null && !yml.getAgents().isEmpty()) d.setAgents(yml.getAgents());
+        if (yml.getKeywords() != null && !yml.getKeywords().isEmpty()) d.setKeywords(yml.getKeywords());
+        if (yml.getPhrases() != null && !yml.getPhrases().isEmpty()) d.setPhrases(yml.getPhrases());
+        if (yml.getSynonyms() != null && !yml.getSynonyms().isEmpty()) d.setSynonyms(yml.getSynonyms());
+        if (yml.getTraditional() != null && !yml.getTraditional().isEmpty()) d.setTraditional(yml.getTraditional());
+        if (yml.getBenchmark() != null && !yml.getBenchmark().isEmpty()) d.setBenchmark(yml.getBenchmark());
+        return d;
     }
 
-    /** 初始化关键短语 (2-3 字) */
-    private void initDefaultPhrases() {
-        // order 短语
-        addPhrase(INTENT_ORDER, "我要买", 12.0);
-        addPhrase(INTENT_ORDER, "我想买", 12.0);
-        addPhrase(INTENT_ORDER, "帮我买", 11.0);
-        addPhrase(INTENT_ORDER, "买一下", 9.0);
-        addPhrase(INTENT_ORDER, "帮我下", 10.0);
-        addPhrase(INTENT_ORDER, "帮我订", 11.0);
-
-        // complaint 短语
-        addPhrase(INTENT_COMPLAINT, "我要退款", 13.0);
-        addPhrase(INTENT_COMPLAINT, "我想退款", 13.0);
-        addPhrase(INTENT_COMPLAINT, "退款!", 11.0);
-        addPhrase(INTENT_COMPLAINT, "退货!", 11.0);
-        addPhrase(INTENT_COMPLAINT, "差评!", 11.0);
-        addPhrase(INTENT_COMPLAINT, "申请退款", 12.0);
-
-        // query 短语
-        addPhrase(INTENT_QUERY, "帮我查", 10.0);
-        addPhrase(INTENT_QUERY, "帮我看看", 9.0);
-        addPhrase(INTENT_QUERY, "有多少", 8.0);
-        addPhrase(INTENT_QUERY, "查一下", 10.0);
-        addPhrase(INTENT_QUERY, "看一下", 7.0);
-
-        // consult 短语
-        addPhrase(INTENT_CONSULT, "怎么用", 9.0);
-        addPhrase(INTENT_CONSULT, "怎么办", 9.0);
-        addPhrase(INTENT_CONSULT, "如何用", 9.0);
-        addPhrase(INTENT_CONSULT, "怎么操作", 10.0);
-
-        // cancel 短语
-        addPhrase(INTENT_CANCEL, "不要了", 12.0);
-        addPhrase(INTENT_CANCEL, "算了吧", 10.0);
-        addPhrase(INTENT_CANCEL, "取消吧", 11.0);
-        addPhrase(INTENT_CANCEL, "我撤销", 11.0);
-
-        // pay 短语
-        addPhrase(INTENT_PAY, "我付款", 11.0);
-        addPhrase(INTENT_PAY, "去支付", 11.0);
-        addPhrase(INTENT_PAY, "完成支付", 12.0);
-        addPhrase(INTENT_PAY, "去结账", 11.0);
-
-        // login 短语
-        addPhrase(INTENT_LOGIN, "我要登录", 12.0);
-        addPhrase(INTENT_LOGIN, "怎么登录", 11.0);
-        addPhrase(INTENT_LOGIN, "无法登录", 13.0);
-
-        // register 短语
-        addPhrase(INTENT_REGISTER, "我要注册", 12.0);
-        addPhrase(INTENT_REGISTER, "怎么注册", 11.0);
-        addPhrase(INTENT_REGISTER, "新账号", 10.0);
+    @PostConstruct
+    public void init() {
+        if (config == null) {
+            config = IntentConfig.defaults();
+            reloadConfig();
+        }
+        log.info("[Intent] 加载配置: {} 个意图, {} 个关键词, {} 个短语, {} 个 benchmark",
+                intentKeywords.size(),
+                intentKeywords.values().stream().mapToInt(Map::size).sum(),
+                intentPhrases.values().stream().mapToInt(Map::size).sum(),
+                benchmarkCases.size());
     }
 
-    private void addIntent(String intent, Map<String, Double> words) {
-        intentKeywords.computeIfAbsent(intent, k -> new HashMap<>()).putAll(words);
+    /** 重载配置 (启动时 + 运行时热更新) */
+    public synchronized void reloadConfig() {
+        intentKeywords.clear();
+        if (config.getKeywords() != null) {
+            for (var e : config.getKeywords().entrySet()) {
+                intentKeywords.put(e.getKey(), new HashMap<>(e.getValue()));
+            }
+        }
+        intentPhrases.clear();
+        if (config.getPhrases() != null) {
+            for (var e : config.getPhrases().entrySet()) {
+                intentPhrases.put(e.getKey(), new HashMap<>(e.getValue()));
+            }
+        }
+        intentToAgent.clear();
+        intentToAgent.putAll(config.getAgents());
+
+        urgentWords = new HashSet<>(config.getUrgent().getWords());
+        urgentDegreeWords = new HashSet<>(config.getUrgent().getDegree());
+        positiveWords = new HashSet<>(config.getSentiment().getPositive());
+        negativeWords = new HashSet<>(config.getSentiment().getNegative());
+        degreeAdverbs = new HashMap<>(config.getSentiment().getDegreeWords());
+        modelWeights = config.getWeights();
+        confidenceScale = config.getConfidenceScale();
+        benchmarkCases = new ArrayList<>(config.getBenchmark());
+
+        // 同步给 TextNormalizer + NegationHandler
+        TextNormalizer.setSynonyms(config.getSynonyms());
+        TextNormalizer.setTraditional(config.getTraditional());
+        NegationHandler.setPrefixes(config.getNegation().getPrefixes());
+        NegationHandler.setScope(config.getNegation().getScope());
     }
-    // addPhrase 公有方法见下方 588 行 (动态添加短语 / 运行时学习)
+
     // ═══════════════════════════════════════════════════════════
     // 主入口
     // ═══════════════════════════════════════════════════════════
 
-    /**
-     * 预测意图 (V3.5.6 升级版, 4 模型加权投票)
-     *
-     * @param text 客户一句话
-     * @return 完整预测结果
-     */
     public IntentPrediction predict(String text) {
         return predict(text, null);
     }
 
-    /**
-     * 预测意图 (带 sessionId 上下文)
-     *
-     * @param text 客户一句话
-     * @param sessionId 会话 ID, null 则无上下文
-     */
     public IntentPrediction predict(String text, String sessionId) {
         if (text == null || text.isBlank()) {
             return IntentPrediction.builder()
@@ -300,32 +227,22 @@ public class IntentPredictionService {
                     .confidence(0.0)
                     .sentiment("neutral")
                     .urgency(0.0)
-                    .algorithm("v3.5.6-weighted-voting")
+                    .algorithm(config.getAlgorithm())
                     .build();
         }
-
-        // ───── 步骤 0: 文本归一化 ─────
         NormalizedResult norm = TextNormalizer.normalize(text);
         String work = norm.normalized();
-
-        // ───── 步骤 1: 检测否定作用域 ─────
+        log.debug("[intent] in='{}' normalized='{}' expansions={}", text, work, norm.expansions());
         Map<Integer, Integer> negScopes = NegationHandler.detectNegationScopes(work);
 
-        // ───── 步骤 2: 4 模型打分 ─────
-        // 2.1 关键词 TF
         Map<String, Double> tfScores = scoreKeywords(work, negScopes);
-        // 2.2 N-gram 短语
         Map<String, Double> ngramScores = scoreNgrams(work);
-        // 2.3 同义词扩展
         Map<String, Double> expandScores = scoreExpansions(norm.expansions());
-        // 2.4 上下文继承
         String ctxIntent = getContextIntent(sessionId);
 
-        // ───── 步骤 3: 加权投票融合 ─────
         Map<String, Double> fused = WeightedVotingEnsemble.fuse(
-                tfScores, ngramScores, expandScores, ctxIntent, null);
+                tfScores, ngramScores, expandScores, ctxIntent, modelWeights);
 
-        // ───── 步骤 4: 排序 + 计算置信度 ─────
         if (fused.isEmpty()) {
             return IntentPrediction.builder()
                     .originalText(text)
@@ -334,27 +251,23 @@ public class IntentPredictionService {
                     .confidence(0.0)
                     .sentiment(calcSentiment(text, work, negScopes))
                     .urgency(calcUrgency(text, work))
-                    .algorithm("v3.5.6-weighted-voting")
+                    .algorithm(config.getAlgorithm())
                     .modelScores(Map.of("tf", tfScores, "ngram", ngramScores, "expand", expandScores))
                     .build();
         }
         List<Map.Entry<String, Double>> sorted = new ArrayList<>(fused.entrySet());
         sorted.sort((a, b) -> Double.compare(b.getValue(), a.getValue()));
         String topIntent = sorted.get(0).getKey();
-        double confidence = WeightedVotingEnsemble.confidence(sorted);
+        double confidence = confidenceSigmoid(sorted);
 
-        // ───── 步骤 5: 实体 + 槽位 ─────
         List<ExtractedEntity> entities = extractEntities(text);
         Map<String, String> slots = extractSlots(text, topIntent, entities);
 
-        // ───── 步骤 6: 紧迫度 + 情感 (V3.5.6 加强) ─────
         double urgency = calcUrgency(text, work);
         String sentiment = calcSentiment(text, work, negScopes);
 
-        // ───── 步骤 7: Agent 推荐 ─────
-        String recommendedAgent = INTENT_TO_AGENT.getOrDefault(topIntent, "echo-analyzer");
+        String recommendedAgent = intentToAgent.getOrDefault(topIntent, "echo-analyzer");
 
-        // ───── 步骤 8: 备选意图 ─────
         List<IntentCandidate> alternatives = new ArrayList<>();
         Map<String, Double> probs = WeightedVotingEnsemble.softmax(fused);
         for (int i = 1; i < Math.min(sorted.size(), 4); i++) {
@@ -362,7 +275,6 @@ public class IntentPredictionService {
             alternatives.add(new IntentCandidate(e.getKey(), probs.getOrDefault(e.getKey(), 0.0)));
         }
 
-        // ───── 步骤 9: 保存上下文 ─────
         if (sessionId != null) {
             sessionContext.put(sessionId, new ContextEntry(topIntent, System.currentTimeMillis()));
             cleanupExpiredContext();
@@ -373,14 +285,14 @@ public class IntentPredictionService {
                 .normalizedText(work)
                 .intent(topIntent)
                 .confidence(confidence)
-                .intentScores(probs)  // softmax 后的概率
+                .intentScores(probs)
                 .entities(entities)
                 .slots(slots)
                 .urgency(urgency)
                 .sentiment(sentiment)
                 .recommendedAgent(recommendedAgent)
                 .alternatives(alternatives)
-                .algorithm("v3.5.6-weighted-voting")
+                .algorithm(config.getAlgorithm())
                 .modelScores(Map.of(
                         "tf", tfScores,
                         "ngram", ngramScores,
@@ -392,15 +304,12 @@ public class IntentPredictionService {
     }
 
     // ═══════════════════════════════════════════════════════════
-    // 4 模型打分 (内部)
+    // 4 模型打分
     // ═══════════════════════════════════════════════════════════
 
-    /** 模型 1: 关键词 TF + Negation 修正 */
     private Map<String, Double> scoreKeywords(String text, Map<Integer, Integer> negScopes) {
         Map<String, Double> result = new HashMap<>();
         String lower = text.toLowerCase(Locale.ROOT);
-        // 分词 (按空格, 没空格就按字)
-        String[] tokens = lower.split("\\s+");
         int totalTokens = Math.max(1, lower.length());
         for (Map.Entry<String, Map<String, Double>> intent : intentKeywords.entrySet()) {
             double score = 0;
@@ -409,24 +318,20 @@ public class IntentPredictionService {
                 int idx = lower.indexOf(w);
                 if (idx >= 0) {
                     double s = word.getValue();
-                    // Negation 修正
                     if (NegationHandler.isNegated(idx, negScopes)) {
                         s *= NegationHandler.negationPenalty(true);
                     }
-                    // TF 归一 (出现多次按比例加权)
                     int occurrences = countOccurrences(lower, w);
                     double tf = 1.0 + Math.log(1 + occurrences - 1) * 0.3;
                     score += s * tf;
                 }
             }
-            // 按文本长度归一 (避免长文本占便宜)
             score = score / Math.sqrt(totalTokens);
             if (score > 0) result.put(intent.getKey(), score);
         }
         return result;
     }
 
-    /** 模型 2: N-gram 短语 */
     private Map<String, Double> scoreNgrams(String text) {
         Map<String, Double> result = new HashMap<>();
         for (Map.Entry<String, Map<String, Double>> intent : intentPhrases.entrySet()) {
@@ -438,12 +343,10 @@ public class IntentPredictionService {
         return result;
     }
 
-    /** 模型 3: 同义词扩展 */
     private Map<String, Double> scoreExpansions(List<String> expansions) {
         Map<String, Double> result = new HashMap<>();
         if (expansions == null || expansions.isEmpty()) return result;
         for (String exp : expansions) {
-            // exp = 标准词 (如 "退款"), 查它对应的 intent
             for (Map.Entry<String, Map<String, Double>> intent : intentKeywords.entrySet()) {
                 if (intent.getValue().containsKey(exp)) {
                     double s = intent.getValue().get(exp);
@@ -454,7 +357,6 @@ public class IntentPredictionService {
         return result;
     }
 
-    /** 上下文意图 (5 分钟 TTL) */
     private String getContextIntent(String sessionId) {
         if (sessionId == null) return null;
         ContextEntry entry = sessionContext.get(sessionId);
@@ -466,13 +368,13 @@ public class IntentPredictionService {
         return entry.intent;
     }
 
-    /** 清理过期上下文 (防内存泄漏) */
     private void cleanupExpiredContext() {
         long now = System.currentTimeMillis();
         sessionContext.entrySet().removeIf(e -> now - e.getValue().timestamp > CONTEXT_TTL_MS);
     }
 
-    /** 统计子串出现次数 (不重叠) */
+
+
     private static int countOccurrences(String text, String sub) {
         int count = 0;
         int from = 0;
@@ -485,8 +387,18 @@ public class IntentPredictionService {
         return count;
     }
 
+    /** sigmoid 置信度 (用配置里的 scale 因子) */
+    private double confidenceSigmoid(List<Map.Entry<String, Double>> sortedScores) {
+        if (sortedScores.isEmpty()) return 0.0;
+        if (sortedScores.size() == 1) return Math.min(1.0, sortedScores.get(0).getValue());
+        double s1 = sortedScores.get(0).getValue();
+        double s2 = sortedScores.get(1).getValue();
+        double diff = s1 - s2;
+        return 0.5 + 0.5 * Math.tanh(diff / confidenceScale);
+    }
+
     // ═══════════════════════════════════════════════════════════
-    // 实体 / 槽位 / 紧迫度 / 情感 (V3.5.6 加强)
+    // 实体 / 槽位 / 紧迫度 / 情感
     // ═══════════════════════════════════════════════════════════
 
     private List<ExtractedEntity> extractEntities(String text) {
@@ -503,9 +415,7 @@ public class IntentPredictionService {
 
     private void addMatches(List<ExtractedEntity> out, String text, String type, Pattern p) {
         Matcher m = p.matcher(text);
-        while (m.find()) {
-            out.add(new ExtractedEntity(type, m.group(), m.start(), m.end()));
-        }
+        while (m.find()) out.add(new ExtractedEntity(type, m.group(), m.start(), m.end()));
     }
 
     private Map<String, String> extractSlots(String text, String intent, List<ExtractedEntity> entities) {
@@ -533,34 +443,25 @@ public class IntentPredictionService {
         return slots;
     }
 
-    /**
-     * 紧迫度 (V3.5.6: 加程度副词加权 + 紧急词密度)
-     */
     private double calcUrgency(String text, String work) {
-        long baseCount = URGENT_WORDS.stream().filter(w -> work.contains(w)).count();
-        long degreeCount = URGENT_DEGREE.stream().filter(w -> work.contains(w)).count();
+        long baseCount = urgentWords.stream().filter(work::contains).count();
+        long degreeCount = urgentDegreeWords.stream().filter(work::contains).count();
         long exclaim = text.chars().filter(c -> c == '!' || c == '！').count();
         double score = baseCount * 0.3 + degreeCount * 0.15 + exclaim * 0.1;
         return Math.min(1.0, score);
     }
 
-    /**
-     * 情感 (V3.5.6: 加否定修正 + 程度副词加权)
-     */
     private String calcSentiment(String text, String work, Map<Integer, Integer> negScopes) {
-        long pos = POS_WORDS.stream().filter(work::contains).count();
-        long neg = NEG_WORDS.stream().filter(work::contains).count();
-        // 程度副词加权
+        long pos = positiveWords.stream().filter(work::contains).count();
+        long neg = negativeWords.stream().filter(work::contains).count();
         double posWeighted = pos;
         double negWeighted = neg;
-        for (var e : DEGREE_ADV.entrySet()) {
+        for (var e : degreeAdverbs.entrySet()) {
             if (work.contains(e.getKey())) {
-                // 检查影响范围 (粗略: 全局加权)
                 posWeighted *= e.getValue();
                 negWeighted *= e.getValue();
             }
         }
-        // Negation: 否定作用域里的反向
         if (NegationHandler.isNegated(work.indexOf("好") >= 0 ? work.indexOf("好") : 0, negScopes)) {
             posWeighted *= 0.3;
         }
@@ -573,32 +474,43 @@ public class IntentPredictionService {
     }
 
     // ═══════════════════════════════════════════════════════════
-    // 学习 API (运行时)
+    // 运行时学习 + 热更新 API
     // ═══════════════════════════════════════════════════════════
 
-    /** 动态添加关键词 */
     public void addKeyword(String intent, String keyword, double weight) {
         intentKeywords.computeIfAbsent(intent, k -> new HashMap<>()).put(keyword, weight);
     }
 
-    /** 动态添加短语 */
     public void addPhrase(String intent, String phrase, double weight) {
         intentPhrases.computeIfAbsent(intent, k -> new HashMap<>()).put(phrase, weight);
     }
 
-    /** 清除 session 上下文 */
     public void clearContext(String sessionId) {
         if (sessionId != null) sessionContext.remove(sessionId);
     }
 
-    /** 列出所有意图 */
     public Set<String> listIntents() {
         return intentKeywords.keySet();
     }
 
-    /** 获取算法版本 */
     public String getAlgorithmVersion() {
-        return "v3.5.6-weighted-voting";
+        return config != null ? config.getAlgorithm() : "v3.5.6";
+    }
+
+    /** 获取当前配置 (只读) */
+    public IntentConfig getConfig() {
+        return config;
+    }
+
+    /** 运行时热更新配置 (部分字段) */
+    public synchronized void updateConfig(IntentConfig newConfig) {
+        this.config = mergeWithDefaults(newConfig);
+        reloadConfig();
+    }
+
+    /** 获取 benchmark 测试用例 */
+    public List<IntentConfig.BenchmarkCase> getBenchmarkCases() {
+        return benchmarkCases;
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -612,7 +524,6 @@ public class IntentPredictionService {
         private String normalizedText;
         private String intent;
         private double confidence;
-        /** softmax 后的概率分布 (V3.5.6 新增) */
         private Map<String, Double> intentScores;
         private List<ExtractedEntity> entities;
         private Map<String, String> slots;
@@ -620,11 +531,8 @@ public class IntentPredictionService {
         private String sentiment;
         private String recommendedAgent;
         private List<IntentCandidate> alternatives;
-        /** 算法版本 (V3.5.6 新增) */
         private String algorithm;
-        /** 各模型原始分 (V3.5.6 新增, 用于 debug / 可解释性) */
         private Map<String, Object> modelScores;
-        /** 同义词扩展 (V3.5.6 新增) */
         private List<String> expansions;
     }
 

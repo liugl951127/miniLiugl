@@ -232,7 +232,7 @@ class IntentPredictionTest {
         // 全角数字 + 简繁
         IntentPredictionService.IntentPrediction r = svc.predict("退訂單, 謝謝");
         assertNotNull(r.getNormalizedText(), "应有归一化结果");
-        assertTrue(r.getNormalizedText().contains("订单"), "应归一为简体");
+        assertTrue(r.getNormalizedText().contains("订单"), "应归一为简体, 实际: " + r.getNormalizedText());
     }
 
     /**

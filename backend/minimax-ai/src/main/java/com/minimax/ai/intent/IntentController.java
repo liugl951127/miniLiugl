@@ -103,46 +103,30 @@ public class IntentController {
         return Result.ok(stats);
     }
 
-    @Operation(summary = "内部基准测试 (V3.5.6 新增)")
+    @Operation(summary = "内部基准测试 (V3.5.7 用 yml 配置)")
     @PostMapping("/benchmark")
     public Result<Map<String, Object>> benchmark(@RequestBody(required = false) Map<String, Object> body) {
         int n = body != null && body.get("n") instanceof Number ? ((Number) body.get("n")).intValue() : 100;
-        // 100 条标准测试集
-        String[][] cases = {
-            {"查询一下订单状态", "query"},
-            {"我想买 10 台服务器", "order"},
-            {"我要退款, 差评, 紧急!", "complaint"},
-            {"紧急! 马上修复!!", "complaint"},
-            {"13800138000 邮箱 test@example.com 支付 100 元, 明天发货", "pay"},
-            {"非常棒, 谢谢!", "feedback"},
-            {"我要付款 100 元", "pay"},
-            {"查询订单状态", "query"},
-            {"怎么登录?", "consult"},
-            {"我要注册账号", "register"},
-            {"帮我取消订单", "cancel"},
-            {"退货!", "complaint"},
-            {"购买 5 个 iPhone", "order"},
-            {"不满意, 退款", "complaint"},
-            {"非常感谢, 帮大忙了", "feedback"},
-            {"dingdan zhuangtai", "query"},  // 拼音
-            {"i want refund", "complaint"},  // 英文
-            {"无法登录怎么办?", "login"},
-            {"帮我看看数据", "query"},
-            {"下单 100 元", "order"}
-        };
+        // 从 yml 加载 (V3.5.7)
+        List<IntentConfig.BenchmarkCase> cases = service.getBenchmarkCases();
+        if (cases.isEmpty()) {
+            Map<String, Object> err = new LinkedHashMap<>();
+            err.put("error", "benchmark 用例为空, 请检查 yml 配置");
+            return Result.ok(err);
+        }
         int correct = 0, total = 0;
         List<Map<String, Object>> details = new ArrayList<>();
         long t0 = System.nanoTime();
         for (int i = 0; i < n; i++) {
-            for (String[] c : cases) {
-                IntentPredictionService.IntentPrediction r = service.predict(c[0]);
-                boolean ok = c[1].equals(r.getIntent());
+            for (IntentConfig.BenchmarkCase c : cases) {
+                IntentPredictionService.IntentPrediction r = service.predict(c.getText());
+                boolean ok = c.getExpected().equals(r.getIntent());
                 if (ok) correct++;
                 total++;
                 if (i == 0) {
                     Map<String, Object> d = new LinkedHashMap<>();
-                    d.put("text", c[0]);
-                    d.put("expected", c[1]);
+                    d.put("text", c.getText());
+                    d.put("expected", c.getExpected());
                     d.put("actual", r.getIntent());
                     d.put("confidence", r.getConfidence());
                     d.put("ok", ok);
@@ -158,7 +142,38 @@ public class IntentController {
         result.put("accuracy", (double) correct / total);
         result.put("avgLatencyMs", cost / 1_000_000.0 / total);
         result.put("algorithm", service.getAlgorithmVersion());
+        result.put("configSource", "application-intent.yml");
+        result.put("caseCount", cases.size());
         result.put("sampleDetails", details.subList(0, Math.min(10, details.size())));
+        return Result.ok(result);
+    }
+
+    @Operation(summary = "查看当前配置 (V3.5.7 新增)")
+    @GetMapping("/config")
+    public Result<IntentConfig> getConfig() {
+        return Result.ok(service.getConfig());
+    }
+
+    @Operation(summary = "热更新配置 (V3.5.7 新增, 部分覆盖)")
+    @PutMapping("/config")
+    public Result<Map<String, Object>> updateConfig(@RequestBody IntentConfig newConfig) {
+        if (newConfig == null) return Result.fail("配置不能为空");
+        service.updateConfig(newConfig);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("algorithm", service.getAlgorithmVersion());
+        result.put("intents", service.listIntents());
+        result.put("updated", true);
+        return Result.ok(result);
+    }
+
+    @Operation(summary = "重置为默认配置 (V3.5.7 新增)")
+    @PostMapping("/config/reset")
+    public Result<Map<String, Object>> resetConfig() {
+        service.updateConfig(IntentConfig.defaults());
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("algorithm", service.getAlgorithmVersion());
+        result.put("intents", service.listIntents());
+        result.put("reset", true);
         return Result.ok(result);
     }
 }

@@ -80,16 +80,22 @@ public final class WeightedVotingEnsemble {
      * 计算置信度: top1 vs top2 差距
      * softmax 风格: confidence = (e^s1 - e^s2) / (e^s1 + e^s2)
      * 简化: confidence = sigmoid(s1 - s2)
+     *
+     * @param sortedScores 排序后的分数列表
+     * @param scale        缩放因子 (默认 5.0, 越小越敏感)
      */
-    public static double confidence(List<Map.Entry<String, Double>> sortedScores) {
+    public static double confidence(List<Map.Entry<String, Double>> sortedScores, double scale) {
         if (sortedScores.isEmpty()) return 0.0;
         if (sortedScores.size() == 1) return Math.min(1.0, sortedScores.get(0).getValue());
         double s1 = sortedScores.get(0).getValue();
         double s2 = sortedScores.get(1).getValue();
-        // 差距越大置信度越高
         double diff = s1 - s2;
-        // 范围 [0.5, 1.0]
-        return 0.5 + 0.5 * Math.tanh(diff / 5.0);
+        return 0.5 + 0.5 * Math.tanh(diff / Math.max(0.1, scale));
+    }
+
+    /** 兼容旧 API (scale=5.0) */
+    public static double confidence(List<Map.Entry<String, Double>> sortedScores) {
+        return confidence(sortedScores, 5.0);
     }
 
     /**
