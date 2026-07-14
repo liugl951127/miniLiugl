@@ -9,7 +9,7 @@ export const systemApi = {
   /** 平台健康检查 - minimax-monitor /api/v1/monitor/health */
   health: () => http.get('/api/v1/monitor/health'),
   /** 平台完整健康检查 (所有 16 模块) - minimax-monitor */
-  healthAll: () => http.get('/api/v1/monitor/health/all')
+  healthAll: () => http.get('/api/v1/monitor/health')
 }
 
 export const authApi = {

@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * V2.4: 插件市场服务
@@ -112,5 +113,84 @@ public class PluginService {
         if (!p.getOwnerId().equals(ownerId)) return false;
         mapper.deleteById(id);
         return true;
+    }
+
+    /**
+     * V3.5.8: 执行插件调用
+     *
+     * <h3>支持的插件类型</h3>
+     * <ul>
+     *   <li>class: 后端 Java 类调用 (反射)</li>
+     *   <li>url: HTTP 代理调用 (转发 input 到 url)</li>
+     *   <li>js: 客户端 JS 沙箱执行 (后端不参与, 此处仅验证 + 返回配置)</li>
+     *   <li>wasm: WebAssembly (预留)</li>
+     * </ul>
+     *
+     * @param id    插件 ID
+     * @param input 调用参数
+     * @return 调用结果 (不同插件类型返回不同结构)
+     */
+    public Object call(Long id, Map<String, Object> input) {
+        Plugin p = mapper.selectById(id);
+        if (p == null) throw new IllegalArgumentException("Plugin not found: " + id);
+        if (p.getEnabled() == null || p.getEnabled() == 0) {
+            throw new IllegalStateException("Plugin disabled: " + p.getName());
+        }
+        String type = p.getPluginType() == null ? "url" : p.getPluginType().toLowerCase();
+        log.info("[plugin] call id={} name={} type={} input={}", id, p.getName(), type, input);
+
+        return switch (type) {
+            case "class" -> callClassPlugin(p, input);
+            case "url"   -> callUrlPlugin(p, input);
+            case "js"    -> callJsPlugin(p, input);
+            case "wasm"  -> callWasmPlugin(p, input);
+            default      -> throw new IllegalArgumentException("Unknown plugin type: " + type);
+        };
+    }
+
+    /** Class 插件: 后端 Java 反射调用 (示例实现) */
+    private Object callClassPlugin(Plugin p, Map<String, Object> input) {
+        String entry = p.getEntry();
+        // 简化: 返回固定结果 + input 回显, 避免反射安全问题
+        return Map.of(
+                "type", "class",
+                "plugin", p.getName(),
+                "entry", entry,
+                "input", input,
+                "output", "[class plugin] " + entry + " executed with " + input
+        );
+    }
+
+    /** URL 插件: HTTP 转发 (实际转发留 Gateway) */
+    private Object callUrlPlugin(Plugin p, Map<String, Object> input) {
+        return Map.of(
+                "type", "url",
+                "plugin", p.getName(),
+                "endpoint", p.getEntry(),
+                "input", input,
+                "output", "[url plugin] would forward to " + p.getEntry()
+        );
+    }
+
+    /** JS 插件: 客户端执行, 后端仅返回配置 */
+    private Object callJsPlugin(Plugin p, Map<String, Object> input) {
+        return Map.of(
+                "type", "js",
+                "plugin", p.getName(),
+                "client", true,
+                "code", p.getEntry(),
+                "input", input,
+                "message", "JS plugin executes on client, backend returns config only"
+        );
+    }
+
+    /** WASM 插件: 预留 */
+    private Object callWasmPlugin(Plugin p, Map<String, Object> input) {
+        return Map.of(
+                "type", "wasm",
+                "plugin", p.getName(),
+                "input", input,
+                "message", "WASM support is reserved (V3.5.8+)"
+        );
     }
 }

@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
@@ -54,6 +55,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/agent")
 @RequiredArgsConstructor
+@Slf4j
 public class AgentController {
 
     private final AgentService agent;
@@ -329,5 +331,22 @@ public class AgentController {
     @DeleteMapping("/plugins/{id}")
     public Result<Boolean> deletePlugin(@PathVariable Long id, @RequestParam Long ownerId) {
         return Result.ok(plugin.delete(id, ownerId));
+    }
+
+    // V3.5.8: 插件调用端点 (供 PluginShowground.vue 动态调用)
+    @Operation(summary = "调用插件 (执行插件代码)")
+    @PostMapping("/plugins/{id}/call")
+    public Result<Object> callPlugin(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        try {
+            Object result = plugin.call(id, body != null ? body : Map.of());
+            return Result.ok(result);
+        } catch (IllegalArgumentException e) {
+            return Result.fail(404, e.getMessage());
+        } catch (IllegalStateException e) {
+            return Result.fail(403, e.getMessage());
+        } catch (Exception e) {
+            log.error("[plugin] call failed: {}", e.getMessage());
+            return Result.fail(500, "Plugin execution failed: " + e.getMessage());
+        }
     }
 }

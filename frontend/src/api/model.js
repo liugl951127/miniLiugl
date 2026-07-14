@@ -3,8 +3,10 @@ import http from './http'
 import { useUserStore } from '@/store/user'
 
 export const modelApi = {
-  list: () => http.get('/api/v1/models'),
-  providers: () => http.get('/api/v1/models/providers'),
+  // V3.5.8: 修正路径 - 后端 minimax-admin /api/v1/admin/models (限管理员)
+  list: () => http.get('/api/v1/admin/models'),
+  providers: () => http.get('/api/v1/admin/models/providers'),
+  // 聊天端点保持原样 (minimax-model 模块有 /api/v1/models/chat)
   chat: (data) => http.post('/api/v1/models/chat', data),
   cancel: (streamId) => http.post(`/api/v1/models/chat/cancel?streamId=${streamId}`)
 }

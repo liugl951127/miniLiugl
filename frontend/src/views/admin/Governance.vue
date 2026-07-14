@@ -28,7 +28,7 @@
       <el-col :span="4">
         <el-card class="kpi warn">
           <div class="kpi-label">失败率</div>
-          <div class="kpi-value">{{ (overview.failRate * 100).toFixed(2) }}%</div>
+          <div class="kpi-value">{{ failRatePercent }}%</div>
         </el-card>
       </el-col>
       <el-col :span="4">
@@ -169,11 +169,12 @@ import { LineChart, BarChart, PieChart } from 'echarts/charts'
 import {
   TitleComponent, TooltipComponent, GridComponent, LegendComponent
 } from 'echarts/components'
-import { adminApi } from '@/api/admin'
+import http from '@/api/http'
 
 use([CanvasRenderer, LineChart, BarChart, PieChart, TitleComponent, TooltipComponent, GridComponent, LegendComponent])
 
 const overview = ref(null)
+const failRatePercent = computed(() => overview.value ? (overview.value.failRate * 100).toFixed(2) : "-")
 const timeline = ref([])
 const anomalies = ref(null)
 const compliance = ref(null)
@@ -249,11 +250,11 @@ const formatTime = (iso) => {
 const loadAll = async () => {
   try {
     const [ov, tl, an, co, rt] = await Promise.all([
-      adminApi.governance.overview(),
-      adminApi.governance.timeline(),
-      adminApi.governance.anomalies(),
-      adminApi.governance.compliance(),
-      adminApi.governance.retention()
+      http.get('/api/v1/admin/governance/overview'),
+      http.get('/api/v1/admin/governance/timeline'),
+      http.get('/api/v1/admin/governance/anomalies'),
+      http.get('/api/v1/admin/governance/compliance'),
+      http.get('/api/v1/admin/governance/retention')
     ])
     overview.value = ov.data
     timeline.value = tl.data || []
@@ -267,7 +268,7 @@ const loadAll = async () => {
 
 const loadTimeline = async () => {
   try {
-    const res = await adminApi.governance.timeline()
+    const res = await http.get('/api/v1/admin/governance/timeline')
     timeline.value = res.data || []
   } catch (e) { console.warn(e) }
 }

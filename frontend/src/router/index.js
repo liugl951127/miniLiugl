@@ -166,6 +166,36 @@ const routes = [
             meta: { title: 'AI 工具演练场', icon: 'Tools' }
           },
           {
+            path: 'ai-market',
+            name: 'AdminModelMarket',
+            component: () => import('@/views/ai/ModelMarket.vue'),
+            meta: { title: 'AI 模型市场 (V2.9.1)', icon: 'Box' }
+          },
+          {
+            path: 'marketplace',
+            name: 'AdminMarketplace',
+            component: () => import('@/views/ai/Marketplace.vue'),
+            meta: { title: 'AI Agent 市场 (V2.9.0)', icon: 'Goods' }
+          },
+          {
+            path: 'tensorboard',
+            name: 'AdminTensorBoard',
+            component: () => import('@/views/ai/TensorBoard.vue'),
+            meta: { title: 'TensorBoard 训练可视化', icon: 'DataAnalysis' }
+          },
+          {
+            path: 'tensorboard-stats',
+            name: 'AdminTensorBoardStats',
+            component: () => import('@/views/ai/TensorBoardStats.vue'),
+            meta: { title: '训练统计分布 (V2.8.9)', icon: 'Histogram' }
+          },
+          {
+            path: 'webhooks',
+            name: 'AdminWebhooks',
+            component: () => import('@/views/ai/WebhookManager.vue'),
+            meta: { title: 'Webhook 集成 (V2.9.1)', icon: 'Link' }
+          },
+          {
             path: 'ai-video-stream',
             name: 'AiVideoStream',
             component: () => import('@/views/ai/VideoStream.vue'),
@@ -188,6 +218,12 @@ const routes = [
             name: 'Audit',
             component: () => import('@/views/admin/Audit.vue'),
             meta: { title: '审计日志', icon: 'Document' }
+          },
+          {
+            path: 'governance',
+            name: 'AdminGovernance',
+            component: () => import('@/views/admin/Governance.vue'),
+            meta: { title: '治理后台 (V2.9.0)', icon: 'Shield' }
           },
           {
             path: 'mask-tool',
