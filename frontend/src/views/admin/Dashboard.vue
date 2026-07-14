@@ -126,7 +126,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, markRaw } from 'vue'
+import { ref, onMounted, onUnmounted, computed, markRaw } from 'vue'
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
@@ -157,6 +157,11 @@ const quickActions = ref([
 ])
 const auditLogs = ref([])
 const trendData = ref({})
+
+// 图表懒加载 (Day 26)
+const chartSectionRef = ref(null)
+const isChartsVisible = ref(false)
+let chartObserver = null
 
 // V5.9: 折线图真实数据 (按天审计统计, 7 天)
 const dailyOps = ref([])        // 所有操作按天
@@ -244,6 +249,23 @@ const pieOption = computed(() => {
 
 onMounted(async () => {
   await loadAll()
+  // 图表懒加载: 滚动到可视区再渲染 ECharts (Day 26)
+  if (chartSectionRef.value && typeof IntersectionObserver !== 'undefined') {
+    chartObserver = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        isChartsVisible.value = true
+        chartObserver.disconnect()
+        chartObserver = null
+      }
+    }, { threshold: 0.1 })
+    chartObserver.observe(chartSectionRef.value)
+  } else {
+    isChartsVisible.value = true
+  }
+})
+
+onUnmounted(() => {
+  chartObserver?.disconnect()
 })
 
 async function loadAll() {
@@ -503,6 +525,14 @@ function actionLabel(a) {
   font-weight: 600;
   color: #111827;
   margin-bottom: 16px;
+}
+
+/* Day 26: 图表懒加载骨架屏 */
+.chart-skeleton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
 }
 
 .audit-card {
