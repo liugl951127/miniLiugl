@@ -7,8 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.regex.Matcher;import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 /**
  * 关键词驱动引擎 (V2.7 自研)

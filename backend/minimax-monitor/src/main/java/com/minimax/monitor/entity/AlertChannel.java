@@ -20,6 +20,9 @@ public class AlertChannel {
     private Integer priority;          // 通知优先级
     private String description;
 
+    /** 告警通知模板 (Day 28). 支持变量: ${ruleName} ${severity} ${metricName} ${metricValue} ${threshold} ${message} ${firedAt} ${service} */
+    private String template;
+
     @TableField(fill = FieldFill.INSERT)
     private Long createdBy;
 

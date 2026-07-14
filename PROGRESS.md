@@ -527,7 +527,13 @@
 - V5.7: Nacos 服务发现 + Resilience4j + lb:// 转发
 - V5.8: TraceFilter + 智能分包 + nginx gzip/br + http X-Trace-Id
 
-## Day 27 - 待开始
+## Day 27 - 2026-07-14 ✅ 告警渠道真发送 / history查真实表 / E2E CI优化 / WebSocket实时推送
+
+## Day 28 - 2026-07-14 ✅ 告警通知模板+变量替换 / Ack写库 / 审计日志资源类型筛选
+
+## Day 29 - 2026-07-14 ✅ 智能化提升: QueryComplexity + SmartModelRouter + IntentConfidenceScorer
+
+## Day 30 - 待开始
 
 ## Day 21 - 2026-06-26 ✅ API 文档体系 + 压测模板
 

@@ -30,6 +30,17 @@
             <el-option label="拒绝" value="DENIED" />
           </el-select>
         </el-form-item>
+        <el-form-item label="资源类型">
+          <el-select v-model="filters.resourceType" placeholder="全部" clearable style="width: 140px">
+            <el-option label="用户" value="user" />
+            <el-option label="对话" value="chat" />
+            <el-option label="AI 模型" value="model" />
+            <el-option label="Agent" value="agent" />
+            <el-option label="文件" value="file" />
+            <el-option label="配置" value="config" />
+            <el-option label="API Key" value="api_key" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="时间">
           <el-date-picker
             v-model="filters.dateRange"
@@ -121,7 +132,7 @@ const loading = ref(false)
 const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
-const filters = ref({ username: '', action: '', result: '', dateRange: null })
+const filters = ref({ username: '', action: '', result: '', resourceType: '', dateRange: null })
 const detailVisible = ref(false)
 const detail = ref({})
 
@@ -164,7 +175,7 @@ async function loadLogs() {
 }
 
 function resetFilters() {
-  filters.value = { username: '', action: '', result: '', dateRange: null }
+  filters.value = { username: '', action: '', result: '', resourceType: '', dateRange: null }
   loadLogs()
 }
 

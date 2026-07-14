@@ -44,6 +44,20 @@ minimax:
     # 训练数据
     training-data-path: ${TRAINING_DATA:./data/ai/training-data.txt}
 
+    # ── Day 29: 智能模型路由配置 ──────────────────────────────────
+    # Provider 开关: auto / self / external
+    #   auto       — 两类模型都参与路由，按策略选最优 (默认)
+    #   self       — 仅自研模型，不依赖外部 API key
+    #   external   — 仅外部模型，需配置下面 key
+    provider-mode: ${MODEL_PROVIDER_MODE:auto}
+
+    # 外部模型 API Key (不配置则外部模型不参与路由)
+    openai-api-key: ${OPENAI_API_KEY:}
+    deepseek-api-key: ${DEEPSEEK_API_KEY:}
+
+    # 自研模型质量开关 (true=全部开启, false=仅基础对话)
+    self-model-full: ${SELF_MODEL_FULL:true}
+
 # 健康检查
 management:
   endpoints:

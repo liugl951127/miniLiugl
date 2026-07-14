@@ -2,10 +2,13 @@ package com.minimax.monitor.controller;
 
 import com.minimax.common.result.Result;
 import com.minimax.monitor.alert.AlertEngine;
+import com.minimax.monitor.alert.AlertNotifierManager;
+import com.minimax.monitor.config.AlertStreamRegistry;
 import com.minimax.monitor.client.ServiceEndpoints;
 import com.minimax.monitor.collector.MetricsCollector;
 import com.minimax.monitor.entity.AlertChannel;
 import com.minimax.monitor.entity.AlertEvent;
+import com.minimax.monitor.mapper.AlertEventMapper;
 import com.minimax.monitor.entity.AlertRule;
 import com.minimax.monitor.entity.MetricSnapshot;
 import com.minimax.monitor.health.HealthDetailService;
@@ -17,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -28,6 +32,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Monitor 控制器 (Day 12 完整版).
@@ -66,6 +71,9 @@ public class MonitorController {
     private final AlertEngine alert;
     private final ServiceEndpoints endpoints;
     private final AlertChannelService alertChannelService;
+    private final AlertNotifierManager notifierManager;
+    private final AlertStreamRegistry alertStreamRegistry;
+    private final AlertEventMapper alertEventMapper;
 
     // V5.10: Java HttpClient 复用 (跨服务调 /actuator/prometheus)
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -282,8 +290,15 @@ public class MonitorController {
     @PostMapping("/alerts/{id}/ack")
     public Result<Boolean> acknowledgeAlert(@PathVariable Long id) {
         log.info("[monitor] acknowledge alert id={}", id);
-        // 实际生产: 写 audit log + 更新 alert.status = 'ack'
-        // 沙箱: 直接返回成功
+        // Day 28: 真正写库
+        AlertEvent e = alertEventMapper.selectById(id);
+        if (e == null) {
+            return Result.fail("告警事件不存在: " + id);
+        }
+        e.setStatus("acked");
+        e.setAckedAt(java.time.LocalDateTime.now());
+        alertEventMapper.updateById(e);
+        log.info("[monitor] alert {} acked", id);
         return Result.ok(true);
     }
 
@@ -297,9 +312,17 @@ public class MonitorController {
     @PostMapping("/alerts/channels/{id}/test")
     public Result<Boolean> testAlertChannel(@PathVariable Long id) {
         log.info("[monitor] test alert channel id={}", id);
-        // 实际生产: 触发 channel.send("test message")
-        // 沙箱: 模拟成功
-        return Result.ok(true);
+        AlertChannel ch = alertChannelService.getById(id);
+        if (ch == null) {
+            return Result.fail("渠道不存在: " + id);
+        }
+        try {
+            notifierManager.sendTest(ch);
+            return Result.ok(true);
+        } catch (Exception e) {
+            log.warn("[monitor] test alert channel failed: id={} err={}", id, e.getMessage());
+            return Result.fail("测试消息发送失败: " + e.getMessage());
+        }
     }
 
     /**
@@ -310,19 +333,47 @@ public class MonitorController {
     public Result<List<Map<String, Object>>> getAlertHistory(
             @RequestParam(defaultValue = "7") int days,
             @RequestParam(defaultValue = "100") int limit) {
-        // 沙箱: 返回模拟数据
-        List<Map<String, Object>> history = new ArrayList<>();
-        for (int i = 0; i < Math.min(limit, 20); i++) {
-            history.add(Map.of(
-                    "id", (long) (i + 1),
-                    "rule", "CPU > 80%",
-                    "level", "warning",
-                    "status", "recovered",
-                    "triggeredAt", System.currentTimeMillis() - (long) i * 86400000,
-                    "recoveredAt", System.currentTimeMillis() - (long) i * 86400000 + 3600000
-            ));
-        }
+        // Day 27: 查真实 alert_event 表
+        List<AlertEvent> events = alert.recentEvents(Math.max(limit, 200));
+        List<Map<String, Object>> history = events.stream()
+                .filter(e -> !"firing".equals(e.getStatus())) // 只返回已解决的
+                .limit(limit)
+                .map(e -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("id", e.getId());
+                    m.put("rule", e.getRuleName());
+                    m.put("severity", e.getSeverity());
+                    m.put("status", e.getStatus());
+                    m.put("message", e.getMessage());
+                    m.put("triggeredAt", e.getFiredAt() != null ? e.getFiredAt().toString() : null);
+                    m.put("recoveredAt", e.getResolvedAt() != null ? e.getResolvedAt().toString() : null);
+                    m.put("ackedAt", e.getAckedAt() != null ? e.getAckedAt().toString() : null);
+                    m.put("duration", e.getDuration());
+                    return m;
+                })
+                .toList();
         return Result.ok(history);
+    }
+
+    /**
+     * 告警实时推送 (SSE) (Day 27).
+     * 前端 EventSource 订阅此端点，新告警触发时实时推送。
+     */
+    @Operation(summary = "告警实时推送 (SSE)")
+    @GetMapping(value = "/alerts/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamAlerts() {
+        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
+        alertStreamRegistry.register(emitter);
+        emitter.onCompletion(() -> alertStreamRegistry.unregister(emitter));
+        emitter.onTimeout(() -> alertStreamRegistry.unregister(emitter));
+        emitter.onError(e -> alertStreamRegistry.unregister(emitter));
+        // 立即发送一条心跳
+        try {
+            emitter.send(SseEmitter.event()
+                    .name("ping")
+                    .data("{\"type\":\"connected\",\"msg\":\"alert stream connected\"}"));
+        } catch (Exception ignored) {}
+        return emitter;
     }
 
     /**
