@@ -11,9 +11,8 @@
     </parent>
 
     <!-- V3.5.5+: common 是 library 公共依赖模块, 不是可执行应用
-         packaging=jar (默认) + 跳过 spring-boot-maven-plugin
-         ⚠️  不要作为 Docker 服务运行 (无 @SpringBootApplication main)
-         ⚠️  跳过 spring-boot-maven-plugin, 不会生成 fat jar
+         packaging=jar 使其能生成 jar 包, 供其他模块通过 mvn install 安装到本地仓库
+         ⚠️  不要加 spring-boot-maven-plugin (会生成无 main 的 fat jar)
     -->
     <packaging>jar</packaging>
 
@@ -114,19 +113,7 @@
         </dependency>
     </dependencies>
 
-    <!-- ⚠️  library 模式: 跳过 spring-boot-maven-plugin (不打 fat jar)
-         其他模块通过 maven 依赖自动拉取 .class 文件
+    <!-- ⚠️  library 模式无 build/plugins, 不打 jar, 不跑 spring-boot-maven-plugin
+         其他模块通过 maven 依赖自动拉取源代码和资源
     -->
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <!-- 跳过 spring-boot fat jar 打包 (common 是 library, 不是可执行应用) -->
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>
