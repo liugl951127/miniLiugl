@@ -11,18 +11,18 @@ import java.util.List;
 @Mapper
 public interface KbChunkMapper extends BaseMapper<KbChunk> {
 
-    @Select("SELECT * FROM kb_chunk WHERE docId = #{docId} ORDER BY seq ASC")
+    @Select("SELECT * FROM kb_chunk WHERE doc_id = #{doc_id} ORDER BY seq ASC")
     List<KbChunk> findByDoc(@Param("docId") String docId);
 
-    @Select("SELECT * FROM kb_chunk WHERE kbId = #{kbId} ORDER BY seq ASC")
+    @Select("SELECT * FROM kb_chunk WHERE kb_id = #{kb_id} ORDER BY seq ASC")
     List<KbChunk> findByKb(@Param("kbId") String kbId);
 
     @Select("SELECT * FROM kb_chunk WHERE content LIKE CONCAT('%', #{keyword}, '%') LIMIT #{limit}")
     List<KbChunk> findByKeyword(@Param("keyword") String keyword, @Param("limit") int limit);
 
-    @Select("SELECT COUNT(*) FROM kb_chunk WHERE docId = #{docId}")
+    @Select("SELECT COUNT(*) FROM kb_chunk WHERE doc_id = #{doc_id}")
     int countByDoc(@Param("docId") String docId);
 
-    @Select("SELECT COUNT(*) FROM kb_chunk WHERE kbId = #{kbId}")
+    @Select("SELECT COUNT(*) FROM kb_chunk WHERE kb_id = #{kb_id}")
     int countByKb(@Param("kbId") String kbId);
 }

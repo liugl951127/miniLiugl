@@ -16,19 +16,19 @@ import java.util.List;
 public interface TrainingJobMapper extends BaseMapper<TrainingJob> {
 
     /** 按 taskId 查 */
-    @Select("SELECT * FROM training_job WHERE taskId = #{taskId} LIMIT 1")
+    @Select("SELECT * FROM training_job WHERE task_id = #{task_id} LIMIT 1")
     TrainingJob findByTaskId(@Param("taskId") String taskId);
 
     /** 按状态查 */
-    @Select("SELECT * FROM training_job WHERE status = #{status} ORDER BY createdAt DESC")
+    @Select("SELECT * FROM training_job WHERE status = #{status} ORDER BY created_at DESC")
     List<TrainingJob> findByStatus(@Param("status") String status);
 
     /** 按 ownerId 查 */
-    @Select("SELECT * FROM training_job WHERE ownerId = #{ownerId} ORDER BY createdAt DESC")
+    @Select("SELECT * FROM training_job WHERE owner_id = #{owner_id} ORDER BY created_at DESC")
     List<TrainingJob> findByOwnerId(@Param("ownerId") Long ownerId);
 
     /** 更新最新指标 (单字段, 高频调用) */
-    @Update("UPDATE training_job SET currentEpoch = #{epoch}, currentStep = #{step}, " +
+    @Update("UPDATE training_job SET current_epoch = #{epoch}, current_step = #{step}, " +
             "lastLoss = #{loss}, lastValLoss = #{valLoss}, lastAccuracy = #{accuracy}, " +
             "updatedAt = NOW() WHERE taskId = #{taskId}")
     int updateLatestMetric(@Param("taskId") String taskId,
@@ -39,7 +39,7 @@ public interface TrainingJobMapper extends BaseMapper<TrainingJob> {
                             @Param("accuracy") double accuracy);
 
     /** 更新状态 */
-    @Update("UPDATE training_job SET status = #{status}, endTimeMs = #{endTimeMs}, " +
+    @Update("UPDATE training_job SET status = #{status}, end_time_ms = #{end_time_ms}, " +
             "error = #{error}, updatedAt = NOW() WHERE taskId = #{taskId}")
     int updateStatus(@Param("taskId") String taskId,
                      @Param("status") String status,

@@ -11,10 +11,10 @@ import java.util.List;
 @Mapper
 public interface KbPermissionMapper extends BaseMapper<KbPermission> {
 
-    @Select("SELECT * FROM kb_permission WHERE kbId = #{kbId}")
+    @Select("SELECT * FROM kb_permission WHERE kb_id = #{kb_id}")
     List<KbPermission> findByKb(@Param("kbId") String kbId);
 
-    @Select("SELECT * FROM kb_permission WHERE kbId = #{kbId} AND subjectType = #{subjectType} " +
+    @Select("SELECT * FROM kb_permission WHERE kb_id = #{kb_id} AND subject_type = #{subject_type} " +
             "AND subjectId = #{subjectId} LIMIT 1")
     KbPermission findOne(@Param("kbId") String kbId,
                          @Param("subjectType") String subjectType,

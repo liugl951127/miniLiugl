@@ -12,22 +12,22 @@ import java.util.List;
 @Mapper
 public interface KbDocumentMapper extends BaseMapper<KbDocument> {
 
-    @Select("SELECT * FROM kb_document WHERE docId = #{docId} LIMIT 1")
+    @Select("SELECT * FROM kb_document WHERE doc_id = #{doc_id} LIMIT 1")
     KbDocument findByDocId(@Param("docId") String docId);
 
-    @Select("SELECT * FROM kb_document WHERE kbId = #{kbId} ORDER BY createdAt DESC")
+    @Select("SELECT * FROM kb_document WHERE kb_id = #{kb_id} ORDER BY created_at DESC")
     List<KbDocument> findByKb(@Param("kbId") String kbId);
 
-    @Select("SELECT * FROM kb_document WHERE ownerId = #{ownerId} ORDER BY createdAt DESC")
+    @Select("SELECT * FROM kb_document WHERE owner_id = #{owner_id} ORDER BY created_at DESC")
     List<KbDocument> findByOwner(@Param("ownerId") Long ownerId);
 
-    @Select("SELECT * FROM kb_document WHERE status = #{status} ORDER BY createdAt ASC")
+    @Select("SELECT * FROM kb_document WHERE status = #{status} ORDER BY created_at ASC")
     List<KbDocument> findByStatus(@Param("status") String status);
 
-    @Select("SELECT * FROM kb_document WHERE isPublic = TRUE ORDER BY createdAt DESC LIMIT #{limit}")
+    @Select("SELECT * FROM kb_document WHERE is_public = TRUE ORDER BY created_at DESC LIMIT #{limit}")
     List<KbDocument> findPublic(@Param("limit") int limit);
 
-    @Update("UPDATE kb_document SET status = #{status}, chunkCount = #{chunkCount}, " +
+    @Update("UPDATE kb_document SET status = #{status}, chunk_count = #{chunk_count}, " +
             "embeddingCount = #{embedCount}, error = #{error}, updatedAt = NOW() WHERE docId = #{docId}")
     int updateIndexResult(@Param("docId") String docId,
                           @Param("status") String status,

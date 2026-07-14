@@ -21,14 +21,14 @@ public interface CollabRoomMapper extends BaseMapper<CollabRoom> {
      * @param delta 变化量 (+1 加入, -1 离开)
      * @return 受影响行数
      */
-    @Update("UPDATE collab_room SET currentParticipants = currentParticipants + #{delta}, " +
+    @Update("UPDATE collab_room SET current_participants = current_participants + #{delta}, " +
             "lastActivityAt = NOW() WHERE roomId = #{roomId}")
     int updateParticipantCount(@Param("roomId") String roomId, @Param("delta") int delta);
 
     /**
      * 关闭房间
      */
-    @Update("UPDATE collab_room SET status = 'CLOSED', closedAt = NOW() " +
+    @Update("UPDATE collab_room SET status = 'CLOSED', closed_at = NOW() " +
             "WHERE roomId = #{roomId} AND status = 'ACTIVE'")
     int closeRoom(@Param("roomId") String roomId);
 }

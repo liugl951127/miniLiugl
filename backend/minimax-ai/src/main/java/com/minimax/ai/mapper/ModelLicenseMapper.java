@@ -12,15 +12,15 @@ import java.util.List;
 @Mapper
 public interface ModelLicenseMapper extends BaseMapper<ModelLicense> {
 
-    @Select("SELECT * FROM model_license WHERE licenseKey = #{licenseKey} LIMIT 1")
+    @Select("SELECT * FROM model_license WHERE license_key = #{license_key} LIMIT 1")
     ModelLicense findByKey(@Param("licenseKey") String licenseKey);
 
-    @Select("SELECT * FROM model_license WHERE userId = #{userId} AND status = 'ACTIVE'")
+    @Select("SELECT * FROM model_license WHERE user_id = #{user_id} AND status = 'ACTIVE'")
     List<ModelLicense> findActiveByUser(@Param("userId") Long userId);
 
-    @Select("SELECT * FROM model_license WHERE userId = #{userId} AND modelEntryId = #{modelEntryId} AND status = 'ACTIVE'")
+    @Select("SELECT * FROM model_license WHERE user_id = #{user_id} AND model_entry_id = #{model_entry_id} AND status = 'ACTIVE'")
     List<ModelLicense> findByUserAndEntry(@Param("userId") Long userId, @Param("modelEntryId") Long modelEntryId);
 
-    @Update("UPDATE model_license SET usedCalls = usedCalls + 1, updatedAt = NOW() WHERE id = #{id} AND (quotaCalls = 0 OR usedCalls < quotaCalls)")
+    @Update("UPDATE model_license SET used_calls = used_calls + 1, updated_at = NOW() WHERE id = #{id} AND (quota_calls = 0 OR used_calls < quota_calls)")
     int incrementUsage(@Param("id") Long id);
 }

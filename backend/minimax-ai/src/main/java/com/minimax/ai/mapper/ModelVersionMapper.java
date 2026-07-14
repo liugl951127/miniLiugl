@@ -12,18 +12,18 @@ import java.util.List;
 @Mapper
 public interface ModelVersionMapper extends BaseMapper<ModelVersion> {
 
-    @Select("SELECT * FROM model_version WHERE versionId = #{versionId} LIMIT 1")
+    @Select("SELECT * FROM model_version WHERE version_id = #{version_id} LIMIT 1")
     ModelVersion findByVersionId(@Param("versionId") String versionId);
 
-    @Select("SELECT * FROM model_version WHERE modelEntryId = #{modelEntryId} ORDER BY createdAt DESC")
+    @Select("SELECT * FROM model_version WHERE model_entry_id = #{model_entry_id} ORDER BY created_at DESC")
     List<ModelVersion> findByEntry(@Param("modelEntryId") Long modelEntryId);
 
-    @Select("SELECT * FROM model_version WHERE modelEntryId = #{modelEntryId} AND isLatest = TRUE LIMIT 1")
+    @Select("SELECT * FROM model_version WHERE model_entry_id = #{model_entry_id} AND is_latest = TRUE LIMIT 1")
     ModelVersion findLatest(@Param("modelEntryId") Long modelEntryId);
 
-    @Update("UPDATE model_version SET isLatest = (id = #{id}) WHERE modelEntryId = #{modelEntryId}")
+    @Update("UPDATE model_version SET is_latest = (id = #{id}) WHERE model_entry_id = #{model_entry_id}")
     int setLatest(@Param("id") Long id, @Param("modelEntryId") Long modelEntryId);
 
-    @Update("UPDATE model_version SET status = #{status}, updatedAt = NOW() WHERE versionId = #{versionId}")
+    @Update("UPDATE model_version SET status = #{status}, updated_at = NOW() WHERE version_id = #{version_id}")
     int updateStatus(@Param("versionId") String versionId, @Param("status") String status);
 }

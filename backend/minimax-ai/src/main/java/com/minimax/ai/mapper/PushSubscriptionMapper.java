@@ -16,7 +16,7 @@ import java.util.List;
 public interface PushSubscriptionMapper extends BaseMapper<PushSubscription> {
 
     /** 按 userId 查 */
-    @Select("SELECT * FROM push_subscription WHERE userId = #{userId} AND status = 'ACTIVE'")
+    @Select("SELECT * FROM push_subscription WHERE user_id = #{user_id} AND status = 'ACTIVE'")
     List<PushSubscription> findByUser(@Param("userId") Long userId);
 
     /** 按 platform 查 */
@@ -32,11 +32,11 @@ public interface PushSubscriptionMapper extends BaseMapper<PushSubscription> {
     PushSubscription findByEndpoint(@Param("endpoint") String endpoint);
 
     /** 标过期 */
-    @Update("UPDATE push_subscription SET status = 'EXPIRED', updatedAt = NOW() WHERE id = #{id}")
+    @Update("UPDATE push_subscription SET status = 'EXPIRED', updated_at = NOW() WHERE id = #{id}")
     int markExpired(@Param("id") Long id);
 
     /** 取消订阅 */
-    @Update("UPDATE push_subscription SET status = 'UNSUBSCRIBED', updatedAt = NOW() WHERE subscriptionId = #{subscriptionId}")
+    @Update("UPDATE push_subscription SET status = 'UNSUBSCRIBED', updated_at = NOW() WHERE subscription_id = #{subscription_id}")
     int unsubscribe(@Param("subscriptionId") String subscriptionId);
 
     /** 计数 (按 platform) */
