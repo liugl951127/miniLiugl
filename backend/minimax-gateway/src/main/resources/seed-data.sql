@@ -409,10 +409,10 @@ INSERT INTO `alert_event` (`id`, `rule_id`, `rule_name`, `severity`, `metric_nam
 -- =========================================
 -- 7. model_battle_log (模型对决日志, 3 条)
 -- =========================================
-INSERT INTO `model_battle_log` (`id`, `battle_id`, `user_id`, `model_id`, `model_code`, `prompt`, `response`, `prompt_tokens`, `completion_tokens`, `latency_ms`, `status`, `error_msg`, `score`, `judge_model`, `judge_reason`, `created_at`) VALUES
-(1, 'battle_a1b2c3', 1, 1, 'gpt-4o', '解释 REST API 和 GraphQL 区别', 'RESTful 6 原则 vs GraphQL 单端点查询', 45, 320, 4520, 'success', NULL, 5, 'gpt-4o', 'GraphQL 简洁', NOW()),
-(2, 'battle_d4e5f6', 3, 4, 'deepseek-coder', '写一个 Python 快速排序', 'def qs(arr): ...', 28, 180, 2340, 'success', NULL, 5, 'gpt-4o', '代码完整可运行', NOW()),
-(3, 'battle_g7h8i9', 1, 2, 'claude-3.5', '总结《百年孤独》', '布恩迪亚家族七代兴衰...', 56, 480, 5680, 'success', NULL, 4, 'gpt-4o', '文学性强', NOW());
+INSERT INTO `model_battle_log` (`id`, `user_id`, `prompt`, `models`, `winner`, `latency`, `tokens`, `score`, `created_at`) VALUES
+(1, 1, '解释 REST API 和 GraphQL 区别', 'gpt-4o,claude-3.5,deepseek-coder,gemini-pro', 'claude-3.5', 4520, 1820, 4.5, '2026-07-14 07:00:00'),
+(2, 3, '写一个 Python 快速排序', 'gpt-4o,deepseek-coder,claude-3.5', 'deepseek-coder', 2340, 980, 4.8, '2026-07-14 09:00:00'),
+(3, 1, '总结《百年孤独》', 'gpt-4o,claude-3.5,gemini-pro', 'gpt-4o', 5680, 2150, 4.6, '2026-07-14 11:00:00');
 
 
 SET FOREIGN_KEY_CHECKS = 1;
@@ -539,10 +539,10 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- 20. kg_relation (知识图谱关系, 4 条)
 -- =========================================
 INSERT INTO `kg_relation` (`id`, `user_id`, `from_entity`, `to_entity`, `relation_type`, `description`, `weight`, `source`, `ref_count`, `created_at`) VALUES
-(1, 1, 1, 2, 'developed_by', 'Platform 由 MiniMax 开发', 1.0000, 'system', 15, NOW()),
-(2, 1, 1, 3, 'uses', 'Platform 使用 RAG 技术', 0.9500, 'system', 12, NOW()),
-(3, 1, 1, 4, 'supports', 'Platform 支持 17 微服务', 0.9000, 'system', 8, NOW()),
-(4, 1, 1, 5, 'contains', 'Platform 包含 AI 模块', 0.8500, 'system', 6, NOW());
+(1, 1, 1, 2, 'developed_by', 'Platform 由 MiniMax 开发', 1.0000, 'system', 15, '2026-07-13 06:00:1783922400'),
+(2, 1, 1, 3, 'uses', 'Platform 使用 RAG 技术', 0.9500, 'system', 12, '2026-07-13 06:00:1783922400'),
+(3, 1, 1, 4, 'supports', 'Platform 支持 17 微服务', 0.9000, 'system', 8, '2026-07-13 06:00:1783922400'),
+(4, 1, 1, 5, 'contains', 'Platform 包含 AI 模块', 0.8500, 'system', 6, '2026-07-13 06:00:1783922400');
 
 
 -- =========================================
@@ -558,10 +558,10 @@ INSERT INTO `collab_room` (`id`, `roomId`, `name`, `type`, `ownerId`, `ownerName
 -- 22. pipeline_node_log (工作流节点日志, 4 条)
 -- =========================================
 INSERT INTO `pipeline_node_log` (`id`, `run_id`, `node_id`, `node_type`, `node_name`, `status`, `start_time`, `end_time`, `duration_ms`, `input_rows`) VALUES
-(1, 1, 'node_input_1', 'input', '用户输入', 'success', NOW(), NOW(), 50, 1),
-(2, 1, 'node_llm_1', 'llm', 'GPT-4 推理', 'success', NOW(), NOW(), 4200, 1),
-(3, 1, 'node_output_1', 'output', '返回结果', 'success', NOW(), NOW(), 80, 1),
-(4, 2, 'node_sql_1', 'sql', '查询订单', 'running', NOW(), NULL, 0, 0);
+(1, 1, 'node_input_1', 'input', '用户输入', 'success', '2026-07-14 09:00:1784019600', '2026-07-14 09:00:1784019600', 50, 1),
+(2, 1, 'node_llm_1', 'llm', 'GPT-4 推理', 'success', '2026-07-14 09:00:1784019600', '2026-07-14 09:00:1784019600', 4200, 1),
+(3, 1, 'node_output_1', 'output', '返回结果', 'success', '2026-07-14 09:00:1784019600', '2026-07-14 09:00:1784019600', 80, 1),
+(4, 2, 'node_sql_1', 'sql', '查询订单', 'running', '2026-07-14 11:45:1784029500', NULL, 0, 0);
 
 
 -- =========================================
@@ -594,16 +594,47 @@ INSERT INTO `kb_chunk` (`id`, `chunk_id`, `doc_id`, `kb_id`, `seq`, `content`, `
 (4, 'chunk_b2', 'doc_d4e5f6', '1', 2, '鉴权用 Bearer Token', 18, 10, 'emb_m3n4o5p6', 'text-embedding-3-small');
 
 
+-- =========================================
+-- 26. agent_group (Agent 群组, 3 条)
+-- =========================================
+INSERT INTO `agent_group` (`id`, `name`, `description`, `owner_id`, `member_count`, `created_at`) VALUES
+(1, '开发组', '后端 + 前端 + 测试', 1, 8, '2026-07-13 06:00:1783922400'),
+(2, '数据组', '数据分析 + 算法', 1, 5, '2026-07-13 11:00:1783940400'),
+(3, '运维组', 'DevOps + SRE', 1, 3, '2026-07-13 16:00:1783958400');
 
 
+-- =========================================
+-- 27. training_job (训练任务, 2 条)
+-- =========================================
+INSERT INTO `training_job` (`id`, `job_name`, `model_name`, `dataset_name`, `status`, `epochs`, `batch_size`, `learning_rate`, `loss`, `accuracy`, `started_at`, `finished_at`) VALUES
+(1, 'sentiment-finetune-v1', 'bert-base-chinese', 'weibo-sentiment-100k', 'success', 3, 32, 0.00002, 0.1234, 0.9234, '2026-07-13 07:00:1783926000', '2026-07-14 10:00:1784023200'),
+(2, 'qa-finetune-v2', 'qwen-1.5b', 'custom-qa-50k', 'running', 1, 16, 0.00001, 0.4521, 0.7856, '2026-07-14 09:00:1784019600', NULL);
 
 
+-- =========================================
+-- 28. analytics_nlsql_history (NL2SQL 历史, 4 条)
+-- =========================================
+INSERT INTO `analytics_nlsql_history` (`id`, `user_id`, `question`, `generated_sql`, `data_source_id`, `status`, `row_count`, `duration_ms`, `created_at`) VALUES
+(1, 1, '上月订单总数', 'SELECT COUNT(*) FROM orders WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 MONTH)', 1, 'success', 1234, 120, '2026-07-14 10:00:1784023200'),
+(2, 1, '本周活跃用户', 'SELECT COUNT(DISTINCT user_id) FROM events WHERE ts > DATE_SUB(NOW(), INTERVAL 7 DAY)', 1, 'success', 567, 85, '2026-07-14 08:00:1784016000'),
+(3, 3, '畅销产品 TOP 10', 'SELECT product_id, SUM(qty) as total FROM order_items GROUP BY product_id ORDER BY total DESC LIMIT 10', 1, 'success', 10, 220, '2026-07-14 09:00:1784019600'),
+(4, 1, '上月营收', 'SELECT SUM(amount) FROM payments WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 MONTH)', 1, 'failed', 0, 50, '2026-07-14 11:00:1784026800');
 
 
+-- =========================================
+-- 29. analytics_report (分析报告, 3 条)
+-- =========================================
+INSERT INTO `analytics_report` (`id`, `report_name`, `report_type`, `data_source_id`, `format`, `file_path`, `file_size`, `status`, `creator_id`, `created_at`) VALUES
+(1, '2026 Q2 销售报告', 'quarterly', 1, 'pdf', '/reports/2026_q2_sales.pdf', 2048576, 'ready', 1, '2026-07-14 07:00:1784012400'),
+(2, '用户增长周报', 'weekly', 1, 'html', '/reports/weekly_growth.html', 524288, 'ready', 1, '2026-07-14 09:00:1784019600'),
+(3, '产品库存月报', 'monthly', 1, 'xlsx', '/reports/monthly_inventory.xlsx', 1048576, 'generating', 3, '2026-07-14 11:00:1784026800');
 
 
-
-
-
-
-
+-- =========================================
+-- 30. billing_record (计费记录, 4 条)
+-- =========================================
+INSERT INTO `billing_record` (`id`, `user_id`, `username`, `model_code`, `input_tokens`, `output_tokens`, `total_tokens`, `cost_cny`, `billing_date`, `created_at`) VALUES
+(1, 1, 'adminLiugl', 'gpt-4o', 12500, 8200, 20700, 0.4500, '2026-07-14', '2026-07-14 10:00:1784023200'),
+(2, 1, 'adminLiugl', 'claude-3.5', 8200, 5100, 13300, 0.3200, '2026-07-14', '2026-07-14 09:00:1784019600'),
+(3, 3, 'test_user', 'deepseek-coder', 15200, 9800, 25000, 0.0250, '2026-07-14', '2026-07-14 08:00:1784016000'),
+(4, 4, 'demo_user', 'gpt-4o-mini', 4500, 2100, 6600, 0.0030, '2026-07-14', '2026-07-14 07:00:1784012400');
