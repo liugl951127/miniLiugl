@@ -1,16 +1,14 @@
 -- =========================================
--- MiniMax Platform V3.5.8 种子数据
+-- MiniMax Platform V3.5.8 种子数据 (统一版)
 -- =========================================
+-- 作用: 给 complete.sql 77 张表灌入核心业务数据
+-- 兼容: MySQL / H2 (MODE=MySQL) / MariaDB
 -- 加载顺序: 在 complete.sql 之后执行
--- 涵盖: 用户/角色/租户/模型/工具/Prompt/插件/知识库/敏感词/意图词典 等
--- 4 个测试账号:
---   adminLiugl / Liugl@2026  (super admin)
---   admin_user / admin123     (admin)
---   test_user  / user123      (user)
---   demo_user  / demo1234     (user)
+-- 包含: 用户/角色/租户/模型/工具/Prompt/插件/知识库/敏感词/意图词典
 -- =========================================
 
-SET NAMES utf8mb4;
+-- MySQL 字符集 (H2 MODE=MySQL 自动忽略, MySQL 必须)
+-- 外键检查关闭 (H2 忽略, MySQL 用以允许跨表插入)
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- =========================================
@@ -207,8 +205,8 @@ INSERT INTO `ai_intent_keyword` (`intent`, `keyword`, `weight`, `is_regex`, `ena
 --       last_used_at/use_count
 -- =========================================
 INSERT INTO `user_api_key` (`id`, `user_id`, `name`, `key_hash`, `key_prefix`, `scopes`, `enabled`, `expires_at`, `last_used_at`, `use_count`, `created_at`, `updated_at`, `deleted`) VALUES
-(1, 1, '默认 Key', 'mm_live_1000000000000000000000000000000000000000000000000000000000000001', 'mm_live_', '["all"]',   1, NULL, NULL, 0, NOW(), NOW(), 0),
-(2, 3, '测试 Key', 'mm_test_3000000000000000000000000000000000000000000000000000000000000003', 'mm_test_', '["read"]',  1, NULL, NULL, 0, NOW(), NOW(), 0);
+(1, 1, '默认 Key', 'mm_demo_key_a1000000000000000000000000000000000000000000000000000000000000001', 'mm_demo_key_a', '["all"]',   1, NULL, NULL, 0, NOW(), NOW(), 0),
+(2, 3, '测试 Key', 'mm_demo_key_b3000000000000000000000000000000000000000000000000000000000000003', 'mm_demo_key_b', '["read"]',  1, NULL, NULL, 0, NOW(), NOW(), 0);
 
 -- =========================================
 -- 14. 通知 (3 条)
@@ -308,7 +306,6 @@ INSERT INTO `kg_entity` (`id`, `name`, `aliases`, `entity_type`, `description`, 
 (2, 'Spring Cloud',     '["SpringCloud"]',          'framework', '微服务框架',                    1, 4, 5,  'auto',   NOW(), NOW(), 0),
 (3, 'RAG',              '["检索增强"]',             'concept',   'Retrieval-Augmented Generation', 1, 5, 8,  'manual', NOW(), NOW(), 0);
 
-SET FOREIGN_KEY_CHECKS = 1;
 
 -- =========================================
 -- 种子数据加载完成
