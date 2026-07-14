@@ -124,13 +124,25 @@ do_install() {
         rm -f /etc/nginx/sites-enabled/default
         yellow "   移除 /etc/nginx/sites-enabled/default (避免 default server 冲突)"
     fi
-    # 清理旧的拆分文件
-    for f in minimax-upstream.conf minimax-security.conf minimax-locations.conf; do
-        if [ -f "/etc/nginx/conf.d/$f" ]; then
-            rm -f "/etc/nginx/conf.d/$f"
-            yellow "   清理旧文件: $f"
+    # 清理所有旧版 minimax-* 拆分文件 (不管存不存在, 一律尝试删)
+    # V3.5.5 之前是 3 个拆分文件 (upstream + security + locations)
+    # V3.5.5+ 改为单文件 minimax.conf (内联一切)
+    yellow "   清理 /etc/nginx/conf.d/ 下所有旧 minimax-* 拆分文件..."
+    shopt -s nullglob 2>/dev/null || true
+    for f in /etc/nginx/conf.d/minimax-*.conf; do
+        if [ -f "$f" ]; then
+            rm -f "$f"
+            yellow "     ✓ 删除: $(basename $f)"
         fi
     done
+    # 也清理 sites-enabled/sites-available 下其他可能的 minimax 配置
+    for f in /etc/nginx/sites-enabled/minimax* /etc/nginx/sites-available/minimax*; do
+        if [ -f "$f" ]; then
+            rm -f "$f"
+            yellow "     ✓ 删除: $f"
+        fi
+    done
+    shopt -u nullglob 2>/dev/null || true
 
     # 5. 复制前端
     bold "  [5/5] 复制前端 dist"
