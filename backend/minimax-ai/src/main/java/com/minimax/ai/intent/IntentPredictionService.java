@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -244,14 +245,36 @@ public class IntentPredictionService {
                 tfScores, ngramScores, expandScores, ctxIntent, modelWeights);
 
         if (fused.isEmpty()) {
+            // V3.5.8: 也输出新字段
+            DataAnalysisEngine.Result daResult2 = DataAnalysisEngine.recognize(work);
+            List<QuestionClassifier.Match> qMatches2 = QuestionClassifier.classify(work);
+            QuestionClassifier.Complexity complexity2 = QuestionClassifier.assess(work);
+            String questionType2 = qMatches2.isEmpty() ? "general" : qMatches2.get(0).type();
+            String intent2 = daResult2.matched() ? daResult2.intent() : INTENT_OTHER;
+            SuggestionEngine.Suggestion suggestion2 = SuggestionEngine.suggest(
+                    intent2, questionType2, complexity2, daResult2.confidence());
             return IntentPrediction.builder()
                     .originalText(text)
                     .normalizedText(work)
-                    .intent(INTENT_OTHER)
-                    .confidence(0.0)
+                    .intent(intent2)
+                    .confidence(daResult2.matched() ? daResult2.confidence() : 0.0)
                     .sentiment(calcSentiment(text, work, negScopes))
                     .urgency(calcUrgency(text, work))
                     .algorithm(config.getAlgorithm())
+                    .recommendedAgent(suggestion2.agent())
+                    .questionType(questionType2)
+                    .queryComplexity(complexity2.level())
+                    .complexityDetail(Map.of(
+                            "timeRanges", complexity2.timeRanges(),
+                            "aggregations", complexity2.aggregations(),
+                            "dimensions", complexity2.dimensions()
+                    ))
+                    .suggestedTools(suggestion2.tools())
+                    .processSuggestion(suggestion2.process())
+                    .chartTypeSuggestion(suggestion2.chartType())
+                    .followupQuestions(suggestion2.followups())
+                    .suggestionConfidence(suggestion2.confidence())
+                    .dataEntities(DataAnalysisEngine.extractEntities(work))
                     .modelScores(Map.of("tf", tfScores, "ngram", ngramScores, "expand", expandScores))
                     .build();
         }
@@ -280,6 +303,26 @@ public class IntentPredictionService {
             cleanupExpiredContext();
         }
 
+        // ═══ V3.5.8 新增: 数据分析意图识别 + 问题类型 + 智能推荐 ═══
+        DataAnalysisEngine.Result daResult = DataAnalysisEngine.recognize(work);
+        List<QuestionClassifier.Match> qMatches = QuestionClassifier.classify(work);
+        QuestionClassifier.Complexity complexity = QuestionClassifier.assess(work);
+        String questionType = qMatches.isEmpty() ? "general" : qMatches.get(0).type();
+
+        // 如果是数据分析场景, 覆盖意图
+        if (daResult.matched()) {
+            topIntent = daResult.intent();
+            // 重新计算 conf (取原 conf + da conf)
+            confidence = Math.min(1.0, confidence * 0.5 + daResult.confidence() * 0.5);
+        }
+
+        // 智能推荐
+        SuggestionEngine.Suggestion suggestion = SuggestionEngine.suggest(
+                topIntent, questionType, complexity, confidence);
+        Map<String, Set<String>> dataEntities = daResult.matched()
+                ? daResult.entities().get(0).entities()
+                : DataAnalysisEngine.extractEntities(work);
+
         return IntentPrediction.builder()
                 .originalText(text)
                 .normalizedText(work)
@@ -290,16 +333,31 @@ public class IntentPredictionService {
                 .slots(slots)
                 .urgency(urgency)
                 .sentiment(sentiment)
-                .recommendedAgent(recommendedAgent)
+                .recommendedAgent(suggestion.agent())
                 .alternatives(alternatives)
                 .algorithm(config.getAlgorithm())
                 .modelScores(Map.of(
                         "tf", tfScores,
                         "ngram", ngramScores,
                         "expand", expandScores,
-                        "context", ctxIntent != null ? Map.of(ctxIntent, 1.0) : Map.of()
+                        "context", ctxIntent != null ? Map.of(ctxIntent, 1.0) : Map.of(),
+                        "dataAnalysis", daResult.matched() ? Map.of(daResult.intent(), daResult.confidence()) : Map.of()
                 ))
                 .expansions(norm.expansions())
+                // V3.5.8 新增字段
+                .questionType(questionType)
+                .queryComplexity(complexity.level())
+                .complexityDetail(Map.of(
+                        "timeRanges", complexity.timeRanges(),
+                        "aggregations", complexity.aggregations(),
+                        "dimensions", complexity.dimensions()
+                ))
+                .suggestedTools(suggestion.tools())
+                .processSuggestion(suggestion.process())
+                .chartTypeSuggestion(suggestion.chartType())
+                .followupQuestions(suggestion.followups())
+                .suggestionConfidence(suggestion.confidence())
+                .dataEntities(dataEntities)
                 .build();
     }
 
@@ -534,6 +592,16 @@ public class IntentPredictionService {
         private String algorithm;
         private Map<String, Object> modelScores;
         private List<String> expansions;
+        // V3.5.8 新增字段
+        private String questionType;          // what/how/why/when/where/who/query/compare/analyze/predict/recommend/create
+        private String queryComplexity;        // simple/medium/complex
+        private Map<String, Integer> complexityDetail;  // 复杂度细节
+        private List<String> suggestedTools;   // 推荐工具
+        private String processSuggestion;      // 推荐处理流程
+        private String chartTypeSuggestion;    // 推荐图表
+        private List<String> followupQuestions;  // 推荐追问
+        private double suggestionConfidence;   // 推荐置信度
+        private Map<String, Set<String>> dataEntities;  // 数据实体
     }
 
     public record ExtractedEntity(String type, String value, int start, int end) {}

@@ -382,3 +382,141 @@ intent:
       expected: query
     - text: "下单 100 元"
       expected: order
+
+# =============================================================
+# V3.5.8 新增: 数据分析能力
+# =============================================================
+
+dataAnalysis:
+  enabled: true
+  # 6 种数据分析意图
+  intents:
+    data_query:      # 查数据 (单条件)
+      - 查询
+      - 查
+      - 看看
+      - 列出
+      - 显示
+      - 多少
+      - 几个
+    data_analyze:    # 分析 (多维度)
+      - 分析
+      - 统计
+      - 占比
+      - 分布
+      - 排名
+      - 排序
+    data_compare:    # 对比 (2+ 实体)
+      - 对比
+      - 比较
+      - 区别
+      - 哪个好
+      - 哪个多
+    data_predict:    # 预测 (未来)
+      - 预测
+      - 预估
+      - 未来
+      - 走势
+      - 明年
+      - 下月
+    data_visualize:  # 可视化
+      - 画
+      - 图表
+      - 折线
+      - 柱状
+      - 饼图
+    data_report:     # 报告
+      - 报告
+      - 报表
+      - 汇总
+      - 周报
+      - 月报
+      - 导出
+
+  # 5 类数据实体
+  entities:
+    metric:           # 指标
+      - 销售额
+      - 订单数
+      - 用户数
+      - 转化率
+      - 库存
+    dimension:        # 维度
+      - 地区
+      - 产品
+      - 渠道
+      - 用户
+    timeRange:        # 时间范围
+      - 今天
+      - 上周
+      - 上月
+      - 上季度
+      - 近7天
+      - 近30天
+    aggregation:      # 聚合
+      - 总数
+      - 平均
+      - 最大
+      - 最小
+      - Top
+    dataSource:       # 数据源
+      - 订单
+      - 用户
+      - 产品
+      - 库存
+  confidenceThreshold: 0.15   # 匹配阈值 (低于此不算 matched)
+
+# =============================================================
+# V3.5.8 新增: 12 种问题类型 (5W1H + 6 数据查询)
+# =============================================================
+
+questionTypes:
+  enabled: true
+  triggers:
+    what:    ["什么是", "啥是", "解释", "定义"]
+    how:     ["怎么", "如何", "方法", "步骤"]
+    why:     ["为什么", "为何", "原因"]
+    when:    ["什么时候", "何时", "时间"]
+    where:   ["在哪里", "位置", "路径"]
+    who:     ["谁", "哪个", "负责人"]
+    query:   ["查询", "查", "列出", "显示"]
+    compare: ["对比", "比较", "区别", "vs"]
+    analyze: ["分析", "统计", "趋势", "占比"]
+    predict: ["预测", "预估", "未来", "走势"]
+    recommend: ["推荐", "建议", "哪个好"]
+    create:  ["创建", "画", "制作", "生成"]
+
+# =============================================================
+# V3.5.8 新增: 智能推荐引擎
+# =============================================================
+
+suggestion:
+  enabled: true
+  # 意图 → Agent 路由
+  routing:
+    greeting: chat
+    question: rag
+    consult: rag
+    order: function
+    complaint: chat
+    data_query: analytics
+    data_analyze: analytics
+    data_compare: analytics
+    data_predict: analytics
+    data_visualize: analytics
+    data_report: analytics
+
+  # 工具推荐
+  tools:
+    greeting: [welcome_template]
+    question: [rag_search, web_search]
+    consult: [rag_search]
+    order: [order_query, order_cancel]
+    complaint: [complaint_create, human_handoff]
+    data_query: [sql_query, data_export]
+    data_analyze: [data_query, statistic, trend_detect]
+    data_compare: [data_query, diff_calc]
+    data_predict: [data_query, ml_forecast, model_inference]
+    data_visualize: [data_query, chart_generate]
+    data_report: [data_query, report_template, pdf_export]
+
