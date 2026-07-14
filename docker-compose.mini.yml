@@ -1,31 +1,11 @@
-# ============================================================
-# Docker Compose 精简部署 (V3.5.5+ 宿主 nginx 模式)
-# 5 个后端容器: mariadb + redis + auth + ai + gateway
-# 适用环境: 2GB 内存 / 开发测试 / 沙箱 / 树莓派 / VPS
-# 完整版 17 微服务请用 docker-compose.yml (需要 8GB+)
-#
-# ⚠️  nginx 不在此 compose 中! 改为宿主机部署:
-#   sudo ./nginx/install-nginx.sh install
-#
-# 原因:
-#   1. 减少容器层 (host nginx 性能更好)
-#   2. 宿主 nginx 配 HTTPS / HTTP2 / WebSocket 更灵活
-#   3. 日志统一到 systemd journal
-#   4. 防火墙只需放行 80/443, 不用管容器端口
-#
-# 端口设计 (宿主 nginx 访问容器):
-#   auth:8081, ai:8094, gateway:7080 都暴露 0.0.0.0
-#   宿主机 nginx 通过 127.0.0.1:port 访问容器内服务
-#
+# =============================================================
+# MiniMax Platform V3.5.8 精简部署 (6 核心服务)
+# 内存需求: 4GB+
 # 用法:
-#   sudo ./nginx/install-nginx.sh install  # 一次性装 nginx
-#   ./deploy-mini.sh up                    # 启动后端 5 容器
-#   ./deploy-mini.sh down                  # 停止
-# ============================================================
-
+#   ./start-all.sh up mini
+# =============================================================
 version: "3.9"
 
-# ============== 基础设施 (精简 2 容器) ==============
 services:
   mariadb:
     image: mariadb:10.11
@@ -34,178 +14,99 @@ services:
     environment:
       MARIADB_ROOT_PASSWORD: root123456
       MARIADB_DATABASE: minimax_platform
-      MARIADB_USER: minimax
-      MARIADB_PASSWORD: minimax_2024
       TZ: Asia/Shanghai
-    command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-      - --max_connections=200
-    # 暴露 0.0.0.0 让宿主工具/运维访问 (DB 调试, 如 mysql client)
-    ports:
-      - "3306:3306"
+    command: ["--character-set-server=utf8mb4", "--innodb-buffer-pool-size=384M"]
+    ports: ["3306:3306"]
     volumes:
-      - minimax_mariadb:/var/lib/mysql
+      - mariadb_data:/var/lib/mysql
       - ./sql/complete.sql:/docker-entrypoint-initdb.d/01-complete.sql:ro
-    tmpfs:
-      - /tmp:rw,noexec,nosuid,size=128m
+      - ./sql/seed-data.sql:/docker-entrypoint-initdb.d/02-seed-data.sql:ro
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-uroot", "-proot123456"]
       interval: 10s
       timeout: 5s
       retries: 10
+    networks: [minimax-net]
+    deploy:
+      resources: { limits: { memory: 768M } }
 
   redis:
     image: redis:7-alpine
     container_name: minimax-redis
     restart: unless-stopped
-    command:
-      - redis-server
-      - --requirepass
-      - minimax_redis_2024
-      - --maxmemory
-      - 128mb
-      - --maxmemory-policy
-      - allkeys-lru
-      - --save
-      - ""
-      - --appendonly
-      - "no"
-    # 暴露 0.0.0.0 让宿主工具/运维访问
-    ports:
-      - "6379:6379"
-    volumes:
-      - minimax_redis:/data
-    tmpfs:
-      - /tmp:rw,size=32m
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "minimax_redis_2024", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-
-  # ============== 核心 3 微服务 (auth + ai + gateway) ==============
-  # ⚠️  端口 0.0.0.0 暴露是必要的! 宿主 nginx 通过 127.0.0.1:port 反向代理
-  auth:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      args:
-        MODULE: auth
-    image: minimax-auth:latest
-    container_name: minimax-auth
-    restart: unless-stopped
-    depends_on:
-      mariadb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    environment:
-      SERVER_PORT: 8081
-      SPRING_PROFILES_ACTIVE: mysql
-      MYSQL_HOST: mariadb
-      MYSQL_PORT: 3306
-      MYSQL_DB: minimax_platform
-      MYSQL_USER: root
-      MYSQL_PASSWORD: root123456
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASS: minimax_redis_2024
-      JAVA_OPTS: "-Xms192m -Xmx384m -XX:+UseG1GC -XX:MaxRAMPercentage=70 -XX:+UseContainerSupport"
-    # 暴露给宿主 nginx 反向代理
-    ports:
-      - "8081:8081"
-    volumes:
-      - ./backend/minimax-auth/src/main/resources:/app/config:ro
-      - ./logs/auth:/app/logs
-    tmpfs:
-      - /tmp:rw,size=128m
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  ai:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      args:
-        MODULE: ai
-    image: minimax-ai:latest
-    container_name: minimax-ai
-    restart: unless-stopped
-    depends_on:
-      mariadb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    environment:
-      SERVER_PORT: 8094
-      SPRING_PROFILES_ACTIVE: mysql
-      MYSQL_HOST: mariadb
-      MYSQL_PORT: 3306
-      MYSQL_DB: minimax_platform
-      MYSQL_USER: root
-      MYSQL_PASSWORD: root123456
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASS: minimax_redis_2024
-      JAVA_OPTS: "-Xms256m -Xmx768m -XX:+UseG1GC -XX:MaxRAMPercentage=70 -XX:+UseContainerSupport"
-    ports:
-      - "8094:8094"
-    volumes:
-      - ./backend/minimax-ai/src/main/resources:/app/config:ro
-      - ./logs/ai:/app/logs
-    tmpfs:
-      - /tmp:rw,size=256m
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8094/actuator/health || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 60s
+    command: redis-server --requirepass minimax_redis_2024 --maxmemory 128mb
+    ports: ["6379:6379"]
+    volumes: [redis_data:/data]
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 256M } } }
 
   gateway:
     build:
       context: ./backend
-      dockerfile: Dockerfile
-      args:
-        MODULE: gateway
-    image: minimax-gateway:latest
+      dockerfile: minimax-gateway/Dockerfile
+    image: minimax/gateway:latest
     container_name: minimax-gateway
     restart: unless-stopped
     depends_on:
-      auth:
-        condition: service_healthy
-      ai:
-        condition: service_healthy
+      mariadb: { condition: service_healthy }
     environment:
-      SERVER_PORT: 7080
-      JAVA_OPTS: "-Xms192m -Xmx384m -XX:+UseG1GC -XX:MaxRAMPercentage=70 -XX:+UseContainerSupport"
-    ports:
-      - "7080:7080"
+      SPRING_PROFILES_ACTIVE: mysql
+      JAVA_OPTS: "-XX:MaxRAMPercentage=75 -XX:+UseG1GC"
+    ports: ["7080:7080"]
     volumes:
-      - ./backend/minimax-gateway/src/main/resources:/app/config:ro
-      - ./logs/gateway:/app/logs
-    tmpfs:
-      - /tmp:rw,size=128m
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:7080/actuator/health || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      - .docker-volumes/maven-repo:/root/.m2
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 512M } } }
 
-# ============== 命名卷 (持久化到磁盘) ==============
+  auth:
+    build:
+      context: ./backend
+      dockerfile: minimax-auth/Dockerfile
+    image: minimax/auth:latest
+    container_name: minimax-auth
+    restart: unless-stopped
+    depends_on: [mariadb]
+    environment:
+      SPRING_PROFILES_ACTIVE: mysql
+      JAVA_OPTS: "-XX:MaxRAMPercentage=75 -XX:+UseG1GC"
+    ports: ["8081:8081"]
+    volumes:
+      - .docker-volumes/maven-repo:/root/.m2
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 384M } } }
+
+  ai:
+    build:
+      context: ./backend
+      dockerfile: minimax-ai/Dockerfile
+    image: minimax/ai:latest
+    container_name: minimax-ai
+    restart: unless-stopped
+    depends_on: [mariadb]
+    environment:
+      SPRING_PROFILES_ACTIVE: mysql
+      JAVA_OPTS: "-XX:MaxRAMPercentage=75 -XX:+UseG1GC"
+    ports: ["8094:8094"]
+    volumes:
+      - .docker-volumes/maven-repo:/root/.m2
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 512M } } }
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: minimax-nginx
+    restart: unless-stopped
+    depends_on: [gateway, auth, ai]
+    ports: ["80:80"]
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 64M } } }
+
 volumes:
-  minimax_mariadb:
-    driver: local
-  minimax_redis:
-    driver: local
+  mariadb_data:
+  redis_data:
 
-# ============== 网络 (默认 bridge, 容器内通过服务名互访) ==============
 networks:
-  default:
-    name: minimax-net
+  minimax-net:
+    driver: bridge
