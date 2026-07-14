@@ -3,77 +3,77 @@ import http from './http'
 
 // ==================== 监控基础 ====================
 
-export const getMonitorInfo = () => http.get('/monitor/info')
-export const getMonitorHealth = () => http.get('/monitor/health')
-export const getJvmHealth = () => http.get('/monitor/health/jvm')
-export const getDbHealth = () => http.get('/monitor/health/database')
-export const getDiskHealth = () => http.get('/monitor/health/disk')
+export const getMonitorInfo = () => http.get('/api/v1/monitor/info')
+export const getMonitorHealth = () => http.get('/api/v1/monitor/health')
+export const getJvmHealth = () => http.get('/api/v1/monitor/health/jvm')
+export const getDbHealth = () => http.get('/api/v1/monitor/health/database')
+export const getDiskHealth = () => http.get('/api/v1/monitor/health/disk')
 
-export const getMetrics = () => http.get('/monitor/metrics')
-export const getMetricsSnapshot = () => http.get('/monitor/metrics/snapshot')
+export const getMetrics = () => http.get('/api/v1/monitor/metrics')
+export const getMetricsSnapshot = () => http.get('/api/v1/monitor/metrics/snapshot')
 
 // ==================== 告警 (V2.7.1 新增) ====================
 
 /** 触发中的告警 */
-export const getFiringAlerts = () => http.get('/monitor/alerts/firing')
+export const getFiringAlerts = () => http.get('/api/v1/monitor/alerts/firing')
 
 /** 告警摘要 */
-export const getAlertSummary = () => http.get('/monitor/alerts/summary')
+export const getAlertSummary = () => http.get('/api/v1/monitor/alerts/summary')
 
 /** 告警规则列表 */
-export const listAlertRules = () => http.get('/monitor/alerts/rules')
+export const listAlertRules = () => http.get('/api/v1/monitor/alerts/rules')
 
 /** 创建告警规则 */
-export const createAlertRule = (rule) => http.post('/monitor/alerts/rules', rule)
+export const createAlertRule = (rule) => http.post('/api/v1/monitor/alerts/rules', rule)
 
 /** 更新告警规则 */
-export const updateAlertRule = (id, rule) => http.put(`/monitor/alerts/rules/${id}`, rule)
+export const updateAlertRule = (id, rule) => http.put(`/api/v1/monitor/alerts/rules/${id}`, rule)
 
 /** 删除告警规则 */
-export const deleteAlertRule = (id) => http.delete(`/monitor/alerts/rules/${id}`)
+export const deleteAlertRule = (id) => http.delete(`/api/v1/monitor/alerts/rules/${id}`)
 
 /** 启用/禁用告警规则 */
 export const toggleAlertRule = (id, enabled) =>
-  http.post(`/monitor/alerts/rules/${id}/toggle`, { enabled })
+  http.post(`/api/v1/monitor/alerts/rules/${id}/toggle`, { enabled })
 
 /** 确认告警 */
-export const acknowledgeAlert = (id) => http.post(`/monitor/alerts/${id}/ack`)
+export const acknowledgeAlert = (id) => http.post(`/api/v1/monitor/alerts/${id}/ack`)
 
 /** 通知渠道列表 */
-export const listAlertChannels = () => http.get('/monitor/alerts/channels')
+export const listAlertChannels = () => http.get('/api/v1/monitor/alerts/channels')
 
 /** 查通知渠道 */
-export const getAlertChannel = (id) => http.get(`/monitor/alerts/channels/${id}`)
+export const getAlertChannel = (id) => http.get(`/api/v1/monitor/alerts/channels/${id}`)
 
 /** 创建通知渠道 */
-export const createAlertChannel = (channel) => http.post('/monitor/alerts/channels', channel)
+export const createAlertChannel = (channel) => http.post('/api/v1/monitor/alerts/channels', channel)
 
 /** 更新通知渠道 */
-export const updateAlertChannel = (id, channel) => http.put(`/monitor/alerts/channels/${id}`, channel)
+export const updateAlertChannel = (id, channel) => http.put(`/api/v1/monitor/alerts/channels/${id}`, channel)
 
 /** 删除通知渠道 */
-export const deleteAlertChannel = (id) => http.delete(`/monitor/alerts/channels/${id}`)
+export const deleteAlertChannel = (id) => http.delete(`/api/v1/monitor/alerts/channels/${id}`)
 
 /** 测试通知渠道 */
-export const testAlertChannel = (id) => http.post(`/monitor/alerts/channels/${id}/test`)
+export const testAlertChannel = (id) => http.post(`/api/v1/monitor/alerts/channels/${id}/test`)
 
 /** 告警历史 */
-export const getAlertHistory = (params) => http.get('/monitor/alerts/history', { params })
+export const getAlertHistory = (params) => http.get('/api/v1/monitor/alerts/history', { params })
 
 // ==================== 审计日志 (V2.7.1 新增) ====================
 
 /** 审计日志列表 */
-export const getAuditLogs = (params) => http.get('/admin/audit/recent', { params })
+export const getAuditLogs = (params) => http.get('/api/v1/admin/audit/recent', { params })
 
 /** 按用户查询审计 */
-export const getAuditByUser = (userId) => http.get(`/admin/audit/by-actor/${userId}`)
+export const getAuditByUser = (userId) => http.get(`/api/v1/admin/audit/by-actor/${userId}`)
 
 /** 按天统计 */
-export const getAuditByDay = (params) => http.get('/admin/audit/by-day', { params })
+export const getAuditByDay = (params) => http.get('/api/v1/admin/audit/by-day', { params })
 
 /** 导出审计日志 */
 export const exportAuditLogs = (params) =>
-  http.get('/admin/audit/export', { params, responseType: 'blob' })
+  http.get('/api/v1/admin/audit/export', { params, responseType: 'blob' })
 
 // 默认导出 (兼容 import monitorApi)
 const monitorApi = {
@@ -98,7 +98,7 @@ export const getMonitorJvm = getJvmHealth
 export const getMonitorDisk = getDiskHealth
 export const getMonitorDb = getDbHealth
 export const getMonitorMetrics = getMetrics
-export const getMonitorTrend = (hours) => http.get('/monitor/metrics/trend', { params: { hours } })
+export const getMonitorTrend = (hours) => http.get('/api/v1/monitor/metrics/trend', { params: { hours } })
 export const getMonitorSnapshot = getMetricsSnapshot
 export const getMonitorAlerts = getFiringAlerts
 export const getMonitorAlertsFiring = getFiringAlerts

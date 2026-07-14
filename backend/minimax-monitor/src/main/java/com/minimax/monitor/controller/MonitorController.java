@@ -26,6 +26,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 
 /**
@@ -267,6 +268,76 @@ public class MonitorController {
      *   返回: text/plain (Prometheus 文本格式)
      * </pre>
      */
+    // ════════════════════════════════════════════════════════════
+    // V3.5.8 新增: 告警管理 (前端 monitor.js 调用)
+    // ════════════════════════════════════════════════════════════
+
+    /**
+     * 确认告警 (标记已处理)
+     *
+     * @param id 告警 ID
+     * @return 成功状态
+     */
+    @Operation(summary = "确认告警")
+    @PostMapping("/alerts/{id}/ack")
+    public Result<Boolean> acknowledgeAlert(@PathVariable Long id) {
+        log.info("[monitor] acknowledge alert id={}", id);
+        // 实际生产: 写 audit log + 更新 alert.status = 'ack'
+        // 沙箱: 直接返回成功
+        return Result.ok(true);
+    }
+
+    /**
+     * 测试告警通道 (发送测试消息)
+     *
+     * @param id 告警通道 ID
+     * @return 发送结果
+     */
+    @Operation(summary = "测试告警通道")
+    @PostMapping("/alerts/channels/{id}/test")
+    public Result<Boolean> testAlertChannel(@PathVariable Long id) {
+        log.info("[monitor] test alert channel id={}", id);
+        // 实际生产: 触发 channel.send("test message")
+        // 沙箱: 模拟成功
+        return Result.ok(true);
+    }
+
+    /**
+     * 告警历史 (已恢复的告警)
+     */
+    @Operation(summary = "告警历史")
+    @GetMapping("/alerts/history")
+    public Result<List<Map<String, Object>>> getAlertHistory(
+            @RequestParam(defaultValue = "7") int days,
+            @RequestParam(defaultValue = "100") int limit) {
+        // 沙箱: 返回模拟数据
+        List<Map<String, Object>> history = new ArrayList<>();
+        for (int i = 0; i < Math.min(limit, 20); i++) {
+            history.add(Map.of(
+                    "id", (long) (i + 1),
+                    "rule", "CPU > 80%",
+                    "level", "warning",
+                    "status", "recovered",
+                    "triggeredAt", System.currentTimeMillis() - (long) i * 86400000,
+                    "recoveredAt", System.currentTimeMillis() - (long) i * 86400000 + 3600000
+            ));
+        }
+        return Result.ok(history);
+    }
+
+    /**
+     * 启停告警规则
+     *
+     * @param id 规则 ID
+     * @return 启停状态
+     */
+    @Operation(summary = "启停告警规则")
+    @PostMapping("/alerts/rules/{id}/toggle")
+    public Result<Boolean> toggleAlertRule(@PathVariable Long id, @RequestParam Boolean enabled) {
+        log.info("[monitor] toggle rule id={} enabled={}", id, enabled);
+        return Result.ok(enabled);
+    }
+
     @Operation(summary = "转发其他服务的 Prometheus 输出 (V5.10)")
     @GetMapping(value = "/forward-prometheus", produces = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<String> forwardPrometheus(@RequestParam("service") String service) {

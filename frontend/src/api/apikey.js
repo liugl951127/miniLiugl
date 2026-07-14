@@ -21,8 +21,8 @@ export const apiKeyApi = {
 
   // V5.9 Day 20: 管理员 API Key 统计
   /** 全局统计摘要 (admin) */
-  adminSummary: () => http.get('/admin/stats/apikey'),
+  adminSummary: () => http.get('/api/v1/admin/stats/apikey'),
 
   /** 新增趋势 (admin) */
-  adminTrend: (days = 7) => http.get(`/admin/stats/apikey/trend?days=${days}`)
+  adminTrend: (days = 7) => http.get(`/api/v1/admin/stats/apikey/trend?days=${days}`)
 }

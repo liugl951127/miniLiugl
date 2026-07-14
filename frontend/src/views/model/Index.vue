@@ -179,7 +179,7 @@ const editModel = (row) => {
 const deleteModel = async (row) => {
   await ElMessageBox.confirm(`确认删除模型 ${row.name}?`, '警告', { type: 'warning' })
   try {
-    await http.delete(`/api/v1/models/${row.id}`)
+    await http.delete(`/api/v1/admin/models/${row.id}`)
     ElMessage.success('删除成功')
     loadModels()
   } catch (e) {
@@ -191,9 +191,9 @@ const saveModel = async () => {
   await formRef.value.validate()
   try {
     if (editing.value) {
-      await http.put(`/api/v1/models/${form.id}`, form)
+      await http.put(`/api/v1/admin/models/${form.id}`, form)
     } else {
-      await http.post('/api/v1/models', form)
+      await http.post('/api/v1/admin/models', form)
     }
     ElMessage.success('保存成功')
     showAddDialog.value = false

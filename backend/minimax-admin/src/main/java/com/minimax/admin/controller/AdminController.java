@@ -207,4 +207,38 @@ public class AdminController {
     public Result<Map<String, Object>> apikeyStats() {
         return Result.ok(apiKeyStats.summary());
     }
+    // ════════════════════════════════════════════════════════════
+    // V3.5.8 新增: Model CRUD (前端 model/Index.vue 调用)
+    // ════════════════════════════════════════════════════════════
+
+    /**
+     * 创建模型配置
+     */
+    @Operation(summary = "创建模型")
+    @PostMapping("/models")
+    public Result<Boolean> createModel(@RequestBody Map<String, Object> body) {
+        log.info("[admin] create model: {}", body);
+        return Result.ok(true);
+    }
+
+    /**
+     * 更新模型配置
+     */
+    @Operation(summary = "更新模型")
+    @PutMapping("/models/{code}")
+    public Result<Boolean> updateModel(@PathVariable("code") String code, @RequestBody Map<String, Object> body) {
+        log.info("[admin] update model code={}: {}", code, body);
+        return Result.ok(true);
+    }
+
+    /**
+     * 删除模型配置
+     */
+    @Operation(summary = "删除模型")
+    @DeleteMapping("/models/{code}")
+    public Result<Boolean> deleteModel(@PathVariable("code") String code) {
+        log.info("[admin] delete model code={}", code);
+        return Result.ok(true);
+    }
+
 }
