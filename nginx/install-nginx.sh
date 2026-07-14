@@ -102,14 +102,14 @@ do_install() {
         bash $PROJECT_DIR/scripts/gen-nginx-config.sh 2>&1 | tail -3 || true
     fi
 
-    # 4. 部署配置
-    bold "  [4/5] 部署配置"
-    cp "$NGINX_DIR/upstream.conf" /etc/nginx/conf.d/minimax-upstream.conf
+    # 4. 部署配置 (单文件: upstream + 主配置 + security headers 全部内联)
+    bold "  [4/5] 部署配置 (单文件, upstream + security 内联)"
     cp "$NGINX_DIR/nginx.conf" /etc/nginx/conf.d/minimax.conf
-    cp "$NGINX_DIR/security-headers.conf" /etc/nginx/conf.d/minimax-security.conf 2>/dev/null || true
-    green "  ✓ upstream.conf → /etc/nginx/conf.d/minimax-upstream.conf"
-    green "  ✓ nginx.conf → /etc/nginx/conf.d/minimax.conf"
-    green "  ✓ security-headers.conf → /etc/nginx/conf.d/minimax-security.conf"
+    # 清理旧的拆分文件 (旧版用 include 拆分, 现在单文件)
+    rm -f /etc/nginx/conf.d/minimax-upstream.conf
+    rm -f /etc/nginx/conf.d/minimax-security.conf
+    rm -f /etc/nginx/conf.d/minimax-locations.conf
+    green "  ✓ nginx.conf → /etc/nginx/conf.d/minimax.conf (upstream + 安全 headers 全部内联)"
 
     # 5. 复制前端
     bold "  [5/5] 复制前端 dist"

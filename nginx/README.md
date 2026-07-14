@@ -6,8 +6,6 @@
 |------|------|------|
 | `install-nginx.sh` | 一键部署 (装 + 配置 + 启动) | 7KB |
 | `nginx.conf` | 主配置 (SPA + 16 API + WS + SSE) | 11KB |
-| `upstream.conf` | 16 个后端 upstream | 2.3KB |
-| `security-headers.conf` | CSP / XSS / CORS 安全 headers | 2KB |
 | `README.md` | 本文档 | 4KB |
 
 ## 🎯 覆盖的 16 个微服务
