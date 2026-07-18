@@ -20,6 +20,33 @@ server:
     keep-alive-timeout: 60s
 
 spring:
+  # ===== V3.5.9 Nacos 服务注册 + 配置中心 (17 个微服务统一) =====
+  # 沙箱模式 (h2local profile) 会主动关闭 nacos, 这里是默认配置
+  cloud:
+    nacos:
+      discovery:
+        enabled: ${NACOS_ENABLED:true}
+        server-addr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
+        namespace: ${NACOS_NS:minimax-dev}
+        username: ${NACOS_USER:nacos}
+        password: ${NACOS_PASS:nacos}
+        register-enabled: true
+        metadata:
+          version: 5.7.0
+          group: minimax
+      config:
+        enabled: ${NACOS_ENABLED:true}
+        server-addr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
+        namespace: ${NACOS_NS:minimax-dev}
+        username: ${NACOS_USER:nacos}
+        password: ${NACOS_PASS:nacos}
+        file-extension: yaml
+        refresh-enabled: true
+        extension-configs:
+          - data-id: minimax-common.yaml
+            group: DEFAULT_GROUP
+            refresh: true
+
   # ===== 公共 Jackson 配置 =====
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss

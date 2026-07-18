@@ -828,10 +828,10 @@ CREATE TABLE IF NOT EXISTS `sys_user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `sys_user_role` (
-    `user_id` VARCHAR(255) DEFAULT NULL COMMENT 'user_id',
-    `role_id` VARCHAR(255) DEFAULT NULL COMMENT 'role_id',
-    PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `user_id` BIGINT DEFAULT NULL COMMENT 'user_id',
+    `role_id` BIGINT DEFAULT NULL COMMENT 'role_id',
+    PRIMARY KEY (`user_id`, `role_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='sys_user_role (auto-generated V3.5.9)';
 
 CREATE TABLE IF NOT EXISTS `tenant` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
