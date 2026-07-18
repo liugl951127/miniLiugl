@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -51,7 +52,7 @@ class ApiKeyAuthGlobalFilterTest {
         // mock Redis (永不使用)
         var redis = mockRedisTemplate(null);
         var webClient = mockWebClient();
-        var f = new ApiKeyAuthGlobalFilter(webClient, redis, "http://auth:8081");
+        var f = newFilter(webClient, redis);
 
         when(mockChain.filter(exchange)).thenReturn(Mono.empty());
 
@@ -72,7 +73,7 @@ class ApiKeyAuthGlobalFilterTest {
 
         var redis = mockRedisTemplate(null);
         var webClient = mockWebClient();
-        var f = new ApiKeyAuthGlobalFilter(webClient, redis, "http://auth:8081");
+        var f = newFilter(webClient, redis);
 
         when(mockChain.filter(exchange)).thenReturn(Mono.empty());
 
@@ -96,7 +97,7 @@ class ApiKeyAuthGlobalFilterTest {
 
         var redis = mockRedisTemplate(cachedUserId);
         var webClient = mockWebClient();
-        var f = new ApiKeyAuthGlobalFilter(webClient, redis, "http://auth:8081");
+        var f = newFilter(webClient, redis);
 
         when(mockChain.filter(any())).thenAnswer(inv -> {
             ServerWebExchange ex = inv.getArgument(0);
@@ -117,7 +118,7 @@ class ApiKeyAuthGlobalFilterTest {
     void order_isBeforeJwtAuthFilter() {
         var redis = mockRedisTemplate(null);
         var webClient = mockWebClient();
-        var f = new ApiKeyAuthGlobalFilter(webClient, redis, "http://auth:8081");
+        var f = newFilter(webClient, redis);
 
         assertEquals(-200, f.getOrder(), "API Key Filter 优先级应 < JwtAuthFilter 的 -100");
     }
@@ -128,7 +129,7 @@ class ApiKeyAuthGlobalFilterTest {
         // redis 返回 valid user info -> cache hit, 跳过 webClient
         var redis = mockRedisTemplate("{\"userId\":1,\"valid\":true}");
         var webClient = mockWebClient();
-        var f = new ApiKeyAuthGlobalFilter(webClient, redis, "http://auth:8081");
+        var f = newFilter(webClient, redis);
 
         String rawKey = "mmx_secret_key";
         String expectedHash;
@@ -171,7 +172,7 @@ class ApiKeyAuthGlobalFilterTest {
 
         var redis = mockRedisTemplate(cachedUserId);
         var webClient = mockWebClient();
-        var f = new ApiKeyAuthGlobalFilter(webClient, redis, "http://auth:8081");
+        var f = newFilter(webClient, redis);
 
         when(mockChain.filter(any())).thenAnswer(inv -> {
             ServerWebExchange ex = inv.getArgument(0);
@@ -184,6 +185,20 @@ class ApiKeyAuthGlobalFilterTest {
     }
 
     // ── Mock helpers ────────────────────────────────────────────────────────
+
+    /**
+     * 创建 filter 并通过反射注入 authServiceUrl.
+     * V3.5.8+ 生产代码使用 @Value 注入, 测试不启动 Spring 容器,
+     * 所以手工设置字段值. 这里是测试中唯一会调 auth 服务 URL 的地方,
+     * 但当前测试场景都是 "放行" 或 "Redis 命中" 路径, 不会真的发 HTTP.
+     */
+    private static ApiKeyAuthGlobalFilter newFilter(
+            org.springframework.web.reactive.function.client.WebClient webClient,
+            org.springframework.data.redis.core.StringRedisTemplate redis) {
+        var f = newFilter(webClient, redis);
+        ReflectionTestUtils.setField(f, "authServiceUrl", "http://auth:8081");
+        return f;
+    }
 
     private static org.springframework.data.redis.core.StringRedisTemplate mockRedisTemplate(String cachedValue) {
         var template = org.mockito.Mockito.mock(org.springframework.data.redis.core.StringRedisTemplate.class);
