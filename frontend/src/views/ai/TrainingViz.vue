@@ -1,3 +1,8 @@
+<!--
+  @file views/ai/TrainingViz.vue (模型训练任务 (TrainingViz))
+  @version V3.5.12+ (前端注释补全)
+  @description 模型训练任务 (TrainingViz)
+-->
 <template>
   <div class="training-viz">
     <el-card>
@@ -91,6 +96,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {

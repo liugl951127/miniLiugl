@@ -1,3 +1,19 @@
+/**
+ * @file rag API 调用层 (V3.5.12+)
+ *
+ * 对应后端模块: minimax-rag
+ * 接口数: 13
+ *
+ *   POST   /api/v1/rag/kb
+ *   GET    /api/v1/rag/kb
+ *   GET    /api/v1/rag/kb/public
+ *   GET    /api/v1/rag/kb/{id}
+ *   DELETE /api/v1/rag/kb/{id}
+ *   PUT    /api/v1/rag/kb/{id}
+ *   POST   /api/v1/rag/doc/upload
+ *   GET    /api/v1/rag/doc
+ *   ... 共 13 个
+ */
 // RAG 知识库 API (V5.24 + V5.22 进度 + 可取消)
 import http from './http'
 

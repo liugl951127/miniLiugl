@@ -1,3 +1,16 @@
+/**
+ * @file router/index.js - Vue Router 配置 (V3.5.12+)
+ *
+ * 路由表:
+ *   - 公开: /login, /h5-login, /register
+ *   - 受保护: 业务页面 (由 beforeEach 守卫)
+ *   - 移动端 H5: /h5/*
+ *
+ * 守卫:
+ *   - JWT token 校验 (从 useUserStore)
+ *   - meta.public = true 跳过校验
+ *   - meta.title 设置 document.title
+ */
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/store/user'
 

@@ -1,3 +1,16 @@
+/**
+ * @file main.js - Vue 应用入口 (V3.5.12+)
+ *
+ * 启动顺序:
+ *   1. 浏览器兼容层 (initBrowserCompat)
+ *   2. Capacitor 移动端 (initCapacitor)
+ *   3. Pinia + 持久化插件
+ *   4. Vue Router
+ *   5. Element Plus (中文 locale)
+ *   6. Vue I18n
+ *   7. 自定义指令 + 全局错误处理
+ *   8. 挂载到 #app
+ */
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'

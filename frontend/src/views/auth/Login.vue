@@ -1,3 +1,8 @@
+<!--
+  @file views/auth/Login.vue (登录页)
+  @version V3.5.12+ (前端注释补全)
+  @description 登录页
+-->
 <template>
   <div class="login-page">
     <div class="login-bg" />
@@ -93,6 +98,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -129,16 +135,25 @@ onMounted(() => {
   }
 })
 
+/**
+ * 填充演示账号 (开发模式快捷登录)
+ */
 function fillAccount(u, p) {
   form.value.username = u
   form.value.password = p
   ElMessage.info('已填入演示账号, 点击登录')
 }
 
+/**
+ * 忘记密码处理 (弹提示)
+ */
 function onForgot() {
   ElMessage.warning('请联系管理员重置密码')
 }
 
+/**
+ * 提交登录 (POST /api/v1/auth/login)
+ */
 async function onSubmit() {
   if (!formRef.value) return
   await formRef.value.validate(async (valid) => {
@@ -162,6 +177,9 @@ async function onSubmit() {
   })
 }
 
+/**
+ * 微信扫码登录回调
+ */
 function onWechatLogin(profile) {
   ElMessage.success('微信登录成功')
   router.push('/admin/dashboard')

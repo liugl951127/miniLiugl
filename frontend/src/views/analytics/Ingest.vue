@@ -1,3 +1,8 @@
+<!--
+  @file views/analytics/Ingest.vue (Ingest 页面)
+  @version V3.5.12+ (前端注释补全)
+  @description Ingest 页面
+-->
 <template>
   <div class="page">
     <el-card>
@@ -71,6 +76,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
 import { UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'

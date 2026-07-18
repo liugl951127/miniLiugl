@@ -6,6 +6,11 @@
   - 强制绑定/解绑
   - 用户侧: 我的绑定
 -->
+<!--
+  @file views/admin/WechatBindings.vue (微信绑定管理)
+  @version V3.5.12+ (前端注释补全)
+  @description 微信绑定管理
+-->
 <template>
   <div class="wechat-bindings">
     <header class="header">
@@ -129,6 +134,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import http from '@/api/http'

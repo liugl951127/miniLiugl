@@ -1,4 +1,20 @@
 /**
+ * @file ai API 调用层 (V3.5.12+)
+ *
+ * 对应后端模块: minimax-ai
+ * 接口数: 93
+ *
+ *   POST   /api/v1/ai/generate
+ *   POST   /api/v1/ai/embed
+ *   POST   /api/v1/ai/similarity
+ *   POST   /api/v1/ai/tokenize
+ *   GET    /api/v1/ai/info
+ *   GET    /api/v1/ai/health
+ *   POST   /api/v1/ai/train
+ *   POST   /api/v1/ai/video/compose
+ *   ... 共 93 个
+ */
+/**
  * Liugl-AI AI 平台前端 SDK (V2.7)
  *
  * 包含:

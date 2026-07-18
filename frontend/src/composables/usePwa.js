@@ -1,3 +1,7 @@
+/**
+ * @file usePwa.js - PWA 组合式函数 (SW 注册/版本检查)
+ * @version V3.5.12+ (前端注释补全)
+ */
 // V2.8.9 PWA composable
 // 提供: 注册 SW / 安装提示 / 离线检测 / 更新提示 / 缓存控制
 

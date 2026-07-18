@@ -1,3 +1,8 @@
+<!--
+  @file views/agent/Index.vue (入口/列表)
+  @version V3.5.12+ (前端注释补全)
+  @description 入口/列表
+-->
 <template>
   <div class="agent-container">
     <div class="agent-header">
@@ -77,6 +82,7 @@
 </template>
 
 <script setup lang="ts">
+// ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
 import http from '@/api/http'
 import { ElMessage } from 'element-plus'

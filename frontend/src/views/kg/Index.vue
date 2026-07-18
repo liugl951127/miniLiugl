@@ -8,6 +8,11 @@
     - 最短路径查询 (任意两实体)
     - 节点点击跳转, 边权值显示
 -->
+<!--
+  @file views/kg/Index.vue (入口/列表)
+  @version V3.5.12+ (前端注释补全)
+  @description 入口/列表
+-->
 <template>
   <div class="kg-container">
     <div class="kg-header">
@@ -145,6 +150,7 @@
 </template>
 
 <script setup lang="ts">
+// ───── 依赖导入 ─────
 import { ref, reactive, onMounted, nextTick } from 'vue'
 import axios from 'axios'
 import * as echarts from 'echarts'

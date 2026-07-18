@@ -4,6 +4,11 @@
   - 按 unionid 查用户
   - 手动合并账号
 -->
+<!--
+  @file views/admin/WechatUnionidAdmin.vue (微信 UnionID 管理)
+  @version V3.5.12+ (前端注释补全)
+  @description 微信 UnionID 管理
+-->
 <template>
   <div class="unionid-admin">
     <header class="header">
@@ -122,6 +127,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { User } from '@element-plus/icons-vue'

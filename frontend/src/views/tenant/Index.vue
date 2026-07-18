@@ -3,6 +3,11 @@
   adminLiugl (SUPER_ADMIN) 专属
   功能: 租户列表 / 创建 / 启停 / 配额 / 删除 / 查看用户
 -->
+<!--
+  @file views/tenant/Index.vue (入口/列表)
+  @version V3.5.12+ (前端注释补全)
+  @description 入口/列表
+-->
 <template>
   <div class="tenant-page">
     <!-- 页面标题 -->
@@ -207,6 +212,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {

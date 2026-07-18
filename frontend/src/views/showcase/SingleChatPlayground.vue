@@ -4,6 +4,11 @@
   - 显示延迟/token/原始响应
   - 调 raw HTTP, 无中间层
 -->
+<!--
+  @file views/showcase/SingleChatPlayground.vue (AI 聊天对话 (SingleChatPlayground))
+  @version V3.5.12+ (前端注释补全)
+  @description AI 聊天对话 (SingleChatPlayground)
+-->
 <template>
   <div class="playground">
     <header class="header">
@@ -118,6 +123,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Promotion, VideoPause } from '@element-plus/icons-vue'

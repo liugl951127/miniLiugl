@@ -3,6 +3,11 @@
   显示当前用户所有微信应用绑定 (unionid 关联)
   支持扫多个应用二维码, 自动识别为同一用户
 -->
+<!--
+  @file components/CrossAppBinding.vue (跨应用绑定)
+  @version V3.5.12+ (前端注释补全)
+  @description 跨应用绑定
+-->
 <template>
   <div class="cross-app-binding">
     <header class="header">
@@ -85,6 +90,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Loading, User } from '@element-plus/icons-vue'

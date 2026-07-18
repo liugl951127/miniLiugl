@@ -1,3 +1,8 @@
+<!--
+  @file views/notification/Index.vue (入口/列表)
+  @version V3.5.12+ (前端注释补全)
+  @description 入口/列表
+-->
 <template>
   <div class="notif-page">
     <div class="notif-header">
@@ -58,6 +63,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useNotificationStore } from '@/store/notification'

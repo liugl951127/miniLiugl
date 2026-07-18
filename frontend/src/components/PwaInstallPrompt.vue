@@ -4,6 +4,11 @@
   - 提供 "安装到桌面" 按钮
   - iOS 提供 "添加到主屏幕" 说明
 -->
+<!--
+  @file components/PwaInstallPrompt.vue (PWA 安装提示)
+  @version V3.5.12+ (前端注释补全)
+  @description PWA 安装提示
+-->
 <template>
   <transition name="fade">
     <div v-if="showPrompt" class="install-prompt">
@@ -27,6 +32,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
 import { t } from '@/i18n'
 

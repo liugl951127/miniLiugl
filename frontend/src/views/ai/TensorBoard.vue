@@ -1,3 +1,8 @@
+<!--
+  @file views/ai/TensorBoard.vue (TensorBoard 页面)
+  @version V3.5.12+ (前端注释补全)
+  @description TensorBoard 页面
+-->
 <template>
   <div class="tensorboard-container">
     <div class="tb-header">
@@ -114,6 +119,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Folder } from '@element-plus/icons-vue'

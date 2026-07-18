@@ -1,3 +1,8 @@
+<!--
+  @file components/LangSwitcher.vue (语言切换)
+  @version V3.5.12+ (前端注释补全)
+  @description 语言切换
+-->
 <template>
   <el-dropdown @command="onSwitch" trigger="click">
     <span class="lang-trigger">
@@ -14,6 +19,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { computed } from 'vue'
 import { Position } from '@element-plus/icons-vue'
 import { currentLang, setLang } from '@/i18n'

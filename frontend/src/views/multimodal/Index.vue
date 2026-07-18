@@ -4,6 +4,11 @@
   API 路径: /api/v1/multimodal/*
   功能: 图像描述 / 多图分析 / 多模态上传 / 视频描述
 -->
+<!--
+  @file views/multimodal/Index.vue (入口/列表)
+  @version V3.5.12+ (前端注释补全)
+  @description 入口/列表
+-->
 <template>
   <div class="multimodal-page">
     <el-card>
@@ -122,6 +127,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { PictureFilled, Upload, MagicStick } from '@element-plus/icons-vue'

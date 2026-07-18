@@ -3,6 +3,11 @@
   - 6 模型: Sora / 可灵 / CogVideoX / 万相 / AnimateDiff / Mock
   - mock 模式: 演示 + 帧序列
 -->
+<!--
+  @file views/showcase/VideoGenShowcase.vue (VideoGenShowcase 页面)
+  @version V3.5.12+ (前端注释补全)
+  @description VideoGenShowcase 页面
+-->
 <template>
   <div class="videogen">
     <header class="header">
@@ -111,6 +116,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { VideoCamera, VideoPlay, WarningFilled } from '@element-plus/icons-vue'

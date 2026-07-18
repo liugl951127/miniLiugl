@@ -1,3 +1,8 @@
+<!--
+  @file views/pipeline/Designer.vue (Designer 页面)
+  @version V3.5.12+ (前端注释补全)
+  @description Designer 页面
+-->
 <template>
   <div class="page">
     <el-card>
@@ -101,6 +106,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

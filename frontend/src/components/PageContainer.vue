@@ -1,3 +1,8 @@
+<!--
+  @file components/PageContainer.vue (页面容器)
+  @version V3.5.12+ (前端注释补全)
+  @description 页面容器
+-->
 <template>
   <div class="page-container">
     <div class="page-header" v-if="title || $slots.header">
@@ -27,6 +32,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 defineProps({
   title: String,
   subtitle: String,

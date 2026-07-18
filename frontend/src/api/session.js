@@ -1,3 +1,7 @@
+/**
+ * @file session API 调用层 (V3.5.12+)
+ *
+ */
 import http from './http'
 
 /** 会话管理 */

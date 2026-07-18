@@ -2,6 +2,11 @@
   V5.9 Day 20: API Key 用量统计页面
   功能: 全局 Key 统计 / 启用状态分布 / 调用次数 Top / 趋势图
 -->
+<!--
+  @file views/apikey/Stats.vue (Stats 页面)
+  @version V3.5.12+ (前端注释补全)
+  @description Stats 页面
+-->
 <template>
   <div class="apikey-stats-page">
     <!-- 页面标题 -->
@@ -123,6 +128,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, onMounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'

@@ -1,3 +1,18 @@
+/**
+ * @file pipeline API 调用层 (V3.5.12+)
+ *
+ * 对应后端模块: minimax-pipeline
+ * 接口数: 8
+ *
+ *   GET    /api/v1/pipeline/runs/{runId}
+ *   GET    /api/v1/pipeline/runs/{runId}/result
+ *   GET    /api/v1/pipeline/workflows/{id}
+ *   PUT    /api/v1/pipeline/workflows/{id}
+ *   DELETE /api/v1/pipeline/workflows/{id}
+ *   POST   /api/v1/pipeline/workflows/{id}/run
+ *   GET    /api/v1/pipeline/workflows/{id}/runs
+ *   POST   /api/v1/pipeline/workflows/validate
+ */
 // V5.32 画布工作流 API
 import http from './http'
 

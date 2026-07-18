@@ -1,3 +1,7 @@
+/**
+ * @file notification.js - Pinia 状态管理 (V3.5.12+)
+ */
+
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useUserStore } from './user'

@@ -1,3 +1,8 @@
+<!--
+  @file components/StateBlock.vue (状态块)
+  @version V3.5.12+ (前端注释补全)
+  @description 状态块
+-->
 <template>
   <div class="state-block">
     <el-empty v-if="type === 'empty'" :description="message" :image-size="100">
@@ -18,6 +23,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { Loading } from '@element-plus/icons-vue'
 defineProps({
   type: { type: String, default: 'empty' },  // empty / loading / error

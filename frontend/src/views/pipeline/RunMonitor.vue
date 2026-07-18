@@ -1,3 +1,8 @@
+<!--
+  @file views/pipeline/RunMonitor.vue (运行监控)
+  @version V3.5.12+ (前端注释补全)
+  @description 运行监控
+-->
 <template>
   <div class="page">
     <el-card>
@@ -69,6 +74,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { getRun, getRunResult, listWorkflowRuns } from '@/api/pipeline'

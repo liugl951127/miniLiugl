@@ -1,3 +1,19 @@
+/**
+ * @file analytics API 调用层 (V3.5.12+)
+ *
+ * 对应后端模块: minimax-analytics
+ * 接口数: 19
+ *
+ *   POST   /api/v1/analytics/datasources
+ *   GET    /api/v1/analytics/datasources
+ *   GET    /api/v1/analytics/datasources/{id}
+ *   POST   /api/v1/analytics/datasources/test
+ *   GET    /api/v1/analytics/datasources/{dsId}/databases
+ *   GET    /api/v1/analytics/datasources/{dsId}/databases/{db}/tables
+ *   GET    /api/v1/analytics/datasources/{dsId}/databases/{db}/tables/{table}
+ *   GET    /api/v1/analytics/datasources/{dsId}/databases/{db}/tables/{table}/profile
+ *   ... 共 19 个
+ */
 // V5.31 数据智能分析 API
 import http from './http'
 

@@ -1,3 +1,8 @@
+<!--
+  @file views/admin/Provider.vue (模型 Provider)
+  @version V3.5.12+ (前端注释补全)
+  @description 模型 Provider
+-->
 <template>
   <div class="provider-page">
     <div class="page-header">
@@ -120,6 +125,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, onMounted, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh, Connection, Edit, Delete } from '@element-plus/icons-vue'

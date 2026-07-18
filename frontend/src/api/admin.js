@@ -1,3 +1,19 @@
+/**
+ * @file admin API 调用层 (V3.5.12+)
+ *
+ * 对应后端模块: minimax-admin
+ * 接口数: 30
+ *
+ *   GET    /api/v1/admin/users
+ *   GET    /api/v1/admin/users/{id}
+ *   POST   /api/v1/admin/users
+ *   POST   /api/v1/admin/users/{id}/reset-password
+ *   PUT    /api/v1/admin/users/{id}/status
+ *   GET    /api/v1/admin/models/providers
+ *   GET    /api/v1/admin/models
+ *   PUT    /api/v1/admin/models/{code}/rate-limit
+ *   ... 共 30 个
+ */
 // Admin API 封装
 import http from './http'
 
@@ -39,9 +55,29 @@ export const getAuditByDay = (days = 7, action) =>
 
 // V2.9.0: 治理后台 API
 export const governance = {
+  /**
+   * overview - 查询 /api/v1/admin/governance/overview
+   * @returns GET /api/v1/admin/governance/overview 的响应 Promise
+   */
   overview: (params) => http.get('/api/v1/admin/governance/overview', { params }),
+  /**
+   * timeline - 查询 /api/v1/admin/governance/timeline
+   * @returns GET /api/v1/admin/governance/timeline 的响应 Promise
+   */
   timeline: (params) => http.get('/api/v1/admin/governance/timeline', { params }),
+  /**
+   * anomalies - 查询 /api/v1/admin/governance/anomalies
+   * @returns GET /api/v1/admin/governance/anomalies 的响应 Promise
+   */
   anomalies: (params) => http.get('/api/v1/admin/governance/anomalies', { params }),
+  /**
+   * compliance - 查询 /api/v1/admin/governance/compliance
+   * @returns GET /api/v1/admin/governance/compliance 的响应 Promise
+   */
   compliance: () => http.get('/api/v1/admin/governance/compliance'),
+  /**
+   * retention - 查询 /api/v1/admin/governance/retention
+   * @returns GET /api/v1/admin/governance/retention 的响应 Promise
+   */
   retention: () => http.get('/api/v1/admin/governance/retention')
 }

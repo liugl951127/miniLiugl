@@ -1,3 +1,7 @@
+/**
+ * @file notification API 调用层 (V3.5.12+)
+ *
+ */
 import http from './http'
 
 /** 通知列表（分页） */

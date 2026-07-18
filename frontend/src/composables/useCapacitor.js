@@ -1,4 +1,8 @@
 /**
+ * @file useCapacitor.js - useCapacitor 组合式 API
+ * @version V3.5.12+ (前端注释补全)
+ */
+/**
  * Capacitor 移动端能力集成 (V3.1.1)
  *
  * <p>提供:

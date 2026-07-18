@@ -3,6 +3,11 @@
   5 种流式类型: chat/vision/audio/agent/battle
   后端: minimax-ws 8095
 -->
+<!--
+  @file views/showcase/StreamShowcase.vue (AI 流式对话 (StreamShowcase))
+  @version V3.5.12+ (前端注释补全)
+  @description AI 流式对话 (StreamShowcase)
+-->
 <template>
   <div class="stream">
     <header class="header">
@@ -159,6 +164,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 

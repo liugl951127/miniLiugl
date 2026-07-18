@@ -3,6 +3,11 @@
   用户自主管理个人 API Key
   功能: 创建 / 列表 / 复制 / 禁用 / 轮换 / 删除
 -->
+<!--
+  @file views/apikey/Index.vue (入口/列表)
+  @version V3.5.12+ (前端注释补全)
+  @description 入口/列表
+-->
 <template>
   <div class="apikey-page">
     <!-- 页面标题 -->
@@ -144,6 +149,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Refresh, Delete, DocumentCopy, Check, Close } from '@element-plus/icons-vue'

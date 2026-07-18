@@ -1,3 +1,7 @@
+/**
+ * @file user.js - Pinia 状态管理 (V3.5.12+)
+ */
+
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authApi } from '@/api/auth'

@@ -1,3 +1,8 @@
+<!--
+  @file views/ai/AiToolAdmin.vue (AI 工具 (AiToolAdmin))
+  @version V3.5.12+ (前端注释补全)
+  @description AI 工具 (AiToolAdmin)
+-->
 <template>
   <div class="ai-tool-admin">
     <el-tabs v-model="activeTab">
@@ -292,6 +297,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {

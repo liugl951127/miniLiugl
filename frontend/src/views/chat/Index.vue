@@ -9,6 +9,11 @@
     - 多模型切换
     - 停止生成 + 重试
 -->
+<!--
+  @file views/chat/Index.vue (入口/列表)
+  @version V3.5.12+ (前端注释补全)
+  @description 入口/列表
+-->
 <template>
   <div class="chat-page">
     <!-- 侧边栏 -->
@@ -169,6 +174,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/store/user'
@@ -225,6 +231,9 @@ watch(() => route.query.prompt, (val) => {
   if (val) inputText.value = decodeURIComponent(val)
 })
 
+/**
+ * 加载 AI 模型列表 (GET /api/v1/models)
+ */
 async function loadModels() {
   try {
     const r = await modelApi.list()
@@ -236,6 +245,9 @@ async function loadModels() {
   }
 }
 
+/**
+ * 加载会话列表 (GET /api/v1/sessions)
+ */
 async function loadSessions() {
   try {
     const r = await listSessions()
@@ -250,6 +262,9 @@ async function loadSessions() {
   }
 }
 
+/**
+ * 新建对话会话 (POST /api/v1/sessions)
+ */
 async function newSession() {
   if (streaming.value) {
     ElMessage.warning('正在生成中, 请先停止')
@@ -279,6 +294,9 @@ async function newSession() {
   }
 }
 
+/**
+ * 切换当前会话 (更新 currentSessionId)
+ */
 async function switchSession(id) {
   if (streaming.value) {
     ElMessage.warning('正在生成中, 请先停止')
@@ -289,6 +307,9 @@ async function switchSession(id) {
   messages.value = []
 }
 
+/**
+ * 删除会话 (DELETE /api/v1/sessions/:id)
+ */
 async function deleteSession(id) {
   try {
     await ElMessageBox.confirm('确定删除该会话?', '提示', { type: 'warning' })
@@ -304,6 +325,9 @@ async function deleteSession(id) {
   ElMessage.success('已删除')
 }
 
+/**
+ * 重命名会话 (PUT /api/v1/sessions/:id)
+ */
 function renameSession(s) {
   ElMessageBox.prompt('输入新标题', '重命名', { inputValue: s.title })
     .then(({ value }) => {
@@ -312,11 +336,17 @@ function renameSession(s) {
     }).catch(() => {})
 }
 
+/**
+ * 发送快捷短语 (同 sendMessage)
+ */
 function sendQuick(text) {
   inputText.value = text
   sendMessage()
 }
 
+/**
+ * 键盘事件处理 (Enter 发送, Shift+Enter 换行)
+ */
 function onKey(e) {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault()
@@ -324,6 +354,9 @@ function onKey(e) {
   }
 }
 
+/**
+ * 文件选择处理 (上传 /api/v1/multimodal/upload)
+ */
 function onFileChange(file) {
   const reader = new FileReader()
   reader.onload = (e) => {
@@ -336,6 +369,9 @@ function onFileChange(file) {
   reader.readAsDataURL(file.raw)
 }
 
+/**
+ * 拖拽文件处理 (drop event)
+ */
 function onDrop(e) {
   dragging.value = false
   const files = e.dataTransfer.files

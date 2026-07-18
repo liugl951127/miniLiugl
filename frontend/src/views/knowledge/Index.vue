@@ -1,3 +1,8 @@
+<!--
+  @file views/knowledge/Index.vue (入口/列表)
+  @version V3.5.12+ (前端注释补全)
+  @description 入口/列表
+-->
 <template>
   <div class="rag-page">
     <!-- 顶部统计 -->
@@ -310,6 +315,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, onMounted, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Files, Document, Reading, Histogram, Plus, FolderOpened, Delete, Search, MagicStick, Upload, Edit, EditPen } from '@element-plus/icons-vue'

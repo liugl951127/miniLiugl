@@ -1,3 +1,7 @@
+/**
+ * @file useBrowserCompat.js - 浏览器兼容检测 (polyfill 加载)
+ * @version V3.5.12+ (前端注释补全)
+ */
 // V3.0.0 浏览器兼容层 (V3.5.8 全面增强版)
 // 检测浏览器能力, 缺失时注入 polyfill
 // 兼容: Chrome 63+ / Edge 79+ / Firefox 60+ / Safari 12+ / iOS 12+ / Android 8+

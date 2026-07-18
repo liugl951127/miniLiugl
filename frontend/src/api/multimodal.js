@@ -1,3 +1,15 @@
+/**
+ * @file multimodal API 调用层 (V3.5.12+)
+ *
+ * 对应后端模块: minimax-multimodal
+ * 接口数: 5
+ *
+ *   POST   /api/v1/multimodal/upload
+ *   POST   /api/v1/multimodal/describe
+ *   POST   /api/v1/multimodal/describe/multi
+ *   GET    /api/v1/multimodal/info
+ *   GET    /api/v1/multimodal/providers/default
+ */
 // 多模态 API (V2.7) - 重新指向 /api/ai/multimodal
 // 保留旧路径用于向后兼容
 import http from './http'

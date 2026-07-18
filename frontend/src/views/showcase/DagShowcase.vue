@@ -4,6 +4,11 @@
   - 拖拽连线
   - 实时执行进度 (mock)
 -->
+<!--
+  @file views/showcase/DagShowcase.vue (DagShowcase 页面)
+  @version V3.5.12+ (前端注释补全)
+  @description DagShowcase 页面
+-->
 <template>
   <div class="dag">
     <header class="header">
@@ -143,6 +148,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { CircleCheckFilled, Loading, WarningFilled } from '@element-plus/icons-vue'

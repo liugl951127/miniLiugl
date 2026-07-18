@@ -1,3 +1,8 @@
+<!--
+  @file views/ai/Marketplace.vue (AI 市场)
+  @version V3.5.12+ (前端注释补全)
+  @description AI 市场
+-->
 <template>
   <div class="marketplace-container">
     <div class="mp-header">
@@ -176,6 +181,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { marketplaceApi } from '@/api/marketplace'

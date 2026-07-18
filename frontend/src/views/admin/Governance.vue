@@ -1,3 +1,8 @@
+<!--
+  @file views/admin/Governance.vue (治理)
+  @version V3.5.12+ (前端注释补全)
+  @description 治理
+-->
 <template>
   <div class="governance-container">
     <div class="gov-header">
@@ -161,6 +166,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, reactive, computed, onMounted } from 'vue'
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'

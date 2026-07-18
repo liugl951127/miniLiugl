@@ -4,6 +4,11 @@
   - 未登录用户: 扫码登录 → 自动跳转
   - 增加: 扫码步骤说明 + 失败重试 + 已绑定状态展示
 -->
+<!--
+  @file views/auth/WechatScanPage.vue (微信扫码登录页)
+  @version V3.5.12+ (前端注释补全)
+  @description 微信扫码登录页
+-->
 <template>
   <div class="wechat-scan-page">
     <div class="container">
@@ -62,6 +67,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import WechatScanLogin from '@/components/WechatScanLogin.vue'
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'

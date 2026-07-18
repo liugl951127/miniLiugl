@@ -4,6 +4,11 @@
   - 数据源: model_battle_log 表
   - ECharts 可视化
 -->
+<!--
+  @file views/showcase/LeaderboardShowcase.vue (排行榜 (LeaderboardShowcase))
+  @version V3.5.12+ (前端注释补全)
+  @description 排行榜 (LeaderboardShowcase)
+-->
 <template>
   <div class="leaderboard">
     <header class="header">
@@ -116,6 +121,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'

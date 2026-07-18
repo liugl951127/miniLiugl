@@ -1,3 +1,8 @@
+<!--
+  @file views/analytics/Nl2Sql.vue (Nl2Sql 页面)
+  @version V3.5.12+ (前端注释补全)
+  @description Nl2Sql 页面
+-->
 <template>
   <div class="page">
     <el-card>
@@ -61,6 +66,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { nl2sqlAsk, nl2sqlExplain, nl2qlFeedback, nl2sqlHistory, dryRunQuery } from '@/api/analytics'

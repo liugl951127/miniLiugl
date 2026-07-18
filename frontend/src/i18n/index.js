@@ -1,3 +1,13 @@
+/**
+ * @file i18n/index.js - 国际化 (i18n) 配置 (V3.5.12+)
+ *
+ * 加载顺序:
+ *   1. 本地 locales/zh-CN.json + en-US.json
+ *   2. 异步加载后端动态语言包 (i18n/dynamic)
+ *   3. 合并到 vue-i18n 实例
+ *
+ * 切换语言: $i18n.locale = 'en-US' / 'zh-CN'
+ */
 import { createI18n } from 'vue-i18n'
 import zh from './locales/zh'
 import en from './locales/en'

@@ -4,6 +4,11 @@
   - TTS 文字转语音 (5 个音色 + Edge-TTS/CosyVoice)
   - 用浏览器原生 MediaRecorder 录音
 -->
+<!--
+  @file views/showcase/AudioShowcase.vue (AudioShowcase 页面)
+  @version V3.5.12+ (前端注释补全)
+  @description AudioShowcase 页面
+-->
 <template>
   <div class="audio">
     <header class="header">
@@ -158,6 +163,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Microphone, VideoPause } from '@element-plus/icons-vue'

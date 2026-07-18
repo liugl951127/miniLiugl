@@ -3,6 +3,11 @@
   对应后端模块: minimax-model (端口 8084)
   API 路径: /api/v1/models/*
 -->
+<!--
+  @file views/model/Index.vue (入口/列表)
+  @version V3.5.12+ (前端注释补全)
+  @description 入口/列表
+-->
 <template>
   <div class="model-page">
     <el-card>
@@ -119,6 +124,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Cpu, Refresh, Plus } from '@element-plus/icons-vue'
@@ -158,6 +164,9 @@ const providerTag = (p) => ({
   deepseek: '', moonshot: '', minimax: 'primary'
 })[p] || ''
 
+/**
+ * 加载模型配置 (GET /api/v1/models/configs)
+ */
 const loadModels = async () => {
   loading.value = true
   try {
@@ -170,12 +179,18 @@ const loadModels = async () => {
   }
 }
 
+/**
+ * 编辑模型 (打开弹窗 + 填充表单)
+ */
 const editModel = (row) => {
   Object.assign(form, row)
   editing.value = true
   showAddDialog.value = true
 }
 
+/**
+ * 删除模型 (DELETE /api/v1/models/configs/:id)
+ */
 const deleteModel = async (row) => {
   await ElMessageBox.confirm(`确认删除模型 ${row.name}?`, '警告', { type: 'warning' })
   try {
@@ -187,6 +202,9 @@ const deleteModel = async (row) => {
   }
 }
 
+/**
+ * 保存/更新模型 (POST/PUT)
+ */
 const saveModel = async () => {
   await formRef.value.validate()
   try {
@@ -204,6 +222,9 @@ const saveModel = async () => {
   }
 }
 
+/**
+ * 测试模型 (POST /api/v1/models/test)
+ */
 const testModel = async (row) => {
   testPrompt.value = '你好,请介绍你自己 (测试消息,10 字以内回答)'
   testResult.value = ''

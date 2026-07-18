@@ -5,6 +5,11 @@
   - 自动识别平台 (navigator.userAgent)
   - 支持 unionid 跨平台打通
 -->
+<!--
+  @file views/auth/H5Login.vue (H5 跨平台登录)
+  @version V3.5.12+ (前端注释补全)
+  @description H5 跨平台登录
+-->
 <template>
   <div class="h5-login">
     <header class="header">
@@ -61,6 +66,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -84,6 +90,9 @@ async function loginWechat() {
   showScan.value = true
 }
 
+/**
+ * 微信公众号 OAuth 登录
+ */
 function loginMp() {
   // 公众号 OAuth 跳转
   if (!inWechat.value) {
@@ -93,10 +102,16 @@ function loginMp() {
   triggerAuthorize('wechat', 'mp')
 }
 
+/**
+ * QQ OAuth 登录
+ */
 function loginQq() {
   triggerAuthorize('qq', 'web')
 }
 
+/**
+ * 支付宝 OAuth 登录
+ */
 function loginAlipay() {
   triggerAuthorize('alipay', 'web')
 }
@@ -155,6 +170,9 @@ function onLogin(loginResp) {
   router.push(redirect)
 }
 
+/**
+ * 账号密码登录 (H5 端)
+ */
 async function onPasswordLogin() {
   if (!form.value.username || !form.value.password) {
     ElMessage.warning('请填写用户名和密码')

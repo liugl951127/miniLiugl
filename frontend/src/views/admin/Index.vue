@@ -3,6 +3,11 @@
   - 提供侧边栏子导航 + 主内容 router-view
   - 子页: Dashboard / Metrics / Traces / Monitor / Provider / Leaderboard / ApiKeyStats
 -->
+<!--
+  @file views/admin/Index.vue (入口/列表)
+  @version V3.5.12+ (前端注释补全)
+  @description 入口/列表
+-->
 <template>
   <div class="admin-container">
     <el-aside width="220px" class="admin-aside">
@@ -71,6 +76,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { Setting, DataLine, TrendCharts, Connection, Monitor, Cpu, Trophy, ChatDotRound } from '@element-plus/icons-vue'

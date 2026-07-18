@@ -1,3 +1,7 @@
+/**
+ * @file prompt.js - Pinia 状态管理 (V3.5.12+)
+ */
+
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { promptApi } from '@/api/prompt'

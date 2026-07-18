@@ -1,3 +1,8 @@
+<!--
+  @file components/PwaStatusBar.vue (PWA 状态栏)
+  @version V3.5.12+ (前端注释补全)
+  @description PWA 状态栏
+-->
 <template>
   <transition name="fade">
     <div v-if="isOffline || isInstallable" class="pwa-bar" :class="barClass">
@@ -14,6 +19,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { computed } from 'vue'
 import { usePwa } from '@/composables/usePwa'
 

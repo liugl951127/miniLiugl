@@ -1,4 +1,15 @@
 /**
+ * @file directives/permission.js - 权限指令 v-permission (V3.5.12+)
+ *
+ * 用法: <button v-permission="['admin', 'super_admin']">删除</button>
+ * 行为: 当前用户没权限时, 元素从 DOM 移除 (类似 v-if)
+ * 依赖: useUserStore().roles
+ */
+/**
+ * @file permission.js - permission
+ * @version V3.5.12+ (前端注释补全)
+ */
+/**
  * v-permission 指令 (V2.7.9)
  *
  * 用法:

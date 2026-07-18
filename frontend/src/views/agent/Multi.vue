@@ -1,3 +1,8 @@
+<!--
+  @file views/agent/Multi.vue (Multi 页面)
+  @version V3.5.12+ (前端注释补全)
+  @description Multi 页面
+-->
 <template>
   <div class="multi-agent">
     <div class="header">
@@ -109,6 +114,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
 import http from '@/api/http'
 import { ElMessage } from 'element-plus'

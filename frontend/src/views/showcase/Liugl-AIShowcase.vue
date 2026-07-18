@@ -12,6 +12,11 @@
     4. 每个模型回答实时流式显示
     5. 评分 → 写入 model_battle_log
 -->
+<!--
+  @file views/showcase/Liugl-AIShowcase.vue (Liugl-AIShowcase 页面)
+  @version V3.5.12+ (前端注释补全)
+  @description Liugl-AIShowcase 页面
+-->
 <template>
   <div class="showcase">
     <header class="header">
@@ -158,6 +163,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Promotion, Warning } from '@element-plus/icons-vue'

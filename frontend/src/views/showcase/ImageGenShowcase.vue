@@ -4,6 +4,11 @@
   - mock 模式: 用 prompt 哈希生成 SVG 渐变占位图
   - 真实模式: SILICONFLOW_API_KEY 调用
 -->
+<!--
+  @file views/showcase/ImageGenShowcase.vue (ImageGenShowcase 页面)
+  @version V3.5.12+ (前端注释补全)
+  @description ImageGenShowcase 页面
+-->
 <template>
   <div class="imagegen">
     <header class="header">
@@ -90,6 +95,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Picture } from '@element-plus/icons-vue'

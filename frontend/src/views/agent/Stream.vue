@@ -1,3 +1,8 @@
+<!--
+  @file views/agent/Stream.vue (AI 流式对话)
+  @version V3.5.12+ (前端注释补全)
+  @description AI 流式对话
+-->
 <template>
   <div class="agent-stream">
     <div class="header">
@@ -90,6 +95,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
 import http from '@/api/http'
 import { ElMessage } from 'element-plus'

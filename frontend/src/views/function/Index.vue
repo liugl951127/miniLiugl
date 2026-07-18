@@ -3,6 +3,11 @@
   对应后端模块: minimax-function (端口 8086)
   API 路径: /api/v1/function/*
 -->
+<!--
+  @file views/function/Index.vue (入口/列表)
+  @version V3.5.12+ (前端注释补全)
+  @description 入口/列表
+-->
 <template>
   <div class="function-page">
     <el-card>
@@ -118,6 +123,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Tools, Refresh, Plus } from '@element-plus/icons-vue'

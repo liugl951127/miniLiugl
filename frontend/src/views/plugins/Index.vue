@@ -1,3 +1,8 @@
+<!--
+  @file views/plugins/Index.vue (入口/列表)
+  @version V3.5.12+ (前端注释补全)
+  @description 入口/列表
+-->
 <template>
   <div class="plugins-container">
     <div class="plugins-header">
@@ -83,6 +88,7 @@
 </template>
 
 <script setup lang="ts">
+// ───── 依赖导入 ─────
 import { ref, reactive, onMounted } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'

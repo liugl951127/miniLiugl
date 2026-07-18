@@ -1,3 +1,8 @@
+<!--
+  @file views/ai/ModelMarket.vue (AI 模型 (ModelMarket))
+  @version V3.5.12+ (前端注释补全)
+  @description AI 模型 (ModelMarket)
+-->
 <template>
   <div class="model-market-container">
     <div class="header">
@@ -217,6 +222,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'

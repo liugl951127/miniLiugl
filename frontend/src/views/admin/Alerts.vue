@@ -1,3 +1,8 @@
+<!--
+  @file views/admin/Alerts.vue (告警列表)
+  @version V3.5.12+ (前端注释补全)
+  @description 告警列表
+-->
 <template>
   <div class="alerts">
     <el-card>
@@ -184,6 +189,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { monitorApi } from '@/api/monitor'

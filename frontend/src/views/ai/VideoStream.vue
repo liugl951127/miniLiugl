@@ -1,3 +1,8 @@
+<!--
+  @file views/ai/VideoStream.vue (AI 流式对话 (VideoStream))
+  @version V3.5.12+ (前端注释补全)
+  @description AI 流式对话 (VideoStream)
+-->
 <template>
   <div class="video-stream">
     <el-card>
@@ -111,6 +116,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, onUnmounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { cancelVideoStream } from '@/api/ai'

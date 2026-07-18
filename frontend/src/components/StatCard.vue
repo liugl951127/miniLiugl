@@ -1,3 +1,8 @@
+<!--
+  @file components/StatCard.vue (统计卡片)
+  @version V3.5.12+ (前端注释补全)
+  @description 统计卡片
+-->
 <template>
   <div :class="['stat-card', `stat-${color || 'primary'}`]">
     <div class="stat-icon" v-if="icon">{{ icon }}</div>
@@ -16,6 +21,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { computed } from 'vue'
 const props = defineProps({
   label: String,

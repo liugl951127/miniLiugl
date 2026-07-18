@@ -1,9 +1,15 @@
+<!--
+  @file App.vue (App 页面)
+  @version V3.5.12+ (前端注释补全)
+  @description App 页面
+-->
 <template>
   <PwaStatusBar />
   <router-view />
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import PwaStatusBar from '@/components/PwaStatusBar.vue'
 // V2.8.9: 加载 usePwa 以触发 SW 注册 (在 app 加载时)
 import { usePwa } from '@/composables/usePwa'

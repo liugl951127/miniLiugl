@@ -6,6 +6,11 @@
     - 横向对比识别结果
   后端: minimax-multimodal 8088 + minimax-model 8083
 -->
+<!--
+  @file views/showcase/VisionShowcase.vue (VisionShowcase 页面)
+  @version V3.5.12+ (前端注释补全)
+  @description VisionShowcase 页面
+-->
 <template>
   <div class="vision">
     <header class="header">
@@ -118,6 +123,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UploadFilled, View } from '@element-plus/icons-vue'

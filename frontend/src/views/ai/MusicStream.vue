@@ -1,3 +1,8 @@
+<!--
+  @file views/ai/MusicStream.vue (AI 流式对话 (MusicStream))
+  @version V3.5.12+ (前端注释补全)
+  @description AI 流式对话 (MusicStream)
+-->
 <template>
   <div class="music-stream">
     <el-card>
@@ -113,6 +118,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { cancelMusicStream } from '@/api/ai'

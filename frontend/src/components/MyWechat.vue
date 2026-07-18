@@ -4,6 +4,11 @@
   - 已绑定: 显示微信信息 + 解绑按钮
   - 未绑定: 显示"去扫码登录"按钮
 -->
+<!--
+  @file components/MyWechat.vue (微信绑定)
+  @version V3.5.12+ (前端注释补全)
+  @description 微信绑定
+-->
 <template>
   <div class="my-wechat">
     <div v-if="loading" class="loading">
@@ -35,6 +40,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Loading, User, ChatDotRound } from '@element-plus/icons-vue'

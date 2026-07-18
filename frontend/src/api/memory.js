@@ -1,3 +1,7 @@
+/**
+ * @file memory API 调用层 (V3.5.12+)
+ *
+ */
 // 记忆管理 API (V5.24)
 import http from './http'
 

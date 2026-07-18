@@ -2,6 +2,11 @@
   API Key 配额统计页面 (Day 20)
   管理员视角: 全局 Key 数量 / 活跃数 / 总调用量
 -->
+<!--
+  @file views/admin/ApiKeyStats.vue (API Key 统计)
+  @version V3.5.12+ (前端注释补全)
+  @description API Key 统计
+-->
 <template>
   <div class="apikey-stats">
     <!-- 页面标题 -->
@@ -87,6 +92,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'

@@ -1,4 +1,8 @@
 /**
+ * @file tenant API 调用层 (V3.5.12+)
+ *
+ */
+/**
  * V3.1: 多租户 API
  * 路径: /api/v1/auth/tenants/*
  * 权限: adminLiugl (SUPER_ADMIN) 专属

@@ -1,3 +1,19 @@
+/**
+ * @file monitor API 调用层 (V3.5.12+)
+ *
+ * 对应后端模块: minimax-monitor
+ * 接口数: 27
+ *
+ *   GET    /monitor/api-docs
+ *   GET    /api/v1/monitor/health
+ *   GET    /api/v1/monitor/health/database
+ *   GET    /api/v1/monitor/health/jvm
+ *   GET    /api/v1/monitor/health/disk
+ *   GET    /api/v1/monitor/metrics
+ *   GET    /api/v1/monitor/metrics/snapshot
+ *   GET    /api/v1/monitor/metrics/trend
+ *   ... 共 27 个
+ */
 // 监控 + 告警 + 审计 API (V2.7.1)
 import http from './http'
 

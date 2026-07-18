@@ -1,3 +1,8 @@
+<!--
+  @file views/admin/Audit.vue (审计日志)
+  @version V3.5.12+ (前端注释补全)
+  @description 审计日志
+-->
 <template>
   <div class="audit">
     <el-card>
@@ -123,6 +128,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { monitorApi } from '@/api/monitor'

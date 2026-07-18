@@ -1,3 +1,13 @@
+/**
+ * @file HTTP 客户端封装 (V3.5.12+)
+ *
+ * 统一封装 axios, 处理:
+ *  - JWT Token 自动注入 (Authorization: Bearer)
+ *  - 错误统一处理 (BizException, 401 跳转登录)
+ *  - 请求/响应拦截 (TraceId 透传)
+ *  - 适配 Vite 代理 (开发模式 /api 直连后端)
+ */
+
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'

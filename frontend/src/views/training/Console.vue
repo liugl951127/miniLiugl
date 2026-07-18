@@ -3,6 +3,11 @@
   联动后端: /training/models | /training/tasks
   实时指标: 轮询 /training/tasks/{id} 驱动 ECharts
 -->
+<!--
+  @file views/training/Console.vue (Console 页面)
+  @version V3.5.12+ (前端注释补全)
+  @description Console 页面
+-->
 <template>
   <div class="training-console">
     <div class="tc-header">
@@ -153,6 +158,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, reactive, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'

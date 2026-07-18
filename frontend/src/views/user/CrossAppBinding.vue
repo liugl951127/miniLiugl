@@ -1,3 +1,8 @@
+<!--
+  @file views/user/CrossAppBinding.vue (跨应用绑定)
+  @version V3.5.12+ (前端注释补全)
+  @description 跨应用绑定
+-->
 <template>
   <div class="cross-app-page">
     <div class="page-header">
@@ -118,6 +123,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Unlock, FullScreen } from '@element-plus/icons-vue'

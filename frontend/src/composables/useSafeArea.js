@@ -1,4 +1,8 @@
 /**
+ * @file useSafeArea.js - useSafeArea 组合式 API
+ * @version V3.5.12+ (前端注释补全)
+ */
+/**
  * 移动端安全区域管理 (V3.1.1)
  *
  * <p>处理:

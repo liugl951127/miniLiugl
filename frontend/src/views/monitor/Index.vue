@@ -9,6 +9,11 @@
     - 告警 firing 列表
     - 自动刷新 (10s)
 -->
+<!--
+  @file views/monitor/Index.vue (入口/列表)
+  @version V3.5.12+ (前端注释补全)
+  @description 入口/列表
+-->
 <template>
   <div class="monitor-container">
     <div class="mon-header">
@@ -349,6 +354,7 @@
 </template>
 
 <script setup lang="ts">
+// ───── 依赖导入 ─────
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'

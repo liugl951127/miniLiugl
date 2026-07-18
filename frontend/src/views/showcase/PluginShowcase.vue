@@ -5,6 +5,11 @@
   - 真实 class 插件调后端 /api/v1/agent/plugins/exec
   - 模板市场 (4 个示例插件)
 -->
+<!--
+  @file views/showcase/PluginShowcase.vue (PluginShowcase 页面)
+  @version V3.5.12+ (前端注释补全)
+  @description PluginShowcase 页面
+-->
 <template>
   <div class="plugin-sdk">
     <header class="header">
@@ -145,6 +150,7 @@ function execute(input) {
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import http from '@/api/http'

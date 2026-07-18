@@ -1,3 +1,8 @@
+<!--
+  @file views/ai/Workflow.vue (工作流)
+  @version V3.5.12+ (前端注释补全)
+  @description 工作流
+-->
 <template>
   <div class="workflow">
     <el-card>
@@ -81,6 +86,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { executeWorkflow, validateWorkflow as apiValidate, dispatchPrompt } from '@/api/ai'

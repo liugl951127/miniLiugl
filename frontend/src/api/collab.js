@@ -1,3 +1,7 @@
+/**
+ * @file collab API 调用层 (V3.5.12+)
+ *
+ */
 // V2.8.7 实时协作 API
 import http from './http'
 

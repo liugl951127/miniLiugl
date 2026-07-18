@@ -1,3 +1,8 @@
+<!--
+  @file views/admin/Traces.vue (调用链追踪)
+  @version V3.5.12+ (前端注释补全)
+  @description 调用链追踪
+-->
 <template>
   <div class="traces-page">
     <div class="header">
@@ -95,6 +100,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import http from '@/api/http'
 import { ElMessage } from 'element-plus'

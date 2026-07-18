@@ -1,3 +1,8 @@
+<!--
+  @file views/chat/Stream.vue (AI 流式对话)
+  @version V3.5.12+ (前端注释补全)
+  @description AI 流式对话
+-->
 <template>
   <div class="chat-stream">
     <div class="header">
@@ -109,6 +114,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'

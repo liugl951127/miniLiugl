@@ -1,3 +1,8 @@
+<!--
+  @file views/memory/Index.vue (入口/列表)
+  @version V3.5.12+ (前端注释补全)
+  @description 入口/列表
+-->
 <template>
   <div class="memory-page">
     <div class="page-header">
@@ -251,6 +256,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, onMounted, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ChatDotRound, DataAnalysis, Files, Star, Plus, Search, MagicStick, Delete, Refresh } from '@element-plus/icons-vue'

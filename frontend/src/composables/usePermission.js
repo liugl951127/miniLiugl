@@ -1,3 +1,7 @@
+/**
+ * @file usePermission.js - usePermission 组合式 API
+ * @version V3.5.12+ (前端注释补全)
+ */
 import { ref, computed } from 'vue'
 
 /**

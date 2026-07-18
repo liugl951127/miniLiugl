@@ -1,3 +1,8 @@
+<!--
+  @file views/ai/ImageGen.vue (ImageGen 页面)
+  @version V3.5.12+ (前端注释补全)
+  @description ImageGen 页面
+-->
 <template>
   <div class="image-gen">
     <el-card>
@@ -79,6 +84,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { generateImage, listImageTypes, inferImageType as inferApi } from '@/api/ai'

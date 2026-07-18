@@ -7,6 +7,11 @@
     - ECharts 饼图 (按 resource type)
     - 最近审计时间线
 -->
+<!--
+  @file views/admin/Dashboard.vue (指标仪表盘)
+  @version V3.5.12+ (前端注释补全)
+  @description 指标仪表盘
+-->
 <template>
   <div class="dash">
     <!-- 顶部: 6 服务健康状态 -->
@@ -126,6 +131,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, onMounted, onUnmounted, computed, markRaw } from 'vue'
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'

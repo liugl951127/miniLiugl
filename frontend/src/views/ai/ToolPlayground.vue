@@ -1,3 +1,8 @@
+<!--
+  @file views/ai/ToolPlayground.vue (AI 工具 (ToolPlayground))
+  @version V3.5.12+ (前端注释补全)
+  @description AI 工具 (ToolPlayground)
+-->
 <template>
   <PageContainer title="AI 工具演练场" subtitle="9 大类 19 工具 · 无需代码即可使用" icon="🛠">
     <el-row :gutter="16">
@@ -111,6 +116,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, watch, markRaw } from 'vue'
 import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer.vue'

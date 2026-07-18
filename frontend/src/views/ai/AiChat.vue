@@ -1,3 +1,8 @@
+<!--
+  @file views/ai/AiChat.vue (AI 聊天对话 (AiChat))
+  @version V3.5.12+ (前端注释补全)
+  @description AI 聊天对话 (AiChat)
+-->
 <template>
   <PageContainer title="AI 智能助手" subtitle="自研 AI 引擎 · 0 外部依赖 · 13 种意图识别" icon="🤖">
     <el-row :gutter="16">
@@ -88,6 +93,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer.vue'

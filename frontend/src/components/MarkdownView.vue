@@ -3,11 +3,17 @@
   Markdown 渲染 + 代码高亮 + 复制按钮 + 链接
   醒目特性: 代码块带语言标签 + 复制按钮 / 表格渲染 / 任务列表
 -->
+<!--
+  @file components/MarkdownView.vue (Markdown 渲染)
+  @version V3.5.12+ (前端注释补全)
+  @description Markdown 渲染
+-->
 <template>
   <div class="md-body" v-html="rendered"></div>
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { computed, onMounted } from 'vue'
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'

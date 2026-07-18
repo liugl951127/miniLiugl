@@ -1,3 +1,8 @@
+<!--
+  @file views/analytics/Schema.vue (Schema)
+  @version V3.5.12+ (前端注释补全)
+  @description Schema
+-->
 <template>
   <div class="page">
     <el-card>
@@ -49,6 +54,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, onMounted, computed } from 'vue'
 import { listDataSources, listDatabases, listTables, describeTable, profileTable } from '@/api/analytics'
 

@@ -1,13 +1,45 @@
+/**
+ * @file model API 调用层 (V3.5.12+)
+ *
+ * 对应后端模块: minimax-model
+ * 接口数: 26
+ *
+ *   GET    /api/v1/audio/asr/models
+ *   POST   /api/v1/audio/asr/transcribe
+ *   GET    /api/v1/audio/tts/voices
+ *   POST   /api/v1/audio/tts/synthesize
+ *   GET    /api/v1/imagegen/models
+ *   POST   /api/v1/imagegen/generate
+ *   GET    /api/v1/leaderboard/overall
+ *   GET    /api/v1/leaderboard/latency
+ *   ... 共 26 个
+ */
 // 模型管理 API (V5.24 扩展 Provider + Leaderboard, V5.23 修复 localStorage→Pinia)
 import http from './http'
 import { useUserStore } from '@/store/user'
 
 export const modelApi = {
   // V3.5.8: 修正路径 - 后端 minimax-admin /api/v1/admin/models (限管理员)
+  /**
+   * list - 查询 /api/v1/admin/models
+   * @returns GET /api/v1/admin/models 的响应 Promise
+   */
   list: () => http.get('/api/v1/admin/models'),
+  /**
+   * providers - 查询 /api/v1/admin/models/providers
+   * @returns GET /api/v1/admin/models/providers 的响应 Promise
+   */
   providers: () => http.get('/api/v1/admin/models/providers'),
   // 聊天端点保持原样 (minimax-model 模块有 /api/v1/models/chat)
+  /**
+   * chat - 创建/更新 /api/v1/models/chat
+   * @returns POST /api/v1/models/chat 的响应 Promise
+   */
   chat: (data) => http.post('/api/v1/models/chat', data),
+  /**
+   * cancel - 创建/更新 
+   * @returns POST  的响应 Promise
+   */
   cancel: (streamId) => http.post(`/api/v1/models/chat/cancel?streamId=${streamId}`)
 }
 

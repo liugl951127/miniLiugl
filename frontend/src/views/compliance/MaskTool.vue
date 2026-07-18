@@ -1,3 +1,8 @@
+<!--
+  @file views/compliance/MaskTool.vue (AI 工具 (MaskTool))
+  @version V3.5.12+ (前端注释补全)
+  @description AI 工具 (MaskTool)
+-->
 <template>
   <div class="mask-tool">
     <el-card>
@@ -61,6 +66,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { maskText } from '@/api/ai'

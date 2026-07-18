@@ -6,6 +6,11 @@
   - status=confirmed 自动回调 onLoginSuccess(accessToken, refreshToken)
   - mock 模式: 显示"模拟扫码"按钮直接跳确认
 -->
+<!--
+  @file components/WechatScanLogin.vue (微信扫码登录)
+  @version V3.5.12+ (前端注释补全)
+  @description 微信扫码登录
+-->
 <template>
   <div class="wechat-scan">
     <div class="qrcode-box" v-if="qrcode">
@@ -42,6 +47,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'

@@ -8,6 +8,11 @@
     - 流式打字机
     - 时间戳 + 复制 + 重试
 -->
+<!--
+  @file components/ChatMessage.vue (AI 消息气泡)
+  @version V3.5.12+ (前端注释补全)
+  @description AI 消息气泡
+-->
 <template>
   <div :class="['msg', { 'msg-user': role === 'user', 'msg-ai': role !== 'user' }]">
     <!-- 头像 -->
@@ -107,6 +112,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { computed } from 'vue'
 import {
   User, ChatDotRound, Loading, CircleClose, Tools,

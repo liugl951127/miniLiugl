@@ -1,3 +1,8 @@
+<!--
+  @file views/admin/Leaderboard.vue (排行榜)
+  @version V3.5.12+ (前端注释补全)
+  @description 排行榜
+-->
 <template>
   <div class="leaderboard-page">
     <div class="page-header">
@@ -97,6 +102,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, onMounted, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'

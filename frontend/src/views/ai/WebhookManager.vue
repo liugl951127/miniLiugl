@@ -1,3 +1,8 @@
+<!--
+  @file views/ai/WebhookManager.vue (WebhookManager 页面)
+  @version V3.5.12+ (前端注释补全)
+  @description WebhookManager 页面
+-->
 <template>
   <div class="webhook-container">
     <div class="header">
@@ -134,6 +139,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { webhookApi } from '@/api/webhook'

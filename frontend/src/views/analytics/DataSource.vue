@@ -1,3 +1,8 @@
+<!--
+  @file views/analytics/DataSource.vue (数据源)
+  @version V3.5.12+ (前端注释补全)
+  @description 数据源
+-->
 <template>
   <div class="page">
     <el-card>
@@ -61,6 +66,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'

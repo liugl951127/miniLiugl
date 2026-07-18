@@ -1,3 +1,8 @@
+<!--
+  @file layout/Index.vue (入口/列表)
+  @version V3.5.12+ (前端注释补全)
+  @description 入口/列表
+-->
 <template>
   <el-container class="layout-container">
     <!-- V3.5.8: Desktop 侧边栏 (固定) -->
@@ -122,6 +127,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

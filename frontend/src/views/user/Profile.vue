@@ -4,6 +4,11 @@
   - 我的微信 (集成 MyWechat)
   - 退出登录
 -->
+<!--
+  @file views/user/Profile.vue (个人中心)
+  @version V3.5.12+ (前端注释补全)
+  @description 个人中心
+-->
 <template>
   <div class="profile-page">
     <header class="header">
@@ -50,6 +55,7 @@
 </template>
 
 <script setup>
+// ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { User } from '@element-plus/icons-vue'

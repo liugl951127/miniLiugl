@@ -1,3 +1,16 @@
+/**
+ * @file prompt API 调用层 (V3.5.12+)
+ *
+ * 对应后端模块: minimax-prompt
+ * 接口数: 6
+ *
+ *   GET    /api/v1/prompts/{id}
+ *   GET    /api/v1/prompts/categories
+ *   PUT    /api/v1/prompts/{id}
+ *   DELETE /api/v1/prompts/{id}
+ *   POST   /api/v1/prompts/{id}/use
+ *   POST   /api/v1/prompts/resolve
+ */
 import http from './http'
 
 const BASE = '/api/v1/prompts'
