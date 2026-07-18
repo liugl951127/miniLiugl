@@ -162,3 +162,114 @@ INSERT INTO `cluster_node` (`id`, `node_id`, `name`, `address`, `region`, `capab
 INSERT INTO `notification` (`id`, `user_id`, `type`, `title`, `content`, `is_read`, `created_at`, `updated_at`) VALUES
 (1, 1, 'system', '欢迎使用 MiniMax', '平台已就绪, 4 个测试账号可用', 0, NOW(), NOW()),
 (2, 1, 'system', '系统升级',         'V3.5.8 部署完成, 17 服务在线', 0, NOW(), NOW());
+
+-- ===== 23. 用户角色关联 (4) =====
+-- AdminDataInitializer 启动时也会创建, 这里先放 SQL 保证一致
+INSERT INTO `sys_user_role` (`user_id`, `role_id`) VALUES
+(1, 1), (2, 2), (3, 3), (4, 3);
+
+-- ===== 24. AI 聊天会话 (3) =====
+INSERT INTO `ai_chat_session` (`id`, `session_id`, `user_id`, `username`, `title`, `created_at`, `updated_at`, `deleted`) VALUES
+(1, 'sess-ai-001', 1, 'adminLiugl', 'AI 平台使用咨询', NOW(), NOW(), 0),
+(2, 'sess-ai-002', 2, 'admin_user', '数据分析请求',   NOW(), NOW(), 0),
+(3, 'sess-ai-003', 1, 'adminLiugl', '知识库检索测试', NOW(), NOW(), 0);
+
+-- ===== 25. AI 聊天消息 (5) =====
+INSERT INTO `ai_chat_message` (`id`, `session_id`, `role`, `content`, `tool_code`, `tool_input`, `tool_output`, `created_at`) VALUES
+(1, 1, 'user',      '什么是 RAG?',        NULL, NULL, NULL, NOW()),
+(2, 1, 'assistant', 'RAG 是检索增强生成...', NULL, NULL, NULL, NOW()),
+(3, 2, 'user',      '查询上月销售数据',   'sql_query', '{"sql":"SELECT * FROM sales"}', '[]', NOW()),
+(4, 3, 'user',      'MiniMax 平台架构',   NULL, NULL, NULL, NOW()),
+(5, 3, 'assistant', '17 个微服务, 包括...', NULL, NULL, NULL, NOW());
+
+-- ===== 26. Chat 会话 (2) =====
+INSERT INTO `chat_session` (`id`, `user_id`, `title`, `model`, `system_prompt`, `temperature`, `status`, `message_count`, `last_message_at`, `tenant_id`, `created_at`, `updated_at`, `deleted`) VALUES
+(1, 1, '关于 MiniMax', 'gpt-4o', '你是 AI 助手', 0.7, 1, 3, NOW(), 1, NOW(), NOW(), 0),
+(2, 2, '数据查询',    'claude-3.5', NULL, 0.5, 1, 2, NOW(), 1, NOW(), NOW(), 0);
+
+-- ===== 27. Chat 消息 (3) =====
+INSERT INTO `chat_message` (`id`, `session_id`, `user_id`, `role`, `content`, `tokens`, `finish_reason`, `created_at`, `deleted`) VALUES
+(1, 1, 1, 'user',      'MiniMax 有哪些模块?', 8,  'stop', NOW(), 0),
+(2, 1, 1, 'assistant', '17 个微服务...',     128, 'stop', NOW(), 0),
+(3, 2, 2, 'user',      '上月销售',          12, 'stop', NOW(), 0);
+
+-- ===== 28. 知识库文档 (5) =====
+INSERT INTO `kb_document` (`id`, `doc_id`, `kb_id`, `filename`, `mime_type`, `size_bytes`, `sha256`, `file_path`, `source`, `source_url`, `status`, `chunk_count`, `embedding_count`, `error`, `tags`, `owner_id`, `is_public`, `created_at`, `updated_at`) VALUES
+(1, 'doc-001', 'kb_product', 'platform-intro.md',   'text/markdown', 4096,  'sha256-aaa', '/data/kb/doc-001.md', 'upload', NULL, 1, 5, 5, NULL, 'guide,intro', 1, 1, NOW(), NOW()),
+(2, 'doc-002', 'kb_product', 'api-docs.md',         'text/markdown', 8192,  'sha256-bbb', '/data/kb/doc-002.md', 'upload', NULL, 1, 8, 8, NULL, 'api',        1, 1, NOW(), NOW()),
+(3, 'doc-003', 'kb_product', 'deployment.md',       'text/markdown', 6144,  'sha256-ccc', '/data/kb/doc-003.md', 'upload', NULL, 1, 6, 6, NULL, 'deploy',     1, 1, NOW(), NOW()),
+(4, 'doc-004', 'kb_tech',    'code-standards.md',   'text/markdown', 3072,  'sha256-ddd', '/data/kb/doc-004.md', 'upload', NULL, 1, 3, 3, NULL, 'standard',   1, 1, NOW(), NOW()),
+(5, 'doc-005', 'kb_tech',    'git-workflow.md',     'text/markdown', 2048,  'sha256-eee', '/data/kb/doc-005.md', 'upload', NULL, 1, 2, 2, NULL, 'git',        1, 1, NOW(), NOW());
+
+-- ===== 29. 知识库分块 (8) =====
+INSERT INTO `kb_chunk` (`id`, `chunk_id`, `doc_id`, `kb_id`, `seq`, `content`, `char_count`, `token_count`, `embedding`, `embedding_model`, `keywords`, `summary`, `location`, `created_at`) VALUES
+(1, 'chunk-001-1', 'doc-001', 'kb_product', 1, 'MiniMax 平台是 AI 大模型平台...',         512, 128, NULL, 'text-embedding-3-small', 'MiniMax,AI,平台',     '平台介绍',     'p1', NOW()),
+(2, 'chunk-001-2', 'doc-001', 'kb_product', 2, '包含 17 个微服务: gateway, auth...',     512, 128, NULL, 'text-embedding-3-small', '微服务,架构',       '架构概览',     'p2', NOW()),
+(3, 'chunk-002-1', 'doc-002', 'kb_product', 1, 'AI 引擎提供 5 类工具...',               256, 64,  NULL, 'text-embedding-3-small', 'AI,工具,plugin',    '工具介绍',     'p1', NOW()),
+(4, 'chunk-002-2', 'doc-002', 'kb_product', 2, 'POST /api/v1/ai/intent/predict...',     256, 64,  NULL, 'text-embedding-3-small', 'API,意图',         'API 示例',     'p2', NOW()),
+(5, 'chunk-003-1', 'doc-003', 'kb_product', 1, 'Docker Compose 一键部署...',             256, 64,  NULL, 'text-embedding-3-small', 'docker,部署',      '部署方法',     'p1', NOW()),
+(6, 'chunk-004-1', 'doc-004', 'kb_tech',    1, '编码规范: 命名, 注释, 异常处理...',     512, 128, NULL, 'text-embedding-3-small', '规范,代码',        '规范总览',     'p1', NOW()),
+(7, 'chunk-005-1', 'doc-005', 'kb_tech',    1, 'Git Flow: main, develop, feature...',    256, 64,  NULL, 'text-embedding-3-small', 'git,工作流',       'Git 流程',     'p1', NOW()),
+(8, 'chunk-005-2', 'doc-005', 'kb_tech',    2, 'PR 评审要求: 2 个 reviewer...',          256, 64,  NULL, 'text-embedding-3-small', 'PR,review',        'PR 规范',      'p2', NOW());
+
+-- ===== 30. 模型对战日志 (3) =====
+INSERT INTO `model_battle_log` (`id`, `battle_id`, `user_id`, `model_id`, `model_code`, `prompt`, `response`, `prompt_tokens`, `completion_tokens`, `latency_ms`, `status`, `error_msg`, `score`, `judge_model`, `judge_reason`, `created_at`) VALUES
+(1, 'battle-001', 1, 1, 'gpt-4o',         '解释 REST 和 GraphQL 区别', 'REST 是资源为中心, GraphQL 是查询为中心...', 45, 320, 4520, 'success', NULL, 5, 'gpt-4o', '对比清晰', NOW()),
+(2, 'battle-002', 1, 4, 'deepseek-coder', '写 Python 快速排序',       'def qs(arr): ...',                            28, 180, 2340, 'success', NULL, 5, 'gpt-4o', '代码完整', NOW()),
+(3, 'battle-003', 1, 2, 'claude-3.5',     '总结《百年孤独》',         '布恩迪亚家族七代兴衰...',                    56, 480, 5680, 'success', NULL, 4, 'gpt-4o', '文学性强', NOW());
+
+-- ===== 31. 告警事件 (3) =====
+INSERT INTO `alert_event` (`id`, `rule_id`, `rule_name`, `severity`, `metric_name`, `metric_value`, `threshold`, `message`, `status`, `fired_at`, `resolved_at`, `acked_at`, `acked_by`, `duration`) VALUES
+(1, 1, 'CPU 高',   'warning',  'cpu_usage', 85.5,  80, 'CPU 超过 80%',         'resolved', NOW(), NOW(), NOW(), 1, 300),
+(2, 2, '内存高',   'warning',  'mem_usage', 90.2,  85, '内存超过 85%',         'firing',   NOW(), NULL, NULL, NULL, NULL),
+(3, 3, '错误率高', 'critical', 'err_rate',  8.7,   5,  '5xx 错误率 8.7%',      'acked',    NOW(), NULL, NOW(), 1, NULL);
+
+-- ===== 32. 文档分块 (5, 旧表, kb 兼容) =====
+INSERT INTO `document_chunk` (`id`, `doc_id`, `kb_id`, `owner_id`, `chunk_index`, `content`, `embedding`, `dim`, `char_count`, `start_pos`, `end_pos`, `access_count`, `last_access_at`, `created_at`, `updated_at`, `deleted`) VALUES
+(1, 1, 1, 1, 0, 'MiniMax 平台介绍...',    NULL, 0, 512, 0,    512,  0, NULL, NOW(), NOW(), 0),
+(2, 1, 1, 1, 1, '17 个微服务架构...',     NULL, 0, 512, 512,  1024, 0, NULL, NOW(), NOW(), 0),
+(3, 2, 1, 1, 0, 'API 端点列表...',        NULL, 0, 256, 0,    256,  0, NULL, NOW(), NOW(), 0),
+(4, 3, 1, 1, 0, 'Docker Compose 部署...', NULL, 0, 256, 0,    256,  0, NULL, NOW(), NOW(), 0),
+(5, 4, 2, 1, 0, '编码规范...',             NULL, 0, 512, 0,    512,  0, NULL, NOW(), NOW(), 0);
+
+-- ===== 33. 智能体任务 (3) =====
+INSERT INTO `agent_task` (`id`, `task_id`, `user_id`, `goal`, `status`, `rounds`, `result`, `llm_calls`, `tool_calls`, `total_tokens`, `error_msg`, `latency_ms`, `created_at`, `updated_at`, `deleted`) VALUES
+(1, 'task-001', 1, '查询用户增长趋势',     'success', 3, '用户增长 12.5%',  4, 2, 1850, NULL, 12500, NOW(), NOW(), 0),
+(2, 'task-002', 2, '分析月度销售',         'success', 5, '销售 100万, +5%', 6, 3, 2400, NULL, 18200, NOW(), NOW(), 0),
+(3, 'task-003', 1, '生成 RAG 报告',         'running', 2, NULL,             2, 1, 800,  NULL, NULL,   NOW(), NOW(), 0);
+
+-- ===== 34. 流水线运行 (2) =====
+INSERT INTO `pipeline_run` (`id`, `workflow_id`, `workflow_name`, `status`, `trigger_by`, `trigger_type`, `definition_snapshot`, `start_time`, `end_time`, `duration_ms`, `error_message`, `result_summary`, `create_time`) VALUES
+(1, 1, 'ETL 流程',  'success', 1, 'manual', '{"nodes":[]}', NOW(), NOW(), 12000, NULL, '处理 10000 行, 错误 0',  NOW()),
+(2, 2, 'AI 训练',   'failed',  1, 'cron',   '{"nodes":[]}', NOW(), NOW(), 35000, 'GPU 内存不足', NULL, NOW());
+
+-- ===== 35. 训练任务 (2) =====
+INSERT INTO `training_task` (`id`, `user_id`, `model_name`, `corpus_path`, `n_layer`, `n_head`, `n_embd`, `block_size`, `max_iters`, `batch_size`, `learning_rate`, `status`, `progress`, `current_loss`, `current_iter`, `error_message`, `created_at`, `updated_at`, `completed_at`) VALUES
+(1, 1, 'minimax-mini',  '/data/corpus/wiki.txt', 6, 6, 384, 256, 5000, 32, 0.0003, 'training', 60.0, 2.18, 3000, NULL, NOW(), NOW(), NULL),
+(2, 2, 'minimax-coder', '/data/corpus/code.txt', 12, 12, 768, 512, 10000, 16, 0.0001, 'completed', 100.0, 1.05, 10000, NULL, NOW(), NOW(), NOW());
+
+-- ===== 36. 审计日志 (3) =====
+INSERT INTO `audit_log` (`id`, `trace_id`, `user_id`, `username`, `user_ip`, `user_agent`, `action`, `resource_type`, `resource_id`, `method`, `path`, `request_body`, `response_status`, `result`, `error_msg`, `duration_ms`, `created_at`) VALUES
+(1, 'trace-001', 1, 'adminLiugl', '127.0.0.1', 'Mozilla/5.0', 'login',    'auth', NULL, 'POST', '/api/v1/auth/login',   '{"username":"adminLiugl"}', 200, 'success', NULL, 234, NOW()),
+(2, 'trace-002', 1, 'adminLiugl', '127.0.0.1', 'Mozilla/5.0', 'create',   'ai_tool', '5', 'POST', '/api/v1/admin/ai/tools', '{"code":"web_search"}', 200, 'success', NULL, 89, NOW()),
+(3, 'trace-003', 2, 'admin_user', '127.0.0.1', 'curl/7.81',  'reset_pwd', 'sys_user', '4', 'POST', '/api/v1/admin/users/4/reset-password', '{"password":"demo1234"}', 200, 'success', NULL, 156, NOW());
+
+-- ===== 37. 认证登录日志 (3) =====
+INSERT INTO `auth_login_log` (`id`, `user_id`, `username`, `ip`, `user_agent`, `status`, `message`, `created_at`) VALUES
+(1, 1, 'adminLiugl', '127.0.0.1', 'Mozilla/5.0', 1, '登录成功', NOW()),
+(2, 2, 'admin_user', '127.0.0.1', 'Mozilla/5.0', 1, '登录成功', NOW()),
+(3, 3, 'test_user',  '127.0.0.1', 'curl/7.81',   0, '密码错误', NOW());
+
+-- ===== 38. 协作房间 (1) =====
+INSERT INTO `collab_room` (`id`, `room_id`, `name`, `type`, `owner_id`, `owner_name`, `description`, `is_public`, `max_participants`, `status`, `current_participants`, `created_at`, `last_activity_at`, `closed_at`) VALUES
+(1, 'room-001', '产品评审会议', 'meeting', 1, 'adminLiugl', 'V3.5.8 评审', 0, 10, 1, 2, NOW(), NOW(), NULL);
+
+-- ===== 39. 协作参与者 (2) =====
+INSERT INTO `collab_participant` (`id`, `room_id`, `user_id`, `username`, `nickname`, `avatar`, `role`, `cursor_x`, `cursor_y`, `selection_id`, `status`, `joined_at`, `left_at`, `last_heartbeat`) VALUES
+(1, 1, 1, 'adminLiugl', 'Liugl', NULL, 'owner',  0,    0,    NULL, 'online',  NOW(), NULL, NOW()),
+(2, 1, 2, 'admin_user', 'Admin', NULL, 'editor', 100,  200,  NULL, 'online',  NOW(), NULL, NOW());
+
+-- ===== 40. 协作消息 (2) =====
+INSERT INTO `collab_message` (`id`, `room_id`, `user_id`, `username`, `nickname`, `type`, `content`, `metadata`, `client_msg_id`, `broadcast`, `created_at`) VALUES
+(1, 1, 1, 'adminLiugl', 'Liugl', 'text',  '大家看下 V3.5.8 的设计', NULL, 'msg-001', 1, NOW()),
+(2, 1, 2, 'admin_user', 'Admin', 'text',  '架构清晰, 建议加监控',  NULL, 'msg-002', 1, NOW());
