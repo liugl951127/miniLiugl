@@ -20,8 +20,9 @@ spring:
       mode: always
       schema-locations: classpath:complete-h2.sql
       encoding: UTF-8
-      data-locations: classpath:seed-data.sql
-      continue-on-error: false
+      # data-locations: classpath:seed-data.sql  # V3.5.12+: 跳过 seed, AdminDataInitializer 兜底
+      continue-on-error: true
+      data-locations:
   data:
     redis:
       host: 127.0.0.1

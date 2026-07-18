@@ -59,6 +59,7 @@ public class AdminDataInitializer implements CommandLineRunner {
             admin.setPassword(passwordEncoder.encode("admin@123"));
             admin.setNickname("超级管理员");
             admin.setStatus(1);
+            admin.setDeleted(0);  // V3.5.12+ 显式 0
             admin.setTenantId(0L);
             userMapper.insert(admin);
             log.info("✅ 初始化 admin 用户 (密码 admin@123)");
@@ -76,9 +77,10 @@ public class AdminDataInitializer implements CommandLineRunner {
             owner.setEmail(superAdminEmail);
             owner.setStatus(1);
             owner.setTenantId(0L);
+            owner.setDeleted(0);  // V3.5.12+: 显式设 0, 避免 @TableLogic 过滤
             owner.setRemark("平台所有者 - 唯一超级管理员");
             userMapper.insert(owner);
-            log.info("✅ 初始化超级管理员 {} (密码 {})", superAdminUsername, superAdminPassword);
+            log.info("✅ 初始化超级管理员 {} (密码 {}) hash={}", superAdminUsername, superAdminPassword, owner.getPassword());
 
             bindRole(owner.getId(), superRole.getId());
         } else {
