@@ -86,7 +86,10 @@ export default defineConfig(({ mode }) => {
       // V5.8: sourcemap 关闭 (生产不暴露源码)
       sourcemap: isProd ? false : 'eval',
       // V3.0.0: 浏览器 polyfill 支持
-      polyfillModulePreload: true,
+      // V3.5.8+: polyfillModulePreload 弃用, 改用 modulePreload.polyfill
+      modulePreload: {
+        polyfill: true
+      },
       cssCodeSplit: true,
       chunkSizeWarningLimit: 1500,
       // V5.8: 智能分包 (按依赖 + 路由)
@@ -126,6 +129,15 @@ export default defineConfig(({ mode }) => {
     esbuild: {
       target: 'es2018',
       drop: isProd ? ['console', 'debugger'] : [],
+    },
+    // V3.5.8+: 关闭 Sass legacy JS API 警告 (Dart Sass 2.0 移除)
+    css: {
+      preprocessorOptions: {
+        scss: {
+          api: 'modern-compiler',  // 用 modern API 替代 legacy JS API
+          silenceDeprecations: ['legacy-js-api'],  // V3.5.8 兜底, 避免依赖警告
+        }
+      }
     }
   }
 })
