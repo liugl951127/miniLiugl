@@ -42,7 +42,15 @@ spring:
 
 # 模块特殊配置 (保留原 minimax.* 块)
 minimax:
-# (无特殊配置, 模块按需添加)
+  multimodal:
+    local:
+      # V3.5.10+: 模型加载配置 (默认配合 /var/minimax/models/vision/mobilenetv3.onnx)
+      # 来源: onnx-community/mobilenetv3_small_100.lamb_in1k (10.2 MB)
+      #       HF 模型的输入名是 pixel_values, 需与默认 input=input 不同
+      model-dir: ${MINIMAX_MODEL_DIR:/var/minimax/models/vision}
+      model-file: ${MINIMAX_VISION_MODEL:mobilenetv3.onnx}
+      input-name: ${MINIMAX_VISION_INPUT:pixel_values}
+      input-size: ${MINIMAX_VISION_INPUT_SIZE:224}
 # (无特殊配置)
 
 # (无特殊配置, 模块按需添加)
