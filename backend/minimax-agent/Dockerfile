@@ -15,8 +15,8 @@ COPY minimax-rag/pom.xml minimax-rag/
 COPY minimax-agent/pom.xml minimax-agent/
 
 # 安装 common + 下载所有依赖 (这一层缓存最久)
-RUN mvn -B -pl minimax-common -am install -DskipTests -Dspotless.check.skip=true -q 2>&1 | tail -3 && \
-    mvn -B -pl minimax-agent -am dependency:go-offline -DskipTests -Dspotless.check.skip=true -q 2>&1 | tail -3
+RUN mvn -B -pl minimax-common -am install -DskipTests -Dspotless.check.skip=true 2>&1 | tail -10 && \
+    mvn -B -pl minimax-agent -am dependency:go-offline -DskipTests -Dspotless.check.skip=true 2>&1 | tail -10
 
 # ─── Stage 2: 构建层 ───
 FROM deps AS build
@@ -29,7 +29,7 @@ COPY minimax-rag minimax-rag
 COPY minimax-agent minimax-agent
 
 RUN mvn -B -pl minimax-agent -am clean package \
-        -DskipTests -Dspotless.check.skip=true -q 2>&1 | tail -5
+        -DskipTests -Dspotless.check.skip=true 2>&1 | tail -15
 
 # 拆 Spring Boot layered jar (4 层)
 RUN java -Djarmode=layertools -jar \

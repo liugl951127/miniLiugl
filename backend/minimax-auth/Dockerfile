@@ -10,8 +10,8 @@ COPY pom.xml .
 COPY minimax-common/pom.xml minimax-common/
 COPY minimax-auth/pom.xml minimax-auth/
 
-RUN mvn -B -pl minimax-common -am install -DskipTests -Dspotless.check.skip=true -q 2>&1 | tail -3 && \
-    mvn -B -pl minimax-auth -am dependency:go-offline -DskipTests -Dspotless.check.skip=true -q 2>&1 | tail -3
+RUN mvn -B -pl minimax-common -am install -DskipTests -Dspotless.check.skip=true 2>&1 | tail -10 && \
+    mvn -B -pl minimax-auth -am dependency:go-offline -DskipTests -Dspotless.check.skip=true 2>&1 | tail -10
 
 FROM deps AS build
 WORKDIR /workspace
@@ -20,7 +20,7 @@ COPY minimax-common minimax-common
 COPY minimax-auth minimax-auth
 
 RUN mvn -B -pl minimax-auth -am clean package \
-        -DskipTests -Dspotless.check.skip=true -q 2>&1 | tail -5
+        -DskipTests -Dspotless.check.skip=true 2>&1 | tail -15
 
 RUN java -Djarmode=layertools -jar \
     minimax-auth/target/minimax-auth-spring-boot.jar extract --destination extracted

@@ -12,8 +12,8 @@ COPY minimax-common/pom.xml minimax-common/
 COPY minimax-ai/pom.xml minimax-ai/
 
 # 安装 common (packaging=pom) + 下载所有依赖
-RUN mvn -B -pl minimax-common -am install -DskipTests -Dspotless.check.skip=true -q 2>&1 | tail -3 && \
-    mvn -B -pl minimax-ai -am dependency:go-offline -DskipTests -Dspotless.check.skip=true -q 2>&1 | tail -3
+RUN mvn -B -pl minimax-common -am install -DskipTests -Dspotless.check.skip=true 2>&1 | tail -10 && \
+    mvn -B -pl minimax-ai -am dependency:go-offline -DskipTests -Dspotless.check.skip=true 2>&1 | tail -10
 
 # ─── Stage 2: 构建层 ───
 FROM deps AS build
@@ -23,7 +23,7 @@ COPY minimax-common minimax-common
 COPY minimax-ai minimax-ai
 
 RUN mvn -B -pl minimax-ai -am clean package \
-        -DskipTests -Dspotless.check.skip=true -q 2>&1 | tail -5
+        -DskipTests -Dspotless.check.skip=true 2>&1 | tail -15
 
 # 拆 layered jar
 RUN java -Djarmode=layertools -jar \

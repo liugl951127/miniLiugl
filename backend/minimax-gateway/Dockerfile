@@ -24,8 +24,8 @@ COPY minimax-gateway/pom.xml minimax-gateway/
 
 # 安装 minimax-common (因为 packaging=pom, 必装)
 # 然后下载所有依赖到 /root/.m2 (Docker 缓存这层)
-RUN mvn -B -pl minimax-common -am install -DskipTests -Dspotless.check.skip=true -q 2>&1 | tail -3 && \
-    mvn -B -pl minimax-gateway -am dependency:go-offline -DskipTests -Dspotless.check.skip=true -q 2>&1 | tail -3
+RUN mvn -B -pl minimax-common -am install -DskipTests -Dspotless.check.skip=true 2>&1 | tail -10 && \
+    mvn -B -pl minimax-gateway -am dependency:go-offline -DskipTests -Dspotless.check.skip=true 2>&1 | tail -10
 
 # ─── Stage 2: 构建层 (源码变化) ───
 FROM deps AS build
@@ -42,7 +42,7 @@ COPY minimax-gateway minimax-gateway
 
 # 编译 (利用缓存的依赖)
 RUN mvn -B -pl minimax-gateway -am clean package \
-        -DskipTests -Dspotless.check.skip=true -q 2>&1 | tail -5
+        -DskipTests -Dspotless.check.skip=true 2>&1 | tail -15
 
 # 拆 layered jar (4 层)
 RUN java -Djarmode=layertools -jar \
