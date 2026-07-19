@@ -42,7 +42,8 @@ COPY minimax-gateway minimax-gateway
 
 # 编译 (利用缓存的依赖)
 RUN mvn -B -pl minimax-gateway -am clean package \
-        -DskipTests -Dspotless.check.skip=true 2>&1 | tail -15
+        -DskipTests -Dspotless.check.skip=true 2>&1 | tail -15 && \
+    ls -la /workspace/*/target/ 2>/dev/null | head -20  # V3.5.14: 验证 jar 产物
 
 # 拆 layered jar (4 层)
 RUN java -Djarmode=layertools -jar \

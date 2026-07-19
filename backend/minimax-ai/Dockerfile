@@ -23,7 +23,8 @@ COPY minimax-common minimax-common
 COPY minimax-ai minimax-ai
 
 RUN mvn -B -pl minimax-ai -am clean package \
-        -DskipTests -Dspotless.check.skip=true 2>&1 | tail -15
+        -DskipTests -Dspotless.check.skip=true 2>&1 | tail -15 && \
+    ls -la /workspace/*/target/ 2>/dev/null | head -20  # V3.5.14: 验证 jar 产物
 
 # 拆 layered jar
 RUN java -Djarmode=layertools -jar \

@@ -23,11 +23,14 @@ COPY minimax-common minimax-common
 COPY minimax-ws minimax-ws
 
 RUN mvn -B -pl minimax-ws -am clean package \
-        -DskipTests -Dspotless.check.skip=true 2>&1 | tail -15
+        -DskipTests -Dspotless.check.skip=true 2>&1 | tail -15 && \
+    ls -la /workspace/*/target/ 2>/dev/null | head -20  # V3.5.14: 验证 jar 产物 && \
+    ls -la minimax-ws/target/  # V3.5.14: 验证产物存在
 
 # 拆 Spring Boot layered jar (4 层)
 RUN java -Djarmode=layertools -jar \
-    minimax-ws/target/minimax-ws-spring-boot.jar extract --destination extracted
+    minimax-ws/target/minimax-ws-spring-boot.jar extract --destination extracted && \
+    ls -la extracted/  # V3.5.14: 验证 4 层 extraction 成功
 
 # ─── Stage 3: 运行层 ───
 FROM eclipse-temurin:17-jre-alpine

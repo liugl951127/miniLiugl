@@ -21,7 +21,7 @@
 .DS_Store
 
 # Maven
-**/target/
+**/target/  # V3.5.14: 临时注释, 让 mvn 容器内产物可被 COPY (实际 Dockerfile mvn 在容器跑, 不用 COPY target, 注释无副作用)
 **/pom.xml.tag
 **/pom.xml.releaseBackup
 **/pom.xml.versionsBackup

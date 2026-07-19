@@ -27,7 +27,8 @@ COPY minimax-ai minimax-ai
 COPY minimax-multimodal minimax-multimodal
 
 RUN mvn -B -pl minimax-multimodal -am clean package \
-        -DskipTests -Dspotless.check.skip=true 2>&1 | tail -15
+        -DskipTests -Dspotless.check.skip=true 2>&1 | tail -15 && \
+    ls -la /workspace/*/target/ 2>/dev/null | head -20  # V3.5.14: 验证 jar 产物
 
 # 拆 Spring Boot layered jar (4 层)
 RUN java -Djarmode=layertools -jar \
