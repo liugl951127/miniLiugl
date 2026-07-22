@@ -11,6 +11,7 @@ import com.minimax.ai.entity.AiGenerationLog;
 import com.minimax.ai.generation.AnimationGenerator;
 import com.minimax.ai.generation.ChartGenerator;
 import com.minimax.ai.generation.DashboardBuilder;
+import com.minimax.ai.generation.IntentService;
 import com.minimax.ai.generation.KeywordEngine;
 import com.minimax.ai.generation.MusicGenerator;
 import com.minimax.ai.generation.Nl2Chart;
@@ -65,6 +66,7 @@ public class AiPlatformController {
     private final DashboardBuilder dashboardBuilder;
     private final Nl2Chart nl2Chart;
     private final KeywordEngine keywordEngine;
+    private final IntentService intentService;
     private final ProjectCodeGenerator codeGenerator;
     private final DynamicDataSource dynamicDataSource;
     private final AiToolRegistry toolRegistry;
@@ -338,15 +340,23 @@ public class AiPlatformController {
     /**
      * 识别意图 (纯识别, 不路由)
      */
+    /**
+     * V3.5.15+: 4 模型加权投票 (TF 0.4 + N-gram 0.3 + 同义 0.2 + 上下文 0.1)
+     */
     @PostMapping("/route/recognize")
     public Result<Map<String, Object>> recognize(@RequestBody Map<String, String> body) {
         String text = body.get("text");
-        KeywordEngine.Intent intent = keywordEngine.recognize(text);
+        String sessionId = body.get("sessionId");  // V3.5.15+ 可选, 启用上下文
+        // 4 模型加权: 优先用 IntentService (新算法)
+        KeywordEngine.Intent intent = intentService.recognize(text, sessionId);
+        // 参数提取仍用旧 KeywordEngine (未迁移)
         Map<String, String> params = keywordEngine.extractParams(text);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("intent", intent);
         result.put("params", params);
         result.put("text", text);
+        result.put("sessionId", sessionId);
+        result.put("algorithm", "V3.5.15-4model-weighted");
         return Result.ok(result);
     }
 

@@ -109,8 +109,13 @@ public class TransformerBlock {
         double[][] output = new double[seqLen][hiddenDim];
         double scale = 1.0 / Math.sqrt(headDim);
 
-        for (int h = 0; h < numHeads; h++) {
-            int offset = h * headDim;
+        // V3.5.15+: numHeads 维度并行化 (Java parallel streams)
+        // 每个 head 独立计算, 写入 output 的不同 offset 区间, 无冲突
+        int[] headOffsets = new int[numHeads];
+        for (int h = 0; h < numHeads; h++) headOffsets[h] = h * headDim;
+
+        java.util.stream.IntStream.range(0, numHeads).parallel().forEach(h -> {
+            int offset = headOffsets[h];
             // 注意力分数: [seq, seq]
             double[][] scores = new double[seqLen][seqLen];
             for (int i = 0; i < seqLen; i++) {
@@ -149,7 +154,7 @@ public class TransformerBlock {
                     output[i][offset + d] = s;
                 }
             }
-        }
+        });
 
         // Output projection
         return matmul(output, Wo, bo);

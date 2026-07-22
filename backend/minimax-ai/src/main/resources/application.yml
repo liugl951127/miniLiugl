@@ -58,6 +58,15 @@ minimax:
     # 自研模型质量开关 (true=全部开启, false=仅基础对话)
     self-model-full: ${SELF_MODEL_FULL:true}
 
+    # ── V3.5.15+: 4 模型加权投票权重 ──
+    intent:
+      weight:
+        tf: ${INTENT_W_TF:0.4}            # 关键词 TF
+        ngram: ${INTENT_W_NGRAM:0.3}      # Bigram 搭配
+        synonym: ${INTENT_W_SYNONYM:0.2}  # 同义词扩展
+        context: ${INTENT_W_CONTEXT:0.1}  # 上下文继承
+      cache-size: ${INTENT_CACHE:1000}    # LRU 缓存条数
+
 # 健康检查
 management:
   endpoints:
