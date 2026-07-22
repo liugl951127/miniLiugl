@@ -5,6 +5,8 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.minimax.ai.entity.AiIntentKeyword;
 import com.minimax.ai.generation.model.ContextModel;
 import com.minimax.ai.generation.model.NgramModel;
+import com.minimax.ai.generation.model.NeuralIntentModel;
+import com.minimax.ai.generation.model.OnlineLearningEngine;
 import com.minimax.ai.generation.model.SynonymModel;
 import com.minimax.ai.mapper.AiIntentKeywordMapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Service;
 import jakarta.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.*;
+import java.util.EnumMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
@@ -61,6 +64,8 @@ public class IntentService {
     private final NgramModel ngramModel;
     private final SynonymModel synonymModel;
     private final ContextModel contextModel;
+    private final NeuralIntentModel neuralModel;
+    private final OnlineLearningEngine onlineLearning;
 
     // ============== 权重配置 (V3.5.7+ 可热更新) ==============
 
@@ -75,6 +80,9 @@ public class IntentService {
 
     @Value("${minimax.ai.intent.weight.context:0.1}")
     private double weightContext;
+
+    @Value("${minimax.ai.intent.weight.neural:0.0}")
+    private double weightNeural;  // V3.5.16+ neural 召回权重, 默认 0 关闭 (MiniTransformer 未训练)
 
     @Value("${minimax.ai.intent.cache-size:1000}")
     private int cacheSize;
@@ -245,6 +253,14 @@ public class IntentService {
             }
         }
 
+        // 2.5 Neural (V3.5.16+, 默认 0 关闭, 等 MiniTransformer 训练后开启)
+        if (weightNeural > 0) {
+            Map<String, Double> neuralScores = neuralModel.score(text);
+            for (Map.Entry<String, Double> e : neuralScores.entrySet()) {
+                scores.merge(e.getKey(), e.getValue() * weightNeural, Double::sum);
+            }
+        }
+
         // 3. 取最高分
         KeywordEngine.Intent result;
         if (!scores.isEmpty()) {
@@ -263,6 +279,21 @@ public class IntentService {
 
         // 4. 入 LRU 缓存
         lruCache.put(cacheKey, new RecognitionResult(result, scores.getOrDefault(result.name(), 0.0)));
+
+        // 5. V3.5.16+ 记录投票 (供 online learning)
+        if (onlineLearning != null) {
+            Map<OnlineLearningEngine.Model, Double> voteScores = new EnumMap<>(OnlineLearningEngine.Model.class);
+            // 简化: 记录每个模型"贡献"了多少 (用总 score 比例近似)
+            double total = scores.values().stream().mapToDouble(Double::doubleValue).sum();
+            if (total > 0) {
+                // 找 TF 贡献 = TF*0.4 比例
+                voteScores.put(OnlineLearningEngine.Model.TF, weightTf);
+                voteScores.put(OnlineLearningEngine.Model.NGRAM, weightNgram);
+                voteScores.put(OnlineLearningEngine.Model.SYNONYM, weightSynonym);
+                voteScores.put(OnlineLearningEngine.Model.CONTEXT, weightContext);
+            }
+            onlineLearning.recordVote(sessionId, text, result.name(), voteScores);
+        }
         return result;
     }
 

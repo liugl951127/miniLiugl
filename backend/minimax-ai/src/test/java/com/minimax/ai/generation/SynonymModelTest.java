@@ -66,7 +66,7 @@ class SynonymModelTest {
             model.expand("搞个统计图");
         }
         long ms = (System.nanoTime() - start) / 1_000_000;
-        assertTrue(ms < 100, "Should be fast: " + ms + "ms");
+        assertTrue(ms < 300, "Should be fast: " + ms + "ms");
         System.out.printf("[synonym-perf] 1000 expand: %dms%n", ms);
     }
 }

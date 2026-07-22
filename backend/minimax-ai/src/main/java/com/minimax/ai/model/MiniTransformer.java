@@ -154,6 +154,83 @@ public class MiniTransformer {
     }
 
     /**
+     * V3.5.16+: 句向量提取 (平均池化)
+     *
+     * <p>把 seqLen 个 token 的 hidden 状态平均成 1 个 hiddenDim 向量,
+     * 用于语义相似度比较 (cosine).
+     *
+     * <p>不调用 outputProjection (省 vocabSize 投影).
+     *
+     * @param tokenIds 编码后的 token 序列
+     * @return hiddenDim 维句向量
+     */
+    public double[] embed(int[] tokenIds) {
+        int seqLen = Math.min(tokenIds.length, maxSeqLen);
+        if (seqLen == 0) {
+            return new double[hiddenDim];
+        }
+
+        // 1. Embedding
+        double[][] x = new double[seqLen][hiddenDim];
+        for (int i = 0; i < seqLen; i++) {
+            int tokenId = tokenIds[i];
+            if (tokenId < 0 || tokenId >= vocabSize) tokenId = 1;
+            for (int j = 0; j < hiddenDim; j++) {
+                x[i][j] = tokenEmbedding[tokenId][j] + positionEmbedding[i][j];
+            }
+        }
+
+        // 2. N x Transformer Block (无 output projection, 省一半计算)
+        for (TransformerBlock block : blocks) {
+            x = block.forward(x);
+        }
+
+        // 3. Final LayerNorm
+        x = layerNorm(x, finalGamma, finalBeta);
+
+        // 4. 平均池化 -> 句向量 [hiddenDim]
+        double[] sentenceVec = new double[hiddenDim];
+        for (int i = 0; i < seqLen; i++) {
+            for (int j = 0; j < hiddenDim; j++) {
+                sentenceVec[j] += x[i][j];
+            }
+        }
+        for (int j = 0; j < hiddenDim; j++) {
+            sentenceVec[j] /= seqLen;
+        }
+        return sentenceVec;
+    }
+
+    /**
+     * 批量 embed (省多次 forward 的 Java overhead)
+     *
+     * @param tokenIdsBatch 多个 token 序列
+     * @return 每个序列的句向量
+     */
+    public double[][] embedBatch(int[][] tokenIdsBatch) {
+        double[][] result = new double[tokenIdsBatch.length][];
+        for (int i = 0; i < tokenIdsBatch.length; i++) {
+            result[i] = embed(tokenIdsBatch[i]);
+        }
+        return result;
+    }
+
+    /**
+     * 余弦相似度
+     */
+    public static double cosineSimilarity(double[] a, double[] b) {
+        if (a.length != b.length) return 0.0;
+        double dot = 0, na = 0, nb = 0;
+        for (int i = 0; i < a.length; i++) {
+            dot += a[i] * b[i];
+            na += a[i] * a[i];
+            nb += b[i] * b[i];
+        }
+        if (na == 0 || nb == 0) return 0.0;
+        return dot / (Math.sqrt(na) * Math.sqrt(nb));
+    }
+
+    /**
      * Layer Normalization
      */
     private double[][] layerNorm(double[][] x, double[] gamma, double[] beta) {

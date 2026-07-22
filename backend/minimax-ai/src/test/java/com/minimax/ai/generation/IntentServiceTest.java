@@ -51,12 +51,13 @@ class IntentServiceTest {
         conversationContext = new ConversationContext();
         contextModel = new ContextModel(conversationContext);
 
-        service = new IntentService(keywordMapper, ngramModel, synonymModel, contextModel);
+        service = new IntentService(keywordMapper, ngramModel, synonymModel, contextModel, null, null);
         // 反射注入 @Value 字段
         injectField(service, "weightTf", 0.4);
         injectField(service, "weightNgram", 0.3);
         injectField(service, "weightSynonym", 0.2);
         injectField(service, "weightContext", 0.1);
+        injectField(service, "weightNeural", 0.0);
         injectField(service, "cacheSize", 1000);
 
         service.init();
