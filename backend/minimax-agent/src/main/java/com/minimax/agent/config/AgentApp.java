@@ -8,7 +8,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @SpringBootApplication(scanBasePackages = {"com.minimax.agent", "com.minimax.common", "com.minimax.function"})
 @MapperScan({
     "com.minimax.agent.mapper",
-    "com.minimax.function.mapper"
+    "com.minimax.pipeline.function_ext.mapper"
 })
 @EnableAsync
 public class AgentApp {

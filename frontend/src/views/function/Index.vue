@@ -1,6 +1,6 @@
 <!--
   Function Call 工具管理页 (V3.5.5+ 新增)
-  对应后端模块: minimax-function (端口 8086)
+  对应后端模块: minimax-pipeline (端口 8093)
   API 路径: /api/v1/function/*
 -->
 <!--

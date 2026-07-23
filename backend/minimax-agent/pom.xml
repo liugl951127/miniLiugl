@@ -30,7 +30,7 @@
 
         <dependency>
             <groupId>com.minimax</groupId>
-            <artifactId>minimax-function</artifactId>
+            <artifactId>minimax-pipeline</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 

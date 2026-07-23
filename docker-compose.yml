@@ -135,16 +135,6 @@ services:
     networks: [minimax-net]
     deploy: { resources: { limits: { memory: 384M } } }
 
-  memory:
-    build: { context: ./backend, dockerfile: minimax-memory/Dockerfile }
-    image: minimax/memory:latest
-    container_name: minimax-memory
-    restart: unless-stopped
-    depends_on: [mariadb]
-    environment: { SPRING_PROFILES_ACTIVE: mysql, JAVA_OPTS: "-XX:MaxRAMPercentage=70 -XX:+UseG1GC" }
-    volumes: *maven-volumes
-    networks: [minimax-net]
-    deploy: { resources: { limits: { memory: 384M } } }
 
   model:
     build: { context: ./backend, dockerfile: minimax-model/Dockerfile }
@@ -168,16 +158,6 @@ services:
     networks: [minimax-net]
     deploy: { resources: { limits: { memory: 384M } } }
 
-  function:
-    build: { context: ./backend, dockerfile: minimax-function/Dockerfile }
-    image: minimax/function:latest
-    container_name: minimax-function
-    restart: unless-stopped
-    depends_on: [mariadb]
-    environment: { SPRING_PROFILES_ACTIVE: mysql, JAVA_OPTS: "-XX:MaxRAMPercentage=70 -XX:+UseG1GC" }
-    volumes: *maven-volumes
-    networks: [minimax-net]
-    deploy: { resources: { limits: { memory: 384M } } }
 
   multimodal:
     build: { context: ./backend, dockerfile: minimax-multimodal/Dockerfile }
@@ -214,16 +194,6 @@ services:
     networks: [minimax-net]
     deploy: { resources: { limits: { memory: 384M } } }
 
-  prompt:
-    build: { context: ./backend, dockerfile: minimax-prompt/Dockerfile }
-    image: minimax/prompt:latest
-    container_name: minimax-prompt
-    restart: unless-stopped
-    depends_on: [mariadb]
-    environment: { SPRING_PROFILES_ACTIVE: mysql, JAVA_OPTS: "-XX:MaxRAMPercentage=70 -XX:+UseG1GC" }
-    volumes: *maven-volumes
-    networks: [minimax-net]
-    deploy: { resources: { limits: { memory: 384M } } }
 
   agent:
     build: { context: ./backend, dockerfile: minimax-agent/Dockerfile }

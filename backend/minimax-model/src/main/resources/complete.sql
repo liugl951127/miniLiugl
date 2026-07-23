@@ -1333,7 +1333,7 @@ CREATE TABLE IF NOT EXISTS `prompt_template` (
     `description` VARCHAR(255) DEFAULT NULL COMMENT '描述(description)',
     `category` VARCHAR(255) DEFAULT NULL COMMENT 'category(category)',
     `content` VARCHAR(255) DEFAULT NULL COMMENT 'content(content)',
-    `variables` VARCHAR(255) DEFAULT NULL COMMENT 'variables(variables)',
+    `variables` TEXT COMMENT "variables",
     `creator_id` BIGINT DEFAULT 0 COMMENT 'creator_id(creator_id)',
     `creator_name` VARCHAR(255) DEFAULT NULL COMMENT 'creator_name(creator_name)',
     `is_public` TINYINT(1) DEFAULT 0 COMMENT 'is_public(is_public)',

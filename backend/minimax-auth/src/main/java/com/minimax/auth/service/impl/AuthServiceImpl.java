@@ -181,7 +181,7 @@ public class AuthServiceImpl implements AuthService {
             // 写失败日志 (userId=null, 未知用户)
             recordLog(null, req.getUsername(), http, 0, "用户不存在");
             // 统一错误码, 防止用户名枚举
-            throw new BizException(ResultCode.USER_PASSWORD_ERROR);
+            log.error("DBG: u==null, username={}", req.getUsername()); throw new BizException(ResultCode.USER_PASSWORD_ERROR);
         }
 
         // 2. 校验状态: null 也算禁用 (防御性编程)
@@ -191,9 +191,9 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 3. 校验密码: BCrypt 自动从 hash 提取盐值 + 匹配
-        if (!passwordEncoder.matches(req.getPassword(), u.getPassword())) {
+        if (!passwordEncoder.matches(req.getPassword(), u.getPassword())) { log.error("DBG: matches false: req.pwd={} hash={}", req.getPassword(), u.getPassword());
             recordLog(u.getId(), u.getUsername(), http, 0, "密码错误");
-            throw new BizException(ResultCode.USER_PASSWORD_ERROR);
+            log.error("DBG: u==null, username={}", req.getUsername()); throw new BizException(ResultCode.USER_PASSWORD_ERROR);
         }
 
         // 4. 更新最后登录信息 (审计 + 异地登录检测)

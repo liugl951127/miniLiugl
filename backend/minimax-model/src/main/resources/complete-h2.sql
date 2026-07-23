@@ -1221,7 +1221,7 @@ CREATE TABLE IF NOT EXISTS `prompt_template` (
     `description` VARCHAR(255) DEFAULT NULL COMMENT 'description',
     `category` VARCHAR(255) DEFAULT NULL COMMENT 'category',
     `content` VARCHAR(255) DEFAULT NULL COMMENT 'content',
-    `variables` VARCHAR(255) DEFAULT NULL COMMENT 'variables',
+    `variables` TEXT COMMENT "variables",
     `creator_id` VARCHAR(255) DEFAULT NULL COMMENT 'creator_id',
     `creator_name` VARCHAR(255) DEFAULT NULL COMMENT 'creator_name',
     `is_public` VARCHAR(255) DEFAULT NULL COMMENT 'is_public',

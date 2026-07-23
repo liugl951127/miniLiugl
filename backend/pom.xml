@@ -24,15 +24,12 @@
         <module>minimax-ws</module>
         <module>minimax-auth</module>
         <module>minimax-chat</module>
-        <module>minimax-memory</module>
         <module>minimax-model</module>
         <module>minimax-rag</module>
-        <module>minimax-function</module>
         <module>minimax-admin</module>
         <module>minimax-multimodal</module>
         <module>minimax-monitor</module>
         <module>minimax-agent</module>
-        <module>minimax-prompt</module>
         <module>minimax-analytics</module>
         <module>minimax-pipeline</module>
         <module>minimax-ai</module>

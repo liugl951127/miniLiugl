@@ -17,11 +17,12 @@ import org.springframework.scheduling.annotation.EnableAsync;
  */
 @SpringBootApplication(scanBasePackages = {
         "com.minimax.pipeline",
+        "com.minimax.pipeline.function_ext",
         "com.minimax.common",
         "com.minimax.analytics",
         "com.minimax.model"
 })
-@MapperScan("com.minimax.pipeline.mapper")
+@MapperScan({"com.minimax.pipeline.mapper", "com.minimax.pipeline.function_ext.mapper"})
 @EnableAsync
 public class PipelineApplication {
 

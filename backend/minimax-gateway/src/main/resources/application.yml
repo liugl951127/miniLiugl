@@ -99,7 +99,7 @@ spring.cloud.gateway:
             key-resolver: "#{@apiKeyRateLimitResolver}"
 
     - id: memory
-      uri: lb://minimax-memory
+      uri: lb://minimax-chat
       predicates:
         - Path=/api/v1/memory/**
       filters:
@@ -113,7 +113,7 @@ spring.cloud.gateway:
         - StripPrefix=2
 
     - id: function
-      uri: lb://minimax-function
+      uri: lb://minimax-pipeline
       predicates:
         - Path=/api/v1/function/**
       filters:
@@ -146,7 +146,7 @@ spring.cloud.gateway:
             key-resolver: "#{@apiKeyRateLimitResolver}"
 
     - id: prompt
-      uri: lb://minimax-prompt
+      uri: lb://minimax-model
       predicates:
         - Path=/api/v1/prompt/**,/api/v1/prompts/**
       filters:

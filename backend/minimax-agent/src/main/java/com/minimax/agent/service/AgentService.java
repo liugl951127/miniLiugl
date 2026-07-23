@@ -1,8 +1,8 @@
 package com.minimax.agent.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.minimax.function.executor.ToolExecutor;
-import com.minimax.function.mapper.FunctionToolMapper;
+import com.minimax.pipeline.function_ext.executor.ToolExecutor;
+import com.minimax.pipeline.function_ext.mapper.FunctionToolMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -167,7 +167,7 @@ public class AgentService {
                 steps, maxRounds, toolsUsed);
     }
 
-    private List<com.minimax.function.entity.FunctionTool> pickTools(List<String> names) {
+    private List<com.minimax.pipeline.function_ext.entity.FunctionTool> pickTools(List<String> names) {
         if (names == null || names.isEmpty()) {
             return toolMapper.selectEnabled();
         }
@@ -178,7 +178,7 @@ public class AgentService {
                 .toList();
     }
 
-    private List<Map<String, Object>> toOpenAiTools(List<com.minimax.function.entity.FunctionTool> tools) {
+    private List<Map<String, Object>> toOpenAiTools(List<com.minimax.pipeline.function_ext.entity.FunctionTool> tools) {
         List<Map<String, Object>> out = new ArrayList<>();
         for (var t : tools) {
             Map<String, Object> fn = new HashMap<>();
