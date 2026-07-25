@@ -8,7 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         "com.minimax.admin",
         "com.minimax.common"
 })
-@MapperScan("com.minimax.admin")
+@MapperScan("com.minimax.admin.mapper")
 public class AdminApplication {
     public static void main(String[] args) {
         SpringApplication.run(AdminApplication.class, args);

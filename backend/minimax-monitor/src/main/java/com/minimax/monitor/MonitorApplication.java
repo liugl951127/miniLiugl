@@ -8,7 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         "com.minimax.monitor",
         "com.minimax.common"
 })
-@MapperScan("com.minimax.monitor")
+@MapperScan("com.minimax.monitor.mapper")
 public class MonitorApplication {
     public static void main(String[] args) {
         SpringApplication.run(MonitorApplication.class, args);
