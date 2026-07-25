@@ -43,6 +43,7 @@ spring:
         pool:
           max-active: 16
   mybatis-plus:
+    type-aliases-package: com.minimax.monitor.entity   # V3.5.31+ 防御性: 限定实体包, 避免 alert.AlertNotifier 被误扫
     configuration:
       map-underscore-to-camel-case: true
     global-config:

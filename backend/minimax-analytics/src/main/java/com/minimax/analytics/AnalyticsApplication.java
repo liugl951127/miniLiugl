@@ -20,7 +20,9 @@ import org.springframework.scheduling.annotation.EnableAsync;
  */
 @SpringBootApplication(scanBasePackages = {
     "com.minimax.analytics",
-    "com.minimax.common"
+    "com.minimax.common",
+    "com.minimax.model",                // V3.5.30+: Nl2SqlServiceImpl 依赖 ModelProviderFactory
+    "com.minimax.model.prompt"          // V3.5.30+: prompt 子包
 })
 @MapperScan("com.minimax.analytics.mapper")
 @EnableAsync

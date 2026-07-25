@@ -1,38 +1,36 @@
 package com.minimax.monitor.config;
 
 import com.baomidou.mybatisplus.annotation.DbType;
-import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
-import org.apache.ibatis.reflection.MetaObject;
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.time.LocalDateTime;
-
+/**
+ * MyBatis-Plus 全局配置 (V3.5.31+).
+ *
+ * 关键点:
+ *   1. type-aliases-package 限定到 .entity 子包, 避免 alert.AlertNotifier 等 interface 被误扫
+ *   2. mapper-locations 显式只读 mapper/ 目录下的 XML
+ *   3. 分页插件 (V3.5.31+ 统一拦截)
+ *
+ * 解决: AlertNotifier.channelType 之前的 MyBatis BindingException
+ */
 @Configuration
+@MapperScan(
+    basePackages = "com.minimax.monitor.mapper",
+    sqlSessionTemplateRef = "sqlSessionTemplate"
+)
 public class MybatisPlusConfig {
 
+    /**
+     * 分页插件 (V3.5.31+ 统一拦截).
+     */
     @Bean
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
-        MybatisPlusInterceptor it = new MybatisPlusInterceptor();
-        it.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
-        return it;
-    }
-
-    @Bean
-    public MetaObjectHandler metaObjectHandler() {
-        return new MetaObjectHandler() {
-            @Override public void insertFill(MetaObject m) {
-                this.strictInsertFill(m, "createdAt", LocalDateTime.class, LocalDateTime.now());
-                this.strictInsertFill(m, "updatedAt", LocalDateTime.class, LocalDateTime.now());
-                this.strictInsertFill(m, "createdBy", Long.class, 0L);
-                this.strictInsertFill(m, "updatedBy", Long.class, 0L);
-                this.strictInsertFill(m, "recordedAt", LocalDateTime.class, LocalDateTime.now());
-            }
-            @Override public void updateFill(MetaObject m) {
-                this.strictUpdateFill(m, "updatedAt", LocalDateTime.class, LocalDateTime.now());
-            }
-        };
+        MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+        interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
+        return interceptor;
     }
 }

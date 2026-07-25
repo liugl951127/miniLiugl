@@ -1,6 +1,5 @@
 package com.minimax.monitor;
 
-import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -8,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         "com.minimax.monitor",
         "com.minimax.common"
 })
-@MapperScan("com.minimax.monitor.mapper")
+// V3.5.31+: @MapperScan 移到 MybatisPlusConfig
 public class MonitorApplication {
     public static void main(String[] args) {
         SpringApplication.run(MonitorApplication.class, args);
