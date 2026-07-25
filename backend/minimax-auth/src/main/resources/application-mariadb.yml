@@ -1,0 +1,111 @@
+# =============================================================
+# MariaDB 生产模式 (V3.5.26+ 新增)
+# - 跟 MySQL 兼容, 用 MariaDB Connector/J 3.x
+# - 驱动: org.mariadb.jdbc.Driver
+# - URL:  jdbc:mariadb://host:port/db
+# - 用法: java -jar minimax-X.jar --spring.profiles.active=mariadb
+# =============================================================
+server:
+  port: ${SERVER_PORT:8081}    # auth 默认端口
+
+# 关闭 OTEL exporter (避免连 localhost:4318 失败)
+otel:
+  metrics:
+    exporter: none
+  traces:
+    exporter: none
+  logs:
+    exporter: none
+  java:
+    global-autoconfigure:
+      enabled: false
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  datasource:
+    # MariaDB Connector/J 3.x 驱动 (替代 com.mysql.cj.jdbc.Driver)
+    driver-class-name: org.mariadb.jdbc.Driver
+    # MariaDB URL 格式: jdbc:mariadb://host:port/database
+    # - 关键参数: useUnicode + characterEncoding=utf-8 (中文)
+    # - serverTimezone=Asia/Shanghai (避免 +08:00 错位)
+    # - allowPublicKeyRetrieval=true (允许公钥检索, MariaDB 10.4+ 需要)
+    url: jdbc:mariadb://${MARIADB_HOST:127.0.0.1}:${MARIADB_PORT:3306}/${MARIADB_DB:minimax_platform}?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MARIADB_USER:root}
+    password: ${MARIADB_PASSWORD:root123456}
+    hikari:
+      # MariaDB 推荐: 连接池略小, 因为 mariadb 自身连接开销低
+      maximum-pool-size: 16
+      minimum-idle: 4
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: MariaDB-Pool
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASS:minimax_redis_2024}
+      database: 0
+      timeout: 3s
+      lettuce:
+        pool:
+          max-active: 16
+  mybatis-plus:
+    configuration:
+      map-underscore-to-camel-case: true
+    global-config:
+      db-config:
+        id-type: ASSIGN_ID
+        logic-delete-field: deleted
+    mapper-locations: classpath*:mapper/**/*.xml
+  application:
+    name: minimax-auth
+  profiles:
+    active: mariadb
+  cloud:
+    nacos:
+      discovery:
+        enabled: true
+        server-addr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
+        namespace: ${NACOS_NS:minimax-dev}
+        username: ${NACOS_USER:nacos}
+        password: ${NACOS_PASS:nacos}
+      config:
+        enabled: true
+        server-addr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
+        namespace: ${NACOS_NS:minimax-dev}
+        file-extension: yml
+        username: ${NACOS_USER:nacos}
+        password: ${NACOS_PASS:nacos}
+
+# V3.5.5+: 沙箱/生产启动不跑 seed insert, AdminDataInitializer 兜底
+spring.sql.init.mode: never
+# 兜底: schema 错不阻塞启动
+spring.sql.init.continue-on-error: true
+
+# Token 服务端密钥 (V3.5.9+)
+minimax:
+  auth:
+    super-admin-username: ${SUPER_ADMIN_USERNAME:adminLiugl}
+    super-admin-password: ${SUPER_ADMIN_PASSWORD:Liugl@2026}
+    super-admin-email: ${SUPER_ADMIN_EMAIL:liugl951127@gmail.com}
+  jwt:
+    secret: ${JWT_SECRET:mVsZlpnzIoXX8f+SxZPIJbsbQyatC3J+9EKrE6pJA2w=}
+    access-token-expire-seconds: 1800
+    refresh-token-expire-seconds: 604800
+  captcha:
+    enabled: ${CAPTCHA_ENABLED:false}
+  wechat:
+    enabled: ${WECHAT_ENABLED:false}
+  oauth:
+    enabled: ${OAUTH_ENABLED:false}
+
+# 关闭 actuator 暴露 (生产按需打开)
+management:
+  endpoints:
+    web:
+      exposure:
+        exclude: "*"
+  tracing:
+    enabled: false
