@@ -24,7 +24,7 @@ spring:
   main:
     allow-bean-definition-overriding: true
   datasource:
-    # MariaDB Connector/J 3.x 驱动 (替代 com.mysql.cj.jdbc.Driver)
+    # MariaDB Connector/J 3.x 驱动 (替代 org.mariadb.jdbc.Driver)
     driver-class-name: org.mariadb.jdbc.Driver
     # MariaDB URL 格式: jdbc:mariadb://host:port/database
     # - 关键参数: useUnicode + characterEncoding=utf-8 (中文)

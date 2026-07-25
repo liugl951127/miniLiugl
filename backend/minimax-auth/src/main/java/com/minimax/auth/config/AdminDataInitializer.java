@@ -1,5 +1,6 @@
 package com.minimax.auth.config;
 
+import java.time.LocalDateTime;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.minimax.auth.entity.SysRole;
 import com.minimax.auth.entity.SysUser;
@@ -99,8 +100,12 @@ public class AdminDataInitializer implements CommandLineRunner {
             owner.setEmail(superAdminEmail);
             owner.setStatus(1);
             owner.setTenantId(0L);
+            owner.setCreatedAt(LocalDateTime.now());
+            owner.setUpdatedAt(LocalDateTime.now());
             owner.setDeleted(0);  // V3.5.12+: 显式设 0, 避免 @TableLogic 过滤
             owner.setRemark("平台所有者 - 唯一超级管理员");
+            owner.setCreatedAt(LocalDateTime.now());
+            owner.setUpdatedAt(LocalDateTime.now());
             userMapper.insert(owner);
             log.info("✅ 初始化超级管理员 {} (密码 {})", superAdminUsername, superAdminPassword);
             bindRole(owner.getId(), superRole.getId());
@@ -109,6 +114,8 @@ public class AdminDataInitializer implements CommandLineRunner {
             owner.setPassword(passwordEncoder.encode(superAdminPassword));
             owner.setEmail(superAdminEmail);
             owner.setStatus(1);
+            owner.setCreatedAt(LocalDateTime.now());
+            owner.setUpdatedAt(LocalDateTime.now());
             owner.setDeleted(0);
             userMapper.updateById(owner);
             if (!hasRole(owner.getId(), superRole.getId())) {
