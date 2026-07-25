@@ -36,6 +36,12 @@ x-jvm-env: &jvm-env
   SPRING_PROFILES_ACTIVE: mysql
   JAVA_OPTS: "-XX:MaxRAMPercentage=70 -XX:+UseG1GC -XX:+UseContainerSupport"
   TZ: Asia/Shanghai
+  NACOS_HOST: nacos
+  NACOS_PORT: "8848"
+  NACOS_USER: nacos
+  NACOS_PASS: nacos
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
 
 services:
   # ============== 基础设施 (3 个) ==============
@@ -92,9 +98,9 @@ services:
       JVM_XMN: 256m
       # 鉴权配置 (V3.5.9+: 用户提供的 base64 token)
       NACOS_AUTH_ENABLE: "true"
-      NACOS_AUTH_TOKEN: "${NACOS_AUTH_TOKEN:mVsZlpnzIoXX8f+SxZPIJbsbQyatC3J+9EKrE6pJA2w=}"
-      NACOS_AUTH_IDENTITY_KEY: "${NACOS_AUTH_IDENTITY_KEY:minimax-nacos}"
-      NACOS_AUTH_IDENTITY_VALUE: "${NACOS_AUTH_IDENTITY_VALUE:minimax-nacos-secret-2026}"
+      NACOS_AUTH_TOKEN: "mVsZlpnzIoXX8f+SxZPIJbsbQyatC3J+9EKrE6pJA2w="
+      NACOS_AUTH_IDENTITY_KEY: "minimax-nacos"
+      NACOS_AUTH_IDENTITY_VALUE: "minimax-nacos-secret-2026"
     command: ["sh", "-c", "echo 'nacos.core.auth.plugin.nacos.token.secret.key=${NACOS_AUTH_TOKEN}' > /home/nacos/conf/application.properties && echo 'nacos.core.auth.server.identity.key=${NACOS_AUTH_IDENTITY_KEY}' >> /home/nacos/conf/application.properties && echo 'nacos.core.auth.server.identity.value=${NACOS_AUTH_IDENTITY_VALUE}' >> /home/nacos/conf/application.properties && bin/startup.sh -m standalone && tail -f /home/nacos/logs/start.out"]
     ports: ["8848:8848", "9848:9848"]
     volumes:
@@ -126,6 +132,7 @@ services:
     environment:
       <<: *jvm-env
       NACOS_SERVER: nacos:8848
+      SERVER_PORT: "7080"
     ports: ["7080:7080"]
     volumes: *maven-volumes
     networks: [minimax-net]
