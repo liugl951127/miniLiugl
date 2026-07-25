@@ -72,7 +72,6 @@
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
-            <version>8.0.33</version>
         </dependency>
 
         <!-- V5.33: 告警邮件发送 -->

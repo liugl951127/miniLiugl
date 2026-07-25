@@ -57,7 +57,6 @@
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
-            <version>8.0.33</version>
         </dependency>
 
         <!-- V3.1.0 ONNX Runtime (本地模型推理) -->
