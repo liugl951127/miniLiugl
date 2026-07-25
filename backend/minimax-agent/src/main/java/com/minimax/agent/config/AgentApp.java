@@ -5,7 +5,13 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableAsync;
 
-@SpringBootApplication(scanBasePackages = {"com.minimax.agent", "com.minimax.common", "com.minimax.function"})
+@SpringBootApplication(scanBasePackages = {
+        "com.minimax.agent",
+        "com.minimax.common",
+        "com.minimax.pipeline",
+        "com.minimax.pipeline.function_ext",
+        "com.minimax.model"  // V3.5.27+: agent 用 model 调 LLM
+})
 @MapperScan({
     "com.minimax.agent.mapper",
     "com.minimax.pipeline.function_ext.mapper"
