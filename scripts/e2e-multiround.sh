@@ -110,7 +110,7 @@ for user in "adminLiugl:Liugl@2026" "admin:admin@123" "admin_user:admin123" "tes
     # 用 auth 直连 (避免 gateway 鉴权复杂)
     code=$(direct POST "http://localhost:8081/api/v1/auth/login" "{\"username\":\"$username\",\"password\":\"$password\"}" 2>/dev/null)
     if [[ "$code" == "200" ]]; then
-        token=$(cat /tmp/e2e-resp | python3 -c "import sys,json; print(json.load(sys.stdin).get('data',{}).get('token',''))" 2>/dev/null)
+        token=$(cat /tmp/e2e-resp | python3 -c "import sys,json; print(json.load(sys.stdin).get('data',{}).get('accessToken',''))" 2>/dev/null)
         if [[ -n "$token" ]]; then
             green "  ✅ $username 登录成功 (token len=${#token})"
             PASS=$((PASS+1))
