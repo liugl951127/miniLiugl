@@ -64,14 +64,15 @@ public class AdminController {
     @Operation(summary = "用户列表")
     @GetMapping("/users")
     public Result<String> listUsers(@RequestParam(defaultValue = "1") int page,
-                                     @RequestParam(defaultValue = "20") int size) {
-        return Result.ok(userMgmt.listUsers(page, size));
+                                     @RequestParam(defaultValue = "20") int size,
+                                     HttpServletRequest req) {
+        return Result.ok(userMgmt.listUsers(page, size, req));
     }
 
     @Operation(summary = "获取用户详情")
     @GetMapping("/users/{id}")
-    public Result<String> getUser(@PathVariable Long id) {
-        return Result.ok(userMgmt.getUser(id));
+    public Result<String> getUser(@PathVariable Long id, HttpServletRequest req) {
+        return Result.ok(userMgmt.getUser(id, req));
     }
 
     @Operation(summary = "创建用户")
@@ -107,14 +108,14 @@ public class AdminController {
 
     @Operation(summary = "列出模型提供商")
     @GetMapping("/models/providers")
-    public Result<String> listProviders() {
-        return Result.ok(modelMgmt.listProviders());
+    public Result<String> listProviders(HttpServletRequest req) {
+        return Result.ok(modelMgmt.listProviders(req));
     }
 
     @Operation(summary = "列出模型配置")
     @GetMapping("/models")
-    public Result<String> listConfigs() {
-        return Result.ok(modelMgmt.listConfigs());
+    public Result<String> listModels(HttpServletRequest req) {
+        return Result.ok(modelMgmt.listModels(req));
     }
 
     @Operation(summary = "更新模型限流配置")
@@ -139,15 +140,15 @@ public class AdminController {
 
     @Operation(summary = "仪表盘统计")
     @GetMapping("/stats/dashboard")
-    public Result<Map<String, Object>> dashboard() {
-        return Result.ok(stats.dashboard());
+    public Result<Map<String, Object>> dashboard(HttpServletRequest req) {
+        return Result.ok(stats.dashboard(req));
     }
 
     /** V5.9 Day 20: API Key 全局用量统计 */
     @Operation(summary = "API Key 全局统计摘要 (Day 20)")
     @GetMapping("/stats/apikey")
-    public Result<Map<String, Object>> apiKeyStats() {
-        return Result.ok(apiKeyStats.summary());
+    public Result<Map<String, Object>> apiKeyStats(HttpServletRequest req) {
+        return Result.ok(apiKeyStats.summary(req));
     }
 
     /** V5.9 Day 20: API Key 近 N 天新增趋势 */
@@ -206,8 +207,8 @@ public class AdminController {
     // ---------- API Key 统计 (Day 20) ----------
     @Operation(summary = "API Key 全局统计 (Day 20)")
     @GetMapping("/apikey/stats")
-    public Result<Map<String, Object>> apikeyStats() {
-        return Result.ok(apiKeyStats.summary());
+    public Result<Map<String, Object>> apikeyStats(HttpServletRequest req) {
+        return Result.ok(apiKeyStats.summary(req));
     }
     // ════════════════════════════════════════════════════════════
     // V3.5.8 新增: Model CRUD (前端 model/Index.vue 调用)

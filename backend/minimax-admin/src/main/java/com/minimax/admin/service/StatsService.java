@@ -6,6 +6,7 @@ import com.minimax.admin.entity.AdminAuditLog;
 import com.minimax.admin.mapper.AdminAuditLogMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -53,9 +54,9 @@ public class StatsService {
     }
 
     /** 模型调用统计 — 调 model 服务 (如有 /stats/calls) */
-    public Map<String, Object> modelStats() {
+    public Map<String, Object> modelStats(HttpServletRequest req) {
         Map<String, Object> r = new LinkedHashMap<>();
-        String body = client.get(endpoints.model(), "/api/v1/models/stats");
+        String body = client.get(endpoints.model(), "/api/v1/models/stats", jwtFrom(req));
         if (body != null) {
             r.put("model", body);
         } else {
@@ -65,9 +66,9 @@ public class StatsService {
     }
 
     /** 工具调用统计 — 调 function 服务 */
-    public Map<String, Object> toolStats() {
+    public Map<String, Object> toolStats(HttpServletRequest req) {
         Map<String, Object> r = new LinkedHashMap<>();
-        String body = client.get(endpoints.function(), "/api/v1/function/stats");
+        String body = client.get(endpoints.function(), "/api/v1/function/stats", jwtFrom(req));
         if (body != null) {
             r.put("function", body);
         } else {
@@ -77,13 +78,19 @@ public class StatsService {
     }
 
     /** Dashboard 摘要 - 一页看到所有关键指标 */
-    public Map<String, Object> dashboard() {
+    public Map<String, Object> dashboard(HttpServletRequest req) {
         Map<String, Object> d = new LinkedHashMap<>();
         d.put("ops", opsStats());
-        d.put("model", modelStats());
-        d.put("tools", toolStats());
+        d.put("model", modelStats(req));
+        d.put("tools", toolStats(req));
         d.put("periods", periodBounds());
         d.put("generatedAt", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         return d;
+    }
+
+    private String jwtFrom(HttpServletRequest req) {
+        if (req == null) return null;
+        String h = req.getHeader("Authorization");
+        return (h != null && !h.isBlank()) ? h : null;
     }
 }

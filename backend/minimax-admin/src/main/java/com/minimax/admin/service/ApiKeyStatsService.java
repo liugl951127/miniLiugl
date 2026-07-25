@@ -7,6 +7,7 @@ import com.minimax.admin.client.ServiceEndpoints;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.*;
 
@@ -25,11 +26,17 @@ public class ApiKeyStatsService {
     private final ServiceEndpoints endpoints;
     private final ObjectMapper json = new ObjectMapper();
 
+    private String jwtFrom(HttpServletRequest req) {
+        if (req == null) return null;
+        String h = req.getHeader("Authorization");
+        return (h != null && !h.isBlank()) ? h : null;
+    }
+
     /**
      * 全局 API Key 统计摘要.
      * 调 auth 服务获取全部用户的 Key 信息，聚合后返回。
      */
-    public Map<String, Object> summary() {
+    public Map<String, Object> summary(HttpServletRequest req) {
         Map<String, Object> r = new LinkedHashMap<>();
 
         // 调 auth 服务获取所有用户下的 API Keys
@@ -37,7 +44,7 @@ public class ApiKeyStatsService {
         // admin 模块通过 ServiceClient 调 auth，且 auth 服务需支持 admin 调用
         // 这里降级策略：auth 服务不可达时返回 unavailable 而不抛异常
         try {
-            String body = client.get(endpoints.auth(), "/api/v1/auth/admin/apikeys");
+            String body = client.get(endpoints.auth(), "/api/v1/auth/admin/apikeys", jwtFrom(req));
             if (body == null || body.contains("\"code\":")) {
                 r.put("status", "unavailable");
                 r.put("message", "auth 服务不可达或无权访问");
