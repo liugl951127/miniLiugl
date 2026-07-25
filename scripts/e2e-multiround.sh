@@ -83,7 +83,7 @@ echo "════════════════════════�
 bold "  Round 1: 服务健康检查 (16 微服务)"
 echo "═══════════════════════════════════════════════════════════"
 
-for svc_port in "auth:8081" "ai:8094" "admin:8090" "multimodal:8087" "gateway:7080" "chat:8082" "memory:8083" "model:8084" "rag:8085" "function:8086" "agent:8088" "monitor:8089" "prompt:8091" "analytics:8092" "pipeline:8093" "ws:8095"; do
+for svc_port in "auth:8081" "ai:8094" "admin:8090" "multimodal:8087" "gateway:7080" "chat:8082" "model:8084" "rag:8085" "pipeline:8093" "agent:8088" "monitor:8089" "analytics:8092" "ws:8095"; do
     svc=${svc_port%%:*}
     port=${svc_port##*:}
     # 直接访问, 不通过 gateway
@@ -150,7 +150,7 @@ code=$(direct GET "http://localhost:8090/api/v1/admin/health" 2>/dev/null)
 if [[ "$code" == "200" || "$code" == "401" ]]; then green "  ✅ Admin endpoint ($code)"; PASS=$((PASS+1)); else red "  ❌ Admin ($code)"; FAIL=$((FAIL+1)); fi; TOTAL=$((TOTAL+1)); continue
 
 # 3.3 Memory short-term
-code=$(direct GET "http://localhost:8083/api/v1/memory/short-term/test-session" 2>/dev/null)
+code=$(direct GET "http://localhost:8082/api/v1/memory/short-term/test-session" 2>/dev/null)
 if [[ "$code" == "200" ]]; then
     green "  ✅ Memory 查询"
     PASS=$((PASS+1))
@@ -225,7 +225,7 @@ bold "  Round 5: 接口覆盖率扫描 (主要端点)"
 echo "═══════════════════════════════════════════════════════════"
 
 # 5.1 扫描所有 16 服务 actuator/health
-for svc_port in "auth:8081" "ai:8094" "admin:8090" "multimodal:8087" "gateway:7080" "chat:8082" "memory:8083" "model:8084" "rag:8085" "function:8086" "agent:8088" "monitor:8089" "prompt:8091" "analytics:8092" "pipeline:8093" "ws:8095"; do
+for svc_port in "auth:8081" "ai:8094" "admin:8090" "multimodal:8087" "gateway:7080" "chat:8082" "model:8084" "rag:8085" "pipeline:8093" "agent:8088" "monitor:8089" "analytics:8092" "ws:8095"; do
     svc=${svc_port%%:*}
     port=${svc_port##*:}
     code=$(direct GET "http://localhost:$port/actuator/health" 2>/dev/null)
