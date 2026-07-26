@@ -36,3 +36,13 @@ pipeline:
     queue-capacity: 200
   storage:
     output-dir: /tmp/minimax-pipeline/outputs
+
+# =============================================================
+# MyBatis-Plus (V3.5.33+ 防御性配置)
+#   - type-aliases-package 限定到 .entity 子包
+# =============================================================
+mybatis-plus:
+  type-aliases-package: com.minimax.pipeline.entity
+  configuration:
+    map-underscore-to-camel-case: true
+  mapper-locations: classpath*:mapper/**/*.xml

@@ -61,3 +61,13 @@ minimax:
   model:
     mock-mode: ${MODEL_MOCK_MODE:false}
     providers: ${MODEL_PROVIDERS:minimax:openai-compatible:https://api.minimax.chat/v1:sk-xxx}
+
+# =============================================================
+# MyBatis-Plus (V3.5.33+ 防御性配置)
+#   - type-aliases-package 限定到 .entity 子包
+# =============================================================
+mybatis-plus:
+  type-aliases-package: com.minimax.analytics.entity
+  configuration:
+    map-underscore-to-camel-case: true
+  mapper-locations: classpath*:mapper/**/*.xml

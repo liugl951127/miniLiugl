@@ -34,6 +34,7 @@ spring:
       db-config:
         id-type: ASSIGN_ID
         logic-delete-field: deleted
+    type-aliases-package: com.minimax.chat.entity  # V3.5.33+ 防御性限定
     mapper-locations: classpath*:mapper/**/*.xml
   application:
     name: minimax-chat

@@ -22,10 +22,10 @@ TYPE_MAP = {
     'Double': 'DOUBLE',
     'Float': 'FLOAT',
     'BigDecimal': 'DECIMAL(20,4)',
-    'LocalDateTime': 'DATETIME',
+    'LocalDateTime': 'TIMESTAMP',
     'LocalDate': 'DATE',
     'LocalTime': 'TIME',
-    'Date': 'DATETIME',
+    'Date': 'TIMESTAMP',
     'byte[]': 'BLOB',
     'JSONObject': 'TEXT',
     'JSONArray': 'TEXT',
@@ -155,7 +155,7 @@ def gen_create_table(entity):
             # 默认值
             if sql_type in ('BIGINT', 'INT', 'TINYINT(1)', 'DOUBLE', 'FLOAT', 'DECIMAL(20,4)'):
                 if f['insert_fill'] or f['update_fill']:
-                    default = " DEFAULT CURRENT_TIMESTAMP" if sql_type == 'DATETIME' else " DEFAULT 0"
+                    default = " DEFAULT CURRENT_TIMESTAMP" if sql_type == 'TIMESTAMP' else " DEFAULT 0"
                 else:
                     default = " DEFAULT 0"
             else:
@@ -166,7 +166,7 @@ def gen_create_table(entity):
     pks = [f['col'] for f in fields if f['is_pk']]
     if pks:
         lines.append(f"    PRIMARY KEY (`{'`, `'.join(pks)}`)")
-    elif len(pks) == 0 and len(fields) >= 2:
+    elif False and len(pks) == 0 and len(fields) >= 2:  # V3.5.33+: 禁用 fallback 联合主键, 避免无 id 字段表加多余 PK
         # 如果没有 @TableId 字段, 用前两个字段当联合主键 (中间表)
         candidate = [f['col'] for f in fields[:2]]
         if all(c for c in candidate):
