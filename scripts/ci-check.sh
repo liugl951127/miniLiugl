@@ -59,14 +59,14 @@ echo "--- 4. Dockerfile 禁止 minimax-{memory,prompt,function} 残留 ---"
 # 这些目录已删除, Dockerfile 还引用会 build fail
 RESIDUAL=0
 for old_mod in memory prompt function; do
-    HITS=$(grep -rln "minimax-$old_mod" backend/minimax-*/Dockerfile 2>/dev/null || true)
+    HITS=$(grep -rln "minimax-$old_mod" backend/minimax-*/Dockerfile backend/Dockerfile 2>/dev/null || true)
     if [ -n "$HITS" ]; then
         echo "  ✗ FAIL: minimax-$old_mod 残留 in: $HITS"
         RESIDUAL=1
     fi
 done
 if [ $RESIDUAL -eq 0 ]; then
-    echo "  ✓ PASS (14 Dockerfile 全部对齐 V3.5.18 module 列表)"
+    echo "  ✓ PASS (15 Dockerfile 全部对齐 (14 module + 1 通用) V3.5.18 module 列表)"
 else
     EXIT=1
 fi

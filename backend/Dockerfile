@@ -21,15 +21,12 @@ COPY pom.xml .
 COPY minimax-common minimax-common
 COPY minimax-auth minimax-auth
 COPY minimax-chat minimax-chat
-COPY minimax-memory minimax-memory
 COPY minimax-model minimax-model
 COPY minimax-rag minimax-rag
-COPY minimax-function minimax-function
 COPY minimax-admin minimax-admin
 COPY minimax-multimodal minimax-multimodal
 COPY minimax-monitor minimax-monitor
 COPY minimax-agent minimax-agent
-COPY minimax-prompt minimax-prompt
 COPY minimax-analytics minimax-analytics
 COPY minimax-pipeline minimax-pipeline
 COPY minimax-ws minimax-ws
