@@ -17,7 +17,6 @@ COPY pom.xml .
 COPY minimax-common/pom.xml minimax-common/
 COPY minimax-auth/pom.xml minimax-auth/
 COPY minimax-chat/pom.xml minimax-chat/
-COPY minimax-memory/pom.xml minimax-memory/
 COPY minimax-model/pom.xml minimax-model/
 COPY minimax-rag/pom.xml minimax-rag/
 COPY minimax-gateway/pom.xml minimax-gateway/
@@ -35,7 +34,6 @@ WORKDIR /workspace
 COPY minimax-common minimax-common
 COPY minimax-auth minimax-auth
 COPY minimax-chat minimax-chat
-COPY minimax-memory minimax-memory
 COPY minimax-model minimax-model
 COPY minimax-rag minimax-rag
 COPY minimax-gateway minimax-gateway
