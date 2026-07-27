@@ -533,7 +533,25 @@
 
 ## Day 29 - 2026-07-14 ✅ 智能化提升: QueryComplexity + SmartModelRouter + IntentConfidenceScorer
 
-## Day 30 - 待开始
+## Day 30 - 2026-07-27 ✅ 智能化提升 V2: 多模型投票/RAG查询重写/告警RCA/日志异常检测
+
+**今日完成：**
+- [x] **MultiModelVotingService** (`minimax-ai`): confidence < 0.50 触发多模型并行推理，3 种投票策略 (MAJORITY/CONFIDENCE_WEIGHTED/LLM_JUDGE)，CompletableFuture 并发，LLM 生成简洁答案方便比较
+- [x] **QueryExpander** (`minimax-rag`): MiniMax-Text-03 查询展开，3 种策略 (SYNTACTIC/SEMANTIC_LLM/HYBRID)，并发多展开检索 + chunkId 去重合并 topK
+- [x] **AlertRcaService** (`minimax-monitor`): LLM 推理告警根因，7 类分类 (RESOURCE/CONFIG/EXTERNAL/CODE/TRAFFIC/NETWORK/UNKNOWN)，含规则预分类快路径 + 4 条优先级建议操作
+- [x] **LogAnomalyDetector** (`minimax-monitor`): 无监督异常检测，4 种算法加权 (Z-Score 35%/EWMA 30%/IQR 20%/Spike 15%)，滑动窗口 + 环形缓冲区，支持批量检测 + 指标摘要
+- [x] `scripts/self-check.sh` + `scripts/java-static-check.sh` 新增
+- [x] 前端 npm build 1m 22s ✅ | 自检 13/13 ✅ | 静态检查 5/5 ✅
+
+**代码量:** +4 服务类 (~57KB) + 2 脚本
+
+**明日计划 Day 31：**
+- [ ] 多模型投票集成到 ChatController
+- [ ] QueryExpander 默认启用到 RagService
+- [ ] AlertRcaService 与 AlertEngine 联动
+- [ ] LogAnomalyDetector 与告警规则绑定
+
+## Day 31 - 待开始
 
 ## Day 21 - 2026-06-26 ✅ API 文档体系 + 压测模板
 
