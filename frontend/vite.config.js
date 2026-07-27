@@ -84,7 +84,7 @@ export default defineConfig(({ mode }) => {
       // package.json 中 browserslist 会覆盖
       target: 'es2015',
       // V5.8: sourcemap 关闭 (生产不暴露源码)
-      sourcemap: isProd ? false : 'eval',
+      sourcemap: isProd ? true : 'eval',
       // V3.0.0: 浏览器 polyfill 支持
       // V3.5.8+: polyfillModulePreload 弃用, 改用 modulePreload.polyfill
       modulePreload: {
@@ -101,7 +101,7 @@ export default defineConfig(({ mode }) => {
               if (id.includes('echarts') || id.includes('vue-echarts')) return 'echarts'
               if (id.includes('axios') || id.includes('@element-plus/icons-vue')) return 'common'
               if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router')) return 'vue'
-              if (id.includes('dayjs') || id.includes('markdown')) return 'utils'
+              if (id.includes('dayjs') || id.includes('markdown') || id.includes('highlight')) return 'vendor'
               return 'vendor'
             }
             if (id.includes('/src/api/') || id.includes('/src/views/admin/')) return 'admin'

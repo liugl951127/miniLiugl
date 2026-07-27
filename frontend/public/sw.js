@@ -66,12 +66,20 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(CACHE_NAME)
-      // 用 addAll 但容错 (某些资源可能 404, 不阻塞安装)
-      await Promise.allSettled(
-        PRECACHE_URLS.map((url) => cache.add(url).catch((e) => {
+      // V3.5.43: 每个 URL 用 try-catch, cache.put 失败也不阻塞 install
+      for (const url of PRECACHE_URLS) {
+        try {
+          // 用 fetch + put 代替 cache.add (避免 add 内部 opaque response 错)
+          const resp = await fetch(url, { cache: 'no-cache' })
+          if (resp.ok) {
+            await cache.put(url, resp.clone())
+          } else {
+            console.warn('[SW] skip pre-cache (non-2xx):', url, resp.status)
+          }
+        } catch (e) {
           console.warn('[SW] pre-cache failed:', url, e.message)
-        }))
-      )
+        }
+      }
       await self.skipWaiting()
     })()
   )
