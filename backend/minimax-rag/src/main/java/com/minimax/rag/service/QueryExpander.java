@@ -1,5 +1,6 @@
 package com.minimax.rag.service;
 
+import com.minimax.rag.retriever.Retriever;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -188,22 +190,6 @@ public class QueryExpander {
                 yield combined;
             }
         };
-    }
-
-    /**
-     * 句法展开：基于规则的同义词/句式变换（无需 LLM 调用）。
-     */
-    private List<String> expand(String query) {
-        List<String> variants = new ArrayList<>(syntacticExpand(query));
-        variants.addAll(semanticLlmExpand(query));
-
-        Set<String> seen = new HashSet<>();
-        List<String> unique = new ArrayList<>();
-        for (String v : variants) {
-            String norm = v.strip().toLowerCase();
-            if (seen.add(norm)) unique.add(v);
-        }
-        return unique.subList(0, Math.min(unique.size(), expandedCount + 1));
     }
 
     /**
