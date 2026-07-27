@@ -22,8 +22,8 @@
  * @since V2.8.9
  */
 
-const CACHE_VERSION = 'v2.8.9'
-const CACHE_NAME = `liugl-${CACHE_VERSION}`
+const CACHE_VERSION = 'v3.5.41'
+const CACHE_NAME = `minimax-${CACHE_VERSION}`
 const RUNTIME_CACHE = 'liugl-runtime'
 const API_CACHE = 'liugl-api'
 const OFFLINE_URL = '/offline.html'
@@ -35,8 +35,8 @@ const PRECACHE_URLS = [
   '/offline.html',
   '/manifest.json',
   '/favicon.svg',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
+  // '/icons/icon-192.png'  // V3.5.41: dist/icons/ 只有 svg, 无 png
+  // '/icons/icon-512.png'  // V3.5.41: dist/icons/ 只有 svg, 无 png
   '/icons/icon-192.svg'
 ]
 
@@ -252,8 +252,8 @@ self.addEventListener('push', (event) => {
     event.waitUntil(
       self.registration.showNotification(data.title || 'Liugl-AI', {
         body: data.body || '',
-        icon: '/icons/icon-192.png',
-        badge: '/icons/icon-192.png',
+        icon: '/icons/icon-192.svg'
+        badge: '/icons/icon-192.svg'
         data: data.url || '/'
       })
     )
