@@ -46,15 +46,20 @@
     </div>
     <script type="module" src="/src/main.js"></script>
     <script>
-      // 注册 Service Worker (PWA 离线支持)
+      // 注册 Service Worker (PWA 离线支持, 仅生产环境)
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').then(reg => {
-            console.log('SW registered:', reg.scope);
-          }).catch(err => {
-            console.warn('SW register failed:', err);
+        // V3.5.42: dev 跳过, 跟 usePwa.js 一致, 避免 HMR 干扰
+        if (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'http:' && location.port === '3000') {
+          console.log('[PWA] 开发模式跳过 SW 注册 (避免 HMR 冲突)');
+        } else {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(reg => {
+              console.log('SW registered:', reg.scope);
+            }).catch(err => {
+              console.warn('SW register failed:', err);
+            });
           });
-        });
+        }
       }
     </script>
   </body>
