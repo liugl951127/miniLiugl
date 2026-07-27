@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
-OUTPUT = ROOT / "sql/v3.5.50-seed.sql"
+OUTPUT = ROOT / "sql/V3.5.58-seed.sql"
 
 # BCrypt 10 rounds placeholder (跟 AdminDataInitializer 兼容, 启动时会被实际 hash 替换)
 BCRYPT_PLACEHOLDER = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
@@ -107,7 +107,7 @@ def main():
         "-- MiniMax Platform V3.5.50 Seed Data",
         f"-- 重新生成时间: {os.popen('date').read().strip()}",
         "-- 目标: MySQL 8.0+ / MariaDB 10.4+",
-        "-- 用法: mysql -uroot -proot123456 < sql/v3.5.50-seed.sql",
+        "-- 用法: mysql -uroot -proot123456 < sql/V3.5.58-seed.sql",
         "-- ",
         "-- 内容:",
         f"--   - {len(ACCOUNTS)} 测试账号 (adminLiugl / admin / admin_user / test_user / demo_user)",
@@ -120,7 +120,7 @@ def main():
         "-- ",
         "-- BCrypt 密码哈希 (10 rounds) 跟 AdminDataInitializer 兼容",
         "-- 沙箱模式 (h2local): AdminDataInitializer 自动建账号, 不用跑本文件",
-        "-- 生产模式 (mariadb/mysql): 手动跑 mysql -uroot -p < v3.5.50-seed.sql",
+        "-- 生产模式 (mariadb/mysql): 手动跑 mysql -uroot -p < V3.5.58-seed.sql",
         "-- =============================================================",
         "",
         "USE minimax_platform;",

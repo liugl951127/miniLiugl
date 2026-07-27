@@ -1,8 +1,8 @@
 -- =============================================================
 -- MiniMax Platform V3.5.50 Seed Data
--- 重新生成时间: Mon Jul 27 17:20:43 UTC 2026
+-- 重新生成时间: Mon Jul 27 23:22:55 UTC 2026
 -- 目标: MySQL 8.0+ / MariaDB 10.4+
--- 用法: mysql -uroot -proot123456 < sql/v3.5.50-seed.sql
+-- 用法: mysql -uroot -proot123456 < sql/V3.5.58-seed.sql
 -- 
 -- 内容:
 --   - 5 测试账号 (adminLiugl / admin / admin_user / test_user / demo_user)
@@ -15,7 +15,7 @@
 -- 
 -- BCrypt 密码哈希 (10 rounds) 跟 AdminDataInitializer 兼容
 -- 沙箱模式 (h2local): AdminDataInitializer 自动建账号, 不用跑本文件
--- 生产模式 (mariadb/mysql): 手动跑 mysql -uroot -p < v3.5.50-seed.sql
+-- 生产模式 (mariadb/mysql): 手动跑 mysql -uroot -p < V3.5.58-seed.sql
 -- =============================================================
 
 USE minimax_platform;

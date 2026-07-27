@@ -2,7 +2,7 @@
 """
 V3.5.49: 验证 entity ↔ schema 100% 对齐
 - 扫描后端 entity (@TableName)
-- 跟 sql/v3.5.49-schema.sql 对比
+- 跟 sql/v3.5.58-schema.sql 对比
 - 输出 entity 缺 schema / schema 缺 entity / 字段差异
 """
 import re
@@ -18,7 +18,7 @@ for m in os.listdir(os.path.join(ROOT, 'backend')):
         if os.path.exists(ent):
             ENTITY_DIRS.append(ent)
 
-SCHEMA_FILE = os.path.join(ROOT, 'sql/v3.5.49-schema.sql')
+SCHEMA_FILE = os.path.join(ROOT, 'sql/v3.5.58-schema.sql')
 
 def parse_entities():
     """提取所有 entity: table_name -> {fields: {name: type}}"""

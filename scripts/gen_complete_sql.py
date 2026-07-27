@@ -251,7 +251,7 @@ def main():
     out.append(f"-- 完成: 共 {len(unique)} 张表")
 
     # 写入文件
-    out_path = '/workspace/miniLiugl/sql/v3.5.49-schema.sql'
+    out_path = '/workspace/miniLiugl/sql/V3.5.58-schema.sql'
     with open(out_path, 'w') as f:
         f.write('\n'.join(out))
 
