@@ -12,17 +12,16 @@ spring:
   # V5.33: 告警邮件 SMTP 配置 (环境变量覆盖)
   mail:
     host: ${SMTP_HOST:smtp.qq.com}
-    port: ${SMTP_PORT:465}
+    port: ${SMTP_PORT:587}
     username: ${SMTP_USER:}
     password: ${SMTP_PASSWORD:}
     properties:
       mail:
         smtp:
           auth: true
-          ssl:
+          starttls:
             enable: true
-          socket-factory:
-            class: javax.net.ssl.SSLSocketFactory
+            required: true
 
   datasource:
     driver-class-name: org.mariadb.jdbc.Driver
@@ -62,10 +61,10 @@ minimax:
   alert:
     email:
       host: ${SMTP_HOST:smtp.qq.com}
-      port: ${SMTP_PORT:465}
+      port: ${SMTP_PORT:587}
       username: ${SMTP_USER:}
       password: ${SMTP_PASSWORD:}
-      from: ${SMTP_FROM:alert@minimax.com}
+      from: ${SMTP_FROM:493634207@qq.com}
     dingtalk:
       enabled: true
 

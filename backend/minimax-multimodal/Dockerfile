@@ -35,7 +35,7 @@ RUN java -Djarmode=layertools -jar \
     minimax-multimodal/target/minimax-multimodal-spring-boot.jar extract --destination extracted
 
 # ─── Stage 3: 运行层 ───
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre
 WORKDIR /app
 
 # 4 层按 变化少→变化多 顺序 COPY

@@ -36,6 +36,18 @@ x-jvm-env: &jvm-env
   SPRING_PROFILES_ACTIVE: mysql
   JAVA_OPTS: "-XX:MaxRAMPercentage=70 -XX:+UseG1GC -XX:+UseContainerSupport"
   TZ: Asia/Shanghai
+  NACOS_HOST: nacos
+  NACOS_PORT: "8848"
+  NACOS_USER: nacos
+  NACOS_PASS: Minimax@Nacos2026!
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_PASS: minimax_redis_2024
+  MYSQL_HOST: mariadb
+  MYSQL_PORT: "3306"
+  MYSQL_USER: root
+  MYSQL_PASS: root123456
+  MYSQL_DATABASE: minimax_platform
 
 services:
   # ============== 基础设施 (3 个) ==============
@@ -92,15 +104,16 @@ services:
       JVM_XMN: 256m
       # 鉴权配置 (V3.5.9+: 用户提供的 base64 token)
       NACOS_AUTH_ENABLE: "true"
-      NACOS_AUTH_TOKEN: "${NACOS_AUTH_TOKEN:mVsZlpnzIoXX8f+SxZPIJbsbQyatC3J+9EKrE6pJA2w=}"
-      NACOS_AUTH_IDENTITY_KEY: "${NACOS_AUTH_IDENTITY_KEY:minimax-nacos}"
-      NACOS_AUTH_IDENTITY_VALUE: "${NACOS_AUTH_IDENTITY_VALUE:minimax-nacos-secret-2026}"
-    command: ["sh", "-c", "echo 'nacos.core.auth.plugin.nacos.token.secret.key=${NACOS_AUTH_TOKEN}' > /home/nacos/conf/application.properties && echo 'nacos.core.auth.server.identity.key=${NACOS_AUTH_IDENTITY_KEY}' >> /home/nacos/conf/application.properties && echo 'nacos.core.auth.server.identity.value=${NACOS_AUTH_IDENTITY_VALUE}' >> /home/nacos/conf/application.properties && bin/startup.sh -m standalone && tail -f /home/nacos/logs/start.out"]
+      NACOS_AUTH_TOKEN: "mVsZlpnzIoXX8f+SxZPIJbsbQyatC3J+9EKrE6pJA2w="
+      NACOS_AUTH_IDENTITY_KEY: "minimax-nacos"
+      NACOS_AUTH_IDENTITY_VALUE: "minimax-nacos-secret-2026"
+    command: ["sh", "-c", "echo 'nacos.core.auth.plugin.nacos.token.secret.key=mVsZlpnzIoXX8f+SxZPIJbsbQyatC3J+9EKrE6pJA2w=' > /home/nacos/conf/application.properties && echo 'nacos.core.auth.server.identity.key=minimax-nacos' >> /home/nacos/conf/application.properties && echo 'nacos.core.auth.server.identity.value=minimax-nacos-secret-2026' >> /home/nacos/conf/application.properties && bin/startup.sh -m standalone && tail -f /home/nacos/logs/start.out"]
     ports: ["8848:8848", "9848:9848"]
     volumes:
       - ./.docker-data/nacos/logs:/home/nacos/logs
       - ./.docker-data/nacos/data:/home/nacos/data
       - ./.docker-data/nacos/init.d:/home/nacos/conf/init.d
+      - ./.docker-data/nacos/conf/application.properties:/home/nacos/conf/application.properties
     healthcheck:
       test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:8848/nacos/ | grep -q '200' || exit 1"]
       interval: 15s
@@ -125,8 +138,7 @@ services:
       nacos:   { condition: service_healthy }
     environment:
       <<: *jvm-env
-      NACOS_SERVER: nacos:8848
-      SERVER_PORT: 7080
+      SERVER_PORT: "7080"
     ports: ["7080:7080"]
     volumes: *maven-volumes
     networks: [minimax-net]
@@ -145,8 +157,7 @@ services:
     restart: unless-stopped
     depends_on:
       mariadb: { condition: service_healthy }
-    environment: { <<: *jvm-env, NACOS_SERVER: nacos:8848 }
-      SERVER_PORT: 8081
+    environment: { <<: *jvm-env, SERVER_PORT: "8081" }
     ports: ["8081:8081"]
     volumes: *maven-volumes
     networks: [minimax-net]
@@ -160,8 +171,7 @@ services:
     depends_on:
       mariadb: { condition: service_healthy }
       redis:   { condition: service_healthy }
-    environment: { <<: *jvm-env, NACOS_SERVER: nacos:8848 }
-      SERVER_PORT: 8082
+    environment: { <<: *jvm-env, SERVER_PORT: "8082" }
     ports: ["8082:8082"]
     volumes: *maven-volumes
     networks: [minimax-net]
@@ -174,8 +184,7 @@ services:
     restart: unless-stopped
     depends_on:
       mariadb: { condition: service_healthy }
-    environment: { <<: *jvm-env, NACOS_SERVER: nacos:8848 }
-      SERVER_PORT: 8084
+    environment: { <<: *jvm-env, SERVER_PORT: "8084" }
     ports: ["8084:8084"]
     volumes: *maven-volumes
     networks: [minimax-net]
@@ -188,8 +197,7 @@ services:
     restart: unless-stopped
     depends_on:
       mariadb: { condition: service_healthy }
-    environment: { <<: *jvm-env, NACOS_SERVER: nacos:8848 }
-      SERVER_PORT: 8085
+    environment: { <<: *jvm-env, SERVER_PORT: "8085" }
     ports: ["8085:8085"]
     volumes: *maven-volumes
     networks: [minimax-net]
@@ -202,10 +210,12 @@ services:
     restart: unless-stopped
     depends_on:
       mariadb: { condition: service_healthy }
-    environment: { <<: *jvm-env, NACOS_SERVER: nacos:8848 }
-      SERVER_PORT: 8087
+    environment: { <<: *jvm-env, SERVER_PORT: "8087", MODEL_DIR: "/var/minimax/models/vision", MODEL_FILE: "mobilenetv3.onnx" }
     ports: ["8087:8087"]
-    volumes: *maven-volumes
+    volumes:
+      - ./.docker-data/maven-repo:/root/.m2
+      - ./.docker-data/logs:/var/log/minimax
+      - /opt/minimax/models/vision:/var/minimax/models/vision
     networks: [minimax-net]
     deploy: { resources: { limits: { memory: 512M } } }
 
@@ -217,8 +227,7 @@ services:
     depends_on:
       mariadb: { condition: service_healthy }
       redis:   { condition: service_healthy }
-    environment: { <<: *jvm-env, NACOS_SERVER: nacos:8848 }
-      SERVER_PORT: 8088
+    environment: { <<: *jvm-env, SERVER_PORT: "8088" }
     ports: ["8088:8088"]
     volumes: *maven-volumes
     networks: [minimax-net]
@@ -231,8 +240,7 @@ services:
     restart: unless-stopped
     depends_on:
       mariadb: { condition: service_healthy }
-    environment: { <<: *jvm-env, NACOS_SERVER: nacos:8848 }
-      SERVER_PORT: 8089
+    environment: { <<: *jvm-env, SERVER_PORT: "8089", SMTP_USER: "493634207@qq.com", SMTP_PASSWORD: "qndknqjbcarjcbbe" }
     ports: ["8089:8089"]
     volumes: *maven-volumes
     networks: [minimax-net]
@@ -245,8 +253,7 @@ services:
     restart: unless-stopped
     depends_on:
       mariadb: { condition: service_healthy }
-    environment: { <<: *jvm-env, NACOS_SERVER: nacos:8848 }
-      SERVER_PORT: 8090
+    environment: { <<: *jvm-env, SERVER_PORT: "8090" }
     ports: ["8090:8090"]
     volumes: *maven-volumes
     networks: [minimax-net]
@@ -260,8 +267,7 @@ services:
     depends_on:
       mariadb: { condition: service_healthy }
       redis:   { condition: service_healthy }
-    environment: { <<: *jvm-env, NACOS_SERVER: nacos:8848 }
-      SERVER_PORT: 8092
+    environment: { <<: *jvm-env, SERVER_PORT: "8092" }
     ports: ["8092:8092"]
     volumes: *maven-volumes
     networks: [minimax-net]
@@ -274,8 +280,7 @@ services:
     restart: unless-stopped
     depends_on:
       mariadb: { condition: service_healthy }
-    environment: { <<: *jvm-env, NACOS_SERVER: nacos:8848 }
-      SERVER_PORT: 8093
+    environment: { <<: *jvm-env, SERVER_PORT: "8093" }
     ports: ["8093:8093"]
     volumes: *maven-volumes
     networks: [minimax-net]
@@ -288,10 +293,12 @@ services:
     restart: unless-stopped
     depends_on:
       mariadb: { condition: service_healthy }
-    environment: { <<: *jvm-env, NACOS_SERVER: nacos:8848 }
-      SERVER_PORT: 8094
+    environment: { <<: *jvm-env, SERVER_PORT: "8094", MODEL_PATH: "/app/data/ai/model.bin", TRAINING_DATA: "/app/data/ai/training-data.txt" }
     ports: ["8094:8094"]
-    volumes: *maven-volumes
+    volumes:
+      - ./.docker-data/maven-repo:/root/.m2
+      - ./.docker-data/logs:/var/log/minimax
+      - /opt/minimax/ai-models/data:/app/data/ai
     networks: [minimax-net]
     deploy: { resources: { limits: { memory: 512M } } }
 
@@ -302,8 +309,7 @@ services:
     restart: unless-stopped
     depends_on:
       mariadb: { condition: service_healthy }
-    environment: { <<: *jvm-env, NACOS_SERVER: nacos:8848 }
-      SERVER_PORT: 8095
+    environment: { <<: *jvm-env, SERVER_PORT: "8095" }
     ports: ["8095:8095"]
     volumes: *maven-volumes
     networks: [minimax-net]
