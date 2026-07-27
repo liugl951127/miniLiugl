@@ -22,6 +22,11 @@ TYPE_MAP = {
     'Double': 'DOUBLE',
     'Float': 'FLOAT',
     'BigDecimal': 'DECIMAL(20,4)',
+    'java.math.BigDecimal': 'DECIMAL(20,4)',
+    'java.math.BigInteger': 'BIGINT',
+    'java.time.LocalDateTime': 'TIMESTAMP',
+    'java.time.LocalDate': 'DATE',
+    'java.util.Date': 'TIMESTAMP',
     'LocalDateTime': 'TIMESTAMP',
     'LocalDate': 'DATE',
     'LocalTime': 'TIME',
@@ -81,7 +86,7 @@ def parse_entity(path):
         r'((?:@\w+(?:\([^)]*\))?\s*\n?\s*)*)'  # 注解块
         r'(?:private|protected|public)\s+'
         r'(?:static\s+)?'
-        r'([\w<>,\s\[\]]+?)\s+'
+        r'([\w<>,\s\[\]\.]+?)\s+'
         r'(\w+)\s*[;=]',
         re.MULTILINE
     )

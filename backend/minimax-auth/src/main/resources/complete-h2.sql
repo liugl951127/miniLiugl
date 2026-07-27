@@ -1,7 +1,7 @@
 -- =============================================================
 -- MiniMax Platform V3.5.5+ 完整 SQL DDL (扫描所有 Entity 自动生成)
 -- 共 77 张表 / 11 个模块
--- 生成时间: Mon Jul 27 01:38:16 UTC 2026
+-- 生成时间: Mon Jul 27 01:48:20 UTC 2026
 -- 生成工具: scripts/gen_complete_sql.py
 --
 -- 用法: 
@@ -1208,6 +1208,8 @@ CREATE TABLE IF NOT EXISTS `alert_event` (
     `rule_name` VARCHAR(255) DEFAULT NULL COMMENT 'rule_name(rule_name)',
     `severity` VARCHAR(255) DEFAULT NULL COMMENT 'severity(severity)',
     `metric_name` VARCHAR(255) DEFAULT NULL COMMENT 'metric_name(metric_name)',
+    `metric_value` DECIMAL(20,4) DEFAULT 0 COMMENT 'metric_value(metric_value)',
+    `threshold` DECIMAL(20,4) DEFAULT 0 COMMENT 'threshold(threshold)',
     `message` VARCHAR(255) DEFAULT NULL COMMENT 'message(message)',
     `status` VARCHAR(255) DEFAULT NULL COMMENT '状态(status)',
     `fired_at` TIMESTAMP DEFAULT NULL COMMENT 'fired_at(fired_at)',
@@ -1227,6 +1229,7 @@ CREATE TABLE IF NOT EXISTS `alert_rule` (
     `metric_name` VARCHAR(255) DEFAULT NULL COMMENT 'metric_name(metric_name)',
     `service` VARCHAR(255) DEFAULT NULL COMMENT 'service(service)',
     `operator` VARCHAR(255) DEFAULT NULL COMMENT 'operator(operator)',
+    `threshold` DECIMAL(20,4) DEFAULT 0 COMMENT 'threshold(threshold)',
     `severity` VARCHAR(255) DEFAULT NULL COMMENT 'severity(severity)',
     `cooldown_minutes` INT DEFAULT 0 COMMENT 'cooldown_minutes(cooldown_minutes)',
     `enabled` INT DEFAULT 0 COMMENT '是否启用(enabled)',
