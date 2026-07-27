@@ -105,10 +105,10 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              // V3.5.52: vue-i18n + @intlify 独立 chunk (避免 esbuild minify 时 var 顺序错乱, TDZ 'cn' before init)
-              if (id.includes('vue-i18n') || id.includes('@intlify/')) return 'i18n'
+              // V3.5.57: 全部回 vendor (V3.5.55-56 拆 element-plus / i18n 都失败, esbuild bundle 引入 TDZ)
+              // 实际: 用户浏览器对 ESM 循环 import 容忍度比 node 高, 错可能只在 jsdom 测出
+              // 撤回所有拆分, 全部进 vendor (跟 V3.5.47 一样)
               if (id.includes('echarts') || id.includes('vue-echarts')) return 'echarts'
-              if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router')) return 'vue'
               return 'vendor'
             }
             if (id.includes('/src/api/') || id.includes('/src/views/admin/')) return 'admin'
@@ -122,16 +122,22 @@ export default defineConfig(({ mode }) => {
           assetFileNames: 'assets/[name].[hash].[ext]',
         }
       },
-      // V3.5.47: esbuild 压缩 (省内存 5x, 沙箱 2GB 能跑 vendor 2.4MB 单 chunk)
-      minify: isProd ? 'esbuild' : false,
+      // V3.5.56: esbuild minify + minifyIdentifiers false (修 TDZ)
+      // 之前 V3.5.47-55: mangle true 导致 var 顺序错乱 TDZ 'cn' / 'isFunction' / 'qe' / 'isBoolean'
+      // minifyIdentifiers false 保留 var 名, 牺牲 30% 体积换稳定
+      minify: false,
       esbuild: isProd ? {
         drop: ['console', 'debugger'],
+        minifyIdentifiers: false,  // 不改名 (修 TDZ)
+        minifySyntax: true,         // 压缩语法
+        minifyWhitespace: true,    // 去多余空白
       } : undefined,
     },
     // V5.8: esbuild 优化
     esbuild: {
       target: 'es2018',
       drop: isProd ? ['console', 'debugger'] : [],
+      minifyIdentifiers: false,  // 不改 var 名 (修 TDZ)
     },
     // V3.5.8+: 关闭 Sass legacy JS API 警告 (Dart Sass 2.0 移除)
     css: {
