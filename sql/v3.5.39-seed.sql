@@ -1,6 +1,6 @@
 -- =============================================================
 -- MiniMax Platform V3.5.37 Seed Data
--- 重新生成时间: Mon Jul 27 01:38:40 UTC 2026
+-- 重新生成时间: Mon Jul 27 01:51:07 UTC 2026
 -- 目标: MySQL 8.0+ / MariaDB 10.4+
 -- 用法: mysql -uroot -proot123456 < sql/v3.5.37-seed.sql
 -- 
