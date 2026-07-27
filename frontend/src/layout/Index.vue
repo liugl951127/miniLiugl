@@ -197,6 +197,11 @@ const menuRoutes = computed(() => {
     { path: '/pipeline/runs', title: '运行监控', icon: 'Monitor' },
     { path: '/apikey', title: 'API Key', icon: 'Key' },
     { path: '/admin', title: '管理后台', icon: 'Setting' },
+    // V3.5.48: 新增 4 个 AI 能力 (一级菜单, 让用户能直接访问)
+    { path: '/ai/ai-ppt', title: 'PPT 生成', icon: 'DataLine' },
+    { path: '/ai/ai-project', title: '项目生成', icon: 'Box' },
+    { path: '/ai/ai-agent-group', title: '智能体群', icon: 'Connection' },
+    { path: '/ai/ai-intent', title: '意图识别', icon: 'Aim' },
     { path: '/about', title: '关于', icon: 'InfoFilled' }
   ]
   // 超级管理员 (adminLiugl) 专属菜单

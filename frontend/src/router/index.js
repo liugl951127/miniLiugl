@@ -220,6 +220,31 @@ const routes = [
             component: () => import('@/views/ai/MusicStream.vue'),
             meta: { title: '音乐流式生成', icon: 'Headset' }
           },
+          // V3.5.48: 新增 4 个 AI 能力
+          {
+            path: 'ai-ppt',
+            name: 'AiPptGen',
+            component: () => import('@/views/ai/PptGen.vue'),
+            meta: { title: 'PPT 自动生成', icon: 'DataLine' }
+          },
+          {
+            path: 'ai-project',
+            name: 'AiProjectDownload',
+            component: () => import('@/views/ai/ProjectDownload.vue'),
+            meta: { title: '项目代码生成', icon: 'Box' }
+          },
+          {
+            path: 'ai-agent-group',
+            name: 'AiAutoAgentGroup',
+            component: () => import('@/views/ai/AutoAgentGroup.vue'),
+            meta: { title: '智能体群生成', icon: 'Connection' }
+          },
+          {
+            path: 'ai-intent',
+            name: 'AiIntent',
+            component: () => import('@/views/ai/Intent.vue'),
+            meta: { title: '意图识别', icon: 'Aim' }
+          },
           {
             path: 'alerts',
             name: 'Alerts',
@@ -286,6 +311,31 @@ const routes = [
             component: () => import('@/views/admin/ApiKeyStats.vue'),
             meta: { title: 'API Key 配额统计 (Day 20)', icon: 'Key' }
           },
+          // V3.5.48: 新增 3 个管理功能
+          {
+            path: 'cluster',
+            name: 'AdminCluster',
+            component: () => import('@/views/admin/Cluster.vue'),
+            meta: { title: 'AI 集群管理', icon: 'Cpu' }
+          },
+          {
+            path: 'push',
+            name: 'AdminPush',
+            component: () => import('@/views/admin/Push.vue'),
+            meta: { title: '消息推送', icon: 'Promotion' }
+          },
+          {
+            path: 'document',
+            name: 'AdminDocument',
+            component: () => import('@/views/admin/Document.vue'),
+            meta: { title: '文档解析', icon: 'Document' }
+          },
+          {
+            path: 'framework',
+            name: 'AdminFramework',
+            component: () => import('@/views/admin/Framework.vue'),
+            meta: { title: 'AI 框架', icon: 'Setting' }
+          }
         ]
       },
       {

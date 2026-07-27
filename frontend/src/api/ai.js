@@ -342,3 +342,289 @@ export const downloadBlob = (blob, filename) => {
   document.body.removeChild(a)
   setTimeout(() => URL.revokeObjectURL(url), 100)
 }
+
+// ============================================================
+// V3.5.48: 新增 8 大功能 API 函数 (覆盖 100+ 后端端点)
+// ============================================================
+
+// ============ 1. PptGen (4 端点) ============
+/** 生成 PPT (返回 base64) */
+export const pptGenerate = (data) => http.post('/ai/ppt/generate', data)
+/** 自动生成 PPT (只给主题) */
+export const pptAuto = (data) => http.post('/ai/ppt/auto', data)
+/** 列出可用主题 */
+export const pptThemes = () => http.get('/ai/ppt/themes')
+/** 解析大纲预览 */
+export const pptParse = (data) => http.post('/ai/ppt/parse', data)
+
+// ============ 2. ProjectDownload (2 端点) ============
+/** 下载生成的项目 ZIP (GET) */
+export const projectDownloadGet = (params) => http.get('/ai/project/download', { params })
+/** 下载生成的项目 ZIP (POST) */
+export const projectDownloadPost = (data) => http.post('/ai/project/download', data, { responseType: 'blob' })
+
+// ============ 3. AutoAgentGroup (3 端点) ============
+/** 一句话生成智能体群 */
+export const autoAgentGroupGenerate = (data) => http.post('/ai/agent-group/auto/generate', data)
+/** 基于模板生成智能体群 */
+export const autoAgentGroupByTemplate = (data) => http.post('/ai/agent-group/auto/template', data)
+/** 列出可用模板 */
+export const autoAgentGroupTemplates = () => http.get('/ai/agent-group/auto/templates')
+
+// ============ 4. Intent (12 端点) ============
+/** 单条意图预测 */
+export const intentPredict = (data) => http.post('/ai/intent/predict', data)
+/** 批量意图预测 */
+export const intentPredictBatch = (data) => http.post('/ai/intent/predict/batch', data)
+/** 动态添加关键词 */
+export const intentAddKeyword = (data) => http.post('/ai/intent/keyword', data)
+/** 动态添加短语 */
+export const intentAddPhrase = (data) => http.post('/ai/intent/phrase', data)
+/** 列出所有意图 */
+export const intentList = () => http.get('/ai/intent/list')
+/** 意图统计 */
+export const intentStats = () => http.get('/ai/intent/stats')
+/** 意图识别基准测试 */
+export const intentBenchmark = (data) => http.post('/ai/intent/benchmark', data)
+/** 获取意图配置 */
+export const intentGetConfig = () => http.get('/ai/intent/config')
+/** 更新意图配置 */
+export const intentUpdateConfig = (data) => http.put('/ai/intent/config', data)
+/** 重置意图配置 */
+export const intentResetConfig = () => http.post('/ai/intent/config/reset', {})
+/** 清空意图上下文 */
+export const intentClearContext = (data) => http.post('/ai/intent/context/clear', data)
+
+// ============ 5. Cluster / Raft (15 端点) ============
+/** 列出所有节点 */
+export const clusterListNodes = () => http.get('/ai/cluster/nodes/list')
+/** 列出 ACTIVE 节点 */
+export const clusterActiveNodes = () => http.get('/ai/cluster/nodes/active')
+/** 获取节点详情 */
+export const clusterNode = (nodeId) => http.get(`/ai/cluster/nodes/${nodeId}`)
+/** 当前节点 */
+export const clusterMe = () => http.get('/ai/cluster/me')
+/** Leader 节点 */
+export const clusterLeader = () => http.get('/ai/cluster/leader')
+/** 节点路由 */
+export const clusterRoute = (data) => http.post('/ai/cluster/route', data)
+/** 节点排空 (drain) */
+export const clusterDrainNode = (nodeId) => http.post(`/ai/cluster/node/${nodeId}/drain`, {})
+/** 集群统计 */
+export const clusterStats = () => http.get('/ai/cluster/stats')
+/** Raft 启动 */
+export const raftStart = () => http.post('/ai/cluster/raft/start', {})
+/** Raft 停止 */
+export const raftStop = () => http.post('/ai/cluster/raft/stop', {})
+/** Raft 状态 */
+export const raftState = () => http.get('/ai/cluster/raft/state')
+/** Raft Leader */
+export const raftLeader = () => http.get('/ai/cluster/raft/leader')
+/** Raft 提交 */
+export const raftSubmit = (data) => http.post('/ai/cluster/raft/submit', data)
+/** Raft 已应用 */
+export const raftApplied = () => http.get('/ai/cluster/raft/applied')
+/** Raft Append (底层) */
+export const raftAppend = (data) => http.post('/ai/raft/append', data)
+/** Raft 投票 */
+export const raftVote = (data) => http.post('/ai/raft/vote', data)
+/** Raft 状态 */
+export const raftStatus = () => http.get('/ai/raft/status')
+/** Raft 提交日志 */
+export const raftLog = (params) => http.get('/ai/raft/log', { params })
+/** Raft 触发选举 */
+export const raftTriggerElection = () => http.post('/ai/raft/trigger-election', {})
+
+// ============ 6. Push (10 端点) ============
+/** 订阅推送 */
+export const pushSubscribe = (data) => http.post('/ai/push/subscribe', data)
+/** 取消订阅 */
+export const pushUnsubscribe = (data) => http.post('/ai/push/unsubscribe', data)
+/** 我的订阅列表 */
+export const pushSubscriptions = () => http.get('/ai/push/subscriptions')
+/** 所有订阅 */
+export const pushAllSubscriptions = () => http.get('/ai/push/subscriptions/all')
+/** 发送推送给用户 */
+export const pushSendToUser = (data) => http.post('/ai/push/send/user', data)
+/** 发送推送给平台 */
+export const pushSendToPlatform = (data) => http.post('/ai/push/send/platform', data)
+/** 广播推送 */
+export const pushBroadcast = (data) => http.post('/ai/push/send/broadcast', data)
+/** 推送消息历史 */
+export const pushMessages = (params) => http.get('/ai/push/messages', { params })
+/** 推送统计 */
+export const pushStats = () => http.get('/ai/push/stats')
+/** Push 集成 - 自动检测 */
+export const pushIntegrationAuto = () => http.post('/ai/push/integration/auto', {})
+/** Push 集成 - APNs 配置 */
+export const pushIntegrationApns = (data) => http.post('/ai/push/integration/apns', data)
+/** Push 集成 - FCM 配置 */
+export const pushIntegrationFcm = (data) => http.post('/ai/push/integration/fcm', data)
+/** Push 集成 - Web Push (VAPID) */
+export const pushIntegrationWeb = (data) => http.post('/ai/push/integration/web', data)
+/** Push 集成 - 健康检查 */
+export const pushIntegrationHealth = () => http.get('/ai/push/integration/health')
+/** Push 集成 - 统计 */
+export const pushIntegrationStats = () => http.get('/ai/push/integration/stats')
+/** Push 集成 - 检测环境 */
+export const pushIntegrationDetect = () => http.get('/ai/push/integration/detect')
+/** Push 集成 - VAPID 公钥 */
+export const pushIntegrationVapidKey = () => http.get('/ai/push/integration/vapid-public-key')
+
+// ============ 7. Document (3 端点) ============
+/** 解析文档 */
+export const documentParse = (data) => http.post('/ai/document/parse', data)
+/** 提取关键词 */
+export const documentKeywords = (data) => http.post('/ai/document/keywords', data)
+/** 支持的格式 */
+export const documentFormats = () => http.get('/ai/document/formats')
+
+// ============ 8. Framework (10 端点) ============
+/** 执行 Agent */
+export const frameworkAgentExecute = (data) => http.post('/ai/framework/agents/execute', data)
+/** 路由 Agent */
+export const frameworkAgentRoute = (data) => http.post('/ai/framework/agents/route', data)
+/** 列出所有 Agent */
+export const frameworkAgentsList = () => http.get('/ai/framework/agents')
+/** 权限列表 */
+export const frameworkPermissionList = () => http.get('/ai/framework/permission/list')
+/** 授予权限 */
+export const frameworkPermissionGrant = (data) => http.post('/ai/framework/permission/grant', data)
+/** 撤销权限 */
+export const frameworkPermissionRevoke = (data) => http.post('/ai/framework/permission/revoke', data)
+/** 撤销所有权限 */
+export const frameworkPermissionRevokeAll = (data) => http.post('/ai/framework/permission/revoke-all', data)
+/** 记忆统计 */
+export const frameworkMemoryStats = () => http.get('/ai/framework/memory/stats')
+/** 清空记忆 */
+export const frameworkMemoryClear = (data) => http.post('/ai/framework/memory/clear', data)
+/** 产品搜索 */
+export const frameworkProductSearch = (params) => http.get('/ai/framework/products/search', { params })
+
+// ============ 9. KnowledgeBase (11 端点) - AI 知识库 ============
+/** KB 搜索 */
+export const aiKbSearch = (data) => http.post('/ai/kb/search', data)
+/** KB 关键词搜索 */
+export const aiKbSearchKeyword = (params) => http.get('/ai/kb/search/keyword', { params })
+/** KB 公共知识库 */
+export const aiKbPublic = () => http.get('/ai/kb/public')
+/** KB 上传文档 */
+export const aiKbUpload = (data) => http.post('/ai/kb/upload', data)
+/** KB 文档详情 */
+export const aiKbDoc = (docId) => http.get(`/ai/kb/docs/${docId}`)
+/** KB 文档列表 */
+export const aiKbDocs = (kbId) => http.get(`/ai/kb/docs/list/${kbId}`)
+/** KB 文档分块 */
+export const aiKbDocChunks = (docId) => http.get(`/ai/kb/chunks/${docId}`)
+/** KB 统计 */
+export const aiKbStats = (kbId) => http.get(`/ai/kb/stats/${kbId}`)
+/** KB 授权 */
+export const aiKbGrant = (data) => http.post('/ai/kb/permission/grant', data)
+/** KB 撤销 */
+export const aiKbRevoke = (data) => http.post('/ai/kb/permission/revoke', data)
+
+// ============ 10. Dashboard (10 端点) - AI 仪表盘 ============
+/** 健康检查 */
+export const aiDashboardHealth = () => http.get('/ai/dashboard/health')
+/** 指标 */
+export const aiDashboardMetrics = () => http.get('/ai/dashboard/metrics')
+/** 所有指标 */
+export const aiDashboardMetricsAll = () => http.get('/ai/dashboard/metrics/all')
+/** 指标 by name */
+export const aiDashboardMetric = (name) => http.get(`/ai/dashboard/metrics/${name}`)
+/** 趋势 by name */
+export const aiDashboardTrend = (name) => http.get(`/ai/dashboard/trend/${name}`)
+/** 缓存清理 */
+export const aiDashboardCacheClear = () => http.post('/ai/dashboard/cache/clear', {})
+/** 缓存统计 */
+export const aiDashboardCacheStats = () => http.get('/ai/dashboard/cache/stats')
+/** 工具 Top */
+export const aiDashboardToolsTop = (params) => http.get('/ai/dashboard/tools/top', { params })
+/** 工具 Track */
+export const aiDashboardToolsTrack = (data) => http.post('/ai/dashboard/tools/track', data)
+/** 仪表盘 from-data */
+export const aiDashboardFromData = (data) => http.post('/ai/dashboard/from-data', data)
+
+// ============ 11. Distributed (4 端点) ============
+/** All-reduce */
+export const distributedAllReduce = (data) => http.post('/ai/distributed/all-reduce', data)
+/** Shard */
+export const distributedShard = (data) => http.post('/ai/distributed/shard', data)
+/** Shard Info */
+export const distributedShardInfo = () => http.get('/ai/distributed/shard/info')
+/** Train Step */
+export const distributedTrainStep = (data) => http.post('/ai/distributed/train/step', data)
+
+// ============ 12. ImageGen (3 端点) - AI 图像生成 ============
+/** 生成图像 */
+export const aiImageGenGenerate = (data) => http.post('/ai/image/generate', data)
+/** 推断图像类型 */
+export const aiImageInfer = (data) => http.post('/ai/image/infer', data)
+/** 列出图像类型 */
+export const aiImageTypes = () => http.get('/ai/image/types')
+
+// ============ 13. Animation (2 端点) ============
+/** 文字淡入 GIF */
+export const animationTextFade = (data) => http.post('/ai/animation/text-fade', data, { responseType: 'blob' })
+/** 进度 GIF */
+export const animationProgress = (data) => http.post('/ai/animation/progress', data, { responseType: 'blob' })
+
+// ============ 14. AI Pipeline (6 端点) ============
+/** AI Pipeline 配置 */
+export const aiPipelineConfig = () => http.get('/ai/pipeline/config')
+/** AI Pipeline 配置 (compute mode) */
+export const aiPipelineConfigComputeMode = (data) => http.post('/ai/pipeline/config/compute-mode', data)
+/** AI Pipeline 执行 */
+export const aiPipelineExecute = (data) => http.post('/ai/pipeline/execute', data)
+/** AI Pipeline Intent Reload */
+export const aiPipelineIntentReload = () => http.post('/ai/pipeline/intent/reload', {})
+/** AI Pipeline Intent Stats */
+export const aiPipelineIntentStats = () => http.get('/ai/pipeline/intent/stats')
+/** AI Route Recognize */
+export const aiRouteRecognize = (data) => http.post('/ai/route/recognize', data)
+
+// ============ 15. AI Tools / Files / Charts (附加) ============
+/** 列出 AI 工具 (通用) */
+export const aiListTools = () => http.get('/ai/tools')
+/** 调用 AI 工具 (通用) */
+export const aiInvokeTool = (code, data) => http.post(`/ai/tools/${code}/invoke`, data)
+/** AI 文件列表 */
+export const aiListFiles = () => http.get('/ai/files')
+/** AI 数据源列表 */
+export const aiListDatasources = () => http.get('/ai/datasources')
+/** AI 数据源 schema */
+export const aiDatasourceSchema = (id) => http.get(`/ai/datasources/${id}/schema`)
+/** AI 数据源 test */
+export const aiDatasourceTest = (id) => http.post(`/ai/datasources/${id}/test`, {})
+/** AI 数据源 query */
+export const aiDatasourceQuery = (id, data) => http.post(`/ai/datasources/${id}/query`, data)
+/** 渲染图表 (POST) */
+export const aiRenderChart = (data) => http.post('/ai/chart/render', data, { responseType: 'blob' })
+/** NL2Chart */
+export const aiNl2Chart = (data) => http.post('/ai/nl2chart', data, { responseType: 'blob' })
+/** 渲染仪表盘 */
+export const aiRenderDashboard = (data) => http.post('/ai/dashboard/render', data, { responseType: 'blob' })
+/** 视频合成 */
+export const aiComposeVideo = (data) => http.post('/ai/video/compose', data)
+/** 视频 from-data */
+export const aiVideoFromData = (data) => http.post('/ai/video/from-data', data)
+/** 训练 */
+export const aiTrain = (data) => http.post('/ai/train', data)
+
+// ============ 16. Webhook (11 端点) ============
+/** 列出 webhook */
+export const webhooksList = () => http.get('/ai/webhooks')
+/** 创建 webhook */
+export const webhooksCreate = (data) => http.post('/ai/webhooks', data)
+/** webhook 详情 */
+export const webhookGet = (id) => http.get(`/ai/webhooks/${id}`)
+/** 测试 webhook */
+export const webhookTest = (id) => http.post(`/ai/webhooks/${id}/test`, {})
+/** webhook 投递历史 */
+export const webhookDeliveries = (id) => http.get(`/ai/webhooks/${id}/deliveries`)
+/** 发送 webhook 事件 */
+export const webhookPublish = (data) => http.post('/ai/webhooks/publish', data)
+/** webhook 事件 */
+export const webhookEvents = () => http.get('/ai/webhooks/events')
+/** webhook 统计 */
+export const webhookStats = () => http.get('/ai/webhooks/stats')
