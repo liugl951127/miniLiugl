@@ -105,7 +105,8 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-
+              // V3.5.52: vue-i18n + @intlify 独立 chunk (避免 esbuild minify 时 var 顺序错乱, TDZ 'cn' before init)
+              if (id.includes('vue-i18n') || id.includes('@intlify/')) return 'i18n'
               if (id.includes('echarts') || id.includes('vue-echarts')) return 'echarts'
               if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router')) return 'vue'
               return 'vendor'
