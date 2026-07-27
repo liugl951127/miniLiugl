@@ -15,7 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent
 INITIALIZER = ROOT / "backend/minimax-auth/src/main/java/com/minimax/auth/config/AdminDataInitializer.java"
 KEYWORDS_FILE = ROOT / "scripts/.ai_keywords.txt"
-OUTPUT = ROOT / "sql/v3.5.37-seed.sql"
+OUTPUT = ROOT / "sql/v3.5.40-seed.sql"
 
 
 def extract_bcrypt_hashes():
@@ -113,7 +113,7 @@ def main():
         "-- MiniMax Platform V3.5.37 Seed Data",
         f"-- 重新生成时间: {os.popen('date').read().strip()}",
         "-- 目标: MySQL 8.0+ / MariaDB 10.4+",
-        "-- 用法: mysql -uroot -proot123456 < sql/v3.5.37-seed.sql",
+        "-- 用法: mysql -uroot -proot123456 < sql/v3.5.40-seed.sql",
         "-- ",
         "-- 内容:",
         f"--   - {len(accounts)} 测试账号 (adminLiugl / admin / admin_user / test_user / demo_user)",
