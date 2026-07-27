@@ -61,7 +61,9 @@
             :key="qp"
             class="qp-tag"
             @click="visionPrompt = qp"
-          >{{ qp }}</el-tag>
+          >
+{{ qp }}
+</el-tag>
         </div>
       </div>
 

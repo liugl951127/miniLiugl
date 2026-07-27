@@ -60,7 +60,9 @@
           <el-table-column label="操作" width="100">
             <template #default="{ row }">
               <el-button size="small" type="danger" plain
-                         @click="confirmUnbind(row)">解绑</el-button>
+                         @click="confirmUnbind(row)">
+解绑
+</el-button>
             </template>
           </el-table-column>
         </el-table>

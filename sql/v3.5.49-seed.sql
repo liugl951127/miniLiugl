@@ -1,8 +1,8 @@
 -- =============================================================
 -- MiniMax Platform V3.5.37 Seed Data
--- 重新生成时间: Mon Jul 27 01:58:31 UTC 2026
+-- 重新生成时间: Mon Jul 27 17:05:04 UTC 2026
 -- 目标: MySQL 8.0+ / MariaDB 10.4+
--- 用法: mysql -uroot -proot123456 < sql/v3.5.40-seed.sql
+-- 用法: mysql -uroot -proot123456 < sql/v3.5.49-seed.sql
 -- 
 -- 内容:
 --   - 5 测试账号 (adminLiugl / admin / admin_user / test_user / demo_user)

@@ -138,7 +138,7 @@
             v-model="uploadForm.definitionJson"
             type="textarea"
             :rows="8"
-            placeholder='{"capabilities":["..."],"tools":["..."],"systemPrompt":"..."}'
+            placeholder="{&quot;capabilities&quot;:[&quot;...&quot;],&quot;tools&quot;:[&quot;...&quot;],&quot;systemPrompt&quot;:&quot;...&quot;}"
           />
           <div class="hint">含 capabilities/tools/systemPrompt 的 JSON 对象</div>
         </el-form-item>

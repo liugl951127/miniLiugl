@@ -32,7 +32,7 @@
                   <el-input v-model="subForm.endpoint" type="textarea" :rows="2" />
                 </el-form-item>
                 <el-form-item label="Keys (JSON)">
-                  <el-input v-model="subForm.keys" type="textarea" :rows="2" placeholder='{"p256dh":"...", "auth":"..."}' />
+                  <el-input v-model="subForm.keys" type="textarea" :rows="2" placeholder="{&quot;p256dh&quot;:&quot;...&quot;, &quot;auth&quot;:&quot;...&quot;}" />
                 </el-form-item>
                 <el-form-item label="User ID">
                   <el-input v-model="subForm.userId" />

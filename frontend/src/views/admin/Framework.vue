@@ -41,7 +41,7 @@
                       <el-input v-model="execForm.code" />
                     </el-form-item>
                     <el-form-item label="输入参数 (JSON)">
-                      <el-input v-model="execForm.input" type="textarea" :rows="3" placeholder='{"text": "..."}' />
+                      <el-input v-model="execForm.input" type="textarea" :rows="3" placeholder="{&quot;text&quot;: &quot;...&quot;}" />
                     </el-form-item>
                     <el-form-item label="Session ID">
                       <el-input v-model="execForm.sessionId" />

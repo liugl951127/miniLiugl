@@ -1,7 +1,7 @@
 -- =============================================================
 -- MiniMax Platform V3.5.5+ 完整 SQL DDL (扫描所有 Entity 自动生成)
--- 共 77 张表 / 11 个模块
--- 生成时间: Mon Jul 27 01:58:31 UTC 2026
+-- 共 89 张表 / 12 个模块
+-- 生成时间: Mon Jul 27 17:09:53 UTC 2026
 -- 生成工具: scripts/gen_complete_sql.py
 --
 -- 用法: 
@@ -14,6 +14,71 @@ USE `minimax_platform`;
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
+
+
+-- =========================================
+-- 模块: common (3 张表)
+-- =========================================
+
+-- common/AsyncTask.java
+DROP TABLE IF EXISTS `async_task`;
+CREATE TABLE IF NOT EXISTS `async_task` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID(id)',
+    `task_id` VARCHAR(255) DEFAULT NULL COMMENT 'task_id(task_id)',
+    `task_type` VARCHAR(255) DEFAULT NULL COMMENT 'task_type(task_type)',
+    `status` VARCHAR(255) DEFAULT NULL COMMENT '状态(status)',
+    `params` VARCHAR(255) DEFAULT NULL COMMENT 'params(params)',
+    `result` VARCHAR(255) DEFAULT NULL COMMENT 'result(result)',
+    `error_msg` VARCHAR(255) DEFAULT NULL COMMENT 'error_msg(error_msg)',
+    `retry_count` INT DEFAULT 0 COMMENT 'retry_count(retry_count)',
+    `latency_ms` BIGINT DEFAULT 0 COMMENT 'latency_ms(latency_ms)',
+    `submitter_id` BIGINT DEFAULT 0 COMMENT 'submitter_id(submitter_id)',
+    `created_at` TIMESTAMP DEFAULT NULL COMMENT 'created_at(created_at)',
+    `updated_at` TIMESTAMP DEFAULT NULL COMMENT 'updated_at(updated_at)',
+    `started_at` TIMESTAMP DEFAULT NULL COMMENT 'started_at(started_at)',
+    `finished_at` TIMESTAMP DEFAULT NULL COMMENT 'finished_at(finished_at)',
+    `deleted` INT DEFAULT 0 COMMENT '逻辑删除标记(deleted)',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='async_task (auto-generated V3.5.5)';
+
+-- common/RateLimitRule.java
+DROP TABLE IF EXISTS `rate_limit_rule`;
+CREATE TABLE IF NOT EXISTS `rate_limit_rule` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID(id)',
+    `scope` VARCHAR(255) DEFAULT NULL COMMENT 'scope(scope)',
+    `key` VARCHAR(255) DEFAULT NULL COMMENT 'key(key)',
+    `description` VARCHAR(255) DEFAULT NULL COMMENT '描述(description)',
+    `capacity` INT DEFAULT 0 COMMENT 'capacity(capacity)',
+    `refill_tokens` INT DEFAULT 0 COMMENT 'refill_tokens(refill_tokens)',
+    `period_seconds` INT DEFAULT 0 COMMENT 'period_seconds(period_seconds)',
+    `enabled` INT DEFAULT 0 COMMENT '是否启用(enabled)',
+    `priority` INT DEFAULT 0 COMMENT 'priority(priority)',
+    `created_at` TIMESTAMP DEFAULT NULL COMMENT 'created_at(created_at)',
+    `updated_at` TIMESTAMP DEFAULT NULL COMMENT 'updated_at(updated_at)',
+    `deleted` INT DEFAULT 0 COMMENT '逻辑删除标记(deleted)',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='rate_limit_rule (auto-generated V3.5.5)';
+
+-- common/RequestLog.java
+DROP TABLE IF EXISTS `request_log`;
+CREATE TABLE IF NOT EXISTS `request_log` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID(id)',
+    `trace_id` VARCHAR(255) DEFAULT NULL COMMENT 'trace_id(trace_id)',
+    `method` VARCHAR(255) DEFAULT NULL COMMENT 'method(method)',
+    `path` VARCHAR(255) DEFAULT NULL COMMENT 'path(path)',
+    `query_string` VARCHAR(255) DEFAULT NULL COMMENT 'query_string(query_string)',
+    `client_ip` VARCHAR(255) DEFAULT NULL COMMENT 'client_ip(client_ip)',
+    `user_agent` VARCHAR(255) DEFAULT NULL COMMENT 'user_agent(user_agent)',
+    `user_id` BIGINT DEFAULT 0 COMMENT 'user_id(user_id)',
+    `status` INT DEFAULT 0 COMMENT '状态(status)',
+    `latency_ms` BIGINT DEFAULT 0 COMMENT 'latency_ms(latency_ms)',
+    `slow` TINYINT(1) DEFAULT 0 COMMENT 'slow(slow)',
+    `error` TINYINT(1) DEFAULT 0 COMMENT 'error(error)',
+    `module` VARCHAR(255) DEFAULT NULL COMMENT 'module(module)',
+    `created_at` TIMESTAMP DEFAULT NULL COMMENT 'created_at(created_at)',
+    `deleted` INT DEFAULT 0 COMMENT '逻辑删除标记(deleted)',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='request_log (auto-generated V3.5.5)';
 
 
 -- =========================================
@@ -272,7 +337,7 @@ CREATE TABLE IF NOT EXISTS `wechat_user_binding` (
 
 
 -- =========================================
--- 模块: ai (27 张表)
+-- 模块: ai (34 张表)
 -- =========================================
 
 -- ai/AgentGroup.java
@@ -293,6 +358,45 @@ CREATE TABLE IF NOT EXISTS `agent_group` (
     `updated_at` TIMESTAMP DEFAULT NULL COMMENT 'updated_at(updated_at)',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='agent_group (auto-generated V3.5.5)';
+
+-- ai/MarketplaceAgent.java
+DROP TABLE IF EXISTS `agent_marketplace`;
+CREATE TABLE IF NOT EXISTS `agent_marketplace` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID(id)',
+    `agentKey` VARCHAR(255) DEFAULT NULL COMMENT 'agentKey(agentKey)',
+    `name` VARCHAR(255) DEFAULT NULL COMMENT '名称(name)',
+    `description` VARCHAR(255) DEFAULT NULL COMMENT '描述(description)',
+    `category` VARCHAR(255) DEFAULT NULL COMMENT 'category(category)',
+    `icon` VARCHAR(255) DEFAULT NULL COMMENT 'icon(icon)',
+    `authorId` BIGINT DEFAULT 0 COMMENT 'authorId(authorId)',
+    `authorName` VARCHAR(255) DEFAULT NULL COMMENT 'authorName(authorName)',
+    `definitionJson` VARCHAR(255) DEFAULT NULL COMMENT 'definitionJson(definitionJson)',
+    `version` VARCHAR(255) DEFAULT NULL COMMENT '乐观锁版本号(version)',
+    `visibility` VARCHAR(255) DEFAULT NULL COMMENT 'visibility(visibility)',
+    `status` VARCHAR(255) DEFAULT NULL COMMENT '状态(status)',
+    `usageCount` BIGINT DEFAULT 0 COMMENT 'usageCount(usageCount)',
+    `avgRating` DOUBLE DEFAULT 0 COMMENT 'avgRating(avgRating)',
+    `ratingCount` BIGINT DEFAULT 0 COMMENT 'ratingCount(ratingCount)',
+    `tags` VARCHAR(255) DEFAULT NULL COMMENT 'tags(tags)',
+    `capabilities` VARCHAR(255) DEFAULT NULL COMMENT 'capabilities(capabilities)',
+    `createdAt` TIMESTAMP DEFAULT NULL COMMENT '创建时间(createdAt)',
+    `updatedAt` TIMESTAMP DEFAULT NULL COMMENT '更新时间(updatedAt)',
+    `publishedAt` TIMESTAMP DEFAULT NULL COMMENT 'publishedAt(publishedAt)',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='agent_marketplace (auto-generated V3.5.5)';
+
+-- ai/AgentRating.java
+DROP TABLE IF EXISTS `agent_rating`;
+CREATE TABLE IF NOT EXISTS `agent_rating` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID(id)',
+    `agentKey` VARCHAR(255) DEFAULT NULL COMMENT 'agentKey(agentKey)',
+    `userId` BIGINT DEFAULT 0 COMMENT 'userId(userId)',
+    `username` VARCHAR(255) DEFAULT NULL COMMENT 'username(username)',
+    `rating` INT DEFAULT 0 COMMENT 'rating(rating)',
+    `comment` VARCHAR(255) DEFAULT NULL COMMENT 'comment(comment)',
+    `createdAt` TIMESTAMP DEFAULT NULL COMMENT '创建时间(createdAt)',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='agent_rating (auto-generated V3.5.5)';
 
 -- ai/AiChatMessage.java
 DROP TABLE IF EXISTS `ai_chat_message`;
@@ -577,6 +681,28 @@ CREATE TABLE IF NOT EXISTS `kb_permission` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='kb_permission (auto-generated V3.5.5)';
 
+-- ai/LicenseTemplate.java
+DROP TABLE IF EXISTS `license_template`;
+CREATE TABLE IF NOT EXISTS `license_template` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID(id)',
+    `template_key` VARCHAR(255) DEFAULT NULL COMMENT 'template_key(template_key)',
+    `name` VARCHAR(255) DEFAULT NULL COMMENT '名称(name)',
+    `license_type` VARCHAR(255) DEFAULT NULL COMMENT 'license_type(license_type)',
+    `description` VARCHAR(255) DEFAULT NULL COMMENT '描述(description)',
+    `quota_calls` BIGINT DEFAULT 0 COMMENT 'quota_calls(quota_calls)',
+    `quota_days` INT DEFAULT 0 COMMENT 'quota_days(quota_days)',
+    `price_cents` BIGINT DEFAULT 0 COMMENT 'price_cents(price_cents)',
+    `features` VARCHAR(255) DEFAULT NULL COMMENT 'features(features)',
+    `limits` VARCHAR(255) DEFAULT NULL COMMENT 'limits(limits)',
+    `is_public` INT DEFAULT 0 COMMENT 'is_public(is_public)',
+    `is_active` INT DEFAULT 0 COMMENT 'is_active(is_active)',
+    `version` INT DEFAULT 0 COMMENT '乐观锁版本号(version)',
+    `created_by` BIGINT DEFAULT 0 COMMENT 'created_by(created_by)',
+    `created_at` TIMESTAMP DEFAULT NULL COMMENT 'created_at(created_at)',
+    `updated_at` TIMESTAMP DEFAULT NULL COMMENT 'updated_at(updated_at)',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='license_template (auto-generated V3.5.5)';
+
 -- ai/ModelLicense.java
 DROP TABLE IF EXISTS `model_license`;
 CREATE TABLE IF NOT EXISTS `model_license` (
@@ -596,6 +722,49 @@ CREATE TABLE IF NOT EXISTS `model_license` (
     `updated_at` TIMESTAMP DEFAULT NULL COMMENT 'updated_at(updated_at)',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='model_license (auto-generated V3.5.5)';
+
+-- ai/ModelEntry.java
+DROP TABLE IF EXISTS `model_market`;
+CREATE TABLE IF NOT EXISTS `model_market` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID(id)',
+    `modelKey` VARCHAR(255) DEFAULT NULL COMMENT 'modelKey(modelKey)',
+    `name` VARCHAR(255) DEFAULT NULL COMMENT '名称(name)',
+    `description` VARCHAR(255) DEFAULT NULL COMMENT '描述(description)',
+    `modelType` VARCHAR(255) DEFAULT NULL COMMENT 'modelType(modelType)',
+    `taskType` VARCHAR(255) DEFAULT NULL COMMENT 'taskType(taskType)',
+    `baseModel` VARCHAR(255) DEFAULT NULL COMMENT 'baseModel(baseModel)',
+    `version` VARCHAR(255) DEFAULT NULL COMMENT '乐观锁版本号(version)',
+    `filePath` VARCHAR(255) DEFAULT NULL COMMENT 'filePath(filePath)',
+    `fileName` VARCHAR(255) DEFAULT NULL COMMENT 'fileName(fileName)',
+    `fileSize` BIGINT DEFAULT 0 COMMENT 'fileSize(fileSize)',
+    `sha256` VARCHAR(255) DEFAULT NULL COMMENT 'sha256(sha256)',
+    `license` VARCHAR(255) DEFAULT NULL COMMENT 'license(license)',
+    `authorId` BIGINT DEFAULT 0 COMMENT 'authorId(authorId)',
+    `authorName` VARCHAR(255) DEFAULT NULL COMMENT 'authorName(authorName)',
+    `tags` VARCHAR(255) DEFAULT NULL COMMENT 'tags(tags)',
+    `metricsJson` VARCHAR(255) DEFAULT NULL COMMENT 'metricsJson(metricsJson)',
+    `status` VARCHAR(255) DEFAULT NULL COMMENT '状态(status)',
+    `downloadCount` BIGINT DEFAULT 0 COMMENT 'downloadCount(downloadCount)',
+    `avgRating` DOUBLE DEFAULT 0 COMMENT 'avgRating(avgRating)',
+    `ratingCount` BIGINT DEFAULT 0 COMMENT 'ratingCount(ratingCount)',
+    `createdAt` TIMESTAMP DEFAULT NULL COMMENT '创建时间(createdAt)',
+    `updatedAt` TIMESTAMP DEFAULT NULL COMMENT '更新时间(updatedAt)',
+    `publishedAt` TIMESTAMP DEFAULT NULL COMMENT 'publishedAt(publishedAt)',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='model_market (auto-generated V3.5.5)';
+
+-- ai/ModelRating.java
+DROP TABLE IF EXISTS `model_rating`;
+CREATE TABLE IF NOT EXISTS `model_rating` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID(id)',
+    `modelKey` VARCHAR(255) DEFAULT NULL COMMENT 'modelKey(modelKey)',
+    `userId` BIGINT DEFAULT 0 COMMENT 'userId(userId)',
+    `username` VARCHAR(255) DEFAULT NULL COMMENT 'username(username)',
+    `rating` INT DEFAULT 0 COMMENT 'rating(rating)',
+    `comment` VARCHAR(255) DEFAULT NULL COMMENT 'comment(comment)',
+    `createdAt` TIMESTAMP DEFAULT NULL COMMENT '创建时间(createdAt)',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='model_rating (auto-generated V3.5.5)';
 
 -- ai/ModelVersion.java
 DROP TABLE IF EXISTS `model_version`;
@@ -827,6 +996,48 @@ CREATE TABLE IF NOT EXISTS `training_metric` (
     `timestamp` TIMESTAMP DEFAULT NULL COMMENT 'timestamp(timestamp)',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='training_metric (auto-generated V3.5.5)';
+
+-- ai/Webhook.java
+DROP TABLE IF EXISTS `webhook`;
+CREATE TABLE IF NOT EXISTS `webhook` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID(id)',
+    `webhookId` VARCHAR(255) DEFAULT NULL COMMENT 'webhookId(webhookId)',
+    `name` VARCHAR(255) DEFAULT NULL COMMENT '名称(name)',
+    `description` VARCHAR(255) DEFAULT NULL COMMENT '描述(description)',
+    `url` VARCHAR(255) DEFAULT NULL COMMENT 'url(url)',
+    `events` VARCHAR(255) DEFAULT NULL COMMENT 'events(events)',
+    `secret` VARCHAR(255) DEFAULT NULL COMMENT 'secret(secret)',
+    `customHeaders` VARCHAR(255) DEFAULT NULL COMMENT 'customHeaders(customHeaders)',
+    `enabled` INT DEFAULT 0 COMMENT '是否启用(enabled)',
+    `status` VARCHAR(255) DEFAULT NULL COMMENT '状态(status)',
+    `deliveryCount` BIGINT DEFAULT 0 COMMENT 'deliveryCount(deliveryCount)',
+    `successCount` BIGINT DEFAULT 0 COMMENT 'successCount(successCount)',
+    `failCount` BIGINT DEFAULT 0 COMMENT 'failCount(failCount)',
+    `lastDeliveryAt` TIMESTAMP DEFAULT NULL COMMENT 'lastDeliveryAt(lastDeliveryAt)',
+    `lastStatus` INT DEFAULT 0 COMMENT 'lastStatus(lastStatus)',
+    `ownerId` BIGINT DEFAULT 0 COMMENT 'ownerId(ownerId)',
+    `createdAt` TIMESTAMP DEFAULT NULL COMMENT '创建时间(createdAt)',
+    `updatedAt` TIMESTAMP DEFAULT NULL COMMENT '更新时间(updatedAt)',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='webhook (auto-generated V3.5.5)';
+
+-- ai/WebhookDelivery.java
+DROP TABLE IF EXISTS `webhook_delivery`;
+CREATE TABLE IF NOT EXISTS `webhook_delivery` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID(id)',
+    `webhookId` VARCHAR(255) DEFAULT NULL COMMENT 'webhookId(webhookId)',
+    `eventType` VARCHAR(255) DEFAULT NULL COMMENT 'eventType(eventType)',
+    `eventId` VARCHAR(255) DEFAULT NULL COMMENT 'eventId(eventId)',
+    `payload` VARCHAR(255) DEFAULT NULL COMMENT 'payload(payload)',
+    `responseStatus` INT DEFAULT 0 COMMENT 'responseStatus(responseStatus)',
+    `responseBody` VARCHAR(255) DEFAULT NULL COMMENT 'responseBody(responseBody)',
+    `durationMs` BIGINT DEFAULT 0 COMMENT 'durationMs(durationMs)',
+    `status` VARCHAR(255) DEFAULT NULL COMMENT '状态(status)',
+    `retryCount` INT DEFAULT 0 COMMENT 'retryCount(retryCount)',
+    `errorMsg` VARCHAR(255) DEFAULT NULL COMMENT 'errorMsg(errorMsg)',
+    `createdAt` TIMESTAMP DEFAULT NULL COMMENT '创建时间(createdAt)',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='webhook_delivery (auto-generated V3.5.5)';
 
 
 -- =========================================
@@ -1139,7 +1350,7 @@ CREATE TABLE IF NOT EXISTS `knowledge_base` (
 
 
 -- =========================================
--- 模块: chat (2 张表)
+-- 模块: chat (4 张表)
 -- =========================================
 
 -- chat/ChatMessage.java
@@ -1176,6 +1387,43 @@ CREATE TABLE IF NOT EXISTS `chat_session` (
     `deleted` INT DEFAULT 0 COMMENT '逻辑删除标记(deleted)',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='chat_session (auto-generated V3.5.5)';
+
+-- chat/LongTermMemory.java
+DROP TABLE IF EXISTS `memory_long_term`;
+CREATE TABLE IF NOT EXISTS `memory_long_term` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID(id)',
+    `user_id` BIGINT DEFAULT 0 COMMENT 'user_id(user_id)',
+    `session_id` BIGINT DEFAULT 0 COMMENT 'session_id(session_id)',
+    `content` VARCHAR(255) DEFAULT NULL COMMENT 'content(content)',
+    `summary` VARCHAR(255) DEFAULT NULL COMMENT 'summary(summary)',
+    `role` VARCHAR(255) DEFAULT NULL COMMENT 'role(role)',
+    `embedding` BLOB DEFAULT NULL COMMENT 'embedding(embedding)',
+    `dim` INT DEFAULT 0 COMMENT 'dim(dim)',
+    `importance` DECIMAL(20,4) DEFAULT 0 COMMENT 'importance(importance)',
+    `tags` VARCHAR(255) DEFAULT NULL COMMENT 'tags(tags)',
+    `access_count` INT DEFAULT 0 COMMENT 'access_count(access_count)',
+    `last_access_at` TIMESTAMP DEFAULT NULL COMMENT 'last_access_at(last_access_at)',
+    `expires_at` TIMESTAMP DEFAULT NULL COMMENT 'expires_at(expires_at)',
+    `created_at` TIMESTAMP DEFAULT NULL COMMENT 'created_at(created_at)',
+    `updated_at` TIMESTAMP DEFAULT NULL COMMENT 'updated_at(updated_at)',
+    `deleted` INT DEFAULT 0 COMMENT '逻辑删除标记(deleted)',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='memory_long_term (auto-generated V3.5.5)';
+
+-- chat/UserPref.java
+DROP TABLE IF EXISTS `memory_user_pref`;
+CREATE TABLE IF NOT EXISTS `memory_user_pref` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID(id)',
+    `user_id` BIGINT DEFAULT 0 COMMENT 'user_id(user_id)',
+    `pref_key` VARCHAR(255) DEFAULT NULL COMMENT 'pref_key(pref_key)',
+    `pref_value` VARCHAR(255) DEFAULT NULL COMMENT 'pref_value(pref_value)',
+    `weight` DECIMAL(20,4) DEFAULT 0 COMMENT 'weight(weight)',
+    `source` VARCHAR(255) DEFAULT NULL COMMENT 'source(source)',
+    `created_at` TIMESTAMP DEFAULT NULL COMMENT 'created_at(created_at)',
+    `updated_at` TIMESTAMP DEFAULT NULL COMMENT 'updated_at(updated_at)',
+    `deleted` INT DEFAULT 0 COMMENT '逻辑删除标记(deleted)',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='memory_user_pref (auto-generated V3.5.5)';
 
 
 -- =========================================
@@ -1557,4 +1805,4 @@ CREATE TABLE IF NOT EXISTS `collab_room` (
 
 SET FOREIGN_KEY_CHECKS = 1;
 
--- 完成: 共 77 张表
+-- 完成: 共 89 张表

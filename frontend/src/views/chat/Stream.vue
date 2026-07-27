@@ -72,19 +72,25 @@
           <el-divider>引导方向 (steer)</el-divider>
           <el-input v-model="steerText" placeholder="例如: 用更简洁的语言回答" size="small" />
           <el-button :disabled="!connected" size="small" style="margin-top:6px; width:100%"
-        @click="steer">🎯 发送引导</el-button>
+        @click="steer">
+🎯 发送引导
+</el-button>
 
           <el-divider>反馈评分 (feedback)</el-divider>
           <el-rate v-model="feedbackScore" :max="5" />
           <el-input v-model="feedbackText" placeholder="反馈内容 (可选)" size="small" />
           <el-button :disabled="!connected" size="small" style="margin-top:6px; width:100%"
-        @click="sendFeedback">⭐ 提交反馈</el-button>
+        @click="sendFeedback">
+⭐ 提交反馈
+</el-button>
 
           <el-divider>注入上下文 (inject)</el-divider>
           <el-input v-model="injectText" type="textarea" :rows="3" placeholder="注入的额外上下文 (RAG 召回结果等)"
             size="small" />
           <el-button :disabled="!connected" size="small" style="margin-top:6px; width:100%"
-        @click="inject">📥 注入</el-button>
+        @click="inject">
+📥 注入
+</el-button>
 
           <el-divider>切换模型 (set_model)</el-divider>
           <el-select v-model="selectedModel" placeholder="选择模型" size="small" style="width:100%">
@@ -95,7 +101,9 @@
             <el-option label="gemini-1.5-flash" value="gemini-1.5-flash" />
           </el-select>
           <el-button :disabled="!connected" size="small" style="margin-top:6px; width:100%"
-        @click="setModel">🔄 切换</el-button>
+        @click="setModel">
+🔄 切换
+</el-button>
         </el-card>
 
         <!-- 事件日志 -->

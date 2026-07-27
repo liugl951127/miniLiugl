@@ -166,7 +166,7 @@
           />
         </el-form-item>
         <el-form-item v-if="editingChannel.type === 'email'" label="收件人">
-          <el-input v-model="editingChannel.config" placeholder='{"email":"ops@example.com"}' />
+          <el-input v-model="editingChannel.config" placeholder="{&quot;email&quot;:&quot;ops@example.com&quot;}" />
         </el-form-item>
         <el-form-item label="通知模板">
           <el-input

@@ -240,7 +240,7 @@ const activeMenu = computed(() => {
 })
 
 const activeTitle = computed(() => {
-  const r = menuRoutes.find((m) => m.path === activeMenu.value)
+  const r = menuRoutes.value.find((m) => m.path === activeMenu.value)
   return r?.title || 'Liugl-AI'
 })
 

@@ -224,7 +224,7 @@
           <el-input v-model="invokeForm.column" />
         </el-form-item>
         <el-form-item label="输入参数 (JSON)">
-          <el-input v-model="invokeForm.json" type="textarea" :rows="6" placeholder='{"key": "value"}' />
+          <el-input v-model="invokeForm.json" type="textarea" :rows="6" placeholder="{&quot;key&quot;: &quot;value&quot;}" />
         </el-form-item>
       </el-form>
       <template #footer>

@@ -37,7 +37,7 @@
                   <el-button size="small" type="danger" @click="removeNode(idx)">删除</el-button>
                 </div>
                 <div class="node-body">
-                  <el-input v-model="node.inputJson" type="textarea" :rows="3" placeholder='{"dataSourceId": 1}' size="small" />
+                  <el-input v-model="node.inputJson" type="textarea" :rows="3" placeholder="{&quot;dataSourceId&quot;: 1}" size="small" />
                 </div>
                 <div v-if="idx < nodes.length - 1" class="edge-arrow">↓</div>
               </div>

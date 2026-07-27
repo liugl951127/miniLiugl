@@ -70,12 +70,9 @@ def parse_entity(path):
     # @TableName
     m = re.search(r'@TableName\s*\(\s*(?:value\s*=\s*)?"(\w+)"\s*\)', c)
     if not m:
-        m2 = re.search(r'public\s+class\s+(\w+)\b', c)
-        if not m2:
-            return None
-        table = to_snake(m2.group(1))
-    else:
-        table = m.group(1)
+        return None
+    table = m.group(1)
+    # V3.5.49: 警告: 允许只有 @TableName 无 @TableId (sys_user_role 等简单表)
 
     # 解析类级别注解
     has_logic_delete = '@TableLogic' in c
@@ -189,7 +186,10 @@ def main():
     for root, dirs, files in os.walk('/workspace/miniLiugl/backend'):
         if 'src/test' in root: continue
         for f in files:
-            if f.endswith('.java') and 'entity' in root.lower():
+            if f.endswith('.java'):
+                # 排除 dto/vo/req/resp 子包
+                if any(x in root.lower() for x in ['/dto/', '/vo/', '/req/', '/resp/']):
+                    continue
                 e = parse_entity(os.path.join(root, f))
                 if e and e['fields']:
                     entities.append(e)
@@ -251,7 +251,7 @@ def main():
     out.append(f"-- 完成: 共 {len(unique)} 张表")
 
     # 写入文件
-    out_path = '/workspace/miniLiugl/sql/complete.sql'
+    out_path = '/workspace/miniLiugl/sql/v3.5.49-schema.sql'
     with open(out_path, 'w') as f:
         f.write('\n'.join(out))
 

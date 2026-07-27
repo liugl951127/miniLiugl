@@ -87,7 +87,7 @@
         </el-form-item>
         <el-form-item label="参数定义 (JSON Schema)" prop="parameters">
           <el-input v-model="form.parameters" type="textarea" :rows="6"
-                    placeholder='{"type":"object","properties":{...}}' />
+                    placeholder="{&quot;type&quot;:&quot;object&quot;,&quot;properties&quot;:{...}}" />
         </el-form-item>
         <el-form-item label="状态">
           <el-switch v-model="form.enabled" />
@@ -106,7 +106,7 @@
           <el-tag>{{ currentTool?.name }}</el-tag>
         </el-form-item>
         <el-form-item label="参数 (JSON)">
-          <el-input v-model="invokeArgs" type="textarea" :rows="6" placeholder='{"key":"value"}' />
+          <el-input v-model="invokeArgs" type="textarea" :rows="6" placeholder="{&quot;key&quot;:&quot;value&quot;}" />
         </el-form-item>
         <el-form-item v-if="invokeResult">
           <el-divider />

@@ -46,7 +46,9 @@
             :key="qp"
             class="qp-tag"
             @click="prompt = qp"
-          >{{ qp.substring(0, 18) }}{{ qp.length > 18 ? '…' : '' }}</el-tag>
+          >
+{{ qp.substring(0, 18) }}{{ qp.length > 18 ? '…' : '' }}
+</el-tag>
         </div>
       </div>
 

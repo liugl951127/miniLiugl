@@ -94,7 +94,7 @@
               </el-form-item>
               <el-form-item label="参数">
                 <el-input v-model="paramsText" type="textarea" :rows="6"
-                          placeholder='JSON, 例: {"url":"jdbc:mysql://..."}' />
+                          placeholder="JSON, 例: {&quot;url&quot;:&quot;jdbc:mysql://...&quot;}" />
               </el-form-item>
             </el-form>
           </template>

@@ -66,7 +66,9 @@
             <div class="model-grid">
               <div v-for="m in battleModels" :key="m"
                    :class="['m-chip', { active: battleSel.includes(m) }]"
-                   @click="toggleBattle(m)">{{ m }}</div>
+                   @click="toggleBattle(m)">
+{{ m }}
+</div>
             </div>
             <div class="actions">
               <el-button type="primary" @click="reconnect" :disabled="connected">连接</el-button>
