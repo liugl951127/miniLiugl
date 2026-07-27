@@ -97,7 +97,7 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              if (id.includes('element-plus') || id.includes('@element-plus')) return 'element'
+              if (id.includes('element-plus') || id.includes('@element-plus') || id.includes('@vueuse') || id.includes('@vue/shared') || id.includes('lodash-unified') || id.includes('element-plus/es/') || id.includes('@vueuse/') || id.includes('@ctrl/') || id.includes('normalize-wheel-es')) return 'element'
               if (id.includes('echarts') || id.includes('vue-echarts')) return 'echarts'
               if (id.includes('axios') || id.includes('@element-plus/icons-vue')) return 'common'
               if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router')) return 'vue'
