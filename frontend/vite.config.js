@@ -97,7 +97,7 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              if (id.includes('element-plus') || id.includes('@element-plus') || id.includes('@vueuse') || id.includes('@vue/shared') || id.includes('lodash-unified') || id.includes('element-plus/es/') || id.includes('@vueuse/') || id.includes('@ctrl/') || id.includes('normalize-wheel-es')) return 'element'
+
               if (id.includes('echarts') || id.includes('vue-echarts')) return 'echarts'
               if (id.includes('axios') || id.includes('@element-plus/icons-vue')) return 'common'
               if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router')) return 'vue'
@@ -115,14 +115,10 @@ export default defineConfig(({ mode }) => {
           assetFileNames: 'assets/[name].[hash].[ext]',
         }
       },
-      // V5.8: terser 压缩 (生产)
-      minify: isProd ? 'terser' : false,
-      terserOptions: isProd ? {
-        compress: {
-          drop_console: true,
-          drop_debugger: true,
-          pure_funcs: ['console.info', 'console.debug'],
-        },
+      // V3.5.47: esbuild 压缩 (省内存 5x, 沙箱 2GB 能跑 vendor 2.4MB 单 chunk)
+      minify: isProd ? 'esbuild' : false,
+      esbuild: isProd ? {
+        drop: ['console', 'debugger'],
       } : undefined,
     },
     // V5.8: esbuild 优化
