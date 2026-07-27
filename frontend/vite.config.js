@@ -22,6 +22,11 @@ export default defineConfig(({ mode }) => {
       // V5.8 优化: 移除 vite-plugin-compression (含 brotli native 依赖, 沙箱装不上)
       // nginx 端已配置运行时 gzip + br 压缩 (scripts/nginx-minimax-3000.conf)
     ],
+    define: {
+      __VUE_I18N_LEGACY_API__: false,
+      __VUE_I18N_FULL_INSTALL__: true,
+      __INTLIFY_JIT_COMPILATION__: true,
+    },
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url))
@@ -99,9 +104,7 @@ export default defineConfig(({ mode }) => {
             if (id.includes('node_modules')) {
 
               if (id.includes('echarts') || id.includes('vue-echarts')) return 'echarts'
-              if (id.includes('axios') || id.includes('@element-plus/icons-vue')) return 'common'
               if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router')) return 'vue'
-              if (id.includes('dayjs') || id.includes('markdown') || id.includes('highlight')) return 'vendor'
               return 'vendor'
             }
             if (id.includes('/src/api/') || id.includes('/src/views/admin/')) return 'admin'
