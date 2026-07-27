@@ -23,9 +23,12 @@ export default defineConfig(({ mode }) => {
       // nginx 端已配置运行时 gzip + br 压缩 (scripts/nginx-minimax-3000.conf)
     ],
     define: {
+      // V3.5.50: vue-i18n 11.4.8 需要的 5 个全局常量 (17a9b3e 加 3 个, V3.5.50 补 2 个)
       __VUE_I18N_LEGACY_API__: false,
       __VUE_I18N_FULL_INSTALL__: true,
       __INTLIFY_JIT_COMPILATION__: true,
+      __INTLIFY_PROD_DEVTOOLS__: false,
+      __INTLIFY_DROP_MESSAGE_COMPILER__: false,
     },
     resolve: {
       alias: {
