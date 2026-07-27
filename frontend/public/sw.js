@@ -22,7 +22,7 @@
  * @since V2.8.9
  */
 
-const CACHE_VERSION = 'v3.5.50'
+const CACHE_VERSION = 'v3.5.51'
 const CACHE_NAME = `minimax-${CACHE_VERSION}`
 const RUNTIME_CACHE = 'liugl-runtime'
 const API_CACHE = 'liugl-api'
@@ -90,10 +90,17 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
       // 删除旧版本缓存
+      // V3.5.51 修: CACHE_NAME 用 minimax- 前缀, 但旧版 activate 只删 liugl- 前缀, 老 minimax-v3.5.45 等残留导致旧 chunk 反复报错
+      // 现在: liugl- 跟 minimax- 前缀都清, 但保留 RUNTIME_CACHE/API_CACHE (运行时缓存) 跟当前 CACHE_NAME
       const keys = await caches.keys()
       await Promise.all(
         keys
-          .filter((key) => key.startsWith('liugl-') && key !== CACHE_NAME && key !== RUNTIME_CACHE && key !== API_CACHE)
+          .filter((key) =>
+            (key.startsWith('liugl-') || key.startsWith('minimax-')) &&
+            key !== CACHE_NAME &&
+            key !== RUNTIME_CACHE &&
+            key !== API_CACHE
+          )
           .map((key) => caches.delete(key))
       )
       await self.clients.claim()
