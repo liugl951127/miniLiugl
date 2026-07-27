@@ -252,8 +252,8 @@ self.addEventListener('push', (event) => {
     event.waitUntil(
       self.registration.showNotification(data.title || 'Liugl-AI', {
         body: data.body || '',
-        icon: '/icons/icon-192.svg'
-        badge: '/icons/icon-192.svg'
+        icon: '/icons/icon-192.svg',
+        badge: '/icons/icon-192.svg',
         data: data.url || '/'
       })
     )
