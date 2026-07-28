@@ -4,6 +4,7 @@ import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import { fileURLToPath, URL } from 'node:url'
+import cdnImport from 'vite-plugin-cdn-import'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -18,7 +19,58 @@ export default defineConfig(({ mode }) => {
     plugins: [
       vue(),
       AutoImport({ resolvers: [ElementPlusResolver()] }),
-      Components({ resolvers: [ElementPlusResolver()] })
+      Components({ resolvers: [ElementPlusResolver()] }),
+      // V3.5.60: element-plus 走 CDN (避开内部 ESM 循环 import 引起的 TDZ 错)
+      cdnImport({
+        modules: [
+          {
+            name: 'element-plus',
+            var: 'ElementPlus',
+            path: 'https://unpkg.com/element-plus@2.6.2/dist/index.full.min.js',
+            css: 'https://unpkg.com/element-plus@2.6.2/dist/index.css',
+          },
+          {
+            name: 'element-plus/es',
+            var: 'ElementPlus',
+            path: 'https://unpkg.com/element-plus@2.6.2/dist/index.full.min.js',
+            css: 'https://unpkg.com/element-plus@2.6.2/dist/index.css',
+          },
+          {
+            name: '@element-plus/icons-vue',
+            var: 'ElementPlusIconsVue',
+            path: 'https://unpkg.com/@element-plus/icons-vue@2.3.1/dist/index.iife.min.js',
+          },
+          // V3.5.61: vue-i18n 也走 CDN (避开 @intlify 内部循环)
+          {
+            name: 'vue-i18n',
+            var: 'VueI18n',
+            path: 'https://unpkg.com/vue-i18n@11.4.8/dist/vue-i18n.global.prod.js',
+          },
+          // V3.5.62: echarts 走 CDN (避开 zrender 内部 ESM 循环)
+          {
+            name: 'echarts',
+            var: 'echarts',
+            path: 'https://unpkg.com/echarts@5.4.3/dist/echarts.min.js',
+          },
+          {
+            name: 'vue-echarts',
+            var: 'ECharts',
+            path: 'https://unpkg.com/vue-echarts@7.0.3/dist/vue-echarts.umd.min.js',
+          },
+
+          {
+            name: 'vue-echarts',
+            var: 'ECharts',
+            path: 'https://unpkg.com/vue-echarts@7.0.3/dist/vue-echarts.umd.min.js',
+          },
+
+          {
+            name: 'vue-echarts',
+            var: 'ECharts',
+            path: 'https://unpkg.com/vue-echarts@7.0.3/dist/vue-echarts.umd.min.js',
+          },
+        ],
+      }),
       // V5.8 优化: 移除 vite-plugin-compression (含 brotli native 依赖, 沙箱装不上)
       // nginx 端已配置运行时 gzip + br 压缩 (scripts/nginx-minimax-3000.conf)
     ],
