@@ -54,28 +54,28 @@ describe('Monitor API', () => {
       mockHttp.get.mockResolvedValueOnce(mockResponse({ data: { gateway: 'UP' } }))
       const { getMonitorHealth } = await import('../api/monitor.js')
       await getMonitorHealth()
-      expect(mockHttp.get).toHaveBeenCalledWith('/monitor/health')
+      expect(mockHttp.get).toHaveBeenCalledWith('/api/v1/monitor/health')
     })
 
     it('getMonitorJvm 应调用 GET /monitor/health/jvm', async () => {
       mockHttp.get.mockResolvedValueOnce(mockResponse({ data: { heap: '512MB' } }))
       const { getMonitorJvm } = await import('../api/monitor.js')
       await getMonitorJvm()
-      expect(mockHttp.get).toHaveBeenCalledWith('/monitor/health/jvm')
+      expect(mockHttp.get).toHaveBeenCalledWith('/api/v1/monitor/health/jvm')
     })
 
     it('getMonitorDisk 应调用 GET /monitor/health/disk', async () => {
       mockHttp.get.mockResolvedValueOnce(mockResponse({ data: { usage: '65%' } }))
       const { getMonitorDisk } = await import('../api/monitor.js')
       await getMonitorDisk()
-      expect(mockHttp.get).toHaveBeenCalledWith('/monitor/health/disk')
+      expect(mockHttp.get).toHaveBeenCalledWith('/api/v1/monitor/health/disk')
     })
 
     it('getMonitorDb 应调用 GET /monitor/health/database', async () => {
       mockHttp.get.mockResolvedValueOnce(mockResponse({ data: { pool: 'active:5' } }))
       const { getMonitorDb } = await import('../api/monitor.js')
       await getMonitorDb()
-      expect(mockHttp.get).toHaveBeenCalledWith('/monitor/health/database')
+      expect(mockHttp.get).toHaveBeenCalledWith('/api/v1/monitor/health/database')
     })
   })
 
@@ -86,21 +86,21 @@ describe('Monitor API', () => {
       mockHttp.get.mockResolvedValueOnce(mockResponse({ data: {} }))
       const { getMonitorMetrics } = await import('../api/monitor.js')
       await getMonitorMetrics()
-      expect(mockHttp.get).toHaveBeenCalledWith('/monitor/metrics')
+      expect(mockHttp.get).toHaveBeenCalledWith('/api/v1/monitor/metrics')
     })
 
     it('getMonitorTrend 应传入 hours 参数', async () => {
       mockHttp.get.mockResolvedValueOnce(mockResponse({ data: [] }))
       const { getMonitorTrend } = await import('../api/monitor.js')
       await getMonitorTrend(48)
-      expect(mockHttp.get).toHaveBeenCalledWith('/monitor/metrics/trend', { params: { hours: 48 } })
+      expect(mockHttp.get).toHaveBeenCalledWith('/api/v1/monitor/metrics/trend', { params: { hours: 48 } })
     })
 
     it('getMonitorSnapshot 应调用 GET /monitor/metrics/snapshot', async () => {
       mockHttp.get.mockResolvedValueOnce(mockResponse({ data: {} }))
       const { getMonitorSnapshot } = await import('../api/monitor.js')
       await getMonitorSnapshot()
-      expect(mockHttp.get).toHaveBeenCalledWith('/monitor/metrics/snapshot')
+      expect(mockHttp.get).toHaveBeenCalledWith('/api/v1/monitor/metrics/snapshot')
     })
   })
 
@@ -111,21 +111,21 @@ describe('Monitor API', () => {
       mockHttp.get.mockResolvedValueOnce(mockResponse({ data: [] }))
       const { getMonitorAlerts } = await import('../api/monitor.js')
       await getMonitorAlerts()
-      expect(mockHttp.get).toHaveBeenCalledWith('/monitor/alerts/firing')
+      expect(mockHttp.get).toHaveBeenCalledWith('/api/v1/monitor/alerts/firing')
     })
 
     it('getMonitorAlertsFiring 应调用 GET /monitor/alerts/firing', async () => {
       mockHttp.get.mockResolvedValueOnce(mockResponse({ data: [] }))
       const { getMonitorAlertsFiring } = await import('../api/monitor.js')
       await getMonitorAlertsFiring()
-      expect(mockHttp.get).toHaveBeenCalledWith('/monitor/alerts/firing')
+      expect(mockHttp.get).toHaveBeenCalledWith('/api/v1/monitor/alerts/firing')
     })
 
     it('getMonitorAlertSummary 应调用 GET /monitor/alerts/summary', async () => {
       mockHttp.get.mockResolvedValueOnce(mockResponse({ data: { total: 3 } }))
       const { getMonitorAlertSummary } = await import('../api/monitor.js')
       const result = await getMonitorAlertSummary()
-      expect(mockHttp.get).toHaveBeenCalledWith('/monitor/alerts/summary')
+      expect(mockHttp.get).toHaveBeenCalledWith('/api/v1/monitor/alerts/summary')
       expect(result.data.data.total).toBe(3)
     })
   })
@@ -137,7 +137,7 @@ describe('Monitor API', () => {
       mockHttp.get.mockResolvedValueOnce(mockResponse({ data: [] }))
       const { getMonitorAlertRules } = await import('../api/monitor.js')
       await getMonitorAlertRules()
-      expect(mockHttp.get).toHaveBeenCalledWith('/monitor/alerts/rules')
+      expect(mockHttp.get).toHaveBeenCalledWith('/api/v1/monitor/alerts/rules')
     })
 
     it('createMonitorAlertRule 应调用 POST /monitor/alerts/rules', async () => {
@@ -145,21 +145,21 @@ describe('Monitor API', () => {
       const { createMonitorAlertRule } = await import('../api/monitor.js')
       const body = { name: 'HighCPU', metric: 'cpu_usage', threshold: 80 }
       await createMonitorAlertRule(body)
-      expect(mockHttp.post).toHaveBeenCalledWith('/monitor/alerts/rules', body)
+      expect(mockHttp.post).toHaveBeenCalledWith('/api/v1/monitor/alerts/rules', body)
     })
 
     it('updateMonitorAlertRule 应调用 PUT /monitor/alerts/rules/{id}', async () => {
       mockHttp.put.mockResolvedValueOnce(mockResponse({ data: {} }))
       const { updateMonitorAlertRule } = await import('../api/monitor.js')
       await updateMonitorAlertRule(1, { name: 'Updated' })
-      expect(mockHttp.put).toHaveBeenCalledWith('/monitor/alerts/rules/1', { name: 'Updated' })
+      expect(mockHttp.put).toHaveBeenCalledWith('/api/v1/monitor/alerts/rules/1', { name: 'Updated' })
     })
 
     it('deleteMonitorAlertRule 应调用 DELETE /monitor/alerts/rules/{id}', async () => {
       mockHttp.delete.mockResolvedValueOnce(mockResponse({ data: {} }))
       const { deleteMonitorAlertRule } = await import('../api/monitor.js')
       await deleteMonitorAlertRule(5)
-      expect(mockHttp.delete).toHaveBeenCalledWith('/monitor/alerts/rules/5')
+      expect(mockHttp.delete).toHaveBeenCalledWith('/api/v1/monitor/alerts/rules/5')
     })
   })
 
@@ -170,7 +170,7 @@ describe('Monitor API', () => {
       mockHttp.get.mockResolvedValueOnce(mockResponse({ data: [{ id: 1, name: '运维邮件' }] }))
       const { getAlertChannels } = await import('../api/monitor.js')
       const result = await getAlertChannels()
-      expect(mockHttp.get).toHaveBeenCalledWith('/monitor/alerts/channels')
+      expect(mockHttp.get).toHaveBeenCalledWith('/api/v1/monitor/alerts/channels')
       expect(result.data.data).toHaveLength(1)
     })
 
@@ -178,7 +178,7 @@ describe('Monitor API', () => {
       mockHttp.get.mockResolvedValueOnce(mockResponse({ data: { id: 2, name: '钉钉群' } }))
       const { getAlertChannel } = await import('../api/monitor.js')
       await getAlertChannel(2)
-      expect(mockHttp.get).toHaveBeenCalledWith('/monitor/alerts/channels/2')
+      expect(mockHttp.get).toHaveBeenCalledWith('/api/v1/monitor/alerts/channels/2')
     })
 
     it('createAlertChannel 应调用 POST /monitor/alerts/channels', async () => {
@@ -186,21 +186,21 @@ describe('Monitor API', () => {
       const { createAlertChannel } = await import('../api/monitor.js')
       const body = { name: 'DingTalk', channelType: 'DINGTALK', config: '{"webhook":"https://..."}' }
       await createAlertChannel(body)
-      expect(mockHttp.post).toHaveBeenCalledWith('/monitor/alerts/channels', body)
+      expect(mockHttp.post).toHaveBeenCalledWith('/api/v1/monitor/alerts/channels', body)
     })
 
     it('updateAlertChannel 应调用 PUT /monitor/alerts/channels/{id}', async () => {
       mockHttp.put.mockResolvedValueOnce(mockResponse({ data: {} }))
       const { updateAlertChannel } = await import('../api/monitor.js')
       await updateAlertChannel(3, { name: 'Updated Channel', enabled: 0 })
-      expect(mockHttp.put).toHaveBeenCalledWith('/monitor/alerts/channels/3', { name: 'Updated Channel', enabled: 0 })
+      expect(mockHttp.put).toHaveBeenCalledWith('/api/v1/monitor/alerts/channels/3', { name: 'Updated Channel', enabled: 0 })
     })
 
     it('deleteAlertChannel 应调用 DELETE /monitor/alerts/channels/{id}', async () => {
       mockHttp.delete.mockResolvedValueOnce(mockResponse({ data: {} }))
       const { deleteAlertChannel } = await import('../api/monitor.js')
       await deleteAlertChannel(7)
-      expect(mockHttp.delete).toHaveBeenCalledWith('/monitor/alerts/channels/7')
+      expect(mockHttp.delete).toHaveBeenCalledWith('/api/v1/monitor/alerts/channels/7')
     })
   })
 

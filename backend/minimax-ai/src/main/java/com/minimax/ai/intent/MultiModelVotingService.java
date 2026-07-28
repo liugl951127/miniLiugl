@@ -179,8 +179,8 @@ public class MultiModelVotingService {
 
         return futures.stream()
                 .map(f -> {
-                    try { return f.getNow(new ModelAnswer(null, null, null, "timeout", 0)); }
-                    catch (Exception e) { return new ModelAnswer(null, null, null, e.getMessage(), 0); }
+                    try { return f.getNow(new ModelAnswer(null, null, null, "timeout", 0, 0.0)); }
+                    catch (Exception e) { return new ModelAnswer(null, null, null, e.getMessage(), 0, 0.0); }
                 })
                 .toList();
     }
@@ -346,7 +346,7 @@ public class MultiModelVotingService {
         if (answer == null) return "";
         return answer.strip()
                 .toLowerCase()
-                .replaceAll("[，。！？、；：""''']", "")
+                .replaceAll("[，。！？、；：]", "").replaceAll("\"", "").replaceAll("\'", "")
                 .replaceAll("\\s+", "")
                 .substring(0, Math.min(answer.length(), 80));
     }

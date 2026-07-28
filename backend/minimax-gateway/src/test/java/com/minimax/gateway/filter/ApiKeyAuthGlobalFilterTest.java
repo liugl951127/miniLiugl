@@ -195,7 +195,7 @@ class ApiKeyAuthGlobalFilterTest {
     private static ApiKeyAuthGlobalFilter newFilter(
             org.springframework.web.reactive.function.client.WebClient webClient,
             org.springframework.data.redis.core.StringRedisTemplate redis) {
-        var f = newFilter(webClient, redis);
+        var f = new ApiKeyAuthGlobalFilter(webClient, redis);
         ReflectionTestUtils.setField(f, "authServiceUrl", "http://auth:8081");
         return f;
     }
