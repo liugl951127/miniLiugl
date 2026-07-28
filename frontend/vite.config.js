@@ -22,14 +22,6 @@ export default defineConfig(({ mode }) => {
       // V5.8 优化: 移除 vite-plugin-compression (含 brotli native 依赖, 沙箱装不上)
       // nginx 端已配置运行时 gzip + br 压缩 (scripts/nginx-minimax-3000.conf)
     ],
-    define: {
-      // V3.5.50: vue-i18n 11.4.8 需要的 5 个全局常量 (17a9b3e 加 3 个, V3.5.50 补 2 个)
-      __VUE_I18N_LEGACY_API__: false,
-      __VUE_I18N_FULL_INSTALL__: true,
-      __INTLIFY_JIT_COMPILATION__: true,
-      __INTLIFY_PROD_DEVTOOLS__: false,
-      __INTLIFY_DROP_MESSAGE_COMPILER__: false,
-    },
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url))
@@ -105,10 +97,11 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              // V3.5.57: 全部回 vendor (V3.5.55-56 拆 element-plus / i18n 都失败, esbuild bundle 引入 TDZ)
-              // 实际: 用户浏览器对 ESM 循环 import 容忍度比 node 高, 错可能只在 jsdom 测出
-              // 撤回所有拆分, 全部进 vendor (跟 V3.5.47 一样)
+              if (id.includes('element-plus') || id.includes('@element-plus')) return 'element'
               if (id.includes('echarts') || id.includes('vue-echarts')) return 'echarts'
+              if (id.includes('axios') || id.includes('@element-plus/icons-vue')) return 'common'
+              if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router')) return 'vue'
+              if (id.includes('dayjs') || id.includes('markdown') || id.includes('highlight')) return 'vendor'
               return 'vendor'
             }
             if (id.includes('/src/api/') || id.includes('/src/views/admin/')) return 'admin'
@@ -122,22 +115,18 @@ export default defineConfig(({ mode }) => {
           assetFileNames: 'assets/[name].[hash].[ext]',
         }
       },
-      // V3.5.56: esbuild minify + minifyIdentifiers false (修 TDZ)
-      // 之前 V3.5.47-55: mangle true 导致 var 顺序错乱 TDZ 'cn' / 'isFunction' / 'qe' / 'isBoolean'
-      // minifyIdentifiers false 保留 var 名, 牺牲 30% 体积换稳定
+      // V5.8: terser 压缩 (生产)
       minify: false,
-      esbuild: isProd ? {
-        drop: ['console', 'debugger'],
-        minifyIdentifiers: false,  // 不改名 (修 TDZ)
-        minifySyntax: true,         // 压缩语法
-        minifyWhitespace: true,    // 去多余空白
+      terserOptions: isProd ? {
+        compress: {
+                    pure_funcs: ['console.info', 'console.debug'],
+        },
       } : undefined,
     },
     // V5.8: esbuild 优化
     esbuild: {
       target: 'es2018',
       drop: isProd ? ['console', 'debugger'] : [],
-      minifyIdentifiers: false,  // 不改 var 名 (修 TDZ)
     },
     // V3.5.8+: 关闭 Sass legacy JS API 警告 (Dart Sass 2.0 移除)
     css: {
