@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "rollup-plugin-external-globals": "^0.13.0",
     "yaml": "^2.9.0"
   }
 }

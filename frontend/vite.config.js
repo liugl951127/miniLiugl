@@ -4,7 +4,6 @@ import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import { fileURLToPath, URL } from 'node:url'
-import cdnImport from 'vite-plugin-cdn-import'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -20,57 +19,8 @@ export default defineConfig(({ mode }) => {
       vue(),
       AutoImport({ resolvers: [ElementPlusResolver()] }),
       Components({ resolvers: [ElementPlusResolver()] }),
-      // V3.5.60: element-plus 走 CDN (避开内部 ESM 循环 import 引起的 TDZ 错)
-      cdnImport({
-        modules: [
-          {
-            name: 'element-plus',
-            var: 'ElementPlus',
-            path: 'https://unpkg.com/element-plus@2.6.2/dist/index.full.min.js',
-            css: 'https://unpkg.com/element-plus@2.6.2/dist/index.css',
-          },
-          {
-            name: 'element-plus/es',
-            var: 'ElementPlus',
-            path: 'https://unpkg.com/element-plus@2.6.2/dist/index.full.min.js',
-            css: 'https://unpkg.com/element-plus@2.6.2/dist/index.css',
-          },
-          {
-            name: '@element-plus/icons-vue',
-            var: 'ElementPlusIconsVue',
-            path: 'https://unpkg.com/@element-plus/icons-vue@2.3.1/dist/index.iife.min.js',
-          },
-          // V3.5.61: vue-i18n 也走 CDN (避开 @intlify 内部循环)
-          {
-            name: 'vue-i18n',
-            var: 'VueI18n',
-            path: 'https://unpkg.com/vue-i18n@11.4.8/dist/vue-i18n.global.prod.js',
-          },
-          // V3.5.62: echarts 走 CDN (避开 zrender 内部 ESM 循环)
-          {
-            name: 'echarts',
-            var: 'echarts',
-            path: 'https://unpkg.com/echarts@5.4.3/dist/echarts.min.js',
-          },
-          {
-            name: 'vue-echarts',
-            var: 'ECharts',
-            path: 'https://unpkg.com/vue-echarts@7.0.3/dist/vue-echarts.umd.min.js',
-          },
+      // V3.5.63: 用 rollupOptions.external + index.html 注入 CDN, 不需要 vite-plugin-cdn-import
 
-          {
-            name: 'vue-echarts',
-            var: 'ECharts',
-            path: 'https://unpkg.com/vue-echarts@7.0.3/dist/vue-echarts.umd.min.js',
-          },
-
-          {
-            name: 'vue-echarts',
-            var: 'ECharts',
-            path: 'https://unpkg.com/vue-echarts@7.0.3/dist/vue-echarts.umd.min.js',
-          },
-        ],
-      }),
       // V5.8 优化: 移除 vite-plugin-compression (含 brotli native 依赖, 沙箱装不上)
       // nginx 端已配置运行时 gzip + br 压缩 (scripts/nginx-minimax-3000.conf)
     ],
@@ -145,13 +95,16 @@ export default defineConfig(({ mode }) => {
       cssCodeSplit: true,
       chunkSizeWarningLimit: 1500,
       // V5.8: 智能分包 (按依赖 + 路由)
+      // V3.5.64: 4 核心库独立 chunk, 本地打包, Rollup 不打包, 用 externalGlobals 映射到 window 全局
       rollupOptions: {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              if (id.includes('element-plus') || id.includes('@element-plus')) return 'element'
-              if (id.includes('echarts') || id.includes('vue-echarts')) return 'echarts'
-              if (id.includes('axios') || id.includes('@element-plus/icons-vue')) return 'common'
+              // V3.5.64: 4 核心库独立 chunk, 本地打包
+              if (id.includes('element-plus') || id.includes('@element-plus/')) return 'element-plus'
+              if (id.includes('echarts') || id.includes('vue-echarts') || id.includes('zrender')) return 'echarts'
+              if (id.includes('vue-i18n') || id.includes('@intlify/')) return 'i18n'
+              if (id.includes('axios')) return 'common'
               if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router')) return 'vue'
               if (id.includes('dayjs') || id.includes('markdown') || id.includes('highlight')) return 'vendor'
               return 'vendor'
