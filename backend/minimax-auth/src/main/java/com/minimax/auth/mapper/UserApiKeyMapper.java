@@ -3,22 +3,21 @@ package com.minimax.auth.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.minimax.auth.entity.UserApiKey;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Update;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
 @Mapper
 public interface UserApiKeyMapper extends BaseMapper<UserApiKey> {
 
-    @Select("SELECT * FROM user_api_key WHERE user_id = #{user_id} AND deleted = 0 ORDER BY created_at DESC")
+    /** 通过 userId 列出 API Key (XML mapper) */
     List<UserApiKey> selectByUserId(@Param("userId") Long userId);
 
-    @Select("SELECT * FROM user_api_key WHERE key_hash = #{key_hash} AND deleted = 0 AND enabled = 1 LIMIT 1")
+    /** 通过 keyHash 查单个 API Key (XML mapper) */
     UserApiKey selectByKeyHash(@Param("keyHash") String keyHash);
 
-    @Update("UPDATE user_api_key SET use_count = use_count + 1, last_used_at = NOW() WHERE id = #{id}")
+    /** 自增 use_count (XML mapper) */
     void incrementUseCount(@Param("id") Long id);
 
     /** 全量聚合统计 */
