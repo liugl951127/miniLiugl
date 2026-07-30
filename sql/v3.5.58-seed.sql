@@ -29,9 +29,9 @@ INSERT INTO sys_user (username, password, nickname, email, status, tenant_id, re
 INSERT INTO sys_user (username, password, nickname, email, status, tenant_id, remark, created_at, updated_at, deleted) VALUES ('demo_user', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Demo User', 'demo_user@minimax.io', 1, 2, 'Demo 租户 (租户 ID=2)', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
 
 -- ============== 2. 3 角色 ==============
-INSERT INTO sys_role (code, name, description, sort, status, created_at, updated_at, deleted) VALUES ('SUPER_ADMIN', '超级管理员 (adminLiugl)', '拥有平台所有权限, 包括管理其他管理员', 0, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
-INSERT INTO sys_role (code, name, description, sort, status, created_at, updated_at, deleted) VALUES ('ADMIN', '管理员', '管理员, 拥有大部分业务权限', 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
-INSERT INTO sys_role (code, name, description, sort, status, created_at, updated_at, deleted) VALUES ('USER', '普通用户', '普通用户, 受限权限', 2, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
+INSERT INTO sys_role (code, name, description, sort, enabled, created_at, updated_at, deleted) VALUES ('SUPER_ADMIN', '超级管理员 (adminLiugl)', '拥有平台所有权限, 包括管理其他管理员', 0, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
+INSERT INTO sys_role (code, name, description, sort, enabled, created_at, updated_at, deleted) VALUES ('ADMIN', '管理员', '管理员, 拥有大部分业务权限', 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
+INSERT INTO sys_role (code, name, description, sort, enabled, created_at, updated_at, deleted) VALUES ('USER', '普通用户', '普通用户, 受限权限', 2, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
 
 -- ============== 3. 3 租户 ==============
 INSERT INTO tenant (id, code, name, plan, status, max_users, max_models, qps_limit, monthly_quota, used_quota, contact_email, contact_phone, remark, created_at, updated_at) VALUES (0, 'default', '默认租户', 'enterprise', 1, 999, 999, 1000, 1000000, 0, 'admin@minimax.io', '13900000000', '平台默认租户', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
