@@ -305,7 +305,7 @@ jobs:
   # V3.5.65+: CI 4 项硬性检查 (schema/JDBC/Driver/引用)
   # ============================================
   ci-check:
-    name: CI 4 项硬性检查
+    name: CI 6 项硬性检查
     runs-on: ubuntu-latest
     timeout-minutes: 5
 

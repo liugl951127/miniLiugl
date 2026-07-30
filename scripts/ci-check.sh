@@ -10,7 +10,7 @@ set -e
 cd "$(dirname "$0")/.."
 ROOT=$(pwd)
 echo "═══════════════════════════════════════════════════════════"
-echo "  CI check: schema + JDBC URL + Driver 3 项"
+echo "  CI check: schema + JDBC + Driver + Dockerfile + Mapper 重复 + seed-data 列对齐 6 项"
 echo "═══════════════════════════════════════════════════════════"
 echo ""
 
@@ -72,9 +72,38 @@ else
 fi
 echo ""
 
+# --- Check 5: mapper 接口 @Select/@Update 注解 + XML mapper 重复 (V3.5.68+) ---
+echo "--- 5. mapper 接口注解 + XML 同名定义禁止重复 ---"
+# MyBatis-Plus 启动报 "ERROR ... mapper[xxx] is ignored, because it exists, maybe from xml file"
+# 跑 Python 扫描所有 mapper 接口 + XML
+MAPPER_DUP=$(python3 scripts/check_mapper_duplicate.py 2>&1)
+MAPPER_EXIT=$?
+if [ $MAPPER_EXIT -eq 0 ]; then
+    echo "  ✓ PASS (0 mapper 重复)"
+else
+    echo "  ✗ FAIL: mapper 注解 + XML 重复定义"
+    echo "$MAPPER_DUP" | head -10
+    EXIT=1
+fi
+echo ""
+
+# --- Check 6: seed-data INSERT 列名 跟 entity 字段对齐 (V3.5.67+) ---
+echo "--- 6. seed-data INSERT 列名 跟 entity 字段对齐 ---"
+# V3.5.67 错位: sys_role INSERT 写 status 列, entity 字段是 enabled
+SEED_DUP=$(python3 scripts/check_seed_data_columns.py 2>&1)
+SEED_EXIT=$?
+if [ $SEED_EXIT -eq 0 ]; then
+    echo "  ✓ PASS (0 seed-data 列错位)"
+else
+    echo "  ✗ FAIL: seed-data 列错位"
+    echo "$SEED_DUP" | head -10
+    EXIT=1
+fi
+echo ""
+
 echo "═══════════════════════════════════════════════════════════"
 if [ $EXIT -eq 0 ]; then
-    echo "  ✓ ALL PASS (4/4)"
+    echo "  ✓ ALL PASS (6/6)"
 else
     echo "  ✗ FAILED (some checks)"
 fi
