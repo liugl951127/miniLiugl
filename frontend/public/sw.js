@@ -22,7 +22,7 @@
  * @since V2.8.9
  */
 
-const CACHE_VERSION = 'v3.5.72'
+const CACHE_VERSION = 'v3.5.73'
 const CACHE_NAME = `minimax-${CACHE_VERSION}`
 const RUNTIME_CACHE = 'liugl-runtime'
 const API_CACHE = 'liugl-api'
@@ -52,6 +52,11 @@ const API_GET_PATTERNS = [
   /\/api\/v\d+\/tensorboard\//
 ]
 
+// V3.5.73+ Background Sync 队列 (IndexedDB)
+const QUEUE_DB = 'minimax-bg-sync'
+const QUEUE_STORE = 'pending-requests'
+const SYNC_TAG = 'minimax-bg-sync'
+
 // 永不缓存
 const NEVER_CACHE_PATTERNS = [
   /\/api\/v\d+\/auth\/(login|logout|refresh)/,
@@ -62,9 +67,68 @@ const NEVER_CACHE_PATTERNS = [
   /\/api\/v\d+\/collab\/rooms\/[^/]+\/doc\/ops/  // CRDT op 写
 ]
 
+// V3.5.73+ Background Sync event handler
+// 浏览器从离线恢复时触发, 重发 IndexedDB 队列
+self.addEventListener('sync', (event) => {
+  if (event.tag !== SYNC_TAG) return
+  console.log('[SW] Background Sync 触发, 重发离线队列...')
+  event.waitUntil(replayQueuedRequests(event))
+})
+
+async function replayQueuedRequests(event) {
+  const queued = await getQueuedRequests()
+  console.log(`[SW] 队列里有 ${queued.length} 个待发请求`)
+  let success = 0, failed = 0
+  for (const entry of queued) {
+    try {
+      const resp = await fetch(entry.url, { method: entry.method, headers: entry.headers, body: entry.body })
+      if (resp.ok) {
+        await deleteQueuedRequest(entry.id)
+        success++
+        console.log('[SW] 重发成功:', entry.url, '->', resp.status)
+        await notifyClientsOfSyncResult(entry, resp)
+      } else if (resp.status >= 400 && resp.status < 500) {
+        await deleteQueuedRequest(entry.id)
+        failed++
+        console.warn('[SW] 4xx 客户端错, 丢弃:', entry.url, '->', resp.status)
+        await notifyClientsOfSyncResult(entry, resp, 'client-error')
+      } else {
+        await incrementRetry(entry.id)
+        failed++
+        console.warn('[SW] 5xx 服务端错, 留待重试:', entry.url, '->', resp.status)
+      }
+    } catch (e) {
+      await incrementRetry(entry.id)
+      failed++
+      console.warn('[SW] 网络仍失败, 留待重试:', entry.url, e.message)
+    }
+  }
+  console.log(`[SW] Background Sync 完成: ${success} 成功, ${failed} 失败`)
+  const remaining = await getQueuedRequests()
+  if (remaining.length > 0 && event && event.again) {
+    event.again()
+    console.log('[SW] 请求浏览器再次 sync (还有', remaining.length, '个待发)')
+  }
+}
+
+async function notifyClientsOfSyncResult(entry, response, errorTag) {
+  try {
+    const allClients = await self.clients.matchAll({ includeUncontrolled: true })
+    for (const client of allClients) {
+      client.postMessage({
+        type: 'bg-sync-result',
+        url: entry.url, method: entry.method, status: response.status,
+        ok: response.ok, errorTag: errorTag || null, timestamp: Date.now()
+      })
+    }
+  } catch (e) {
+    console.warn('[SW] notifyClients 失败:', e.message)
+  }
+}
+
 // ============= Lifecycle =============
 
-self.addEventListener('install', (event) => {
+self.addEventListener('install, (event) => {
   console.log('[SW] Installing v' + CACHE_VERSION)
   event.waitUntil(
     (async () => {
