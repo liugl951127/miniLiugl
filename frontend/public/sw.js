@@ -22,7 +22,7 @@
  * @since V2.8.9
  */
 
-const CACHE_VERSION = 'v3.5.71'
+const CACHE_VERSION = 'v3.5.72'
 const CACHE_NAME = `minimax-${CACHE_VERSION}`
 const RUNTIME_CACHE = 'liugl-runtime'
 const API_CACHE = 'liugl-api'
@@ -154,13 +154,17 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // 7. V3.5.71: /assets/* JS/CSS - NetworkFirst (永远拿最新, 老 cache 仅作 offline fallback)
-  if (url.pathname.startsWith('/assets/')) {
-    event.respondWith(handleAssetsJsCss(req))
+  // 7. V3.5.71+ V3.5.72 扩展: NetworkFirst 静态资源
+  //   - /assets/* JS/CSS chunk (vite build 产物, hash 命名)
+  //   - /icons/* PWA 图标 (PWA 部署时常更新)
+  //   - /favicon.svg 站点图标
+  // 老 cache 仅作 offline fallback
+  if (shouldNetworkFirst(url.pathname)) {
+    event.respondWith(handleStaticNetworkFirst(req))
     return
   }
 
-  // 8. 其它静态资源 (images/fonts/icons) - CacheFirst with revalidate
+  // 8. 其它静态资源 (images/fonts) - CacheFirst with revalidate
   event.respondWith(handleStatic(req))
 })
 
@@ -223,21 +227,37 @@ async function handleApiGet(req) {
 }
 
 /**
- * V3.5.71+ /assets/* JS/CSS NetworkFirst 策略
+ * V3.5.72+: 判断路径是否走 NetworkFirst 策略
+ *
+ * @param {string} pathname - URL pathname
+ * @returns {boolean}
+ */
+function shouldNetworkFirst(pathname) {
+  return (
+    pathname.startsWith('/assets/') ||      // V3.5.71: vite build JS/CSS chunk
+    pathname.startsWith('/icons/') ||       // V3.5.72: PWA 图标
+    pathname === '/favicon.svg'             // V3.5.72: 站点 favicon
+  )
+}
+
+/**
+ * V3.5.71+ NetworkFirst 策略
+ *
+ * 适用范围: /assets/* JS/CSS (V3.5.71) + /icons/* + /favicon.svg (V3.5.72)
  *
  * 背景: V3.5.70 用户浏览器报错 "Failed to resolve module specifier 'vue'"
  * 原因: 老 /assets/*.js 用 import 'vue' 裸 specifier (V3.5.62-63 时期 externalGlobals 方案)
  * 浏览器 sw 缓存了老 chunk, CacheFirst 命中就返回, 跑老代码报错
  *
- * 修法: /assets/* 永远 NetworkFirst
+ * 修法: 这些静态资源永远 NetworkFirst
  *   1. 5s 内从网络拿最新
  *   2. 成功 → 返回 + 更新 ASSETS_CACHE
  *   3. 失败/超时 → 走 ASSETS_CACHE 老版本 (offline fallback)
- *   4. 完全没缓存 → 404
+ *   4. 完全没缓存 → 503
  *
  * 这样新版本代码永远从网络拿, 老 cache 只在断网时用
  */
-async function handleAssetsJsCss(req) {
+async function handleStaticNetworkFirst(req) {
   const cache = await caches.open(ASSETS_CACHE)
   try {
     const controller = new AbortController()
