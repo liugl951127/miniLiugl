@@ -22,7 +22,7 @@
  * @since V2.8.9
  */
 
-const CACHE_VERSION = 'v3.5.64'
+const CACHE_VERSION = 'v3.5.70'
 const CACHE_NAME = `minimax-${CACHE_VERSION}`
 const RUNTIME_CACHE = 'liugl-runtime'
 const API_CACHE = 'liugl-api'
@@ -98,8 +98,9 @@ self.addEventListener('activate', (event) => {
           .filter((key) =>
             (key.startsWith('liugl-') || key.startsWith('minimax-')) &&
             key !== CACHE_NAME &&
-            key !== RUNTIME_CACHE &&
             key !== API_CACHE
+            // V3.5.70 修: RUNTIME_CACHE 不再豁免, 老 /assets/*.js 可能 import 'vue' 裸 specifier
+            // 浏览器报 "Failed to resolve module specifier 'vue'", 强制清空老 runtime cache
           )
           .map((key) => caches.delete(key))
       )
