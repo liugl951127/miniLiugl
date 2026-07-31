@@ -22,7 +22,7 @@
  * @since V2.8.9
  */
 
-const CACHE_VERSION = 'v3.5.70'
+const CACHE_VERSION = 'v3.5.71'
 const CACHE_NAME = `minimax-${CACHE_VERSION}`
 const RUNTIME_CACHE = 'liugl-runtime'
 const API_CACHE = 'liugl-api'
@@ -39,6 +39,9 @@ const PRECACHE_URLS = [
   // '/icons/icon-512.png'  // V3.5.41: dist/icons/ 只有 svg, 无 png
   '/icons/icon-192.svg'
 ]
+
+// V3.5.71+ /assets/* 缓存 (NetworkFirst, 永远拿最新, 离线兜底)
+const ASSETS_CACHE = 'minimax-assets-runtime'
 
 // API 路径模式 (NetworkFirst, 可离线读缓存)
 const API_GET_PATTERNS = [
@@ -101,6 +104,7 @@ self.addEventListener('activate', (event) => {
             key !== API_CACHE
             // V3.5.70 修: RUNTIME_CACHE 不再豁免, 老 /assets/*.js 可能 import 'vue' 裸 specifier
             // 浏览器报 "Failed to resolve module specifier 'vue'", 强制清空老 runtime cache
+            // V3.5.71+ /assets/* 走独立 ASSETS_CACHE (NetworkFirst), 升版本也一并清
           )
           .map((key) => caches.delete(key))
       )
@@ -150,7 +154,13 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // 7. 静态资源 (JS/CSS/images/fonts) - CacheFirst with revalidate
+  // 7. V3.5.71: /assets/* JS/CSS - NetworkFirst (永远拿最新, 老 cache 仅作 offline fallback)
+  if (url.pathname.startsWith('/assets/')) {
+    event.respondWith(handleAssetsJsCss(req))
+    return
+  }
+
+  // 8. 其它静态资源 (images/fonts/icons) - CacheFirst with revalidate
   event.respondWith(handleStatic(req))
 })
 
@@ -209,6 +219,52 @@ async function handleApiGet(req) {
       JSON.stringify({ code: -1, message: '离线 + 无缓存', data: null }),
       { status: 503, headers: { 'Content-Type': 'application/json' } }
     )
+  }
+}
+
+/**
+ * V3.5.71+ /assets/* JS/CSS NetworkFirst 策略
+ *
+ * 背景: V3.5.70 用户浏览器报错 "Failed to resolve module specifier 'vue'"
+ * 原因: 老 /assets/*.js 用 import 'vue' 裸 specifier (V3.5.62-63 时期 externalGlobals 方案)
+ * 浏览器 sw 缓存了老 chunk, CacheFirst 命中就返回, 跑老代码报错
+ *
+ * 修法: /assets/* 永远 NetworkFirst
+ *   1. 5s 内从网络拿最新
+ *   2. 成功 → 返回 + 更新 ASSETS_CACHE
+ *   3. 失败/超时 → 走 ASSETS_CACHE 老版本 (offline fallback)
+ *   4. 完全没缓存 → 404
+ *
+ * 这样新版本代码永远从网络拿, 老 cache 只在断网时用
+ */
+async function handleAssetsJsCss(req) {
+  const cache = await caches.open(ASSETS_CACHE)
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 5000)
+    const network = await fetch(req, { cache: 'no-cache', signal: controller.signal })
+    clearTimeout(timeout)
+    if (network.ok) {
+      // 限制运行时缓存大小 (50 资源)
+      limitCacheSize(ASSETS_CACHE, 50)
+      cache.put(req, network.clone())
+      return network
+    }
+    // 非 2xx: 走缓存
+    const cached = await cache.match(req)
+    if (cached) return cached
+    return network
+  } catch (e) {
+    // 网络失败/超时: 走缓存 (offline fallback)
+    const cached = await cache.match(req)
+    if (cached) {
+      console.log('[SW] /assets/* 离线返回缓存:', new URL(req.url).pathname)
+      return cached
+    }
+    return new Response('Offline + no cache: ' + new URL(req.url).pathname, {
+      status: 503,
+      headers: { 'Content-Type': 'text/plain' }
+    })
   }
 }
 

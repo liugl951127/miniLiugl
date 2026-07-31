@@ -36,7 +36,7 @@ export function usePwa() {
       return
     }
     try {
-      registration = await navigator.serviceWorker.register('/sw.js?v=3.5.70', {
+      registration = await navigator.serviceWorker.register('/sw.js?v=3.5.71', {
         scope: '/'
       })
       swRegistered.value = true
