@@ -116,10 +116,17 @@ http.interceptors.response.use(
       return Promise.reject(err)
     }
 
-    // V5.8: 5xx 错误带 traceId 提示 (方便排查)
+    // V3.7.6+ 错误码细化 (500/502/503/504 区分)
+    let specificMsg = msg
+    if (status === 500) specificMsg = msg || '服务内部错误'
+    else if (status === 502) specificMsg = msg || '网关错误 (后端不可用)'
+    else if (status === 503) specificMsg = msg || '服务暂不可用 (维护中或过载)'
+    else if (status === 504) specificMsg = msg || '网关超时 (后端响应慢)'
+    else if (status >= 500) specificMsg = msg || '服务异常'
+
     const fullMsg = status >= 500 && respTraceId
-      ? `${msg} [traceId: ${respTraceId}]`
-      : (msg || '网络异常')
+      ? `${specificMsg} [traceId: ${respTraceId}]`
+      : (specificMsg || '网络异常')
     ElMessage.error({
       message: fullMsg,
       duration: 5000,
