@@ -1,4 +1,8 @@
 <!--
+  @file views/ai/ProjectDownload.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/ai/ProjectDownload.vue (V3.5.48)
   @description 项目代码生成 + ZIP 下载 - 用户目标能力之一
   - 2 端点: download (GET + POST)
@@ -6,7 +10,7 @@
   - 模板: controller / service / entity / mapper / pom.xml / Dockerfile
 -->
 <template>
-  <div class="page">
+  <div class="page-project-download page">
     <el-card>
       <template #header>
         <div class="header">

@@ -1,4 +1,8 @@
 <!--
+  @file views/showcase/VisionShowcase.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   视觉对决 (V4) - 多 Vision 模型同时看图
   支持:
     - 上传/拖拽图片
@@ -12,7 +16,7 @@
   @description VisionShowcase 页面
 -->
 <template>
-  <div class="vision">
+  <div class="page-vision-showcase vision">
     <header class="header">
       <h1>👁 视觉对决</h1>
       <p class="subtitle">同一张图片, 多个 Vision 模型同时识别, 看谁看得更准</p>

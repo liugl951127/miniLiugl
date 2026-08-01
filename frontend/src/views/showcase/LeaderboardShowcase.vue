@@ -1,4 +1,8 @@
 <!--
+  @file views/showcase/LeaderboardShowcase.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   模型对决排行榜 (V4.1)
   - 4 个 tab: 总体 / 速度 / 最近 / 分类
   - 数据源: model_battle_log 表
@@ -10,7 +14,7 @@
   @description 排行榜 (LeaderboardShowcase)
 -->
 <template>
-  <div class="leaderboard">
+  <div class="page-leaderboard-showcase leaderboard">
     <header class="header">
       <h1>🏆 模型排行榜</h1>
       <p class="subtitle">基于真实对决日志, 谁是最强大模型一目了然</p>

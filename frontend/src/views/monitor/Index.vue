@@ -1,4 +1,8 @@
 <!--
+  @file views/monitor/Index.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   系统监控 V5.6
   特性:
     - 5 个服务健康卡片 (UP/DOWN + 详情)
@@ -15,7 +19,7 @@
   @description 入口/列表
 -->
 <template>
-  <div class="monitor-container">
+  <div class="page-index monitor-container">
     <div class="mon-header">
       <h1>📊 系统监控 <span class="badge">V5.6</span></h1>
       <p class="sub">实时指标 + JVM + DB + 磁盘 + 告警 · 自动刷新 {{ refreshSec }}s</p>

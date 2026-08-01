@@ -1,10 +1,14 @@
 <!--
+  @file views/ai/Intent.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/ai/Intent.vue (V3.5.48)
   @description 意图识别 - 单条/批量预测, 关键词管理, 配置管理
   - 11 端点: predict / predict/batch / keyword / phrase / list / stats / benchmark / config / config (PUT) / config/reset / context/clear
 -->
 <template>
-  <div class="page">
+  <div class="page-intent page">
     <el-card>
       <template #header>
         <div class="header">

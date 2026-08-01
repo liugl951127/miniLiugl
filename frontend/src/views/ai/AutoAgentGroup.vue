@@ -1,10 +1,14 @@
 <!--
+  @file views/ai/AutoAgentGroup.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/ai/AutoAgentGroup.vue (V3.5.48)
   @description AI 工具配置 - 一句话生成智能体群 - 用户目标能力之一
   - 3 端点: generate / template / templates
 -->
 <template>
-  <div class="page">
+  <div class="page-auto-agent-group page">
     <el-card>
       <template #header>
         <div class="header">

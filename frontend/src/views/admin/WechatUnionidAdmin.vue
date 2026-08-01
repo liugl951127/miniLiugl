@@ -1,4 +1,8 @@
 <!--
+  @file views/admin/WechatUnionidAdmin.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   unionid 跨应用管理后台 (V5.1)
   - 列出所有 unionid 关联
   - 按 unionid 查用户
@@ -10,7 +14,7 @@
   @description 微信 UnionID 管理
 -->
 <template>
-  <div class="unionid-admin">
+  <div class="page-wechat-unionid-admin unionid-admin">
     <header class="header">
       <h1>🔗 unionid 跨应用管理</h1>
       <p class="subtitle">adminLiugl 专属: 管理跨应用账号打通 + 合并重复账号</p>

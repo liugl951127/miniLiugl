@@ -1,10 +1,14 @@
 <!--
+  @file views/admin/Framework.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/admin/Framework.vue (V3.5.48)
   @description AI 框架 - Agent 执行/路由 + 权限管理 + 记忆统计 + 产品搜索
   - 10 端点: agents/execute, agents/route, agents, permission/{grant,revoke,revoke-all,list}, memory/{stats,clear}, products/search
 -->
 <template>
-  <div class="page">
+  <div class="page-framework page">
     <el-card>
       <template #header>
         <div class="header">

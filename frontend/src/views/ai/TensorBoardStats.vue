@@ -1,10 +1,14 @@
 <!--
+  @file views/ai/TensorBoardStats.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/ai/TensorBoardStats.vue (TensorBoardStats 页面)
   @version V3.5.12+ (前端注释补全)
   @description TensorBoardStats 页面
 -->
 <template>
-  <div class="tb-stats-container">
+  <div class="page-tensor-board-stats tb-stats-container">
     <div class="header">
       <h1>📊 统计分布 <span class="badge">V2.8.9</span></h1>
       <p class="sub">单 run 详细统计 / 多 run 对比 / 直方图</p>

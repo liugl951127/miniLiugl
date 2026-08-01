@@ -1,10 +1,14 @@
 <!--
+  @file views/analytics/DataSource.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/analytics/DataSource.vue (数据源)
   @version V3.5.12+ (前端注释补全)
   @description 数据源
 -->
 <template>
-  <div class="page">
+  <div class="page-data-source page">
     <el-card>
       <template #header>
         <div class="header">

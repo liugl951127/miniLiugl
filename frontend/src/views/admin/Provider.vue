@@ -1,10 +1,14 @@
 <!--
+  @file views/admin/Provider.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/admin/Provider.vue (模型 Provider)
   @version V3.5.12+ (前端注释补全)
   @description 模型 Provider
 -->
 <template>
-  <div class="provider-page">
+  <div class="page-provider provider-page">
     <div class="page-header">
       <h2>🛠️ 模型 Provider 管理</h2>
       <div class="actions">

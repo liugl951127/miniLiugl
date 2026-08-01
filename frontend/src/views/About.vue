@@ -1,10 +1,14 @@
 <!--
+  @file views/About.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/About.vue (关于)
   @version V3.5.12+ (前端注释补全)
   @description 关于
 -->
 <template>
-  <div class="about-page">
+  <div class="page-about about-page">
     <div class="hero minimax-card">
       <h1 class="gradient-text" style="font-size: 36px; margin: 0 0 8px;">
         Liugl-AI 大模型平台

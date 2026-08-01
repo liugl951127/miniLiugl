@@ -1,10 +1,14 @@
 <!--
+  @file views/ai/TensorBoard.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/ai/TensorBoard.vue (TensorBoard 页面)
   @version V3.5.12+ (前端注释补全)
   @description TensorBoard 页面
 -->
 <template>
-  <div class="tensorboard-container">
+  <div class="page-tensor-board tensorboard-container">
     <div class="tb-header">
       <h1>📊 TensorBoard <span class="badge">V2.8.8 自托管</span></h1>
       <p class="sub">训练指标可视化 · 多 run 对比 · 实时刷新 (3s 轮询)</p>

@@ -1,10 +1,14 @@
 <!--
+  @file views/ai/ModelMarket.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/ai/ModelMarket.vue (AI 模型 (ModelMarket))
   @version V3.5.12+ (前端注释补全)
   @description AI 模型 (ModelMarket)
 -->
 <template>
-  <div class="model-market-container">
+  <div class="page-model-market model-market-container">
     <div class="header">
       <h1>📦 AI 模型市场 <span class="badge">V2.9.1</span></h1>
       <p class="sub">上传 / 下载 / 评分 · 用户共建的模型生态</p>

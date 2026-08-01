@@ -1,4 +1,8 @@
 <!--
+  @file views/admin/WechatBindings.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   微信绑定管理 (V5)
   adminLiugl 专属
   - 列出全部绑定
@@ -12,7 +16,7 @@
   @description 微信绑定管理
 -->
 <template>
-  <div class="wechat-bindings">
+  <div class="page-wechat-bindings wechat-bindings">
     <header class="header">
       <h1>📱 微信绑定管理</h1>
       <p class="subtitle">adminLiugl 专属: 管理用户与微信 openid 的绑定关系</p>

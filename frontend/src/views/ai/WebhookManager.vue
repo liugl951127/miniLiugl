@@ -1,10 +1,14 @@
 <!--
+  @file views/ai/WebhookManager.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/ai/WebhookManager.vue (WebhookManager 页面)
   @version V3.5.12+ (前端注释补全)
   @description WebhookManager 页面
 -->
 <template>
-  <div class="webhook-container">
+  <div class="page-webhook-manager webhook-container">
     <div class="header">
       <h1>🔗 Webhook 集成 <span class="badge">V2.9.1</span></h1>
       <p class="sub">事件订阅 / HMAC 签名 / 异步投递 / 重试</p>

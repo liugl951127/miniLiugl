@@ -1,10 +1,14 @@
 <!--
+  @file views/ai/MusicStream.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/ai/MusicStream.vue (AI 流式对话 (MusicStream))
   @version V3.5.12+ (前端注释补全)
   @description AI 流式对话 (MusicStream)
 -->
 <template>
-  <div class="music-stream">
+  <div class="page-music-stream music-stream">
     <el-card>
       <template #header>
         <div class="header">

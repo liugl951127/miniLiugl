@@ -1,10 +1,14 @@
 <!--
+  @file views/compliance/MaskTool.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/compliance/MaskTool.vue (AI 工具 (MaskTool))
   @version V3.5.12+ (前端注释补全)
   @description AI 工具 (MaskTool)
 -->
 <template>
-  <div class="mask-tool">
+  <div class="page-mask-tool mask-tool">
     <el-card>
       <template #header>
         <div class="header">

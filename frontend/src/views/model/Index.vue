@@ -1,4 +1,8 @@
 <!--
+  @file views/model/Index.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   Model 模型管理页 (V3.5.5+ 新增)
   对应后端模块: minimax-model (端口 8084)
   API 路径: /api/v1/models/*
@@ -9,7 +13,7 @@
   @description 入口/列表
 -->
 <template>
-  <div class="model-page">
+  <div class="page-index model-page">
     <el-card>
       <template #header>
         <div class="page-header">

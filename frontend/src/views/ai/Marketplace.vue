@@ -1,10 +1,14 @@
 <!--
+  @file views/ai/Marketplace.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/ai/Marketplace.vue (AI 市场)
   @version V3.5.12+ (前端注释补全)
   @description AI 市场
 -->
 <template>
-  <div class="marketplace-container">
+  <div class="page-marketplace marketplace-container">
     <div class="mp-header">
       <h1>🏪 AI Agent 市场 <span class="badge">V2.9.0</span></h1>
       <p class="sub">浏览 / 上传 / 评分 · 用户共建的 Agent 生态</p>

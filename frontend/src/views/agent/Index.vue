@@ -1,10 +1,14 @@
 <!--
+  @file views/agent/Index.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/agent/Index.vue (入口/列表)
   @version V3.5.12+ (前端注释补全)
   @description 入口/列表
 -->
 <template>
-  <div class="agent-container">
+  <div class="page-index agent-container">
     <div class="agent-header">
       <h1>🤖 {{ t('agent.title') }} <span class="badge">V2.0</span></h1>
       <p class="sub">{{ t('agent.subtitle') }}</p>

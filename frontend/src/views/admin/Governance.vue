@@ -1,10 +1,14 @@
 <!--
+  @file views/admin/Governance.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/admin/Governance.vue (治理)
   @version V3.5.12+ (前端注释补全)
   @description 治理
 -->
 <template>
-  <div class="governance-container">
+  <div class="page-governance governance-container">
     <div class="gov-header">
       <h1>🛡️ 治理后台 <span class="badge">V2.9.0</span></h1>
       <p class="sub">操作审计可视化 / 异常检测 / 合规检查 / 数据保留</p>

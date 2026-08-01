@@ -1,4 +1,8 @@
 <!--
+  @file views/auth/WechatScanPage.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   微信扫码演示页 (V5.24 完善)
   - 已登录用户: 扫码绑定当前账号
   - 未登录用户: 扫码登录 → 自动跳转
@@ -10,7 +14,7 @@
   @description 微信扫码登录页
 -->
 <template>
-  <div class="wechat-scan-page">
+  <div class="page-wechat-scan-page wechat-scan-page">
     <div class="container">
       <h1>📱 {{ t('user.wechatScan') }}</h1>
       <p class="hint">

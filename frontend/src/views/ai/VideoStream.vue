@@ -1,10 +1,14 @@
 <!--
+  @file views/ai/VideoStream.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/ai/VideoStream.vue (AI 流式对话 (VideoStream))
   @version V3.5.12+ (前端注释补全)
   @description AI 流式对话 (VideoStream)
 -->
 <template>
-  <div class="video-stream">
+  <div class="page-video-stream video-stream">
     <el-card>
       <template #header>
         <div class="header">

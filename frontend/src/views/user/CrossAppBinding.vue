@@ -1,10 +1,14 @@
 <!--
+  @file views/user/CrossAppBinding.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/user/CrossAppBinding.vue (跨应用绑定)
   @version V3.5.12+ (前端注释补全)
   @description 跨应用绑定
 -->
 <template>
-  <div class="cross-app-page">
+  <div class="page-cross-app-binding cross-app-page">
     <div class="page-header">
       <h2>🔗 跨应用绑定 (UnionID)</h2>
       <el-button @click="loadMyBinding"><el-icon><Refresh /></el-icon></el-button>

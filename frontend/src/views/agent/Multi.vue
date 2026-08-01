@@ -1,10 +1,14 @@
 <!--
+  @file views/agent/Multi.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/agent/Multi.vue (Multi 页面)
   @version V3.5.12+ (前端注释补全)
   @description Multi 页面
 -->
 <template>
-  <div class="multi-agent">
+  <div class="page-multi multi-agent">
     <div class="header">
       <h1>🧠 多智能体协作 <span class="badge">V5.17</span></h1>
       <p class="sub">Planner 规划 → Executor 执行 → Critic 评估 (3 角色协作, 失败自动重规划)</p>

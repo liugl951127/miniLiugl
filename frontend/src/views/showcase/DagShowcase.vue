@@ -1,4 +1,8 @@
 <!--
+  @file views/showcase/DagShowcase.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   Agent DAG 工作流设计器 (V4.2)
   - 6 种节点: input/llm/tool/condition/loop/output
   - 拖拽连线
@@ -10,7 +14,7 @@
   @description DagShowcase 页面
 -->
 <template>
-  <div class="dag">
+  <div class="page-dag-showcase dag">
     <header class="header">
       <h1>🔀 Agent DAG 工作流</h1>
       <p class="subtitle">拖拽节点 + 连线, 设计复杂 AI 工作流</p>

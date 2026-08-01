@@ -1,4 +1,8 @@
 <!--
+  @file views/showcase/AudioShowcase.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   语音能力 ShowCase (V4.1)
   - ASR 语音转文字 (上传音频 + Whisper/Paraformer)
   - TTS 文字转语音 (5 个音色 + Edge-TTS/CosyVoice)
@@ -10,7 +14,7 @@
   @description AudioShowcase 页面
 -->
 <template>
-  <div class="audio">
+  <div class="page-audio-showcase audio">
     <header class="header">
       <h1>🎤 语音能力</h1>
       <p class="subtitle">ASR 语音转文字 + TTS 文字转语音, 5 个真实模型</p>

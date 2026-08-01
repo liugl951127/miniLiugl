@@ -1,10 +1,14 @@
 <!--
+  @file views/admin/Alerts.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/admin/Alerts.vue (告警列表)
   @version V3.5.12+ (前端注释补全)
   @description 告警列表
 -->
 <template>
-  <div class="alerts">
+  <div class="page-alerts alerts">
     <el-card>
       <template #header>
         <div class="header">

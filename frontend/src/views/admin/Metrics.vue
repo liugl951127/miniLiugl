@@ -1,10 +1,14 @@
 <!--
+  @file views/admin/Metrics.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/admin/Metrics.vue (指标)
   @version V3.5.12+ (前端注释补全)
   @description 指标
 -->
 <template>
-  <div class="metrics-page">
+  <div class="page-metrics metrics-page">
     <div class="header">
       <h2>📊 实时 Metrics 监控 (V5.10)</h2>
       <div class="header-right">

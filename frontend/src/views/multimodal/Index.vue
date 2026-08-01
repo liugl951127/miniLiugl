@@ -1,4 +1,8 @@
 <!--
+  @file views/multimodal/Index.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   Multimodal 多模态页 (V3.5.5+ 新增)
   对应后端模块: minimax-multimodal (端口 8087)
   API 路径: /api/v1/multimodal/*
@@ -10,7 +14,7 @@
   @description 入口/列表
 -->
 <template>
-  <div class="multimodal-page">
+  <div class="page-index multimodal-page">
     <el-card>
       <template #header>
         <div class="page-header">

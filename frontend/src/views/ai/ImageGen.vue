@@ -1,10 +1,14 @@
 <!--
+  @file views/ai/ImageGen.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/ai/ImageGen.vue (ImageGen 页面)
   @version V3.5.12+ (前端注释补全)
   @description ImageGen 页面
 -->
 <template>
-  <div class="image-gen">
+  <div class="page-image-gen image-gen">
     <el-card>
       <template #header>
         <div class="header">

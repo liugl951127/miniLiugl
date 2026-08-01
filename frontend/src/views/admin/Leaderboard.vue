@@ -1,10 +1,14 @@
 <!--
+  @file views/admin/Leaderboard.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/admin/Leaderboard.vue (排行榜)
   @version V3.5.12+ (前端注释补全)
   @description 排行榜
 -->
 <template>
-  <div class="leaderboard-page">
+  <div class="page-leaderboard leaderboard-page">
     <div class="page-header">
       <h2>🏆 模型对决排行榜</h2>
       <el-button @click="loadAll"><el-icon><Refresh /></el-icon> 刷新</el-button>

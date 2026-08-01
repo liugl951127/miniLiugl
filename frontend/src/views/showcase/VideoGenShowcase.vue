@@ -1,4 +1,8 @@
 <!--
+  @file views/showcase/VideoGenShowcase.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   视频生成 ShowCase (V4.2)
   - 6 模型: Sora / 可灵 / CogVideoX / 万相 / AnimateDiff / Mock
   - mock 模式: 演示 + 帧序列
@@ -9,7 +13,7 @@
   @description VideoGenShowcase 页面
 -->
 <template>
-  <div class="videogen">
+  <div class="page-video-gen-showcase videogen">
     <header class="header">
       <h1>🎬 {{ t('showcase.videoGen') }}</h1>
       <p class="subtitle">{{ t('showcase.videoGenSubtitle') }}</p>

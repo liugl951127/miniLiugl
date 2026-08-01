@@ -1,10 +1,14 @@
 <!--
+  @file views/admin/Cluster.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/admin/Cluster.vue (V3.5.48)
   @description AI 集群 + Raft 共识 - 节点管理 / 路由 / leader 选举
   - 19 端点: nodes/active/list/{id}, me, leader, route, drain, stats, raft/start/stop/state/leader/submit/applied, raft/append/vote/status/log/trigger-election
 -->
 <template>
-  <div class="page">
+  <div class="page-cluster page">
     <el-card>
       <template #header>
         <div class="header">

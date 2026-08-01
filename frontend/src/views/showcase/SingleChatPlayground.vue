@@ -1,4 +1,8 @@
 <!--
+  @file views/showcase/SingleChatPlayground.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   实时单模型 PlayGround (V4)
   - 选模型 + 写 prompt → 立即流式调用
   - 显示延迟/token/原始响应
@@ -10,7 +14,7 @@
   @description AI 聊天对话 (SingleChatPlayground)
 -->
 <template>
-  <div class="playground">
+  <div class="page-single-chat-playground playground">
     <header class="header">
       <h1>⚡ 单模型 PlayGround</h1>
       <p class="subtitle">直接打 model 服务, 验证每个模型真实可用</p>

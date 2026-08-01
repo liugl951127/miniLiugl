@@ -1,10 +1,14 @@
 <!--
+  @file views/super/Index.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/super/Index.vue (入口/列表)
   @version V3.5.12+ (前端注释补全)
   @description 入口/列表
 -->
 <template>
-  <div class="super-container">
+  <div class="page-index super-container">
     <div class="super-header">
       <h1>👑 超级管理员控制台 <span class="badge">adminLiugl 专属</span></h1>
       <p class="sub">🔑 你是平台的唯一超级管理员 — 拥有所有权限</p>

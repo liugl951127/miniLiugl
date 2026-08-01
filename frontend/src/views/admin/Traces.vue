@@ -1,10 +1,14 @@
 <!--
+  @file views/admin/Traces.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/admin/Traces.vue (调用链追踪)
   @version V3.5.12+ (前端注释补全)
   @description 调用链追踪
 -->
 <template>
-  <div class="traces-page">
+  <div class="page-traces traces-page">
     <div class="header">
       <h2>🔍 分布式追踪 (V5.14 OpenTelemetry)</h2>
       <div class="header-right">

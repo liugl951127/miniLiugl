@@ -1,4 +1,8 @@
 <!--
+  @file views/chat/Index.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   Chat - 醒目版本
   特性:
     - 拖拽 / 点选上传图片
@@ -15,7 +19,7 @@
   @description 入口/列表
 -->
 <template>
-  <div class="chat-page">
+  <div class="page-index chat-page">
     <!-- 侧边栏 -->
     <aside class="chat-side">
       <el-button type="primary" class="new-chat-btn" @click="newSession" :icon="EditPen">

@@ -1,4 +1,8 @@
 <!--
+  @file views/tenant/Index.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   V3.1: 多租户管理控制台
   adminLiugl (SUPER_ADMIN) 专属
   功能: 租户列表 / 创建 / 启停 / 配额 / 删除 / 查看用户
@@ -9,7 +13,7 @@
   @description 入口/列表
 -->
 <template>
-  <div class="tenant-page">
+  <div class="page-index tenant-page">
     <!-- 页面标题 -->
     <div class="page-header">
       <div>

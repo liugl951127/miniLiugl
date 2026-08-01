@@ -1,10 +1,14 @@
 <!--
+  @file views/ai/TrainingViz.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/ai/TrainingViz.vue (模型训练任务 (TrainingViz))
   @version V3.5.12+ (前端注释补全)
   @description 模型训练任务 (TrainingViz)
 -->
 <template>
-  <div class="training-viz">
+  <div class="page-training-viz training-viz">
     <el-card>
       <template #header>
         <div class="header">

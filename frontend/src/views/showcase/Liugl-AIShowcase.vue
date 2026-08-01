@@ -1,4 +1,8 @@
 <!--
+  @file views/showcase/Liugl-AIShowcase.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   Liugl-AI 实时多模型对决 (V4)
   核心展示:
     - 同时并发调 4+ 个真实大模型
@@ -18,7 +22,7 @@
   @description Liugl-AIShowcase 页面
 -->
 <template>
-  <div class="showcase">
+  <div class="page-liugl-aishowcase showcase">
     <header class="header">
       <h1>🆚 多模型对决</h1>
       <p class="subtitle">同一个 Prompt, 多个大模型同时回答, 横向对比</p>

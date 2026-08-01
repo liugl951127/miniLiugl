@@ -1,10 +1,14 @@
 <!--
+  @file views/knowledge/Index.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/knowledge/Index.vue (入口/列表)
   @version V3.5.12+ (前端注释补全)
   @description 入口/列表
 -->
 <template>
-  <div class="rag-page">
+  <div class="page-index rag-page">
     <!-- 顶部统计 -->
     <el-row :gutter="16" class="stats-row">
       <el-col :span="6">

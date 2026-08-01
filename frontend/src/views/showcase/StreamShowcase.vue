@@ -1,4 +1,8 @@
 <!--
+  @file views/showcase/StreamShowcase.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   WebSocket 流式输出 ShowCase (V4.2)
   5 种流式类型: chat/vision/audio/agent/battle
   后端: minimax-ws 8095
@@ -9,7 +13,7 @@
   @description AI 流式对话 (StreamShowcase)
 -->
 <template>
-  <div class="stream">
+  <div class="page-stream-showcase stream">
     <header class="header">
       <h1>📡 WebSocket 流式输出</h1>
       <p class="subtitle">5 种实时流式类型: chat / vision / audio / agent / battle</p>

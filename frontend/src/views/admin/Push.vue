@@ -1,10 +1,14 @@
 <!--
+  @file views/admin/Push.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/admin/Push.vue (V3.5.48)
   @description 消息推送 - 多渠道 (APNs/FCM/Web Push/VAPID)
   - 18 端点: subscribe/unsubscribe, subscriptions/all, send/user/platform/broadcast, messages, stats, integration/{auto,apns,fcm,web,health,stats,detect,vapid-public-key}
 -->
 <template>
-  <div class="page">
+  <div class="page-push page">
     <el-card>
       <template #header>
         <div class="header">

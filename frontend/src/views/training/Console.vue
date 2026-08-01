@@ -1,4 +1,8 @@
 <!--
+  @file views/training/Console.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   训练控制台 (Day 23)
   联动后端: /training/models | /training/tasks
   实时指标: 轮询 /training/tasks/{id} 驱动 ECharts
@@ -9,7 +13,7 @@
   @description Console 页面
 -->
 <template>
-  <div class="training-console">
+  <div class="page-console training-console">
     <div class="tc-header">
       <h1>🧠 模型训练控制台 <span class="badge">V1.0</span></h1>
       <div class="conn-status">

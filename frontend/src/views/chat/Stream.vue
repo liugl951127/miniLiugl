@@ -1,10 +1,14 @@
 <!--
+  @file views/chat/Stream.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/chat/Stream.vue (AI 流式对话)
   @version V3.5.12+ (前端注释补全)
   @description AI 流式对话
 -->
 <template>
-  <div class="chat-stream">
+  <div class="page-stream chat-stream">
     <div class="header">
       <h1>💬 双向流式聊天 <span class="badge">V5.19</span></h1>
       <p class="sub">实时双向: 你可以暂停 / 引导方向 / 评分反馈 / 注入上下文 / 切换模型</p>

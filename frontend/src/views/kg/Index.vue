@@ -1,4 +1,8 @@
 <!--
+  @file views/kg/Index.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   知识图谱 V5.6 - V2.0 实体管理 + 可视化 + 最短路径
   特性:
     - 创建/搜索实体 (person/place/org/concept/event)
@@ -14,7 +18,7 @@
   @description 入口/列表
 -->
 <template>
-  <div class="kg-container">
+  <div class="page-index kg-container">
     <div class="kg-header">
       <h1>🕸️ {{ t('kg.title') }} <span class="badge">V5.6</span></h1>
       <p class="sub">{{ t('kg.subtitle') }}</p>

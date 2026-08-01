@@ -1,10 +1,14 @@
 <!--
+  @file views/plugins/Index.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/plugins/Index.vue (入口/列表)
   @version V3.5.12+ (前端注释补全)
   @description 入口/列表
 -->
 <template>
-  <div class="plugins-container">
+  <div class="page-index plugins-container">
     <div class="plugins-header">
       <h1>🧩 {{ t('plugins.title') }} <span class="badge">V2.0</span></h1>
       <p class="sub">{{ t('plugins.subtitle') }}</p>

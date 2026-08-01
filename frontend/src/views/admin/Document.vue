@@ -1,10 +1,14 @@
 <!--
+  @file views/admin/Document.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/admin/Document.vue (V3.5.48)
   @description 文档解析 - 上传 PDF/Word/TXT, 解析 + 关键词提取
   - 3 端点: parse / keywords / formats
 -->
 <template>
-  <div class="page">
+  <div class="page-document page">
     <el-card>
       <template #header>
         <div class="header">

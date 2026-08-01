@@ -1,4 +1,8 @@
 <!--
+  @file views/admin/ApiKeyStats.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   API Key 配额统计页面 (Day 20)
   管理员视角: 全局 Key 数量 / 活跃数 / 总调用量
 -->
@@ -8,7 +12,7 @@
   @description API Key 统计
 -->
 <template>
-  <div class="apikey-stats">
+  <div class="page-api-key-stats apikey-stats">
     <!-- 页面标题 -->
     <div class="page-header">
       <div>

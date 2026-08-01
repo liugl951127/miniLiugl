@@ -1,4 +1,8 @@
 <!--
+  @file views/showcase/PluginShowcase.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   插件 SDK (V4.1)
   - 4 类插件: class / url / js / wasm
   - JS 沙箱执行用户上传的插件代码 (Function 构造器)
@@ -11,7 +15,7 @@
   @description PluginShowcase 页面
 -->
 <template>
-  <div class="plugin-sdk">
+  <div class="page-plugin-showcase plugin-sdk">
     <header class="header">
       <h1>🔌 {{ t('showcase.pluginSDK') }}</h1>
       <p class="subtitle">{{ t('showcase.pluginSDKSubtitle') }}</p>

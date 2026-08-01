@@ -1,4 +1,8 @@
 <!--
+  @file views/apikey/Stats.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   V5.9 Day 20: API Key 用量统计页面
   功能: 全局 Key 统计 / 启用状态分布 / 调用次数 Top / 趋势图
 -->
@@ -8,7 +12,7 @@
   @description Stats 页面
 -->
 <template>
-  <div class="apikey-stats-page">
+  <div class="page-stats apikey-stats-page">
     <!-- 页面标题 -->
     <div class="page-header">
       <div>

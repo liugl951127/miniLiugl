@@ -1,4 +1,8 @@
 <!--
+  @file views/user/Profile.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   个人中心 (V5)
   - 头像/昵称/邮箱
   - 我的微信 (集成 MyWechat)
@@ -10,7 +14,7 @@
   @description 个人中心
 -->
 <template>
-  <div class="profile-page">
+  <div class="page-profile profile-page">
     <header class="header">
       <h1>👤 个人中心</h1>
     </header>

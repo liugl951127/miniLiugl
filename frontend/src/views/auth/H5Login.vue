@@ -1,4 +1,8 @@
 <!--
+  @file views/auth/H5Login.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   H5 跨平台登录页 (V5.2)
   - 微信扫码 / 公众号 OAuth / QQ / 支付宝 4 种登录方式
   - 移动端适配 (H5)
@@ -11,7 +15,7 @@
   @description H5 跨平台登录
 -->
 <template>
-  <div class="h5-login">
+  <div class="page-h5login h5-login">
     <header class="header">
       <h1>🔑 登录</h1>
       <p class="subtitle">Liugl-AI 大模型平台</p>

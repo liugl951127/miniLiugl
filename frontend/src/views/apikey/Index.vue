@@ -1,4 +1,8 @@
 <!--
+  @file views/apikey/Index.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   V5.33: API Key 管理页面 (Day 18)
   用户自主管理个人 API Key
   功能: 创建 / 列表 / 复制 / 禁用 / 轮换 / 删除
@@ -9,7 +13,7 @@
   @description 入口/列表
 -->
 <template>
-  <div class="apikey-page">
+  <div class="page-index apikey-page">
     <!-- 页面标题 -->
     <div class="page-header">
       <div>

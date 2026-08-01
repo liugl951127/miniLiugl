@@ -1,4 +1,8 @@
 <!--
+  @file views/showcase/ImageGenShowcase.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   文生图 ShowCase (V4.1)
   - 5 个真实模型 (FLUX / SDXL / Kolors / 通义万相 / DALL-E)
   - mock 模式: 用 prompt 哈希生成 SVG 渐变占位图
@@ -10,7 +14,7 @@
   @description ImageGenShowcase 页面
 -->
 <template>
-  <div class="imagegen">
+  <div class="page-image-gen-showcase imagegen">
     <header class="header">
       <h1>🎨 文生图 (Text-to-Image)</h1>
       <p class="subtitle">输入文字描述, 多个模型同时生成图片, 横向对比效果</p>

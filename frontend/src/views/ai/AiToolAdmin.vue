@@ -1,10 +1,14 @@
 <!--
+  @file views/ai/AiToolAdmin.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/ai/AiToolAdmin.vue (AI 工具 (AiToolAdmin))
   @version V3.5.12+ (前端注释补全)
   @description AI 工具 (AiToolAdmin)
 -->
 <template>
-  <div class="ai-tool-admin">
+  <div class="page-ai-tool-admin ai-tool-admin">
     <el-tabs v-model="activeTab">
       <!-- 工具列表 -->
       <el-tab-pane label="AI 工具" name="tools">

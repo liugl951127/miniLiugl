@@ -1,4 +1,8 @@
 <!--
+  @file views/admin/Index.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   Admin 后台容器 (V5.24)
   - 提供侧边栏子导航 + 主内容 router-view
   - 子页: Dashboard / Metrics / Traces / Monitor / Provider / Leaderboard / ApiKeyStats
@@ -9,7 +13,7 @@
   @description 入口/列表
 -->
 <template>
-  <div class="admin-container">
+  <div class="page-index admin-container">
     <el-aside width="220px" class="admin-aside">
       <div class="aside-header">
         <el-icon :size="24" color="#5b8def"><Setting /></el-icon>

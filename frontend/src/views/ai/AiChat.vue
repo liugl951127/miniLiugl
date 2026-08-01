@@ -1,10 +1,14 @@
 <!--
+  @file views/ai/AiChat.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/ai/AiChat.vue (AI 聊天对话 (AiChat))
   @version V3.5.12+ (前端注释补全)
   @description AI 聊天对话 (AiChat)
 -->
 <template>
-  <PageContainer title="AI 智能助手" subtitle="自研 AI 引擎 · 0 外部依赖 · 13 种意图识别" icon="🤖">
+  <PageContainer class="page-ai-chat" title="AI 智能助手" subtitle="自研 AI 引擎 · 0 外部依赖 · 13 种意图识别" icon="🤖">
     <el-row :gutter="16">
       <!-- 左侧: 历史会话 -->
       <el-col :span="6">

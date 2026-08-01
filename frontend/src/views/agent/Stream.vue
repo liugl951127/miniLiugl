@@ -1,10 +1,14 @@
 <!--
+  @file views/agent/Stream.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/agent/Stream.vue (AI 流式对话)
   @version V3.5.12+ (前端注释补全)
   @description AI 流式对话
 -->
 <template>
-  <div class="agent-stream">
+  <div class="page-stream agent-stream">
     <div class="header">
       <h1>🤖 Agent 流式执行 <span class="badge">V5.16</span></h1>
       <p class="sub">实时看到 Agent 思考过程 / 工具调用 / 步骤演进</p>

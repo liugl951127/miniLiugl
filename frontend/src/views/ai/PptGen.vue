@@ -1,11 +1,15 @@
 <!--
+  @file views/ai/PptGen.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/ai/PptGen.vue (V3.5.48)
   @description PPT 自动生成 - 用户目标能力之一
   - 4 端点: generate / auto / themes / parse
   - 大纲输入 → 4 套主题选择 → 生成 base64 → 浏览器下载
 -->
 <template>
-  <div class="page">
+  <div class="page-ppt-gen page">
     <el-card>
       <template #header>
         <div class="header">

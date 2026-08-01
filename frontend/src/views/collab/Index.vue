@@ -1,10 +1,14 @@
 <!--
+  @file views/collab/Index.vue (V3.5.75 标准化模板)
+  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
+-->
+<!--
   @file views/collab/Index.vue (入口/列表)
   @version V3.5.12+ (前端注释补全)
   @description 入口/列表
 -->
 <template>
-  <div class="collab-container">
+  <div class="page-index collab-container">
     <div class="collab-header">
       <h1>👥 实时协作 <span class="badge">V2.8.7</span></h1>
       <p class="sub">多人协同 AI 对话 / 文档编辑 / 训练监控 · WebSocket 实时同步</p>
