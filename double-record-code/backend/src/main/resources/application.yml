@@ -40,6 +40,27 @@ spring:
       max-file-size: 200MB
       max-request-size: 500MB
 
+# Actuator 安全(DRL-2026-003)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+actuator:
+  allowed-ips: 127.0.0.1,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12
+
+# 限流(DRL-2026-001 修复)
+rate-limit:
+  enabled: true
+  login: 5
+  captcha: 3
+  write: 30
+  read: 120
+
 # MyBatis Plus
 mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
@@ -64,7 +85,6 @@ fabric:
   network-config-path: classpath:fabric/connection-profile.yaml
   wallet-path: ${FABRIC_WALLET_PATH:./wallet}
   identity-label: admin
-  # 链码异步事件监听
   event-listener:
     enabled: true
     poll-interval: 1000
@@ -77,8 +97,8 @@ crypto:
 # JWT
 jwt:
   secret: ${JWT_SECRET:dual_record_jwt_secret_2026_at_least_32_chars}
-  expiration: 7200  # 2 小时
-  refresh-expiration: 604800  # 7 天
+  expiration: 7200
+  refresh-expiration: 604800
   issuer: dual-record-platform
 
 # 业务参数
@@ -127,6 +147,15 @@ csrc:
   institution-name: ${CSRC_INSTITUTION_NAME:XX 银行}
   report-path: /opt/dual-record/csrc-report/
 
+# Springdoc OpenAPI
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+
 # 日志
 logging:
   level:
@@ -136,12 +165,3 @@ logging:
     org.springframework.security: INFO
   pattern:
     console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n'
-
-# Springdoc OpenAPI
-springdoc:
-  api-docs:
-    path: /v3/api-docs
-  swagger-ui:
-    path: /swagger-ui.html
-    tags-sorter: alpha
-    operations-sorter: alpha

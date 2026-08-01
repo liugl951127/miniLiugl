@@ -33,6 +33,7 @@ public class ChainEventConsumer {
 
     private final List<ChainEventHandler> handlers;
     private final com.bank.dualrecord.fabric.event.ChainEventAuditService auditService;
+    private final NonceIdempotentService nonceService;
 
     @KafkaListener(
         topics = {
@@ -64,6 +65,14 @@ public class ChainEventConsumer {
             event.getEventName(), event.getOrderId(), event.getTxId(),
             event.getBlockNumber(), partition, offset);
 
+        // 0. nonce 幂等检查(防重放)
+        String nonce = extractNonce(event);
+        if (!nonceService.tryAcquire(nonce)) {
+            log.warn("事件重放,跳过: nonce={}", nonce);
+            ack.acknowledge();
+            return;
+        }
+
         try {
             // 1. 落库(幂等)
             auditService.persist(event);
@@ -78,6 +87,22 @@ public class ChainEventConsumer {
             // 不 ACK,等待重试 / 进入死信
             // 实际生产应使用 DeadLetterPublishingRecoverer
         }
+    }
+
+    /**
+     * 从载荷中提取 nonce
+     */
+    private String extractNonce(ChainEventListener event) {
+        if (event.getPayload() == null) return null;
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+            com.fasterxml.jackson.databind.JsonNode node = om.readTree(event.getPayload());
+            com.fasterxml.jackson.databind.JsonNode nonceNode = node.get("nonce");
+            if (nonceNode != null) return nonceNode.asText();
+        } catch (Exception e) {
+            // 旧格式无 nonce
+        }
+        return null;
     }
 
     /**

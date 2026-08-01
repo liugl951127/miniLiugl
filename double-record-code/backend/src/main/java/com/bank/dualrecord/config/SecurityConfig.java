@@ -17,6 +17,8 @@ import java.util.List;
 
 /**
  * Spring Security 配置
+ *
+ * <p>含安全修复:DRL-2026-001/002/003/005
  */
 @Configuration
 public class SecurityConfig {
@@ -35,10 +37,13 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/swagger-ui.html",
                     "/actuator/health",
+                    "/actuator/info",
                     "/api/chain/health"
                 ).permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/compliance/**").hasAnyRole("COMPLIANCE", "ADMIN")
+                // 修复 DRL-2026-003:Actuator 详细端点需鉴权
+                .requestMatchers("/actuator/**").hasRole("OPS")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

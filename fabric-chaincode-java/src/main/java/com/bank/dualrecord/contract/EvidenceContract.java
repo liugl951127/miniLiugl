@@ -1,7 +1,5 @@
 package com.bank.dualrecord.contract;
 
-import com.bank.dualrecord.crypto.MerkleUtil;
-import com.bank.dualrecord.crypto.SM2Util;
 import com.bank.dualrecord.model.Evidence;
 import com.bank.dualrecord.model.NodeResult;
 import com.bank.dualrecord.model.OrderState;
@@ -11,7 +9,6 @@ import com.bank.dualrecord.util.JsonUtil;
 import com.bank.dualrecord.util.StateMachine;
 import org.hyperledger.fabric.contract.Context;
 import org.hyperledger.fabric.contract.ContractInterface;
-import org.hyperledger.fabric.contract.annotation.Contact;
 import org.hyperledger.fabric.contract.annotation.Contract;
 import org.hyperledger.fabric.contract.annotation.Default;
 import org.hyperledger.fabric.contract.annotation.Info;
@@ -28,30 +25,27 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * 证据上链合约
  *
- * <p>负责双录业务证据包(视频/音频/合同指纹)上链存证
- * <p>支持:提交、状态流转、节点结果追加、终结归档、多维查询
- *
- * @author Mavis
+ * <p>修复 DRL-2026-005:链码事件 nonce 防重放
+ * <p>所有 setEvent 都携带 unique nonce,后端消费者用 Redis SETNX 幂等去重
  */
 @Contract(
     name = "EvidenceContract",
     info = @Info(
         title = "双录证据上链合约",
-        description = "证据指纹 + 多方 SM2 签名 + 国家授时上链存证",
-        version = "1.0.0",
-        license = @License(name = "Apache-2.0"),
-        contact = @Contact(email = "blockchain@bank.com", name = "区块链团队")
+        description = "证据指纹 + 多方 SM2 签名 + 国家授时上链存证 + 事件 nonce 防重放",
+        version = "1.1.0",
+        license = @License(name = "Apache-2.0")
     )
 )
 public class EvidenceContract implements ContractInterface {
 
     private static final Logger log = LoggerFactory.getLogger(EvidenceContract.class);
 
-    // 索引前缀
     private static final String IDX_CUSTOMER = "CUSTOMER~";
     private static final String IDX_PRODUCT = "PRODUCT~";
     private static final String IDX_CHANNEL = "CHANNEL~";
@@ -63,26 +57,20 @@ public class EvidenceContract implements ContractInterface {
     // 提交证据
     // ============================================================
 
-    /**
-     * 提交证据上链
-     * 背书策略:2 节点背书
-     */
     @Transaction(intent = Transaction.TYPE.SUBMIT)
     public String submitEvidence(@Default() Context ctx, String evidenceJson) {
         log.info("submitEvidence invoked, len={}", evidenceJson == null ? 0 : evidenceJson.length());
 
-        // 1. 解析
         Evidence evidence = JsonUtil.fromJson(evidenceJson, Evidence.class);
         validate(evidence);
 
-        // 2. 幂等性
         ChaincodeStub stub = ctx.getStub();
         byte[] existing = stub.getState(evidence.getOrderId());
         if (existing != null && existing.length > 0) {
             throw new IllegalStateException("订单 " + evidence.getOrderId() + " 证据已存在");
         }
 
-        // 3. 验签(任一签名无效则拒绝)
+        // 验签(任一签名无效则拒绝)
         if (evidence.getCustomerSm2Signature() != null && !evidence.getCustomerSm2Signature().isEmpty()) {
             verifySignature(ctx, "CUSTOMER", evidence.getCustomerId(),
                 evidence.getOrderId() + evidence.getVideoHash(),
@@ -94,7 +82,6 @@ public class EvidenceContract implements ContractInterface {
                 evidence.getManagerSm2Signature());
         }
 
-        // 4. 补充系统字段
         evidence.setTxId(ContextUtil.getTxId(ctx));
         evidence.setState(OrderState.VERIFIED);
         evidence.setArchived(false);
@@ -106,25 +93,20 @@ public class EvidenceContract implements ContractInterface {
             evidence.setSubmitterCert(ContextUtil.getSubmitterCN(ctx));
         }
 
-        // 5. 写入
         stub.putState(evidence.getOrderId(), JsonUtil.toJson(evidence).getBytes(StandardCharsets.UTF_8));
 
-        // 6. 索引
         addToIndex(stub, IDX_CUSTOMER + evidence.getCustomerId(), evidence.getOrderId());
         addToIndex(stub, IDX_PRODUCT + evidence.getProductType().getCode(), evidence.getOrderId());
         addToIndex(stub, IDX_CHANNEL + evidence.getChannel(), evidence.getOrderId());
         addToIndex(stub, IDX_TIME + now.toString().substring(0, 10).replace("-", ""), evidence.getOrderId());
 
-        // 7. 事件
-        stub.setEvent("EvidenceSubmitted", JsonUtil.toJson(evidence).getBytes(StandardCharsets.UTF_8));
+        // 事件:携带 nonce 防重放
+        emitEvent(ctx, "EvidenceSubmitted", evidence);
 
-        log.info("证据 {} 已上链,TxID={}", evidence.getOrderId(), evidence.getTxId());
+        log.info("证据 {} 已上链, TxID={}", evidence.getOrderId(), evidence.getTxId());
         return evidence.getOrderId();
     }
 
-    /**
-     * 状态机流转
-     */
     @Transaction(intent = Transaction.TYPE.SUBMIT)
     public String updateState(@Default() Context ctx, String orderId, String newStateName, String reason) {
         log.info("updateState: {} -> {}, reason={}", orderId, newStateName, reason);
@@ -145,23 +127,19 @@ public class EvidenceContract implements ContractInterface {
 
         ctx.getStub().putState(orderId, JsonUtil.toJson(evidence).getBytes(StandardCharsets.UTF_8));
 
-        // 审计
         recordAuditInternal(ctx, orderId, "UPDATE_STATE", oldState, newState, reason);
 
-        // 事件
+        // 事件:携带 nonce
         Map<String, String> evt = new HashMap<>();
         evt.put("orderId", orderId);
         evt.put("oldState", oldState.name());
         evt.put("newState", newState.name());
         evt.put("reason", reason == null ? "" : reason);
-        ctx.getStub().setEvent("StateChanged", JsonUtil.toJson(evt).getBytes(StandardCharsets.UTF_8));
+        emitEvent(ctx, "StateChanged", evt);
 
         return newState.name();
     }
 
-    /**
-     * 追加话术节点结果(支持断点续传)
-     */
     @Transaction(intent = Transaction.TYPE.SUBMIT)
     public String appendNodeResult(@Default() Context ctx, String orderId, String nodeResultJson) {
         NodeResult result = JsonUtil.fromJson(nodeResultJson, NodeResult.class);
@@ -172,19 +150,15 @@ public class EvidenceContract implements ContractInterface {
         String key = IDX_NODE + orderId + "~" + result.getNodeCode();
         ctx.getStub().putState(key, nodeResultJson.getBytes(StandardCharsets.UTF_8));
 
-        // 事件
         Map<String, String> evt = new HashMap<>();
         evt.put("orderId", orderId);
         evt.put("nodeCode", result.getNodeCode());
         evt.put("result", result.getResult());
-        ctx.getStub().setEvent("NodeResultAppended", JsonUtil.toJson(evt).getBytes(StandardCharsets.UTF_8));
+        emitEvent(ctx, "NodeResultAppended", evt);
 
         return "OK";
     }
 
-    /**
-     * 终结证据(Merkle 根聚合)
-     */
     @Transaction(intent = Transaction.TYPE.SUBMIT)
     public String finalizeEvidence(@Default() Context ctx, String orderId, String merkleRoot) {
         log.info("finalizeEvidence: {}, root={}", orderId, merkleRoot);
@@ -207,15 +181,14 @@ public class EvidenceContract implements ContractInterface {
 
         ctx.getStub().putState(orderId, JsonUtil.toJson(evidence).getBytes(StandardCharsets.UTF_8));
 
-        // 审计
         recordAuditInternal(ctx, orderId, "FINALIZE", OrderState.QA_PASSED, OrderState.COMPLETED, "归档锁定");
 
-        ctx.getStub().setEvent("EvidenceFinalized", JsonUtil.toJson(evidence).getBytes(StandardCharsets.UTF_8));
+        emitEvent(ctx, "EvidenceFinalized", evidence);
         return "OK";
     }
 
     // ============================================================
-    // 查询(免费)
+    // 查询
     // ============================================================
 
     @Transaction(intent = Transaction.TYPE.EVALUATE)
@@ -233,9 +206,6 @@ public class EvidenceContract implements ContractInterface {
         return e == null ? null : JsonUtil.toJson(e);
     }
 
-    /**
-     * 验证证据(链下数据 vs 链上指纹)
-     */
     @Transaction(intent = Transaction.TYPE.EVALUATE)
     public String verifyEvidence(@Default() Context ctx, String orderId, String videoHash, String audioHash, String contractHash) {
         Evidence evidence = queryEvidence(ctx, orderId);
@@ -264,9 +234,6 @@ public class EvidenceContract implements ContractInterface {
         return JsonUtil.toJson(result);
     }
 
-    /**
-     * 查询订单的所有历史
-     */
     @Transaction(intent = Transaction.TYPE.EVALUATE)
     public String getEvidenceHistory(@Default() Context ctx, String orderId) {
         List<Map<String, Object>> history = new ArrayList<>();
@@ -282,17 +249,11 @@ public class EvidenceContract implements ContractInterface {
         return JsonUtil.toJson(history);
     }
 
-    /**
-     * 按客户查询(返回 JSON 数组)
-     */
     @Transaction(intent = Transaction.TYPE.EVALUATE)
     public String queryByCustomer(@Default() Context ctx, String customerId, int pageSize, String bookmark) {
         return queryByIndex(ctx, IDX_CUSTOMER + customerId, pageSize, bookmark);
     }
 
-    /**
-     * 按产品查询
-     */
     @Transaction(intent = Transaction.TYPE.EVALUATE)
     public String queryByProduct(@Default() Context ctx, int productType, int pageSize, String bookmark) {
         return queryByIndex(ctx, IDX_PRODUCT + productType, pageSize, bookmark);
@@ -315,6 +276,31 @@ public class EvidenceContract implements ContractInterface {
     // ============================================================
     // 内部方法
     // ============================================================
+
+    /**
+     * 发送事件 - 带 nonce 防重放
+     *
+     * <p>修复 DRL-2026-005
+     * <p>每个事件都携带 unique nonce(UUID),消费者用 Redis SETNX 幂等
+     */
+    private void emitEvent(Context ctx, String eventName, Object payload) {
+        String nonce = UUID.randomUUID().toString();
+        String eventPayload = JsonUtil.toJson(payload);
+
+        // 包装格式:{ "nonce": "...", "data": {...} }
+        Map<String, Object> envelope = new HashMap<>();
+        envelope.put("nonce", nonce);
+        envelope.put("eventName", eventName);
+        envelope.put("txId", ContextUtil.getTxId(ctx));
+        envelope.put("blockNum", 0); // 实际值 Fabric 在 setEvent 后会自动填充
+        envelope.put("timestamp", Instant.now().toString());
+        envelope.put("data", payload);
+
+        String envelopeJson = JsonUtil.toJson(envelope);
+        ctx.getStub().setEvent(eventName, envelopeJson.getBytes(StandardCharsets.UTF_8));
+
+        log.debug("事件已发送: name={}, nonce={}, len={}", eventName, nonce, envelopeJson.length());
+    }
 
     private void validate(Evidence evidence) {
         if (evidence == null) {
@@ -343,8 +329,10 @@ public class EvidenceContract implements ContractInterface {
         if (pubKeyBytes == null) {
             throw new IllegalStateException("公钥未注册: " + partyType + "/" + partyId);
         }
-        boolean valid = SM2Util.verify(new String(pubKeyBytes, StandardCharsets.UTF_8),
-            plaintext.getBytes(StandardCharsets.UTF_8), signatureHex);
+        boolean valid = com.bank.dualrecord.crypto.SM2Util.verify(
+            new String(pubKeyBytes, StandardCharsets.UTF_8),
+            plaintext.getBytes(StandardCharsets.UTF_8),
+            signatureHex);
         if (!valid) {
             throw new IllegalStateException(partyType + " SM2 签名验证失败: " + partyId);
         }
@@ -389,7 +377,7 @@ public class EvidenceContract implements ContractInterface {
 
     private void recordAuditInternal(Context ctx, String orderId, String action, OrderState oldState, OrderState newState, String reason) {
         Map<String, Object> audit = new HashMap<>();
-        audit.put("id", java.util.UUID.randomUUID().toString().replace("-", ""));
+        audit.put("id", UUID.randomUUID().toString().replace("-", ""));
         audit.put("orderId", orderId);
         audit.put("action", action);
         audit.put("operator", ContextUtil.getSubmitterCN(ctx));

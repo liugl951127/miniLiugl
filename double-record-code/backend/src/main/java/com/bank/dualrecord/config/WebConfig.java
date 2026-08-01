@@ -1,6 +1,6 @@
 package com.bank.dualrecord.config;
 
-import com.bank.dualrecord.security.RateLimitInterceptor;
+import com.bank.dualrecord.security.DistributedRateLimitInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -14,7 +14,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @RequiredArgsConstructor
 public class WebConfig implements WebMvcConfigurer {
 
-    private final RateLimitInterceptor rateLimitInterceptor;
+    private final DistributedRateLimitInterceptor rateLimitInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
