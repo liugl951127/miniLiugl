@@ -22,22 +22,24 @@
  * @since V2.8.9
  */
 
-const CACHE_VERSION = 'v3.5.76'
+const CACHE_VERSION = 'v3.5.79'
 const CACHE_NAME = `minimax-${CACHE_VERSION}`
 const RUNTIME_CACHE = 'liugl-runtime'
 const API_CACHE = 'liugl-api'
 const OFFLINE_URL = '/offline.html'
 
 // 静态资源预缓存 (构建时由 vite-plugin-pwa 注入, 这里手工维护核心)
+// V3.5.79+ PWA 全 SVG 矢量图标 (响应式 + 高 DPI 友好)
 const PRECACHE_URLS = [
   '/',
   '/index.html',
   '/offline.html',
   '/manifest.json',
   '/favicon.svg',
-  // '/icons/icon-192.png'  // V3.5.41: dist/icons/ 只有 svg, 无 png
-  // '/icons/icon-512.png'  // V3.5.41: dist/icons/ 只有 svg, 无 png
-  '/icons/icon-192.svg'
+  '/icons/icon-192.svg',
+  '/icons/icon-512.svg',
+  '/icons/apple-touch-icon.svg',
+  '/icons/mask-icon.svg'
 ]
 
 // V3.5.71+ /assets/* 缓存 (NetworkFirst, 永远拿最新, 离线兜底)
@@ -57,6 +59,10 @@ const QUEUE_DB = 'minimax-bg-sync'
 const QUEUE_STORE = 'pending-requests'
 const SYNC_TAG = 'minimax-bg-sync'
 
+// V3.5.79+ Periodic Background Sync 定时同步
+const PERIODIC_TAG = 'minimax-periodic-sync'
+const PERIODIC_MIN_INTERVAL = 60 * 60 * 1000   // 1 小时 (浏览器可延长)
+
 // 永不缓存
 const NEVER_CACHE_PATTERNS = [
   /\/api\/v\d+\/auth\/(login|logout|refresh)/,
@@ -74,6 +80,71 @@ self.addEventListener('sync', (event) => {
   console.log('[SW] Background Sync 触发, 重发离线队列...')
   event.waitUntil(replayQueuedRequests(event))
 })
+
+// V3.5.79+ Periodic Background Sync event handler
+// 浏览器定时触发 (最少 1h 间隔), 拉取新通知/更新缓存
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag !== PERIODIC_TAG) return
+  console.log('[SW] Periodic Background Sync 触发, 拉新数据...')
+  event.waitUntil(performPeriodicSync())
+})
+
+async function performPeriodicSync() {
+  // 1. 拉新通知
+  try {
+    const resp = await fetch('/api/v1/notification/unread', {
+      cache: 'no-cache',
+      credentials: 'include'
+    })
+    if (resp.ok) {
+      const data = await resp.json()
+      const unread = (data.data?.list || []).filter(n => !n.read)
+      console.log(`[SW] Periodic 拉新 ${unread.length} 个未读通知`)
+      // 通知 client
+      const allClients = await self.clients.matchAll({ includeUncontrolled: true })
+      for (const client of allClients) {
+        client.postMessage({
+          type: 'periodic-sync-notification',
+          unreadCount: unread.length,
+          notifications: unread.slice(0, 5),
+          timestamp: Date.now()
+        })
+      }
+      // 显示系统通知 (前 1 个)
+      if (unread.length > 0 && 'showNotification' in self.registration) {
+        const top = unread[0]
+        await self.registration.showNotification(top.title || '新通知', {
+          body: top.content || top.body || '',
+          icon: '/icons/icon-192.svg',
+          badge: '/icons/icon-192.svg',
+          tag: 'periodic-sync-' + (top.id || 'default'),
+          data: { url: top.url || '/notification' },
+          requireInteraction: false,
+          silent: false
+        })
+      }
+    } else {
+      console.log('[SW] Periodic 拉新 API 错:', resp.status)
+    }
+  } catch (e) {
+    console.warn('[SW] Periodic 拉新网络失败:', e.message)
+  }
+
+  // 2. 后台 update critical assets
+  try {
+    const cache = await caches.open('minimax-assets-runtime')
+    const criticalUrls = ['/index.html', '/manifest.json', '/icons/icon-192.svg']
+    for (const url of criticalUrls) {
+      try {
+        const resp = await fetch(url, { cache: 'no-cache' })
+        if (resp.ok) cache.put(url, resp.clone())
+      } catch (e) { /* ignore */ }
+    }
+    console.log('[SW] Periodic 更新 critical assets 完成')
+  } catch (e) {
+    console.warn('[SW] Periodic update critical assets 失败:', e.message)
+  }
+}
 
 async function replayQueuedRequests(event) {
   const queued = await getQueuedRequests()
@@ -128,7 +199,7 @@ async function notifyClientsOfSyncResult(entry, response, errorTag) {
 
 // ============= Lifecycle =============
 
-self.addEventListener('install, (event) => {
+self.addEventListener('install', (event) => {
   console.log('[SW] Installing v' + CACHE_VERSION)
   event.waitUntil(
     (async () => {
