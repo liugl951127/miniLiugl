@@ -1,8 +1,0 @@
-[2026-08-01 14:17:38] 触发每日任务
-[0;32m[2026-08-01 14:17:38][0m ===== 每日任务开始 =====
-[0;32m[2026-08-01 14:17:38][0m 工作目录: /workspace/double-record-code
-[0;32m[2026-08-01 14:17:38][0m ===== 步骤 1/8: 环境检查 =====
-[0;32m[2026-08-01 14:17:38][0m ===== 步骤 2/8: Git 状态 =====
-[0;32m[2026-08-01 14:17:38][0m ===== 步骤 3/8: Java 链码测试 =====
-/workspace/double-record-code/daily-task.sh: line 101: cd: /workspace/double-record-code/fabric-chaincode-java: No such file or directory
-[2026-08-01 14:17:38] 任务完成,等待 86400 秒

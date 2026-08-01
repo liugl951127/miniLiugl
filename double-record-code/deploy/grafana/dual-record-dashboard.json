@@ -1,0 +1,256 @@
+{
+  "title": "双录一体化平台 - 总览",
+  "uid": "dual-record-overview",
+  "tags": ["dual-record", "bank", "blockchain"],
+  "timezone": "Asia/Shanghai",
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "namespace",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(kube_pod_info{app_kubernetes_io_part_of=\"dual-record\"}, namespace)",
+        "current": { "value": "dual-record-prod" }
+      },
+      {
+        "name": "pod",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(kube_pod_info{namespace=\"$namespace\"}, pod)",
+        "multi": true,
+        "includeAll": true
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "📊 核心指标 - 实时",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
+      "panels": [
+        {
+          "id": 11,
+          "type": "stat",
+          "title": "QPS",
+          "targets": [{ "expr": "sum(rate(http_server_requests_seconds_count[1m]))" }],
+          "fieldConfig": { "defaults": { "unit": "reqps" } },
+          "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 }
+        },
+        {
+          "id": 12,
+          "type": "stat",
+          "title": "P95 响应时间",
+          "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le))" }],
+          "fieldConfig": { "defaults": { "unit": "s" } },
+          "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 }
+        },
+        {
+          "id": 13,
+          "type": "stat",
+          "title": "错误率",
+          "targets": [{
+            "expr": "sum(rate(http_server_requests_seconds_count{status=~\"5..\"}[5m])) / sum(rate(http_server_requests_seconds_count[5m]))"
+          }],
+          "fieldConfig": { "defaults": { "unit": "percentunit" } },
+          "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 }
+        },
+        {
+          "id": 14,
+          "type": "stat",
+          "title": "在线 Pod",
+          "targets": [{
+            "expr": "count(kube_pod_status_phase{namespace=\"$namespace\",phase=\"Running\"})"
+          }],
+          "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 }
+        },
+        {
+          "id": 15,
+          "type": "stat",
+          "title": "JVM 堆使用率",
+          "targets": [{
+            "expr": "jvm_memory_used_bytes{area=\"heap\"} / jvm_memory_max_bytes{area=\"heap\"}"
+          }],
+          "fieldConfig": { "defaults": { "unit": "percentunit" } },
+          "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 }
+        },
+        {
+          "id": 16,
+          "type": "stat",
+          "title": "今日订单数",
+          "targets": [{
+            "expr": "increase(t_orders_created_total[24h])"
+          }],
+          "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "📈 流量趋势 - QPS / 响应时间",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 4 }
+    },
+    {
+      "id": 21,
+      "type": "graph",
+      "title": "QPS by URI",
+      "targets": [{
+        "expr": "sum(rate(http_server_requests_seconds_count[1m])) by (uri)",
+        "legendFormat": "{{uri}}"
+      }],
+      "yaxes": [{ "unit": "reqps" }],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 }
+    },
+    {
+      "id": 22,
+      "type": "graph",
+      "title": "P50/P95/P99 响应时间",
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket[5m])) by (le))", "legendFormat": "P50" },
+        { "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le))", "legendFormat": "P95" },
+        { "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket[5m])) by (le))", "legendFormat": "P99" }
+      ],
+      "yaxes": [{ "unit": "s" }],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 }
+    },
+    {
+      "id": 3,
+      "title": "🛢️ 数据库",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 }
+    },
+    {
+      "id": 31,
+      "type": "graph",
+      "title": "MySQL 连接数",
+      "targets": [
+        { "expr": "mysql_global_status_threads_connected", "legendFormat": "活跃连接" },
+        { "expr": "mysql_global_variables_max_connections", "legendFormat": "最大连接" }
+      ],
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 14 }
+    },
+    {
+      "id": 32,
+      "type": "graph",
+      "title": "MySQL QPS",
+      "targets": [
+        { "expr": "rate(mysql_global_status_questions[1m])", "legendFormat": "QPS" }
+      ],
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 14 }
+    },
+    {
+      "id": 33,
+      "type": "graph",
+      "title": "MySQL 慢查询",
+      "targets": [
+        { "expr": "increase(mysql_global_status_slow_queries[5m])", "legendFormat": "慢查询数" }
+      ],
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 14 }
+    },
+    {
+      "id": 4,
+      "title": "💾 Redis",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 }
+    },
+    {
+      "id": 41,
+      "type": "graph",
+      "title": "Redis 内存使用",
+      "targets": [
+        { "expr": "redis_memory_used_bytes / 1024 / 1024", "legendFormat": "已用 (MB)" },
+        { "expr": "redis_memory_max_bytes / 1024 / 1024", "legendFormat": "最大 (MB)" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 23 }
+    },
+    {
+      "id": 42,
+      "type": "graph",
+      "title": "Redis 命令 QPS",
+      "targets": [
+        { "expr": "rate(redis_commands_total[1m])", "legendFormat": "{{cmd}}" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 23 }
+    },
+    {
+      "id": 5,
+      "title": "🔗 Kafka 消费者",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 31 }
+    },
+    {
+      "id": 51,
+      "type": "graph",
+      "title": "Kafka 消费积压",
+      "targets": [{
+        "expr": "kafka_consumer_lag",
+        "legendFormat": "{{topic}}/{{partition}}"
+      }],
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 32 }
+    },
+    {
+      "id": 6,
+      "title": "⛓️ Fabric 区块链",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 40 }
+    },
+    {
+      "id": 61,
+      "type": "stat",
+      "title": "区块高度",
+      "targets": [{ "expr": "max(fabric_block_height)" }],
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 41 }
+    },
+    {
+      "id": 62,
+      "type": "graph",
+      "title": "链码交易 TPS",
+      "targets": [{
+        "expr": "rate(fabric_chaincode_proposals_total[1m])",
+        "legendFormat": "{{chaincode}}"
+      }],
+      "gridPos": { "h": 4, "w": 12, "x": 6, "y": 41 }
+    },
+    {
+      "id": 63,
+      "type": "graph",
+      "title": "出块时间",
+      "targets": [{
+        "expr": "fabric_block_commit_duration_seconds"
+      }],
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 41 }
+    },
+    {
+      "id": 7,
+      "title": "🏗️ K8s 资源",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 45 }
+    },
+    {
+      "id": 71,
+      "type": "graph",
+      "title": "Pod CPU 使用",
+      "targets": [{
+        "expr": "rate(container_cpu_usage_seconds_total{pod=~\"dual-record-.*\",namespace=\"$namespace\"}[5m])",
+        "legendFormat": "{{pod}}"
+      }],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 46 }
+    },
+    {
+      "id": 72,
+      "type": "graph",
+      "title": "Pod 内存使用",
+      "targets": [{
+        "expr": "container_memory_usage_bytes{pod=~\"dual-record-.*\",namespace=\"$namespace\"}",
+        "legendFormat": "{{pod}}"
+      }],
+      "yaxes": [{ "unit": "bytes" }],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 46 }
+    }
+  ]
+}

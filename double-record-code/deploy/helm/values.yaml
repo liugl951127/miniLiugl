@@ -1,0 +1,173 @@
+# 双录一体化平台 Helm Chart - 默认配置
+# 银行合规生产环境推荐值
+
+replicaCount: 3
+
+image:
+  repository: harbor.bank.com/dual-record/backend
+  pullPolicy: IfNotPresent
+  tag: "1.2.0"
+
+imagePullSecrets:
+  - name: harbor-credential
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/actuator/prometheus"
+
+podSecurityContext:
+  fsGroup: 2000
+  runAsNonRoot: true
+  runAsUser: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "500m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/limit-rps: "1000"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: dual-record.bank.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - hosts:
+        - dual-record.bank.com
+      secretName: dual-record-tls
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 4Gi
+  requests:
+    cpu: 1000m
+    memory: 2Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# JVM 调优(GC + 堆)
+jvm:
+  heapMax: 2g
+  heapMin: 1g
+  gc: G1GC
+  gcOpts: "-XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+ParallelRefProcEnabled -XX:+UseStringDeduplication"
+
+# 节点选择
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# 环境配置
+env:
+  SPRING_PROFILES_ACTIVE: prod
+  TZ: Asia/Shanghai
+
+# 密钥(Secret 中)
+secrets:
+  jwtSecret: "REPLACE_WITH_32_CHARS_RANDOM"
+  dbPassword: "REPLACE_WITH_DB_PASSWORD"
+  redisPassword: "REPLACE_WITH_REDIS_PASSWORD"
+  qwenApiKey: "REPLACE_WITH_QWEN_KEY"
+  deepseekApiKey: "REPLACE_WITH_DEEPSEEK_KEY"
+  sm4Key: "REPLACE_WITH_32_HEX_CHARS"
+
+# 持久化(共享文件存储用于上传/导出)
+persistence:
+  enabled: true
+  size: 100Gi
+  storageClass: csi-alicloud
+  accessModes:
+    - ReadWriteMany
+  mountPath: /opt/dual-record/storage
+
+# 应用配置
+config:
+  # 数据库
+  db:
+    host: dual-record-mysql
+    port: 3306
+    name: dual_record
+    username: dual_record
+  # Redis
+  redis:
+    host: dual-record-redis
+    port: 6379
+    database: 0
+  # Kafka
+  kafka:
+    bootstrapServers: dual-record-kafka:9092
+  # Fabric
+  fabric:
+    channel: dual-record-channel
+    mspId: BankMSP
+    chaincode: dual-record-chaincode
+
+# 健康检查
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8080
+  initialDelaySeconds: 90
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+# Network Policy
+networkPolicy:
+  enabled: true
+  ingressNamespaceSelector:
+    - ingress-nginx
+  podSelector: {}
+
+# Service Monitor(Prometheus Operator)
+serviceMonitor:
+  enabled: true
+  interval: 30s
+  scrapeTimeout: 10s
