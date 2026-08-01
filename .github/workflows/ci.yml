@@ -321,12 +321,78 @@ jobs:
         continue-on-error: true
 
   # ============================================
+  # V3.5.78+: 跨浏览器部署验证 (5 browser E2E)
+  # ============================================
+  verify-deploy:
+    name: V3.5.78 跨浏览器 5 browser E2E 验证
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          mvn -s .mvn/settings.xml dependency:go-offline -B -q
+        continue-on-error: true
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Install Playwright browsers (chromium + webkit + firefox + 2 mobile)
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium webkit firefox
+
+      - name: Run verify-deploy.sh (chromium, 跳过后端编译)
+        env:
+          SKIP_BACKEND: '1'
+        run: bash scripts/verify-deploy.sh chromium
+
+      - name: Run verify-deploy.sh (webkit, 验证 Safari 兼容)
+        env:
+          SKIP_BACKEND: '1'
+        run: bash scripts/verify-deploy.sh webkit
+        continue-on-error: true
+
+      - name: Run verify-deploy.sh (firefox, 验证 Firefox 兼容)
+        env:
+          SKIP_BACKEND: '1'
+        run: bash scripts/verify-deploy.sh firefox
+        continue-on-error: true
+
+      - name: Upload verify-deploy reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-deploy-reports
+          path: |
+            reports/verify-deploy/
+            frontend/e2e-report/
+          retention-days: 14
+
+  # ============================================
   # 总结
   # ============================================
   notify:
     name: Summary
     runs-on: ubuntu-latest
-    needs: [backend, frontend, frontend-unit, frontend-e2e, ci-check]
+    needs: [backend, frontend, frontend-unit, frontend-e2e, ci-check, verify-deploy]
     if: always()
 
     steps:

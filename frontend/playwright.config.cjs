@@ -19,6 +19,14 @@ module.exports = defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
+  // V3.5.78+: webServer 仅在 E2E_BASE_URL 未设置时启动 (本地 dev 模式)
+  // CI / verify-deploy.sh 走自己启 dev server 路径, 避免冲突
+  webServer: process.env.E2E_BASE_URL ? undefined : {
+    command: 'npx vite dev --port 5173 --host 0.0.0.0',
+    url: 'http://localhost:5173',
+    reuseExistingServer: !process.env.CI,
+    timeout: 60_000,
+  },
   projects: [
     {
       name: 'chromium',
