@@ -316,9 +316,19 @@
       </el-scrollbar>
     </el-dialog>
   </div>
+
+    <!-- V3.7.1+ Knowledge EntityDrawer 复用 -->
+    <EntityDrawer
+      v-model:visible="entityDrawerVisible"
+      :entity="entityDrawerItem"
+      :relations="entityDrawerRelations"
+      entity-name="Knowledge"
+      @update="handleEntityUpdate"
+      @delete="handleEntityDelete"
+    />
 </template>
 
-<script setup>
+<script setup lang="ts">
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useToast } from '@/composables/useToast'
@@ -328,8 +338,29 @@ import * as ragApi from '@/api/rag'
 import { promptApi } from '@/api/prompt'
 import { useUserStore } from '@/store/user'
 import EmptyState from '@/components/EmptyState.vue'
+import EntityDrawer from '@/components/EntityDrawer.vue'
 
 const userStore = useUserStore()
+
+// V3.7.1+ EntityDrawer 通用详情
+const entityDrawerVisible = ref(false)
+const entityDrawerItem = ref<any>(null)
+const entityDrawerRelations = ref<any[]>([])
+
+function openEntityDrawer(item: any) {
+  entityDrawerItem.value = item
+  entityDrawerVisible.value = true
+}
+
+function handleEntityUpdate(form: any) {
+  toast.info(`${label} 编辑功能开发中...`)
+  entityDrawerVisible.value = false
+}
+
+function handleEntityDelete(item: any) {
+  toast.success(`${label} "${item.name || item.title}" 已删除 (mock)`)
+  entityDrawerVisible.value = false
+}
 const toast = useToast()
 const ownerId = computed(() => userStore.userInfo?.id || 1)
 

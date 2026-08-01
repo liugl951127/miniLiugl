@@ -125,11 +125,22 @@
       </div>
     </el-dialog>
   </div>
+
+    <!-- V3.7.1+ Model EntityDrawer 复用 -->
+    <EntityDrawer
+      v-model:visible="entityDrawerVisible"
+      :entity="entityDrawerItem"
+      :relations="entityDrawerRelations"
+      entity-name="Model"
+      @update="handleEntityUpdate"
+      @delete="handleEntityDelete"
+    />
 </template>
 
-<script setup>
+<script setup lang="ts">
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import EntityDrawer from '@/components/EntityDrawer.vue'
 import { useToast } from '@/composables/useToast'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Cpu, Refresh, Plus } from '@element-plus/icons-vue'

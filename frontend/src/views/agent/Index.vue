@@ -104,11 +104,22 @@
       </div>
     </el-card>
   </div>
+
+    <!-- V3.7.1+ Agent EntityDrawer 复用 -->
+    <EntityDrawer
+      v-model:visible="entityDrawerVisible"
+      :entity="entityDrawerItem"
+      :relations="entityDrawerRelations"
+      entity-name="Agent"
+      @update="handleEntityUpdate"
+      @delete="handleEntityDelete"
+    />
 </template>
 
 <script setup lang="ts">
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
+import EntityDrawer from '@/components/EntityDrawer.vue'
 import { useToast } from '@/composables/useToast'
 import http from '@/api/http'
 import { ElMessage } from 'element-plus'
@@ -117,6 +128,26 @@ import { t } from '@/i18n'
 import { useUserStore } from '@/store/user'
 
 const userStore = useUserStore()
+
+// V3.7.1+ EntityDrawer 通用详情
+const entityDrawerVisible = ref(false)
+const entityDrawerItem = ref<any>(null)
+const entityDrawerRelations = ref<any[]>([])
+
+function openEntityDrawer(item: any) {
+  entityDrawerItem.value = item
+  entityDrawerVisible.value = true
+}
+
+function handleEntityUpdate(form: any) {
+  toast.info(`${label} 编辑功能开发中...`)
+  entityDrawerVisible.value = false
+}
+
+function handleEntityDelete(item: any) {
+  toast.success(`${label} "${item.name || item.title}" 已删除 (mock)`)
+  entityDrawerVisible.value = false
+}
 const toast = useToast()
 
 const goal = ref('查一下北京今天的天气, 然后给出一个旅游建议')
