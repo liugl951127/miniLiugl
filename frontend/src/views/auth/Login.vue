@@ -165,12 +165,12 @@
     <section class="section demos-section">
       <h3 class="section-title">⚡ {{ t('login.demos.title') }}</h3>
       <el-row :gutter="12">
-        <el-col v-for="acc in demoAccounts" :key="acc.username" :xs="12" :sm="8" :md="4">
+        <el-col v-for="acc in demoAccounts"  :key="acc.username" :xs="12" :sm="8" :md="4">
           <el-card
             shadow="hover"
             class="demo-card"
             :class="`role-${acc.roleKey}`"
-            @click="fillAccount(acc)"
+            @click="fillDemoAccount(acc.roleKey)"
           >
             <div class="demo-avatar">{{ acc.avatar }}</div>
             <div class="demo-role">{{ acc.role }}</div>
@@ -250,19 +250,6 @@ const demoMode = ref(isDemoMode())                   // V3.5.93 演示模式
 
 // V3.5.93 切换演示模式
 function onDemoToggle(val) {
-
-// V3.7.5+ 演示账号一键填入
-function fillDemoAccount(roleKey: string) {
-  const account = demoAccounts.find(a => a.roleKey === roleKey)
-  if (!account) return
-  mode.value = 'login'
-  form.username = account.username
-  form.password = account.password
-  form.nickname = ''
-  form.email = ''
-  errorMsg.value = ''
-  toast.success(`已填入 ${account.role}: ${account.username}`)
-}
 
   if (val) {
     localStorage.setItem('minimax_demo_mode', 'true')
