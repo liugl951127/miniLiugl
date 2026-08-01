@@ -304,9 +304,22 @@ function sendQuick(text) {
  * 键盘事件处理 (Enter 发送, Shift+Enter 换行)
  */
 function onKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
+  if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
     e.preventDefault()
     if (canSend.value) sendMessage()
+    return
+  }
+  // Ctrl/Cmd+Enter 也发送
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault()
+    if (canSend.value) sendMessage()
+    return
+  }
+  // Ctrl/Cmd+K 新对话
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault()
+    newChat()
+    return
   }
 }
 

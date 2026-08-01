@@ -140,6 +140,7 @@ const routes = [
         path: 'admin',
         name: 'Admin',
         component: () => import('@/views/admin/Index.vue'),
+        redirect: '/admin/dashboard',
         meta: { title: '管理后台', icon: 'Setting' },
         children: [
           {
@@ -268,12 +269,6 @@ const routes = [
             name: 'MaskTool',
             component: () => import('@/views/compliance/MaskTool.vue'),
             meta: { title: '数据脱敏工具', icon: 'Lock' }
-          },
-          {
-            path: '',
-            name: 'AdminDashboard',
-            component: () => import('@/views/admin/Dashboard.vue'),
-            meta: { title: '仪表盘', icon: 'DataLine' }
           },
           {
             path: 'dashboard',

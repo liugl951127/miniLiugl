@@ -218,7 +218,7 @@ export function installPolyfills() {
   if (typeof Array.prototype.at === 'undefined') {
     Array.prototype.at = function (index) {
       const len = this.length
-      const i = Math.trunc(index) || 0
+      let i = Math.trunc(index) || 0
       if (i < 0) i += len
       if (i < 0 || i >= len) return undefined
       return this[i]

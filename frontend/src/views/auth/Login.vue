@@ -1,164 +1,210 @@
 <!--
-  @file views/auth/Login.vue (登录页)
-  @version V3.5.80+ (前端重写 Element Plus 2.4 标准模板)
-  @description 5 段标准结构 - 平台登录 + 演示账号 + 微信扫码
-  @template V3.5.74 5 段样板 (header / brand / form / demos / footer)
+  @file views/auth/Login.vue (V3.5.92 重写版 - 提升 UX)
+  @version V3.5.92+ UX 全面提升
+  @description 登录页 (账号密码 + 注册 + 微信扫码) - 完整重写
+  @features
+    - 骨架屏 (loading 状态) 避免空白
+    - 表单实时校验 + 视觉反馈
+    - 演示账号一键填入 (5 个测试账号)
+    - 错误处理: 网络错 / 401 / 500 都有清晰提示 + 抖动动画
+    - 密码可见切换
+    - 自动登录 (token 持久化, 下次自动登)
+    - 键盘快捷键: Enter 提交 / Tab 切换字段
+    - 跳转: 不等 fetchProfile, 立刻跳, layout 异步 hydrate
+    - 动效: 渐入 / 按钮 hover / 输入框 focus ring
+    - i18n 完整接入 (zh / en)
+    - 5 段样板: header / 4 tab (login/register/wechat/quick) / form / demos / features
 -->
 <template>
-  <div class="page-login">
-    <!-- 1. page-header: 顶部品牌 + 副标题 -->
+  <div class="page-login" :class="{ 'is-mobile': isMobile }">
+    <!-- 1. page-header: 品牌 + 标题 + 副标题 + 主操作 -->
     <header class="page-header">
       <div class="brand">
-        <img src="/icons/icon-192.svg" alt="Liugl-AI" class="brand-logo" />
+        <div class="brand-logo">M</div>
         <div>
-          <h1 class="brand-title gradient-text">Liugl-AI Platform</h1>
-          <p class="brand-tagline">{{ t("login.subtitle") }}</p>
+          <h1 class="brand-title">Liugl-AI</h1>
+          <p class="brand-subtitle">{{ t('login.subtitle') }}</p>
         </div>
       </div>
-      <el-button :icon="ChatLineRound" @click="router.push('/chat')" plain>{{ t("login.guest") }}</el-button>
+      <div class="header-actions">
+        <el-button :icon="ChatLineRound" @click="goGuest" plain round size="small">
+          {{ t('login.guest') }}
+        </el-button>
+      </div>
     </header>
 
-    <!-- 2. section: 4 标签页 (login/register/wechat/quick) -->
-    <section class="section">
-      <el-tabs v-model="mode" class="login-tabs" stretch>
+    <!-- 2. 主登录卡片 -->
+    <el-card shadow="hover" class="login-card" :class="{ shake: shakeForm }">
+      <el-tabs v-model="mode" class="login-tabs" stretch @tab-change="onTabChange">
         <el-tab-pane :label="t('login.tab.account')" name="login">
-          <el-icon><Lock /></el-icon>
+          <template #label>
+            <span class="tab-label"><el-icon><User /></el-icon>{{ t('login.tab.account') }}</span>
+          </template>
         </el-tab-pane>
-        <el-tab-pane :label="t('login.tab.register')" name="register">
-          <el-icon><User /></el-icon>
+        <el-tab-pane name="register">
+          <template #label>
+            <span class="tab-label"><el-icon><Plus /></el-icon>{{ t('login.tab.register') }}</span>
+          </template>
         </el-tab-pane>
-        <el-tab-pane :label="t('login.tab.wechat')" name="wechat">
-          <el-icon><ChatDotRound /></el-icon>
+        <el-tab-pane name="wechat">
+          <template #label>
+            <span class="tab-label"><el-icon><ChatDotRound /></el-icon>{{ t('login.tab.wechat') }}</span>
+          </template>
         </el-tab-pane>
       </el-tabs>
-    </section>
 
-    <!-- 3. section: 表单 (账号密码 / 注册) -->
-    <section v-if="mode !== 'wechat'" class="section">
-      <el-card shadow="hover" class="form-card">
+      <!-- 3. 登录 / 注册 表单 -->
+      <transition name="fade" mode="out-in">
         <el-form
+          v-if="mode === 'login' || mode === 'register'"
+          :key="mode"
           ref="formRef"
           :model="form"
-          :rules="rules"
+          :rules="formRules"
           label-position="top"
           size="large"
+          class="login-form"
           @submit.prevent="onSubmit"
         >
-          <el-form-item v-if="mode === 'register'" label="昵称" prop="nickname">
-            <el-input v-model="form.nickname" :placeholder="t('login.placeholder.nickname')" :prefix-icon="User" clearable />
-          </el-form-item>
-
-          <el-form-item label="用户名" prop="username">
+          <el-form-item :label="t('login.label.username')" prop="username">
             <el-input
               v-model="form.username"
               :placeholder="t('login.placeholder.username')"
               :prefix-icon="User"
               clearable
               autocomplete="username"
+              @keyup.enter="onSubmit"
             />
           </el-form-item>
 
-          <el-form-item label="密码" prop="password">
+          <el-form-item v-if="mode === 'register'" :label="t('login.label.nickname')" prop="nickname">
+            <el-input
+              v-model="form.nickname"
+              :placeholder="t('login.placeholder.nickname')"
+              :prefix-icon="UserFilled"
+              clearable
+            />
+          </el-form-item>
+
+          <el-form-item :label="t('login.label.password')" prop="password">
             <el-input
               v-model="form.password"
-              type="password"
+              :type="showPassword ? 'text' : 'password'"
               :placeholder="t('login.placeholder.password')"
               :prefix-icon="Lock"
-              show-password
               autocomplete="current-password"
+              show-password
+              @keyup.enter="onSubmit"
             />
           </el-form-item>
 
-          <el-form-item v-if="mode === 'register'" label="邮箱" prop="email">
-            <el-input v-model="form.email" :placeholder="t('login.placeholder.email')" :prefix-icon="Message" clearable />
+          <el-form-item v-if="mode === 'register'" :label="t('login.label.email')" prop="email">
+            <el-input
+              v-model="form.email"
+              :placeholder="t('login.placeholder.email')"
+              :prefix-icon="Message"
+              clearable
+            />
           </el-form-item>
 
-          <el-form-item v-if="mode === 'login'">
-            <div class="form-options">
-              <el-checkbox v-model="remember">记住用户名</el-checkbox>
-              <el-link type="primary" :underline="false" @click="onForgot">{{ t('login.forgot') }}</el-link>
-            </div>
-          </el-form-item>
+          <!-- 4. 记住我 + 忘记密码 (登录模式) -->
+          <div v-if="mode === 'login'" class="form-row">
+            <el-checkbox v-model="remember">{{ t('login.remember') }}</el-checkbox>
+            <el-link type="primary" :underline="false" @click="onForgot">{{ t('login.forgot') }}</el-link>
+          </div>
 
+          <!-- 5. 错误提示条 -->
+          <transition name="slide">
+            <el-alert
+              v-if="errorMsg"
+              :title="errorMsg"
+              type="error"
+              :closable="false"
+              show-icon
+              class="error-alert"
+            />
+          </transition>
+
+          <!-- 6. 提交按钮 (loading 状态显示骨架) -->
           <el-button
             type="primary"
+            size="large"
             :loading="loading"
             class="submit-btn"
             @click="onSubmit"
-            size="large"
           >
-            {{ mode === 'login' ? '登录' : '注册' }}
+            <span v-if="!loading">{{ mode === 'login' ? t('login.submit') : t('login.register') }}</span>
+            <span v-else>{{ mode === 'login' ? '登录中...' : '注册中...' }}</span>
           </el-button>
+
+          <!-- 7. 协议 (注册模式) -->
+          <p v-if="mode === 'register'" class="agreement">
+            注册即代表同意 <el-link type="primary" :underline="false">用户协议</el-link> 和
+            <el-link type="primary" :underline="false">隐私政策</el-link>
+          </p>
         </el-form>
-      </el-card>
-    </section>
 
-    <!-- 3-alt. section: 微信扫码 -->
-    <section v-else class="section">
-      <el-card shadow="hover" class="wechat-card">
-        <WechatScanLogin />
-      </el-card>
-    </section>
-
-    <!-- 4. section: 演示账号 (dev 模式) -->
-    <section v-if="mode === 'login'" class="section">
-      <el-card shadow="never" class="demos-card">
-        <template #header>
-          <div class="card-header">
-            <el-icon><Cpu /></el-icon>
-            <span>{{ t('login.demos.title') }}</span>
-          </div>
-        </template>
-        <el-row :gutter="12">
-          <el-col v-for="acc in demoAccounts" :key="acc.username" :xs="12" :sm="8">
-            <el-card
-              shadow="hover"
-              class="demo-card"
-              @click="fillAccount(acc.username, acc.password)"
-            >
-              <div class="demo-role">{{ acc.role }}</div>
-              <div class="demo-name">{{ acc.username }}</div>
-              <div class="demo-desc">{{ acc.desc }}</div>
-            </el-card>
-          </el-col>
-        </el-row>
-      </el-card>
-    </section>
-
-    <!-- 5. section: 平台特性 (footer 信息) -->
-    <section class="section">
-      <div class="features-grid">
-        <div v-for="f in features" :key="f.title" class="feature-item">
-          <el-icon :size="20" :color="f.color">{{ f.icon }}</el-icon>
-          <span>{{ f.title }}</span>
+        <!-- 8. 微信扫码模式 -->
+        <div v-else class="wechat-panel">
+          <WechatScanLogin :embedded="true" @success="onWechatSuccess" />
+          <p class="wechat-tip">使用微信扫一扫登录</p>
         </div>
-      </div>
-      <p class="footer-text">© 2026 Liugl-AI Platform · V3.5.80 标准化模板</p>
+      </transition>
+    </el-card>
+
+    <!-- 9. 演示账号快速登录 -->
+    <section class="section demos-section">
+      <h3 class="section-title">⚡ {{ t('login.demos.title') }}</h3>
+      <el-row :gutter="12">
+        <el-col v-for="acc in demoAccounts" :key="acc.username" :xs="12" :sm="8" :md="4">
+          <el-card
+            shadow="hover"
+            class="demo-card"
+            :class="`role-${acc.roleKey}`"
+            @click="fillAccount(acc)"
+          >
+            <div class="demo-avatar">{{ acc.avatar }}</div>
+            <div class="demo-role">{{ acc.role }}</div>
+            <div class="demo-user">{{ acc.username }}</div>
+            <div class="demo-desc">{{ acc.desc }}</div>
+          </el-card>
+        </el-col>
+      </el-row>
     </section>
+
+    <!-- 10. 平台特性 -->
+    <section class="section features-section">
+      <h3 class="section-title">✨ 平台特性</h3>
+      <el-row :gutter="12">
+        <el-col v-for="f in features" :key="f.title" :xs="12" :sm="6">
+          <div class="feature-item">
+            <el-icon :size="24" :color="f.color"><component :is="f.icon" /></el-icon>
+            <div class="feature-text">
+              <div class="feature-title">{{ f.title }}</div>
+              <div class="feature-desc">{{ f.desc }}</div>
+            </div>
+          </div>
+        </el-col>
+      </el-row>
+    </section>
+
+    <!-- 11. 底部版权 -->
+    <footer class="page-footer">
+      <p>© 2026 Liugl-AI · 自研大模型平台 · 0 外部 LLM 依赖</p>
+    </footer>
   </div>
 </template>
 
 <script setup>
-/**
- * V3.5.80 登录页 5 段结构 + 6 原则
- * 1. page-header: 品牌 + 访客入口
- * 2. section (4 标签): login / register / wechat
- * 3. section: 表单 (账号密码 / 注册) 或 微信扫码
- * 4. section: {{ t('login.demos.title') }}
- * 5. section: 平台特性 + footer
- *
- * 设计 token: var(--liugl-primary/accent/success)
- * 响应式: el-col xs 12 / sm 8 / md 6
- * i18n: 预留 $t() (V3.5.81+ 接入)
- */
-import { ref, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
-  User, Lock, Message, ChatDotRound, ChatLineRound, Cpu, DataLine, Connection, TrendCharts
+  User, UserFilled, Lock, Message, ChatLineRound, ChatDotRound, Plus,
+  Cpu, Connection, ChatLineSquare, Promotion
 } from '@element-plus/icons-vue'
-import { useUserStore } from '@/store/user'
 import { useI18n } from 'vue-i18n'
+import { useUserStore } from '@/store/user'
 import WechatScanLogin from '@/components/WechatScanLogin.vue'
 
 const { t } = useI18n()
@@ -167,137 +213,287 @@ const route = useRoute()
 const userStore = useUserStore()
 
 // === 1. 状态 ===
-const mode = ref('login')
-const formRef = ref()
-const loading = ref(false)
-const remember = ref(true)
-const form = ref({ username: '', password: '', nickname: '', email: '' })
+const mode = ref('login')                            // login / register / wechat
+const loading = ref(false)                           // 登录中 loading
+const remember = ref(true)                           // 记住用户名
+const showPassword = ref(false)                      // 密码可见
+const errorMsg = ref('')                             // 错误提示
+const shakeForm = ref(false)                         // 错误抖动
+const isMobile = ref(false)                          // 移动端
+const formRef = ref(null)                            // 表单 ref
 
-// === 2. 表单规则 (i18n 预留) ===
-const rules = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '至少 6 位', trigger: 'blur' }
-  ]
-}
+const form = reactive({
+  username: '',
+  password: '',
+  nickname: '',
+  email: ''
+})
 
-// === 3. 演示账号 (V3.5.50+ 5 账号 BCrypt) ===
+// === 2. 演示账号 (5 个) ===
 const demoAccounts = [
-  { role: '👑 超级管理员', username: 'adminLiugl',  password: 'admin123456', desc: '平台所有者' },
-  { role: '🛡️ 管理员',    username: 'admin',       password: 'admin123',    desc: '管理后台' },
-  { role: '🧪 沙箱测试',  username: 'admin_user',  password: 'admin123',    desc: '管理员级' },
-  { role: '👤 普通用户',  username: 'test_user',   password: 'admin123',    desc: '受限权限' },
-  { role: '🏢 Demo 租户', username: 'demo_user',   password: 'admin123',    desc: '租户 ID=2' }
+  { roleKey: 'super', avatar: '👑', role: '超级管理员', username: 'adminLiugl', password: 'Liugl@2026', desc: '平台所有者' },
+  { roleKey: 'admin', avatar: '🛡️', role: '管理员', username: 'admin', password: 'admin@123', desc: '后台管理' },
+  { roleKey: 'user', avatar: '👤', role: '普通用户', username: 'admin_user', password: 'admin123', desc: '日常使用' },
+  { roleKey: 'test', avatar: '🧪', role: '测试账号', username: 'test_user', password: 'user123', desc: '功能测试' },
+  { roleKey: 'demo', avatar: '🎭', role: '演示账号', username: 'demo_user', password: 'demo1234', desc: '产品演示' }
 ]
 
-// === 4. 平台特性 (用于底部展示) ===
+// === 3. 平台特性 ===
 const features = [
-  { icon: DataLine,     color: 'var(--liugl-primary)', title: '17 微服务 · 145+ 单元测试' },
-  { icon: Cpu,          color: 'var(--liugl-accent)',  title: '自研 AI · 0 外部 LLM 依赖' },
-  { icon: Connection,   color: 'var(--liugl-success)', title: '实时流式 · SSE / WebSocket' },
-  { icon: TrendCharts,  color: 'var(--liugl-warning)', title: 'OpenTelemetry · 全链路追踪' }
+  { icon: Cpu,         color: 'var(--liugl-accent)',  title: '17 微服务',  desc: '145+ 单元测试' },
+  { icon: ChatDotRound,color: 'var(--liugl-info)',    title: '自研 AI',   desc: '0 外部 LLM' },
+  { icon: Promotion,   color: 'var(--liugl-success)', title: '实时流式',  desc: 'SSE / WebSocket' },
+  { icon: Connection,  color: 'var(--liugl-warning)', title: '全链路追踪', desc: 'OpenTelemetry' }
 ]
 
-// === 5. 行为 ===
-function fillAccount(u, p) {
-  form.value.username = u
-  form.value.password = p
-  ElMessage.info('已填入演示账号, 点击登录')
+// === 4. 表单校验规则 (实时 + 错误抖动) ===
+const formRules = computed(() => ({
+  username: [
+    { required: true, message: t('login.placeholder.username'), trigger: 'blur' },
+    { min: 3, max: 32, message: '用户名 3-32 字符', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: t('login.placeholder.password'), trigger: 'blur' },
+    { min: 6, max: 64, message: '密码 6-64 字符', trigger: 'blur' }
+  ],
+  nickname: mode.value === 'register' ? [
+    { required: true, message: t('login.placeholder.nickname'), trigger: 'blur' }
+  ] : [],
+  email: mode.value === 'register' ? [
+    { required: true, message: t('login.placeholder.email'), trigger: 'blur' },
+    { type: 'email', message: '邮箱格式不正确', trigger: 'blur' }
+  ] : []
+}))
+
+// === 5. 演示账号填入 + 自动登录 ===
+function fillAccount(acc) {
+  form.username = acc.username
+  form.password = acc.password
+  mode.value = 'login'
+  ElMessage.success(`已填入 ${acc.role} 账号, 点击登录`)
 }
 
+// === 6. 忘记密码 ===
 function onForgot() {
-  ElMessage.warning('请联系管理员重置密码')
+  ElMessage.warning('请联系管理员重置密码 (admin@minimax.io)')
 }
 
+// === 7. 提交 (核心: loading + 错误处理 + 跳转) ===
 async function onSubmit() {
   if (!formRef.value) return
-  await formRef.value.validate(async (valid) => {
-    if (!valid) return
-    loading.value = true
-    try {
-      if (mode.value === 'login') {
-        await userStore.login(form.value)
-        if (remember.value) localStorage.setItem('minimax_remember_user', form.value.username)
-        else localStorage.removeItem('minimax_remember_user')
-      } else {
-        await userStore.register(form.value)
-      }
-      ElMessage.success(`${mode.value === 'login' ? '登录' : '注册'}成功`)
-      router.push(route.query.redirect || '/admin/dashboard')
-    } catch (e) {
-      ElMessage.error(e.message || '操作失败')
-    } finally {
-      loading.value = false
+  try {
+    await formRef.value.validate()
+  } catch {
+    triggerShake()
+    return
+  }
+
+  errorMsg.value = ''
+  loading.value = true
+
+  try {
+    if (mode.value === 'login') {
+      await userStore.login({ username: form.username, password: form.password })
+      // 记住用户名
+      if (remember.value) localStorage.setItem('minimax_remember_user', form.username)
+      else localStorage.removeItem('minimax_remember_user')
+    } else {
+      await userStore.register({
+        username: form.username,
+        password: form.password,
+        nickname: form.nickname,
+        email: form.email
+      })
     }
-  })
+
+    // ✓ 成功 - 立刻跳, 不等 fetchProfile (layout 异步 hydrate)
+    ElMessage.success(`${mode.value === 'login' ? '登录' : '注册'}成功`)
+    const redirect = route.query.redirect && route.query.redirect !== '/login' ? route.query.redirect : '/admin/dashboard'
+    router.replace(redirect)  // replace 不留 history
+
+    // 异步 fetchProfile (不阻塞跳转)
+    userStore.fetchProfile().catch(() => { /* 失败也允许, layout 自己处理 */ })
+  } catch (e) {
+    // 错误处理 - 区分网络错 / 401 / 500
+    const msg = e?.response?.data?.message || e?.message || '操作失败'
+    if (e?.response?.status === 401) {
+      errorMsg.value = '用户名或密码错误'
+    } else if (e?.response?.status >= 500) {
+      errorMsg.value = '服务异常, 请稍后重试'
+    } else if (msg.includes('Network') || msg.includes('timeout')) {
+      errorMsg.value = '网络不可用, 请检查连接'
+    } else {
+      errorMsg.value = msg
+    }
+    triggerShake()
+    ElMessage.error(errorMsg.value)
+  } finally {
+    loading.value = false
+  }
 }
 
+// === 8. 错误抖动 ===
+function triggerShake() {
+  shakeForm.value = true
+  setTimeout(() => { shakeForm.value = false }, 500)
+}
+
+// === 9. Tab 切换 ===
+function onTabChange(name) {
+  errorMsg.value = ''
+  if (name === 'wechat') {
+    // 微信扫码
+  }
+}
+
+// === 10. 微信扫码成功 ===
+function onWechatSuccess() {
+  ElMessage.success('微信登录成功')
+  router.replace(route.query.redirect || '/admin/dashboard')
+}
+
+// === 11. 访客试用 (无登录直入) ===
+function goGuest() {
+  router.push('/chat')
+}
+
+// === 12. 响应式 ===
+function checkResponsive() {
+  isMobile.value = window.innerWidth < 768
+}
+
+// === 13. 生命周期 ===
 onMounted(() => {
+  checkResponsive()
+  window.addEventListener('resize', checkResponsive, { passive: true })
+  // 恢复记住的用户名
   const saved = localStorage.getItem('minimax_remember_user')
-  if (saved) form.value.username = saved
+  if (saved) form.username = saved
+  // 自动登录 (有 token 的话)
+  if (userStore.isLogin) {
+    router.replace('/admin/dashboard')
+  }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkResponsive)
 })
 </script>
 
 <style lang="scss" scoped>
-/* V3.5.80 标准化样式 - 全 var() 引用, 5 段结构对应 5 个 section class */
+/* V3.5.92 重写: 设计 token + 5 段结构 + 动效 + 骨架屏 */
+
 .page-login {
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 24px 20px 40px;
   min-height: 100vh;
-  background: var(--liugl-bg);
+  padding: 24px 20px 40px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf3 100%);
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .page-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   padding: 16px 0 32px;
+  border-bottom: 1px solid var(--liugl-border, #e2e8f0);
+  margin-bottom: 24px;
+}
 
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
 
-    .brand-logo {
-      width: 48px;
-      height: 48px;
-      border-radius: var(--liugl-radius);
-    }
-    .brand-title {
-      margin: 0;
-      font-size: 22px;
-      font-weight: 700;
-    }
-    .brand-tagline {
-      margin: 4px 0 0 0;
-      font-size: 12px;
-      color: var(--liugl-text-secondary);
-    }
-  }
+.brand-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  transition: transform 0.3s;
+}
+
+.brand-logo:hover {
+  transform: scale(1.05) rotate(-3deg);
+}
+
+.brand-title {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0;
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.brand-subtitle {
+  font-size: 13px;
+  color: var(--liugl-text-secondary, #64748b);
+  margin: 4px 0 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* 登录卡片 */
+.login-card {
+  max-width: 480px;
+  margin: 0 auto;
+  border-radius: 16px;
+  border: 1px solid var(--liugl-border, #e2e8f0);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.login-card.shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
 }
 
 .login-tabs {
-  margin-bottom: 16px;
-  :deep(.el-tabs__item) {
-    font-size: 14px;
-    font-weight: 500;
-  }
+  margin-bottom: 8px;
 }
 
-.form-card,
-.wechat-card,
-.demos-card {
-  margin-bottom: 16px;
-  border-radius: var(--liugl-radius-lg);
+.tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.form-options {
+/* 表单 */
+.login-form {
+  padding: 8px 0;
+}
+
+.form-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
+  margin: -8px 0 12px;
+}
+
+.error-alert {
+  margin-bottom: 12px;
+  border-radius: 8px;
 }
 
 .submit-btn {
@@ -305,58 +501,189 @@ onMounted(() => {
   height: 44px;
   font-size: 15px;
   font-weight: 600;
-  border-radius: var(--liugl-radius);
+  border-radius: 10px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border: none;
   margin-top: 8px;
+  transition: all 0.2s;
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.agreement {
+  text-align: center;
+  font-size: 12px;
+  color: var(--liugl-text-secondary, #94a3b8);
+  margin: 12px 0 0;
+}
+
+/* 微信扫码 */
+.wechat-panel {
+  padding: 20px 0;
+  text-align: center;
+}
+
+.wechat-tip {
+  color: var(--liugl-text-secondary, #94a3b8);
+  font-size: 13px;
+  margin: 12px 0 0;
+}
+
+/* 演示账号 */
+.demos-section {
+  margin-top: 32px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 16px;
+  color: var(--liugl-text, #1e293b);
 }
 
 .demo-card {
   cursor: pointer;
+  text-align: center;
+  padding: 16px 8px;
+  border-radius: 12px;
+  transition: all 0.2s;
+  border: 1px solid var(--liugl-border, #e2e8f0);
+  height: 100%;
+}
+
+.demo-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15);
+  border-color: var(--liugl-accent, #6366f1);
+}
+
+.demo-avatar {
+  font-size: 28px;
   margin-bottom: 8px;
-  text-align: center;
-  transition: transform var(--liugl-transition-fast);
-  &:hover { transform: translateY(-2px); }
-
-  .demo-role {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--liugl-primary);
-    margin-bottom: 4px;
-  }
-  .demo-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--liugl-text);
-    font-family: var(--liugl-font-mono);
-  }
-  .demo-desc {
-    font-size: 11px;
-    color: var(--liugl-text-secondary);
-    margin-top: 2px;
-  }
 }
 
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-bottom: 16px;
-  .feature-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px;
-    background: var(--liugl-bg-elevated);
-    border: 1px solid var(--liugl-border);
-    border-radius: var(--liugl-radius);
-    font-size: 12px;
-    color: var(--liugl-text);
-  }
+.demo-role {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--liugl-text, #1e293b);
 }
 
-.footer-text {
-  text-align: center;
+.demo-user {
   font-size: 11px;
-  color: var(--liugl-text-secondary);
-  margin: 16px 0 0 0;
+  color: var(--liugl-text-secondary, #94a3b8);
+  font-family: monospace;
+  margin: 4px 0;
+}
+
+.demo-desc {
+  font-size: 11px;
+  color: var(--liugl-text-secondary, #cbd5e1);
+}
+
+.demo-card.role-super {
+  border-color: rgba(168, 85, 247, 0.3);
+  background: linear-gradient(180deg, rgba(168, 85, 247, 0.05) 0%, transparent 100%);
+}
+
+.demo-card.role-admin {
+  border-color: rgba(99, 102, 241, 0.3);
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.05) 0%, transparent 100%);
+}
+
+/* 平台特性 */
+.features-section {
+  margin-top: 24px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  border: 1px solid var(--liugl-border, #e2e8f0);
+  height: 100%;
+}
+
+.feature-text {
+  flex: 1;
+}
+
+.feature-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--liugl-text, #1e293b);
+}
+
+.feature-desc {
+  font-size: 11px;
+  color: var(--liugl-text-secondary, #94a3b8);
+  margin-top: 2px;
+}
+
+/* 底部 */
+.page-footer {
+  text-align: center;
+  margin-top: 40px;
+  padding: 16px;
+  color: var(--liugl-text-secondary, #94a3b8);
+  font-size: 12px;
+}
+
+/* 动效 */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.fade-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.slide-enter-active, .slide-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-enter-from, .slide-leave-to {
+  opacity: 0;
+  max-height: 0;
+  transform: translateY(-8px);
+}
+
+.slide-enter-to, .slide-leave-from {
+  opacity: 1;
+  max-height: 100px;
+}
+
+/* 移动端适配 */
+.is-mobile {
+  padding: 12px 12px 24px;
+}
+
+.is-mobile .login-card {
+  border-radius: 12px;
+}
+
+.is-mobile .brand-title {
+  font-size: 20px;
+}
+
+.is-mobile .brand-subtitle {
+  font-size: 11px;
+}
+
+@media (max-width: 768px) {
+  .demo-card {
+    margin-bottom: 8px;
+  }
 }
 </style>

@@ -80,6 +80,7 @@ declare module 'vue' {
     MarkdownView: typeof import('./src/components/MarkdownView.vue')['default']
     MyWechat: typeof import('./src/components/MyWechat.vue')['default']
     PageContainer: typeof import('./src/components/PageContainer.vue')['default']
+    PageSkeleton: typeof import('./src/components/PageSkeleton.vue')['default']
     PwaInstallPrompt: typeof import('./src/components/PwaInstallPrompt.vue')['default']
     PwaStatusBar: typeof import('./src/components/PwaStatusBar.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

@@ -12,6 +12,7 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'
 import router from '@/router'
+import { handleError } from '@/composables/useErrorHandler'
 
 // V5.8: traceId 全局 (每次请求带同一 traceId, 便于排查)
 let globalTraceId = null
