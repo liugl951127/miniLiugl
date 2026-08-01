@@ -157,18 +157,11 @@ export default defineConfig(({ mode }) => {
           chunkFileNames: 'assets/[name].[hash].js',
           assetFileNames: 'assets/[name].[hash].[ext]',
         }
-      },
-      // V5.8: terser 压缩 (生产)
-      minify: false,
-      terserOptions: isProd ? {
-        compress: {
-                    pure_funcs: ['console.info', 'console.debug'],
-        },
-      } : undefined,
+      },      // V3.6.19+ 用 esbuild 默认压缩 (沙箱无 terser)
     },
     // V5.8: esbuild 优化
     esbuild: {
-      target: 'es2018',
+      target: 'es2020',
       drop: isProd ? ['console', 'debugger'] : [],
     },
     // V3.5.8+: 关闭 Sass legacy JS API 警告 (Dart Sass 2.0 移除)
