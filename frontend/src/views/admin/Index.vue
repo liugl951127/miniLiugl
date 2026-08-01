@@ -143,7 +143,7 @@
           <el-icon><ChatDotRound /></el-icon>
           <template #title>{{ t('admin.menu.wechat') }}</template>
         </el-menu-item>
-        <el-menu-item index="/admin/wechat-unionid">
+        <el-menu-item index="/admin/wechat/unionid">
           <el-icon><Link /></el-icon>
           <template #title>{{ t('admin.menu.wechatUnionid') }}</template>
         </el-menu-item>
@@ -215,7 +215,7 @@ const PAGE_NAMES = {
   '/admin/document': 'admin.menu.document',
   '/admin/push': 'admin.menu.push',
   '/admin/wechat': 'admin.menu.wechat',
-  '/admin/wechat-unionid': 'admin.menu.wechatUnionid',
+  '/admin/wechat/unionid': 'admin.menu.wechatUnionid',
 }
 const currentPage = computed(() => {
   const key = PAGE_NAMES[route.path]

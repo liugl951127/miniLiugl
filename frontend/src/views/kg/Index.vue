@@ -134,6 +134,7 @@
           <el-empty v-if="!neighbors.length" :description="t('kg.noRelations')" />
           <el-scrollbar v-else style="height:200px">
             <div v-for="(n, i) in neighbors" :key="i" class="neighbor">
+          <el-button text size="small" type="danger" :icon="Delete" @click="deleteRelation(selectedEntity.id, n.entity?.id, n.via)" title="删除关系" />
               <el-tag :type="hopTag(n.hop)" size="small">
                 {{ n.hop }}跳
               </el-tag>
@@ -410,6 +411,8 @@ function renderGraph() {
     chart.on('nodeclick', 'series', onNodeClick)
     chart.on('dragging', 'series', onGraphDragging)
     chart.on('mouseup', 'series', onGraphDragEnd)
+    chart.on('contextmenu', { dataType: 'node' }, onNodeContextMenu)
+    chart.on('contextmenu', { dataType: 'edge' }, onEdgeContextMenu)
     chart._kgEventsBound = true
   }
 }
@@ -465,6 +468,8 @@ async function renderPathGraph() {
     chart.on('nodeclick', 'series', onNodeClick)
     chart.on('dragging', 'series', onGraphDragging)
     chart.on('mouseup', 'series', onGraphDragEnd)
+    chart.on('contextmenu', { dataType: 'node' }, onNodeContextMenu)
+    chart.on('contextmenu', { dataType: 'edge' }, onEdgeContextMenu)
     chart._kgEventsBound = true
   }
 }
@@ -523,6 +528,33 @@ function updateDragLine(fromX, fromY, toX, toY) {
 function clearDragLine() {
   dragLinePoints.value = []
   dragLine.value = null
+}
+
+// V3.6.6+ 右击节点删除
+function onNodeContextMenu(params) {
+  if (params.event?.event?.preventDefault) params.event.event.preventDefault()
+  const id = parseInt(params.data.id)
+  if (isNaN(id)) return
+  ElMessageBox.confirm(
+    `删除实体 #${id} (${params.data.name}) ?`,
+    'V3.6.6+ 右击删除',
+    { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
+  ).then(() => deleteEntity(id)).catch(() => {})
+}
+
+// V3.6.6+ 右击边删除
+function onEdgeContextMenu(params) {
+  if (params.event?.event?.preventDefault) params.event.event.preventDefault()
+  const { source, target, label } = params.data
+  const sourceId = parseInt(source)
+  const targetId = parseInt(target)
+  if (isNaN(sourceId) || isNaN(targetId)) return
+  const typeLabel = label?.formatter || label || 'related_to'
+  ElMessageBox.confirm(
+    `删除关系 ${source} -[${typeLabel}]-> ${target} ?`,
+    'V3.6.6+ 右击删除边',
+    { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
+  ).then(() => deleteRelation(sourceId, targetId, typeLabel)).catch(() => {})
 }
 
 function onGraphDragging(params) {
@@ -603,6 +635,63 @@ async function submitDragRelation() {
 function resetDrag() {
   dragFromId.value = null
   dragToId.value = null
+}
+
+// V3.6.6+ 关系 / 实体删除
+async function deleteEntity(id) {
+  try {
+    await ElMessageBox.confirm(
+      `确认删除实体 #${id} ? (会级联删除关系)`,
+      'V3.6.6+ 删除',
+      { type: 'warning' }
+    )
+    await axios.delete(`${API}/api/v1/agent/kg/entities/${id}`, {
+      params: { userId },
+      ...auth()
+    })
+    ElMessage.success(`已删除实体 #${id}`)
+    if (selectedEntity.value?.id === id) selectedEntity.value = null
+    await doSearch()
+    await nextTick()
+    renderGraph()
+  } catch (e) {
+    if (e === 'cancel') return
+    if (!e.response) {
+      // 演示模式: 假成功
+      ElMessage.success(`🎭 演示模式 - 假成功删除 #${id}`)
+      if (selectedEntity.value?.id === id) selectedEntity.value = null
+    } else {
+      ElMessage.error(e?.response?.data?.message || e?.message)
+    }
+  }
+}
+
+async function deleteRelation(fromId, toId, type) {
+  try {
+    await ElMessageBox.confirm(
+      `确认删除关系 ${fromId} -[${type}]-> ${toId} ?`,
+      'V3.6.6+ 删除',
+      { type: 'warning' }
+    )
+    await axios.delete(`${API}/api/v1/agent/kg/relations`, {
+      params: { userId, fromId, toId, type },
+      ...auth()
+    })
+    ElMessage.success(`已删除关系 ${fromId} -[${type}]-> ${toId}`)
+    await loadNeighbors()
+    await nextTick()
+    renderGraph()
+  } catch (e) {
+    if (e === 'cancel') return
+    if (!e.response) {
+      // 演示模式: 假成功
+      ElMessage.success(`🎭 演示模式 - 假成功删除关系`)
+      neighbors.value = neighbors.value.filter(n => !(n.entity?.id === toId && n.via === type))
+      nextTick(() => renderGraph())
+    } else {
+      ElMessage.error(e?.response?.data?.message || e?.message)
+    }
+  }
 }
 
 function onNodeClick(params) {

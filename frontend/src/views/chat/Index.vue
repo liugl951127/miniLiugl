@@ -49,13 +49,18 @@
           </el-option>
         </el-select>
 
-        <!-- V3.5.98+ Agent 模式切换 -->
-        <el-select v-model="agentMode" size="small" class="agent-select" @change="onAgentModeChange">
-          <el-option v-for="m in agentModes" :key="m.key" :label="m.label" :value="m.key">
-            <el-icon style="margin-right: 4px; vertical-align: middle"><component :is="m.icon" /></el-icon>
+        <!-- V3.6.6+ Agent 模式多选 (Chat + Agent + RAG + Flow 组合) -->
+        <el-checkbox-group v-model="agentMode" size="small" class="agent-modes" @change="onAgentModeChange">
+          <el-checkbox-button
+            v-for="m in agentModes"
+            :key="m.key"
+            :value="m.key"
+            :label="m.key"
+          >
+            <el-icon style="margin-right: 4px"><component :is="m.icon" /></el-icon>
             {{ m.label }}
-          </el-option>
-        </el-select>
+          </el-checkbox-button>
+        </el-checkbox-group>
 
         <!-- V3.6.1+ el-segmented 模型选择器 (移动端 P0 替代 el-select) -->
         <el-segmented
@@ -699,16 +704,27 @@ async function performOCR(file) {
 }
 
 // === V3.5.98+ Agent 模式 ===
-const agentMode = ref('chat')
+// V3.6.6+ 多选模式 (Agent + RAG + Flow 可同时启用)
+const agentMode = ref(['chat'])
+const enabledModes = computed({
+  get: () => agentMode.value,
+  set: (v) => { agentMode.value = v }
+})
 const agentModes = ref([
   { key: 'chat',   label: '💬 普通对话', icon: 'ChatDotRound' },
   { key: 'agent',  label: '🤖 Agent 编排', icon: 'MagicStick' },
   { key: 'rag',    label: '📚 RAG 检索', icon: 'Document' },
   { key: 'flow',   label: '🔀 Flow 流程', icon: 'Share' },
 ])
-function onAgentModeChange(mode) {
-  const m = agentModes.value.find(x => x.key === mode)
-  ElMessage.info(`已切换: ${m?.label || mode}`)
+function onAgentModeChange(modes) {
+  if (!Array.isArray(modes) || !modes.length) {
+    // 至少保留 chat
+    agentMode.value = ['chat']
+    ElMessage.warning('至少需要保留一个模式')
+    return
+  }
+  const labels = modes.map(k => agentModes.value.find(x => x.key === k)?.label || k).join(' + ')
+  ElMessage.success(`已启用: ${labels}`)
 }
 const models = ref([{ code: 'mock', displayName: 'Mock 模式' }])
 const streaming = ref(false)
