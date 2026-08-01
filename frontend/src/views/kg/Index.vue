@@ -424,10 +424,54 @@ async function renderPathGraph() {
 
 window.addEventListener('resize', () => chart?.resize())
 
+// V3.6.2+ 演示模式 (无后端) 加载 mock 数据
+const MOCK_ENTITIES = [
+  { id: 1, name: '李彦宏', entityType: 'person', description: '百度创始人', importance: 9 },
+  { id: 2, name: '百度', entityType: 'org', description: '搜索引擎公司', importance: 10 },
+  { id: 3, name: '北京', entityType: 'place', description: '中国首都', importance: 8 },
+  { id: 4, name: '人工智能', entityType: 'concept', description: 'AI 技术', importance: 10 },
+  { id: 5, name: '深度学习', entityType: 'concept', description: '机器学习分支', importance: 9 },
+  { id: 6, name: 'Transformer', entityType: 'concept', description: '注意力机制架构', importance: 10 },
+  { id: 7, name: 'OpenAI', entityType: 'org', description: 'AI 实验室', importance: 10 },
+  { id: 8, name: 'Sam Altman', entityType: 'person', description: 'OpenAI CEO', importance: 9 },
+  { id: 9, name: 'GPT-4', entityType: 'event', description: '大语言模型', importance: 10 },
+  { id: 10, name: '硅谷', entityType: 'place', description: '科技中心', importance: 8 },
+]
+
+const MOCK_NEIGHBORS = [
+  { entity: MOCK_ENTITIES[1], hop: 1, via: 'founder' },
+  { entity: MOCK_ENTITIES[3], hop: 1, via: 'main_product' },
+  { entity: MOCK_ENTITIES[2], hop: 2, via: 'headquarters' },
+  { entity: MOCK_ENTITIES[6], hop: 1, via: 'core_tech' },
+  { entity: MOCK_ENTITIES[8], hop: 1, via: 'competitor' },
+]
+
+function loadMockData() {
+  entities.value = MOCK_ENTITIES
+  if (!selectedEntity.value) {
+    selectedEntity.value = MOCK_ENTITIES[0]
+    neighbors.value = MOCK_NEIGHBORS
+  }
+  ElMessage.info('🎭 演示模式 - 已加载 10 实体 + 5 关系 (无后端)')
+}
+
 onMounted(async () => {
   await nextTick()
   if (chartEl.value && !chart) chart = echarts.init(chartEl.value)
-  doSearch()
+  // V3.6.2+ 演示模式: 3 秒后无后端响应自动加载 mock
+  const timeoutId = setTimeout(() => {
+    if (entities.value.length === 0) {
+      loadMockData()
+      nextTick(() => renderGraph())
+    }
+  }, 3000)
+  try {
+    await doSearch()
+    clearTimeout(timeoutId)  // 成功就清 mock
+  } catch {
+    loadMockData()
+    nextTick(() => renderGraph())
+  }
 })
 </script>
 

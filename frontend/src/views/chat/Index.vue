@@ -59,6 +59,19 @@
         <el-button :icon="Plus" @click="newChat" plain>新对话</el-button>
         <el-button :icon="Folder" @click="drawerVisible = true" plain>历史</el-button>
         <el-button :icon="Delete" @click="clearAll" plain>清空</el-button>
+        <!-- V3.6.2+ 导出按钮 -->
+        <el-dropdown @command="onExport" size="small">
+          <el-button :icon="Download" plain>
+            导出 <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="markdown">📝 Markdown</el-dropdown-item>
+              <el-dropdown-item command="json">📋 JSON</el-dropdown-item>
+              <el-dropdown-item command="txt">📄 纯文本</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </el-button-group>
     </header>
 
@@ -244,7 +257,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   EditPen, Search, ChatDotRound, MoreFilled, Promotion, Cpu, Clock, MagicStick,
   UploadFilled, Picture, Loading, VideoPause, VideoPlay, CircleCloseFilled, Document, Share,
-  Microphone, CircleClose, Headset,
+  Microphone, CircleClose, Headset, Download, ArrowDown,
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 
@@ -425,6 +438,75 @@ function toggleTTSTest() {
   } else {
     speak('你好, 我是 Liugl-AI 智能助手, 有什么可以帮你的吗?')
   }
+}
+
+// === V3.6.2+ 导出 (Markdown / JSON / 纯文本) ===
+function onExport(format) {
+  if (!messages.value.length) {
+    ElMessage.warning('暂无消息可导出')
+    return
+  }
+
+  let content = ''
+  let filename = `chat-${new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-')}`
+  let mime = 'text/plain;charset=utf-8'
+
+  if (format === 'markdown') {
+    content = messages.value.map(m => {
+      const role = m.role === 'user' ? '用户' : 'AI'
+      const time = m.createdAt ? new Date(m.createdAt).toLocaleString('zh-CN') : ''
+      let body = m.content || ''
+      if (m.toolCalls?.length) {
+        body += '\n\n<details><summary>工具调用 (' + m.toolCalls.length + ')</summary>\n\n'
+        m.toolCalls.forEach(tc => {
+          body += `- **${tc.name}** (${tc.status}) - ${tc.duration || 0}ms\n`
+        })
+        body += '\n</details>'
+      }
+      if (m.sources?.length) {
+        body += '\n\n> 来源:\n'
+        m.sources.forEach((s, i) => { body += `> ${i+1}. ${s.title || s.name || '文档'}\n` })
+      }
+      return `## ${role}\n\n*${time}*\n\n${body}\n`
+    }).join('---\n\n')
+    filename += '.md'
+    mime = 'text/markdown;charset=utf-8'
+  } else if (format === 'json') {
+    content = JSON.stringify({
+      exportedAt: new Date().toISOString(),
+      sessionId: currentSessionId.value,
+      model: selectedModel.value,
+      ragId: ragId.value,
+      agentMode: agentMode.value,
+      messageCount: messages.value.length,
+      messages: messages.value.map(m => ({
+        role: m.role, content: m.content, images: m.images,
+        toolCalls: m.toolCalls, sources: m.sources,
+        createdAt: m.createdAt, status: m.status,
+      })),
+    }, null, 2)
+    filename += '.json'
+    mime = 'application/json;charset=utf-8'
+  } else {
+    content = messages.value.map(m => {
+      const role = m.role === 'user' ? '用户' : 'AI'
+      const time = m.createdAt ? new Date(m.createdAt).toLocaleString('zh-CN') : ''
+      return `[${time}] ${role}:\n${m.content || ''}\n`
+    }).join('\n---\n\n')
+    filename += '.txt'
+  }
+
+  // 触发下载
+  const blob = new Blob([content], { type: mime })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+  ElMessage.success(`已导出 ${filename} (${format})`)
 }
 
 // === V3.6.1+ OCR 图片识别 (Tesseract.js 客户端) ===
