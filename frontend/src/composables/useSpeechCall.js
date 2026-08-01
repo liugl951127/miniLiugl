@@ -149,7 +149,7 @@ export function useSpeechCall() {
     recognition?.stop()
     synth?.cancel()
     cleanup()
-    ElMessage.info('📞 通话结束')
+    console.log('[SpeechCall] 已停止监听')  // V3.6.21+ 不弹 toast, 避免误判
   }
 
   // === 静音切换 ===
