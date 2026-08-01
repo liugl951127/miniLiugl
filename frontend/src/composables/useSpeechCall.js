@@ -1,18 +1,23 @@
 /**
- * V3.6.9+ 语音通话 composable
- * WebRTC MediaRecorder + Web Speech API 双向流
- * - 录音 getUserMedia
- * - 流式 STT (Web Speech API, 实时识别)
- * - 收到 AI 回复后流式 TTS (SpeechSynthesis)
- * - 可视化 (AudioContext + AnalyserNode)
+ * V3.6.16+ 完整语音交互 composable
+ * 链路: STT (说话) → AI 处理 → 打字机 (逐字显示) → TTS (同步播报)
+ *
+ * 5 大能力:
+ * 1. MediaRecorder (WebRTC 录音)
+ * 2. Web Speech API STT (流式识别)
+ * 3. AudioContext + AnalyserNode (音量可视化)
+ * 4. 打字机集成 (typewriterType 函数回调)
+ * 5. Web Speech API TTS (流式播报)
+ *
+ * 状态机:
+ * idle → listening (STT) → processing (AI) → speaking (TTS) → idle
  */
 import { ref, computed, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 
 export function useSpeechCall() {
-  // 状态
-  const isCallActive = ref(false)
-  const isRecording = ref(false)
+  // === 状态 ===
+  const state = ref('idle')  // idle | listening | processing | speaking
   const isMuted = ref(false)
   const callDuration = ref(0)
   const volume = ref(0)
@@ -20,17 +25,29 @@ export function useSpeechCall() {
   const finalText = ref('')
   const error = ref(null)
 
-  // 内部
-  let mediaRecorder = null
+  // === 内部 ===
   let mediaStream = null
   let audioContext = null
   let analyser = null
   let recognition = null
   let synth = window.speechSynthesis
+  let mediaRecorder = null
   let durationTimer = null
   let volumeTimer = null
   let callStartTime = 0
 
+  // === 回调 (由 chat/Index 注入) ===
+  let onRecognizedCallback = null  // STT 完成时调
+  let onTypewriterCallback = null  // 打字机显示调
+  let onSpeakCallback = null       // TTS 播报调
+
+  function setCallbacks({ onRecognized, onTypewriter, onSpeak } = {}) {
+    onRecognizedCallback = onRecognized
+    onTypewriterCallback = onTypewriter
+    onSpeakCallback = onSpeak
+  }
+
+  // === 浏览器支持检测 ===
   const isSupported = computed(() => {
     return !!(
       navigator.mediaDevices?.getUserMedia &&
@@ -39,13 +56,12 @@ export function useSpeechCall() {
     )
   })
 
-  // 启动
+  // === 启动通话 ===
   async function start() {
     if (!isSupported.value) {
       ElMessage.warning('当前浏览器不支持语音通话 (需 Chrome/Edge/Safari)')
       return false
     }
-
     try {
       error.value = null
 
@@ -66,18 +82,7 @@ export function useSpeechCall() {
       analyser.fftSize = 256
       source.connect(analyser)
 
-      // 3. 录音器 (暂存, 流式 STT 不需要录音)
-      mediaRecorder = new MediaRecorder(mediaStream, {
-        mimeType: 'audio/webm',
-      })
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          // 流式 STT 已用 recognition, 这里只存档
-          // TODO: 上传到后端
-        }
-      }
-
-      // 4. STT (Web Speech API)
+      // 3. STT (Web Speech API)
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition
       recognition = new SR()
       recognition.continuous = true
@@ -99,13 +104,16 @@ export function useSpeechCall() {
         if (final) {
           finalText.value += final
           interimText.value = ''
+          // V3.6.16+ 回调: 通知 chat 发送
+          if (onRecognizedCallback) {
+            onRecognizedCallback(final)
+          }
         }
       }
 
       recognition.onerror = (event) => {
         error.value = `识别错误: ${event.error}`
         if (event.error === 'no-speech') {
-          // 静默, 不打扰
           error.value = null
         } else if (event.error === 'not-allowed') {
           ElMessage.error('麦克风权限被拒绝')
@@ -114,18 +122,17 @@ export function useSpeechCall() {
       }
 
       recognition.onend = () => {
-        // 浏览器自动结束 (10s 静默), 重启
-        if (isCallActive.value && !isMuted.value) {
+        if (state.value === 'listening' && !isMuted.value) {
           try { recognition.start() } catch (e) { /* already started */ }
         }
       }
 
-      // 5. 启动
-      isCallActive.value = true
+      // 4. 状态切换
+      state.value = 'listening'
       callStartTime = Date.now()
       recognition.start()
       startTimers()
-      ElMessage.success('🎙️ 语音通话已启动')
+      ElMessage.success('🎙️ 语音通话已启动 (STT 识别中)')
       return true
     } catch (e) {
       error.value = e.message
@@ -135,17 +142,17 @@ export function useSpeechCall() {
     }
   }
 
-  // 停止
+  // === 停止通话 ===
   function stop() {
-    isCallActive.value = false
-    isRecording.value = false
+    state.value = 'idle'
+    isMuted.value = false
     recognition?.stop()
     synth?.cancel()
     cleanup()
     ElMessage.info('📞 通话结束')
   }
 
-  // 静音切换
+  // === 静音切换 ===
   function toggleMute() {
     isMuted.value = !isMuted.value
     if (mediaStream) {
@@ -154,14 +161,16 @@ export function useSpeechCall() {
     if (isMuted.value) {
       recognition?.stop()
       interimText.value = ''
-    } else if (isCallActive.value) {
+    } else if (state.value === 'listening') {
       try { recognition?.start() } catch (e) { /* */ }
     }
   }
 
-  // 流式 TTS (收到 AI 回复时)
-  function speakChunk(text) {
-    if (!synth || !isCallActive.value) return
+  // === V3.6.16+ 流式 TTS (边打字边播报) ===
+  function speakStream(text, { onStart, onEnd } = {}) {
+    if (!synth) return
+    if (state.value === 'idle') return
+
     // 清理 markdown
     const clean = text
       .replace(/[*_`#>]/g, '')
@@ -169,17 +178,56 @@ export function useSpeechCall() {
       .replace(/!\[([^\]]*)\]\([^)]+\)/g, '')
       .trim()
     if (!clean) return
+
+    state.value = 'speaking'
     const u = new SpeechSynthesisUtterance(clean)
     u.lang = 'zh-CN'
-    u.rate = 1.0
+    u.rate = 1.1
     u.pitch = 1.0
+    u.volume = 0.9
+    u.onstart = () => {
+      if (onStart) onStart()
+    }
     u.onend = () => {
-      // 续接下一段
+      if (onEnd) onEnd()
+      // 播完回到 listening
+      if (state.value === 'speaking') {
+        state.value = 'listening'
+      }
+    }
+    u.onerror = (e) => {
+      console.warn('[TTS] Error:', e)
+      state.value = 'listening'
     }
     synth.speak(u)
   }
 
-  // 定时器
+  // === 取消 TTS ===
+  function cancelTTS() {
+    synth?.cancel()
+    if (state.value === 'speaking') {
+      state.value = 'listening'
+    }
+  }
+
+  // === 停止当前 AI 回复的 TTS 播报（用户主动打断）===
+  function stopSpeaking() {
+    cancelTTS()
+  }
+
+  // === 状态机: processing (AI 在生成) ===
+  function setProcessing() {
+    state.value = 'processing'
+  }
+
+  // === 状态机: listening (回到 STT 监听) ===
+  function setListening() {
+    if (state.value !== 'idle') {
+      state.value = 'listening'
+    }
+  }
+
+  // === 定时器 ===
   function startTimers() {
     durationTimer = setInterval(() => {
       callDuration.value = Math.floor((Date.now() - callStartTime) / 1000)
@@ -196,7 +244,7 @@ export function useSpeechCall() {
     }, 100)
   }
 
-  // 清理
+  // === 清理 ===
   function cleanup() {
     if (durationTimer) clearInterval(durationTimer)
     if (volumeTimer) clearInterval(volumeTimer)
@@ -215,13 +263,24 @@ export function useSpeechCall() {
     volume.value = 0
     interimText.value = ''
     finalText.value = ''
+    state.value = 'idle'
   }
 
-  // 格式化
+  // === 格式化 ===
   const callDurationFormatted = computed(() => {
     const m = Math.floor(callDuration.value / 60)
     const s = callDuration.value % 60
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  })
+
+  // === 状态 label ===
+  const stateLabel = computed(() => {
+    return {
+      idle: '空闲',
+      listening: '🎙️ 听你说',
+      processing: '🤖 AI 处理中',
+      speaking: '🔊 AI 播报中',
+    }[state.value]
   })
 
   onUnmounted(() => {
@@ -230,8 +289,8 @@ export function useSpeechCall() {
 
   return {
     isSupported,
-    isCallActive,
-    isRecording,
+    state,
+    stateLabel,
     isMuted,
     callDuration,
     callDurationFormatted,
@@ -239,9 +298,14 @@ export function useSpeechCall() {
     interimText,
     finalText,
     error,
+    setCallbacks,
     start,
     stop,
     toggleMute,
-    speakChunk,
+    speakStream,
+    cancelTTS,
+    stopSpeaking,
+    setProcessing,
+    setListening,
   }
 }

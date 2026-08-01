@@ -99,8 +99,8 @@
     <div v-if="speechCall.isCallActive.value" class="call-panel">
       <div class="call-header">
         <span class="call-status">
-          <span class="call-dot"></span>
-          通话中 {{ speechCall.callDurationFormatted.value }}
+          <span class="call-dot" :class="`state-${speechCall.state.value}`"></span>
+          {{ speechCall.stateLabel.value }} · {{ speechCall.callDurationFormatted.value }}
         </span>
         <el-space :size="6">
           <el-button size="small" :type="speechCall.isMuted.value ? 'warning' : 'default'" @click="speechCall.toggleMute()">
@@ -384,6 +384,16 @@ const route = useRoute()
 
 // V3.6.9+ 语音通话
 const speechCall = useSpeechCall()
+
+// V3.6.16+ 语音交互链路
+// STT 完成 → 调 sendMessage → 流式字符时打字机 + TTS 同步
+speechCall.setCallbacks({
+  onRecognized: (text) => {
+    // STT 识别完成, 把识别到的文字填入输入框
+    inputMessage.value = text
+    ElMessage.info(`识别: ${text.slice(0, 20)}...`)
+  },
+})
 
 // 状态
 const sessions = ref([])
@@ -1024,6 +1034,7 @@ function removeImage(i) {
 }
 
 async function sendMessage() {
+  if (speechCall.state.value !== 'idle') speechCall.setProcessing()
   if (!canSend.value) return
   const text = inputText.value.trim()
   const images = pendingImages.value.map(p => p.url)
