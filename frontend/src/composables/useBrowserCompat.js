@@ -187,6 +187,84 @@ export function installPolyfills() {
       return event
     }
   }
+
+  // ========== V3.5.77+ 新增 7 个 polyfill (Vue 3 / Element Plus 2.4 兼容) ==========
+
+  // 10. globalThis (Chrome 71+/FF 65+/Edge 79+/Safari 12.1+/iOS 12.2+)
+  if (typeof globalThis === 'undefined') {
+    if (typeof self !== 'undefined') self.globalThis = self
+    else if (typeof window !== 'undefined') window.globalThis = window
+    else if (typeof global !== 'undefined') global.globalThis = global
+  }
+
+  // 11. Promise.prototype.finally (Chrome 63+/FF 58+/Edge 79+/Safari 12+/iOS 12+)
+  // Vue 3 内部使用 (路由守卫 / async 错误处理)
+  if (typeof Promise.prototype.finally === 'undefined') {
+    Promise.prototype.finally = function (callback) {
+      const P = this.constructor || Promise
+      return this.then(
+        value => P.resolve(callback()).then(() => value),
+        reason => P.resolve(callback()).then(() => { throw reason })
+      )
+    }
+  }
+
+  // 12. Array.prototype.flat / flatMap (已在 #1/#2 覆盖)
+
+  // 13. Object.fromEntries (已在 #2 覆盖)
+
+  // 14. Array.prototype.at (Chrome 92+/FF 90+/Edge 92+/Safari 15.4+/iOS 15.4+)
+  // Element Plus 2.4 内部用 arr.at(-1)
+  if (typeof Array.prototype.at === 'undefined') {
+    Array.prototype.at = function (index) {
+      const len = this.length
+      const i = Math.trunc(index) || 0
+      if (i < 0) i += len
+      if (i < 0 || i >= len) return undefined
+      return this[i]
+    }
+  }
+
+  // 15. Object.hasOwn (Chrome 92+/FF 90+/Edge 92+/Safari 15.4+/iOS 15.4+)
+  // Vue 3 用 Object.hasOwn 替代 Object.prototype.hasOwnProperty.call
+  if (typeof Object.hasOwn === 'undefined') {
+    Object.hasOwn = function (obj, prop) {
+      return Object.prototype.hasOwnProperty.call(obj, prop)
+    }
+  }
+
+  // 16. Array.prototype.findLast / findLastIndex (Chrome 97+/FF 104+/Edge 97+/Safari 15.4+)
+  if (typeof Array.prototype.findLast === 'undefined') {
+    Array.prototype.findLast = function (callback, thisArg) {
+      for (let i = this.length - 1; i >= 0; i--) {
+        if (callback.call(thisArg, this[i], i, this)) return this[i]
+      }
+      return undefined
+    }
+  }
+  if (typeof Array.prototype.findLastIndex === 'undefined') {
+    Array.prototype.findLastIndex = function (callback, thisArg) {
+      for (let i = this.length - 1; i >= 0; i--) {
+        if (callback.call(thisArg, this[i], i, this)) return i
+      }
+      return -1
+    }
+  }
+
+  // 17. structuredClone (Chrome 98+/FF 94+/Edge 98+/Safari 15.4+/iOS 15.4+)
+  // Vue 3 / Pinia 深拷贝用
+  if (typeof structuredClone === 'undefined') {
+    window.structuredClone = function (obj) {
+      return JSON.parse(JSON.stringify(obj))
+    }
+  }
+
+  // 18. queueMicrotask (Chrome 71+/FF 69+/Edge 79+/Safari 12.1+/iOS 12.2+)
+  if (typeof queueMicrotask === 'undefined') {
+    window.queueMicrotask = function (callback) {
+      Promise.resolve().then(callback).catch(err => setTimeout(() => { throw err }, 0))
+    }
+  }
 }
 
 /**
