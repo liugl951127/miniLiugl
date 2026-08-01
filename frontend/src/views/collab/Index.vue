@@ -237,6 +237,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -251,6 +252,7 @@ import { useUserStore } from '@/store/user'
 const { t } = useI18n()
 const router = useRouter()
 const userStore = useUserStore()
+const toast = useToast()
 
 const joined = ref(false)
 const roomId = ref('')
@@ -314,7 +316,7 @@ const createForm = reactive({
 
 const onCreate = async () => {
   if (!userStore.isLogin) {
-    ElMessage.warning('请先登录')
+    toast.warning('请先登录')
     return router.push('/login')
   }
   creating.value = true
@@ -328,10 +330,10 @@ const onCreate = async () => {
       maxParticipants: createForm.maxParticipants
     })
     const room = res.data.data
-    ElMessage.success(`房间已创建: ${room.roomId}`)
+    toast.success(`房间已创建: ${room.roomId}`)
     doJoin(room.roomId)
   } catch (e) {
-    ElMessage.error('创建失败: ' + (e.response?.data?.message || e.message))
+    toast.error('创建失败: ' + (e.response?.data?.message || e.message))
   } finally {
     creating.value = false
   }
@@ -465,19 +467,19 @@ const onCloseRoom = async () => {
   try {
     await ElMessageBox.confirm('确定关闭房间? 所有参与者将被踢出', '确认', { type: 'warning' })
     await closeRoom(roomId.value, currentUserId.value)
-    ElMessage.success('房间已关闭')
+    toast.success('房间已关闭')
     onLeave()
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error('关闭失败: ' + (e.response?.data?.message || e.message))
+    if (e !== 'cancel') toast.error('关闭失败: ' + (e.response?.data?.message || e.message))
   }
 }
 
 const copyInviteLink = () => {
   const url = `${window.location.origin}/collab?roomId=${roomId.value}`
   navigator.clipboard.writeText(url).then(() => {
-    ElMessage.success('邀请链接已复制')
+    toast.success('邀请链接已复制')
   }).catch(() => {
-    ElMessage.info('房间号: ' + roomId.value)
+    toast.info('房间号: ' + roomId.value)
   })
 }
 
@@ -490,18 +492,18 @@ const connectWs = async (rid) => {
     if (res.data?.code === 0 && res.data?.data) {
       roomInfo.value = res.data.data
     } else {
-      ElMessage.error('房间不存在')
+      toast.error('房间不存在')
       joined.value = false
       return
     }
   } catch (e) {
-    ElMessage.error('房间查询失败')
+    toast.error('房间查询失败')
     joined.value = false
     return
   }
 
   if (!userStore.profile) {
-    ElMessage.warning('请先登录')
+    toast.warning('请先登录')
     joined.value = false
     return router.push('/login')
   }
@@ -519,7 +521,7 @@ const connectWs = async (rid) => {
 
   ws.onopen = () => {
     wsStatus.value = 'open'
-    ElMessage.success('已连接到协作房间')
+    toast.success('已连接到协作房间')
   }
 
   ws.onmessage = (event) => {
@@ -625,7 +627,7 @@ const handleWsMessage = (msg) => {
       break
     }
     case 'ERROR': {
-      ElMessage.error(msg.message)
+      toast.error(msg.message)
       break
     }
     case 'PONG':

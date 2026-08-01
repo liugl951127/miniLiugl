@@ -72,11 +72,13 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { nl2sqlAsk, nl2sqlExplain, nl2qlFeedback, nl2sqlHistory, dryRunQuery } from '@/api/analytics'
 import EmptyState from '@/components/EmptyState.vue'
 
 const question = ref('')
+const toast = useToast()
 const asking = ref(false)
 const result = ref(null)
 const dryRunResult = ref(null)
@@ -84,7 +86,7 @@ const history = ref([])
 
 async function ask() {
   if (!question.value.trim()) {
-    ElMessage.warning('请输入问题')
+    toast.warning('请输入问题')
     return
   }
   asking.value = true

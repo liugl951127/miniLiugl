@@ -124,6 +124,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onUnmounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { cancelMusicStream } from '@/api/ai'
 import EmptyState from '@/components/EmptyState.vue'
@@ -233,7 +234,7 @@ async function cancel() {
     log('info', '已取消 ' + activeTaskId)
     if (eventSource) { eventSource.close(); eventSource = null }
     running.value = false
-  } catch (e) { ElMessage.error('取消失败') }
+  } catch (e) { toast.error('取消失败') }
 }
 
 function clearChunks() {

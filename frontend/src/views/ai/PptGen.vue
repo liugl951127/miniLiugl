@@ -129,10 +129,12 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { pptGenerate, pptAuto, pptThemes, pptParse } from '@/api/ai'
 
 const mode = ref('manual')
+const toast = useToast()
 const generating = ref(false)
 const parsing = ref(false)
 const themes = ref([])
@@ -182,7 +184,7 @@ async function loadThemes() {
 
 async function onGenerateManual() {
   if (!manualForm.outline) {
-    ElMessage.warning('请输入大纲')
+    toast.warning('请输入大纲')
     return
   }
   generating.value = true
@@ -194,7 +196,7 @@ async function onGenerateManual() {
     })
     const data = r.data || {}
     Object.assign(result, data)
-    ElMessage.success(`PPT 生成成功 (${data.slideCount} 页)`)
+    toast.success(`PPT 生成成功 (${data.slideCount} 页)`)
   } catch (e) {
     // 错误已统一处理
   } finally {
@@ -204,7 +206,7 @@ async function onGenerateManual() {
 
 async function onGenerateAuto() {
   if (!autoForm.title) {
-    ElMessage.warning('请输入主题')
+    toast.warning('请输入主题')
     return
   }
   generating.value = true
@@ -216,7 +218,7 @@ async function onGenerateAuto() {
     })
     const data = r.data || {}
     Object.assign(result, data)
-    ElMessage.success(`PPT 自动生成成功 (${data.slideCount} 页)`)
+    toast.success(`PPT 自动生成成功 (${data.slideCount} 页)`)
   } catch (e) {
   } finally {
     generating.value = false
@@ -225,14 +227,14 @@ async function onGenerateAuto() {
 
 async function onParse() {
   if (!parseForm.outline) {
-    ElMessage.warning('请输入大纲')
+    toast.warning('请输入大纲')
     return
   }
   parsing.value = true
   try {
     const r = await pptParse({ outline: parseForm.outline })
     Object.assign(parseResult, r.data || {})
-    ElMessage.success(`解析完成 (${parseResult.slideCount} 页)`)
+    toast.success(`解析完成 (${parseResult.slideCount} 页)`)
   } catch (e) {
   } finally {
     parsing.value = false
@@ -241,7 +243,7 @@ async function onParse() {
 
 function downloadPpt() {
   if (!result.base64) {
-    ElMessage.warning('请先生成 PPT')
+    toast.warning('请先生成 PPT')
     return
   }
   const link = document.createElement('a')

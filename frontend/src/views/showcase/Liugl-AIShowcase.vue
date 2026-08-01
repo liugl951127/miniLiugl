@@ -171,12 +171,14 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { Promotion, Warning } from '@element-plus/icons-vue'
 import http from '@/api/http'
 import dayjs from 'dayjs'
 
 const prompt = ref('请用三句话解释什么是大模型的 ReAct 推理模式, 并举例')
+const toast = useToast()
 const battling = ref(false)
 const results = ref([])
 const history = ref([])
@@ -207,7 +209,7 @@ const quickPrompts = [
 const canBattle = computed(() => prompt.value.trim() && selectedModels.value.length >= 2 && !battling.value)
 
 function toggleModel(code) {
-  if (battling.value) return ElMessage.warning('对决进行中…')
+  if (battling.value) return toast.warning('对决进行中…')
   const i = selectedModels.value.indexOf(code)
   if (i >= 0) selectedModels.value.splice(i, 1)
   else if (selectedModels.value.length < 8) selectedModels.value.push(code)
@@ -254,12 +256,12 @@ async function startBattle() {
         totalLatencyMs: totalLat,
       })
       history.value = history.value.slice(0, 20)
-      ElMessage.success(`对决完成! 最快: ${winner} (${r.data.results.find(x => x.modelCode === winner)?.latencyMs}ms)`)
+      toast.success(`对决完成! 最快: ${winner} (${r.data.results.find(x => x.modelCode === winner)?.latencyMs}ms)`)
     } else {
-      ElMessage.error('对决响应异常: ' + JSON.stringify(r))
+      toast.error('对决响应异常: ' + JSON.stringify(r))
     }
   } catch (e) {
-    ElMessage.error('对决失败: ' + e.message)
+    toast.error('对决失败: ' + e.message)
   } finally {
     battling.value = false
   }
@@ -283,7 +285,7 @@ function estimateCost(modelCode, totalTokens) {
 function rate(r) {
   // 实际项目: 调后端写 model_battle_log.score
   console.log('评分:', r.modelCode, r.score)
-  ElMessage.success(`已为 ${r.modelCode} 打分 ${r.score} 星`)
+  toast.success(`已为 ${r.modelCode} 打分 ${r.score} 星`)
 }
 
 function clearAll() {

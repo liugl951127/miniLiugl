@@ -122,6 +122,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { marketplaceApi } from '@/api/marketplace'
@@ -130,6 +131,7 @@ import EmptyState from '@/components/EmptyState.vue'
 
 const { t } = useI18n()
 const userStore = useUserStore()
+const toast = useToast()
 const stats = ref(null)
 const agents = ref([])
 const loading = ref(false)
@@ -184,7 +186,7 @@ const loadAgents = async () => {
 
 const submitUpload = async () => {
   if (!uploadForm.name) {
-    ElMessage.warning('请填写名称')
+    toast.warning('请填写名称')
     return
   }
   uploading.value = true
@@ -196,15 +198,15 @@ const submitUpload = async () => {
       version: '1.0.0'
     })
     if (res.data?.code === 0) {
-      ElMessage.success('上传成功! ' + (uploadForm.visibility === 'PUBLIC' ? '待审核' : '已发布'))
+      toast.success('上传成功! ' + (uploadForm.visibility === 'PUBLIC' ? '待审核' : '已发布'))
       showUpload.value = false
       loadAgents()
       loadStats()
     } else {
-      ElMessage.error(res.data?.message || '上传失败')
+      toast.error(res.data?.message || '上传失败')
     }
   } catch (e) {
-    ElMessage.error('上传失败: ' + e.message)
+    toast.error('上传失败: ' + e.message)
   } finally {
     uploading.value = false
   }
@@ -218,13 +220,13 @@ const showDetail = async (agent) => {
     myRating.value = 0
     myComment.value = ''
   } catch (e) {
-    ElMessage.error('加载详情失败')
+    toast.error('加载详情失败')
   }
 }
 
 const submitRating = async () => {
   if (!myRating.value) {
-    ElMessage.warning('请选择评分')
+    toast.warning('请选择评分')
     return
   }
   try {
@@ -235,15 +237,15 @@ const submitRating = async () => {
       comment: myComment.value
     })
     if (res.data?.code === 0) {
-      ElMessage.success('评分成功')
+      toast.success('评分成功')
       // 重新加载详情
       const r2 = await marketplaceApi.detail(detail.value.agentKey)
       detail.value = r2.data
     } else {
-      ElMessage.error(res.data?.message || '评分失败')
+      toast.error(res.data?.message || '评分失败')
     }
   } catch (e) {
-    ElMessage.error('评分失败: ' + e.message)
+    toast.error('评分失败: ' + e.message)
   }
 }
 

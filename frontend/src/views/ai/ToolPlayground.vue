@@ -122,6 +122,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, watch, markRaw } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer.vue'
 import StateBlock from '@/components/StateBlock.vue'
@@ -135,6 +136,7 @@ import {
 } from '@/api/ai'
 
 const Input = markRaw(ElInput)
+const toast = useToast()
 const NumberInput = markRaw(ElInputNumber)
 const Select = markRaw(ElSelect)
 const Switch = markRaw(ElSwitch)
@@ -311,7 +313,7 @@ async function invoke() {
     // 处理 seriesJson -> series
     const params = { ...inputParams.value }
     if (params.seriesJson) {
-      try { params.series = JSON.parse(params.seriesJson) } catch { ElMessage.error('series JSON 格式错误'); running.value = false; return }
+      try { params.series = JSON.parse(params.seriesJson) } catch { toast.error('series JSON 格式错误'); running.value = false; return }
       delete params.seriesJson
     }
     // 处理 columns 字符串
@@ -324,17 +326,17 @@ async function invoke() {
     }
     const res = await currentTool.value.invoke(params)
     result.value = res.data || res
-    if (result.value.success !== false) ElMessage.success('调用成功')
-    else ElMessage.error(result.value.message || '调用失败')
+    if (result.value.success !== false) toast.success('调用成功')
+    else toast.error(result.value.message || '调用失败')
 
     // Java 项目生成: 自动弹出下载
     if (currentTool.value.isProject && result.value.zipBase64) {
       downloadJavaProjectFromBase64(result.value.zipBase64, result.value.downloadName)
-      ElMessage.success(`项目已生成 (${result.value.fileCount} 个文件, ${result.value.sizeKB}KB), 下载已开始`)
+      toast.success(`项目已生成 (${result.value.fileCount} 个文件, ${result.value.sizeKB}KB), 下载已开始`)
     }
   } catch (e) {
     result.value = { success: false, message: e.message || '调用失败' }
-    ElMessage.error(e.message || '调用失败')
+    toast.error(e.message || '调用失败')
   } finally {
     running.value = false
   }

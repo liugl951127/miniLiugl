@@ -120,11 +120,13 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import http from '@/api/http'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'
 
 const userStore = useUserStore()
+const toast = useToast()
 
 const goal = ref('给我公司生成一份 Liugl-AI 平台的竞品分析报告, 包含 3 个核心竞品的功能对比、优劣势分析、市场定位')
 const tools = ref([])
@@ -161,7 +163,7 @@ function reset() {
 }
 
 async function execute() {
-  if (!goal.value.trim()) return ElMessage.warning('请输入目标')
+  if (!goal.value.trim()) return toast.warning('请输入目标')
   reset()
 
   if (mode.value === 'sync') {
@@ -188,7 +190,7 @@ async function runSync() {
       rebuildRoundsData(d.steps || [], d.criticEvals || [])
     }
   } catch (e) {
-    ElMessage.error('执行失败: ' + e.message)
+    toast.error('执行失败: ' + e.message)
   } finally {
     running.value = false
   }
@@ -228,7 +230,7 @@ async function runStream() {
     })
 
     if (!resp.ok) {
-      ElMessage.error('启动失败: ' + resp.status)
+      toast.error('启动失败: ' + resp.status)
       running.value = false
       return
     }
@@ -260,7 +262,7 @@ async function runStream() {
       }
     }
   } catch (e) {
-    ElMessage.error('流式失败: ' + e.message)
+    toast.error('流式失败: ' + e.message)
   } finally {
     running.value = false
   }
@@ -294,11 +296,11 @@ function applyEvent(event, data) {
     rounds.value = data.rounds
     totalDurationMs.value = data.totalDurationMs
   } else if (event === 'error') {
-    ElMessage.error('错误: ' + (data.message || ''))
+    toast.error('错误: ' + (data.message || ''))
   }
 }
 
-function cancel() { running.value = false; ElMessage.info('已停止') }
+function cancel() { running.value = false; toast.info('已停止') }
 
 onMounted(loadTools)
 </script>

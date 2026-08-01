@@ -162,11 +162,26 @@
         </el-table>
       </el-card>
     </section>
+    <!-- V3.7.0+ Alerts 健康时间线 (多页扩展) -->
+    <section class="section">
+      <h3 class="section-title">📈 Alerts健康时间线
+        <el-tag size="small" style="float: right; margin-left: 8px" :type="autoRefresh ? 'success' : 'info'">
+          { autoRefresh ? '🔄 自动刷新 (5s)' : '⏸ 手动模式' }
+        </el-tag>
+        <el-switch v-model="autoRefresh" size="small" style="float: right; margin-right: 8px" />
+        <el-button text type="primary" :icon="Refresh" @click="refreshHealth" style="float: right; margin-right: 8px">刷新</el-button>
+      </h3>
+      <el-card shadow="hover">
+        <div ref="healthTimelineRef" class="chart-container" style="height: 320px"></div>
+      </el-card>
+    </section>
+
   </div>
 </template>
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick} from 'vue'
+import * as echarts from 'echarts'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { ElMessageBox } from 'element-plus'
@@ -175,6 +190,7 @@ import EmptyState from '@/components/EmptyState.vue'
 
 const { t } = useI18n()
 const tab = ref('firing')
+const toast = useToast()
 const firing = ref([])
 const rules = ref([])
 const channels = ref([])

@@ -169,12 +169,14 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onUnmounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { Microphone, VideoPause } from '@element-plus/icons-vue'
 import http from '@/api/http'
 import EmptyState from '@/components/EmptyState.vue'
 
 const activeTab = ref('asr')
+const toast = useToast()
 
 // ===== ASR =====
 const asrModels = ref([
@@ -210,7 +212,7 @@ async function startRecord() {
     recordSeconds.value = 0
     recordTimer = setInterval(() => recordSeconds.value++, 1000)
   } catch (e) {
-    ElMessage.error('麦克风权限被拒: ' + e.message)
+    toast.error('麦克风权限被拒: ' + e.message)
   }
 }
 function stopRecord() {
@@ -244,10 +246,10 @@ async function transcribe() {
     })
     if (r && r.data) {
       asrResult.value = r.data
-      ElMessage.success('转写完成')
+      toast.success('转写完成')
     }
   } catch (e) {
-    ElMessage.error('转写失败: ' + e.message)
+    toast.error('转写失败: ' + e.message)
   } finally {
     transcribing.value = false
   }
@@ -285,10 +287,10 @@ async function synthesize() {
     })
     if (r && r.data) {
       ttsResult.value = r.data
-      ElMessage.success('合成完成! 点播放试听')
+      toast.success('合成完成! 点播放试听')
     }
   } catch (e) {
-    ElMessage.error('合成失败: ' + e.message)
+    toast.error('合成失败: ' + e.message)
   } finally {
     ttsLoading.value = false
   }
@@ -302,7 +304,7 @@ function speakText(text) {
 
 async function copyText(text) {
   await navigator.clipboard.writeText(text)
-  ElMessage.success('已复制')
+  toast.success('已复制')
 }
 
 function downloadAudio(r) {
@@ -310,7 +312,7 @@ function downloadAudio(r) {
   a.href = r.audio
   a.download = `tts-${r.voice}-${Date.now()}.${r.format || 'wav'}`
   a.click()
-  ElMessage.success('已下载')
+  toast.success('已下载')
 }
 
 onUnmounted(() => {

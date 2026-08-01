@@ -101,11 +101,13 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { Picture } from '@element-plus/icons-vue'
 import http from '@/api/http'
 
 const prompt = ref('一只可爱的橘猫坐在窗台上看日落, 油画风格, 暖色调')
+const toast = useToast()
 const n = ref(1)
 const size = ref('1024x1024')
 const generating = ref(false)
@@ -178,7 +180,7 @@ async function generate() {
       }
     })
     await Promise.all(tasks)
-    ElMessage.success(`生成完成! ${results.value.length} 张图`)
+    toast.success(`生成完成! ${results.value.length} 张图`)
   } finally {
     generating.value = false
   }
@@ -189,17 +191,17 @@ function downloadImage(r) {
   a.href = r.image
   a.download = `${r.modelCode.replace(/[/\\:]/g, '_')}-${Date.now()}.svg`
   a.click()
-  ElMessage.success('已下载')
+  toast.success('已下载')
 }
 
 async function copyPrompt(r) {
   await navigator.clipboard.writeText(r.prompt)
-  ElMessage.success('prompt 已复制')
+  toast.success('prompt 已复制')
 }
 
 function rate(r) {
   console.log('rate:', r.modelCode, r.score)
-  ElMessage.success(`已为 ${r.modelName} 打分 ${r.score} 星`)
+  toast.success(`已为 ${r.modelName} 打分 ${r.score} 星`)
 }
 </script>
 

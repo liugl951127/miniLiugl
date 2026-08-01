@@ -167,6 +167,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive, computed, watch, onMounted, readonly } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Edit, Delete } from '@element-plus/icons-vue'
@@ -176,6 +177,7 @@ import { t } from '@/i18n'
 
 const router = useRouter()
 const userStore = useUserStore()
+const toast = useToast()
 
 const ALL_CATEGORIES = ['翻译', '代码', '写作', '分析', '营销', '客服', '其他']
 const CATEGORY_ICONS = { '翻译': '🌍', '代码': '💻', '写作': '✍️', '分析': '📊', '营销': '📣', '客服': '🎧', '其他': '📋' }
@@ -213,7 +215,7 @@ async function loadList() {
       total.value = d.total || 0
     }
   } catch (e) {
-    ElMessage.error(t('prompt.loadFailed') + e.message)
+    toast.error(t('prompt.loadFailed') + e.message)
   }
 }
 
@@ -299,21 +301,21 @@ function openEditor(tpl = null) {
 
 async function handleSave() {
   if (!editorForm.name || !editorForm.content) {
-    ElMessage.warning(t('prompt.nameAndContentRequired'))
+    toast.warning(t('prompt.nameAndContentRequired'))
     return
   }
   try {
     if (editingTemplate.value?.id) {
       await promptApi.update(editingTemplate.value.id, editorForm)
-      ElMessage.success(t('prompt.updateSuccess'))
+      toast.success(t('prompt.updateSuccess'))
     } else {
       await promptApi.create(editorForm)
-      ElMessage.success(t('prompt.createSuccess'))
+      toast.success(t('prompt.createSuccess'))
     }
     showEditor.value = false
     await loadList()
   } catch (e) {
-    ElMessage.error(e.message || t('prompt.saveFailed'))
+    toast.error(e.message || t('prompt.saveFailed'))
   }
 }
 
@@ -321,10 +323,10 @@ async function handleDelete(tpl) {
   try {
     await ElMessageBox.confirm(t('prompt.deleteConfirm') + '「' + tpl.name + '」' + t('prompt.deleteConfirmSuffix'), t('prompt.deleteConfirmTitle'), { type: 'warning' })
     await promptApi.remove(tpl.id)
-    ElMessage.success(t('prompt.deleted'))
+    toast.success(t('prompt.deleted'))
     await loadList()
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error(e.message || t('prompt.deleteFailed'))
+    if (e !== 'cancel') toast.error(e.message || t('prompt.deleteFailed'))
   }
 }
 </script>

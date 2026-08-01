@@ -103,6 +103,7 @@
 <script setup lang="ts">
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/store/user'
@@ -110,6 +111,7 @@ import { useRouter } from 'vue-router'
 
 const API = import.meta.env.VITE_API_BASE || 'http://localhost'
 const userStore = useUserStore()
+const toast = useToast()
 const router = useRouter()
 
 const meInfo = ref<any>(null)
@@ -126,7 +128,7 @@ async function loadMe() {
     const { data } = await axios.get(`${API}/api/v1/auth/super/me`, auth())
     meInfo.value = data.data
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.message || e?.message)
+    toast.error(e?.response?.data?.message || e?.message)
   }
 }
 
@@ -135,34 +137,34 @@ async function loadUsers() {
     const { data } = await axios.get(`${API}/api/v1/auth/super/users`, auth())
     users.value = data.data || []
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.message || e?.message)
+    toast.error(e?.response?.data?.message || e?.message)
   }
 }
 
 async function disableUser(row: any) {
   if (row.username === 'adminLiugl') {
-    ElMessage.warning('不能禁用自己')
+    toast.warning('不能禁用自己')
     return
   }
   await ElMessageBox.confirm(`确认禁用 ${row.username}?`, '警告', { type: 'warning' })
   try {
     await axios.post(`${API}/api/v1/auth/super/users/${row.id}/disable`, {}, auth())
-    ElMessage.success('已禁用')
+    toast.success('已禁用')
     loadUsers()
-  } catch (e: any) { ElMessage.error(e?.response?.data?.message || e?.message) }
+  } catch (e: any) { toast.error(e?.response?.data?.message || e?.message) }
 }
 
 async function enableUser(row: any) {
   try {
     await axios.post(`${API}/api/v1/auth/super/users/${row.id}/enable`, {}, auth())
-    ElMessage.success('已启用')
+    toast.success('已启用')
     loadUsers()
-  } catch (e: any) { ElMessage.error(e?.response?.data?.message || e?.message) }
+  } catch (e: any) { toast.error(e?.response?.data?.message || e?.message) }
 }
 
 async function resetPwd(row: any) {
   if (row.username === 'adminLiugl') {
-    ElMessage.warning('不能重置超级管理员密码')
+    toast.warning('不能重置超级管理员密码')
     return
   }
   try {
@@ -172,7 +174,7 @@ async function resetPwd(row: any) {
     const { data } = await axios.post(
       `${API}/api/v1/auth/super/users/${row.id}/reset-pwd?newPwd=${value}`, {}, auth())
     ElMessageBox.alert(`新密码: ${data.data}`, '重置成功', { type: 'success' })
-  } catch (e: any) { if (e !== 'cancel') ElMessage.error(e?.response?.data?.message || e?.message) }
+  } catch (e: any) { if (e !== 'cancel') toast.error(e?.response?.data?.message || e?.message) }
 }
 
 // V1.8: 三个快速操作实现
@@ -185,11 +187,11 @@ function exportData() {
   a.download = `minimax-users-${new Date().toISOString().slice(0, 10)}.json`
   a.click()
   URL.revokeObjectURL(url)
-  ElMessage.success('用户数据已导出')
+  toast.success('用户数据已导出')
 }
 function clearCache() {
   ElMessageBox.confirm('确认清空 Redis 缓存? 仅影响短期记忆和会话状态, 不会丢数据', '清空缓存', { type: 'warning' })
-    .then(() => ElMessage.success('缓存已清空 (本地提示, 需后端端点 /api/v1/admin/cache/clear)'))
+    .then(() => toast.success('缓存已清空 (本地提示, 需后端端点 /api/v1/admin/cache/clear)'))
     .catch(() => {})
 }
 function viewAudit() {

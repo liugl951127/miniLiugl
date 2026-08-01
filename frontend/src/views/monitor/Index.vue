@@ -152,11 +152,27 @@
         </el-table>
       </el-card>
     </section>
+    <!-- V3.7.0+ Monitor 健康时间线 (多页扩展) -->
+    <section class="section">
+      <h3 class="section-title">📈 Monitor健康时间线
+        <el-tag size="small" style="float: right; margin-left: 8px" :type="autoRefresh ? 'success' : 'info'">
+          { autoRefresh ? '🔄 自动刷新 (5s)' : '⏸ 手动模式' }
+        </el-tag>
+        <el-switch v-model="autoRefresh" size="small" style="float: right; margin-right: 8px" />
+        <el-button text type="primary" :icon="Refresh" @click="refreshHealth" style="float: right; margin-right: 8px">刷新</el-button>
+      </h3>
+      <el-card shadow="hover">
+        <div ref="healthTimelineRef" class="chart-container" style="height: 320px"></div>
+      </el-card>
+    </section>
+
   </div>
 </template>
 <script setup lang="ts">
 // ───── 依赖导入 ─────
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, watch, nextTick} from 'vue'
+import * as echarts from 'echarts'
+import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -166,6 +182,7 @@ import { useUserStore } from '@/store/user'
 import { getMonitorAlertRules, createMonitorAlertRule, updateMonitorAlertRule, deleteMonitorAlertRule, getAlertChannels, createAlertChannel, updateAlertChannel, deleteAlertChannel } from '@/api/monitor'
 
 const userStore = useUserStore()
+const toast = useToast()
 const API = import.meta.env.VITE_API_BASE || 'http://localhost'
 const token = userStore.accessToken || ''
 function auth() { return { headers: { Authorization: `Bearer ${token}` } } }
@@ -331,21 +348,21 @@ function openRuleDialog(row?: any) {
 
 // V5.9: 保存规则
 async function saveRule() {
-  if (!ruleForm.name?.trim()) return ElMessage.warning('请输入名称')
-  if (!ruleForm.metricName?.trim()) return ElMessage.warning('请输入指标名')
+  if (!ruleForm.name?.trim()) return toast.warning('请输入名称')
+  if (!ruleForm.metricName?.trim()) return toast.warning('请输入指标名')
   ruleSaving.value = true
   try {
     if (ruleForm.id) {
       await updateMonitorAlertRule(ruleForm.id, ruleForm)
-      ElMessage.success('规则已更新')
+      toast.success('规则已更新')
     } else {
       await createMonitorAlertRule(ruleForm)
-      ElMessage.success('规则已创建')
+      toast.success('规则已创建')
     }
     ruleDialog.value = false
     await loadRules()
   } catch (e: any) {
-    ElMessage.error('保存失败: ' + (e?.response?.data?.msg || e?.message || '未知错误'))
+    toast.error('保存失败: ' + (e?.response?.data?.msg || e?.message || '未知错误'))
   } finally {
     ruleSaving.value = false
   }
@@ -356,7 +373,7 @@ async function removeRule(row: any) {
   try {
     await ElMessageBox.confirm(`确认删除规则 [${row.name}]?`, '提示', { type: 'warning' })
     await deleteMonitorAlertRule(row.id)
-    ElMessage.success('已删除')
+    toast.success('已删除')
     await loadRules()
   } catch (_) { /* cancel */ }
 }
@@ -419,18 +436,18 @@ function openChannelDialog(row?: any) {
 }
 
 async function saveChannel() {
-  if (!channelForm.name?.trim()) return ElMessage.warning('请输入名称')
+  if (!channelForm.name?.trim()) return toast.warning('请输入名称')
   channelSaving.value = true
   try {
     let config: any = {}
     if (channelForm.channelType === 'EMAIL') {
-      if (!channelForm.configEmail?.trim()) return ElMessage.warning('请输入收件人邮箱')
+      if (!channelForm.configEmail?.trim()) return toast.warning('请输入收件人邮箱')
       config = { email: channelForm.configEmail.trim() }
     } else if (channelForm.channelType === 'DINGTALK') {
-      if (!channelForm.configWebhook?.trim()) return ElMessage.warning('请输入 WebHook URL')
+      if (!channelForm.configWebhook?.trim()) return toast.warning('请输入 WebHook URL')
       config = { webhook: channelForm.configWebhook.trim(), secret: channelForm.configSecret?.trim() || undefined }
     } else {
-      if (!channelForm.configWebhook?.trim()) return ElMessage.warning('请输入 WebHook URL')
+      if (!channelForm.configWebhook?.trim()) return toast.warning('请输入 WebHook URL')
       config = { webhook: channelForm.configWebhook.trim(), method: channelForm.configMethod }
     }
     const body = {
@@ -442,15 +459,15 @@ async function saveChannel() {
     }
     if (channelForm.id) {
       await updateAlertChannel(channelForm.id, body)
-      ElMessage.success('渠道已更新')
+      toast.success('渠道已更新')
     } else {
       await createAlertChannel(body)
-      ElMessage.success('渠道已创建')
+      toast.success('渠道已创建')
     }
     channelDialog.value = false
     await loadChannels()
   } catch (e: any) {
-    ElMessage.error('保存失败: ' + (e?.response?.data?.msg || e?.message || '未知错误'))
+    toast.error('保存失败: ' + (e?.response?.data?.msg || e?.message || '未知错误'))
   } finally {
     channelSaving.value = false
   }
@@ -459,7 +476,7 @@ async function saveChannel() {
 async function removeChannel(row: any) {
   try {
     await deleteAlertChannel(row.id)
-    ElMessage.success('已删除')
+    toast.success('已删除')
     await loadChannels()
   } catch (_) {}
 }

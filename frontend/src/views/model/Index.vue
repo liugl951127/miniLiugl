@@ -130,12 +130,14 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Cpu, Refresh, Plus } from '@element-plus/icons-vue'
 import http from '@/api/http'
 import { modelApi } from '@/api/model'
 
 const models = ref([])
+const toast = useToast()
 const loading = ref(false)
 const showAddDialog = ref(false)
 const showTestDialog = ref(false)
@@ -177,7 +179,7 @@ const loadModels = async () => {
     const res = await modelApi.list()
     models.value = res.data || res || []
   } catch (e) {
-    ElMessage.error('加载模型失败: ' + e.message)
+    toast.error('加载模型失败: ' + e.message)
   } finally {
     loading.value = false
   }
@@ -199,10 +201,10 @@ const deleteModel = async (row) => {
   await ElMessageBox.confirm(`确认删除模型 ${row.name}?`, '警告', { type: 'warning' })
   try {
     await http.delete(`/api/v1/admin/models/${row.id}`)
-    ElMessage.success('删除成功')
+    toast.success('删除成功')
     loadModels()
   } catch (e) {
-    ElMessage.error('删除失败: ' + e.message)
+    toast.error('删除失败: ' + e.message)
   }
 }
 
@@ -217,12 +219,12 @@ const saveModel = async () => {
     } else {
       await http.post('/api/v1/admin/models', form)
     }
-    ElMessage.success('保存成功')
+    toast.success('保存成功')
     showAddDialog.value = false
     editing.value = false
     loadModels()
   } catch (e) {
-    ElMessage.error('保存失败: ' + e.message)
+    toast.error('保存失败: ' + e.message)
   }
 }
 

@@ -127,6 +127,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, nextTick } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
@@ -134,6 +135,7 @@ import http from '@/api/http'
 import dayjs from 'dayjs'
 
 const activeTab = ref('overall')
+const toast = useToast()
 const loading = ref(false)
 const overallData = ref([])
 const latencyData = ref([])
@@ -174,7 +176,7 @@ async function loadData() {
       categories.value = r.data || {}
     }
   } catch (e) {
-    ElMessage.error('加载失败: ' + e.message)
+    toast.error('加载失败: ' + e.message)
   } finally {
     loading.value = false
   }

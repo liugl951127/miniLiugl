@@ -154,11 +154,13 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { CircleCheckFilled, Loading, WarningFilled } from '@element-plus/icons-vue'
 import { listProviders } from '@/api/model'
 
 const availableModels = ref(['mock', 'gpt-4o-mini', 'qwen-max', 'deepseek-chat'])
+const toast = useToast()
 
 async function loadModelOptions() {
   try {
@@ -325,7 +327,7 @@ function clearCanvas() {
 function loadTemplate(tpl) {
   try {
     if (!tpl || !tpl.nodes || !tpl.edges) {
-      ElMessage.error('模板数据不完整, 缺少 nodes 或 edges 字段')
+      toast.error('模板数据不完整, 缺少 nodes 或 edges 字段')
       return
     }
     // 兼容后端返回字符串 或 前端直接返回对象
@@ -333,9 +335,9 @@ function loadTemplate(tpl) {
     const parsedEdges = typeof tpl.edges === 'string' ? JSON.parse(tpl.edges) : tpl.edges
     nodes.value = JSON.parse(JSON.stringify(parsedNodes))
     edges.value = JSON.parse(JSON.stringify(parsedEdges))
-    ElMessage.success(`已加载模板: ${tpl.name}`)
+    toast.success(`已加载模板: ${tpl.name}`)
   } catch (e) {
-    ElMessage.error('模板格式错误, 加载失败: ' + e.message)
+    toast.error('模板格式错误, 加载失败: ' + e.message)
   }
 }
 function exportJson() {
@@ -356,7 +358,7 @@ async function executeDag() {
   // 拓扑排序
   const order = topoSort(nodes.value, edges.value)
   if (!order) {
-    ElMessage.error('DAG 有循环依赖!')
+    toast.error('DAG 有循环依赖!')
     executing.value = false
     return
   }
@@ -372,7 +374,7 @@ async function executeDag() {
     n.status = 'done'
   }
   executing.value = false
-  ElMessage.success('DAG 执行完成')
+  toast.success('DAG 执行完成')
 }
 function cancelExec() {
   executing.value = false

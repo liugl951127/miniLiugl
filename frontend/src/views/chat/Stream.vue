@@ -116,6 +116,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, nextTick, inject } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'
@@ -123,6 +124,7 @@ import EmptyState from '@/components/EmptyState.vue'
 
 const { t } = useI18n()
 const userStore = useUserStore()
+const toast = useToast()
 const connected = ref(false)
 const streaming = ref(false)
 const paused = ref(false)
@@ -147,7 +149,7 @@ function log(type, msg) {
 function connect() {
   if (connected.value) return
   if (!userStore.isLogin) {
-    ElMessage.warning('请先登录后再使用 WebSocket 聊天')
+    toast.warning('请先登录后再使用 WebSocket 聊天')
     return
   }
   const token = userStore.accessToken || ''
@@ -179,7 +181,7 @@ function connect() {
 
   ws.onerror = (e) => {
     log('error', 'WS 连接错误, 请检查登录状态')
-    ElMessage.error('WebSocket 连接失败, 请先登录')
+    toast.error('WebSocket 连接失败, 请先登录')
   }
 }
 
@@ -268,7 +270,7 @@ function cancel() {
 }
 
 function steer() {
-  if (!steerText.value.trim()) return ElMessage.warning('请输入引导方向')
+  if (!steerText.value.trim()) return toast.warning('请输入引导方向')
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ action: 'steer', direction: steerText.value }))
     steerText.value = ''
@@ -276,7 +278,7 @@ function steer() {
 }
 
 function sendFeedback() {
-  if (!feedbackScore.value) return ElMessage.warning('请评分')
+  if (!feedbackScore.value) return toast.warning('请评分')
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({
       action: 'feedback',
@@ -289,7 +291,7 @@ function sendFeedback() {
 }
 
 function doInject() {
-  if (!injectText.value.trim()) return ElMessage.warning('请输入注入内容')
+  if (!injectText.value.trim()) return toast.warning('请输入注入内容')
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({
       action: 'inject',

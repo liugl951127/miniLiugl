@@ -111,12 +111,14 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { monitorApi } from '@/api/monitor'
 
 const { t } = useI18n()
 const logs = ref([])
+const toast = useToast()
 const loading = ref(false)
 const page = ref(1)
 const pageSize = ref(20)
@@ -183,9 +185,9 @@ async function exportData() {
     a.download = `audit-${Date.now()}.csv`
     a.click()
     URL.revokeObjectURL(url)
-    ElMessage.success('已导出')
+    toast.success('已导出')
   } catch (e) {
-    ElMessage.error('导出失败')
+    toast.error('导出失败')
   }
 }
 

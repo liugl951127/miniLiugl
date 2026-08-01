@@ -364,6 +364,7 @@
 <script setup lang="ts">
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/store/user'
@@ -380,6 +381,7 @@ import {
 import dayjs from 'dayjs'
 
 const userStore = useUserStore()
+const toast = useToast()
 const route = useRoute()
 
 // V3.6.9+ 语音通话
@@ -391,7 +393,7 @@ speechCall.setCallbacks({
   onRecognized: (text) => {
     // STT 识别完成, 把识别到的文字填入输入框
     inputMessage.value = text
-    ElMessage.info(`识别: ${text.slice(0, 20)}...`)
+    toast.info(`识别: ${text.slice(0, 20)}...`)
   },
 })
 
@@ -420,7 +422,7 @@ const knowledgeBases = ref([
   { id: 5, name: '代码片段库',   docCount: 1024 },
 ])
 function onRagChange(id) {
-  if (id) ElMessage.success(`📚 已启用 RAG 检索: ${knowledgeBases.value.find(k => k.id === id)?.name}`)
+  if (id) toast.success(`📚 已启用 RAG 检索: ${knowledgeBases.value.find(k => k.id === id)?.name}`)
 }
 
 // === V3.5.99+ 语音输入 (Web Speech API) ===
@@ -470,7 +472,7 @@ function initVoice() {
   }
   recognition.onerror = (e) => {
     console.error('语音识别错误:', e.error)
-    ElMessage.error(`语音识别失败: ${e.error}`)
+    toast.error(`语音识别失败: ${e.error}`)
     voiceRecording.value = false
     voiceProcessing.value = false
   }
@@ -487,7 +489,7 @@ function initVoice() {
 
 async function toggleVoice() {
   if (!voiceSupported.value) {
-    ElMessage.warning('当前浏览器不支持语音输入 (Chrome/Edge/Safari 支持)')
+    toast.warning('当前浏览器不支持语音输入 (Chrome/Edge/Safari 支持)')
     return
   }
   if (voiceRecording.value) {
@@ -499,7 +501,7 @@ async function toggleVoice() {
       try {
         voiceRecognition.start()
       } catch (e) {
-        ElMessage.error('启动语音失败: ' + e.message)
+        toast.error('启动语音失败: ' + e.message)
         voiceProcessing.value = false
       }
     }
@@ -604,12 +606,12 @@ function checkNotificationSupport() {
 
 async function requestNotificationPermission() {
   if (!notificationSupported.value) {
-    ElMessage.warning('当前浏览器不支持通知')
+    toast.warning('当前浏览器不支持通知')
     return
   }
   if (notificationPermission === 'granted') {
     notificationEnabled.value = true
-    ElMessage.success('通知已开启')
+    toast.success('通知已开启')
     return
   }
   try {
@@ -617,14 +619,14 @@ async function requestNotificationPermission() {
     notificationPermission = permission
     notificationEnabled.value = permission === 'granted'
     if (permission === 'granted') {
-      ElMessage.success('通知已授权 (AI 答完会发通知)')
+      toast.success('通知已授权 (AI 答完会发通知)')
     } else if (permission === 'denied') {
-      ElMessage.warning('通知被拒绝, 请在浏览器设置中开启')
+      toast.warning('通知被拒绝, 请在浏览器设置中开启')
     } else {
-      ElMessage.info('通知未授权')
+      toast.info('通知未授权')
     }
   } catch (e) {
-    ElMessage.error('请求通知权限失败: ' + e.message)
+    toast.error('请求通知权限失败: ' + e.message)
   }
 }
 
@@ -647,7 +649,7 @@ function showNotification(title, body) {
 // === V3.6.2+ 导出 (Markdown / JSON / 纯文本) ===
 function onExport(format) {
   if (!messages.value.length) {
-    ElMessage.warning('暂无消息可导出')
+    toast.warning('暂无消息可导出')
     return
   }
 
@@ -710,7 +712,7 @@ function onExport(format) {
   a.click()
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
-  ElMessage.success(`已导出 ${filename} (${format})`)
+  toast.success(`已导出 ${filename} (${format})`)
 }
 
 // === V3.6.1+ OCR 图片识别 (Tesseract.js 客户端) ===
@@ -733,7 +735,7 @@ async function initOCR() {
     return tesseractWorker
   } catch (e) {
     console.error('OCR 初始化失败:', e)
-    ElMessage.error('OCR 初始化失败: ' + e.message)
+    toast.error('OCR 初始化失败: ' + e.message)
     return null
   }
 }
@@ -772,13 +774,13 @@ async function performOCR(file) {
     if (ocrText.value) {
       // 自动追加到 input
       input.value = input.value + (input.value ? ' ' : '') + ocrText.value
-      ElMessage.success(`✓ OCR 识别完成 (${ocrProgress.value}%, ${ocrText.value.length} 字符)`)
+      toast.success(`✓ OCR 识别完成 (${ocrProgress.value}%, ${ocrText.value.length} 字符)`)
     } else {
-      ElMessage.warning('OCR 未识别到文字')
+      toast.warning('OCR 未识别到文字')
     }
   } catch (e) {
     console.error('OCR 错误:', e)
-    ElMessage.error('OCR 识别失败: ' + e.message)
+    toast.error('OCR 识别失败: ' + e.message)
   } finally {
     ocrProcessing.value = false
     ocrProgress.value = 0
@@ -809,18 +811,18 @@ async function toggleCall() {
 
 function onDepthChange(depth) {
   const label = depthOptions.value.find(d => d.value === depth)?.label || depth
-  ElMessage.info(`响应深度: ${label}`)
+  toast.info(`响应深度: ${label}`)
 }
 
 function onAgentModeChange(modes) {
   if (!Array.isArray(modes) || !modes.length) {
     // 至少保留 chat
     agentMode.value = ['chat']
-    ElMessage.warning('至少需要保留一个模式')
+    toast.warning('至少需要保留一个模式')
     return
   }
   const labels = modes.map(k => agentModes.value.find(x => x.key === k)?.label || k).join(' + ')
-  ElMessage.success(`已启用: ${labels}`)
+  toast.success(`已启用: ${labels}`)
 }
 const models = ref([{ code: 'mock', displayName: 'Mock 模式' }])
 const streaming = ref(false)
@@ -905,7 +907,7 @@ async function loadSessions() {
  */
 async function newSession() {
   if (streaming.value) {
-    ElMessage.warning('正在生成中, 请先停止')
+    toast.warning('正在生成中, 请先停止')
     return
   }
   try {
@@ -937,7 +939,7 @@ async function newSession() {
  */
 async function switchSession(id) {
   if (streaming.value) {
-    ElMessage.warning('正在生成中, 请先停止')
+    toast.warning('正在生成中, 请先停止')
     return
   }
   currentSessionId.value = id
@@ -960,7 +962,7 @@ async function deleteSession(id) {
     currentSessionId.value = null
     messages.value = []
   }
-  ElMessage.success('已删除')
+  toast.success('已删除')
 }
 
 /**
@@ -970,7 +972,7 @@ function renameSession(s) {
   ElMessageBox.prompt('输入新标题', '重命名', { inputValue: s.title })
     .then(({ value }) => {
       s.title = value
-      ElMessage.success('已修改')
+      toast.success('已修改')
     }).catch(() => {})
 }
 

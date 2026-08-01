@@ -138,6 +138,7 @@
 <script setup lang="ts">
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, reactive } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Upload } from '@element-plus/icons-vue'
@@ -150,6 +151,7 @@ import {
 
 const { t } = useI18n()
 const nodes = ref([])
+const toast = useToast()
 const raftNodes = computed(() => nodes.value)  // V3.5.95: 别名 (模板用 raftNodes)
 const me = ref(null)
 const leaderInfo = ref(null)
@@ -206,28 +208,28 @@ async function onDrain(row) {
   try {
     await ElMessageBox.confirm(`排空节点 ${row.nodeId}?`, '警告', { type: 'warning' })
     await clusterDrainNode(row.nodeId)
-    ElMessage.success('节点已排空')
+    toast.success('节点已排空')
     loadNodes()
   } catch (e) { if (e !== 'cancel') {} }
 }
 
 async function onRaftStart() {
-  try { await raftStart(); ElMessage.success('Raft 已启动'); loadRaftState() } catch (e) {}
+  try { await raftStart(); toast.success('Raft 已启动'); loadRaftState() } catch (e) {}
 }
 
 async function onRaftStop() {
-  try { await raftStop(); ElMessage.success('Raft 已停止'); loadRaftState() } catch (e) {}
+  try { await raftStop(); toast.success('Raft 已停止'); loadRaftState() } catch (e) {}
 }
 
 async function onTriggerElection() {
-  try { await raftTriggerElection(); ElMessage.success('已触发选举'); loadRaftState() } catch (e) {}
+  try { await raftTriggerElection(); toast.success('已触发选举'); loadRaftState() } catch (e) {}
 }
 
 async function onRaftSubmit() {
   if (!raftLogCmd.value) return
   try {
     const r = await raftSubmit({ command: raftLogCmd.value })
-    ElMessage.success(`已提交, index: ${r.data?.index || 'N/A'}`)
+    toast.success(`已提交, index: ${r.data?.index || 'N/A'}`)
     raftLogCmd.value = ''
     loadRaftState()
   } catch (e) {}
@@ -299,7 +301,7 @@ function refreshHealthTimeline() {
     data: generateMockHealth(n, 30),
   }))
   renderHealthTimeline()
-  ElMessage.success('健康时间线已刷新')
+  toast.success('健康时间线已刷新')
 }
 
 function tickHealth() {

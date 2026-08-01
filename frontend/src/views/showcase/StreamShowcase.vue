@@ -172,9 +172,11 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 
 const activeType = ref('chat')
+const toast = useToast()
 const connected = ref(false)
 const streaming = ref(false)
 const chunksReceived = ref(0)
@@ -270,10 +272,10 @@ function reconnect() {
       }
     } else if (msg.type === 'done') {
       streaming.value = false
-      ElMessage.success('流式完成')
+      toast.success('流式完成')
     } else if (msg.type === 'error') {
       streaming.value = false
-      ElMessage.error(msg.message)
+      toast.error(msg.message)
     }
   }
 }

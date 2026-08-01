@@ -73,6 +73,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import WechatScanLogin from '@/components/WechatScanLogin.vue'
+import { useToast } from '@/composables/useToast'
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
 import { useUserStore } from '@/store/user'
@@ -83,6 +84,7 @@ import { getMyBinding } from '@/api/wechat'
 
 const router = useRouter()
 const userStore = useUserStore()
+const toast = useToast()
 const currentStep = ref(1)
 const binding = ref(null)
 
@@ -109,20 +111,20 @@ function onLogin(payload) {
     profile: payload.user || null
   })
   currentStep.value = 4
-  ElMessage.success('微信登录成功, 跳转中...')
+  toast.success('微信登录成功, 跳转中...')
   setTimeout(() => router.push('/chat'), 1000)
 }
 
 function onBind(payload) {
   currentStep.value = 4
-  ElMessage.success('绑定成功')
+  toast.success('绑定成功')
   loadBinding()
   setTimeout(() => router.push('/profile/wechat'), 1500)
 }
 
 function onScanError(err) {
   currentStep.value = 2
-  ElMessage.warning('扫码失败: ' + err + ', 请重试')
+  toast.warning('扫码失败: ' + err + ', 请重试')
 }
 
 function goLogin() {

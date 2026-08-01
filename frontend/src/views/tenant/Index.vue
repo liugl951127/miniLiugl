@@ -218,6 +218,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus, Refresh, Switch, Delete, OfficeBuilding, CircleCheck, User, Warning
@@ -226,6 +227,7 @@ import { useTenantStore } from '@/store/tenant'
 import { t } from '@/i18n'
 
 const tenantStore = useTenantStore()
+const toast = useToast()
 
 const tenants = computed(() => tenantStore.tenants)
 const loading = computed(() => tenantStore.loading)
@@ -261,17 +263,17 @@ function openCreateDialog() {
 
 async function submitTenant() {
   if (!form.value.code || !form.value.name) {
-    ElMessage.warning(t('tenant.codeAndNameRequired'))
+    toast.warning(t('tenant.codeAndNameRequired'))
     return
   }
   submitting.value = true
   try {
     await tenantStore.createTenant(form.value)
-    ElMessage.success(editingTenant.value ? t('tenant.saveSuccess') : t('tenant.createSuccess'))
+    toast.success(editingTenant.value ? t('tenant.saveSuccess') : t('tenant.createSuccess'))
     createVisible.value = false
     await loadTenants()
   } catch (e) {
-    ElMessage.error(e?.message || t('tenant.operationFailed'))
+    toast.error(e?.message || t('tenant.operationFailed'))
   } finally {
     submitting.value = false
   }
@@ -284,9 +286,9 @@ async function toggleStatus(row) {
   try {
     await ElMessageBox.confirm(t('tenant.confirmToggle') + '「' + row.name + '」？', label, { type: 'warning' })
     await tenantStore.toggleStatus(row.id, newStatus)
-    ElMessage.success(label + t('tenant.success'))
+    toast.success(label + t('tenant.success'))
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error(e?.message || label + t('tenant.failed'))
+    if (e !== 'cancel') toast.error(e?.message || label + t('tenant.failed'))
   }
 }
 
@@ -304,25 +306,25 @@ function openQuotaDialog(row) {
 async function submitQuota() {
   try {
     await tenantStore.setQuota(currentTenant.value.id, newQuota.value)
-    ElMessage.success(t('tenant.quotaUpdated'))
+    toast.success(t('tenant.quotaUpdated'))
     quotaVisible.value = false
   } catch (e) {
-    ElMessage.error(e?.message || t('tenant.updateFailed'))
+    toast.error(e?.message || t('tenant.updateFailed'))
   }
 }
 
 // 删除
 async function deleteTenant(row) {
   if (row.code === 'default') {
-    ElMessage.warning(t('tenant.defaultNotDeletable'))
+    toast.warning(t('tenant.defaultNotDeletable'))
     return
   }
   try {
     await ElMessageBox.confirm(t('tenant.confirmDelete') + '「' + row.name + '」' + t('tenant.deleteWarning'), t('tenant.dangerous'), { type: 'error' })
     await tenantStore.removeTenant(row.id)
-    ElMessage.success(t('tenant.deleted'))
+    toast.success(t('tenant.deleted'))
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error(e?.message || t('tenant.deleteFailed'))
+    if (e !== 'cancel') toast.error(e?.message || t('tenant.deleteFailed'))
   }
 }
 
@@ -338,7 +340,7 @@ async function viewUsers(row) {
   try {
     tenantUsers.value = await tenantStore.fetchTenantUsers(row.id)
   } catch (e) {
-    ElMessage.error(t('tenant.loadUsersFailed'))
+    toast.error(t('tenant.loadUsersFailed'))
   } finally {
     usersLoading.value = false
   }
@@ -349,7 +351,7 @@ async function loadTenants() {
   try {
     await tenantStore.fetchTenants()
   } catch (e) {
-    ElMessage.error(t('tenant.loadFailed'))
+    toast.error(t('tenant.loadFailed'))
   }
 }
 

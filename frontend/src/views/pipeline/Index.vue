@@ -49,11 +49,13 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { listWorkflows, runWorkflow, deleteWorkflow } from '@/api/pipeline'
 
 const router = useRouter()
+const toast = useToast()
 const workflows = ref([])
 const loading = ref(false)
 const searchKey = ref('')
@@ -78,7 +80,7 @@ async function runOne(row) {
   try {
     await ElMessageBox.confirm(`运行工作流 "${row.name}"?`, '提示', { type: 'info' })
     const res = await runWorkflow(row.id)
-    ElMessage.success('运行已启动, Run ID: ' + (res.data?.runId || 'N/A'))
+    toast.success('运行已启动, Run ID: ' + (res.data?.runId || 'N/A'))
     router.push('/pipeline/runs')
   } catch (e) { if (e !== 'cancel') {} }
 }
@@ -87,7 +89,7 @@ async function remove(row) {
   try {
     await ElMessageBox.confirm(`删除工作流 "${row.name}"? 不可恢复`, '危险操作', { type: 'warning' })
     await deleteWorkflow(row.id)
-    ElMessage.success('已删除')
+    toast.success('已删除')
     load()
   } catch (e) { if (e !== 'cancel') {} }
 }

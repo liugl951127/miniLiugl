@@ -94,12 +94,14 @@
 <script setup lang="ts">
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { t } from '@/i18n'
 import { useUserStore } from '@/store/user'
 
 const userStore = useUserStore()
+const toast = useToast()
 const API = import.meta.env.VITE_API_BASE || 'http://localhost'
 const token = userStore.accessToken || ''
 const userId = String(userStore.profile?.id || 1)
@@ -121,25 +123,25 @@ async function loadList() {
       params: { category: filterCategory.value || undefined }, ...auth()
     })
     plugins.value = data.data || []
-  } catch (e: any) { ElMessage.error(e?.message) }
+  } catch (e: any) { toast.error(e?.message) }
 }
 
 async function rate(id: number, score: number) {
   try {
     await axios.post(`${API}/api/v1/agent/plugins/${id}/rate?score=${score}`, {}, auth())
-    ElMessage.success(t('plugins.rateSuccess'))
+    toast.success(t('plugins.rateSuccess'))
     loadList()
-  } catch (e: any) { ElMessage.error(e?.message) }
+  } catch (e: any) { toast.error(e?.message) }
 }
 
 async function doPublish() {
-  if (!pub.name || !pub.entry) { ElMessage.warning(t('common.fillComplete')); return }
+  if (!pub.name || !pub.entry) { toast.warning(t('common.fillComplete')); return }
   try {
     await axios.post(`${API}/api/v1/agent/plugins?ownerId=${userId}`, pub, auth())
-    ElMessage.success(t('plugins.published'))
+    toast.success(t('plugins.published'))
     showPublish.value = false
     loadList()
-  } catch (e: any) { ElMessage.error(e?.response?.data?.message || e?.message) }
+  } catch (e: any) { toast.error(e?.response?.data?.message || e?.message) }
 }
 
 function iconOf(cat: string) {

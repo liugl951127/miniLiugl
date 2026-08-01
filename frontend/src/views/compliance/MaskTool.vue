@@ -72,10 +72,12 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, readonly } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { maskText } from '@/api/ai'
 
 const input = ref('')
+const toast = useToast()
 const output = ref('')
 const containsMobile = ref(false)
 const containsIdCard = ref(false)
@@ -95,7 +97,7 @@ const rules = [
 
 async function doMask() {
   if (!input.value.trim()) {
-    ElMessage.warning('请输入文本')
+    toast.warning('请输入文本')
     return
   }
   try {
@@ -106,7 +108,7 @@ async function doMask() {
     containsEmail.value = res.data.containsSensitive === 'true'
   } catch (e) {
     // 前端 fallback (直接调用 DataMasker 逻辑过于复杂, 提示用后端)
-    ElMessage.error('脱敏失败: ' + e.message + ', 请确保后端 AI 服务启动')
+    toast.error('脱敏失败: ' + e.message + ', 请确保后端 AI 服务启动')
   }
 }
 
@@ -133,9 +135,9 @@ async function copyOutput() {
   if (!output.value) return
   try {
     await navigator.clipboard.writeText(output.value)
-    ElMessage.success('已复制到剪贴板')
+    toast.success('已复制到剪贴板')
   } catch (e) {
-    ElMessage.error('复制失败')
+    toast.error('复制失败')
   }
 }
 </script>

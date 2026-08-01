@@ -80,6 +80,7 @@ declare module 'vue' {
     ElUpload: typeof import('element-plus/es')['ElUpload']
     ElWatermark: typeof import('element-plus/es')['ElWatermark']
     EmptyState: typeof import('./src/components/EmptyState.vue')['default']
+    EntityDrawer: typeof import('./src/components/EntityDrawer.vue')['default']
     ErrorBoundary: typeof import('./src/components/ErrorBoundary.vue')['default']
     ErrorState: typeof import('./src/components/ErrorState.vue')['default']
     LangSwitcher: typeof import('./src/components/LangSwitcher.vue')['default']

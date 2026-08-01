@@ -145,11 +145,13 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { webhookApi } from '@/api/webhook'
 import { useUserStore } from '@/store/user'
 
 const userStore = useUserStore()
+const toast = useToast()
 const webhooks = ref([])
 const stats = ref(null)
 const eventTypes = ref([])
@@ -187,7 +189,7 @@ const loadAll = async () => {
 
 const createWebhook = async () => {
   if (!form.name || !form.url) {
-    ElMessage.warning('请填写名称和 URL')
+    toast.warning('请填写名称和 URL')
     return
   }
   creating.value = true
@@ -198,7 +200,7 @@ const createWebhook = async () => {
       ownerId: userStore.profile?.id || 0
     })
     if (res.data?.code === 0) {
-      ElMessage.success('创建成功, secret 已生成')
+      toast.success('创建成功, secret 已生成')
       showCreate.value = false
       form.name = ''
       form.url = ''
@@ -206,10 +208,10 @@ const createWebhook = async () => {
       form.description = ''
       loadAll()
     } else {
-      ElMessage.error(res.data?.message)
+      toast.error(res.data?.message)
     }
   } catch (e) {
-    ElMessage.error('创建失败: ' + e.message)
+    toast.error('创建失败: ' + e.message)
   } finally {
     creating.value = false
   }
@@ -220,24 +222,24 @@ const test = async (wh) => {
     const res = await webhookApi.test(wh.webhookId)
     if (res.data?.code === 0) {
       const d = res.data.data
-      ElMessage.success(`测试投递 ${d.status} (${d.responseStatus || 'N/A'})`)
+      toast.success(`测试投递 ${d.status} (${d.responseStatus || 'N/A'})`)
       loadAll()
       showDeliveries(wh)
     } else {
-      ElMessage.error('测试失败')
+      toast.error('测试失败')
     }
   } catch (e) {
-    ElMessage.error('测试失败: ' + e.message)
+    toast.error('测试失败: ' + e.message)
   }
 }
 
 const toggleEnabled = async (wh) => {
   try {
     await webhookApi.update(wh.webhookId, { enabled: wh.enabled ? 0 : 1 })
-    ElMessage.success('已更新')
+    toast.success('已更新')
     loadAll()
   } catch (e) {
-    ElMessage.error('更新失败: ' + e.message)
+    toast.error('更新失败: ' + e.message)
   }
 }
 
@@ -245,10 +247,10 @@ const remove = async (wh) => {
   try {
     await ElMessageBox.confirm('确定删除此 Webhook?', '确认', { type: 'warning' })
     await webhookApi.delete(wh.webhookId)
-    ElMessage.success('已删除')
+    toast.success('已删除')
     loadAll()
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error('删除失败')
+    if (e !== 'cancel') toast.error('删除失败')
   }
 }
 

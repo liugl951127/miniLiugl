@@ -110,6 +110,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, nextTick } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer.vue'
@@ -158,7 +159,7 @@ async function newSession() {
     messages.value = []
     lastResult.value = null
     await refreshSessions()
-    ElMessage.success('新会话已创建')
+    toast.success('新会话已创建')
   } catch (e) {
     // 失败也允许继续
     currentSessionId.value = null
@@ -185,13 +186,13 @@ function formatTime(t) {
 
 function fillExample(text) {
   userInput.value = text
-  ElMessage.info('已填入, 按 Ctrl+Enter 发送')
+  toast.info('已填入, 按 Ctrl+Enter 发送')
 }
 
 async function handleSend() {
   const text = userInput.value.trim()
   if (!text) {
-    ElMessage.warning('请输入内容')
+    toast.warning('请输入内容')
     return
   }
   loading.value = true
@@ -231,7 +232,7 @@ function scrollToBottom() {
 function clearAll() {
   messages.value = []
   lastResult.value = null
-  ElMessage.success('已清空')
+  toast.success('已清空')
 }
 
 function formatMsg(c) {

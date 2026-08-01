@@ -102,12 +102,14 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   demoTraining, listTrainingTasks, getTrainingHistory, deleteTrainingTask
 } from '@/api/ai'
 
 const tasks = ref([])
+const toast = useToast()
 const selected = ref(null)
 const currentTask = ref({})
 const points = ref([])
@@ -137,12 +139,12 @@ async function startDemo() {
   starting.value = true
   try {
     const res = await demoTraining()
-    ElMessage.success('演示训练已启动: ' + res.data.taskId)
+    toast.success('演示训练已启动: ' + res.data.taskId)
     await refreshTasks()
     selectTask(res.data)
     startPolling()
   } catch (e) {
-    ElMessage.error('启动失败: ' + e.message)
+    toast.error('启动失败: ' + e.message)
   } finally {
     starting.value = false
   }
@@ -188,7 +190,7 @@ async function del() {
   try {
     await ElMessageBox.confirm('确定删除?', '确认', { type: 'warning' })
     await deleteTrainingTask(selected.value)
-    ElMessage.success('已删除')
+    toast.success('已删除')
     selected.value = null
     await refreshTasks()
   } catch (e) { /* 用户取消 */ }

@@ -133,6 +133,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { PictureFilled, Upload, MagicStick } from '@element-plus/icons-vue'
 import http from '@/api/http'
@@ -140,6 +141,7 @@ import { describeImageOld as describeImageApi, getMultimodalInfoOld as getInfoAp
 import EmptyState from '@/components/EmptyState.vue'
 
 const activeTab = ref('describe')
+const toast = useToast()
 
 // 图像描述
 const imgUploadRef = ref()

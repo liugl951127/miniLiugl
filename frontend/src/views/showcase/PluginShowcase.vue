@@ -156,12 +156,14 @@ function execute(input) {
 <script setup>
 // ───── 依赖导入 ─────
 import { ref } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import http from '@/api/http'
 import { t } from '@/i18n'
 import EmptyState from '@/components/EmptyState.vue'
 
 const activeTab = ref('market')
+const toast = useToast()
 const activeTemplate = ref(null)
 
 // ===== 模板市场 =====
@@ -197,7 +199,7 @@ function useTemplate(p) {
   activeTab.value = 'js'
   pluginCode.value = p.code_body
   testInput.value = JSON.stringify({ user: 'admin', message: 'Hello from template: ' + p.name }, null, 2)
-  ElMessage.success(t('plugins.templateLoaded') + p.name)
+  toast.success(t('plugins.templateLoaded') + p.name)
 }
 
 // ===== JS 沙箱 =====
@@ -243,10 +245,10 @@ async function executePlugin() {
       ...result,
       latencyMs: Date.now() - t0
     }
-    ElMessage.success(result.success ? t('plugins.execSuccess') : t('plugins.execFailed'))
+    toast.success(result.success ? t('plugins.execSuccess') : t('plugins.execFailed'))
   } catch (e) {
     execResult.value = { success: false, error: e.message, logs: [], latencyMs: Date.now() - t0 }
-    ElMessage.error(t('plugins.execFailed') + e.message)
+    toast.error(t('plugins.execFailed') + e.message)
   } finally {
     executing.value = false
   }
@@ -270,10 +272,10 @@ async function callClassPlugin(p) {
 
     const r = await http.post(`/api/v1/agent/plugins/${p.code}/call`, input)
     classResult.value = r.data || r
-    ElMessage.success(t('plugins.callSuccess'))
+    toast.success(t('plugins.callSuccess'))
   } catch (e) {
     classResult.value = { error: e.message }
-    ElMessage.error(t('plugins.callFailed') + e.message)
+    toast.error(t('plugins.callFailed') + e.message)
   }
 }
 
@@ -281,14 +283,14 @@ async function callClassPlugin(p) {
 const uploadForm = ref({ name: '', code: '', type: 'js', desc: '', content: '' })
 async function submitPlugin() {
   if (!uploadForm.value.name || !uploadForm.value.code) {
-    ElMessage.warning(t('common.fillComplete'))
+    toast.warning(t('common.fillComplete'))
     return
   }
   // 简化: 存 localStorage (实际生产写后端)
   const list = JSON.parse(localStorage.getItem('minimax_my_plugins') || '[]')
   list.push({ ...uploadForm.value, createdAt: new Date().toISOString() })
   localStorage.setItem('minimax_my_plugins', JSON.stringify(list))
-  ElMessage.success(t('plugins.publishedToMy'))
+  toast.success(t('plugins.publishedToMy'))
   uploadForm.value = { name: '', code: '', type: 'js', desc: '', content: '' }
 }
 </script>

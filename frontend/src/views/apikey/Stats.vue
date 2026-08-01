@@ -134,11 +134,13 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, onMounted, nextTick } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
 import { apiKeyApi } from '@/api/apikey'
 
 const t = (k, def) => k  // i18n placeholder
+const toast = useToast()
 
 const stats = ref(null)
 const pieChartEl = ref(null)
@@ -151,7 +153,7 @@ const loadStats = async () => {
     await nextTick()
     renderPie()
   } catch (e) {
-    ElMessage.error((t('apikey.loadError') || '加载统计失败') + ': ' + (e.message || ''))
+    toast.error((t('apikey.loadError') || '加载统计失败') + ': ' + (e.message || ''))
   }
 }
 

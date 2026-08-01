@@ -72,6 +72,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -79,6 +80,7 @@ import {
 } from '@/api/analytics'
 
 const sources = ref([])
+const toast = useToast()
 const loading = ref(false)
 const dialogVisible = ref(false)
 const form = ref({ id: null, name: '', type: 'mysql', jdbcUrl: '', username: '', password: '' })
@@ -109,7 +111,7 @@ async function save() {
     } else {
       await createDataSource(form.value)
     }
-    ElMessage.success('保存成功')
+    toast.success('保存成功')
     dialogVisible.value = false
     load()
   } catch (e) {}
@@ -119,7 +121,7 @@ async function remove(row) {
   try {
     await ElMessageBox.confirm(`确定删除数据源 ${row.name}?`, '提示', { type: 'warning' })
     await deleteDataSource(row.id)
-    ElMessage.success('已删除')
+    toast.success('已删除')
     load()
   } catch (e) { if (e !== 'cancel') {} }
 }
@@ -127,8 +129,8 @@ async function remove(row) {
 async function testOne(row) {
   try {
     const res = await testDataSource({ id: row.id })
-    if (res.data?.success) ElMessage.success('连接成功')
-    else ElMessage.error(res.data?.message || '连接失败')
+    if (res.data?.success) toast.success('连接成功')
+    else toast.error(res.data?.message || '连接失败')
   } catch (e) {}
 }
 

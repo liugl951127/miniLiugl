@@ -113,6 +113,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -132,6 +133,7 @@ import {
 
 const { t } = useI18n()
 const activeTab = ref('tools')
+const toast = useToast()
 
 // 工具列表
 const tools = ref([])
@@ -143,7 +145,7 @@ async function loadTools() {
     const res = await apiListTools({ category: filterCategory.value })
     tools.value = (res.data || []).filter(t => !filterCategory.value || t.category === filterCategory.value)
   } catch (e) {
-    ElMessage.error('加载工具失败: ' + e.message)
+    toast.error('加载工具失败: ' + e.message)
   } finally {
     loading.value = false
   }
@@ -218,7 +220,7 @@ async function doInvoke() {
     }
     const res = await apiInvokeTool(t.code, input)
     if (res.data && res.data.success) {
-      ElMessage.success(`调用成功 (${res.data.durationMs || 0}ms)`)
+      toast.success(`调用成功 (${res.data.durationMs || 0}ms)`)
       let body = res.data.data || res.data
       if (body && body.zipBase64) {
         try {
@@ -237,10 +239,10 @@ async function doInvoke() {
       ElMessageBox.alert(JSON.stringify(body, null, 2), '结果', { type: 'success' })
       invokeVisible.value = false
     } else {
-      ElMessage.error('调用失败: ' + (res.data?.message || '未知错误'))
+      toast.error('调用失败: ' + (res.data?.message || '未知错误'))
     }
   } catch (e) {
-    ElMessage.error('调用失败: ' + (e.message || e))
+    toast.error('调用失败: ' + (e.message || e))
   } finally {
     invokeLoading.value = false
   }
@@ -260,29 +262,29 @@ async function saveTool() {
     } else {
       await apiCreateTool(editForm.value)
     }
-    ElMessage.success('保存成功')
+    toast.success('保存成功')
     editVisible.value = false
     loadTools()
   } catch (e) {
-    ElMessage.error('保存失败: ' + e.message)
+    toast.error('保存失败: ' + e.message)
   }
 }
 async function toggleTool(t) {
   try {
     await apiUpdateTool(t.id, t)
-    ElMessage.success('已更新')
+    toast.success('已更新')
   } catch (e) {
-    ElMessage.error('更新失败: ' + e.message)
+    toast.error('更新失败: ' + e.message)
   }
 }
 async function del(t) {
   await ElMessageBox.confirm(`确定删除工具 ${t.name}?`, '确认', { type: 'warning' })
   try {
     await apiDeleteTool(t.id)
-    ElMessage.success('已删除')
+    toast.success('已删除')
     loadTools()
   } catch (e) {
-    ElMessage.error('删除失败: ' + e.message)
+    toast.error('删除失败: ' + e.message)
   }
 }
 
@@ -295,7 +297,7 @@ async function loadDatasources() {
     const res = await apiListDataSources()
     datasources.value = res.data.list
   } catch (e) {
-    ElMessage.error('加载数据源失败: ' + e.message)
+    toast.error('加载数据源失败: ' + e.message)
   } finally {
     dsLoading.value = false
   }
@@ -304,13 +306,13 @@ async function testDs(ds) {
   try {
     const res = await apiTestDataSource(ds.id)
     if (res.data.success) {
-      ElMessage.success('连接成功: ' + res.data.message)
+      toast.success('连接成功: ' + res.data.message)
     } else {
-      ElMessage.error('连接失败: ' + res.data.message)
+      toast.error('连接失败: ' + res.data.message)
     }
     loadDatasources()
   } catch (e) {
-    ElMessage.error('测试失败: ' + e.message)
+    toast.error('测试失败: ' + e.message)
   }
 }
 const dsEditVisible = ref(false)
@@ -326,17 +328,17 @@ async function saveDs() {
     } else {
       await apiCreateDataSource(dsEdit.value)
     }
-    ElMessage.success('保存成功')
+    toast.success('保存成功')
     dsEditVisible.value = false
     loadDatasources()
   } catch (e) {
-    ElMessage.error('保存失败: ' + e.message)
+    toast.error('保存失败: ' + e.message)
   }
 }
 async function delDs(ds) {
   await ElMessageBox.confirm(`确定删除数据源 ${ds.name}?`, '确认', { type: 'warning' })
   await apiDeleteDataSource(ds.id)
-  ElMessage.success('已删除')
+  toast.success('已删除')
   loadDatasources()
 }
 
@@ -351,9 +353,9 @@ async function generate() {
     const res = await apiGenerateProject(genForm.value)
     genResult.value = res.data
     selectedFile.value = res.data.keyFiles[0] || Object.keys(res.data.files)[0]
-    ElMessage.success(`生成 ${res.data.totalFiles} 个文件`)
+    toast.success(`生成 ${res.data.totalFiles} 个文件`)
   } catch (e) {
-    ElMessage.error('生成失败: ' + e.message)
+    toast.error('生成失败: ' + e.message)
   } finally {
     genLoading.value = false
   }
@@ -374,7 +376,7 @@ const analysisLoading = ref(false)
 const analysisResult = ref(null)
 async function runAnalysis() {
   if (!analysisForm.value.dataSourceId || !analysisForm.value.table || !analysisForm.value.column) {
-    ElMessage.warning('请填写完整')
+    toast.warning('请填写完整')
     return
   }
   analysisLoading.value = true
@@ -386,12 +388,12 @@ async function runAnalysis() {
     })
     if (res.data.success) {
       analysisResult.value = res.data.data
-      ElMessage.success(`分析完成 (${res.data.durationMs}ms)`)
+      toast.success(`分析完成 (${res.data.durationMs}ms)`)
     } else {
-      ElMessage.error('分析失败: ' + res.data.message)
+      toast.error('分析失败: ' + res.data.message)
     }
   } catch (e) {
-    ElMessage.error('分析失败: ' + e.message)
+    toast.error('分析失败: ' + e.message)
   } finally {
     analysisLoading.value = false
   }

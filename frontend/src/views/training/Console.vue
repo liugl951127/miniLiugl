@@ -164,6 +164,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
@@ -171,6 +172,7 @@ import { trainingApi } from '@/api/training'
 
 // ---- 数据 ----
 const connected = ref(false)
+const toast = useToast()
 const starting = ref(false)
 const modelOptions = ref([])
 const tasks = ref([])
@@ -201,10 +203,10 @@ async function connect() {
     modelOptions.value = r?.data || []
     connected.value = true
     await loadTasks()
-    ElMessage.success(`已连接 · ${modelOptions.value.length} 个模型可用`)
+    toast.success(`已连接 · ${modelOptions.value.length} 个模型可用`)
   } catch (e) {
     connected.value = false
-    ElMessage.error('连接失败: ' + (e?.message || '后端未启动'))
+    toast.error('连接失败: ' + (e?.message || '后端未启动'))
   }
 }
 
@@ -220,8 +222,8 @@ async function loadTasks() {
 
 // ---- 开始训练 ----
 async function startTraining() {
-  if (!form.modelName) return ElMessage.warning('请选择模型')
-  if (!form.corpusPath.trim()) return ElMessage.warning('请填写语料路径')
+  if (!form.modelName) return toast.warning('请选择模型')
+  if (!form.corpusPath.trim()) return toast.warning('请填写语料路径')
   starting.value = true
   try {
     const r = await trainingApi.createTask({ ...form })
@@ -231,7 +233,7 @@ async function startTraining() {
     selectTask(task)
     pushEvent('info', `训练任务 #${task.id} 已创建: ${task.modelName}`)
   } catch (e) {
-    ElMessage.error('创建失败: ' + (e?.message || '后端未启动'))
+    toast.error('创建失败: ' + (e?.message || '后端未启动'))
   } finally {
     starting.value = false
   }
@@ -245,7 +247,7 @@ async function cancelTraining() {
     stopPoll()
     currentTask.value.status = 'FAILED'
   } catch (e) {
-    ElMessage.error('取消失败')
+    toast.error('取消失败')
   }
 }
 

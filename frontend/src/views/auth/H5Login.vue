@@ -139,6 +139,7 @@
  * - 错误处理: 演示模式 401/500 兜底
  */
 import { ref, computed, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -150,6 +151,7 @@ import WechatScanLogin from '@/components/WechatScanLogin.vue'
 
 const { t } = useI18n()
 const router = useRouter()
+const toast = useToast()
 const activePlatform = ref(null)
 const unionId = ref(localStorage.getItem('minimax_unionid') || '')
 const isDemo = ref(localStorage.getItem('minimax_demo_mode') === 'true' || false)
@@ -196,7 +198,7 @@ function onPlatformLogin(p) {
   if (p.id === 'wechat') {
     activePlatform.value = p
   } else {
-    ElMessage.info(`${p.name} 登录开发中, 暂用微信扫码 / 演示账号`)
+    toast.info(`${p.name} 登录开发中, 暂用微信扫码 / 演示账号`)
     activePlatform.value = p
   }
 }
@@ -211,7 +213,7 @@ async function onDemoLogin(d) {
   // 模拟网络延迟
   await new Promise(r => setTimeout(r, 300))
 
-  ElMessage.success(`🎭 演示模式 - 已切换到 ${d.name} (${d.role})`)
+  toast.success(`🎭 演示模式 - 已切换到 ${d.name} (${d.role})`)
 
   // 直接跳到聊天
   setTimeout(() => {
@@ -224,7 +226,7 @@ function onLogin(user) {
     localStorage.setItem('minimax_unionid', user.unionId)
     unionId.value = user.unionId
   }
-  ElMessage.success('登录成功')
+  toast.success('登录成功')
   router.push('/chat')
 }
 

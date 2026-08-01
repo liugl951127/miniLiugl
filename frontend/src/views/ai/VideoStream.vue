@@ -122,6 +122,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onUnmounted, nextTick } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { cancelVideoStream } from '@/api/ai'
 import EmptyState from '@/components/EmptyState.vue'
@@ -263,7 +264,7 @@ async function cancel() {
     if (eventSource) { eventSource.close(); eventSource = null }
     running.value = false
   } catch (e) {
-    ElMessage.error('取消失败')
+    toast.error('取消失败')
   }
 }
 

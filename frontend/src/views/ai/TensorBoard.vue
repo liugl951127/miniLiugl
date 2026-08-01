@@ -125,6 +125,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { Folder } from '@element-plus/icons-vue'
 import VChart from 'vue-echarts'
@@ -141,6 +142,7 @@ import EmptyState from '@/components/EmptyState.vue'
 use([CanvasRenderer, LineChart, TitleComponent, TooltipComponent, GridComponent, LegendComponent, DataZoomComponent])
 
 const runs = ref([])
+const toast = useToast()
 const selectedRuns = ref([])
 const availableTags = ref([])     // { runId, tag, color }
 const selectedTags = ref([])      // ["runId|tag", ...]

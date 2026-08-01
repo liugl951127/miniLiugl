@@ -69,6 +69,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useNotificationStore } from '@/store/notification'
 import {
@@ -77,6 +78,7 @@ import {
 } from '@element-plus/icons-vue'
 
 const notifStore = useNotificationStore()
+const toast = useToast()
 const loading = ref(false)
 
 // ── 图标映射 ────────────────────────────────────────────────────────────
@@ -113,12 +115,12 @@ async function onItemClick(n) {
 
 async function onMarkRead(id) {
   await notifStore.markRead(id)
-  ElMessage.success('已标记已读')
+  toast.success('已标记已读')
 }
 
 async function onMarkAllRead() {
   await notifStore.markAllRead()
-  ElMessage.success('已全部已读')
+  toast.success('已全部已读')
 }
 
 async function onClear() {
@@ -129,7 +131,7 @@ async function onClear() {
       type: 'warning'
     })
     await notifStore.clear()
-    ElMessage.success('已清空')
+    toast.success('已清空')
   } catch (_) {}
 }
 

@@ -133,12 +133,14 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { User } from '@element-plus/icons-vue'
 import http from '@/api/http'
 import dayjs from 'dayjs'
 
 const activeTab = ref('all')
+const toast = useToast()
 const loading = ref(false)
 const allRels = ref([])
 const filterKw = ref('')
@@ -165,7 +167,7 @@ async function loadAll() {
     const r = await http.get('/auth/admin/wechat/unionid-relations', { params: { limit: 100 } })
     allRels.value = r.data || []
   } catch (e) {
-    ElMessage.error('加载失败: ' + e.message)
+    toast.error('加载失败: ' + e.message)
   } finally {
     loading.value = false
   }
@@ -173,7 +175,7 @@ async function loadAll() {
 
 async function doFind() {
   if (!searchUnionid.value.trim()) {
-    ElMessage.warning('请输入 unionid')
+    toast.warning('请输入 unionid')
     return
   }
   finding.value = true
@@ -182,10 +184,10 @@ async function doFind() {
       { params: { unionid: searchUnionid.value.trim() } })
     foundUsers.value = r.data || []
     if (foundUsers.value.length === 0) {
-      ElMessage.info('未找到该 unionid 的用户')
+      toast.info('未找到该 unionid 的用户')
     }
   } catch (e) {
-    ElMessage.error('查找失败: ' + e.message)
+    toast.error('查找失败: ' + e.message)
   } finally {
     finding.value = false
   }
@@ -199,11 +201,11 @@ function showDetail(row) {
 
 async function doMerge() {
   if (!mergeForm.value.userToId || !mergeForm.value.userFromId) {
-    ElMessage.warning('请填写目标账号 ID 和源账号 ID')
+    toast.warning('请填写目标账号 ID 和源账号 ID')
     return
   }
   if (Number(mergeForm.value.userToId) === Number(mergeForm.value.userFromId)) {
-    ElMessage.warning('目标账号和源账号不能相同')
+    toast.warning('目标账号和源账号不能相同')
     return
   }
   try {
@@ -216,11 +218,11 @@ async function doMerge() {
   } catch { return }
   try {
     await http.post('/auth/admin/wechat/merge-accounts', mergeForm.value)
-    ElMessage.success('合并成功')
+    toast.success('合并成功')
     loadAll()
     doFind()
   } catch (e) {
-    ElMessage.error('合并失败: ' + e.message)
+    toast.error('合并失败: ' + e.message)
   }
 }
 

@@ -87,6 +87,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { reactive, ref } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { Download } from '@element-plus/icons-vue'
 import { projectDownloadGet, projectDownloadPost } from '@/api/ai'
@@ -104,7 +105,7 @@ const fileList = ref([])
 
 async function onDownload() {
   if (!form.projectName) {
-    ElMessage.warning('请输入项目名')
+    toast.warning('请输入项目名')
     return
   }
   downloading.value = true
@@ -120,7 +121,7 @@ async function onDownload() {
     a.click()
     document.body.removeChild(a)
     setTimeout(() => URL.revokeObjectURL(url), 100)
-    ElMessage.success(`${form.projectName}-${form.version}.zip 下载完成`)
+    toast.success(`${form.projectName}-${form.version}.zip 下载完成`)
   } catch (e) {
     // 错误已统一处理
   } finally {
@@ -150,7 +151,7 @@ function onPreview() {
     { path: `README.md`, type: 'md', description: '项目说明文档' }
   ]
   fileList.value = list
-  ElMessage.success(`预览 ${list.length} 个文件`)
+  toast.success(`预览 ${list.length} 个文件`)
 }
 </script>
 

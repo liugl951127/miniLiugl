@@ -129,12 +129,14 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Tools, Refresh, Plus } from '@element-plus/icons-vue'
 import http from '@/api/http'
 import { functionApi } from '@/api/function'
 
 const tools = ref([])
+const toast = useToast()
 const loading = ref(false)
 const categoryFilter = ref('')
 const showAddDialog = ref(false)
@@ -178,7 +180,7 @@ const loadTools = async () => {
     const res = await functionApi.listTools()
     tools.value = res.data || res || []
   } catch (e) {
-    ElMessage.error('加载工具失败: ' + e.message)
+    toast.error('加载工具失败: ' + e.message)
   } finally {
     loading.value = false
   }
@@ -194,10 +196,10 @@ const deleteTool = async (row) => {
   await ElMessageBox.confirm(`确认删除工具 ${row.displayName}?`, '警告', { type: 'warning' })
   try {
     await functionApi.deleteTool(row.id)
-    ElMessage.success('删除成功')
+    toast.success('删除成功')
     loadTools()
   } catch (e) {
-    ElMessage.error('删除失败: ' + e.message)
+    toast.error('删除失败: ' + e.message)
   }
 }
 
@@ -209,12 +211,12 @@ const saveTool = async () => {
     } else {
       await functionApi.createTool(form)
     }
-    ElMessage.success('保存成功')
+    toast.success('保存成功')
     showAddDialog.value = false
     editing.value = false
     loadTools()
   } catch (e) {
-    ElMessage.error('保存失败: ' + e.message)
+    toast.error('保存失败: ' + e.message)
   }
 }
 
@@ -228,7 +230,7 @@ const invokeTool = (row) => {
 const doInvoke = async () => {
   let args = {}
   try { args = JSON.parse(invokeArgs.value) }
-  catch (e) { return ElMessage.error('参数 JSON 格式错: ' + e.message) }
+  catch (e) { return toast.error('参数 JSON 格式错: ' + e.message) }
 
   invoking.value = true
   try {

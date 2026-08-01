@@ -108,6 +108,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, onMounted, reactive } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
 import {
@@ -116,6 +117,7 @@ import {
 } from '@/api/model'
 
 const activeTab = ref('overall')
+const toast = useToast()
 const overall = ref([])
 const latency = ref([])
 const recent = ref([])
@@ -137,7 +139,7 @@ async function loadOverall() {
     const res = await leaderboardOverall(50)
     overall.value = res.data?.data || res.data || []
   } catch (e) {
-    ElMessage.error('加载失败: ' + (e.response?.data?.message || e.message))
+    toast.error('加载失败: ' + (e.response?.data?.message || e.message))
   } finally { loading.overall = false }
 }
 
@@ -147,7 +149,7 @@ async function loadLatency() {
     const res = await leaderboardLatency(50)
     latency.value = res.data?.data || res.data || []
   } catch (e) {
-    ElMessage.error('加载失败')
+    toast.error('加载失败')
   } finally { loading.latency = false }
 }
 
@@ -157,7 +159,7 @@ async function loadRecent() {
     const res = await leaderboardRecent(100)
     recent.value = res.data?.data || res.data || []
   } catch (e) {
-    ElMessage.error('加载失败')
+    toast.error('加载失败')
   } finally { loading.recent = false }
 }
 
@@ -167,7 +169,7 @@ async function loadCategories() {
     const res = await leaderboardCategories()
     categories.value = res.data?.data || res.data || {}
   } catch (e) {
-    ElMessage.error('加载失败')
+    toast.error('加载失败')
   } finally { loading.categories = false }
 }
 

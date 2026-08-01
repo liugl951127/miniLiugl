@@ -155,6 +155,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { Plus, Refresh, Delete, DocumentCopy, Check, Close } from '@element-plus/icons-vue'
 import { t } from '@/i18n'
@@ -162,6 +163,7 @@ import { apiKeyApi } from '@/api/apikey'
 import EmptyState from '@/components/EmptyState.vue'
 
 const keys = ref([])
+const toast = useToast()
 const loading = ref(false)
 const createVisible = ref(false)
 const rotateVisible = ref(false)
@@ -181,7 +183,7 @@ async function fetchKeys() {
     const res = await apiKeyApi.list()
     keys.value = res.data || []
   } catch (e) {
-    ElMessage.error(e.message || '加载失败')
+    toast.error(e.message || '加载失败')
   } finally {
     loading.value = false
   }
@@ -208,7 +210,7 @@ async function doCreate() {
     copied.value = false
     await fetchKeys()
   } catch (e) {
-    ElMessage.error(e.message || '创建失败')
+    toast.error(e.message || '创建失败')
   } finally {
     creating.value = false
   }
@@ -217,10 +219,10 @@ async function doCreate() {
 async function toggleKey(row) {
   try {
     await apiKeyApi.toggle(row.id, !row.enabled)
-    ElMessage.success(row.enabled ? t('apikey.disabled') : t('apikey.enabled'))
+    toast.success(row.enabled ? t('apikey.disabled') : t('apikey.enabled'))
     await fetchKeys()
   } catch (e) {
-    ElMessage.error(e.message || '操作失败')
+    toast.error(e.message || '操作失败')
   }
 }
 
@@ -242,7 +244,7 @@ async function doRotate() {
     copied.value = false
     await fetchKeys()
   } catch (e) {
-    ElMessage.error(e.message || '轮换失败')
+    toast.error(e.message || '轮换失败')
   } finally {
     rotating.value = false
   }
@@ -251,10 +253,10 @@ async function doRotate() {
 async function deleteKey(id) {
   try {
     await apiKeyApi.remove(id)
-    ElMessage.success('已删除')
+    toast.success('已删除')
     await fetchKeys()
   } catch (e) {
-    ElMessage.error(e.message || '删除失败')
+    toast.error(e.message || '删除失败')
   }
 }
 
@@ -264,7 +266,7 @@ async function copyRawKey() {
     copied.value = true
     setTimeout(() => { copied.value = false }, 2000)
   } catch {
-    ElMessage.error('复制失败，请手动复制')
+    toast.error('复制失败，请手动复制')
   }
 }
 

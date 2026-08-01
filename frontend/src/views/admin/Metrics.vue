@@ -127,6 +127,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, onUnmounted, markRaw } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
@@ -265,7 +266,7 @@ async function loadAll() {
     rawText.value = typeof r === 'string' ? r : (r?.data || '')
     parsePrometheus(rawText.value)
   } catch (e) {
-    ElMessage.warning('该服务未暴露 /actuator/prometheus 或未启动')
+    toast.warning('该服务未暴露 /actuator/prometheus 或未启动')
     rawText.value = ''
     metrics.value = {}
   } finally {

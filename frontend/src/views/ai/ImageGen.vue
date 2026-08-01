@@ -113,6 +113,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { generateImage, listImageTypes, inferImageType as inferApi } from '@/api/ai'
@@ -120,6 +121,7 @@ import EmptyState from '@/components/EmptyState.vue'
 
 const { t } = useI18n()
 const req = ref({ prompt: '蓝色渐变背景', type: '', width: 1024, height: 1024, seed: 42 })
+const toast = useToast()
 const sizePreset = ref('1024x1024')
 const imageTypes = ref(['abstract', 'gradient', 'pattern', 'text', 'scene', 'logo', 'infographic'])
 const result = ref(null)
@@ -142,16 +144,16 @@ function randomSeed() {
 
 async function generate() {
   if (!req.value.prompt) {
-    ElMessage.warning('请输入描述')
+    toast.warning('请输入描述')
     return
   }
   loading.value = true
   try {
     const res = await generateImage(req.value)
     result.value = res.data
-    ElMessage.success('生成成功')
+    toast.success('生成成功')
   } catch (e) {
-    ElMessage.error('生成失败: ' + e.message)
+    toast.error('生成失败: ' + e.message)
   } finally {
     loading.value = false
   }
@@ -162,9 +164,9 @@ async function inferType() {
   try {
     const res = await inferApi(req.value.prompt)
     req.value.type = res.data.type
-    ElMessage.info('推断类型: ' + res.data.type)
+    toast.info('推断类型: ' + res.data.type)
   } catch (e) {
-    ElMessage.error('推断失败')
+    toast.error('推断失败')
   }
 }
 

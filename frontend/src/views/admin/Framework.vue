@@ -172,6 +172,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
 import {
@@ -182,6 +183,7 @@ import {
 } from '@/api/ai'
 
 const tab = ref('agents')
+const toast = useToast()
 const agentTab = ref('execute')
 const executing = ref(false)
 const routing = ref(false)
@@ -212,7 +214,7 @@ async function loadMemoryStats() {
 }
 
 async function onExecute() {
-  if (!execForm.code) { ElMessage.warning('请输入 Agent 编码'); return }
+  if (!execForm.code) { toast.warning('请输入 Agent 编码'); return }
   executing.value = true
   try {
     const r = await frameworkAgentExecute({
@@ -225,7 +227,7 @@ async function onExecute() {
 }
 
 async function onRoute() {
-  if (!routeForm.text) { ElMessage.warning('请输入'); return }
+  if (!routeForm.text) { toast.warning('请输入'); return }
   routing.value = true
   try {
     const r = await frameworkAgentRoute({ text: routeForm.text })
@@ -234,16 +236,16 @@ async function onRoute() {
 }
 
 async function onGrant() {
-  try { await frameworkPermissionGrant(permForm); ElMessage.success('已授权'); loadPermissions() } catch (e) {}
+  try { await frameworkPermissionGrant(permForm); toast.success('已授权'); loadPermissions() } catch (e) {}
 }
 async function onRevoke() {
-  try { await frameworkPermissionRevoke(permForm); ElMessage.success('已撤销'); loadPermissions() } catch (e) {}
+  try { await frameworkPermissionRevoke(permForm); toast.success('已撤销'); loadPermissions() } catch (e) {}
 }
 async function onRevokeAll() {
   try {
     await ElMessageBox.confirm(`撤销用户 ${permForm.userId} 所有权限?`, '警告', { type: 'warning' })
     await frameworkPermissionRevokeAll({ userId: permForm.userId })
-    ElMessage.success('已撤销')
+    toast.success('已撤销')
     loadPermissions()
   } catch (e) { if (e !== 'cancel') {} }
 }
@@ -252,7 +254,7 @@ async function onClearMemory() {
   try {
     await ElMessageBox.confirm('清空所有记忆数据?', '危险', { type: 'error' })
     await frameworkMemoryClear({ scope: 'all' })
-    ElMessage.success('已清空')
+    toast.success('已清空')
     loadMemoryStats()
   } catch (e) { if (e !== 'cancel') {} }
 }

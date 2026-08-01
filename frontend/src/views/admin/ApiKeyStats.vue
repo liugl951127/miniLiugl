@@ -98,12 +98,14 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { getApiKeyStats } from '@/api/admin'
 
 const { t } = useI18n()
 const loading = ref(false)
+const toast = useToast()
 const rawStats = ref(null)
 
 const stats = computed(() => rawStats.value ?? {
@@ -149,10 +151,10 @@ async function fetchStats() {
     if (res.code === 0 || res.ok !== false) {
       rawStats.value = res.data ?? res
     } else {
-      ElMessage.error(res.message || t('apikey.fetchFailed'))
+      toast.error(res.message || t('apikey.fetchFailed'))
     }
   } catch (e) {
-    ElMessage.error(t('apikey.fetchFailed'))
+    toast.error(t('apikey.fetchFailed'))
   } finally {
     loading.value = false
   }

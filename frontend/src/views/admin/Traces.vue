@@ -106,6 +106,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import http from '@/api/http'
 import { ElMessage } from 'element-plus'
@@ -113,6 +114,7 @@ import EmptyState from '@/components/EmptyState.vue'
 
 const { t } = useI18n()
 const service = ref('')
+const toast = useToast()
 const traceId = ref('')
 const loading = ref(false)
 const autoRefresh = ref(false)
@@ -173,7 +175,7 @@ async function search() {
     const data = typeof r === 'string' ? JSON.parse(r) : (r?.data || r)
     traces.value = data?.data || []
   } catch (e) {
-    ElMessage.warning('Jaeger 未启动或不可达: ' + (e?.message || '未知错误'))
+    toast.warning('Jaeger 未启动或不可达: ' + (e?.message || '未知错误'))
     traces.value = []
   } finally {
     loading.value = false

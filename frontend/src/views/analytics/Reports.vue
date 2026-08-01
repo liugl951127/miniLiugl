@@ -63,10 +63,12 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { listDataSources, generateReport, getReport } from '@/api/analytics'
 
 const reports = ref([])
+const toast = useToast()
 const sources = ref([])
 const loading = ref(false)
 const createVisible = ref(false)
@@ -110,7 +112,7 @@ async function doGenerate() {
   try {
     const res = await generateReport(form.value)
     const id = res.data?.reportId
-    ElMessage.success('报告生成中, ID: ' + id)
+    toast.success('报告生成中, ID: ' + id)
     createVisible.value = false
     // 轮询或直接查看
     setTimeout(async () => {

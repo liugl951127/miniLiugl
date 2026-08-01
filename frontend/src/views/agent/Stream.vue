@@ -101,6 +101,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import http from '@/api/http'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'
@@ -116,6 +117,7 @@ const finalAnswer = ref('')
 const rounds = ref(0)
 const duration = ref(0)
 const userStore = useUserStore()
+const toast = useToast()
 let esController = new AbortController()
 
 async function loadTools() {
@@ -159,7 +161,7 @@ function truncate(s, n) {
 }
 
 async function execute() {
-  if (!goal.value.trim()) return ElMessage.warning('请输入目标')
+  if (!goal.value.trim()) return toast.warning('请输入目标')
   reset()
 
   if (mode.value === 'plan') return runPlanMode()
@@ -190,7 +192,7 @@ async function runStreamMode() {
     })
 
     if (!resp.ok) {
-      ElMessage.error('启动失败: ' + resp.status)
+      toast.error('启动失败: ' + resp.status)
       running.value = false
       return
     }
@@ -232,7 +234,7 @@ async function runStreamMode() {
       }
     }
   } catch (e) {
-    ElMessage.error('流式执行失败: ' + e.message)
+    toast.error('流式执行失败: ' + e.message)
   } finally {
     running.value = false
   }
@@ -247,17 +249,17 @@ async function runPlanMode() {
     })
     if (r && r.data) {
       planSteps.value = r.data
-      ElMessage.success(`已生成 ${planSteps.value.length} 步 Plan`)
+      toast.success(`已生成 ${planSteps.value.length} 步 Plan`)
     }
   } catch (e) {
-    ElMessage.error('生成 Plan 失败: ' + e.message)
+    toast.error('生成 Plan 失败: ' + e.message)
   } finally {
     running.value = false
   }
 }
 
 async function runPlan() {
-  if (!planSteps.value.length) return ElMessage.warning('Plan 为空')
+  if (!planSteps.value.length) return toast.warning('Plan 为空')
   running.value = true
   events.value = []
   try {
@@ -270,10 +272,10 @@ async function runPlan() {
       finalAnswer.value = r.data.answer
       rounds.value = r.data.rounds
       duration.value = r.data.durationMs
-      ElMessage.success('Plan 执行完成')
+      toast.success('Plan 执行完成')
     }
   } catch (e) {
-    ElMessage.error('Plan 执行失败: ' + e.message)
+    toast.error('Plan 执行失败: ' + e.message)
   } finally {
     running.value = false
   }
@@ -292,10 +294,10 @@ async function runWithMemory() {
       finalAnswer.value = r.data.answer
       rounds.value = r.data.rounds
       duration.value = r.data.durationMs
-      ElMessage.success('带记忆执行完成')
+      toast.success('带记忆执行完成')
     }
   } catch (e) {
-    ElMessage.error('带记忆执行失败: ' + e.message)
+    toast.error('带记忆执行失败: ' + e.message)
   } finally {
     running.value = false
   }
@@ -307,7 +309,7 @@ function cancel() {
     esController = new AbortController()
   }
   running.value = false
-  ElMessage.info('已停止')
+  toast.info('已停止')
 }
 
 function reset() {

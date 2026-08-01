@@ -142,11 +142,13 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import http from '@/api/http'
 import dayjs from 'dayjs'
 
 const activeTab = ref('all')
+const toast = useToast()
 const loading = ref(false)
 const bindings = ref([])
 const filterKw = ref('')
@@ -175,7 +177,7 @@ async function loadAll() {
     }
     bindings.value = rows
   } catch (e) {
-    ElMessage.error('加载失败: ' + e.message)
+    toast.error('加载失败: ' + e.message)
   } finally {
     loading.value = false
   }
@@ -183,7 +185,7 @@ async function loadAll() {
 
 async function doFind() {
   if (!searchOpenid.value.trim()) {
-    ElMessage.warning('请输入 openid')
+    toast.warning('请输入 openid')
     return
   }
   finding.value = true
@@ -191,7 +193,7 @@ async function doFind() {
     const r = await http.get('/auth/admin/wechat/find', { params: { openid: searchOpenid.value.trim() } })
     foundResult.value = r.data
   } catch (e) {
-    ElMessage.error('查找失败: ' + e.message)
+    toast.error('查找失败: ' + e.message)
   } finally {
     finding.value = false
   }
@@ -199,17 +201,17 @@ async function doFind() {
 
 async function doBind() {
   if (!bindForm.value.userId || !bindForm.value.openid) {
-    ElMessage.warning('用户 ID 和 OpenID 必填')
+    toast.warning('用户 ID 和 OpenID 必填')
     return
   }
   binding.value = true
   try {
     await http.post('/auth/admin/wechat/bind', bindForm.value)
-    ElMessage.success('绑定成功')
+    toast.success('绑定成功')
     bindForm.value = { userId: '', openid: '', unionid: '', nickname: '', avatar: '', appType: 'mp' }
     loadAll()
   } catch (e) {
-    ElMessage.error('绑定失败: ' + e.message)
+    toast.error('绑定失败: ' + e.message)
   } finally {
     binding.value = false
   }
@@ -225,10 +227,10 @@ async function confirmUnbind(row) {
   } catch { return }
   try {
     await http.delete(`/auth/admin/wechat/bind/${row.user_id}`)
-    ElMessage.success('已解绑')
+    toast.success('已解绑')
     loadAll()
   } catch (e) {
-    ElMessage.error('解绑失败: ' + e.message)
+    toast.error('解绑失败: ' + e.message)
   }
 }
 

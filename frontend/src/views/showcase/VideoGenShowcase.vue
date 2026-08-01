@@ -122,11 +122,13 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { VideoCamera, VideoPlay, WarningFilled } from '@element-plus/icons-vue'
 import { t } from '@/i18n'
 
 const prompt = ref('一只橘猫在草地上追蝴蝶, 慢动作, 电影质感, 黄金时刻光线')
+const toast = useToast()
 const duration = ref(5)
 const resolution = ref('720P')
 const generating = ref(false)
@@ -196,11 +198,11 @@ async function generate() {
   })
   await Promise.all(tasks)
   generating.value = false
-  ElMessage.success(`生成完成! ${results.value.length} 个视频`)
+  toast.success(`生成完成! ${results.value.length} 个视频`)
 }
 
 function playMock(r) {
-  ElMessage.info('Mock 模式: 真实部署时这里播放生成的 mp4')
+  toast.info('Mock 模式: 真实部署时这里播放生成的 mp4')
 }
 </script>
 

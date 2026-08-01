@@ -129,12 +129,14 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Unlock, FullScreen } from '@element-plus/icons-vue'
 import { getMyBinding, unbindMyself } from '@/api/wechat'
 import EmptyState from '@/components/EmptyState.vue'
 
 const myBinding = ref(null)
+const toast = useToast()
 const historyList = ref([])
 const showBindQr = ref(false)
 const step = ref(2)
@@ -155,7 +157,7 @@ async function loadMyBinding() {
       historyList.value = []
     }
   } catch (e) {
-    ElMessage.error('加载绑定失败: ' + (e.response?.data?.message || e.message))
+    toast.error('加载绑定失败: ' + (e.response?.data?.message || e.message))
   }
 }
 
@@ -175,10 +177,10 @@ async function handleUnbind() {
   )
   try {
     await unbindMyself()
-    ElMessage.success('已解绑')
+    toast.success('已解绑')
     await loadMyBinding()
   } catch (e) {
-    ElMessage.error('解绑失败')
+    toast.error('解绑失败')
   }
 }
 

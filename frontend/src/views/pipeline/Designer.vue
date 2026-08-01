@@ -112,12 +112,14 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted, computed, watch } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getWorkflow, createWorkflow, updateWorkflow, runWorkflow, validateWorkflow } from '@/api/pipeline'
 import EmptyState from '@/components/EmptyState.vue'
 
 const route = useRoute()
+const toast = useToast()
 const router = useRouter()
 const canvasRef = ref(null)
 const canvasWidth = ref(2000)
@@ -246,11 +248,11 @@ async function save() {
     delete body.id
     if (wf.id) {
       await updateWorkflow(wf.id, body)
-      ElMessage.success('已更新')
+      toast.success('已更新')
     } else {
       const res = await createWorkflow(body)
       wf.id = res.data?.id || res.data
-      ElMessage.success('已创建, ID: ' + wf.id)
+      toast.success('已创建, ID: ' + wf.id)
     }
   } catch (e) {} finally { saving.value = false }
 }
@@ -258,20 +260,20 @@ async function save() {
 async function validate() {
   try {
     const res = await validateWorkflow(wf)
-    if (res.data?.valid) ElMessage.success('校验通过')
-    else ElMessage.warning(res.data?.message || '校验失败')
+    if (res.data?.valid) toast.success('校验通过')
+    else toast.warning(res.data?.message || '校验失败')
   } catch (e) {}
 }
 
 async function run() {
   if (!wf.id) {
-    ElMessage.warning('请先保存')
+    toast.warning('请先保存')
     return
   }
   running.value = true
   try {
     const res = await runWorkflow(wf.id, {})
-    ElMessage.success('运行已启动, Run ID: ' + (res.data?.runId || 'N/A'))
+    toast.success('运行已启动, Run ID: ' + (res.data?.runId || 'N/A'))
   } catch (e) {} finally { running.value = false }
 }
 

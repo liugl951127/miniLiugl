@@ -82,11 +82,13 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { uploadIngestFile, getIngestTask, getIngestQuality } from '@/api/analytics'
 
 const tasks = ref([])
+const toast = useToast()
 const loading = ref(false)
 const detailVisible = ref(false)
 const current = ref(null)
@@ -103,7 +105,7 @@ function statusType(s) {
 
 function beforeUpload(file) {
   if (file.size > 100 * 1024 * 1024) {
-    ElMessage.error('文件超过 100MB')
+    toast.error('文件超过 100MB')
     return false
   }
   return true
@@ -128,16 +130,16 @@ async function customUpload(option) {
 
     const res = await promise
     if (!cancelled) {
-      ElMessage.success('上传成功, 任务 ID: ' + res.data?.taskId)
+      toast.success('上传成功, 任务 ID: ' + res.data?.taskId)
       uploadProgress.value = 0
       uploadingFileName.value = ''
       loadTasks()
     }
   } catch (e) {
     if (e?.__cancelled || e?.name === 'CanceledError') {
-      ElMessage.info('上传已取消')
+      toast.info('上传已取消')
     } else {
-      ElMessage.error('上传失败: ' + (e.response?.data?.message || e.message))
+      toast.error('上传失败: ' + (e.response?.data?.message || e.message))
     }
     uploadProgress.value = 0
     uploadingFileName.value = ''

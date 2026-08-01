@@ -131,11 +131,13 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { UploadFilled, View } from '@element-plus/icons-vue'
 import http from '@/api/http'
 
 const imageFile = ref(null)
+const toast = useToast()
 const imageUrl = ref('')
 const imageBase64 = ref('')
 const dragging = ref(false)
@@ -169,7 +171,7 @@ function toggleModel(code) {
   const i = selectedModels.value.indexOf(code)
   if (i >= 0) selectedModels.value.splice(i, 1)
   else if (selectedModels.value.length < 3) selectedModels.value.push(code)
-  else ElMessage.warning('最多选 3 个')
+  else toast.warning('最多选 3 个')
 }
 
 function onFileChange(e) {
@@ -254,11 +256,11 @@ async function startAnalyze() {
     })
   }
   analyzing.value = false
-  ElMessage.success(`识别完成! ${okResults.length}/${results.value.length} 成功`)
+  toast.success(`识别完成! ${okResults.length}/${results.value.length} 成功`)
 }
 
 function rate(r) {
-  ElMessage.success(`已为 ${r.modelName} 打分 ${r.score} 星`)
+  toast.success(`已为 ${r.modelName} 打分 ${r.score} 星`)
 }
 </script>
 

@@ -93,6 +93,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { autoAgentGroupGenerate, autoAgentGroupByTemplate, autoAgentGroupTemplates } from '@/api/ai'
@@ -100,6 +101,7 @@ import EmptyState from '@/components/EmptyState.vue'
 
 const { t } = useI18n()
 const mode = ref('auto')
+const toast = useToast()
 const generating = ref(false)
 const templates = ref([])
 const currentTemplate = ref(null)
@@ -136,7 +138,7 @@ function onTemplateChange(code) {
 
 async function onGenerate() {
   if (!autoForm.description) {
-    ElMessage.warning('请输入描述')
+    toast.warning('请输入描述')
     return
   }
   generating.value = true
@@ -147,7 +149,7 @@ async function onGenerate() {
       collaboration: autoForm.collaboration
     })
     Object.assign(result, r.data || {})
-    ElMessage.success(`生成 ${result.agents?.length || 0} 个 Agent`)
+    toast.success(`生成 ${result.agents?.length || 0} 个 Agent`)
   } catch (e) {
   } finally {
     generating.value = false
@@ -156,7 +158,7 @@ async function onGenerate() {
 
 async function onTemplateGenerate() {
   if (!templateForm.code) {
-    ElMessage.warning('请选择模板')
+    toast.warning('请选择模板')
     return
   }
   generating.value = true
@@ -166,7 +168,7 @@ async function onTemplateGenerate() {
       params: autoForm
     })
     Object.assign(result, r.data || {})
-    ElMessage.success(`基于模板生成 ${result.agents?.length || 0} 个 Agent`)
+    toast.success(`基于模板生成 ${result.agents?.length || 0} 个 Agent`)
   } catch (e) {
   } finally {
     generating.value = false
@@ -174,11 +176,11 @@ async function onTemplateGenerate() {
 }
 
 function onSave() {
-  ElMessage.info('保存到市场功能 V3.5.49 上线')
+  toast.info('保存到市场功能 V3.5.49 上线')
 }
 
 function onTestAgent(row) {
-  ElMessage.info(`测试 Agent: ${row.name}`)
+  toast.info(`测试 Agent: ${row.name}`)
 }
 
 onMounted(loadTemplates)

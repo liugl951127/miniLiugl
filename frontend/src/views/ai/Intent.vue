@@ -188,6 +188,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   intentPredict, intentPredictBatch, intentAddKeyword, intentAddPhrase,
@@ -196,6 +197,7 @@ import {
 } from '@/api/ai'
 
 const tab = ref('predict')
+const toast = useToast()
 const predictMode = ref('single')
 const predicting = ref(false)
 const configLoading = ref(false)
@@ -235,7 +237,7 @@ async function loadConfig() {
 }
 
 async function onPredictSingle() {
-  if (!singleForm.text) { ElMessage.warning('请输入'); return }
+  if (!singleForm.text) { toast.warning('请输入'); return }
   predicting.value = true
   try {
     const r = await intentPredict({ text: singleForm.text, sessionId: singleForm.sessionId })
@@ -244,31 +246,31 @@ async function onPredictSingle() {
 }
 
 async function onPredictBatch() {
-  if (!batchForm.texts) { ElMessage.warning('请输入'); return }
+  if (!batchForm.texts) { toast.warning('请输入'); return }
   const texts = batchForm.texts.split('\n').filter(s => s.trim())
   predicting.value = true
   try {
     const r = await intentPredictBatch({ texts })
     batchResult.value = r.data || []
-    ElMessage.success(`批量预测 ${batchResult.value.length} 条`)
+    toast.success(`批量预测 ${batchResult.value.length} 条`)
   } catch (e) {} finally { predicting.value = false }
 }
 
 async function onAddKeyword() {
-  if (!keywordForm.keyword || !keywordForm.intent) { ElMessage.warning('请填完整'); return }
+  if (!keywordForm.keyword || !keywordForm.intent) { toast.warning('请填完整'); return }
   try {
     await intentAddKeyword(keywordForm)
-    ElMessage.success('关键词已添加')
+    toast.success('关键词已添加')
     keywordForm.keyword = ''
     loadIntents()
   } catch (e) {}
 }
 
 async function onAddPhrase() {
-  if (!phraseForm.phrase || !phraseForm.intent) { ElMessage.warning('请填完整'); return }
+  if (!phraseForm.phrase || !phraseForm.intent) { toast.warning('请填完整'); return }
   try {
     await intentAddPhrase(phraseForm)
-    ElMessage.success('短语已添加')
+    toast.success('短语已添加')
     phraseForm.phrase = ''
     loadIntents()
   } catch (e) {}
@@ -277,7 +279,7 @@ async function onAddPhrase() {
 async function onSaveConfig() {
   try {
     await intentUpdateConfig(config)
-    ElMessage.success('配置已保存')
+    toast.success('配置已保存')
   } catch (e) {}
 }
 
@@ -285,7 +287,7 @@ async function onResetConfig() {
   try {
     await ElMessageBox.confirm('重置为默认配置?', '警告', { type: 'warning' })
     await intentResetConfig()
-    ElMessage.success('已重置')
+    toast.success('已重置')
     loadConfig()
   } catch (e) { if (e !== 'cancel') {} }
 }
@@ -294,7 +296,7 @@ async function onClearContext() {
   try {
     await ElMessageBox.confirm('清空所有意图上下文?', '警告', { type: 'warning' })
     await intentClearContext({})
-    ElMessage.success('上下文已清空')
+    toast.success('上下文已清空')
   } catch (e) { if (e !== 'cancel') {} }
 }
 
@@ -302,7 +304,7 @@ async function onBenchmark() {
   benchmarking.value = true
   try {
     const r = await intentBenchmark({})
-    ElMessage.success(`基准测试完成, 平均准确率: ${(r.data?.accuracy * 100).toFixed(1)}%`)
+    toast.success(`基准测试完成, 平均准确率: ${(r.data?.accuracy * 100).toFixed(1)}%`)
   } catch (e) {} finally { benchmarking.value = false }
 }
 

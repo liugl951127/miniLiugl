@@ -109,6 +109,7 @@
 <script setup lang="ts">
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import http from '@/api/http'
 import { ElMessage } from 'element-plus'
 import MarkdownView from '@/components/MarkdownView.vue'
@@ -116,6 +117,7 @@ import { t } from '@/i18n'
 import { useUserStore } from '@/store/user'
 
 const userStore = useUserStore()
+const toast = useToast()
 
 const goal = ref('查一下北京今天的天气, 然后给出一个旅游建议')
 const tools = ref<string[]>([])
@@ -144,7 +146,7 @@ async function loadTools() {
 
 async function run() {
   if (!goal.value.trim()) {
-    ElMessage.warning(t('agent.enterGoal'))
+    toast.warning(t('agent.enterGoal'))
     return
   }
   running.value = true
@@ -159,7 +161,7 @@ async function run() {
     })
     const result = r?.data
     if (!result) {
-      ElMessage.error(t('agent.execFailed') + (r?.message || t('agent.noResponse')))
+      toast.error(t('agent.execFailed') + (r?.message || t('agent.noResponse')))
       return
     }
     steps.value = result.steps || []
@@ -170,7 +172,7 @@ async function run() {
       ? result.answer
       : '❌ ' + (result.answer || '执行失败')
   } catch (e: any) {
-    ElMessage.error(t('agent.requestFailed') + (e?.message || ''))
+    toast.error(t('agent.requestFailed') + (e?.message || ''))
   } finally {
     running.value = false
   }

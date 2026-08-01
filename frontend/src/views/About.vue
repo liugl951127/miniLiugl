@@ -75,6 +75,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { systemApi } from '@/api/system'
 import { ElMessage } from 'element-plus'
 
@@ -114,7 +115,7 @@ const techStack = [
 async function checkHealth() {
   try {
     const res = await systemApi.health()
-    ElMessage.success(`${res.data.app} v${res.data.version} · ${res.data.day} · 一切就绪`)
+    toast.success(`${res.data.app} v${res.data.version} · ${res.data.day} · 一切就绪`)
   } catch (e) { /* ignore */ }
 }
 </script>

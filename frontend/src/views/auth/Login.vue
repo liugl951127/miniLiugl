@@ -207,6 +207,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
@@ -221,6 +222,7 @@ const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const toast = useToast()
 
 // V3.5.93+ 演示模式检测
 function isDemoMode() {
@@ -243,10 +245,10 @@ const demoMode = ref(isDemoMode())                   // V3.5.93 演示模式
 function onDemoToggle(val) {
   if (val) {
     localStorage.setItem('minimax_demo_mode', 'true')
-    ElMessage.success('🎭 演示模式已启用 - 无后端本地演示')
+    toast.success('🎭 演示模式已启用 - 无后端本地演示')
   } else {
     localStorage.removeItem('minimax_demo_mode')
-    ElMessage.info('演示模式已关闭 - 恢复 API 模式')
+    toast.info('演示模式已关闭 - 恢复 API 模式')
   }
 }
 
@@ -301,17 +303,17 @@ function fillAccount(acc) {
   // V3.5.93+: demo mode 下, fillAccount 直接跳 (不需点登录)
   if (isDemoMode()) {
     localStorage.setItem('minimax_demo_user', acc.username)
-    ElMessage.success(`🎭 演示模式 - 已切换到 ${acc.role}`)
+    toast.success(`🎭 演示模式 - 已切换到 ${acc.role}`)
     const redirect = route.query.redirect || '/admin/dashboard'
     router.replace(redirect)
   } else {
-    ElMessage.success(`已填入 ${acc.role} 账号, 点击登录`)
+    toast.success(`已填入 ${acc.role} 账号, 点击登录`)
   }
 }
 
 // === 6. 忘记密码 ===
 function onForgot() {
-  ElMessage.warning('请联系管理员重置密码 (admin@minimax.io)')
+  toast.warning('请联系管理员重置密码 (admin@minimax.io)')
 }
 
 // === 7. 提交 (核心: loading + 错误处理 + 跳转) ===
@@ -332,7 +334,7 @@ async function onSubmit() {
     await new Promise(r => setTimeout(r, 500))  // 模拟网络延迟
     localStorage.setItem('minimax_demo_user', form.username)
     localStorage.setItem('minimax_remember_user', form.username)
-    ElMessage.success('🎭 演示模式登录成功 (无后端)')
+    toast.success('🎭 演示模式登录成功 (无后端)')
     const redirect = route.query.redirect && route.query.redirect !== '/login' ? route.query.redirect : '/admin/dashboard'
     router.replace(redirect)
     loading.value = false
@@ -355,7 +357,7 @@ async function onSubmit() {
     }
 
     // ✓ 成功 - 立刻跳, 不等 fetchProfile (layout 异步 hydrate)
-    ElMessage.success(`${mode.value === 'login' ? '登录' : '注册'}成功`)
+    toast.success(`${mode.value === 'login' ? '登录' : '注册'}成功`)
     const redirect = route.query.redirect && route.query.redirect !== '/login' ? route.query.redirect : '/admin/dashboard'
     router.replace(redirect)  // replace 不留 history
 
@@ -374,7 +376,7 @@ async function onSubmit() {
       errorMsg.value = msg
     }
     triggerShake()
-    ElMessage.error(errorMsg.value)
+    toast.error(errorMsg.value)
   } finally {
     loading.value = false
   }
@@ -396,7 +398,7 @@ function onTabChange(name) {
 
 // === 10. 微信扫码成功 ===
 function onWechatSuccess() {
-  ElMessage.success('微信登录成功')
+  toast.success('微信登录成功')
   router.replace(route.query.redirect || '/admin/dashboard')
 }
 

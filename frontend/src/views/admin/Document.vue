@@ -102,11 +102,13 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted, readonly } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { Refresh, UploadFilled } from '@element-plus/icons-vue'
 import { documentParse, documentKeywords, documentFormats } from '@/api/ai'
 
 const tab = ref('parse')
+const toast = useToast()
 const file = ref(null)
 const parsing = ref(false)
 const extracting = ref(false)
@@ -132,7 +134,7 @@ async function onParse() {
       content: await fileToBase64(file.value.raw)
     })
     parseResult.value = r.data
-    ElMessage.success('解析完成')
+    toast.success('解析完成')
   } catch (e) {} finally { parsing.value = false }
 }
 
@@ -146,12 +148,12 @@ function fileToBase64(f) {
 }
 
 async function onExtractKeywords() {
-  if (!kwForm.text) { ElMessage.warning('请输入文本'); return }
+  if (!kwForm.text) { toast.warning('请输入文本'); return }
   extracting.value = true
   try {
     const r = await documentKeywords({ text: kwForm.text, limit: kwForm.limit })
     keywords.value = r.data || []
-    ElMessage.success(`提取 ${keywords.value.length} 个关键词`)
+    toast.success(`提取 ${keywords.value.length} 个关键词`)
   } catch (e) {} finally { extracting.value = false }
 }
 

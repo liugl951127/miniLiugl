@@ -228,6 +228,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
 import VChart from 'vue-echarts'
@@ -242,6 +243,7 @@ import EmptyState from '@/components/EmptyState.vue'
 use([CanvasRenderer, PieChart, TitleComponent, TooltipComponent, LegendComponent])
 
 const userStore = useUserStore()
+const toast = useToast()
 const stats = ref(null)
 const models = ref([])
 const loading = ref(false)
@@ -322,8 +324,8 @@ const onFileChange = (file) => {
 }
 
 const submitUploadFile = async () => {
-  if (!fileObj.value) return ElMessage.warning('请选择文件')
-  if (!uploadForm.name) return ElMessage.warning('请填写模型名')
+  if (!fileObj.value) return toast.warning('请选择文件')
+  if (!uploadForm.name) return toast.warning('请填写模型名')
   uploading.value = true
   try {
     const fd = new FormData()
@@ -338,22 +340,22 @@ const submitUploadFile = async () => {
     fd.append('tags', uploadForm.tags || '')
     const res = await modelMarketApi.upload(fd)
     if (res.data?.code === 0) {
-      ElMessage.success('上传成功!')
+      toast.success('上传成功!')
       showUpload.value = false
       loadModels()
       loadStats()
     } else {
-      ElMessage.error(res.data?.message || '失败')
+      toast.error(res.data?.message || '失败')
     }
   } catch (e) {
-    ElMessage.error('上传失败: ' + e.message)
+    toast.error('上传失败: ' + e.message)
   } finally {
     uploading.value = false
   }
 }
 
 const submitUploadMeta = async () => {
-  if (!metaForm.name) return ElMessage.warning('请填写名称')
+  if (!metaForm.name) return toast.warning('请填写名称')
   uploading.value = true
   try {
     const res = await modelMarketApi.publish({
@@ -362,15 +364,15 @@ const submitUploadMeta = async () => {
       authorName: userStore.profile?.username || 'anon'
     })
     if (res.data?.code === 0) {
-      ElMessage.success('发布成功')
+      toast.success('发布成功')
       showUpload.value = false
       loadModels()
       loadStats()
     } else {
-      ElMessage.error(res.data?.message || '失败')
+      toast.error(res.data?.message || '失败')
     }
   } catch (e) {
-    ElMessage.error('发布失败: ' + e.message)
+    toast.error('发布失败: ' + e.message)
   } finally {
     uploading.value = false
   }
@@ -390,7 +392,7 @@ const downloadModel = () => {
 }
 
 const submitRate = async () => {
-  if (!myRating.value) return ElMessage.warning('请选择评分')
+  if (!myRating.value) return toast.warning('请选择评分')
   try {
     const res = await modelMarketApi.rate(detail.value.modelKey, {
       userId: userStore.profile?.id || 0,
@@ -399,15 +401,15 @@ const submitRate = async () => {
       comment: myComment.value
     })
     if (res.data?.code === 0) {
-      ElMessage.success('评分成功')
+      toast.success('评分成功')
       const r2 = await modelMarketApi.detail(detail.value.modelKey)
       detail.value = r2.data
       rateVisible.value = false
     } else {
-      ElMessage.error(res.data?.message)
+      toast.error(res.data?.message)
     }
   } catch (e) {
-    ElMessage.error('失败: ' + e.message)
+    toast.error('失败: ' + e.message)
   }
 }
 

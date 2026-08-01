@@ -148,69 +148,16 @@
 </div>
 <div ref="chartEl" class="kg-chart"></div>
         </el-card>
-    <!-- V3.6.26+ 节点属性面板 (右侧 drawer) -->
-    <el-drawer
-      v-model="nodeDrawerVisible"
-      :title="nodeDetail ? `节点详情 - ${nodeDetail.name}` : '节点详情'"
-      direction="rtl"
-      size="420px"
-      :destroy-on-close="true"
-    >
-      <div v-if="nodeDetail" class="node-drawer-content">
-        <section class="node-section">
-          <h4 class="section-title">📋 基本信息</h4>
-          <el-descriptions :column="1" border size="small">
-            <el-descriptions-item label="ID">{{ nodeDetail.id }}</el-descriptions-item>
-            <el-descriptions-item label="名称">
-              <el-input v-if="nodeEditing" v-model="nodeEditForm.name" size="small" />
-              <span v-else>{{ nodeDetail.name }}</span>
-            </el-descriptions-item>
-            <el-descriptions-item label="类型">
-              <el-tag size="small">{{ nodeDetail.type || '未分类' }}</el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item label="重要性">
-              <el-rate v-if="nodeEditing" v-model="nodeEditForm.importance" :max="10" />
-              <el-rate v-else :model-value="nodeDetail.importance || 5" disabled :max="10" />
-            </el-descriptions-item>
-            <el-descriptions-item label="创建时间">{{ nodeDetail.createdAt || 'N/A' }}</el-descriptions-item>
-          </el-descriptions>
-        </section>
-
-        <section class="node-section">
-          <h4 class="section-title">📝 描述</h4>
-          <el-input v-if="nodeEditing" v-model="nodeEditForm.description" type="textarea" :rows="4" placeholder="节点描述" />
-          <div v-else class="description-text">{{ nodeDetail.description || '暂无描述' }}</div>
-        </section>
-
-        <section class="node-section">
-          <h4 class="section-title">🔗 关联关系 ({{ nodeRelations.length }})</h4>
-          <el-empty v-if="!nodeRelations.length" description="暂无关联" :image-size="50" />
-          <el-table v-else :data="nodeRelations" stripe size="small" max-height="240">
-            <el-table-column prop="relation" label="关系" width="100" />
-            <el-table-column prop="targetName" label="目标节点" show-overflow-tooltip />
-            <el-table-column prop="weight" label="权重" width="70" sortable>
-              <template #default="{ row }">
-                <el-tag :type="row.weight > 7 ? 'success' : 'info'" size="small">{{ row.weight || 1 }}</el-tag>
-              </template>
-            </el-table-column>
-          </el-table>
-        </section>
-
-        <section class="node-section">
-          <div class="drawer-actions">
-            <template v-if="!nodeEditing">
-              <el-button type="primary" :icon="Edit" @click="startEditNode">编辑</el-button>
-              <el-button :icon="Refresh" @click="loadNodeRelations(nodeDetail.id)">刷新关系</el-button>
-              <el-button type="danger" :icon="Delete" @click="deleteNode">删除</el-button>
-            </template>
-            <template v-else>
-              <el-button type="primary" :icon="Check" @click="saveNodeEdit">保存</el-button>
-              <el-button :icon="Close" @click="cancelEditNode">取消</el-button>
-            </template>
-          </div>
-        </section>
-      </div>
-    </el-drawer>
+    <!-- V3.7.0+ 节点属性面板 (EntityDrawer 复用) -->
+    <EntityDrawer
+      v-model:visible="nodeDrawerVisible"
+      :entity="nodeDetail"
+      :relations="nodeRelations"
+      entity-name="节点"
+      @update="saveNodeEdit"
+      @delete="deleteNode"
+      @refresh-relations="(e) => loadNodeRelations(e.id)"
+    />
 
 
         <el-card v-if="selectedEntity" style="margin-top:16px">
@@ -275,6 +222,8 @@
 <script setup lang="ts">
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted, nextTick, h, computed } from 'vue'
+import EntityDrawer from '@/components/EntityDrawer.vue'
+import { useToast } from '@/composables/useToast'
 import axios from 'axios'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
@@ -282,6 +231,7 @@ import { t } from '@/i18n'
 import { useUserStore } from '@/store/user'
 
 const userStore = useUserStore()
+const toast = useToast()
 const API = import.meta.env.VITE_API_BASE || 'http://localhost'
 const userId = String(userStore.profile?.id || 1)
 
@@ -310,20 +260,20 @@ function applyPreset(preset: string) {
   currentPreset.value = preset
   Object.assign(forceConfig.value, forcePresets[preset as keyof typeof forcePresets])
   applyForceLayout()
-  ElMessage.success(`已应用 ${preset} 预设`)
+  toast.success(`已应用 ${preset} 预设`)
 }
 
 function saveLayout() {
-  if (!chart) { ElMessage.warning('图表未初始化'); return }
+  if (!chart) { toast.warning('图表未初始化'); return }
   const option = chart.getOption()
   const series = option.series?.[0]
-  if (!series?.data) { ElMessage.warning('无节点数据'); return }
+  if (!series?.data) { toast.warning('无节点数据'); return }
   savedLayout.value = {
     savedAt: new Date().toISOString(),
     nodes: series.data.map((n: any) => ({ id: n.id, x: n.x, y: n.y })),
   }
   localStorage.setItem('minimax_kg_layout', JSON.stringify(savedLayout.value))
-  ElMessage.success(`已保存 ${savedLayout.value.nodes.length} 个节点位置`)
+  toast.success(`已保存 ${savedLayout.value.nodes.length} 个节点位置`)
 }
 
 function restoreLayout() {
@@ -332,8 +282,8 @@ function restoreLayout() {
   if (!layout) {
     const saved = localStorage.getItem('minimax_kg_layout')
     if (saved) {
-      try { layout = JSON.parse(saved); savedLayout.value = layout } catch (e) { ElMessage.error('布局数据损坏'); return }
-    } else { ElMessage.warning('无保存的布局'); return }
+      try { layout = JSON.parse(saved); savedLayout.value = layout } catch (e) { toast.error('布局数据损坏'); return }
+    } else { toast.warning('无保存的布局'); return }
   }
   const option = chart.getOption()
   const series = option.series?.[0]
@@ -344,7 +294,7 @@ function restoreLayout() {
       if (pos) { n.x = pos.x; n.y = pos.y; n.fixed = true }
     })
     chart.setOption(option)
-    ElMessage.success('已还原保存的布局 (节点已固定)')
+    toast.success('已还原保存的布局 (节点已固定)')
   }
 }
 
@@ -356,7 +306,7 @@ function resetLayout() {
     series.data.forEach((n: any) => { delete n.x; delete n.y; delete n.fixed })
     chart.setOption(option)
     setTimeout(() => applyForceLayout(), 100)
-    ElMessage.info('已重置布局, 重新计算中...')
+    toast.info('已重置布局, 重新计算中...')
   }
 }
 
@@ -374,7 +324,7 @@ function applyForceLayout() {
       },
     }],
   })
-  ElMessage.success('已应用 force 布局')
+  toast.success('已应用 force 布局')
 }
 const token = userStore.accessToken || ''
 
@@ -429,14 +379,14 @@ function truncate(s: string, n: number) {
 function auth() { return { headers: { Authorization: `Bearer ${token}` } } }
 
 async function createEntity() {
-  if (!newEntity.name) { ElMessage.warning(t('kg.enterName')); return }
+  if (!newEntity.name) { toast.warning(t('kg.enterName')); return }
   try {
     await axios.post(`${API}/api/v1/agent/kg/entities`,
       { userId, ...newEntity, importance: newEntity.importance }, auth())
-    ElMessage.success(t('kg.created'))
+    toast.success(t('kg.created'))
     newEntity.name = ''; newEntity.description = ''
     doSearch()
-  } catch (e: any) { ElMessage.error(e?.response?.data?.message || e?.message) }
+  } catch (e: any) { toast.error(e?.response?.data?.message || e?.message) }
 }
 
 async function doSearch() {
@@ -444,7 +394,7 @@ async function doSearch() {
     const { data } = await axios.get(`${API}/api/v1/agent/kg/entities/search`,
       { params: { userId, keyword: searchKw.value || 'a', limit: 50 }, ...auth() })
     entities.value = data.data || []
-  } catch (e: any) { ElMessage.error(e?.response?.data?.message || e?.message) }
+  } catch (e: any) { toast.error(e?.response?.data?.message || e?.message) }
 }
 
 async function selectEntity(e: any) {
@@ -499,12 +449,12 @@ async function saveNodeEdit() {
   try {
     await axios.put(`${API}/api/v1/agent/kg/entities/${nodeDetail.value.id}`,
       { ...nodeEditForm, userId }, auth())
-    ElMessage.success('节点已更新')
+    toast.success('节点已更新')
     nodeDetail.value = { ...nodeDetail.value, ...nodeEditForm }
     nodeEditing.value = false
     doSearch()
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.message || e?.message)
+    toast.error(e?.response?.data?.message || e?.message)
   }
 }
 
@@ -514,11 +464,11 @@ async function deleteNode() {
     await ElMessageBox.confirm(`确认删除节点 "${nodeDetail.value.name}" 吗?`, '提示', { type: 'warning' })
     await axios.delete(`${API}/api/v1/agent/kg/entities/${nodeDetail.value.id}`,
       { params: { userId }, ...auth() })
-    ElMessage.success('节点已删除')
+    toast.success('节点已删除')
     nodeDrawerVisible.value = false
     doSearch()
   } catch (e: any) {
-    if (e !== 'cancel') ElMessage.error(e?.response?.data?.message || e?.message)
+    if (e !== 'cancel') toast.error(e?.response?.data?.message || e?.message)
   }
 }
 
@@ -565,7 +515,7 @@ async function loadNeighbors() {
       }
       neighbors.value = [...list2, ...extra]
     }
-  } catch (e: any) { ElMessage.error(e?.message) }
+  } catch (e: any) { toast.error(e?.message) }
 }
 
 async function createRelationTo(toId: number) {
@@ -574,21 +524,21 @@ async function createRelationTo(toId: number) {
 }
 
 async function submitRelation() {
-  if (!relForm.toId || !relForm.type) { ElMessage.warning(t('kg.fillComplete')); return }
+  if (!relForm.toId || !relForm.type) { toast.warning(t('kg.fillComplete')); return }
   try {
     await axios.post(`${API}/api/v1/agent/kg/relations`, {
       userId, fromId: selectedEntity.value.id, toId: relForm.toId,
       type: relForm.type, weight: 1.0
     }, auth())
-    ElMessage.success(t('kg.relationCreated'))
+    toast.success(t('kg.relationCreated'))
     await loadNeighbors()
     await nextTick()
     renderGraph()
-  } catch (e: any) { ElMessage.error(e?.response?.data?.message || e?.message) }
+  } catch (e: any) { toast.error(e?.response?.data?.message || e?.message) }
 }
 
 async function findPath() {
-  if (!pathFromId.value || !pathToId.value) { ElMessage.warning(t('kg.selectEndpoints')); return }
+  if (!pathFromId.value || !pathToId.value) { toast.warning(t('kg.selectEndpoints')); return }
   try {
     const { data } = await axios.get(`${API}/api/v1/agent/kg/path`, {
       // V1.8: 后端参数名是 from/to, 不是 fromId/toId
@@ -597,14 +547,14 @@ async function findPath() {
     })
     if (data.data) {
       pathResult.value = data.data
-      ElMessage.success(t('kg.pathFound') + ` ${data.data.length}`)
+      toast.success(t('kg.pathFound') + ` ${data.data.length}`)
       // 可视化路径
       await renderPathGraph()
     } else {
       pathResult.value = null
-      ElMessage.warning(t('kg.noPathFound'))
+      toast.warning(t('kg.noPathFound'))
     }
-  } catch (e: any) { ElMessage.error(e?.response?.data?.message || e?.message) }
+  } catch (e: any) { toast.error(e?.response?.data?.message || e?.message) }
 }
 
 // ====== ECharts 渲染 ======
@@ -877,16 +827,16 @@ async function submitDragRelation() {
       type: relTypeInput.value,
       weight: 1.0,
     }, auth())
-    ElMessage.success(`已创建关系: ${dragFromId.value} → ${dragToId.value} (${relTypeInput.value})`)
+    toast.success(`已创建关系: ${dragFromId.value} → ${dragToId.value} (${relTypeInput.value})`)
     await loadNeighbors()
     await nextTick()
     renderGraph()
   } catch (e: any) {
     // 演示模式: 假成功
     if (!e.response) {
-      ElMessage.success(`🎭 演示模式 - 假成功创建关系: ${dragFromId.value} → ${dragToId.value}`)
+      toast.success(`🎭 演示模式 - 假成功创建关系: ${dragFromId.value} → ${dragToId.value}`)
     } else {
-      ElMessage.error(e?.response?.data?.message || e?.message)
+      toast.error(e?.response?.data?.message || e?.message)
     }
   } finally {
     resetDrag()
@@ -910,7 +860,7 @@ async function deleteEntity(id) {
       params: { userId },
       ...auth()
     })
-    ElMessage.success(`已删除实体 #${id}`)
+    toast.success(`已删除实体 #${id}`)
     if (selectedEntity.value?.id === id) selectedEntity.value = null
     await doSearch()
     await nextTick()
@@ -919,10 +869,10 @@ async function deleteEntity(id) {
     if (e === 'cancel') return
     if (!e.response) {
       // 演示模式: 假成功
-      ElMessage.success(`🎭 演示模式 - 假成功删除 #${id}`)
+      toast.success(`🎭 演示模式 - 假成功删除 #${id}`)
       if (selectedEntity.value?.id === id) selectedEntity.value = null
     } else {
-      ElMessage.error(e?.response?.data?.message || e?.message)
+      toast.error(e?.response?.data?.message || e?.message)
     }
   }
 }
@@ -938,7 +888,7 @@ async function deleteRelation(fromId, toId, type) {
       params: { userId, fromId, toId, type },
       ...auth()
     })
-    ElMessage.success(`已删除关系 ${fromId} -[${type}]-> ${toId}`)
+    toast.success(`已删除关系 ${fromId} -[${type}]-> ${toId}`)
     await loadNeighbors()
     await nextTick()
     renderGraph()
@@ -946,11 +896,11 @@ async function deleteRelation(fromId, toId, type) {
     if (e === 'cancel') return
     if (!e.response) {
       // 演示模式: 假成功
-      ElMessage.success(`🎭 演示模式 - 假成功删除关系`)
+      toast.success(`🎭 演示模式 - 假成功删除关系`)
       neighbors.value = neighbors.value.filter(n => !(n.entity?.id === toId && n.via === type))
       nextTick(() => renderGraph())
     } else {
-      ElMessage.error(e?.response?.data?.message || e?.message)
+      toast.error(e?.response?.data?.message || e?.message)
     }
   }
 }
@@ -961,7 +911,7 @@ function onNodeClick(params) {
     if (!isNaN(id)) {
       // 单击: 设为拖拽起点
       dragFromId.value = id
-      ElMessage.info('已选中节点 ' + params.data.name + ', 拖到目标节点上创建关系')
+      toast.info('已选中节点 ' + params.data.name + ', 拖到目标节点上创建关系')
     }
   }
 }
@@ -999,7 +949,7 @@ function loadMockData() {
     selectedEntity.value = MOCK_ENTITIES[0]
     neighbors.value = MOCK_NEIGHBORS
   }
-  ElMessage.info('🎭 演示模式 - 已加载 10 实体 + 5 关系 (无后端)')
+  toast.info('🎭 演示模式 - 已加载 10 实体 + 5 关系 (无后端)')
 }
 
 onMounted(async () => {

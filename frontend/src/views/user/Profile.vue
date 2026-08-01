@@ -61,6 +61,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { useRouter } from 'vue-router'
 import { User } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -70,6 +71,7 @@ import MyWechat from '@/components/MyWechat.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
+const toast = useToast()
 const profile = ref(null)
 
 async function load() {
@@ -82,7 +84,7 @@ async function load() {
 }
 
 async function changePassword() {
-  ElMessage.info('修改密码 (生产场景)')
+  toast.info('修改密码 (生产场景)')
 }
 
 function goWechatScan() {

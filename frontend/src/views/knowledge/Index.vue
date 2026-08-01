@@ -321,6 +321,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, reactive } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Files, Document, Reading, Histogram, Plus, FolderOpened, Delete, Search, MagicStick, Upload, Edit, EditPen } from '@element-plus/icons-vue'
 import * as ragApi from '@/api/rag'
@@ -329,6 +330,7 @@ import { useUserStore } from '@/store/user'
 import EmptyState from '@/components/EmptyState.vue'
 
 const userStore = useUserStore()
+const toast = useToast()
 const ownerId = computed(() => userStore.userInfo?.id || 1)
 
 const activeTab = ref('mine')
@@ -425,16 +427,16 @@ async function loadPublicKbs() {
 }
 
 async function handleCreateKb() {
-  if (!newKb.name.trim()) return ElMessage.warning('请输入名称')
+  if (!newKb.name.trim()) return toast.warning('请输入名称')
   loading.create = true
   try {
     await ragApi.createKb(ownerId.value, { ...newKb })
-    ElMessage.success('创建成功')
+    toast.success('创建成功')
     showCreateKb.value = false
     Object.assign(newKb, { name: '', description: '', visibility: 'private', tags: '' })
     await loadKbs()
   } catch (e) {
-    ElMessage.error('创建失败: ' + (e.response?.data?.message || e.message))
+    toast.error('创建失败: ' + (e.response?.data?.message || e.message))
   } finally { loading.create = false }
 }
 
@@ -442,10 +444,10 @@ async function handleDeleteKb(row) {
   await ElMessageBox.confirm(`确认删除知识库 "${row.name}" 及其所有文档?`, '警告', { type: 'warning' })
   try {
     await ragApi.deleteKb(row.id, ownerId.value)
-    ElMessage.success('删除成功')
+    toast.success('删除成功')
     await loadKbs()
   } catch (e) {
-    ElMessage.error('删除失败: ' + (e.response?.data?.message || e.message))
+    toast.error('删除失败: ' + (e.response?.data?.message || e.message))
   }
 }
 
@@ -462,18 +464,18 @@ function editKb(row) {
 }
 
 async function doEditKb() {
-  if (!editKbForm.name.trim()) return ElMessage.warning('请输入名称')
+  if (!editKbForm.name.trim()) return toast.warning('请输入名称')
   loading.editKb = true
   try {
     await ragApi.updateKb(editKbForm.id, ownerId.value, { ...editKbForm })
-    ElMessage.success('保存成功')
+    toast.success('保存成功')
     editKbVisible.value = false
     await loadKbs()
     if (currentKb.value?.id === editKbForm.id) {
       currentKb.value = { ...currentKb.value, ...editKbForm }
     }
   } catch (e) {
-    ElMessage.error('保存失败: ' + (e.response?.data?.message || e.message))
+    toast.error('保存失败: ' + (e.response?.data?.message || e.message))
   } finally {
     loading.editKb = false
   }
@@ -486,15 +488,15 @@ function renameDoc(row) {
 }
 
 async function doRenameDoc() {
-  if (!renameDocTitle.value.trim()) return ElMessage.warning('请输入新名称')
+  if (!renameDocTitle.value.trim()) return toast.warning('请输入新名称')
   loading.renameDoc = true
   try {
     await ragApi.renameDoc(renameDocId.value, ownerId.value, renameDocTitle.value.trim())
-    ElMessage.success('重命名成功')
+    toast.success('重命名成功')
     renameDocVisible.value = false
     await loadDocs()
   } catch (e) {
-    ElMessage.error('重命名失败: ' + (e.response?.data?.message || e.message))
+    toast.error('重命名失败: ' + (e.response?.data?.message || e.message))
   } finally {
     loading.renameDoc = false
   }
@@ -519,17 +521,17 @@ async function handleDeleteDoc(row) {
   await ElMessageBox.confirm(`确认删除文档 "${row.title}"?`, '警告', { type: 'warning' })
   try {
     await ragApi.deleteDoc(row.id, ownerId.value)
-    ElMessage.success('删除成功')
+    toast.success('删除成功')
     await loadDocs()
   } catch (e) {
-    ElMessage.error('删除失败: ' + (e.response?.data?.message || e.message))
+    toast.error('删除失败: ' + (e.response?.data?.message || e.message))
   }
 }
 
 function beforeUpload(file) {
   const max = 50 * 1024 * 1024
   if (file.size > max) {
-    ElMessage.error('文件大小不能超过 50MB')
+    toast.error('文件大小不能超过 50MB')
     return false
   }
   return true
@@ -559,16 +561,16 @@ async function customUpload({ file }) {
     }
     await promise
     if (!cancelled) {
-      ElMessage.success('上传成功')
+      toast.success('上传成功')
       uploadProgress.value = 0
       uploadingFileName.value = ''
       await loadDocs()
     }
   } catch (e) {
     if (e?.__cancelled || e?.message?.includes('cancel') || e?.name === 'CanceledError') {
-      ElMessage.info('上传已取消')
+      toast.info('上传已取消')
     } else {
-      ElMessage.error('上传失败: ' + (e.response?.data?.message || e.message))
+      toast.error('上传失败: ' + (e.response?.data?.message || e.message))
     }
     uploadProgress.value = 0
     uploadingFileName.value = ''
@@ -592,12 +594,12 @@ async function viewChunks(row) {
     const res = await ragApi.listChunks(row.id)
     chunks.value = res.data?.data || res.data || []
   } catch (e) {
-    ElMessage.error('加载切片失败')
+    toast.error('加载切片失败')
   }
 }
 
 async function handleRetrieve() {
-  if (!retrieveForm.query.trim()) return ElMessage.warning('请输入问题')
+  if (!retrieveForm.query.trim()) return toast.warning('请输入问题')
   loading.retrieve = true
   try {
     const res = await ragApi.retrieve({
@@ -609,12 +611,12 @@ async function handleRetrieve() {
     retrieveCount.value++
     askAnswer.value = null
   } catch (e) {
-    ElMessage.error('检索失败: ' + (e.response?.data?.message || e.message))
+    toast.error('检索失败: ' + (e.response?.data?.message || e.message))
   } finally { loading.retrieve = false }
 }
 
 async function handleAsk() {
-  if (!retrieveForm.query.trim()) return ElMessage.warning('请输入问题')
+  if (!retrieveForm.query.trim()) return toast.warning('请输入问题')
   loading.ask = true
   try {
     const payload = {
@@ -630,7 +632,7 @@ async function handleAsk() {
     askAnswer.value = res.data?.data || res.data || null
     retrieveCount.value++
   } catch (e) {
-    ElMessage.error('问答失败: ' + (e.response?.data?.message || e.message))
+    toast.error('问答失败: ' + (e.response?.data?.message || e.message))
   } finally { loading.ask = false }
 }
 

@@ -262,6 +262,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, reactive } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ChatDotRound, DataAnalysis, Files, Star, Plus, Search, MagicStick, Delete, Refresh } from '@element-plus/icons-vue'
 import * as memApi from '@/api/memory'
@@ -269,6 +270,7 @@ import { useUserStore } from '@/store/user'
 import EmptyState from '@/components/EmptyState.vue'
 
 const userStore = useUserStore()
+const toast = useToast()
 const userId = computed(() => userStore.userInfo?.id || 1)
 
 const activeTab = ref('short')
@@ -292,7 +294,7 @@ const prefForm = reactive({ id: null, key: '', value: '', source: 'manual' })
 const loading = reactive({ short: false, long: false, recall: false, pref: false })
 
 async function loadShortTerm() {
-  if (!sessionInput.value) return ElMessage.warning('请先输入 Session ID')
+  if (!sessionInput.value) return toast.warning('请先输入 Session ID')
   loading.short = true
   try {
     const [msgs, size, sum] = await Promise.all([
@@ -304,30 +306,30 @@ async function loadShortTerm() {
     shortTermSize.value = size.data?.data || size.data || 0
     summary.value = sum.data?.data || sum.data || ''
   } catch (e) {
-    ElMessage.error('加载失败: ' + (e.response?.data?.message || e.message))
+    toast.error('加载失败: ' + (e.response?.data?.message || e.message))
   } finally { loading.short = false }
 }
 
 async function handleAppend() {
-  if (!newMsg.content.trim()) return ElMessage.warning('请输入内容')
+  if (!newMsg.content.trim()) return toast.warning('请输入内容')
   try {
     await memApi.appendShortTerm(sessionInput.value, { ...newMsg })
-    ElMessage.success('已追加')
+    toast.success('已追加')
     showAppend.value = false
     newMsg.content = ''
     await loadShortTerm()
   } catch (e) {
-    ElMessage.error('追加失败')
+    toast.error('追加失败')
   }
 }
 
 async function handleSummarize() {
   try {
     await memApi.summarize(sessionInput.value)
-    ElMessage.success('摘要生成中...')
+    toast.success('摘要生成中...')
     setTimeout(loadShortTerm, 1500)
   } catch (e) {
-    ElMessage.error('触发摘要失败')
+    toast.error('触发摘要失败')
   }
 }
 
@@ -335,10 +337,10 @@ async function handleClear() {
   await ElMessageBox.confirm('确认清空该会话的短期记忆?', '警告', { type: 'warning' })
   try {
     await memApi.clearShortTerm(sessionInput.value)
-    ElMessage.success('已清空')
+    toast.success('已清空')
     await loadShortTerm()
   } catch (e) {
-    ElMessage.error('清空失败')
+    toast.error('清空失败')
   }
 }
 
@@ -348,12 +350,12 @@ async function loadLongTerm() {
     const res = await memApi.recentLongTerm(userId.value, 100)
     longTermMemories.value = res.data?.data || res.data || []
   } catch (e) {
-    ElMessage.error('加载失败')
+    toast.error('加载失败')
   } finally { loading.long = false }
 }
 
 async function handleRecall() {
-  if (!recallQuery.value.trim()) return ElMessage.warning('请输入查询')
+  if (!recallQuery.value.trim()) return toast.warning('请输入查询')
   loading.recall = true
   try {
     const res = await memApi.recallLongTerm({
@@ -363,12 +365,12 @@ async function handleRecall() {
     })
     recallHits.value = res.data?.data || res.data || []
   } catch (e) {
-    ElMessage.error('召回失败')
+    toast.error('召回失败')
   } finally { loading.recall = false }
 }
 
 async function handleStore() {
-  if (!newLong.content.trim()) return ElMessage.warning('请输入内容')
+  if (!newLong.content.trim()) return toast.warning('请输入内容')
   try {
     await memApi.storeLongTerm({
       userId: userId.value,
@@ -377,12 +379,12 @@ async function handleStore() {
       content: newLong.content,
       importance: newLong.importance
     })
-    ElMessage.success('已存储')
+    toast.success('已存储')
     showStore.value = false
     Object.assign(newLong, { role: 'user', sessionId: '', content: '', importance: 3 })
     await loadLongTerm()
   } catch (e) {
-    ElMessage.error('存储失败')
+    toast.error('存储失败')
   }
 }
 
@@ -390,10 +392,10 @@ async function handleDeleteLong(row) {
   await ElMessageBox.confirm('确认删除该长期记忆?', '警告', { type: 'warning' })
   try {
     await memApi.deleteLongTerm(row.id, userId.value)
-    ElMessage.success('已删除')
+    toast.success('已删除')
     await loadLongTerm()
   } catch (e) {
-    ElMessage.error('删除失败')
+    toast.error('删除失败')
   }
 }
 
@@ -403,7 +405,7 @@ async function loadPrefs() {
     const res = await memApi.listPref(userId.value)
     prefs.value = res.data?.data || res.data || []
   } catch (e) {
-    ElMessage.error('加载失败')
+    toast.error('加载失败')
   } finally { loading.pref = false }
 }
 
@@ -413,15 +415,15 @@ function editPref(row) {
 }
 
 async function handleSavePref() {
-  if (!prefForm.key.trim() || !prefForm.value.trim()) return ElMessage.warning('键值必填')
+  if (!prefForm.key.trim() || !prefForm.value.trim()) return toast.warning('键值必填')
   try {
     await memApi.setPref(userId.value, prefForm.key, prefForm.value, prefForm.source || 'manual')
-    ElMessage.success('已保存')
+    toast.success('已保存')
     showPref.value = false
     Object.assign(prefForm, { id: null, key: '', value: '', source: 'manual' })
     await loadPrefs()
   } catch (e) {
-    ElMessage.error('保存失败')
+    toast.error('保存失败')
   }
 }
 

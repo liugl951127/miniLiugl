@@ -129,6 +129,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage } from 'element-plus'
 import { Promotion, VideoPause } from '@element-plus/icons-vue'
 import http from '@/api/http'
@@ -194,14 +195,14 @@ async function run() {
       result.totalTokens = r.data.totalTokens
       result.finishReason = r.data.finishReason
       result.raw = r.data.raw || null
-      ElMessage.success(`调用成功! ${result.latencyMs}ms / ${result.totalTokens} tokens`)
+      toast.success(`调用成功! ${result.latencyMs}ms / ${result.totalTokens} tokens`)
     } else {
       throw new Error('响应无 content 字段: ' + JSON.stringify(r))
     }
   } catch (e) {
     result.status = 'error'
     result.error = e.message
-    ElMessage.error('调用失败: ' + e.message)
+    toast.error('调用失败: ' + e.message)
   } finally {
     running.value = false
     streaming.value = false

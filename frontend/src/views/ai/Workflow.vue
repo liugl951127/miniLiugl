@@ -77,6 +77,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { executeWorkflow, validateWorkflow as apiValidate, dispatchPrompt } from '@/api/ai'
@@ -124,11 +125,11 @@ function safeParse(s) {
 
 async function runWorkflow() {
   if (!nodes.value.length) {
-    ElMessage.warning('请先添加节点')
+    toast.warning('请先添加节点')
     return
   }
   if (nodes.value.some(n => !n.toolCode)) {
-    ElMessage.warning('请填写所有节点的工具编码')
+    toast.warning('请填写所有节点的工具编码')
     return
   }
   running.value = true
@@ -144,12 +145,12 @@ async function runWorkflow() {
       })
     }
     if (res.data.success) {
-      ElMessage.success('工作流执行成功')
+      toast.success('工作流执行成功')
     } else {
-      ElMessage.error('执行失败: ' + (res.data.error || '未知'))
+      toast.error('执行失败: ' + (res.data.error || '未知'))
     }
   } catch (e) {
-    ElMessage.error('执行异常: ' + e.message)
+    toast.error('执行异常: ' + e.message)
   } finally {
     running.value = false
   }
@@ -157,19 +158,19 @@ async function runWorkflow() {
 
 async function validateWorkflow() {
   if (!nodes.value.length) {
-    ElMessage.warning('工作流为空')
+    toast.warning('工作流为空')
     return
   }
   try {
     const wf = buildWorkflow()
     const res = await apiValidate(wf)
     if (res.data.valid) {
-      ElMessage.success(`验证通过 (${res.data.nodeCount} 节点, ${res.data.edgeCount} 边)`)
+      toast.success(`验证通过 (${res.data.nodeCount} 节点, ${res.data.edgeCount} 边)`)
     } else {
-      ElMessage.error('验证失败: ' + (res.data.error || '结构错误'))
+      toast.error('验证失败: ' + (res.data.error || '结构错误'))
     }
   } catch (e) {
-    ElMessage.error('验证失败')
+    toast.error('验证失败')
   }
 }
 
@@ -179,7 +180,7 @@ function loadExample() {
     { id: 'analyze', toolCode: 'data.analyze.stats', inputJson: '{"dataSourceId":1,"table":"user"}', status: 'PENDING' },
     { id: 'chart', toolCode: 'data.analyze.distribution', inputJson: '{"dataSourceId":1,"table":"user","column":"age","buckets":10}', status: 'PENDING' }
   ]
-  ElMessage.success('已加载示例')
+  toast.success('已加载示例')
 }
 
 function formatOutput(o) {
