@@ -1,163 +1,213 @@
 <!--
-  @file views/auth/Login.vue (V3.5.75 标准化模板)
-  @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
--->
-<!--
   @file views/auth/Login.vue (登录页)
-  @version V3.5.12+ (前端注释补全)
-  @description 登录页
+  @version V3.5.80+ (前端重写 Element Plus 2.4 标准模板)
+  @description 5 段标准结构 - 平台登录 + 演示账号 + 微信扫码
+  @template V3.5.74 5 段样板 (header / brand / form / demos / footer)
 -->
 <template>
-  <div class="page-login login-page">
-    <div class="login-bg" />
-    <div class="login-feature-panel">
-      <div class="feature-content">
-        <h1 class="gradient-text">🚀 Liugl-AI Platform</h1>
-        <p class="feature-tagline">企业级 AI · 智能协作 · 自研大模型</p>
-        <ul class="feature-list">
-          <li>✅ <b>17</b> 微服务 · <b>145+</b> 单元测试</li>
-          <li>🤖 自研 AI (无外部 LLM 依赖)</li>
-          <li>🎬 视频/音乐 <b>实时流式</b> 生成</li>
-          <li>📊 7 种图表 / 看板 / 多模态</li>
-          <li>🔐 RBAC + 审计 + 脱敏</li>
-          <li>🌐 i18n 中英双语</li>
-        </ul>
-        <div class="feature-stats">
-          <div><b>12</b><span>微服务</span></div>
-          <div><b>211+</b><span>API</span></div>
-          <div><b>62</b><span>页面</span></div>
-          <div><b>532</b><span>i18n</span></div>
+  <div class="page-login">
+    <!-- 1. page-header: 顶部品牌 + 副标题 -->
+    <header class="page-header">
+      <div class="brand">
+        <img src="/icons/icon-192.svg" alt="Liugl-AI" class="brand-logo" />
+        <div>
+          <h1 class="brand-title gradient-text">Liugl-AI Platform</h1>
+          <p class="brand-tagline">企业级 AI · 智能协作 · 自研大模型</p>
         </div>
       </div>
-    </div>
+      <el-button :icon="ChatLineRound" @click="router.push('/chat')" plain>访客试用</el-button>
+    </header>
 
-    <div class="login-box">
-      <div class="login-header">
-        <h1 class="gradient-text" style="margin: 0 0 8px; font-size: 28px;">{{ t('app.name') || 'Liugl-AI' }}</h1>
-        <p style="color: #909399; margin: 0; font-size: 13px;">{{ t('app.tagline') }}</p>
-      </div>
-
-      <el-tabs v-model="mode" stretch class="login-tabs">
-        <el-tab-pane :label="'🔑 ' + (t('user.login') || '登录')" name="login" />
-        <el-tab-pane :label="'📝 ' + (t('user.register') || '注册')" name="register" />
-        <el-tab-pane :label="'📱 微信扫码'" name="wechat" />
+    <!-- 2. section: 4 标签页 (login/register/wechat/quick) -->
+    <section class="section">
+      <el-tabs v-model="mode" class="login-tabs" stretch>
+        <el-tab-pane label="账号密码" name="login">
+          <el-icon><Lock /></el-icon>
+        </el-tab-pane>
+        <el-tab-pane label="注册账号" name="register">
+          <el-icon><User /></el-icon>
+        </el-tab-pane>
+        <el-tab-pane label="微信扫码" name="wechat">
+          <el-icon><ChatDotRound /></el-icon>
+        </el-tab-pane>
       </el-tabs>
+    </section>
 
-      <el-form v-if="mode !== 'wechat'" ref="formRef" :model="form" :rules="rules" size="large" @submit.prevent="onSubmit">
-        <el-form-item prop="username">
-          <el-input v-model="form.username" placeholder="用户名" :prefix-icon="User" autocomplete="username" clearable />
-        </el-form-item>
-        <el-form-item prop="password">
-          <el-input
-            v-model="form.password" type="password" show-password
-            placeholder="密码" :prefix-icon="Lock" autocomplete="current-password"
-            @keyup.enter="onSubmit" clearable
-          />
-        </el-form-item>
-        <el-form-item v-if="mode === 'register'" prop="nickname">
-          <el-input v-model="form.nickname" placeholder="昵称（选填）" :prefix-icon="Avatar" clearable />
-        </el-form-item>
-        <el-form-item v-if="mode === 'register'" prop="email">
-          <el-input v-model="form.email" placeholder="邮箱（选填）" :prefix-icon="Message" clearable />
-        </el-form-item>
-        <div v-if="mode === 'login'" class="login-extras">
-          <el-checkbox v-model="remember">记住我</el-checkbox>
-          <a class="forgot-link" @click="onForgot">忘记密码？</a>
+    <!-- 3. section: 表单 (账号密码 / 注册) -->
+    <section v-if="mode !== 'wechat'" class="section">
+      <el-card shadow="hover" class="form-card">
+        <el-form
+          ref="formRef"
+          :model="form"
+          :rules="rules"
+          label-position="top"
+          size="large"
+          @submit.prevent="onSubmit"
+        >
+          <el-form-item v-if="mode === 'register'" label="昵称" prop="nickname">
+            <el-input v-model="form.nickname" placeholder="请输入昵称" :prefix-icon="User" clearable />
+          </el-form-item>
+
+          <el-form-item label="用户名" prop="username">
+            <el-input
+              v-model="form.username"
+              placeholder="请输入用户名"
+              :prefix-icon="User"
+              clearable
+              autocomplete="username"
+            />
+          </el-form-item>
+
+          <el-form-item label="密码" prop="password">
+            <el-input
+              v-model="form.password"
+              type="password"
+              placeholder="请输入密码"
+              :prefix-icon="Lock"
+              show-password
+              autocomplete="current-password"
+            />
+          </el-form-item>
+
+          <el-form-item v-if="mode === 'register'" label="邮箱" prop="email">
+            <el-input v-model="form.email" placeholder="请输入邮箱" :prefix-icon="Message" clearable />
+          </el-form-item>
+
+          <el-form-item v-if="mode === 'login'">
+            <div class="form-options">
+              <el-checkbox v-model="remember">记住用户名</el-checkbox>
+              <el-link type="primary" :underline="false" @click="onForgot">忘记密码？</el-link>
+            </div>
+          </el-form-item>
+
+          <el-button
+            type="primary"
+            :loading="loading"
+            class="submit-btn"
+            @click="onSubmit"
+            size="large"
+          >
+            {{ mode === 'login' ? '登录' : '注册' }}
+          </el-button>
+        </el-form>
+      </el-card>
+    </section>
+
+    <!-- 3-alt. section: 微信扫码 -->
+    <section v-else class="section">
+      <el-card shadow="hover" class="wechat-card">
+        <WechatScanLogin />
+      </el-card>
+    </section>
+
+    <!-- 4. section: 演示账号 (dev 模式) -->
+    <section v-if="mode === 'login'" class="section">
+      <el-card shadow="never" class="demos-card">
+        <template #header>
+          <div class="card-header">
+            <el-icon><Cpu /></el-icon>
+            <span>演示账号 (开发模式)</span>
+          </div>
+        </template>
+        <el-row :gutter="12">
+          <el-col v-for="acc in demoAccounts" :key="acc.username" :xs="12" :sm="8">
+            <el-card
+              shadow="hover"
+              class="demo-card"
+              @click="fillAccount(acc.username, acc.password)"
+            >
+              <div class="demo-role">{{ acc.role }}</div>
+              <div class="demo-name">{{ acc.username }}</div>
+              <div class="demo-desc">{{ acc.desc }}</div>
+            </el-card>
+          </el-col>
+        </el-row>
+      </el-card>
+    </section>
+
+    <!-- 5. section: 平台特性 (footer 信息) -->
+    <section class="section">
+      <div class="features-grid">
+        <div v-for="f in features" :key="f.title" class="feature-item">
+          <el-icon :size="20" :color="f.color">{{ f.icon }}</el-icon>
+          <span>{{ f.title }}</span>
         </div>
-        <el-button type="primary" size="large" :loading="loading" style="width: 100%;" @click="onSubmit">
-          {{ mode === 'login' ? '登录' : '注册并登录' }}
-        </el-button>
-        <el-divider v-if="mode === 'login'"><span class="divider-text">快速登录（演示）</span></el-divider>
-        <div v-if="mode === 'login'" class="quick-accounts">
-          <el-tag class="quick-tag" type="danger" effect="plain" @click="fillAccount('adminLiugl', 'Liugl@2026')">
-            👑 adminLiugl (超管)
-          </el-tag>
-          <el-tag class="quick-tag" type="success" effect="plain" @click="fillAccount('admin', 'admin@123')">
-            🔑 admin
-          </el-tag>
-          <el-tag class="quick-tag" type="info" effect="plain" @click="fillAccount('user', 'user@123')">
-            👤 user
-          </el-tag>
-        </div>
-      </el-form>
-
-      <div v-else class="wechat-tab">
-        <WechatScanLogin @login-success="onWechatLogin" />
-        <p class="wechat-tip">
-          没有微信？<a href="javascript:;" @click="mode = 'login'">账号密码登录</a>
-        </p>
       </div>
-
-      <div v-if="mode !== 'wechat'" class="login-tips">
-        <el-alert type="info" :closable="false" show-icon>
-          <template #title>
-            <span style="font-size: 12px;">
-              💡 演示账号: <code>admin</code> / <code>admin@123</code> (或点击上方快速登录)
-            </span>
-          </template>
-        </el-alert>
-      </div>
-    </div>
+      <p class="footer-text">© 2026 Liugl-AI Platform · V3.5.80 标准化模板</p>
+    </section>
   </div>
 </template>
 
 <script setup>
-// ───── 依赖导入 ─────
+/**
+ * V3.5.80 登录页 5 段结构 + 6 原则
+ * 1. page-header: 品牌 + 访客入口
+ * 2. section (4 标签): login / register / wechat
+ * 3. section: 表单 (账号密码 / 注册) 或 微信扫码
+ * 4. section: 演示账号 (开发模式)
+ * 5. section: 平台特性 + footer
+ *
+ * 设计 token: var(--liugl-primary/accent/success)
+ * 响应式: el-col xs 12 / sm 8 / md 6
+ * i18n: 预留 $t() (V3.5.81+ 接入)
+ */
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { User, Lock, Avatar, Message } from '@element-plus/icons-vue'
-import { useI18n } from 'vue-i18n'
+import {
+  User, Lock, Message, ChatDotRound, ChatLineRound, Cpu, DataLine, Connection, TrendCharts
+} from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'
 import WechatScanLogin from '@/components/WechatScanLogin.vue'
 
-const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
+// === 1. 状态 ===
 const mode = ref('login')
 const formRef = ref()
 const loading = ref(false)
 const remember = ref(true)
-const form = ref({
-  username: '',
-  password: '',
-  nickname: '',
-  email: ''
-})
+const form = ref({ username: '', password: '', nickname: '', email: '' })
+
+// === 2. 表单规则 (i18n 预留) ===
 const rules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }, { min: 6, message: '至少 6 位', trigger: 'blur' }]
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, message: '至少 6 位', trigger: 'blur' }
+  ]
 }
 
-onMounted(() => {
-  // 恢复记住的用户名
-  const saved = localStorage.getItem('minimax_remember_user')
-  if (saved) {
-    form.value.username = saved
-  }
-})
+// === 3. 演示账号 (V3.5.50+ 5 账号 BCrypt) ===
+const demoAccounts = [
+  { role: '👑 超级管理员', username: 'adminLiugl',  password: 'admin123456', desc: '平台所有者' },
+  { role: '🛡️ 管理员',    username: 'admin',       password: 'admin123',    desc: '管理后台' },
+  { role: '🧪 沙箱测试',  username: 'admin_user',  password: 'admin123',    desc: '管理员级' },
+  { role: '👤 普通用户',  username: 'test_user',   password: 'admin123',    desc: '受限权限' },
+  { role: '🏢 Demo 租户', username: 'demo_user',   password: 'admin123',    desc: '租户 ID=2' }
+]
 
-/**
- * 填充演示账号 (开发模式快捷登录)
- */
+// === 4. 平台特性 (用于底部展示) ===
+const features = [
+  { icon: DataLine,     color: 'var(--liugl-primary)', title: '17 微服务 · 145+ 单元测试' },
+  { icon: Cpu,          color: 'var(--liugl-accent)',  title: '自研 AI · 0 外部 LLM 依赖' },
+  { icon: Connection,   color: 'var(--liugl-success)', title: '实时流式 · SSE / WebSocket' },
+  { icon: TrendCharts,  color: 'var(--liugl-warning)', title: 'OpenTelemetry · 全链路追踪' }
+]
+
+// === 5. 行为 ===
 function fillAccount(u, p) {
   form.value.username = u
   form.value.password = p
   ElMessage.info('已填入演示账号, 点击登录')
 }
 
-/**
- * 忘记密码处理 (弹提示)
- */
 function onForgot() {
   ElMessage.warning('请联系管理员重置密码')
 }
 
-/**
- * 提交登录 (POST /api/v1/auth/login)
- */
 async function onSubmit() {
   if (!formRef.value) return
   await formRef.value.validate(async (valid) => {
@@ -181,108 +231,130 @@ async function onSubmit() {
   })
 }
 
-/**
- * 微信扫码登录回调
- */
-function onWechatLogin(profile) {
-  ElMessage.success('微信登录成功')
-  router.push('/admin/dashboard')
-}
+onMounted(() => {
+  const saved = localStorage.getItem('minimax_remember_user')
+  if (saved) form.value.username = saved
+})
 </script>
 
-<style scoped>
-.login-page {
-  display: flex;
+<style lang="scss" scoped>
+/* V3.5.80 标准化样式 - 全 var() 引用, 5 段结构对应 5 个 section class */
+.page-login {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
   min-height: 100vh;
-  background: #f5f7fa;
-  position: relative;
+  background: var(--liugl-bg);
 }
-.login-bg {
-  position: fixed; inset: 0; z-index: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-  opacity: 0.95;
-}
-.login-feature-panel {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  position: relative;
-  z-index: 1;
-  color: white;
-}
-.feature-content { max-width: 480px; }
-.gradient-text {
-  background: linear-gradient(135deg, #fff 0%, #fbbf24 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-size: 48px;
-  font-weight: 800;
-  margin: 0 0 8px;
-}
-.feature-tagline { font-size: 18px; opacity: 0.9; margin: 0 0 32px; }
-.feature-list { list-style: none; padding: 0; margin: 0 0 32px; line-height: 2.2; font-size: 15px; }
-.feature-list b { color: #fbbf24; }
-.feature-stats {
-  display: flex;
-  gap: 32px;
-  padding: 24px 0;
-  border-top: 1px solid rgba(255,255,255,0.2);
-  border-bottom: 1px solid rgba(255,255,255,0.2);
-}
-.feature-stats > div {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.feature-stats b { font-size: 32px; font-weight: 700; color: #fbbf24; }
-.feature-stats span { font-size: 12px; opacity: 0.85; margin-top: 4px; }
 
-.login-box {
-  width: 460px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-  padding: 40px;
-  margin: auto;
-  position: relative;
-  z-index: 1;
-}
-.login-header { text-align: center; margin-bottom: 24px; }
-.login-tabs :deep(.el-tabs__item) { font-size: 14px; }
-.login-extras {
+.page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  font-size: 13px;
-}
-.forgot-link { color: #409EFF; cursor: pointer; }
-.forgot-link:hover { text-decoration: underline; }
-.divider-text { font-size: 12px; color: #909399; }
-.quick-accounts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
-}
-.quick-tag { cursor: pointer; }
-.quick-tag:hover { transform: scale(1.05); }
-.wechat-tab { text-align: center; padding: 20px 0; }
-.wechat-tip { color: #909399; font-size: 13px; }
-.login-tips { margin-top: 16px; }
-.login-tips code {
-  background: #f0f0f0;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 12px;
-  color: #d63384;
+  padding: 16px 0 32px;
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .brand-logo {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--liugl-radius);
+    }
+    .brand-title {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+    }
+    .brand-tagline {
+      margin: 4px 0 0 0;
+      font-size: 12px;
+      color: var(--liugl-text-secondary);
+    }
+  }
 }
 
-@media (max-width: 768px) {
-  .login-feature-panel { display: none; }
-  .login-box { width: 100%; max-width: 460px; margin: 0 auto; }
+.login-tabs {
+  margin-bottom: 16px;
+  :deep(.el-tabs__item) {
+    font-size: 14px;
+    font-weight: 500;
+  }
+}
+
+.form-card,
+.wechat-card,
+.demos-card {
+  margin-bottom: 16px;
+  border-radius: var(--liugl-radius-lg);
+}
+
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.submit-btn {
+  width: 100%;
+  height: 44px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: var(--liugl-radius);
+  margin-top: 8px;
+}
+
+.demo-card {
+  cursor: pointer;
+  margin-bottom: 8px;
+  text-align: center;
+  transition: transform var(--liugl-transition-fast);
+  &:hover { transform: translateY(-2px); }
+
+  .demo-role {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--liugl-primary);
+    margin-bottom: 4px;
+  }
+  .demo-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--liugl-text);
+    font-family: var(--liugl-font-mono);
+  }
+  .demo-desc {
+    font-size: 11px;
+    color: var(--liugl-text-secondary);
+    margin-top: 2px;
+  }
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    background: var(--liugl-bg-elevated);
+    border: 1px solid var(--liugl-border);
+    border-radius: var(--liugl-radius);
+    font-size: 12px;
+    color: var(--liugl-text);
+  }
+}
+
+.footer-text {
+  text-align: center;
+  font-size: 11px;
+  color: var(--liugl-text-secondary);
+  margin: 16px 0 0 0;
 }
 </style>

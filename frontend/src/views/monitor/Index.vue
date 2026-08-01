@@ -19,344 +19,127 @@
   @description 入口/列表
 -->
 <template>
-  <div class="page-index monitor-container">
-    <div class="mon-header">
-      <h1>📊 系统监控 <span class="badge">V5.6</span></h1>
-      <p class="sub">实时指标 + JVM + DB + 磁盘 + 告警 · 自动刷新 {{ refreshSec }}s</p>
-      <el-switch v-model="autoRefresh" active-text="自动" inactive-text="手动" @change="toggleAuto" />
-    </div>
+  <div class="page-monitor">
+    <!-- 1. page-header: 标题 + 副标题 + 操作 -->
+    <header class="page-header">
+      <div>
+        <h2 class="page-title">📊 系统监控</h2>
+        <p class="page-subtitle">实时指标 + JVM + DB + 磁盘 + 告警 · 自动刷新 {{ refreshSec }}s</p>
+      </div>
+      <el-button-group>
+        <el-switch v-model="autoRefresh" active-text="自动" inactive-text="手动" @change="toggleAuto" />
+        <el-button type="primary" :icon="Refresh" @click="loadAll">刷新</el-button>
+      </el-button-group>
+    </header>
 
-    <!-- 5 个健康卡片 -->
-    <el-row :gutter="16" class="row">
-      <el-col v-for="(h, key) in healths" :key="key" :span="4" :xs="12" :sm="8" :md="4">
-        <el-card :class="['health-card', h.status === 'UP' ? 'up' : 'down']">
-          <div class="hc-top">
-            <el-icon :size="22" :color="h.status === 'UP' ? '#67c23a' : '#f56c6c'">
-              <component :is="h.status === 'UP' ? CircleCheck : CircleClose" />
-            </el-icon>
-            <strong>{{ key }}</strong>
-          </div>
-          <div class="hc-status">{{ h.status || '...' }}</div>
-          <div class="hc-detail" v-if="h.detail">
-            <div v-for="(v, k) in flatten(h.detail)" :key="k">
-              <span class="k">{{ k }}:</span>
-              <span class="v">{{ v }}</span>
+    <!-- 2. section: 4 健康卡片 -->
+    <section class="section">
+      <h3 class="section-title">服务健康</h3>
+      <el-row :gutter="16">
+        <el-col v-for="(h, key) in healths" :key="key" :xs="12" :sm="6">
+          <el-card :class="['health-card', h.status === 'UP' ? 'up' : 'down']" shadow="hover">
+            <div class="hc-top">
+              <el-icon :size="20" :color="h.status === 'UP' ? 'var(--liugl-success)' : 'var(--liugl-danger)'">
+                <component :is="h.status === 'UP' ? CircleCheck : CircleClose" />
+              </el-icon>
+              <strong>{{ key }}</strong>
             </div>
-          </div>
-          <div class="hc-detail" v-else>
-            <div class="muted">点击 "刷新" 加载</div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- 实时业务指标 -->
-    <el-row :gutter="16" class="row">
-      <el-col :span="24">
-        <el-card>
-          <template #header>
-            <span>📈 实时业务指标</span>
-            <el-button-group style="margin-left:12px">
-              <el-button size="small" @click="loadMetrics">刷新</el-button>
-            </el-button-group>
-          </template>
-          <div class="metric-grid">
-            <div class="metric-cell" v-for="(v, k) in metrics" :key="k">
-              <div class="metric-label">{{ metricLabel(k) }}</div>
-              <div class="metric-value" :class="metricClass(k)">{{ formatNum(v) }}</div>
+            <div class="hc-status">{{ h.status || '...' }}</div>
+            <div class="hc-detail" v-if="h.detail">
+              <div v-for="(v, k) in flatten(h.detail).slice(0, 4)" :key="k" class="detail-row">
+                <span class="k">{{ k }}:</span>
+                <span class="v">{{ v }}</span>
+              </div>
             </div>
+            <div class="hc-detail muted" v-else>点击刷新加载</div>
+          </el-card>
+        </el-col>
+      </el-row>
+    </section>
+
+    <!-- 3. section: 实时业务指标 (KPI 网格) -->
+    <section class="section">
+      <h3 class="section-title">实时业务指标</h3>
+      <el-card shadow="hover">
+        <div class="metric-grid">
+          <div class="metric-cell" v-for="(v, k) in metrics" :key="k">
+            <div class="metric-label">{{ metricLabel(k) }}</div>
+            <div class="metric-value" :class="metricClass(k)">{{ formatNum(v) }}</div>
           </div>
-        </el-card>
-      </el-col>
-    </el-row>
+        </div>
+      </el-card>
+    </section>
 
-    <el-row :gutter="16" class="row">
-      <!-- JVM -->
-      <el-col :span="12">
-        <el-card>
-          <template #header><span>☕ JVM 内存</span></template>
-          <div v-if="jvmInfo">
-            <el-progress
-              :percentage="jvmInfo.usedPercent || 0"
-              :status="jvmInfo.usedPercent > 80 ? 'exception' : 'success'"
-              :stroke-width="20"
-              :format="(p: number) => `${p}% (${jvmInfo.usedMb}MB / ${jvmInfo.totalMb}MB)`"
-            />
-            <div class="info-grid">
-              <div><span class="k">Max:</span> <span>{{ jvmInfo.maxMb }} MB</span></div>
-              <div><span class="k">Init:</span> <span>{{ jvmInfo.initMb }} MB</span></div>
-              <div><span class="k">GC:</span> <span>{{ jvmInfo.gcCount || '-' }}</span></div>
-              <div><span class="k">Threads:</span> <span>{{ jvmInfo.threadCount || '-' }}</span></div>
-              <div><span class="k">UP:</span> <span>{{ jvmInfo.uptime || '-' }}</span></div>
-              <div><span class="k">Java:</span> <span>{{ jvmInfo.javaVersion || '-' }}</span></div>
+    <!-- 4. section: JVM / 磁盘 详情 -->
+    <section class="section">
+      <el-row :gutter="16">
+        <el-col :xs="24" :md="12">
+          <el-card shadow="hover">
+            <template #header>
+              <div class="card-header">
+                <el-icon><Cpu /></el-icon>
+                <span>☕ JVM 内存</span>
+              </div>
+            </template>
+            <div v-if="jvmInfo">
+              <el-progress :percentage="jvmInfo.usedPercent || 0" :stroke-width="14" :color="jvmBarColor" />
+              <div class="jvm-stats">
+                <div><span class="k">Heap Used</span><span class="v">{{ jvmInfo.heapUsed || '-' }}</span></div>
+                <div><span class="k">Heap Max</span><span class="v">{{ jvmInfo.heapMax || '-' }}</span></div>
+                <div><span class="k">Threads</span><span class="v">{{ jvmInfo.threads || '-' }}</span></div>
+                <div><span class="k">GC</span><span class="v">{{ jvmInfo.gc || '-' }}</span></div>
+              </div>
             </div>
-          </div>
-          <el-empty v-else description="加载中..." />
-        </el-card>
-      </el-col>
-
-      <!-- 数据库 -->
-      <el-col :span="12">
-        <el-card>
-          <template #header><span>🗄️ 数据库连接池 (HikariCP)</span></template>
-          <div v-if="dbInfo">
-            <el-progress
-              :percentage="dbInfo.usagePercent || 0"
-              :status="dbInfo.usagePercent > 80 ? 'exception' : 'success'"
-              :stroke-width="20"
-              :format="(p: number) => `${dbInfo.active}/${dbInfo.total}`"
-            />
-            <div class="info-grid">
-              <div><span class="k">Active:</span> <span>{{ dbInfo.active }}</span></div>
-              <div><span class="k">Idle:</span> <span>{{ dbInfo.idle }}</span></div>
-              <div><span class="k">Total:</span> <span>{{ dbInfo.total }}</span></div>
-              <div><span class="k">Wait:</span> <span>{{ dbInfo.waiting }}</span></div>
-              <div><span class="k">Max:</span> <span>{{ dbInfo.max }}</span></div>
-              <div><span class="k">Min Idle:</span> <span>{{ dbInfo.minIdle }}</span></div>
-              <div><span class="k">URL:</span> <span class="url">{{ dbInfo.urlShort || dbInfo.url }}</span></div>
+            <el-skeleton v-else :rows="4" animated />
+          </el-card>
+        </el-col>
+        <el-col :xs="24" :md="12">
+          <el-card shadow="hover">
+            <template #header>
+              <div class="card-header">
+                <el-icon><Coin /></el-icon>
+                <span>💾 磁盘 + DB</span>
+              </div>
+            </template>
+            <div v-if="diskInfo">
+              <el-progress :percentage="diskInfo.usedPercent || 0" :stroke-width="14" :color="diskBarColor" />
+              <div class="jvm-stats">
+                <div><span class="k">Used</span><span class="v">{{ diskInfo.used || '-' }}</span></div>
+                <div><span class="k">Total</span><span class="v">{{ diskInfo.total || '-' }}</span></div>
+                <div v-if="dbInfo"><span class="k">DB Pool</span><span class="v">{{ dbInfo.active || 0 }}/{{ dbInfo.max || 0 }}</span></div>
+              </div>
             </div>
-          </div>
-          <el-empty v-else description="加载中..." />
-        </el-card>
-      </el-col>
-    </el-row>
+            <el-skeleton v-else :rows="4" animated />
+          </el-card>
+        </el-col>
+      </el-row>
+    </section>
 
-    <el-row :gutter="16" class="row">
-      <!-- 磁盘 -->
-      <el-col :span="12">
-        <el-card>
-          <template #header><span>💾 磁盘使用</span></template>
-          <div v-if="diskInfo">
-            <el-progress
-              :percentage="diskInfo.usagePercent || 0"
-              :status="diskInfo.usagePercent > 85 ? 'exception' : 'success'"
-              :stroke-width="20"
-              :format="(p: number) => `${diskInfo.usedGb}GB / ${diskInfo.totalGb}GB`"
-            />
-            <div class="info-grid">
-              <div><span class="k">Free:</span> <span>{{ diskInfo.freeGb }} GB</span></div>
-              <div><span class="k">Path:</span> <span class="url">{{ diskInfo.path }}</span></div>
-            </div>
-          </div>
-          <el-empty v-else description="加载中..." />
-        </el-card>
-      </el-col>
-
-      <!-- 告警 -->
-      <el-col :span="12">
-        <el-card>
-          <template #header>
-            <span>🚨 告警 (Firing: {{ alerts.length }})</span>
-          </template>
-          <el-empty v-if="!alerts.length" description="无活跃告警 🎉" />
-          <el-scrollbar v-else style="height:200px">
-            <div v-for="a in alerts" :key="a.id" class="alert-item">
-              <el-tag :type="a.severity === 'critical' ? 'danger' : 'warning'" size="small">
-                {{ a.severity || 'warn' }}
-              </el-tag>
-              <strong>{{ a.ruleName || a.name || '未命名' }}</strong>
-              <div class="alert-msg">{{ a.message }}</div>
-              <div class="alert-time">{{ formatTime(a.firedAt) }}</div>
-            </div>
-          </el-scrollbar>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- V5.9: 告警规则管理 -->
-    <el-row :gutter="16" class="row" v-if="canEditRules">
-      <el-col :span="24">
-        <el-card>
-          <template #header>
-            <span>⚙️ 告警规则 (V5.9)</span>
-            <el-button-group style="margin-left:12px">
-              <el-button size="small" @click="loadRules">刷新</el-button>
-              <el-button size="small" type="primary" @click="openRuleDialog()">+ 新增规则</el-button>
-            </el-button-group>
-          </template>
-          <el-table :data="rules" stripe size="small" empty-text="暂无规则">
-            <el-table-column prop="id" label="ID" width="60" />
-            <el-table-column prop="name" label="名称" min-width="120" />
-            <el-table-column prop="service" label="服务" width="100" />
-            <el-table-column prop="metricName" label="指标" min-width="100" />
-            <el-table-column label="阈值" width="120">
-              <template #default="s">
-                <code>{{ s.row.operator }} {{ s.row.threshold }}</code>
-              </template>
-            </el-table-column>
-            <el-table-column prop="severity" label="级别" width="90">
-              <template #default="s">
-                <el-tag :type="severityType(s.row.severity)" size="small">{{ s.row.severity }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="cooldownMinutes" label="冷却(分)" width="90" />
-            <el-table-column label="状态" width="80">
-              <template #default="s">
-                <el-tag :type="s.row.enabled ? 'success' : 'info'" size="small">
-                  {{ s.row.enabled ? '启用' : '禁用' }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="160">
-              <template #default="s">
-                <el-button size="small" text type="primary" @click="openRuleDialog(s.row)">编辑</el-button>
-                <el-button size="small" text type="danger" @click="removeRule(s.row)">删除</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- V5.9: 规则编辑弹窗 -->
-    <el-dialog v-model="ruleDialog" :title="ruleForm.id ? '编辑规则' : '新增规则'" width="500px">
-      <el-form :model="ruleForm" label-width="100px" size="default">
-        <el-form-item label="名称"><el-input v-model="ruleForm.name" placeholder="e.g. 高错误率告警" /></el-form-item>
-        <el-form-item label="服务">
-          <el-select v-model="ruleForm.service" placeholder="选择服务" style="width:100%">
-            <el-option v-for="s in serviceOptions" :key="s" :label="s" :value="s" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="指标">
-          <el-input v-model="ruleForm.metricName" placeholder="e.g. http_5xx_total / jvm.memory.used" />
-        </el-form-item>
-        <el-form-item label="运算符">
-          <el-select v-model="ruleForm.operator" style="width:100%">
-            <el-option label="> 大于" value=">" />
-            <el-option label=">= 大于等于" value=">=" />
-            <el-option label="< 小于" value="<" />
-            <el-option label="<= 小于等于" value="<=" />
-            <el-option label="== 等于" value="==" />
-            <el-option label="!= 不等于" value="!=" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="阈值"><el-input-number v-model="ruleForm.threshold" :min="0" :step="0.1" style="width:100%" /></el-form-item>
-        <el-form-item label="级别">
-          <el-select v-model="ruleForm.severity" style="width:100%">
-            <el-option label="critical 严重" value="critical" />
-            <el-option label="warning 警告" value="warning" />
-            <el-option label="info 提示" value="info" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="冷却(分)"><el-input-number v-model="ruleForm.cooldownMinutes" :min="1" :max="1440" style="width:100%" /></el-form-item>
-        <el-form-item label="通知渠道">
-          <el-input v-model="ruleForm.notifyChannel" placeholder="e.g. email,websocket,dingtalk (逗号分隔)" />
-        </el-form-item>
-        <el-form-item label="启用">
-          <el-switch v-model="ruleForm.enabled" :active-value="1" :inactive-value="0" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="ruleDialog = false">取消</el-button>
-        <el-button type="primary" :loading="ruleSaving" @click="saveRule">保存</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- V5.33 Day 24: 告警通知渠道管理 -->
-    <el-row :gutter="16" class="row">
-      <el-col :span="24">
-        <el-card>
-          <template #header>
-            <span>📬 告警通知渠道 (V5.33)</span>
-            <el-button-group style="margin-left:12px">
-              <el-button size="small" @click="loadChannels">刷新</el-button>
-              <el-button size="small" type="primary" @click="openChannelDialog()">+ 新增渠道</el-button>
-            </el-button-group>
-          </template>
-          <el-table :data="channels" stripe size="small" empty-text="暂无告警渠道">
-            <el-table-column prop="id" label="ID" width="60" />
-            <el-table-column prop="name" label="名称" min-width="140" />
-            <el-table-column prop="channelType" label="类型" width="100">
-              <template #default="s">
-                <el-tag :type="channelTypeTag(s.row.channelType)" size="small">{{ s.row.channelType }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="配置" min-width="200">
-              <template #default="s">
-                <code style="font-size:11px; color:#666; word-break:break-all;">{{ channelConfigPreview(s.row.config) }}</code>
-              </template>
-            </el-table-column>
-            <el-table-column prop="priority" label="优先级" width="80" align="center" />
-            <el-table-column label="状态" width="80">
-              <template #default="s">
-                <el-tag :type="s.row.enabled ? 'success' : 'info'" size="small">
-                  {{ s.row.enabled ? '启用' : '禁用' }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="180">
-              <template #default="s">
-                <el-button size="small" text type="primary" @click="openChannelDialog(s.row)">编辑</el-button>
-                <el-popconfirm :title="`确认删除 [${s.row.name}]?`" @confirm="removeChannel(s.row)">
-                  <template #reference>
-                    <el-button size="small" text type="danger">删除</el-button>
-                  </template>
-                </el-popconfirm>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- 告警渠道编辑弹窗 -->
-    <el-dialog v-model="channelDialog" :title="channelForm.id ? '编辑渠道' : '新增渠道'" width="520px">
-      <el-form :model="channelForm" label-width="100px" size="default">
-        <el-form-item label="名称" required>
-          <el-input v-model="channelForm.name" placeholder="e.g. 运维告警组" clearable />
-        </el-form-item>
-        <el-form-item label="类型" required>
-          <el-select v-model="channelForm.channelType" placeholder="选择渠道类型" style="width:100%">
-            <el-option label="📧 邮件 (EMAIL)" value="EMAIL" />
-            <el-option label="💬 钉钉 (DINGTALK)" value="DINGTALK" />
-            <el-option label="🌐 Webhook" value="WEBHOOK" />
-          </el-select>
-        </el-form-item>
-        <!-- EMAIL 配置 -->
-        <template v-if="channelForm.channelType === 'EMAIL'">
-          <el-form-item label="收件人">
-            <el-input v-model="channelForm.configEmail" placeholder="oncall@company.com" clearable />
-            <div style="font-size:11px; color:#999; margin-top:4px">告警触发后发送邮件到此地址</div>
-          </el-form-item>
-        </template>
-        <!-- DINGTALK 配置 -->
-        <template v-else-if="channelForm.channelType === 'DINGTALK'">
-          <el-form-item label="WebHook">
-            <el-input v-model="channelForm.configWebhook" placeholder="https://oapi.dingtalk.com/robot/send?access_token=xxx" clearable />
-          </el-form-item>
-          <el-form-item label="签名密钥">
-            <el-input v-model="channelForm.configSecret" placeholder="SEC... (可选)" clearable />
-            <div style="font-size:11px; color:#999; margin-top:4px">HMAC-SHA256 签名密钥（钉钉机器人安全设置）</div>
-          </el-form-item>
-        </template>
-        <!-- WEBHOOK 配置 -->
-        <template v-else-if="channelForm.channelType === 'WEBHOOK'">
-          <el-form-item label="URL">
-            <el-input v-model="channelForm.configWebhook" placeholder="https://your-webhook-url/notify" clearable />
-          </el-form-item>
-          <el-form-item label="Method">
-            <el-select v-model="channelForm.configMethod" style="width:100%">
-              <el-option label="POST (默认)" value="POST" />
-              <el-option label="PUT" value="PUT" />
-            </el-select>
-          </el-form-item>
-        </template>
-        <el-form-item label="优先级">
-          <el-input-number v-model="channelForm.priority" :min="1" :max="100" style="width:100%" />
-          <div style="font-size:11px; color:#999; margin-top:4px">数字越小优先级越高</div>
-        </el-form-item>
-        <el-form-item label="启用">
-          <el-switch v-model="channelForm.enabled" :active-value="1" :inactive-value="0" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="channelDialog = false">取消</el-button>
-        <el-button type="primary" :loading="channelSaving" @click="saveChannel">保存</el-button>
-      </template>
-    </el-dialog>
+    <!-- 5. section: 告警 firing 列表 -->
+    <section v-if="alerts.length" class="section">
+      <h3 class="section-title">🚨 当前告警</h3>
+      <el-card shadow="hover">
+        <el-table :data="alerts" stripe>
+          <el-table-column prop="time" label="时间" width="180">
+            <template #default="{ row }">{{ formatTime(row.firedAt || row.time) }}</template>
+          </el-table-column>
+          <el-table-column prop="name" label="告警名" />
+          <el-table-column prop="severity" label="级别" width="100">
+            <template #default="{ row }">
+              <el-tag :type="row.severity === 'critical' ? 'danger' : 'warning'" size="small">{{ row.severity || 'warning' }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="message" label="内容" />
+          <el-table-column label="操作" width="100">
+            <template #default="{ row }">
+              <el-button size="small" type="primary" @click="ackAlert(row)">确认</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-card>
+    </section>
   </div>
 </template>
-
 <script setup lang="ts">
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted, onUnmounted } from 'vue'

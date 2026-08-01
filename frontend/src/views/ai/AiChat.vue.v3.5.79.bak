@@ -8,91 +8,94 @@
   @description AI 聊天对话 (AiChat)
 -->
 <template>
-  <div class="page-ai-chat">
-    <!-- 1. page-header: 标题 + 副标题 -->
-    <header class="page-header">
-      <div>
-        <h2 class="page-title">🤖 AI 智能助手</h2>
-        <p class="page-subtitle">自研 AI 引擎 · 0 外部依赖 · 13 种意图识别</p>
-      </div>
-      <el-button-group>
-        <el-tag size="large" :type="lastResult ? 'success' : 'info'">
-          {{ lastResult ? `意图: ${lastResult.intent}` : '等待输入' }}
-        </el-tag>
-        <el-button :icon="Plus" @click="newSession" type="primary">新建会话</el-button>
-      </el-button-group>
-    </header>
-
+  <PageContainer class="page-ai-chat" title="AI 智能助手" subtitle="自研 AI 引擎 · 0 外部依赖 · 13 种意图识别" icon="🤖">
     <el-row :gutter="16">
-      <!-- 2. section: 左侧会话列表 -->
-      <el-col :xs="24" :md="6">
-        <section class="section side-section">
-          <h3 class="section-title">💬 会话</h3>
-          <el-card shadow="hover" class="side-card">
-            <StateBlock v-if="loadingSessions" type="loading" message="加载中..." />
-            <div v-else class="session-list">
-              <div
-                v-for="s in sessions"
-                :key="s.id"
-                :class="['session-item', { active: currentSessionId === s.id }]"
-                @click="loadSession(s)"
-              >
-                <div class="session-title">{{ s.title || '新会话' }}</div>
-                <div class="session-time">{{ formatTime(s.updatedAt) }}</div>
-              </div>
-              <el-empty v-if="!sessions.length" description="暂无会话" :image-size="60" />
+      <!-- 左侧: 历史会话 -->
+      <el-col :span="6">
+        <el-card shadow="never" class="chat-side">
+          <template #header>
+            <div style="display: flex; justify-content: space-between; align-items: center">
+              <span>💬 会话</span>
+              <el-button size="small" type="primary" @click="newSession">+ 新建</el-button>
             </div>
-          </el-card>
-        </section>
+          </template>
+          <StateBlock v-if="loadingSessions" type="loading" message="加载中..." />
+          <div v-else class="session-list">
+            <div
+              v-for="s in sessions"
+              :key="s.id"
+              :class="['session-item', { active: currentSessionId === s.id }]"
+              @click="loadSession(s)"
+            >
+              <div class="session-title">{{ s.title || '新会话' }}</div>
+              <div class="session-time">{{ formatTime(s.updatedAt) }}</div>
+            </div>
+            <el-empty v-if="!sessions.length" description="暂无会话" :image-size="60" />
+          </div>
+        </el-card>
       </el-col>
 
-      <!-- 3. section: 主对话区 -->
-      <el-col :xs="24" :md="18">
-        <section class="section chat-section">
-          <h3 class="section-title">🚀 智能路由 (Ctrl+Enter 发送)</h3>
-          <el-card shadow="hover" class="chat-card">
-            <div class="quick-actions">
-              <el-button v-for="qa in quickActions" :key="qa.text" size="small" @click="sendQuick(qa.text)">
-                {{ qa.label }}
-              </el-button>
+      <!-- 主区: 对话 -->
+      <el-col :span="18">
+        <el-card shadow="never">
+          <template #header>
+            <div class="chat-header">
+              <span>🚀 智能路由 (Ctrl+Enter 发送)</span>
+              <el-tag size="small" :type="lastResult ? 'success' : 'info'">
+                {{ lastResult ? `意图: ${lastResult.intent}` : '等待输入' }}
+              </el-tag>
             </div>
+          </template>
 
-            <div class="messages" ref="messagesRef">
-              <div v-if="!messages.length" class="empty-chat">
-                <el-empty description="开始对话" :image-size="80" />
-              </div>
-              <ChatBubble
-                v-for="m in messages"
-                :key="m.id"
-                :message="m"
-                :is-user="m.role === 'user'"
-              />
-              <div v-if="loading" class="typing">
-                <el-icon class="is-loading"><Loading /></el-icon>
-                AI 思考中...
-              </div>
-            </div>
+          <div class="quick-actions">
+            <span class="quick-label">快捷:</span>
+            <el-tag v-for="ex in examples" :key="ex.text" class="quick-tag" effect="plain" @click="fillExample(ex.text)">
+              {{ ex.icon }} {{ ex.label }}
+            </el-tag>
+          </div>
 
-            <div class="input-bar">
-              <el-input
-                v-model="input"
-                type="textarea"
-                :rows="3"
-                placeholder="输入消息... (Ctrl+Enter 发送)"
-                @keydown.ctrl.enter="send"
-                :disabled="loading"
-              />
-              <div class="input-actions">
-                <el-button @click="clear" :disabled="loading">清空</el-button>
-                <el-button type="primary" :loading="loading" @click="send">发送</el-button>
+          <div class="messages" ref="messagesRef">
+            <div v-for="(m, i) in messages" :key="i" :class="['message', `msg-${m.role}`]">
+              <div class="message-avatar">
+                {{ m.role === 'user' ? '👤' : '🤖' }}
+              </div>
+              <div class="message-content">
+                <div class="message-bubble" v-html="formatMsg(m.content)"></div>
+                <div v-if="m.intent" class="message-meta">
+                  <el-tag size="small" :type="m.intent === 'UNKNOWN' ? 'warning' : 'success'">
+                    {{ m.intent }}
+                  </el-tag>
+                  <span v-if="m.handler" class="meta-handler">{{ m.handler }}</span>
+                </div>
+                <div v-if="m.data" class="message-extra">
+                  <pre>{{ JSON.stringify(m.data, null, 2) }}</pre>
+                </div>
               </div>
             </div>
-          </el-card>
-        </section>
+            <StateBlock v-if="loading" type="loading" message="AI 思考中..." />
+            <el-empty v-if="!messages.length && !loading" description="开始你的第一次对话吧 🚀" :image-size="80" />
+          </div>
+
+          <el-input
+            v-model="userInput"
+            type="textarea"
+            :rows="3"
+            placeholder="试试: 画一个统计 user 表的柱状图 / 生成 8 小节 C 大调音乐 / 转人工 / 生成 Spring Boot 项目"
+            @keydown.ctrl.enter="handleSend"
+            :disabled="loading"
+          />
+          <div class="actions">
+            <el-button :disabled="!messages.length" @click="clearAll">🗑 清空</el-button>
+            <el-button type="primary" :loading="loading" @click="handleSend" size="large">
+              🚀 发送
+            </el-button>
+          </div>
+        </el-card>
       </el-col>
     </el-row>
-  </div>
+  </PageContainer>
 </template>
+
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, nextTick } from 'vue'

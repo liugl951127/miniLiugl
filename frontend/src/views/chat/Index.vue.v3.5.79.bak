@@ -19,115 +19,164 @@
   @description 入口/列表
 -->
 <template>
-  <div class="page-chat">
-    <!-- 1. page-header: 标题 + 模型选择 + 操作 -->
-    <header class="page-header">
-      <div class="brand-info">
-        <el-icon :size="20"><ChatDotRound /></el-icon>
-        <div>
-          <h2 class="page-title">AI 对话</h2>
-          <p class="page-subtitle">{{ modelLabel }} · {{ sessionId || '新会话' }}</p>
+  <div class="page-index chat-page">
+    <!-- 侧边栏 -->
+    <aside class="chat-side">
+      <el-button type="primary" class="new-chat-btn" @click="newSession" :icon="EditPen">
+        新建对话
+      </el-button>
+      <el-input v-model="searchKw" placeholder="搜索会话..." size="small" clearable class="search">
+        <template #prefix><el-icon><Search /></el-icon></template>
+      </el-input>
+      <div class="session-list">
+        <div
+          v-for="s in filteredSessions"
+          :key="s.id"
+          :class="['session-item', { active: s.id === currentSessionId }]"
+          @click="switchSession(s.id)"
+        >
+          <el-icon class="session-icon"><ChatDotRound /></el-icon>
+          <div class="session-info">
+            <div class="session-title">{{ s.title || '新对话' }}</div>
+            <div class="session-meta">{{ s.lastMessageAt ? formatTime(s.lastMessageAt) : '刚刚' }}</div>
+          </div>
+          <el-dropdown trigger="click" @click.stop>
+            <el-icon class="session-more"><MoreFilled /></el-icon>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item @click="renameSession(s)">重命名</el-dropdown-item>
+                <el-dropdown-item divided @click="deleteSession(s.id)">
+                  <span style="color: #ef4444">删除</span>
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
+        <el-empty v-if="filteredSessions.length === 0" description="暂无会话" :image-size="60" />
+      </div>
+    </aside>
+
+    <!-- 主区 -->
+    <main class="chat-main">
+      <!-- 空状态 -->
+      <div v-if="messages.length === 0" class="chat-empty">
+        <div class="empty-logo">🤖</div>
+        <h2>Liugl-AI 智能助手</h2>
+        <p>支持对话 · 记忆 · 知识库 · 工具调用 · 图片理解</p>
+        <div class="quick-prompts">
+          <div class="quick-prompt" @click="sendQuick('你好, 请介绍一下你自己')">
+            <el-icon><Promotion /></el-icon> 你好, 请介绍一下你自己
+          </div>
+          <div class="quick-prompt" @click="sendQuick('帮我算一下 (123+456)*789 等于多少')">
+            <el-icon><Cpu /></el-icon> 计算 (123+456)*789
+          </div>
+          <div class="quick-prompt" @click="sendQuick('上海现在几点?')">
+            <el-icon><Clock /></el-icon> 上海现在几点?
+          </div>
+          <div class="quick-prompt" @click="sendQuick('选一个 1-100 的随机数')">
+            <el-icon><MagicStick /></el-icon> 随机 1-100
+          </div>
         </div>
       </div>
-      <el-button-group>
-        <el-select v-model="modelKey" size="small" class="model-select" @change="onModelChange">
-          <el-option v-for="m in models" :key="m.key" :label="m.label" :value="m.key" />
-        </el-select>
-        <el-button :icon="Plus" @click="newChat" plain>新对话</el-button>
-        <el-button :icon="Folder" @click="drawerVisible = true" plain>历史</el-button>
-        <el-button :icon="Delete" @click="clearAll" plain>清空</el-button>
-      </el-button-group>
-    </header>
 
-    <!-- 2. section: 消息区 (流式 + Markdown + 工具调用) -->
-    <section class="section chat-section">
-      <h3 class="section-title">💬 对话</h3>
-      <el-card shadow="hover" class="messages-card">
-        <div class="messages" ref="messagesRef">
-          <div v-if="!messages.length" class="empty-chat">
-            <el-empty description="开始跟 AI 对话" :image-size="100" />
-            <div class="quick-prompts">
-              <el-button v-for="qa in quickPrompts" :key="qa" size="small" @click="input = qa; send()">
-                {{ qa }}
+      <!-- 消息列表 -->
+      <div v-else ref="messagesRef" class="chat-messages">
+        <ChatMessage
+          v-for="(m, i) in messages"
+          :key="i"
+          :role="m.role"
+          :content="m.content"
+          :images="m.images"
+          :tool-calls="m.toolCalls"
+          :sources="m.sources"
+          :streaming="m.streaming"
+          :status="m.status"
+          :created-at="m.createdAt"
+          @retry="retryMessage(i)"
+        />
+      </div>
+
+      <!-- 输入区 -->
+      <div class="chat-input-wrap">
+        <!-- 拖拽提示 -->
+        <transition name="fade">
+          <div v-if="dragging" class="drop-overlay">
+            <div class="drop-hint">
+              <el-icon :size="48"><UploadFilled /></el-icon>
+              <p>松开上传图片</p>
+            </div>
+          </div>
+        </transition>
+
+        <!-- 附件预览 -->
+        <div v-if="pendingImages.length" class="image-preview-row">
+          <div v-for="(img, i) in pendingImages" :key="i" class="image-preview">
+            <img :src="img.url" alt="preview" />
+            <el-icon class="image-remove" @click="removeImage(i)"><CircleCloseFilled /></el-icon>
+          </div>
+        </div>
+
+        <div
+          class="input-box"
+          :class="{ 'is-drag': dragging }"
+          @dragover.prevent="dragging = true"
+          @dragleave.prevent="dragging = false"
+          @drop.prevent="onDrop"
+        >
+          <textarea
+            v-model="inputText"
+            class="input-textarea"
+            placeholder="输入消息, Enter 发送, Shift+Enter 换行 (可拖拽图片到此处)"
+            rows="3"
+            @keydown="onKey"
+          />
+          <div class="input-toolbar">
+            <div class="toolbar-left">
+              <el-upload
+                :show-file-list="false"
+                :auto-upload="false"
+                accept="image/*"
+                :on-change="onFileChange"
+              >
+                <el-button text size="small">
+                  <el-icon><Picture /></el-icon>
+                  图片
+                </el-button>
+              </el-upload>
+              <el-select v-model="selectedModel" placeholder="选择模型" size="small" style="width: 180px; margin-left: 8px">
+                <el-option v-for="m in models" :key="m.code" :label="m.displayName" :value="m.code" />
+              </el-select>
+            </div>
+            <div class="toolbar-right">
+              <span v-if="streaming" class="streaming-hint">
+                <el-icon class="is-loading"><Loading /></el-icon>
+                正在生成
+              </span>
+              <el-button v-if="streaming" @click="stopStream" type="warning" size="small">
+                <el-icon><VideoPause /></el-icon>
+                停止
+              </el-button>
+              <el-button
+                v-else
+                type="primary"
+                size="small"
+                :disabled="!canSend"
+                @click="sendMessage"
+              >
+                <el-icon><Promotion /></el-icon>
+                发送
               </el-button>
             </div>
           </div>
-          <ChatBubble
-            v-for="m in messages"
-            :key="m.id"
-            :message="m"
-            :is-user="m.role === 'user'"
-            :is-streaming="m.streaming"
-          />
-          <div v-if="loading" class="typing">
-            <el-icon class="is-loading"><Loading /></el-icon>
-            AI 流式输出中...
-          </div>
         </div>
-      </el-card>
-    </section>
-
-    <!-- 3. section: 工具调用面板 (折叠) -->
-    <section v-if="toolCalls.length" class="section">
-      <el-collapse>
-        <el-collapse-item :title="`🔧 工具调用 (${toolCalls.length})`" name="tools">
-          <el-table :data="toolCalls" size="small" stripe>
-            <el-table-column prop="name" label="工具" width="160" />
-            <el-table-column prop="status" label="状态" width="100">
-              <template #default="{ row }">
-                <el-tag :type="row.status === 'ok' ? 'success' : 'danger'" size="small">{{ row.status }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="duration" label="耗时" width="100" />
-            <el-table-column prop="result" label="结果" />
-          </el-table>
-        </el-collapse-item>
-      </el-collapse>
-    </section>
-
-    <!-- 4. section: 输入区 -->
-    <section class="section input-section">
-      <el-card shadow="hover" class="input-card">
-        <div class="input-toolbar">
-          <el-checkbox v-model="useStream">流式</el-checkbox>
-          <el-checkbox v-model="useTools">工具调用</el-checkbox>
-          <el-checkbox v-model="useRag">RAG</el-checkbox>
+        <div class="input-hint">
+          <span>内容由 AI 生成, 仅供参考</span>
         </div>
-        <el-input
-          v-model="input"
-          type="textarea"
-          :rows="4"
-          placeholder="输入消息... (Enter 发送 / Shift+Enter 换行)"
-          @keydown.enter.exact.prevent="send"
-          :disabled="loading"
-        />
-        <div class="input-actions">
-          <span class="hint">内容由 AI 生成, 仅供参考</span>
-          <el-button :icon="Refresh" @click="regenerate" :disabled="loading || !messages.length">重新生成</el-button>
-          <el-button :icon="loading ? Loading : Promotion" :loading="loading" @click="send" type="primary">
-            {{ loading ? '停止' : '发送' }}
-          </el-button>
-        </div>
-      </el-card>
-    </section>
-
-    <!-- 5. section: 历史会话抽屉 -->
-    <el-drawer v-model="drawerVisible" title="📚 历史会话" direction="rtl" size="320px">
-      <div class="drawer-sessions">
-        <div
-          v-for="s in sessions"
-          :key="s.id"
-          :class="['drawer-session', { active: sessionId === s.id }]"
-          @click="loadSession(s); drawerVisible = false"
-        >
-          <div class="session-title">{{ s.title || '新会话' }}</div>
-          <div class="session-time">{{ s.updatedAt || s.createdAt }}</div>
-        </div>
-        <el-empty v-if="!sessions.length" description="暂无历史会话" />
       </div>
-    </el-drawer>
+    </main>
   </div>
 </template>
+
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
