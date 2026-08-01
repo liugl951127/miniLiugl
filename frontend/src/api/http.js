@@ -13,6 +13,8 @@ import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'
 import router from '@/router'
 import { handleError } from '@/composables/useErrorHandler'
+let last401At = 0  // V3.7.5+ 防止 401 风暴 (多接口同时 401)
+
 
 // V5.8: traceId 全局 (每次请求带同一 traceId, 便于排查)
 let globalTraceId = null
@@ -102,6 +104,12 @@ http.interceptors.response.use(
           // refresh 失败 → 走登出
         }
       }
+      // V3.7.5+ 5s 内只跳一次 (防风暴)
+      const now = Date.now()
+      if (now - last401At < 5000) {
+        return Promise.reject(err)
+      }
+      last401At = now
       ElMessage.error('登录已过期，请重新登录')
       await useUserStore().logout()
       router.push('/login')

@@ -124,7 +124,14 @@
               :closable="false"
               show-icon
               class="error-alert"
-            />
+            >
+              <template #default>
+                <div class="error-actions">
+                  <el-button text size="small" type="primary" :icon="Refresh" @click="retryLogin">重试</el-button>
+                  <el-button v-if="isNetworkError" text size="small" type="warning" @click="enableDemo">切演示模式</el-button>
+                </div>
+              </template>
+            </el-alert>
           </transition>
 
           <!-- 6. 提交按钮 (loading 状态显示骨架) -->
@@ -205,7 +212,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useRoute, useRouter } from 'vue-router'
@@ -243,6 +250,20 @@ const demoMode = ref(isDemoMode())                   // V3.5.93 演示模式
 
 // V3.5.93 切换演示模式
 function onDemoToggle(val) {
+
+// V3.7.5+ 演示账号一键填入
+function fillDemoAccount(roleKey: string) {
+  const account = demoAccounts.find(a => a.roleKey === roleKey)
+  if (!account) return
+  mode.value = 'login'
+  form.username = account.username
+  form.password = account.password
+  form.nickname = ''
+  form.email = ''
+  errorMsg.value = ''
+  toast.success(`已填入 ${account.role}: ${account.username}`)
+}
+
   if (val) {
     localStorage.setItem('minimax_demo_mode', 'true')
     toast.success('🎭 演示模式已启用 - 无后端本地演示')
@@ -317,6 +338,14 @@ function onForgot() {
 }
 
 // === 7. 提交 (核心: loading + 错误处理 + 跳转) ===
+function retryLogin() { errorMsg.value = ''; formRef.value?.clearValidate() }
+const isNetworkError = computed(() => errorMsg.value.includes('网络') || errorMsg.value.includes('服务'))
+function enableDemo() {
+  localStorage.setItem('minimax_demo_mode', 'true')
+  toast.success('🎭 已切换到演示模式 - 一键登录')
+  onSubmit()
+}
+
 async function onSubmit() {
   if (!formRef.value) return
   try {
@@ -748,4 +777,6 @@ onUnmounted(() => {
     margin-bottom: 8px;
   }
 }
+
+.error-actions { display: flex; gap: 8px; margin-top: 8px; padding-left: 24px; }
 </style>
