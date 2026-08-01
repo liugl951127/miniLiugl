@@ -101,9 +101,25 @@ else
 fi
 echo ""
 
+# --- Check 7: menu 路径 / router.push 硬编码 vs router 路径 (V3.5.87+) ---
+echo "--- 7. menu 路径 / router.push 硬编码 vs router 路径 ---"
+# V3.5.86 bug: Login 跳 /admin/dashboard, router 没配 dashboard → 跳 fallback 空白
+# 跑 Python 扫所有 menu / router.push 硬编码, 跟 router 路径对比
+cd "$(dirname "$0")/.."
+MENU_ROUTE=$(python3 scripts/check_menu_routes.py 2>&1)
+MENU_EXIT=$?
+if [ $MENU_EXIT -eq 0 ]; then
+    echo "  ✓ PASS (0 menu 路径缺失)"
+else
+    echo "  ✗ FAIL: menu 路径 router 找不到"
+    echo "$MENU_ROUTE" | tail -15
+    EXIT=1
+fi
+echo ""
+
 echo "═══════════════════════════════════════════════════════════"
 if [ $EXIT -eq 0 ]; then
-    echo "  ✓ ALL PASS (6/6)"
+    echo "  ✓ ALL PASS (7/7)"
 else
     echo "  ✗ FAILED (some checks)"
 fi
