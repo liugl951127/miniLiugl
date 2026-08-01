@@ -863,6 +863,25 @@ const typewriterProgress = ref(0)
 const typewriterTyping = ref(false)
 const typewriterIndex = ref(0)
 const typewriterContent = ref('')
+// V3.7.2+ 打字机真实流式队列
+const typewriterQueue = ref<{ msgId: string, target: HTMLElement, fullText: string, onDone?: () => void }[]>([])
+const typewriterCurrent = ref<any>(null)
+
+function typewriterEnqueue(msgId: string, target: HTMLElement, fullText: string, onDone?: () => void) {
+  typewriterQueue.value.push({ msgId, target, fullText, onDone })
+  if (!typewriterTyping.value) typewriterProcessNext()
+}
+
+function typewriterProcessNext() {
+  if (typewriterPaused.value) return
+  const next = typewriterQueue.value.shift()
+  if (!next) { typewriterTyping.value = false; typewriterProgress.value = 0; return }
+  typewriterCurrent.value = next
+  typewriterType(next.target, next.fullText, next.onDone)
+}
+
+watch(typewriterPaused, (v) => { if (!v) typewriterProcessNext() })
+
 let typewriterTimer = null
 
 watch(typewriterEnabled, (v) => localStorage.setItem('minimax_typewriter', String(v)))

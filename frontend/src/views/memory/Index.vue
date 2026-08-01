@@ -292,14 +292,39 @@ function openEntityDrawer(item: any) {
   entityDrawerVisible.value = true
 }
 
-function handleEntityUpdate(form: any) {
-  toast.info(`${label} 编辑功能开发中...`)
-  entityDrawerVisible.value = false
+async function handleEntityUpdate(form: any) {
+  try {
+    const id = entityDrawerItem.value?.id
+    if (id) {
+      await http.put(`${'/memory'}/${'memory'}s/${id}`, form)
+      toast.success(`已更新: ${form.name || form.title}`)
+    } else {
+      await http.post(`${'/memory'}/${'memory'}s`, form)
+      toast.success(`已新建: ${form.name || form.title}`)
+    }
+    entityDrawerVisible.value = false
+  } catch (e: any) {
+    toast.error(e?.response?.data?.message || e?.message || '更新失败')
+  }
 }
 
-function handleEntityDelete(item: any) {
-  toast.success(`${label} "${item.name || item.title}" 已删除 (mock)`)
-  entityDrawerVisible.value = false
+async function handleEntityDelete(item: any) {
+  try {
+    const id = item.id
+    if (id) {
+      await http.delete(`${'/memory'}/${'memory'}s/${id}`)
+      toast.success(`已删除: ${item.name || item.title}`)
+      entityDrawerVisible.value = false
+    }
+  } catch (e: any) {
+    // V3.7.2+ 真实 API - 失败回退 mock
+    if (e?.response?.status === 404) {
+      toast.warning(`后端无 ${'/memory'}/${'memory'}s API, 演示模式: ${item.name} 已标记删除`)
+      entityDrawerVisible.value = false
+    } else {
+      toast.error(e?.response?.data?.message || e?.message || '删除失败')
+    }
+  }
 }
 const toast = useToast()
 const userId = computed(() => userStore.userInfo?.id || 1)

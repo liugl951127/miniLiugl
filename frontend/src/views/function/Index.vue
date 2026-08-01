@@ -166,6 +166,51 @@ const form = reactive({
   description: '', parameters: '{}', enabled: true
 })
 
+
+// V3.7.1+ EntityDrawer 通用详情
+const entityDrawerVisible = ref(false)
+const entityDrawerItem = ref<any>(null)
+const entityDrawerRelations = ref<any[]>([])
+
+function openEntityDrawer(item: any) {
+  entityDrawerItem.value = item
+  entityDrawerVisible.value = true
+}
+
+async function handleEntityUpdate(form: any) {
+  try {
+    const id = entityDrawerItem.value?.id
+    if (id) {
+      await http.put(`/function/functions/${id}`, form)
+      toast.success(`已更新: ${form.name || form.title}`)
+    } else {
+      await http.post(`/function/functions`, form)
+      toast.success(`已新建: ${form.name || form.title}`)
+    }
+    entityDrawerVisible.value = false
+  } catch (e: any) {
+    toast.error(e?.response?.data?.message || e?.message || '更新失败')
+  }
+}
+
+async function handleEntityDelete(item: any) {
+  try {
+    const id = item.id
+    if (id) {
+      await http.delete(`/function/functions/${id}`)
+      toast.success(`已删除: ${item.name || item.title}`)
+      entityDrawerVisible.value = false
+    }
+  } catch (e: any) {
+    if (e?.response?.status === 404) {
+      toast.warning(`后端无 /function/functions API, 演示模式: ${item.name} 已标记删除`)
+      entityDrawerVisible.value = false
+    } else {
+      toast.error(e?.response?.data?.message || e?.message || '删除失败')
+    }
+  }
+}
+
 const rules = {
   name: [{ required: true, message: '请输入工具名', trigger: 'blur' }],
   displayName: [{ required: true, message: '请输入显示名', trigger: 'blur' }],
