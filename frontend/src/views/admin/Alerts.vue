@@ -167,8 +167,9 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import { monitorApi } from '@/api/monitor'
 import EmptyState from '@/components/EmptyState.vue'
 
@@ -284,11 +285,11 @@ async function saveRule() {
     } else {
       await monitorApi.createAlertRule(editingRule.value)
     }
-    ElMessage.success('保存成功')
+    toast.success('保存成功')
     ruleDialogVisible.value = false
     loadRules()
   } catch (e) {
-    ElMessage.error('保存失败: ' + (e.message || '未知错误'))
+    toast.error('保存失败: ' + (e.message || '未知错误'))
   }
 }
 
@@ -296,19 +297,19 @@ async function deleteRule(rule) {
   await ElMessageBox.confirm(`确定删除规则 "${rule.name}"?`, '确认')
   try {
     await monitorApi.deleteAlertRule(rule.id)
-    ElMessage.success('已删除')
+    toast.success('已删除')
     loadRules()
   } catch (e) {
-    ElMessage.error('删除失败: ' + (e.message || '未知错误'))
+    toast.error('删除失败: ' + (e.message || '未知错误'))
   }
 }
 
 async function toggleRule(rule) {
   try {
     await monitorApi.toggleAlertRule(rule.id, rule.enabled)
-    ElMessage.success(rule.enabled ? '已启用' : '已禁用')
+    toast.success(rule.enabled ? '已启用' : '已禁用')
   } catch (e) {
-    ElMessage.error('操作失败')
+    toast.error('操作失败')
     rule.enabled = !rule.enabled
   }
 }
@@ -317,10 +318,10 @@ async function toggleRule(rule) {
 async function acknowledge(alert) {
   try {
     await monitorApi.acknowledgeAlert(alert.id)
-    ElMessage.success('已确认')
+    toast.success('已确认')
     loadFiring()
   } catch (e) {
-    ElMessage.error('操作失败: ' + (e.message || '未知错误'))
+    toast.error('操作失败: ' + (e.message || '未知错误'))
   }
 }
 
@@ -337,7 +338,7 @@ function openChannelDialog(channel = null) {
 /** 保存渠道 (新建/编辑) */
 async function saveChannel() {
   if (!editingChannel.value.name || !editingChannel.value.target) {
-    ElMessage.warning('请填写名称和目标地址')
+    toast.warning('请填写名称和目标地址')
     return
   }
   savingChannel.value = true
@@ -358,11 +359,11 @@ async function saveChannel() {
         template: editingChannel.value.template || null
       })
     }
-    ElMessage.success('保存成功')
+    toast.success('保存成功')
     channelDialogVisible.value = false
     loadChannels()
   } catch (e) {
-    ElMessage.error('保存失败: ' + (e.message || '未知错误'))
+    toast.error('保存失败: ' + (e.message || '未知错误'))
   } finally {
     savingChannel.value = false
   }
@@ -373,9 +374,9 @@ async function testChannel(ch) {
   testingId.value = ch.id
   try {
     await monitorApi.testAlertChannel(ch.id)
-    ElMessage.success('测试消息已发送')
+    toast.success('测试消息已发送')
   } catch (e) {
-    ElMessage.error('发送失败: ' + (e.message || '未知错误'))
+    toast.error('发送失败: ' + (e.message || '未知错误'))
   } finally {
     testingId.value = null
   }
@@ -386,10 +387,10 @@ async function deleteChannel(ch) {
   await ElMessageBox.confirm(`确定删除渠道 "${ch.name}"?`, '确认')
   try {
     await monitorApi.deleteAlertChannel(ch.id)
-    ElMessage.success('已删除')
+    toast.success('已删除')
     loadChannels()
   } catch (e) {
-    ElMessage.error('删除失败: ' + (e.message || '未知错误'))
+    toast.error('删除失败: ' + (e.message || '未知错误'))
   }
 }
 
@@ -430,7 +431,7 @@ function subscribeAlertStream() {
         if (firing.value.length > 50) firing.value.pop()
         // 如果当前 Tab 不是 firing，提示用户
         if (tab.value !== 'firing') {
-          ElMessage.warning(`🔔 收到新告警: ${payload.alert.ruleName}`)
+          toast.warning(`🔔 收到新告警: ${payload.alert.ruleName}`)
         }
       }
     } catch (err) {

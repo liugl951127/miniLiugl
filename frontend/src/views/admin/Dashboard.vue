@@ -60,6 +60,47 @@
       </el-card>
     </section>
 
+    <!-- V3.6.25+ TopN 请求接口表 -->
+    <section class="section">
+      <h3 class="section-title">
+        🔥 Top 10 请求接口
+        <el-button text type="primary" :icon="Refresh" @click="refreshTopPaths" style="float: right; margin-left: 8px;">刷新</el-button>
+      </h3>
+      <el-row :gutter="16">
+        <el-col :xs="24" :md="14">
+          <el-card shadow="hover" class="kpi-card">
+            <div ref="topPathsRef" class="chart-container" style="height: 360px"></div>
+          </el-card>
+        </el-col>
+        <el-col :xs="24" :md="10">
+          <el-card shadow="hover" class="kpi-card">
+            <template #header>
+              <span>详细数据</span>
+            </template>
+            <el-table :data="topPaths" stripe size="small" max-height="360">
+              <el-table-column prop="path" label="路径" min-width="200" show-overflow-tooltip />
+              <el-table-column prop="count" label="请求数" width="90" sortable />
+              <el-table-column prop="avgMs" label="平均(ms)" width="90" sortable>
+                <template #default="{ row }">
+                  <el-tag :type="row.avgMs > 500 ? 'danger' : row.avgMs > 200 ? 'warning' : 'success'" size="small">
+                    {{ row.avgMs }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="errorRate" label="错误率" width="80">
+                <template #default="{ row }">
+                  <span :class="['error-rate', row.errorRate > 1 ? 'high' : row.errorRate > 0.5 ? 'mid' : 'low']">
+                    {{ row.errorRate }}%
+                  </span>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-card>
+        </el-col>
+      </el-row>
+    </section>
+
+
 
     <!-- 3. KPI 卡片 (el-row + el-col + el-statistic 2.4 新组件) -->
     <section class="section">
@@ -176,7 +217,8 @@ import { getRecentAudit } from '@/api/admin'
 
 // === 1. 状态 ===
 const loading = ref(false)
-const health = ref({})
+const health = ref({
+})
 const stats = ref({
   userCount: 0, sessionCount: 0, callCount: 0, toolCount: 0
 })
@@ -310,6 +352,10 @@ onMounted(loadAll)
   }
 }
 
+
+.error-rate.high { color: #dc2626; font-weight: 600; }
+.error-rate.mid { color: #f59e0b; font-weight: 500; }
+.error-rate.low { color: #10b981; }
 .kpi-card {
   margin-bottom: 16px;
   .kpi-head {

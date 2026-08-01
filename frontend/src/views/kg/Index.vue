@@ -220,6 +220,98 @@ import { useUserStore } from '@/store/user'
 const userStore = useUserStore()
 const API = import.meta.env.VITE_API_BASE || 'http://localhost'
 const userId = String(userStore.profile?.id || 1)
+
+// V3.6.25+ Force 物理引擎升级
+const forceConfig = ref({
+  repulsion: 100,
+  gravity: 0.05,
+  edgeLength: 80,
+  friction: 0.3,
+  edgeLengthRange: [50, 120],
+  layoutAnimation: true,
+  useWorker: false,
+})
+
+const forcePresets = {
+  compact: { repulsion: 50, gravity: 0.15, edgeLength: 50, friction: 0.4 },
+  cluster: { repulsion: 200, gravity: 0.03, edgeLength: 100, friction: 0.3 },
+  spread: { repulsion: 400, gravity: 0.02, edgeLength: 150, friction: 0.2 },
+  tree: { repulsion: 150, gravity: 0.08, edgeLength: 80, friction: 0.5 },
+}
+
+const currentPreset = ref('custom')
+const savedLayout = ref(null)
+
+function applyPreset(preset: string) {
+  currentPreset.value = preset
+  Object.assign(forceConfig.value, forcePresets[preset as keyof typeof forcePresets])
+  applyForceLayout()
+  ElMessage.success(`已应用 ${preset} 预设`)
+}
+
+function saveLayout() {
+  if (!chart) { ElMessage.warning('图表未初始化'); return }
+  const option = chart.getOption()
+  const series = option.series?.[0]
+  if (!series?.data) { ElMessage.warning('无节点数据'); return }
+  savedLayout.value = {
+    savedAt: new Date().toISOString(),
+    nodes: series.data.map((n: any) => ({ id: n.id, x: n.x, y: n.y })),
+  }
+  localStorage.setItem('minimax_kg_layout', JSON.stringify(savedLayout.value))
+  ElMessage.success(`已保存 ${savedLayout.value.nodes.length} 个节点位置`)
+}
+
+function restoreLayout() {
+  if (!chart) return
+  let layout: any = savedLayout.value
+  if (!layout) {
+    const saved = localStorage.getItem('minimax_kg_layout')
+    if (saved) {
+      try { layout = JSON.parse(saved); savedLayout.value = layout } catch (e) { ElMessage.error('布局数据损坏'); return }
+    } else { ElMessage.warning('无保存的布局'); return }
+  }
+  const option = chart.getOption()
+  const series = option.series?.[0]
+  if (series?.data) {
+    const posMap = new Map(layout.nodes.map((n: any) => [String(n.id), n]))
+    series.data.forEach((n: any) => {
+      const pos = posMap.get(String(n.id))
+      if (pos) { n.x = pos.x; n.y = pos.y; n.fixed = true }
+    })
+    chart.setOption(option)
+    ElMessage.success('已还原保存的布局 (节点已固定)')
+  }
+}
+
+function resetLayout() {
+  if (!chart) return
+  const option = chart.getOption()
+  const series = option.series?.[0]
+  if (series?.data) {
+    series.data.forEach((n: any) => { delete n.x; delete n.y; delete n.fixed })
+    chart.setOption(option)
+    setTimeout(() => applyForceLayout(), 100)
+    ElMessage.info('已重置布局, 重新计算中...')
+  }
+}
+
+function applyForceLayout() {
+  if (!chart) return
+  currentPreset.value = 'custom'
+  chart.setOption({
+    series: [{
+      type: 'graph',
+      force: {
+        repulsion: forceConfig.value.repulsion,
+        gravity: forceConfig.value.gravity,
+        edgeLength: forceConfig.value.edgeLength,
+        friction: forceConfig.value.friction,
+      },
+    }],
+  })
+  ElMessage.success('已应用 force 布局')
+}
 const token = userStore.accessToken || ''
 
 const newEntity = reactive({ name: '', type: 'person', description: '', importance: 5 })
