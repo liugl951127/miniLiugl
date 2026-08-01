@@ -1,0 +1,88 @@
+# =============================================================
+# V3.5.96+ 防御性 CI - Check 8/9 单独跑
+# 触发: 改了 .vue / docker-compose.yml / ci-check / check-setup-var / verify-docker-compose
+# 跑: check-setup-var.cjs (Check 8) + verify-docker-compose.sh (Check 9) + ci-check.sh (全 9 项)
+# 目的: 提前发现 V3.5.94 类 bug (template 用变量但 setup 未定义)
+# =============================================================
+name: Defensive CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      # Check 8: <script setup> 防御性
+      - 'frontend/src/views/**/*.vue'
+      - 'frontend/src/components/**/*.vue'
+      - 'frontend/src/composables/**/*.js'
+      - 'frontend/src/store/**/*.js'
+      # Check 9: docker-compose
+      - 'docker-compose.yml'
+      - 'docker-compose*.yml'
+      - 'deploy/otel-collector-config.yaml'
+      # CI 脚本
+      - 'scripts/check-setup-var.cjs'
+      - 'scripts/verify-docker-compose.sh'
+      - 'scripts/ci-check.sh'
+      - '.github/workflows/defensive-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'frontend/src/views/**/*.vue'
+      - 'docker-compose.yml'
+      - 'scripts/check-setup-var.cjs'
+      - 'scripts/verify-docker-compose.sh'
+
+jobs:
+  defensive:
+    name: V3.5.96 Defensive CI (Check 8/9)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Check 1-7 (V3.5.65-V3.5.87)
+      - name: Run ci-check.sh (Check 1-7)
+        id: ci-check
+        run: bash scripts/ci-check.sh
+        continue-on-error: true
+
+      # Check 8: <script setup> 防御性自检
+      - name: Check 8 - <script setup> 防御性自检
+        id: check8
+        run: |
+          echo "═══════════════════════════════════════════════════════════"
+          echo "  V3.5.96 Check 8: <script setup> 防御性自检"
+          echo "═══════════════════════════════════════════════════════════"
+          node scripts/check-setup-var.cjs
+
+      # Check 9: docker-compose 静态验证
+      - name: Check 9 - docker-compose 静态验证
+        id: check9
+        run: |
+          echo "═══════════════════════════════════════════════════════════"
+          echo "  V3.5.96 Check 9: docker-compose 静态验证"
+          echo "═══════════════════════════════════════════════════════════"
+          bash scripts/verify-docker-compose.sh
+
+      # 汇总
+      - name: Defensive CI Summary
+        if: always()
+        run: |
+          echo "## V3.5.96 Defensive CI 报告" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | 工具 | 状态 |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 1-7 ci-check.sh | bash | ${{ steps.ci-check.conclusion }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 8 check-setup-var.cjs | node | ${{ steps.check8.conclusion }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 9 verify-docker-compose.sh | python | ${{ steps.check9.conclusion }} |" >> $GITHUB_STEP_SUMMARY
