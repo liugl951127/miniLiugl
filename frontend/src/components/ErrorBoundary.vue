@@ -3,31 +3,21 @@
   全局错误边界 - 捕获子组件错误, 显示友好错误页
 -->
 <template>
-  <div v-if="error" class="error-boundary">
-    <div class="error-content">
-      <el-icon :size="64" color="#ef4444"><CircleClose /></el-icon>
-      <h1>出错了</h1>
-      <p class="error-message">{{ error.message || '未知错误' }}</p>
-      <p class="error-hint">
-        V3.5.93+ ErrorBoundary - 防止单页白屏
-      </p>
-      <div class="error-actions">
-        <el-button type="primary" :icon="Refresh" @click="reload">重新加载</el-button>
-        <el-button :icon="Back" @click="goHome">返回首页</el-button>
-        <el-button :icon="ChatLineRound" @click="goChat">访客试用</el-button>
-      </div>
-      <details v-if="error.stack" class="error-stack">
-        <summary>错误堆栈 (开发模式)</summary>
-        <pre>{{ error.stack }}</pre>
-      </details>
-    </div>
-  </div>
-  <slot v-else />
+  <slot v-if="!error" />
+  <!-- V3.6.12+ 集成 ErrorState 组件 -->
+  <ErrorState
+    v-else
+    :error="error"
+    :error-type="errorType"
+    :show-detail="true"
+    @retry="reload"
+  />
 </template>
 
 <script setup>
-import { ref, onErrorCaptured } from 'vue'
-import { Refresh, Back, ChatLineRound, CircleClose } from '@element-plus/icons-vue'
+import { ref, onErrorCaptured, computed } from 'vue'
+import ErrorState from './ErrorState.vue'
+
 import { useRouter } from 'vue-router'
 
 const error = ref(null)

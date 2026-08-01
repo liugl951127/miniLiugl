@@ -86,7 +86,7 @@
         <section class="section">
           <h3 class="section-title">🖼️ 预览</h3>
           <el-card shadow="hover" class="preview-card">
-            <el-empty v-if="!result" description="填写描述后点击生成" :image-size="120" />
+            <EmptyState v-if="!result" :description="'暂无数据'" />
             <div v-else class="result-area">
               <div v-if="result.imageUrl" class="image-frame">
                 <img :src="result.imageUrl" :alt="req.prompt" class="generated-img" />
@@ -116,6 +116,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { generateImage, listImageTypes, inferImageType as inferApi } from '@/api/ai'
+import EmptyState from '@/components/EmptyState.vue'
 
 const { t } = useI18n()
 const req = ref({ prompt: '蓝色渐变背景', type: '', width: 1024, height: 1024, seed: 42 })

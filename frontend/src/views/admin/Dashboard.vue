@@ -49,6 +49,18 @@
       </div>
     </section>
 
+    <!-- V3.6.12+ 请求热力图 -->
+    <section class="section">
+      <h3 class="section-title">
+        📊 请求热力图 (7天 × 24小时)
+        <el-button text type="primary" :icon="Refresh" @click="refreshHeatmap" style="float: right; margin-left: 8px;">刷新</el-button>
+      </h3>
+      <el-card shadow="hover" class="kpi-card">
+        <div ref="heatmapRef" class="chart-container" style="height: 280px"></div>
+      </el-card>
+    </section>
+
+
     <!-- 3. KPI 卡片 (el-row + el-col + el-statistic 2.4 新组件) -->
     <section class="section">
       <h3 class="section-title">关键指标</h3>
@@ -153,7 +165,8 @@
  *   5. 加载/空/错 三态用 el-skeleton / el-empty / el-alert
  *   6. i18n: 文案用 $t('key') 不硬编码
  */
-import { ref, onMounted, computed } from 'vue'
+import * as echarts from 'echarts'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import {
   Refresh, CircleCheck, CircleClose, TrendCharts, PieChart, CaretTop, CaretBottom,
   User, ChatDotRound, Cpu, Tools

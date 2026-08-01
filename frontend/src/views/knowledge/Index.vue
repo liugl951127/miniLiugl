@@ -92,7 +92,7 @@
             </template>
           </el-table-column>
           <template #empty>
-            <el-empty description="还没有知识库, 点击右上角新建" />
+            <EmptyState :description="'暂无数据'" />
           </template>
         </el-table>
       </el-tab-pane>
@@ -110,7 +110,7 @@
             </template>
           </el-table-column>
           <template #empty>
-            <el-empty description="暂无公开知识库" />
+            <EmptyState :description="'暂无数据'" />
           </template>
         </el-table>
       </el-tab-pane>
@@ -326,6 +326,7 @@ import { Files, Document, Reading, Histogram, Plus, FolderOpened, Delete, Search
 import * as ragApi from '@/api/rag'
 import { promptApi } from '@/api/prompt'
 import { useUserStore } from '@/store/user'
+import EmptyState from '@/components/EmptyState.vue'
 
 const userStore = useUserStore()
 const ownerId = computed(() => userStore.userInfo?.id || 1)
