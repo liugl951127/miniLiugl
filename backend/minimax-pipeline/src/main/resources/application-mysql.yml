@@ -11,15 +11,11 @@ server:
 # 关闭 OTEL exporter (避免连 localhost:4318 失败)
 otel:
   metrics:
-    exporter: none
-  traces:
-    exporter: none
-  logs:
-    exporter: none
-  # 关掉 javaagent 自动 attach
+    export:
+      interval: 30s
   java:
     global-autoconfigure:
-      enabled: false
+      enabled: true
 
 spring:
   main:

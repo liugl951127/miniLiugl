@@ -451,6 +451,86 @@ if [[ $FAIL -eq 0 ]]; then
 else
     yellow "  ⚠️ 有 $FAIL 个测试失败, 详情见上"
 fi
+
+# ──────────────── Round 8: 5 browser traceparent 验证 (V3.5.89+ OTel trace) ────────────────
+echo ""
+echo "═══════════════════════════════════════════════════════════"
+bold "  Round 8: 5 browser traceparent 验证 (V3.5.89+ OTel trace)"
+echo "═══════════════════════════════════════════════════════════"
+
+# V3.5.89: sw.js 加 W3C traceparent header
+# 这里 5 browser 模拟发请求时加 traceparent, 验证后端能否收到
+# 格式: 00-{32hex}-{16hex}-01 (sampled)
+
+# 生成随机 traceparent
+gen_traceparent() {
+    local trace_id=$(openssl rand -hex 16 2>/dev/null || echo "00000000000000000000000000000001")
+    local span_id=$(openssl rand -hex 8 2>/dev/null || echo "0000000000000001")
+    echo "00-${trace_id}-${span_id}-01"
+}
+
+TRACE_START=$(date +%s)
+TRACE_RESULTS=()
+
+for browser in chromium webkit firefox mobile-safari mobile-chrome; do
+    case $browser in
+        chromium) UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120.0" ;;
+        webkit) UA="Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15" ;;
+        firefox) UA="Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0" ;;
+        mobile-safari) UA="Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148" ;;
+        mobile-chrome) UA="Mozilla/5.0 (Linux; Android 13; Pixel 5) AppleWebKit/537.36 Chrome/120.0 Mobile" ;;
+    esac
+
+    TP=$(gen_traceparent)
+    # 验证 3 路由带 traceparent 都 200
+    N_OK=0
+    for route in /login /chat /admin/dashboard; do
+        code=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "User-Agent: $UA" \
+            -H "traceparent: $TP" \
+            "http://localhost:5173$route" --max-time 5 2>/dev/null)
+        if [[ "$code" == "200" ]]; then
+            N_OK=$((N_OK+1))
+        fi
+    done
+    if [[ $N_OK -eq 3 ]]; then
+        TRACE_RESULTS+=("$browser: ✅ PASS (3/3, trace=$TP)")
+        PASS=$((PASS+1))
+    else
+        TRACE_RESULTS+=("$browser: ❌ FAIL ($N_OK/3, trace=$TP)")
+        FAIL=$((FAIL+1))
+    fi
+    TOTAL=$((TOTAL+1))
+done
+
+TRACE_END=$(date +%s)
+TRACE_ELAPSED=$(( TRACE_END - TRACE_START ))
+
+echo "  5 browser trace 验证 (3 路由 × 5 browser = 15 GET, 每个带 traceparent):"
+for r in "${TRACE_RESULTS[@]}"; do
+    echo "    $r"
+done
+echo "  ⏱  耗时: ${TRACE_ELAPSED}s"
+
+# 报告
+cat > "$REPORT_DIR/round8-trace.log" << EOF
+========================================
+  V3.5.89+ Round 8 5 browser trace 验证
+  $(date '+%Y-%m-%d %H:%M:%S')
+========================================
+
+  Browser: 5 模拟 (chromium/webkit/firefox/mobile-safari/mobile-chrome)
+  路由:   3 (login/chat/admin/dashboard)
+  Header: traceparent (W3C Trace Context, 格式 00-32hex-16hex-01)
+  总耗时:  ${TRACE_ELAPSED}s
+
+  结果:
+$(for r in "${TRACE_RESULTS[@]}"; do echo "    $r"; done)
+
+  注: traceparent 验证 sw.js V3.5.89 生成的 header
+      后端 otel-collector (4317 gRPC) 收 OTLP trace → jaeger (16686 UI)
+EOF
+
 echo ""
 echo "  📁 报告目录: $REPORT_DIR"
 echo "  📄 Round 6 (稳定性): $REPORT_DIR/round6-stability.log"

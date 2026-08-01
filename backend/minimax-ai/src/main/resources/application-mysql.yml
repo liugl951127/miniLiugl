@@ -45,13 +45,11 @@ spring:
 # 关闭 OTEL exporter (避免连 localhost:4318 失败)
 otel:
   metrics:
-    exporter: none
-  traces:
-    exporter: none
-  logs:
-    exporter: none
-
-# 关闭 Spring Boot tracing
+    export:
+      interval: 30s
+  java:
+    global-autoconfigure:
+      enabled: true
 management:
   tracing:
     enabled: false

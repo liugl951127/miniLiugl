@@ -8,17 +8,16 @@
 server:
   port: ${SERVER_PORT:8081}    # auth 默认端口
 
-# 关闭 OTEL exporter (避免连 localhost:4318 失败)
+# V3.5.89+ OpenTelemetry trace - 走环境变量配置 (otlp → collector :4317)
+# 注意: jvm-env 已注入 OTEL_SDK_DISABLED=false / OTEL_EXPORTER_OTLP_ENDPOINT
+# 这里只覆盖 metric 间隔 + resource attribute
 otel:
   metrics:
-    exporter: none
-  traces:
-    exporter: none
-  logs:
-    exporter: none
+    export:
+      interval: 30s
   java:
     global-autoconfigure:
-      enabled: false
+      enabled: true
 
 spring:
   main:

@@ -50,7 +50,7 @@
  * @updated V3.5.84 简化
  */
 
-const CACHE_VERSION = 'v3.5.84'
+const CACHE_VERSION = 'v3.5.89'
 const OFFLINE_URL = '/offline.html'
 
 // V3.5.84+ 删 PRECACHE_URLS - 不再预缓存, 浏览器 HTTP 缓存处理
@@ -330,8 +330,9 @@ self.addEventListener('fetch', (event) => {
  */
 async function handleNavigation(req) {
   try {
-    // 直传网络, 不缓存
-    return await fetch(req, { cache: 'no-cache' })
+    // V3.5.89+: 加 traceparent header
+    const tracedReq = withTraceparent(req)
+    return await fetch(tracedReq, { cache: 'no-cache' })
   } catch (e) {
     // 离线: 返回 /offline.html (浏览器 HTTP 缓存会有, 实在没有用内联)
     try {
@@ -358,9 +359,40 @@ async function handleNavigation(req) {
  * @param {Request} req
  * @returns {Promise<Response>}
  */
+// V3.5.89+ W3C Trace Context: 给 fetch 加 traceparent header
+// 格式: '00-{trace_id(32 hex)}-{span_id(16 hex)}-{flags(2 hex)}'
+// 浏览器 fetch 没法自动生成 (没 OpenTelemetry JS SDK), 手工实现
+function generateTraceparent() {
+  const traceId = Array.from({ length: 32 }, () => '0123456789abcdef'[Math.floor(Math.random() * 16)]).join('')
+  const spanId = Array.from({ length: 16 }, () => '0123456789abcdef'[Math.floor(Math.random() * 16)]).join('')
+  return `00-${traceId}-${spanId}-01`  // 01 = sampled
+}
+
+// 给 req 加 traceparent header (保留原 headers)
+function withTraceparent(req) {
+  const newHeaders = new Headers(req.headers)
+  // 不要覆盖前端 / OTel SDK 已经设的 traceparent
+  if (!newHeaders.has('traceparent')) {
+    newHeaders.set('traceparent', generateTraceparent())
+  }
+  return new Request(req.url, {
+    method: req.method,
+    headers: newHeaders,
+    body: req.method !== 'GET' && req.method !== 'HEAD' ? req.body : undefined,
+    mode: req.mode,
+    credentials: req.credentials,
+    cache: req.cache,
+    redirect: req.redirect,
+    referrer: req.referrer,
+    integrity: req.integrity
+  })
+}
+
 async function handleNetworkOnly(req) {
   try {
-    return await fetch(req, { cache: 'no-cache' })
+    // V3.5.89+: 加 traceparent header (W3C Trace Context)
+    const tracedReq = withTraceparent(req)
+    return await fetch(tracedReq, { cache: 'no-cache' })
   } catch (e) {
     // 网络失败: 不返缓存, 直接 503
     return new Response(
@@ -379,7 +411,9 @@ async function handleNetworkOnly(req) {
  */
 async function handleWrite(req) {
   try {
-    return await fetch(req)
+    // V3.5.89+: 加 traceparent header
+    const tracedReq = withTraceparent(req)
+    return await fetch(tracedReq)
   } catch (e) {
     return new Response(
       JSON.stringify({ code: -1, message: '离线时无法执行写操作', data: null }),
