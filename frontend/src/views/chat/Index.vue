@@ -45,7 +45,7 @@
       <el-card shadow="hover" class="messages-card">
         <div class="messages" ref="messagesRef">
           <div v-if="!messages.length" class="empty-chat">
-            <el-empty description="开始跟 AI 对话" :image-size="100" />
+            <el-empty description="{{ t('chat.start') }}" :image-size="100" />
             <div class="quick-prompts">
               <el-button v-for="qa in quickPrompts" :key="qa" size="small" @click="input = qa; send()">
                 {{ qa }}
@@ -72,14 +72,14 @@
       <el-collapse>
         <el-collapse-item :title="`🔧 工具调用 (${toolCalls.length})`" name="tools">
           <el-table :data="toolCalls" size="small" stripe>
-            <el-table-column prop="name" label="工具" width="160" />
-            <el-table-column prop="status" label="状态" width="100">
+            <el-table-column prop="name" :label="t('chat.tool.name')" width="160" />
+            <el-table-column prop="status" :label="t('chat.tool.status')" width="100">
               <template #default="{ row }">
                 <el-tag :type="row.status === 'ok' ? 'success' : 'danger'" size="small">{{ row.status }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="duration" label="耗时" width="100" />
-            <el-table-column prop="result" label="结果" />
+            <el-table-column prop="duration" :label="t('chat.tool.duration')" width="100" />
+            <el-table-column prop="result" :label="t('chat.tool.result')" />
           </el-table>
         </el-collapse-item>
       </el-collapse>
@@ -90,20 +90,20 @@
       <el-card shadow="hover" class="input-card">
         <div class="input-toolbar">
           <el-checkbox v-model="useStream">流式</el-checkbox>
-          <el-checkbox v-model="useTools">工具调用</el-checkbox>
+          <el-checkbox v-model="useTools">{{ t('chat.tools') }}</el-checkbox>
           <el-checkbox v-model="useRag">RAG</el-checkbox>
         </div>
         <el-input
           v-model="input"
           type="textarea"
           :rows="4"
-          placeholder="输入消息... (Enter 发送 / Shift+Enter 换行)"
+          :placeholder="t('chat.placeholder')"
           @keydown.enter.exact.prevent="send"
           :disabled="loading"
         />
         <div class="input-actions">
           <span class="hint">内容由 AI 生成, 仅供参考</span>
-          <el-button :icon="Refresh" @click="regenerate" :disabled="loading || !messages.length">重新生成</el-button>
+          <el-button :icon="Refresh" @click="regenerate" :disabled="loading || !messages.length">{{ t('chat.regenerate') }}</el-button>
           <el-button :icon="loading ? Loading : Promotion" :loading="loading" @click="send" type="primary">
             {{ loading ? '停止' : '发送' }}
           </el-button>
@@ -123,7 +123,7 @@
           <div class="session-title">{{ s.title || '新会话' }}</div>
           <div class="session-time">{{ s.updatedAt || s.createdAt }}</div>
         </div>
-        <el-empty v-if="!sessions.length" description="暂无历史会话" />
+        <el-empty v-if="!sessions.length" description="{{ t('chat.empty.history') }}" />
       </div>
     </el-drawer>
   </div>
@@ -131,6 +131,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { modelApi } from '@/api/model'

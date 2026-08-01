@@ -8,101 +8,87 @@
   @description 调用链追踪
 -->
 <template>
-  <div class="page-traces traces-page">
-    <div class="header">
-      <h2>🔍 分布式追踪 (V5.14 OpenTelemetry)</h2>
-      <div class="header-right">
+  <div class="page-traces">
+    <!-- 1. page-header -->
+    <header class="page-header">
+      <div>
+        <h2 class="page-title">🔍 分布式追踪 <el-tag size="small" type="info">V5.14 OpenTelemetry</el-tag></h2>
+        <p class="page-subtitle">Trace ID / 服务 / 慢调用 / Span / 自动刷新</p>
+      </div>
+      <div class="header-actions">
         <el-input v-model="service" placeholder="服务名 (e.g. minimax-auth)" style="width:200px" clearable />
-        <el-input v-model="traceId" placeholder="Trace ID (可选, 查具体请求)" style="width:280px" clearable />
-        <el-button @click="search" :loading="loading">查询</el-button>
+        <el-input v-model="traceId" placeholder="Trace ID" style="width:280px" clearable />
+        <el-button :icon="Search" @click="search" :loading="loading">查询</el-button>
         <el-switch v-model="autoRefresh" active-text="10s 自动刷新" @change="toggleAuto" />
       </div>
-    </div>
+    </header>
 
-    <!-- 概览 -->
-    <el-row :gutter="16" class="cards">
-      <el-col :span="6">
-        <el-card><div class="num">{{ traces.length }}</div><div class="lbl">Traces</div></el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card><div class="num">{{ totalSpans }}</div><div class="lbl">Spans</div></el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card><div class="num">{{ formatMs(avgDuration) }}</div><div class="lbl">平均耗时</div></el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card>
-          <div class="num" :class="errorRate > 5 ? 'err' : ''">{{ errorRate.toFixed(1) }}%</div>
-          <div class="lbl">错误率</div>
-        </el-card>
-      </el-col>
-    </el-row>
+    <!-- 2. section: 4 KPI -->
+    <section class="section">
+      <el-row :gutter="16">
+        <el-col :xs="12" :sm="6"><el-card shadow="hover" class="kpi-card"><el-statistic title="Traces" :value="traces.length" :value-style="{ color: '#6366f1' }" /></el-card></el-col>
+        <el-col :xs="12" :sm="6"><el-card shadow="hover" class="kpi-card"><el-statistic title="Spans" :value="totalSpans" :value-style="{ color: '#10b981' }" /></el-card></el-col>
+        <el-col :xs="12" :sm="6"><el-card shadow="hover" class="kpi-card"><el-statistic title="Errors" :value="errorCount" :value-style="{ color: '#ef4444' }" /></el-card></el-col>
+        <el-col :xs="12" :sm="6"><el-card shadow="hover" class="kpi-card"><el-statistic title="Avg P95" :value="p95" suffix="ms" :value-style="{ color: '#a855f7' }" /></el-card></el-col>
+      </el-row>
+    </section>
 
-    <!-- Trace 列表 -->
-    <el-card>
-      <template #header>
-        <span>📋 Trace 列表 (按时间倒序)</span>
-        <span class="subtitle">数据来源: Jaeger Query API (OTel 后端) · <code>{{ jaegerUrl }}</code></span>
-      </template>
-      <el-table :data="traces" stripe size="small" empty-text="未找到 trace 数据">
-        <el-table-column type="expand">
-          <template #default="s">
-            <!-- Span 树 -->
-            <div class="span-tree">
-              <div v-for="span in s.row.spans" :key="span.spanID" class="span-row" :style="{ paddingLeft: (span.depth || 0) * 24 + 'px' }">
-                <span class="span-name">{{ span.operationName || span.spanName }}</span>
-                <span class="span-svc">{{ span.process?.serviceName || span.service }}</span>
-                <span class="span-dur">{{ formatRel(span) }}</span>
-                <span v-if="span.tags?.error" class="err-tag">ERROR</span>
-                <span v-if="span.spanID" class="span-id">id={{ span.spanID.substring(0, 8) }}</span>
-              </div>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="Trace ID" min-width="200">
-          <template #default="s">
-            <code class="trace-id" @click="openJaeger(s.row.traceID)">{{ s.row.traceID?.substring(0, 16) }}...</code>
-          </template>
-        </el-table-column>
-        <el-table-column label="根 Span" min-width="180">
-          <template #default="s">
-            {{ s.rootName || s.row.spans?.[0]?.operationName }}
-          </template>
-        </el-table-column>
-        <el-table-column label="服务" min-width="140">
-          <template #default="s">
-            <el-tag size="small" v-for="svc in s.row.services" :key="svc">{{ svc }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="Spans" width="80">
-          <template #default="s">{{ s.row.spans?.length || 0 }}</template>
-        </el-table-column>
-        <el-table-column label="耗时" width="100">
-          <template #default="s">
-            <span :class="s.row.durationUs > 1000000 ? 'err' : ''">
-              {{ formatRel(s.row) }}
-            </span>
-          </template>
-        </el-table-column>
-        <el-table-column label="开始时间" min-width="160">
-          <template #default="s">{{ formatTime(s.row.startTime) }}</template>
-        </el-table-column>
-      </el-table>
-    </el-card>
+    <!-- 3. section: 慢调用 Top 10 -->
+    <section class="section">
+      <h3 class="section-title">🐢 慢调用 Top 10</h3>
+      <el-card shadow="hover">
+        <el-table :data="slowCalls" stripe size="small">
+          <el-table-column prop="service" label="服务" width="160" />
+          <el-table-column prop="operation" label="Operation" min-width="200" />
+          <el-table-column prop="duration" label="耗时 (ms)" width="120" sortable>
+            <template #default="{ row }">
+              <el-tag :type="row.duration > 1000 ? 'danger' : row.duration > 500 ? 'warning' : 'success'" size="small">
+                {{ row.duration.toFixed(1) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="timestamp" label="时间" width="180">
+            <template #default="{ row }">{{ formatTime(row.timestamp) }}</template>
+          </el-table-column>
+          <el-table-column label="操作" width="100">
+            <template #default="{ row }">
+              <el-button size="small" @click="viewTrace(row)">查看</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-card>
+    </section>
 
-    <!-- 提示 -->
-    <el-alert
-      title="需要 Jaeger 后端"
-      type="info"
-      :closable="false"
-      style="margin-top:16px"
-      show-icon>
-      <p>本页面从 <code>{{ jaegerUrl }}</code> 拉取数据, 需要先部署 Jaeger / Tempo / SigNoz 等 OTel 后端.</p>
-      <p>如未部署, 启动命令: <code>docker run -d -p 16686:16686 -p 4318:4318 jaegertracing/all-in-one:latest</code></p>
-    </el-alert>
+    <!-- 4. section: Trace 列表 -->
+    <section class="section">
+      <h3 class="section-title">📋 最近 Trace ({{ traces.length }})</h3>
+      <el-card shadow="hover">
+        <el-table :data="traces" stripe>
+          <el-table-column prop="traceId" label="Trace ID" min-width="200">
+            <template #default="{ row }">
+              <code class="trace-id">{{ row.traceId.substring(0, 16) }}...</code>
+            </template>
+          </el-table-column>
+          <el-table-column prop="service" label="服务" width="140" />
+          <el-table-column prop="operation" label="Operation" min-width="200" />
+          <el-table-column prop="status" label="状态" width="100">
+            <template #default="{ row }">
+              <el-tag :type="row.status === 'OK' ? 'success' : 'danger'" size="small">{{ row.status }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="duration" label="耗时" width="100">
+            <template #default="{ row }">{{ row.duration.toFixed(1) }} ms</template>
+          </el-table-column>
+          <el-table-column prop="spans" label="Spans" width="80" />
+          <el-table-column prop="timestamp" label="时间" width="180">
+            <template #default="{ row }">{{ formatTime(row.timestamp) }}</template>
+          </el-table-column>
+        </el-table>
+        <el-empty v-if="!traces.length && !loading" description="未找到匹配的 Trace" />
+      </el-card>
+    </section>
   </div>
 </template>
-
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, onUnmounted } from 'vue'

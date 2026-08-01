@@ -45,13 +45,13 @@
           @submit.prevent="onSubmit"
         >
           <el-form-item v-if="mode === 'register'" label="昵称" prop="nickname">
-            <el-input v-model="form.nickname" placeholder="请输入昵称" :prefix-icon="User" clearable />
+            <el-input v-model="form.nickname" :placeholder="t('login.placeholder.nickname')" :prefix-icon="User" clearable />
           </el-form-item>
 
           <el-form-item label="用户名" prop="username">
             <el-input
               v-model="form.username"
-              placeholder="请输入用户名"
+              :placeholder="t('login.placeholder.username')"
               :prefix-icon="User"
               clearable
               autocomplete="username"
@@ -62,7 +62,7 @@
             <el-input
               v-model="form.password"
               type="password"
-              placeholder="请输入密码"
+              :placeholder="t('login.placeholder.password')"
               :prefix-icon="Lock"
               show-password
               autocomplete="current-password"
@@ -70,13 +70,13 @@
           </el-form-item>
 
           <el-form-item v-if="mode === 'register'" label="邮箱" prop="email">
-            <el-input v-model="form.email" placeholder="请输入邮箱" :prefix-icon="Message" clearable />
+            <el-input v-model="form.email" :placeholder="t('login.placeholder.email')" :prefix-icon="Message" clearable />
           </el-form-item>
 
           <el-form-item v-if="mode === 'login'">
             <div class="form-options">
               <el-checkbox v-model="remember">记住用户名</el-checkbox>
-              <el-link type="primary" :underline="false" @click="onForgot">忘记密码？</el-link>
+              <el-link type="primary" :underline="false" @click="onForgot">{{ t('login.forgot') }}</el-link>
             </div>
           </el-form-item>
 
@@ -106,7 +106,7 @@
         <template #header>
           <div class="card-header">
             <el-icon><Cpu /></el-icon>
-            <span>演示账号 (开发模式)</span>
+            <span>{{ t('login.demos.title') }}</span>
           </div>
         </template>
         <el-row :gutter="12">
@@ -144,7 +144,7 @@
  * 1. page-header: 品牌 + 访客入口
  * 2. section (4 标签): login / register / wechat
  * 3. section: 表单 (账号密码 / 注册) 或 微信扫码
- * 4. section: 演示账号 (开发模式)
+ * 4. section: {{ t('login.demos.title') }}
  * 5. section: 平台特性 + footer
  *
  * 设计 token: var(--liugl-primary/accent/success)

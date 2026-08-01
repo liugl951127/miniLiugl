@@ -12,14 +12,14 @@
     <!-- 1. page-header: 标题 + 副标题 -->
     <header class="page-header">
       <div>
-        <h2 class="page-title">🤖 AI 智能助手</h2>
+        <h2 class="page-title">🤖 {{ t('aichat.title') }}</h2>
         <p class="page-subtitle">自研 AI 引擎 · 0 外部依赖 · 13 种意图识别</p>
       </div>
       <el-button-group>
         <el-tag size="large" :type="lastResult ? 'success' : 'info'">
           {{ lastResult ? `意图: ${lastResult.intent}` : '等待输入' }}
         </el-tag>
-        <el-button :icon="Plus" @click="newSession" type="primary">新建会话</el-button>
+        <el-button :icon="Plus" @click="newSession" type="primary">{{ t('aichat.new') }}</el-button>
       </el-button-group>
     </header>
 
@@ -40,7 +40,7 @@
                 <div class="session-title">{{ s.title || '新会话' }}</div>
                 <div class="session-time">{{ formatTime(s.updatedAt) }}</div>
               </div>
-              <el-empty v-if="!sessions.length" description="暂无会话" :image-size="60" />
+              <el-empty v-if="!sessions.length" description="{{ t('aichat.empty') }}" :image-size="60" />
             </div>
           </el-card>
         </section>
@@ -59,7 +59,7 @@
 
             <div class="messages" ref="messagesRef">
               <div v-if="!messages.length" class="empty-chat">
-                <el-empty description="开始对话" :image-size="80" />
+                <el-empty description="{{ t('aichat.start') }}" :image-size="80" />
               </div>
               <ChatBubble
                 v-for="m in messages"
@@ -69,7 +69,7 @@
               />
               <div v-if="loading" class="typing">
                 <el-icon class="is-loading"><Loading /></el-icon>
-                AI 思考中...
+                {{ t('aichat.typing') }}
               </div>
             </div>
 
@@ -78,7 +78,7 @@
                 v-model="input"
                 type="textarea"
                 :rows="3"
-                placeholder="输入消息... (Ctrl+Enter 发送)"
+                :placeholder="t('aichat.placeholder')"
                 @keydown.ctrl.enter="send"
                 :disabled="loading"
               />
@@ -96,6 +96,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer.vue'
 import StateBlock from '@/components/StateBlock.vue'

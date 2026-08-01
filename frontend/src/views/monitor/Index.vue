@@ -28,13 +28,13 @@
       </div>
       <el-button-group>
         <el-switch v-model="autoRefresh" active-text="自动" inactive-text="手动" @change="toggleAuto" />
-        <el-button type="primary" :icon="Refresh" @click="loadAll">刷新</el-button>
+        <el-button type="primary" :icon="Refresh" @click="loadAll">{{ t('monitor.refresh') }}</el-button>
       </el-button-group>
     </header>
 
     <!-- 2. section: 4 健康卡片 -->
     <section class="section">
-      <h3 class="section-title">服务健康</h3>
+      <h3 class="section-title">{{ t('monitor.health') }}</h3>
       <el-row :gutter="16">
         <el-col v-for="(h, key) in healths" :key="key" :xs="12" :sm="6">
           <el-card :class="['health-card', h.status === 'UP' ? 'up' : 'down']" shadow="hover">
@@ -59,7 +59,7 @@
 
     <!-- 3. section: 实时业务指标 (KPI 网格) -->
     <section class="section">
-      <h3 class="section-title">实时业务指标</h3>
+      <h3 class="section-title">{{ t('monitor.metrics') }}</h3>
       <el-card shadow="hover">
         <div class="metric-grid">
           <div class="metric-cell" v-for="(v, k) in metrics" :key="k">
@@ -120,16 +120,16 @@
       <h3 class="section-title">🚨 当前告警</h3>
       <el-card shadow="hover">
         <el-table :data="alerts" stripe>
-          <el-table-column prop="time" label="时间" width="180">
+          <el-table-column prop="time" :label="t('monitor.alert.time')" width="180">
             <template #default="{ row }">{{ formatTime(row.firedAt || row.time) }}</template>
           </el-table-column>
-          <el-table-column prop="name" label="告警名" />
-          <el-table-column prop="severity" label="级别" width="100">
+          <el-table-column prop="name" :label="t('monitor.alert.name')" />
+          <el-table-column prop="severity" :label="t('monitor.alert.severity')" width="100">
             <template #default="{ row }">
               <el-tag :type="row.severity === 'critical' ? 'danger' : 'warning'" size="small">{{ row.severity || 'warning' }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="message" label="内容" />
+          <el-table-column prop="message" :label="t('monitor.alert.content')" />
           <el-table-column label="操作" width="100">
             <template #default="{ row }">
               <el-button size="small" type="primary" @click="ackAlert(row)">确认</el-button>
@@ -143,6 +143,7 @@
 <script setup lang="ts">
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { CircleCheck, CircleClose } from '@element-plus/icons-vue'

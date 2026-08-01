@@ -8,87 +8,58 @@
   @description 工作流
 -->
 <template>
-  <div class="page-workflow workflow">
-    <el-card>
-      <template #header>
-        <div class="header">
-          <span>🔗 AI 工作流编排 (V2.7.3)</span>
-          <el-button-group>
-            <el-button @click="addStep">+ 添加节点</el-button>
-            <el-button type="success" :loading="running" @click="runWorkflow">▶️ 执行</el-button>
-            <el-button @click="validateWorkflow">✓ 验证</el-button>
-            <el-button type="primary" @click="loadExample">📋 示例</el-button>
-          </el-button-group>
-        </div>
-      </template>
+  <div class="page-workflow">
+    <!-- 1. page-header -->
+    <header class="page-header">
+      <div>
+        <h2 class="page-title">🔗 AI 工作流编排 <el-tag size="small" type="info">V2.7.3</el-tag></h2>
+        <p class="page-subtitle">节点编排 · 串行/并行 · 验证 · 执行 · 示例</p>
+      </div>
+      <el-button-group>
+        <el-button :icon="Plus" @click="addStep">添加节点</el-button>
+        <el-button :icon="CircleCheck" @click="validateWorkflow">验证</el-button>
+        <el-button :icon="Document" @click="loadExample">示例</el-button>
+        <el-button type="success" :icon="VideoPlay" :loading="running" @click="runWorkflow">执行</el-button>
+      </el-button-group>
+    </header>
 
-      <el-row :gutter="16">
-        <!-- 工作流编辑区 -->
-        <el-col :span="14">
-          <el-card shadow="never">
+    <!-- 2. section: 编辑区 (16:8 分栏) -->
+    <el-row :gutter="16">
+      <el-col :xs="24" :md="14">
+        <section class="section">
+          <h3 class="section-title">📝 工作流定义</h3>
+          <el-card shadow="hover">
             <template #header>
-              <div style="display: flex; justify-content: space-between; align-items: center">
-                <span>📐 工作流编辑 (DAG)</span>
-                <el-text size="small" type="info">节点表示 AI 工具, 边表示数据流</el-text>
+              <div class="card-header">
+                <span>{{ steps.length }} 节点</span>
+                <el-tag v-if="workflowValid === true" type="success" size="small">✓ 有效</el-tag>
+                <el-tag v-else-if="workflowValid === false" type="danger" size="small">✗ 错误</el-tag>
+                <el-tag v-else size="small">未验证</el-tag>
               </div>
             </template>
-
-            <div class="nodes">
-              <div v-for="(node, idx) in nodes" :key="node.id" class="node-card">
-                <div class="node-header">
-                  <el-tag :type="nodeStatusType(node.status)">{{ node.id }}</el-tag>
-                  <el-input v-model="node.toolCode" placeholder="工具编码 (如 sql.query)" size="small" style="width: 280px" />
-                  <el-button size="small" type="danger" @click="removeNode(idx)">删除</el-button>
-                </div>
-                <div class="node-body">
-                  <el-input v-model="node.inputJson" type="textarea" :rows="3" placeholder="{&quot;dataSourceId&quot;: 1}" size="small" />
-                </div>
-                <div v-if="idx < nodes.length - 1" class="edge-arrow">↓</div>
-              </div>
+            <div v-for="(step, idx) in steps" :key="idx" class="step-row">
+              <el-tag size="small" :type="stepTypeColor(step.type)">{{ idx + 1 }}. {{ step.type }}</el-tag>
+              <el-input v-model="step.name" placeholder="节点名" style="width: 200px" />
+              <el-input v-model="step.config" placeholder="config (JSON)" style="flex: 1" />
+              <el-button size="small" :icon="Delete" @click="steps.splice(idx, 1)" type="danger" plain />
             </div>
-
-            <el-empty v-if="!nodes.length" description="点击 + 添加节点 开始构建" />
+            <el-empty v-if="!steps.length" description="暂无节点, 点击上方「添加节点」或「示例」" />
           </el-card>
-        </el-col>
+        </section>
+      </el-col>
 
-        <!-- 执行结果 -->
-        <el-col :span="10">
-          <el-card shadow="never">
-            <template #header>📊 执行结果</template>
-
-            <el-alert
-              v-if="lastResult"
-              :type="lastResult.success ? 'success' : 'error'"
-              :title="lastResult.success ? '✓ 工作流执行成功' : '✗ 执行失败: ' + (lastResult.error || '')"
-              :closable="false"
-              show-icon
-              style="margin-bottom: 12px"
-            />
-
-            <el-timeline v-if="lastResult">
-              <el-timeline-item
-                v-for="node in lastResult.nodes"
-                :key="node.id"
-                :type="nodeStatusType(node.status)"
-                :timestamp="node.durationMs + 'ms'"
-              >
-                <b>{{ node.id }}</b> ({{ node.toolCode }})
-                <el-tag size="small" :type="nodeStatusType(node.status)">{{ node.status }}</el-tag>
-                <div v-if="node.error" style="color: red; font-size: 12px">{{ node.error }}</div>
-                <div v-if="node.output" style="font-size: 12px; margin-top: 4px">
-                  <pre style="background: #f5f5f5; padding: 4px; max-height: 100px; overflow: auto">{{ formatOutput(node.output) }}</pre>
-                </div>
-              </el-timeline-item>
-            </el-timeline>
-
-            <el-empty v-if="!lastResult" description="执行工作流后查看结果" />
+      <el-col :xs="24" :md="10">
+        <section class="section">
+          <h3 class="section-title">▶️ 执行结果</h3>
+          <el-card shadow="hover">
+            <el-empty v-if="!lastResult" description="尚未执行" />
+            <pre v-else class="result-pre">{{ JSON.stringify(lastResult, null, 2) }}</pre>
           </el-card>
-        </el-col>
-      </el-row>
-    </el-card>
+        </section>
+      </el-col>
+    </el-row>
   </div>
 </template>
-
 <script setup>
 // ───── 依赖导入 ─────
 import { ref } from 'vue'

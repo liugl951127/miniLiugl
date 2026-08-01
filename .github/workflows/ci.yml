@@ -321,12 +321,18 @@ jobs:
         continue-on-error: true
 
   # ============================================
-  # V3.5.78+: 跨浏览器部署验证 (5 browser E2E)
+  # V3.5.82+: 跨浏览器部署验证 (5 browser matrix)
+  # V3.5.78 之前: 单 job 内 5 browser 串行跑 (3 step)
+  # V3.5.82 之后: 5 browser matrix 并行跑 (5 独立 job)
   # ============================================
   verify-deploy:
-    name: V3.5.78 跨浏览器 5 browser E2E 验证
+    name: V3.5.82 跨浏览器 ${{ matrix.browser }} E2E
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit, firefox, mobile-safari, mobile-chrome]
 
     steps:
       - name: Checkout
@@ -355,36 +361,49 @@ jobs:
         working-directory: frontend
         run: npm ci --prefer-offline --no-audit
 
-      - name: Install Playwright browsers (chromium + webkit + firefox + 2 mobile)
+      - name: Install Playwright browser (${{ matrix.browser }})
         working-directory: frontend
-        run: npx playwright install --with-deps chromium webkit firefox
+        run: npx playwright install --with-deps ${{ matrix.browser }}
 
-      - name: Run verify-deploy.sh (chromium, 跳过后端编译)
+      - name: Run verify-deploy.sh (${{ matrix.browser }})
         env:
           SKIP_BACKEND: '1'
-        run: bash scripts/verify-deploy.sh chromium
+        run: bash scripts/verify-deploy.sh ${{ matrix.browser }}
 
-      - name: Run verify-deploy.sh (webkit, 验证 Safari 兼容)
-        env:
-          SKIP_BACKEND: '1'
-        run: bash scripts/verify-deploy.sh webkit
-        continue-on-error: true
-
-      - name: Run verify-deploy.sh (firefox, 验证 Firefox 兼容)
-        env:
-          SKIP_BACKEND: '1'
-        run: bash scripts/verify-deploy.sh firefox
-        continue-on-error: true
-
-      - name: Upload verify-deploy reports
+      - name: Upload verify-deploy report (${{ matrix.browser }})
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: verify-deploy-reports
+          name: verify-deploy-${{ matrix.browser }}
           path: |
             reports/verify-deploy/
             frontend/e2e-report/
           retention-days: 14
+
+  # ============================================
+  # V3.5.82+: verify-deploy 汇总 (depends_on 5 matrix jobs)
+  # ============================================
+  verify-deploy-summary:
+    name: V3.5.82 跨浏览器 5 browser 汇总
+    runs-on: ubuntu-latest
+    needs: [verify-deploy]
+    if: always()
+    steps:
+      - name: Matrix 汇总
+        run: |
+          echo "## 跨浏览器 E2E 汇总" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Browser | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+          for browser in chromium webkit firefox mobile-safari mobile-chrome; do
+            status="${{ needs.verify-deploy.result }}"
+            echo "| $browser | $status |" >> $GITHUB_STEP_SUMMARY
+          done
+          if [ "${{ needs.verify-deploy.result }}" != "success" ]; then
+            echo "❌ 至少一个浏览器失败" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          echo "✅ 5 浏览器全部通过" >> $GITHUB_STEP_SUMMARY
 
   # ============================================
   # 总结
@@ -392,7 +411,7 @@ jobs:
   notify:
     name: Summary
     runs-on: ubuntu-latest
-    needs: [backend, frontend, frontend-unit, frontend-e2e, ci-check, verify-deploy]
+    needs: [backend, frontend, frontend-unit, frontend-e2e, ci-check, verify-deploy-summary]
     if: always()
 
     steps:

@@ -8,126 +8,84 @@
   @description 模型 Provider
 -->
 <template>
-  <div class="page-provider provider-page">
-    <div class="page-header">
-      <h2>🛠️ 模型 Provider 管理</h2>
-      <div class="actions">
-        <el-input v-model="search" placeholder="搜索..." clearable style="width: 200px" />
-        <el-button type="primary" @click="showForm = true">
-          <el-icon><Plus /></el-icon> 新增 Provider
-        </el-button>
-        <el-button @click="loadProviders"><el-icon><Refresh /></el-icon></el-button>
+  <div class="page-provider">
+    <!-- 1. page-header -->
+    <header class="page-header">
+      <div>
+        <h2 class="page-title">🛠️ 模型 Provider 管理</h2>
+        <p class="page-subtitle">OpenAI / Anthropic / Gemini / 自定义 LLM 接口</p>
       </div>
-    </div>
+      <el-button-group>
+        <el-input v-model="search" placeholder="搜索..." clearable style="width: 200px" />
+        <el-button :icon="Refresh" @click="loadProviders" />
+        <el-button type="primary" :icon="Plus" @click="showForm = true">新增 Provider</el-button>
+      </el-button-group>
+    </header>
 
     <el-alert type="info" :closable="false" style="margin-bottom: 16px">
       <template #title>💡 提示</template>
-      Provider 用于统一管理 OpenAI / Anthropic / Gemini / 自定义 等 LLM 接口, 配合模型路由使用 (V5.7/V5.10)
+      Provider 用于统一管理 LLM 接口, 配合模型路由使用 (V5.7/V5.10)
     </el-alert>
 
-    <el-table :data="filteredProviders" v-loading="loading" stripe>
-      <el-table-column label="ID" prop="id" width="70" />
-      <el-table-column label="代码" prop="code" width="120">
-        <template #default="{ row }">
-          <el-tag>{{ row.code }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="名称" prop="name" min-width="160" />
-      <el-table-column label="类型" prop="providerType" width="120">
-        <template #default="{ row }">
-          <el-tag :type="typeColor(row.providerType)" size="small">{{ row.providerType }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="Base URL" prop="baseUrl" min-width="200" show-overflow-tooltip />
-      <el-table-column label="API Key" min-width="160">
-        <template #default="{ row }">
-          <code v-if="row.apiKey">{{ maskKey(row.apiKey) }}</code>
-          <el-tag v-else type="info" size="small">未配置</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="状态" width="90">
-        <template #default="{ row }">
-          <el-switch :model-value="row.enabled === 1" @change="(v) => toggleEnabled(row, v)" />
-        </template>
-      </el-table-column>
-      <el-table-column label="权重" prop="sort" width="70" sortable />
-      <el-table-column label="操作" width="240" fixed="right">
-        <template #default="{ row }">
-          <el-button size="small" type="success" @click="handleTest(row)" :loading="testing[row.id]">
-            <el-icon><Connection /></el-icon> 测试
-          </el-button>
-          <el-button size="small" @click="editProvider(row)"><el-icon><Edit /></el-icon></el-button>
-          <el-button size="small" type="danger" @click="handleDelete(row)"><el-icon><Delete /></el-icon></el-button>
-        </template>
-      </el-table-column>
-      <template #empty>
-        <el-empty description="还没有 Provider, 点击右上角新增" />
-      </template>
-    </el-table>
+    <!-- 2. section: Provider 列表 -->
+    <section class="section">
+      <h3 class="section-title">📋 Provider 列表 ({{ filteredProviders.length }})</h3>
+      <el-card shadow="hover">
+        <el-table :data="filteredProviders" v-loading="loading" stripe>
+          <el-table-column label="ID" prop="id" width="70" />
+          <el-table-column label="代码" prop="code" width="120">
+            <template #default="{ row }">
+              <el-tag size="small">{{ row.code }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="名称" prop="name" min-width="160" />
+          <el-table-column label="类型" prop="type" width="100" />
+          <el-table-column label="Base URL" prop="baseUrl" min-width="200" show-overflow-tooltip />
+          <el-table-column label="启用" width="80">
+            <template #default="{ row }">
+              <el-switch v-model="row.enabled" @change="toggleProvider(row)" />
+            </template>
+          </el-table-column>
+          <el-table-column label="优先级" prop="priority" width="100" sortable />
+          <el-table-column label="操作" width="160">
+            <template #default="{ row }">
+              <el-button size="small" @click="editProvider(row)">编辑</el-button>
+              <el-button size="small" type="danger" @click="deleteProvider(row)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-card>
+    </section>
 
-    <!-- 表单对话框 -->
-    <el-dialog v-model="showForm" :title="form.id ? '编辑 Provider' : '新增 Provider'" width="640px">
-      <el-form :model="form" label-width="100px">
-        <el-form-item label="代码" required>
-          <el-input v-model="form.code" placeholder="e.g. openai-main" :disabled="!!form.id" />
-        </el-form-item>
-        <el-form-item label="名称" required>
-          <el-input v-model="form.name" placeholder="e.g. OpenAI 主线路" />
-        </el-form-item>
+    <!-- 3. dialog: 新增 / 编辑 -->
+    <el-dialog v-model="showForm" :title="editingId ? '编辑 Provider' : '新增 Provider'" width="640px">
+      <el-form :model="form" label-width="100px" size="default">
+        <el-form-item label="代码"><el-input v-model="form.code" placeholder="e.g. openai" /></el-form-item>
+        <el-form-item label="名称"><el-input v-model="form.name" placeholder="e.g. OpenAI" /></el-form-item>
         <el-form-item label="类型">
-          <el-select v-model="form.providerType" style="width: 100%">
-            <el-option label="OpenAI 兼容" value="openai" />
-            <el-option label="Anthropic" value="anthropic" />
-            <el-option label="Gemini" value="gemini" />
-            <el-option label="Ollama (本地)" value="ollama" />
-            <el-option label="自定义" value="custom" />
-            <el-option label="Mock" value="mock" />
+          <el-select v-model="form.type" style="width: 100%">
+            <el-option label="OpenAI" value="OPENAI" />
+            <el-option label="Anthropic" value="ANTHROPIC" />
+            <el-option label="Gemini" value="GEMINI" />
+            <el-option label="自研" value="CUSTOM" />
           </el-select>
         </el-form-item>
-        <el-form-item label="Base URL" required>
-          <el-input v-model="form.baseUrl" placeholder="https://api.openai.com/v1" />
-        </el-form-item>
-        <el-form-item label="API Key">
-          <el-input v-model="form.apiKey" type="password" show-password placeholder="sk-..." />
-        </el-form-item>
-        <el-form-item label="默认模型">
-          <el-input v-model="form.defaultModel" placeholder="e.g. gpt-4o-mini" />
-        </el-form-item>
-        <el-form-item label="权重 (sort)">
-          <el-input-number v-model="form.sort" :min="0" :max="100" />
-          <span style="margin-left: 8px; color: #909399; font-size: 12px">数值越大越优先</span>
+        <el-form-item label="Base URL"><el-input v-model="form.baseUrl" placeholder="https://api.openai.com/v1" /></el-form-item>
+        <el-form-item label="API Key"><el-input v-model="form.apiKey" type="password" show-password /></el-form-item>
+        <el-form-item label="优先级">
+          <el-input-number v-model="form.priority" :min="0" :max="100" />
         </el-form-item>
         <el-form-item label="启用">
-          <el-switch v-model="form.enabledBool" />
-        </el-form-item>
-        <el-form-item label="备注">
-          <el-input v-model="form.remark" type="textarea" :rows="2" />
+          <el-switch v-model="form.enabled" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showForm = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="handleSave">保存</el-button>
+        <el-button type="primary" @click="saveProvider" :loading="saving">保存</el-button>
       </template>
-    </el-dialog>
-
-    <!-- 测试结果对话框 -->
-    <el-dialog v-model="showTestResult" title="Provider 连接测试" width="520px">
-      <div v-if="testResult" class="test-result">
-        <el-result :icon="testResult.ok ? 'success' : 'error'" :title="testResult.ok ? '✓ 连接正常' : '✗ 连接失败'">
-          <template #sub-title>
-            <div class="test-meta">
-              <div><strong>Provider:</strong> {{ testResult.provider }}</div>
-              <div><strong>Base URL:</strong> {{ testResult.baseUrl }}</div>
-              <div><strong>API Key:</strong> {{ testResult.apiKeyMasked }}</div>
-              <div v-if="testResult.note" class="note">{{ testResult.note }}</div>
-            </div>
-          </template>
-        </el-result>
-      </div>
     </el-dialog>
   </div>
 </template>
-
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, reactive } from 'vue'

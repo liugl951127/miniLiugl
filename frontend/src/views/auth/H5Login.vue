@@ -15,12 +15,12 @@
           <p class="brand-tagline">Liugl-AI 大模型平台 · 跨端</p>
         </div>
       </div>
-      <el-button :icon="Back" @click="$router.push('/login')" plain>PC 登录</el-button>
+      <el-button :icon="Back" @click="$router.push('/login')" plain>{{ t('h5login.pc') }}</el-button>
     </header>
 
     <!-- 2. section: 4 平台 OAuth 按钮 -->
     <section class="section">
-      <h3 class="section-title">选择登录方式</h3>
+      <h3 class="section-title">{{ t('h5login.platforms') }}</h3>
       <el-row :gutter="12">
         <el-col v-for="p in platforms" :key="p.id" :xs="12" :sm="6">
           <el-card shadow="hover" class="platform-card" @click="onPlatformLogin(p)">
@@ -59,7 +59,7 @@
         <el-row :gutter="16" align="middle">
           <el-col :span="10">
             <img src="/icons/icon-192.svg" alt="Liugl-AI" class="info-qr" />
-            <p class="info-qr-hint">扫码下载移动 App</p>
+            <p class="info-qr-hint">{{ t('h5login.app') }}</p>
           </el-col>
           <el-col :span="14">
             <h4>平台能力</h4>
@@ -99,7 +99,9 @@
  * 业务代码保留: 4 平台 OAuth 跳转 + unionid 跨平台打通
  */
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+const { t } = useI18n()
 import { ElMessage } from 'element-plus'
 import { Back, Close, Check } from '@element-plus/icons-vue'
 import { ChatDotRound, ChatLineRound, Money } from '@element-plus/icons-vue'

@@ -8,122 +8,102 @@
   - 19 端点: nodes/active/list/{id}, me, leader, route, drain, stats, raft/start/stop/state/leader/submit/applied, raft/append/vote/status/log/trigger-election
 -->
 <template>
-  <div class="page-cluster page">
-    <el-card>
-      <template #header>
-        <div class="header">
-          <span>🖥️ AI 集群管理 <el-tag size="small" type="success">V3.5.48</el-tag></span>
-          <div>
-            <el-tag :type="me?.isLeader ? 'success' : 'info'">
-              {{ me?.isLeader ? '👑 Leader' : 'Follower' }} · {{ me?.nodeId || 'N/A' }}
-            </el-tag>
-            <el-button size="small" @click="loadAll" :icon="Refresh" style="margin-left: 8px">刷新</el-button>
-          </div>
-        </div>
-      </template>
+  <div class="page-cluster">
+    <!-- 1. page-header -->
+    <header class="page-header">
+      <div>
+        <h2 class="page-title">🖥️ AI 集群管理 <el-tag size="small" type="success">V3.5.48</el-tag></h2>
+        <p class="page-subtitle">节点管理 · 路由 · Raft 共识 · leader 选举</p>
+      </div>
+      <div>
+        <el-tag :type="me?.isLeader ? 'success' : 'info'">
+          {{ me?.isLeader ? '👑 Leader' : 'Follower' }} · {{ me?.nodeId || 'N/A' }}
+        </el-tag>
+        <el-button size="small" :icon="Refresh" @click="loadAll" style="margin-left: 8px">刷新</el-button>
+      </div>
+    </header>
 
+    <!-- 2. section: 4 KPI -->
+    <section class="section">
       <el-row :gutter="16">
-        <el-col :span="6">
-          <div class="stat-card"><div class="num">{{ nodes.length }}</div><div>总节点数</div></div>
-        </el-col>
-        <el-col :span="6">
-          <div class="stat-card"><div class="num">{{ activeCount }}</div><div>ACTIVE 节点</div></div>
-        </el-col>
-        <el-col :span="6">
-          <div class="stat-card"><div class="num">{{ leaderInfo?.nodeId || 'N/A' }}</div><div>Leader</div></div>
-        </el-col>
-        <el-col :span="6">
-          <div class="stat-card"><div class="num">{{ stats?.loadAvg?.toFixed(2) || '0' }}</div><div>集群负载</div></div>
-        </el-col>
+        <el-col :xs="12" :sm="6"><el-card shadow="hover" class="kpi-card"><el-statistic title="总节点数" :value="nodes.length" /></el-card></el-col>
+        <el-col :xs="12" :sm="6"><el-card shadow="hover" class="kpi-card"><el-statistic title="ACTIVE 节点" :value="activeCount" :value-style="{ color: '#10b981' }" /></el-card></el-col>
+        <el-col :xs="12" :sm="6"><el-card shadow="hover" class="kpi-card"><el-statistic title="已加入共识" :value="raftNodes.length" :value-style="{ color: '#6366f1' }" /></el-card></el-col>
+        <el-col :xs="12" :sm="6"><el-card shadow="hover" class="kpi-card"><el-statistic title="已应用日志" :value="raftState?.appliedIndex ?? 0" :value-style="{ color: '#a855f7' }" /></el-card></el-col>
       </el-row>
-    </el-card>
+    </section>
 
-    <el-row :gutter="16" style="margin-top: 16px">
-      <el-col :span="14">
-        <el-card>
-          <template #header>
-            <div class="header">
-              <span>📋 节点列表</span>
-              <el-radio-group v-model="nodeFilter" size="small">
-                <el-radio-button value="all">全部</el-radio-button>
-                <el-radio-button value="active">ACTIVE</el-radio-button>
-              </el-radio-group>
-            </div>
-          </template>
-          <el-table :data="filteredNodes" border stripe>
-            <el-table-column prop="nodeId" label="节点 ID" width="180" />
-            <el-table-column prop="address" label="地址" width="200" />
-            <el-table-column prop="status" label="状态" width="100">
-              <template #default="{ row }">
-                <el-tag :type="row.status === 'ACTIVE' ? 'success' : 'info'">{{ row.status }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="role" label="角色" width="100">
-              <template #default="{ row }">
-                <el-tag v-if="row.role === 'LEADER'" type="warning" size="small">👑 LEADER</el-tag>
-                <el-tag v-else size="small">FOLLOWER</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="load" label="负载" width="120">
-              <template #default="{ row }">
-                <el-progress :percentage="(row.load || 0) * 100" :stroke-width="8" />
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="120">
-              <template #default="{ row }">
-                <el-button size="small" @click="onDrain(row)" type="danger" :disabled="row.status !== 'ACTIVE'">
-                  排空
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
-      </el-col>
+    <!-- 3. section: 节点表 -->
+    <section class="section">
+      <h3 class="section-title">📋 节点列表 ({{ nodes.length }})</h3>
+      <el-card shadow="hover">
+        <el-table :data="nodes" stripe>
+          <el-table-column prop="nodeId" label="Node ID" min-width="180" />
+          <el-table-column prop="endpoint" label="Endpoint" min-width="180" />
+          <el-table-column prop="status" label="状态" width="100">
+            <template #default="{ row }">
+              <el-tag :type="row.status === 'ACTIVE' ? 'success' : 'info'" size="small">{{ row.status }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="weight" label="权重" width="80" />
+          <el-table-column prop="activeConnections" label="活跃连接" width="100" />
+          <el-table-column prop="isLeader" label="Leader" width="80">
+            <template #default="{ row }">
+              <el-tag v-if="row.isLeader" type="success" size="small">👑</el-tag>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="160">
+            <template #default="{ row }">
+              <el-button size="small" :disabled="row.status === 'DRAINING'" @click="drainNode(row)">Drain</el-button>
+              <el-button size="small" type="primary" @click="routeToNode(row)">Route</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-card>
+    </section>
 
-      <el-col :span="10">
-        <el-card>
-          <template #header>
-            <div class="header">
-              <span>🗳 Raft 共识</span>
-            </div>
-          </template>
-          <div class="raft-panel">
-            <el-descriptions :column="1" border size="small">
-              <el-descriptions-item label="State">{{ raftStateInfo?.state || 'UNKNOWN' }}</el-descriptions-item>
-              <el-descriptions-item label="Term">{{ raftStateInfo?.term || 0 }}</el-descriptions-item>
-              <el-descriptions-item label="Leader">{{ raftStateInfo?.leader || 'N/A' }}</el-descriptions-item>
-              <el-descriptions-item label="Last Log Index">{{ raftStateInfo?.lastLogIndex || 0 }}</el-descriptions-item>
-              <el-descriptions-item label="Commit Index">{{ raftStateInfo?.commitIndex || 0 }}</el-descriptions-item>
-              <el-descriptions-item label="Applied Index">{{ raftAppliedInfo?.applied || 0 }}</el-descriptions-item>
+    <!-- 4. section: Raft 状态 -->
+    <section class="section">
+      <h3 class="section-title">🔗 Raft 状态</h3>
+      <el-row :gutter="16">
+        <el-col :xs="24" :sm="12">
+          <el-card shadow="hover">
+            <template #header><span>集群 ({{ raftNodes.length }})</span></template>
+            <el-table :data="raftNodes" stripe size="small">
+              <el-table-column prop="nodeId" label="Node ID" min-width="180" />
+              <el-table-column prop="role" label="Role" width="100">
+                <template #default="{ row }">
+                  <el-tag :type="row.role === 'LEADER' ? 'success' : 'info'" size="small">{{ row.role }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="term" label="Term" width="80" />
+            </el-table>
+          </el-card>
+        </el-col>
+        <el-col :xs="24" :sm="12">
+          <el-card shadow="hover">
+            <template #header><span>共识</span></template>
+            <el-descriptions :column="1" size="small" border>
+              <el-descriptions-item label="State">{{ raftState?.state || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="Term">{{ raftState?.currentTerm || 0 }}</el-descriptions-item>
+              <el-descriptions-item label="Commit Index">{{ raftState?.commitIndex || 0 }}</el-descriptions-item>
+              <el-descriptions-item label="Last Applied">{{ raftState?.appliedIndex || 0 }}</el-descriptions-item>
+              <el-descriptions-item label="Last Log Term">{{ raftState?.lastLogTerm || 0 }}</el-descriptions-item>
             </el-descriptions>
             <div style="margin-top: 12px">
               <el-button-group>
-                <el-button type="success" @click="onRaftStart" :disabled="raftStateInfo?.state === 'RUNNING'">▶ Start</el-button>
-                <el-button type="danger" @click="onRaftStop" :disabled="raftStateInfo?.state !== 'RUNNING'">⏹ Stop</el-button>
-                <el-button type="warning" @click="onTriggerElection">🗳 Trigger Election</el-button>
+                <el-button :icon="VideoPlay" :loading="raftBusy" @click="startRaft" type="primary" size="small">Start</el-button>
+                <el-button :icon="VideoPause" :loading="raftBusy" @click="stopRaft" size="small">Stop</el-button>
+                <el-button :icon="Warning" :loading="raftBusy" @click="triggerElection" type="warning" size="small">Trigger</el-button>
               </el-button-group>
             </div>
-            <el-divider>提交日志</el-divider>
-            <el-input v-model="raftLogCmd" placeholder="提交命令 (e.g. SET key value)" size="small">
-              <template #append>
-                <el-button @click="onRaftSubmit" :icon="Upload">Submit</el-button>
-              </template>
-            </el-input>
-            <div v-if="recentLogs.length" class="log-list">
-              <h5>最近日志</h5>
-              <div v-for="(l, i) in recentLogs" :key="i" class="log-item">
-                <span class="log-idx">#{{ l.index }}</span>
-                <span class="log-term">T{{ l.term }}</span>
-                <span class="log-cmd">{{ l.command }}</span>
-              </div>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
+          </el-card>
+        </el-col>
+      </el-row>
+    </section>
   </div>
 </template>
-
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, reactive } from 'vue'

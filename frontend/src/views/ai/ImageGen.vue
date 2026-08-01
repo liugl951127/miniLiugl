@@ -8,85 +8,94 @@
   @description ImageGen 页面
 -->
 <template>
-  <div class="page-image-gen image-gen">
-    <el-card>
-      <template #header>
-        <div class="header">
-          <span>🎨 AIGC 图片生成 (V2.7.5 - 自研, 无外部 LLM 依赖)</span>
-        </div>
-      </template>
+  <div class="page-image-gen">
+    <!-- 1. page-header -->
+    <header class="page-header">
+      <div>
+        <h2 class="page-title">🎨 AIGC 图片生成 <el-tag size="small" type="info">V2.7.5</el-tag></h2>
+        <p class="page-subtitle">自研图像生成 · 0 外部 LLM 依赖 · SVG / PNG / 数据图 / Logo</p>
+      </div>
+      <el-button :icon="Refresh" @click="resetForm" plain>重置</el-button>
+    </header>
 
-      <el-row :gutter="16">
-        <!-- 左侧控制 -->
-        <el-col :span="8">
-          <el-card shadow="never">
-            <template #header>⚙️ 生成配置</template>
-            <el-form :model="req" label-width="80px">
+    <!-- 2. section: 8:16 分栏 - 配置 + 预览 -->
+    <el-row :gutter="16">
+      <el-col :xs="24" :md="8">
+        <section class="section">
+          <h3 class="section-title">⚙️ 生成配置</h3>
+          <el-card shadow="hover">
+            <el-form :model="req" label-width="80px" size="default">
               <el-form-item label="描述">
                 <el-input v-model="req.prompt" type="textarea" :rows="3"
                           placeholder="例: 一座山的日落风景 / 公司 logo / 数据图表 / 蓝色渐变" />
               </el-form-item>
               <el-form-item label="类型">
-                <el-select v-model="req.type" placeholder="自动推断" clearable>
-                  <el-option v-for="t in imageTypes" :key="t" :label="t" :value="t" />
+                <el-select v-model="req.type" placeholder="自动推断" clearable style="width: 100%">
+                  <el-option label="🖼️ SVG 矢量" value="svg" />
+                  <el-option label="🖌️ 数据图表" value="chart" />
+                  <el-option label="📊 流程图" value="diagram" />
+                  <el-option label="🎯 Logo" value="logo" />
                 </el-select>
               </el-form-item>
               <el-form-item label="尺寸">
-                <el-radio-group v-model="sizePreset" @change="changeSize">
-                  <el-radio-button label="512x512" />
-                  <el-radio-button label="1024x1024" />
-                  <el-radio-button label="1920x1080" />
+                <el-select v-model="req.size" style="width: 100%">
+                  <el-option label="512×512" value="512x512" />
+                  <el-option label="1024×1024" value="1024x1024" />
+                  <el-option label="1920×1080" value="1920x1080" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="风格">
+                <el-radio-group v-model="req.style">
+                  <el-radio label="flat">扁平</el-radio>
+                  <el-radio label="gradient">渐变</el-radio>
+                  <el-radio label="neon">霓虹</el-radio>
                 </el-radio-group>
               </el-form-item>
-              <el-form-item label="种子">
-                <el-input-number v-model="req.seed" :min="0" />
-                <el-button size="small" @click="randomSeed" style="margin-left: 8px">🎲 随机</el-button>
+              <el-form-item>
+                <el-button type="primary" :loading="generating" :icon="PictureFilled" @click="generate" style="width: 100%">
+                  {{ generating ? '生成中...' : '生成图片' }}
+                </el-button>
               </el-form-item>
-              <el-button type="primary" :loading="loading" @click="generate" style="width: 100%">
-                🎨 立即生成
-              </el-button>
-              <el-button @click="inferType" style="width: 100%; margin-top: 8px">
-                🔍 推断类型
-              </el-button>
             </el-form>
           </el-card>
-        </el-col>
 
-        <!-- 右侧展示 -->
-        <el-col :span="16">
-          <el-card shadow="never">
-            <template #header>
-              <div style="display: flex; justify-content: space-between; align-items: center">
-                <span>🖼️ 预览</span>
-                <el-button-group v-if="result">
-                  <el-button size="small" @click="download">💾 下载</el-button>
-                </el-button-group>
-              </div>
-            </template>
-
-            <div v-if="result" class="result">
-              <div class="image-wrap">
-                <img :src="imageUrl" alt="Generated" />
-              </div>
-
-              <el-descriptions :column="2" border size="small" style="margin-top: 12px">
-                <el-descriptions-item label="类型">{{ result.type }}</el-descriptions-item>
-                <el-descriptions-item label="尺寸">{{ result.width }} x {{ result.height }}</el-descriptions-item>
-                <el-descriptions-item label="大小">{{ formatBytes(result.sizeBytes) }}</el-descriptions-item>
-                <el-descriptions-item label="格式">{{ result.mime }}</el-descriptions-item>
-                <el-descriptions-item label="种子">{{ result.metadata?.seed }}</el-descriptions-item>
-                <el-descriptions-item label="耗时">{{ result.metadata?.costMs }}ms</el-descriptions-item>
-                <el-descriptions-item label="提示词" :span="2">{{ result.prompt }}</el-descriptions-item>
-              </el-descriptions>
-            </div>
-            <el-empty v-else description="填写描述后点击生成" />
+          <h3 class="section-title">💡 示例</h3>
+          <el-card shadow="hover" class="examples-card">
+            <el-button v-for="ex in examples" :key="ex.label" size="small" @click="useExample(ex)" plain style="margin: 4px">
+              {{ ex.label }}
+            </el-button>
           </el-card>
-        </el-col>
-      </el-row>
-    </el-card>
+        </section>
+      </el-col>
+
+      <el-col :xs="24" :md="16">
+        <section class="section">
+          <h3 class="section-title">🖼️ 预览</h3>
+          <el-card shadow="hover" class="preview-card">
+            <el-empty v-if="!result" description="填写描述后点击生成" :image-size="120" />
+            <div v-else class="result-area">
+              <div v-if="result.imageUrl" class="image-frame">
+                <img :src="result.imageUrl" :alt="req.prompt" class="generated-img" />
+              </div>
+              <div v-else-if="result.svg" class="image-frame" v-html="result.svg" />
+              <div class="result-meta">
+                <el-descriptions :column="3" size="small" border>
+                  <el-descriptions-item label="大小">{{ formatSize(result.size) }}</el-descriptions-item>
+                  <el-descriptions-item label="生成耗时">{{ result.durationMs }} ms</el-descriptions-item>
+                  <el-descriptions-item label="模型">{{ result.model || 'self-ai' }}</el-descriptions-item>
+                </el-descriptions>
+                <div class="result-actions">
+                  <el-button :icon="Download" @click="downloadImage" size="small">下载</el-button>
+                  <el-button :icon="CopyDocument" @click="copyImage" size="small">复制</el-button>
+                </div>
+              </div>
+            </div>
+          </el-card>
+        </section>
+      </el-col>
+    </el-row>
   </div>
 </template>
-
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
