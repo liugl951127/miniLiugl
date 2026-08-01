@@ -119,6 +119,7 @@ import {
 
 const { t } = useI18n()
 const nodes = ref([])
+const raftNodes = computed(() => nodes.value)  // V3.5.95: 别名 (模板用 raftNodes)
 const me = ref(null)
 const leaderInfo = ref(null)
 const stats = ref(null)

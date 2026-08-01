@@ -115,11 +115,36 @@ else
     echo "$MENU_ROUTE" | tail -15
     EXIT=1
 fi
+
+# --- Check 8: <script setup> 防御性自检 (V3.5.95+) ---
+echo "--- 8. <script setup> 防御性自检 ---"
+SETUP_VAR=$(node scripts/check-setup-var.cjs 2>&1)
+SETUP_EXIT=$?
+if [ $SETUP_EXIT -eq 0 ]; then
+    echo "  ✓ PASS (0 <script setup> 顶层变量未定义)"
+else
+    echo "  ✗ FAIL: 模板用变量但 setup 未定义"
+    echo "$SETUP_VAR" | tail -15
+    EXIT=1
+fi
+echo ""
+
+# --- Check 9: docker-compose 静态验证 (V3.5.95+) ---
+echo "--- 9. docker-compose 静态验证 ---"
+COMPOSE_CHECK=$(bash scripts/verify-docker-compose.sh 2>&1)
+COMPOSE_EXIT=$?
+if [ $COMPOSE_EXIT -eq 0 ]; then
+    echo "  ✓ PASS (19 services + 14 module depends_on otel-collector)"
+else
+    echo "  ✗ FAIL: docker-compose 配置异常"
+    echo "$COMPOSE_CHECK" | tail -15
+    EXIT=1
+fi
 echo ""
 
 echo "═══════════════════════════════════════════════════════════"
 if [ $EXIT -eq 0 ]; then
-    echo "  ✓ ALL PASS (7/7)"
+    echo "  ✓ ALL PASS (9/9)"
 else
     echo "  ✗ FAILED (some checks)"
 fi

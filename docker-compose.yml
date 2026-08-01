@@ -61,6 +61,30 @@ x-jvm-env: &jvm-env
 
 services:
   # ============== 基础设施 (3 个) ==============
+  # ============== OpenTelemetry (V3.5.95+) ==============
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.96.0
+    container_name: minimax-otel-collector
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./deploy/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    networks: [minimax-net]
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.55
+    container_name: minimax-jaeger
+    restart: unless-stopped
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
+      - "14250:14250"
+    networks: [minimax-net]
+
   mariadb:
     image: mariadb:10.11
     container_name: minimax-mariadb
@@ -167,6 +191,7 @@ services:
     restart: unless-stopped
     depends_on:
       mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
     environment: { <<: *jvm-env, SERVER_PORT: "8081" }
     ports: ["8081:8081"]
     volumes: *maven-volumes
@@ -180,6 +205,7 @@ services:
     restart: unless-stopped
     depends_on:
       mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
       redis:   { condition: service_healthy }
     environment: { <<: *jvm-env, SERVER_PORT: "8082" }
     ports: ["8082:8082"]
@@ -194,6 +220,7 @@ services:
     restart: unless-stopped
     depends_on:
       mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
     environment: { <<: *jvm-env, SERVER_PORT: "8084" }
     ports: ["8084:8084"]
     volumes: *maven-volumes
@@ -207,6 +234,7 @@ services:
     restart: unless-stopped
     depends_on:
       mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
     environment: { <<: *jvm-env, SERVER_PORT: "8085" }
     ports: ["8085:8085"]
     volumes: *maven-volumes
@@ -220,6 +248,7 @@ services:
     restart: unless-stopped
     depends_on:
       mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
     environment: { <<: *jvm-env, SERVER_PORT: "8087", MODEL_DIR: "/var/minimax/models/vision", MODEL_FILE: "mobilenetv3.onnx" }
     ports: ["8087:8087"]
     volumes:
@@ -236,6 +265,7 @@ services:
     restart: unless-stopped
     depends_on:
       mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
       redis:   { condition: service_healthy }
     environment: { <<: *jvm-env, SERVER_PORT: "8088" }
     ports: ["8088:8088"]
@@ -250,6 +280,7 @@ services:
     restart: unless-stopped
     depends_on:
       mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
     environment: { <<: *jvm-env, SERVER_PORT: "8089", SMTP_USER: "493634207@qq.com", SMTP_PASSWORD: "qndknqjbcarjcbbe" }
     ports: ["8089:8089"]
     volumes: *maven-volumes
@@ -263,6 +294,7 @@ services:
     restart: unless-stopped
     depends_on:
       mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
     environment: { <<: *jvm-env, SERVER_PORT: "8090" }
     ports: ["8090:8090"]
     volumes: *maven-volumes
@@ -276,6 +308,7 @@ services:
     restart: unless-stopped
     depends_on:
       mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
       redis:   { condition: service_healthy }
     environment: { <<: *jvm-env, SERVER_PORT: "8092" }
     ports: ["8092:8092"]
@@ -290,6 +323,7 @@ services:
     restart: unless-stopped
     depends_on:
       mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
     environment: { <<: *jvm-env, SERVER_PORT: "8093" }
     ports: ["8093:8093"]
     volumes: *maven-volumes
@@ -303,6 +337,7 @@ services:
     restart: unless-stopped
     depends_on:
       mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
     environment: { <<: *jvm-env, SERVER_PORT: "8094", MODEL_PATH: "/app/data/ai/model.bin", TRAINING_DATA: "/app/data/ai/training-data.txt" }
     ports: ["8094:8094"]
     volumes:
@@ -319,6 +354,7 @@ services:
     restart: unless-stopped
     depends_on:
       mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
     environment: { <<: *jvm-env, SERVER_PORT: "8095" }
     ports: ["8095:8095"]
     volumes: *maven-volumes
@@ -352,32 +388,3 @@ services:
 volumes: {}
 networks:
   minimax-net: { driver: bridge }
-
-  # ============================================
-  # V3.5.89+ OpenTelemetry Collector + Jaeger
-  # 收 14 微服务的 OTLP trace, 转 Jaeger 可视化
-  # ============================================
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.96.0
-    container_name: minimax-otel-collector
-    restart: unless-stopped
-    command: ["--config=/etc/otel-collector-config.yaml"]
-    volumes:
-      - ./deploy/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
-    ports:
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
-    depends_on:
-      - jaeger
-    networks: [minimax-net]
-
-  jaeger:
-    image: jaegertracing/all-in-one:1.55
-    container_name: minimax-jaeger
-    restart: unless-stopped
-    environment:
-      COLLECTOR_OTLP_ENABLED: "true"
-    ports:
-      - "16686:16686"  # Jaeger UI
-      - "14250:14250"  # gRPC
-    networks: [minimax-net]

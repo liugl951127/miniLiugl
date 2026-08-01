@@ -160,6 +160,8 @@ const dragging = ref(false)
 const pendingImages = ref([])
 const searchKw = ref('')
 const messagesRef = ref(null)
+const toolCalls = ref([])  // V3.5.95: 工具调用列表 (顶层)
+const sources = ref([])    // V3.5.95: 来源列表 (RAG 引用)
 
 // 计算
 const filteredSessions = computed(() => {
