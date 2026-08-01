@@ -33,7 +33,7 @@
 
     <!-- 2. 健康状态行 (el-tag 替代自定义 pill) -->
     <section class="section">
-      <h3 class="section-title">服务健康</h3>
+      <h3 class="section-title">服务健康 ({{ healthScore }}/100)</h3>
       <div class="health-grid">
         <el-tag
           v-for="(h, name) in health"
