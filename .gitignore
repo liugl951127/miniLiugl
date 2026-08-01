@@ -76,3 +76,8 @@ frontend/e2e-report/
 *.v3.5.95.bak
 *.v3.5.96.bak
 *.v3.5.97.bak
+# V3.6.11+ 清理历史 bak/backup 目录
+.view-*-backup/
+.jwt-backup*/
+package.json.*.bak
+*.vue.*.bak
