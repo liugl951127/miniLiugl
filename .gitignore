@@ -1,0 +1,27 @@
+# 依赖
+node_modules/
+**/node_modules/
+
+# 构建产物
+target/
+build/
+dist/
+coverage/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+
+# 临时
+*.tmp
+.tmp/
+.total-tmp/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 压缩包(zip 已通过单独交付,不入库)
+*.zip

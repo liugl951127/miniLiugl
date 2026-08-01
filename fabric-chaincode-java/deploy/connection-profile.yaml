@@ -1,0 +1,133 @@
+# 业务系统连接 Fabric Gateway 用的 connection-profile 模板
+# 部署到生产时,把证书路径替换为 KMS 管理的 secret
+name: dual-record-network
+version: 1.0.0
+client:
+  organization: BankOrg
+  logging:
+    level: info
+  cryptoconfig:
+    path: ${GATEWAY_CRYPTO_PATH}
+  credentialStore:
+    path: /tmp/hfc-kvs
+    cryptoStore:
+      path: /tmp/hfc-msp
+  BCCSP:
+    security:
+      enabled: true
+      default:
+        provider: SW
+      hashAlgorithm: SHA2
+      softVerify: true
+      level: 256
+
+organizations:
+  BankOrg:
+    mspid: BankMSP
+    cryptoPath: ${GATEWAY_CRYPTO_PATH}/peerOrganizations/bank.com/users/{username}@bank.com/msp
+    peers:
+      - peer0.bank.com
+    certificateAuthorities:
+      - ca.bank.com
+
+  CsrcOrg:
+    mspid: CsrcMSP
+    cryptoPath: ${GATEWAY_CRYPTO_PATH}/peerOrganizations/csrc.com/users/{username}@csrc.com/msp
+    peers:
+      - peer0.csrc.com
+    certificateAuthorities:
+      - ca.csrc.com
+
+  InsuranceOrg:
+    mspid: InsuranceMSP
+    cryptoPath: ${GATEWAY_CRYPTO_PATH}/peerOrganizations/insurance.com/users/{username}@insurance.com/msp
+    peers:
+      - peer0.insurance.com
+    certificateAuthorities:
+      - ca.insurance.com
+
+  NotaryOrg:
+    mspid: NotaryMSP
+    cryptoPath: ${GATEWAY_CRYPTO_PATH}/peerOrganizations/notary.com/users/{username}@notary.com/msp
+    peers:
+      - peer0.notary.com
+    certificateAuthorities:
+      - ca.notary.com
+
+peers:
+  peer0.bank.com:
+    url: grpcs://peer0.bank.com:7051
+    grpcOptions:
+      ssl-target-name-override: peer0.bank.com
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      max-message-size: 4194304
+      max-receive-message-length: 10485760
+      no-secure-connection: false
+    tlsCACerts:
+      path: ${GATEWAY_CRYPTO_PATH}/peerOrganizations/bank.com/tlsca/tlsca.bank.com-cert.pem
+
+  peer0.csrc.com:
+    url: grpcs://peer0.csrc.com:8051
+    grpcOptions:
+      ssl-target-name-override: peer0.csrc.com
+    tlsCACerts:
+      path: ${GATEWAY_CRYPTO_PATH}/peerOrganizations/csrc.com/tlsca/tlsca.csrc.com-cert.pem
+
+  peer0.insurance.com:
+    url: grpcs://peer0.insurance.com:9051
+    grpcOptions:
+      ssl-target-name-override: peer0.insurance.com
+    tlsCACerts:
+      path: ${GATEWAY_CRYPTO_PATH}/peerOrganizations/insurance.com/tlsca/tlsca.insurance.com-cert.pem
+
+  peer0.notary.com:
+    url: grpcs://peer0.notary.com:10051
+    grpcOptions:
+      ssl-target-name-override: peer0.notary.com
+    tlsCACerts:
+      path: ${GATEWAY_CRYPTO_PATH}/peerOrganizations/notary.com/tlsca/tlsca.notary.com-cert.pem
+
+orderers:
+  orderer.dual-record.com:
+    url: grpcs://orderer.dual-record.com:7050
+    grpcOptions:
+      ssl-target-name-override: orderer.dual-record.com
+    tlsCACerts:
+      path: ${GATEWAY_CRYPTO_PATH}/ordererOrganizations/dual-record.com/tlsca/tlsca.dual-record.com-cert.pem
+
+certificateAuthorities:
+  ca.bank.com:
+    url: https://ca.bank.com:7054
+    caName: ca.bank.com
+    tlsCACerts:
+      path: ${GATEWAY_CRYPTO_PATH}/peerOrganizations/bank.com/ca/ca.bank.com-cert.pem
+    httpOptions:
+      verify: false
+
+channels:
+  dual-record-channel:
+    orderers:
+      - orderer.dual-record.com
+    peers:
+      peer0.bank.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+      peer0.csrc.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+      peer0.insurance.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+      peer0.notary.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
