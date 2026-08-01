@@ -1,88 +1,85 @@
 /**
- * Liugl-AI PWA Service Worker (V2.8.9 完整版)
+ * Liugl-AI PWA Service Worker (V3.5.84 简化版 - network-only)
  *
- * <h3>缓存策略</h3>
+ * <h3>背景</h3>
+ * V3.5.84 改: 去掉所有离线缓存, 改为 network-only 策略
+ *
+ * 之前版本 (V2.8.9 - V3.5.79) 用 7 类缓存策略 (PRECACHE/RUNTIME/API/ASSETS 等):
+ *   - CacheFirst / NetworkFirst / CacheFirst with revalidate
+ *   - 5 个 Cache Storage 名字 (minimax-v3.5.79, liugl-runtime, liugl-api, minimax-assets-runtime, etc.)
+ *   - PRECACHE_URLS (9 个静态资源)
+ *   - 50 资源 FIFO 限制
+ *   - IndexedDB Background Sync 队列
+ *
+ * 改 network-only 的原因:
+ *   1. 版本迭代加载错误: 老 /assets/*.js (V3.5.62-63 CDN 方案残留) 在 sw 缓存里
+ *      浏览器报 "Failed to resolve module specifier 'vue'", 新版本用户跑老代码
+ *   2. 缓存策略复杂度: 7 类策略 + 5 个 cache 名 + 3 个同步机制 = 维护成本高
+ *   3. 缓存大小: 老 cache 占用几十 MB 空间, 用户清理不便
+ *   4. 用户反馈: 离线缓存影响新版本加载, 期望发版立刻生效
+ *
+ * 简化后策略:
+ *   - 所有 fetch 直接走网络, 不缓存
+ *   - 仅保留离线 fallback: 导航请求失败时返回 /offline.html
+ *   - 保留消息协议 (SKIP_WAITING / CLEAR_CACHE / GET_VERSION)
+ *   - 保留 Push 通知 + Background Sync + Periodic Background Sync (写操作 / 通知用)
+ *   - 浏览器 HTTP 缓存天然处理资源缓存, sw 不再干预
+ *
+ * <h3>新策略</h3>
  * <ul>
- *   <li>PRECACHE: 关键静态资源 (HTML/CSS/JS) - CacheFirst</li>
- *   <li>RUNTIME: 图片/字体 - CacheFirst (容量限制)</li>
- *   <li>API GET (用户数据/AI工具): NetworkFirst + 3s 超时, 失败走缓存</li>
- *   <li>API POST/PUT/DELETE (写操作): NetworkOnly (不缓存)</li>
- *   <li>WebSocket: 不缓存, 直连</li>
- *   <li>导航请求 (HTML): NetworkFirst, 失败返回 /offline.html</li>
+ *   <li>导航请求 (HTML): NetworkOnly + 离线 /offline.html fallback</li>
+ *   <li>所有静态资源 (/assets/* /icons/* /favicon.svg): NetworkOnly (HTTP 缓存兜底)</li>
+ *   <li>API GET: NetworkOnly (HTTP 缓存兜底)</li>
+ *   <li>API POST/PUT/DELETE: NetworkOnly + 失败 503 (写操作不能错)</li>
+ *   <li>WebSocket: NetworkOnly (直连)</li>
+ *   <li>消息协议: SKIP_WAITING / CLEAR_CACHE / GET_VERSION / CACHE_URLS (保留)</li>
+ *   <li>Push 通知: 保留 (P1 占位)</li>
+ *   <li>Background Sync: 保留 (V3.5.73+ 离线写排队)</li>
+ *   <li>Periodic Background Sync: 保留 (V3.5.79+ 定时同步)</li>
  * </ul>
  *
- * <h3>消息协议</h3>
+ * <h3>发版流程</h3>
  * <ul>
- *   <li>SKIP_WAITING: 客户端强制激活新 SW</li>
- *   <li>CLEAR_CACHE: 清空所有缓存</li>
- *   <li>GET_VERSION: 返回当前 SW 版本</li>
+ *   <li>发版时 sw.js URL 加 ?v={ver} 强制浏览器拉新 (PRECACHE_URLS 已无意义)</li>
+ *   <li>CACHE_VERSION 仅作消息协议返回用, 不再触发缓存</li>
+ *   <li>activate 时删除所有老 cache, 保证浏览器空间释放</li>
  * </ul>
  *
  * @author Liugl-AI
  * @since V2.8.9
+ * @updated V3.5.84 简化
  */
 
-const CACHE_VERSION = 'v3.5.79'
-const CACHE_NAME = `minimax-${CACHE_VERSION}`
-const RUNTIME_CACHE = 'liugl-runtime'
-const API_CACHE = 'liugl-api'
+const CACHE_VERSION = 'v3.5.84'
 const OFFLINE_URL = '/offline.html'
 
-// 静态资源预缓存 (构建时由 vite-plugin-pwa 注入, 这里手工维护核心)
-// V3.5.79+ PWA 全 SVG 矢量图标 (响应式 + 高 DPI 友好)
-const PRECACHE_URLS = [
-  '/',
-  '/index.html',
-  '/offline.html',
-  '/manifest.json',
-  '/favicon.svg',
-  '/icons/icon-192.svg',
-  '/icons/icon-512.svg',
-  '/icons/apple-touch-icon.svg',
-  '/icons/mask-icon.svg'
-]
+// V3.5.84+ 删 PRECACHE_URLS - 不再预缓存, 浏览器 HTTP 缓存处理
+// const PRECACHE_URLS = []  // 保留注释, 标记删了什么
 
-// V3.5.71+ /assets/* 缓存 (NetworkFirst, 永远拿最新, 离线兜底)
-const ASSETS_CACHE = 'minimax-assets-runtime'
+// V3.5.84+ 删所有 cache 名 - 不再使用
+// - minimax-${CACHE_VERSION}: 预缓存 (9 URL)
+// - liugl-runtime: 图片/字体
+// - liugl-api: API GET
+// - minimax-assets-runtime: /assets/* NetworkFirst
+// - minimax-bg-sync: IndexedDB (保留, Background Sync 用)
 
-// API 路径模式 (NetworkFirst, 可离线读缓存)
-const API_GET_PATTERNS = [
-  /\/api\/v\d+\/auth\/me/,
-  /\/api\/v\d+\/ai\/tools/,
-  /\/api\/v\d+\/ai\/framework\/(agents|permission)/,
-  /\/api\/v\d+\/collab\/rooms/,
-  /\/api\/v\d+\/tensorboard\//
-]
-
-// V3.5.73+ Background Sync 队列 (IndexedDB)
+// V3.5.73+ Background Sync 队列 (IndexedDB) - 保留
 const QUEUE_DB = 'minimax-bg-sync'
 const QUEUE_STORE = 'pending-requests'
 const SYNC_TAG = 'minimax-bg-sync'
 
-// V3.5.79+ Periodic Background Sync 定时同步
+// V3.5.79+ Periodic Background Sync - 保留
 const PERIODIC_TAG = 'minimax-periodic-sync'
-const PERIODIC_MIN_INTERVAL = 60 * 60 * 1000   // 1 小时 (浏览器可延长)
+const PERIODIC_MIN_INTERVAL = 60 * 60 * 1000   // 1 小时
 
-// 永不缓存
-const NEVER_CACHE_PATTERNS = [
-  /\/api\/v\d+\/auth\/(login|logout|refresh)/,
-  /\/api\/v\d+\/ws\//,
-  /\/sockjs-node\//,
-  /\/api\/v\d+\/admin\//,        // 管理操作
-  /\/api\/v\d+\/chat\/send/,     // 发消息
-  /\/api\/v\d+\/collab\/rooms\/[^/]+\/doc\/ops/  // CRDT op 写
-]
-
-// V3.5.73+ Background Sync event handler
-// 浏览器从离线恢复时触发, 重发 IndexedDB 队列
+// V3.5.73+ Background Sync event handler - 保留 (离线写排队)
 self.addEventListener('sync', (event) => {
   if (event.tag !== SYNC_TAG) return
   console.log('[SW] Background Sync 触发, 重发离线队列...')
   event.waitUntil(replayQueuedRequests(event))
 })
 
-// V3.5.79+ Periodic Background Sync event handler
-// 浏览器定时触发 (最少 1h 间隔), 拉取新通知/更新缓存
+// V3.5.79+ Periodic Background Sync - 保留 (定时拉新)
 self.addEventListener('periodicsync', (event) => {
   if (event.tag !== PERIODIC_TAG) return
   console.log('[SW] Periodic Background Sync 触发, 拉新数据...')
@@ -100,7 +97,6 @@ async function performPeriodicSync() {
       const data = await resp.json()
       const unread = (data.data?.list || []).filter(n => !n.read)
       console.log(`[SW] Periodic 拉新 ${unread.length} 个未读通知`)
-      // 通知 client
       const allClients = await self.clients.matchAll({ includeUncontrolled: true })
       for (const client of allClients) {
         client.postMessage({
@@ -110,7 +106,6 @@ async function performPeriodicSync() {
           timestamp: Date.now()
         })
       }
-      // 显示系统通知 (前 1 个)
       if (unread.length > 0 && 'showNotification' in self.registration) {
         const top = unread[0]
         await self.registration.showNotification(top.title || '新通知', {
@@ -128,21 +123,6 @@ async function performPeriodicSync() {
     }
   } catch (e) {
     console.warn('[SW] Periodic 拉新网络失败:', e.message)
-  }
-
-  // 2. 后台 update critical assets
-  try {
-    const cache = await caches.open('minimax-assets-runtime')
-    const criticalUrls = ['/index.html', '/manifest.json', '/icons/icon-192.svg']
-    for (const url of criticalUrls) {
-      try {
-        const resp = await fetch(url, { cache: 'no-cache' })
-        if (resp.ok) cache.put(url, resp.clone())
-      } catch (e) { /* ignore */ }
-    }
-    console.log('[SW] Periodic 更新 critical assets 完成')
-  } catch (e) {
-    console.warn('[SW] Periodic update critical assets 失败:', e.message)
   }
 }
 
@@ -197,64 +177,113 @@ async function notifyClientsOfSyncResult(entry, response, errorTag) {
   }
 }
 
+// ============= IndexedDB Helpers (Background Sync 用) =============
+
+function openQueueDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(QUEUE_DB, 1)
+    req.onupgradeneeded = () => {
+      const db = req.result
+      if (!db.objectStoreNames.contains(QUEUE_STORE)) {
+        db.createObjectStore(QUEUE_STORE, { keyPath: 'id', autoIncrement: true })
+      }
+    }
+    req.onsuccess = () => resolve(req.result)
+    req.onerror = () => reject(req.error)
+  })
+}
+
+async function getQueuedRequests() {
+  try {
+    const db = await openQueueDB()
+    return new Promise((resolve) => {
+      const tx = db.transaction(QUEUE_STORE, 'readonly')
+      const store = tx.objectStore(QUEUE_STORE)
+      const req = store.getAll()
+      req.onsuccess = () => resolve(req.result || [])
+      req.onerror = () => resolve([])
+    })
+  } catch (e) {
+    console.warn('[SW] getQueuedRequests 失败:', e.message)
+    return []
+  }
+}
+
+async function deleteQueuedRequest(id) {
+  try {
+    const db = await openQueueDB()
+    return new Promise((resolve) => {
+      const tx = db.transaction(QUEUE_STORE, 'readwrite')
+      tx.objectStore(QUEUE_STORE).delete(id)
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => resolve()
+    })
+  } catch (e) {
+    console.warn('[SW] deleteQueuedRequest 失败:', e.message)
+  }
+}
+
+async function incrementRetry(id) {
+  try {
+    const db = await openQueueDB()
+    return new Promise((resolve) => {
+      const tx = db.transaction(QUEUE_STORE, 'readwrite')
+      const store = tx.objectStore(QUEUE_STORE)
+      const req = store.get(id)
+      req.onsuccess = () => {
+        const entry = req.result
+        if (entry) {
+          entry.retries = (entry.retries || 0) + 1
+          entry.lastRetry = Date.now()
+          store.put(entry)
+        }
+        resolve()
+      }
+      req.onerror = () => resolve()
+    })
+  } catch (e) {
+    console.warn('[SW] incrementRetry 失败:', e.message)
+  }
+}
+
 // ============= Lifecycle =============
 
+// V3.5.84+ install 简化: 不再预缓存
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing v' + CACHE_VERSION)
-  event.waitUntil(
-    (async () => {
-      const cache = await caches.open(CACHE_NAME)
-      // V3.5.43: 每个 URL 用 try-catch, cache.put 失败也不阻塞 install
-      for (const url of PRECACHE_URLS) {
-        try {
-          // 用 fetch + put 代替 cache.add (避免 add 内部 opaque response 错)
-          const resp = await fetch(url, { cache: 'no-cache' })
-          if (resp.ok) {
-            await cache.put(url, resp.clone())
-          } else {
-            console.warn('[SW] skip pre-cache (non-2xx):', url, resp.status)
-          }
-        } catch (e) {
-          console.warn('[SW] pre-cache failed:', url, e.message)
-        }
-      }
-      await self.skipWaiting()
-    })()
-  )
+  console.log('[SW] Installing v' + CACHE_VERSION + ' (network-only mode)')
+  // V3.5.84 删: PRECACHE_URLS fetch + cache.put
+  // 不再调用 self.skipWaiting() - 让浏览器等所有 tab 关闭再激活, 避免新 SW 干扰老 tab
+  // V3.5.84 修: 之前 skipWaiting() 导致新 SW 立即激活, 老 tab 还没关闭就拿新 SW
+  //                现在发版后让老 tab 自己关闭, 新 tab 才会注册新 SW
 })
 
+// V3.5.84+ activate 简化: 删所有老缓存 (释放浏览器空间) + 不接管 client
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating v' + CACHE_VERSION)
+  console.log('[SW] Activating v' + CACHE_VERSION + ' (network-only mode)')
   event.waitUntil(
     (async () => {
-      // 删除旧版本缓存
-      // V3.5.51 修: CACHE_NAME 用 minimax- 前缀, 但旧版 activate 只删 liugl- 前缀, 老 minimax-v3.5.45 等残留导致旧 chunk 反复报错
-      // 现在: liugl- 跟 minimax- 前缀都清, 但保留 RUNTIME_CACHE/API_CACHE (运行时缓存) 跟当前 CACHE_NAME
+      // 删所有老 cache, 包括 liugl- / minimax- 前缀, 释放浏览器空间
       const keys = await caches.keys()
       await Promise.all(
-        keys
-          .filter((key) =>
-            (key.startsWith('liugl-') || key.startsWith('minimax-')) &&
-            key !== CACHE_NAME &&
-            key !== API_CACHE
-            // V3.5.70 修: RUNTIME_CACHE 不再豁免, 老 /assets/*.js 可能 import 'vue' 裸 specifier
-            // 浏览器报 "Failed to resolve module specifier 'vue'", 强制清空老 runtime cache
-            // V3.5.71+ /assets/* 走独立 ASSETS_CACHE (NetworkFirst), 升版本也一并清
-          )
-          .map((key) => caches.delete(key))
+        keys.map((key) => {
+          console.log('[SW] 删除老 cache:', key)
+          return caches.delete(key)
+        })
       )
-      await self.clients.claim()
+      // V3.5.84 删: self.clients.claim() - 不再强制接管未受控 client
+      // 原因: 接管会导致正在用的 tab 突然切到新 SW, 引发状态错乱
+      //       新 tab 重新注册时自然会用新 SW
     })()
   )
 })
 
-// ============= Fetch Handler =============
+// ============= Fetch Handler (V3.5.84 network-only) =============
 
 self.addEventListener('fetch', (event) => {
   const req = event.request
   const url = new URL(req.url)
 
-  // 1. 跨域直接放行
+  // 1. 跨域直接放行 (CDN / 第三方 API)
   if (url.origin !== location.origin) {
     return
   }
@@ -266,60 +295,51 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // 3. 永不缓存的路径
-  if (NEVER_CACHE_PATTERNS.some((p) => p.test(url.pathname))) {
-    return
-  }
-
-  // 4. 写操作 (POST/PUT/DELETE/PATCH) 不缓存, 直传
-  if (req.method !== 'GET') {
-    event.respondWith(handleWrite(req))
-    return
-  }
-
-  // 5. 导航请求 (HTML) - NetworkFirst with offline fallback
+  // 3. 导航请求 (HTML) - NetworkOnly + 离线 fallback
+  //    V3.5.84 唯一保留的 fallback 行为: 离线时返回 /offline.html
   if (req.mode === 'navigate') {
     event.respondWith(handleNavigation(req))
     return
   }
 
-  // 6. API GET - NetworkFirst with 3s timeout
-  if (API_GET_PATTERNS.some((p) => p.test(url.pathname))) {
-    event.respondWith(handleApiGet(req))
+  // 4. V3.5.84 改: 其他所有请求都直传 (NetworkOnly)
+  //    - /assets/* JS/CSS chunk: 直传 (HTTP 缓存兜底)
+  //    - /icons/* PWA 图标: 直传
+  //    - API GET/POST/PUT/DELETE: 直传
+  //    - 写操作失败时返回 503
+  if (req.method !== 'GET') {
+    event.respondWith(handleWrite(req))
     return
   }
 
-  // 7. V3.5.71+ V3.5.72 扩展: NetworkFirst 静态资源
-  //   - /assets/* JS/CSS chunk (vite build 产物, hash 命名)
-  //   - /icons/* PWA 图标 (PWA 部署时常更新)
-  //   - /favicon.svg 站点图标
-  // 老 cache 仅作 offline fallback
-  if (shouldNetworkFirst(url.pathname)) {
-    event.respondWith(handleStaticNetworkFirst(req))
-    return
-  }
-
-  // 8. 其它静态资源 (images/fonts) - CacheFirst with revalidate
-  event.respondWith(handleStatic(req))
+  // GET 资源全部直传, 不缓存
+  event.respondWith(handleNetworkOnly(req))
 })
 
-// ============= Handler 实现 =============
+// ============= Handler 实现 (V3.5.84 简化版) =============
 
+/**
+ * V3.5.84+ 导航请求处理
+ * 唯一保留的 fallback: 离线时返回 /offline.html
+ *
+ * 之前 V2.8.9-V3.5.79: NetworkFirst + 缓存命中返老版本
+ * 现在 V3.5.84: NetworkOnly + 网络失败返 /offline.html
+ *
+ * @param {Request} req
+ * @returns {Promise<Response>}
+ */
 async function handleNavigation(req) {
   try {
-    const network = await fetch(req)
-    if (network.ok) {
-      const cache = await caches.open(CACHE_NAME)
-      cache.put(req, network.clone())
-    }
-    return network
+    // 直传网络, 不缓存
+    return await fetch(req, { cache: 'no-cache' })
   } catch (e) {
-    // 离线: 返回缓存的 index.html 或 /offline.html
-    const cache = await caches.open(CACHE_NAME)
-    const cached = await cache.match('/index.html')
-    if (cached) return cached
-    const offline = await cache.match(OFFLINE_URL)
-    if (offline) return offline
+    // 离线: 返回 /offline.html (浏览器 HTTP 缓存会有, 实在没有用内联)
+    try {
+      const offline = await fetch(OFFLINE_URL, { cache: 'no-cache' })
+      if (offline.ok) return offline
+    } catch (e2) {
+      // /offline.html 也拉不到, 用内联 HTML
+    }
     return new Response(
       '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>离线</title></head>' +
       '<body style="font-family:sans-serif;text-align:center;padding:60px;">' +
@@ -331,124 +351,33 @@ async function handleNavigation(req) {
   }
 }
 
-async function handleApiGet(req) {
-  const cache = await caches.open(API_CACHE)
+/**
+ * V3.5.84+ GET 资源处理 (NetworkOnly)
+ * 浏览器 HTTP 缓存天然处理资源复用, sw 不再干预
+ *
+ * @param {Request} req
+ * @returns {Promise<Response>}
+ */
+async function handleNetworkOnly(req) {
   try {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 3000)
-    const network = await fetch(req, { signal: controller.signal })
-    clearTimeout(timeout)
-    if (network.ok) {
-      // 只缓存 200, 不缓存 401/403/500
-      cache.put(req, network.clone())
-      return network
-    }
-    // 非 2xx: 走缓存
-    const cached = await cache.match(req)
-    if (cached) return cached
-    return network
+    return await fetch(req, { cache: 'no-cache' })
   } catch (e) {
-    // 网络失败: 走缓存
-    const cached = await cache.match(req)
-    if (cached) {
-      console.log('[SW] API 离线返回缓存:', url.pathname)
-      return cached
-    }
+    // 网络失败: 不返缓存, 直接 503
     return new Response(
-      JSON.stringify({ code: -1, message: '离线 + 无缓存', data: null }),
+      JSON.stringify({ code: -1, message: '网络不可用', data: null }),
       { status: 503, headers: { 'Content-Type': 'application/json' } }
     )
   }
 }
 
 /**
- * V3.5.72+: 判断路径是否走 NetworkFirst 策略
+ * V3.5.84+ 写操作处理 (NetworkOnly)
+ * 跟之前一样, 失败返 503 错误响应
  *
- * @param {string} pathname - URL pathname
- * @returns {boolean}
+ * @param {Request} req
+ * @returns {Promise<Response>}
  */
-function shouldNetworkFirst(pathname) {
-  return (
-    pathname.startsWith('/assets/') ||      // V3.5.71: vite build JS/CSS chunk
-    pathname.startsWith('/icons/') ||       // V3.5.72: PWA 图标
-    pathname === '/favicon.svg'             // V3.5.72: 站点 favicon
-  )
-}
-
-/**
- * V3.5.71+ NetworkFirst 策略
- *
- * 适用范围: /assets/* JS/CSS (V3.5.71) + /icons/* + /favicon.svg (V3.5.72)
- *
- * 背景: V3.5.70 用户浏览器报错 "Failed to resolve module specifier 'vue'"
- * 原因: 老 /assets/*.js 用 import 'vue' 裸 specifier (V3.5.62-63 时期 externalGlobals 方案)
- * 浏览器 sw 缓存了老 chunk, CacheFirst 命中就返回, 跑老代码报错
- *
- * 修法: 这些静态资源永远 NetworkFirst
- *   1. 5s 内从网络拿最新
- *   2. 成功 → 返回 + 更新 ASSETS_CACHE
- *   3. 失败/超时 → 走 ASSETS_CACHE 老版本 (offline fallback)
- *   4. 完全没缓存 → 503
- *
- * 这样新版本代码永远从网络拿, 老 cache 只在断网时用
- */
-async function handleStaticNetworkFirst(req) {
-  const cache = await caches.open(ASSETS_CACHE)
-  try {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 5000)
-    const network = await fetch(req, { cache: 'no-cache', signal: controller.signal })
-    clearTimeout(timeout)
-    if (network.ok) {
-      // 限制运行时缓存大小 (50 资源)
-      limitCacheSize(ASSETS_CACHE, 50)
-      cache.put(req, network.clone())
-      return network
-    }
-    // 非 2xx: 走缓存
-    const cached = await cache.match(req)
-    if (cached) return cached
-    return network
-  } catch (e) {
-    // 网络失败/超时: 走缓存 (offline fallback)
-    const cached = await cache.match(req)
-    if (cached) {
-      console.log('[SW] /assets/* 离线返回缓存:', new URL(req.url).pathname)
-      return cached
-    }
-    return new Response('Offline + no cache: ' + new URL(req.url).pathname, {
-      status: 503,
-      headers: { 'Content-Type': 'text/plain' }
-    })
-  }
-}
-
-async function handleStatic(req) {
-  const cache = await caches.open(RUNTIME_CACHE)
-  const cached = await cache.match(req)
-  if (cached) {
-    // 异步后台更新
-    fetch(req).then((network) => {
-      if (network.ok) cache.put(req, network.clone())
-    }).catch(() => {})
-    return cached
-  }
-  try {
-    const network = await fetch(req)
-    if (network.ok && req.url.startsWith(location.origin)) {
-      // 限制运行时缓存大小 (50 资源)
-      limitCacheSize(RUNTIME_CACHE, 50)
-      cache.put(req, network.clone())
-    }
-    return network
-  } catch (e) {
-    // 找不到资源且无缓存
-    return new Response('Not Found', { status: 404 })
-  }
-}
-
 async function handleWrite(req) {
-  // 写操作: 直传, 失败抛出 (让前端感知)
   try {
     return await fetch(req)
   } catch (e) {
@@ -459,18 +388,7 @@ async function handleWrite(req) {
   }
 }
 
-async function limitCacheSize(name, maxItems) {
-  const cache = await caches.open(name)
-  const keys = await cache.keys()
-  if (keys.length > maxItems) {
-    // 删除最老的 (FIFO)
-    for (let i = 0; i < keys.length - maxItems; i++) {
-      await cache.delete(keys[i])
-    }
-  }
-}
-
-// ============= Push Notifications (P1 占位) =============
+// ============= Push Notifications (保留) =============
 
 self.addEventListener('push', (event) => {
   if (!event.data) return
@@ -495,19 +413,22 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(clients.openWindow(url))
 })
 
-// ============= Message Handler =============
+// ============= Message Handler (保留) =============
 
 self.addEventListener('message', (event) => {
   const data = event.data || {}
   switch (data.type) {
     case 'SKIP_WAITING':
-      self.skipWaiting()
+      // V3.5.84 改: 不再 skipWaiting - 让浏览器等老 tab 关闭
+      // 老 tab 关闭后, 新 tab 重新注册 sw.js 自然会用新版本
+      console.log('[SW] 收到 SKIP_WAITING (V3.5.84 network-only, 已忽略)')
       break
     case 'CLEAR_CACHE':
+      // V3.5.84 改: 仍可清缓存, 但主要是清 IndexedDB 队列
       event.waitUntil((async () => {
         const keys = await caches.keys()
         await Promise.all(keys.map((k) => caches.delete(k)))
-        console.log('[SW] All caches cleared')
+        console.log('[SW] All caches cleared (V3.5.84)')
       })())
       break
     case 'GET_VERSION':
@@ -517,11 +438,8 @@ self.addEventListener('message', (event) => {
       })
       break
     case 'CACHE_URLS':
-      // 手动预缓存新 URL
-      event.waitUntil((async () => {
-        const cache = await caches.open(CACHE_NAME)
-        await cache.addAll(data.urls || [])
-      })())
+      // V3.5.84 改: 不再支持预缓存 URL
+      console.log('[SW] CACHE_URLS 已禁用 (V3.5.84 network-only)')
       break
     default:
       console.debug('[SW] unknown message:', data.type)
