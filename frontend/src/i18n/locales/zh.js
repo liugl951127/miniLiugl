@@ -52,7 +52,7 @@ export default {
     voice: { title: '语音输入', unsupported: '当前浏览器不支持语音', failed: '语音识别失败', placeholder: '点击麦克风开始...' },
     tts: { title: '语音播报', auto: '自动播报', speaking: '播报中', unsupported: '当前浏览器不支持 TTS' },
     ocr: { title: 'OCR 识别', processing: '正在识别...', completed: '识别完成, 已追加到输入框', failed: 'OCR 识别失败', noText: '未识别到文字' },
-    export: { title: '导出', markdown: 'Markdown', json: 'JSON', txt: '纯文本', empty: '暂无消息可导出', success: '已导出' }
+    export: { title: '导出', markdown: 'Markdown', json: 'JSON', txt: '纯文本', empty: '暂无消息可导出', success: '已导出' },
     sessionSearch: { placeholder: '搜索标题 / 消息 / 日期', inContent: '搜索消息内容', found: '个会话', clear: '清除', noMatch: '未找到匹配' }
   },
   common: {

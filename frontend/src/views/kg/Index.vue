@@ -171,7 +171,7 @@
 
 <script setup lang="ts">
 // ───── 依赖导入 ─────
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, nextTick, h } from 'vue'
 import axios from 'axios'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
@@ -390,6 +390,19 @@ function renderGraph() {
       categories: Object.keys(TYPE_COLOR).map(k => ({ name: k, itemStyle: { color: TYPE_COLOR[k] } })),
       data: nodes,
       links: edges,
+        markLine: {
+          silent: true,
+          symbol: ['none', 'arrow'],
+          lineStyle: {
+            type: 'dashed',
+            color: '#3b82f6',
+            width: 2,
+            curveness: 0.2,
+          },
+          data: dragLinePoints.value.length === 2
+            ? [{ coord: dragLinePoints.value[0] }, { coord: dragLinePoints.value[1] }]
+            : [],
+        },
     }],
   })
   // V3.6.3+ 拖拽建边事件
@@ -432,6 +445,19 @@ async function renderPathGraph() {
       categories: Object.keys(TYPE_COLOR).map(k => ({ name: k, itemStyle: { color: TYPE_COLOR[k] } })),
       data: nodes,
       links: edges,
+        markLine: {
+          silent: true,
+          symbol: ['none', 'arrow'],
+          lineStyle: {
+            type: 'dashed',
+            color: '#3b82f6',
+            width: 2,
+            curveness: 0.2,
+          },
+          data: dragLinePoints.value.length === 2
+            ? [{ coord: dragLinePoints.value[0] }, { coord: dragLinePoints.value[1] }]
+            : [],
+        },
     }],
   })
   // V3.6.3+ 拖拽建边事件
@@ -482,25 +508,61 @@ const REL_TYPES = [
   { value: 'mentions', label: '提及' },
 ]
 
+// V3.6.4+ 拖拽虚线
+const dragLine = ref(null)
+const dragLinePoints = ref<[number, number][]>([])
+
+function updateDragLine(fromX, fromY, toX, toY) {
+  if (!fromX || !toX) {
+    dragLinePoints.value = []
+    return
+  }
+  dragLinePoints.value = [[fromX, fromY], [toX, toY]]
+}
+
+function clearDragLine() {
+  dragLinePoints.value = []
+  dragLine.value = null
+}
+
 function onGraphDragging(params) {
-  // 拖拽节点到另一个节点
+  // V3.6.4+ 拖拽时画虚线 (从起点到鼠标位置)
   if (!dragFromId.value) return
-  if (params.dataType === 'node') {
+  if (params.data?.id) {
     const targetId = parseInt(params.data.id)
     if (!isNaN(targetId) && targetId !== dragFromId.value) {
       dragToId.value = targetId
+    }
+  }
+  // ECharts 'dragging' 事件会传 offsetX/offsetY
+  if (params.event?.offsetX) {
+    const fromNode = nodes.find(n => String(n.id) === String(dragFromId.value))
+    if (fromNode && params.event.offsetX) {
+      updateDragLine(fromNode.x, fromNode.y, params.event.offsetX, params.event.offsetY)
     }
   }
 }
 
 function onGraphDragEnd() {
   if (dragFromId.value && dragToId.value) {
-    // 弹出关系类型选择
     relTypeInput.value = 'related_to'
     ElMessageBox.confirm(
       `创建关系: ${dragFromId.value} → ${dragToId.value} ?`,
       'V3.6.3+ 拖拽建边',
-      { confirmButtonText: '创建', cancelButtonText: '取消' }
+      {
+        confirmButtonText: '创建',
+        cancelButtonText: '取消',
+        // V3.6.4+ 关系类型选择
+        message: h('div', [
+          h('p', `创建关系: ${dragFromId.value} → ${dragToId.value} ?`),
+          h('el-select', {
+            modelValue: relTypeInput.value,
+            'onUpdate:modelValue': (v) => { relTypeInput.value = v },
+            size: 'small',
+            style: 'width: 100%; margin-top: 8px',
+          }, REL_TYPES.map(t => h('el-option', { key: t.value, label: t.label, value: t.value }))),
+        ]),
+      }
     ).then(() => {
       submitDragRelation()
     }).catch(() => {
@@ -509,6 +571,8 @@ function onGraphDragEnd() {
   } else {
     resetDrag()
   }
+  // V3.6.4+ 清除虚线
+  clearDragLine()
 }
 
 async function submitDragRelation() {

@@ -35,7 +35,9 @@
         <el-icon :size="20"><ChatDotRound /></el-icon>
         <div>
           <h2 class="page-title">AI 对话</h2>
-          <p class="page-subtitle">{{ modelLabel }} · {{ sessionId || '新会话' }}</p>
+          <el-text type="info" size="small" class="page-subtitle" truncated>
+  {{ modelLabel }} · {{ sessionId || '新会话' }}
+</el-text>
         </div>
       </div>
       <el-button-group>
@@ -131,7 +133,7 @@
     <!-- 4. section: 输入区 -->
     <section class="section input-section">
       <el-card shadow="hover" class="input-card">
-        <div class="input-toolbar">
+        <el-space :size="8" wrap class="input-toolbar">
           <el-checkbox v-model="useStream">流式</el-checkbox>
           <el-checkbox v-model="useTools">{{ t('chat.tools') }}</el-checkbox>
           <el-checkbox v-model="useRag">RAG</el-checkbox>
@@ -161,7 +163,19 @@
           >
             OCR
           </el-button>
-        </div>
+          <!-- V3.6.5+ 浏览器通知开关 -->
+          <el-button
+            v-if="notificationSupported"
+            :icon="notificationEnabled ? BellFilled : Bell"
+            :type="notificationEnabled ? 'success' : 'default'"
+            size="small"
+            plain
+            @click="requestNotificationPermission"
+            :title="notificationEnabled ? '通知已开启' : '点击开启浏览器通知'"
+          >
+            {{ notificationEnabled ? '🔔' : '🔕' }}
+          </el-button>
+        </el-space>
         <!-- V3.6.1+ OCR 状态面板 -->
         <transition name="slide-up">
           <div v-if="ocrProcessing || ocrText" class="ocr-panel">
@@ -225,7 +239,7 @@
         </transition>
 
         <div class="input-actions">
-          <span class="hint">内容由 AI 生成, 仅供参考</span>
+          <el-text type="info" size="small" class="hint">内容由 AI 生成, 仅供参考</el-text>
           <el-button :icon="Refresh" @click="regenerate" :disabled="loading || !messages.length">{{ t('chat.regenerate') }}</el-button>
           <el-button :icon="loading ? Loading : Promotion" :loading="loading" @click="send" type="primary">
             {{ loading ? '停止' : '发送' }}
@@ -287,7 +301,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   EditPen, Search, ChatDotRound, MoreFilled, Promotion, Cpu, Clock, MagicStick,
   UploadFilled, Picture, Loading, VideoPause, VideoPlay, CircleCloseFilled, Document, Share,
-  Microphone, CircleClose, Headset, Download, ArrowDown,
+  Microphone, CircleClose, Headset, Download, ArrowDown, Bell, BellFilled,
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 
@@ -487,6 +501,62 @@ function truncate(s, n) {
   return s && s.length > n ? s.substring(0, n) + '...' : s
 }
 
+// === V3.6.5+ 浏览器通知 (Notification API + PWA) ===
+const notificationSupported = ref(false)
+const notificationEnabled = ref(false)
+let notificationPermission = 'default'
+
+function checkNotificationSupport() {
+  if (typeof window === 'undefined') return
+  notificationSupported.value = 'Notification' in window
+  if (notificationSupported.value) {
+    notificationPermission = Notification.permission
+    notificationEnabled.value = notificationPermission === 'granted'
+  }
+}
+
+async function requestNotificationPermission() {
+  if (!notificationSupported.value) {
+    ElMessage.warning('当前浏览器不支持通知')
+    return
+  }
+  if (notificationPermission === 'granted') {
+    notificationEnabled.value = true
+    ElMessage.success('通知已开启')
+    return
+  }
+  try {
+    const permission = await Notification.requestPermission()
+    notificationPermission = permission
+    notificationEnabled.value = permission === 'granted'
+    if (permission === 'granted') {
+      ElMessage.success('通知已授权 (AI 答完会发通知)')
+    } else if (permission === 'denied') {
+      ElMessage.warning('通知被拒绝, 请在浏览器设置中开启')
+    } else {
+      ElMessage.info('通知未授权')
+    }
+  } catch (e) {
+    ElMessage.error('请求通知权限失败: ' + e.message)
+  }
+}
+
+function showNotification(title, body) {
+  if (!notificationEnabled.value || !notificationSupported.value) return
+  if (document.visibilityState === 'visible') return  // 页面可见不通知
+  try {
+    new Notification(title, {
+      body,
+      icon: '/icons/icon-192.svg',
+      badge: '/icons/icon-192.svg',
+      tag: 'minimax-chat',
+      requireInteraction: false,
+    })
+  } catch (e) {
+    console.warn('通知失败:', e)
+  }
+}
+
 // === V3.6.2+ 导出 (Markdown / JSON / 纯文本) ===
 function onExport(format) {
   if (!messages.value.length) {
@@ -666,6 +736,7 @@ onMounted(async () => {
   await loadSessions()
   checkVoiceSupport()  // V3.5.99+
   checkTTSSupport()    // V3.6.0+
+  checkNotificationSupport()  // V3.6.5+
   // V4.3: 从 Prompt 模板页填入内容
   const q = route.query
   if (q.prompt) {
@@ -909,9 +980,11 @@ async function sendMessage() {
         aiMsg.streaming = false
         streaming.value = false
         scrollToBottom()
-        // V3.6.0+ TTS 自动播报
         if (autoSpeak.value && aiMsg.content) {
           speak(aiMsg.content)
+        }
+        if (aiMsg.content) {
+          showNotification('Liugl-AI', aiMsg.content.slice(0, 100))
         }
       },
       onError: (err) => {

@@ -142,9 +142,34 @@ else
 fi
 echo ""
 
+# --- Check 10: pom.xml 一致性 (V3.6.4+) ---
+echo "--- 10. pom.xml 一致性静态检查 ---"
+POM_CHECK=$(python3 scripts/check_pom_consistency.py 2>&1)
+POM_EXIT=$?
+if [ $POM_EXIT -eq 0 ]; then
+    echo "  ✓ PASS (14 module pom.xml 全部存在)"
+else
+    echo "  ✗ FAIL: pom.xml 配置异常"
+    echo "$POM_CHECK" | tail -15
+    EXIT=1
+fi
+echo ""
+
+# --- Check 11: OTel Trace 沙箱友好版 (V3.6.4+) ---
+echo "--- 11. OTel Trace 沙箱友好验证 ---"
+OTEL_CHECK=$(bash scripts/otel-trace-sandbox.sh 2>&1 | tail -10)
+if echo "$OTEL_CHECK" | grep -q "✅ OTel Trace 沙箱验证完成"; then
+    echo "  ✓ PASS (otel-collector + jaeger + 12 module depends_on + sw.js traceparent)"
+else
+    echo "  ✗ FAIL: OTel 配置异常"
+    echo "$OTEL_CHECK" | tail -10
+    EXIT=1
+fi
+echo ""
+
 echo "═══════════════════════════════════════════════════════════"
 if [ $EXIT -eq 0 ]; then
-    echo "  ✓ ALL PASS (9/9)"
+    echo "  ✓ ALL PASS (11/11)"
 else
     echo "  ✗ FAILED (some checks)"
 fi
