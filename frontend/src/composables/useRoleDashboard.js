@@ -1,15 +1,34 @@
-// V3.7.2+ 角色 dashboard composable
-// 根据当前用户角色返回不同的 KPI / 图表数据
+// V3.7.3+ 角色 dashboard composable - 加 emoji icon
 import { computed } from 'vue'
 import { useDemoMode } from './useDemoMode'
+
+const ROLE_ICONS = {
+  SUPER_ADMIN: '👑', OPERATOR: '🎯', AUDITOR: '🔍', USER: '👤',
+}
+
+const KPI_EMOJI = {
+  // SUPER_ADMIN
+  users: '👥', sessions: '💬', calls: '📞', tools: '🛠️',
+  // OPERATOR
+  todayChats: '💬', activeUsers: '🟢', pendingReview: '⏳', dataExports: '📊',
+  // AUDITOR
+  totalLogs: '📋', securityEvents: '🚨', complianceScore: '✅', auditReports: '📑',
+  // USER
+  myChats: '💬', myAgents: '🤖', ragQueries: '🔎', tools: '🛠️',
+}
 
 export function useRoleDashboard() {
   const { currentRole, currentDashboard, currentUser } = useDemoMode()
 
-  // 4 角色 4 套 KPI (已在 DEMO_DASHBOARDS 里)
-  const kpis = computed(() => currentDashboard.value.kpis)
+  // 加 emoji icon + role icon
+  const kpis = computed(() => {
+    const list = currentDashboard.value.kpis || []
+    return list.map((kpi) => ({
+      ...kpi,
+      emoji: KPI_EMOJI[kpi.key] || '📊',
+    }))
+  })
 
-  // 角色色卡
   const roleColor = computed(() => {
     const map = { SUPER_ADMIN: '#ef4444', OPERATOR: '#06b6d4', AUDITOR: '#f59e0b', USER: '#10b981' }
     return map[currentRole.value] || '#6366f1'
@@ -20,5 +39,7 @@ export function useRoleDashboard() {
     return map[currentRole.value] || '访客'
   })
 
-  return { kpis, roleColor, roleLabel, currentRole, currentUser, currentDashboard }
+  const roleIcon = computed(() => ROLE_ICONS[currentRole.value] || '👤')
+
+  return { kpis, roleColor, roleLabel, roleIcon, currentRole, currentUser, currentDashboard }
 }

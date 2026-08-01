@@ -20,7 +20,7 @@
       <slot name="header" :entity="entity">
         <section class="entity-section">
           <h4 class="section-title">📋 基本信息</h4>
-          <el-descriptions :column="1" border size="small">
+          <el-form :model="editForm" :rules="entityRules" ref="entityFormRef" label-position="top" size="small">
             <el-descriptions-item label="ID">{{ entity.id }}</el-descriptions-item>
             <slot name="fields" :entity="entity" :editing="editing" :form="editForm">
               <el-descriptions-item label="名称">
@@ -35,7 +35,7 @@
             <el-descriptions-item v-if="entity.createdAt" label="创建时间">
               {{ entity.createdAt }}
             </el-descriptions-item>
-          </el-descriptions>
+          </el-form>
         </section>
       </slot>
 
