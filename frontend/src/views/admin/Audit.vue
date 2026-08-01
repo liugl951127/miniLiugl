@@ -3,16 +3,16 @@
   @auto-migrated 2026-08-01 by scripts/migrate-view-style.js
 -->
 <!--
-  @file views/admin/Audit.vue (审计日志)
+  @file views/admin/Audit.vue ({{ t('audit.title') }})
   @version V3.5.12+ (前端注释补全)
-  @description 审计日志
+  @description {{ t('audit.title') }}
 -->
 <template>
   <div class="page-audit">
     <!-- 1. page-header -->
     <header class="page-header">
       <div>
-        <h2 class="page-title">📋 审计日志</h2>
+        <h2 class="page-title">📋 {{ t('audit.title') }}</h2>
         <p class="page-subtitle">合规要求保留 6 个月+ · 当前 {{ total }} 条记录</p>
       </div>
       <el-button-group>
@@ -97,9 +97,11 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { monitorApi } from '@/api/monitor'
 
+const { t } = useI18n()
 const logs = ref([])
 const loading = ref(false)
 const page = ref(1)

@@ -12,7 +12,7 @@
     <!-- 1. page-header -->
     <header class="page-header">
       <div>
-        <h2 class="page-title">🔗 AI 工作流编排 <el-tag size="small" type="info">V2.7.3</el-tag></h2>
+        <h2 class="page-title">{{ t('workflow.title') }} <el-tag size="small" type="info">V2.7.3</el-tag></h2>
         <p class="page-subtitle">节点编排 · 串行/并行 · 验证 · 执行 · 示例</p>
       </div>
       <el-button-group>
@@ -63,9 +63,11 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { executeWorkflow, validateWorkflow as apiValidate, dispatchPrompt } from '@/api/ai'
 
+const { t } = useI18n()
 const nodes = ref([
   { id: 'step1', toolCode: 'sql.query', inputJson: '{"dataSourceId":1,"question":"查询 user 表前 5"}', status: 'PENDING' },
   { id: 'step2', toolCode: 'data.analyze.stats', inputJson: '{"dataSourceId":1,"table":"user","column":"age"}', status: 'PENDING' }

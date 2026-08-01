@@ -12,7 +12,7 @@
     <!-- 1. page-header -->
     <header class="page-header">
       <div>
-        <h2 class="page-title">🔍 分布式追踪 <el-tag size="small" type="info">V5.14 OpenTelemetry</el-tag></h2>
+        <h2 class="page-title">{{ t('traces.title') }} <el-tag size="small" type="info">V5.14 OpenTelemetry</el-tag></h2>
         <p class="page-subtitle">Trace ID / 服务 / 慢调用 / Span / 自动刷新</p>
       </div>
       <div class="header-actions">
@@ -92,9 +92,11 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import http from '@/api/http'
 import { ElMessage } from 'element-plus'
 
+const { t } = useI18n()
 const service = ref('')
 const traceId = ref('')
 const loading = ref(false)

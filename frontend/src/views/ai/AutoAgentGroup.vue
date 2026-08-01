@@ -8,106 +8,82 @@
   - 3 端点: generate / template / templates
 -->
 <template>
-  <div class="page-auto-agent-group page">
-    <el-card>
-      <template #header>
-        <div class="header">
-          <span>🤖 一句话生成智能体群 <el-tag size="small" type="success">V3.5.48</el-tag></span>
-          <el-radio-group v-model="mode" size="small">
-            <el-radio-button value="auto">⚡ 一句话</el-radio-button>
-            <el-radio-button value="template">📋 模板</el-radio-button>
-          </el-radio-group>
-        </div>
-      </template>
+  <div class="page-auto-agent-group">
+    <!-- 1. page-header -->
+    <header class="page-header">
+      <div>
+        <h2 class="page-title">{{ t('autoAgent.title') }} <el-tag size="small" type="success">V3.5.48</el-tag></h2>
+        <p class="page-subtitle">3 端点: generate / template / templates</p>
+      </div>
+      <el-radio-group v-model="mode" size="default">
+        <el-radio-button value="auto">⚡ 一句话</el-radio-button>
+        <el-radio-button value="template">📋 模板</el-radio-button>
+      </el-radio-group>
+    </header>
 
-      <!-- 模式 1: 一句话生成 -->
-      <div v-if="mode === 'auto'" class="mode-section">
-        <el-form label-position="top">
+    <!-- 2. section: 一句话模式 -->
+    <section v-if="mode === 'auto'" class="section">
+      <h3 class="section-title">⚡ 一句话生成</h3>
+      <el-card shadow="hover">
+        <el-form label-position="top" size="default">
           <el-form-item label="智能体群描述 (一句话)">
             <el-input
               v-model="autoForm.description"
               type="textarea"
               :rows="3"
-              placeholder="例: 给我公司生成一个竞品分析智能体群, 包含 3 个核心竞品对比, 自动出报告"
+              placeholder="例: 创建一个电商客服智能体群, 包括售前咨询、售后服务、物流跟踪三个角色"
             />
           </el-form-item>
-          <el-form-item label="数量">
+          <el-form-item label="智能体数量">
             <el-input-number v-model="autoForm.count" :min="1" :max="10" />
           </el-form-item>
-          <el-form-item label="协作模式">
-            <el-select v-model="autoForm.collaboration" style="width: 200px">
-              <el-option label="顺序执行" value="sequential" />
-              <el-option label="并行执行" value="parallel" />
-              <el-option label="专家投票" value="voting" />
-            </el-select>
+          <el-form-item>
+            <el-button type="primary" :loading="generating" :icon="MagicStick" @click="generateAuto" style="width: 100%">
+              {{ generating ? '生成中...' : '生成智能体群' }}
+            </el-button>
           </el-form-item>
-          <el-button type="primary" @click="onGenerate" :loading="generating">⚡ 生成智能体群</el-button>
         </el-form>
-      </div>
+      </el-card>
 
-      <!-- 模式 2: 模板 -->
-      <div v-if="mode === 'template'" class="mode-section">
-        <el-form label-position="top">
-          <el-form-item label="选择模板">
-            <el-select v-model="templateForm.code" placeholder="选择模板" style="width: 100%" @change="onTemplateChange">
-              <el-option v-for="t in templates" :key="t.code" :label="t.name" :value="t.code">
-                <div>
-                  <strong>{{ t.name }}</strong>
-                  <div style="font-size: 12px; color: #909399">{{ t.description }}</div>
-                </div>
-              </el-option>
-            </el-select>
-          </el-form-item>
-          <el-form-item v-if="currentTemplate" label="模板说明">
-            <el-alert type="info" :closable="false">
-              <pre style="white-space: pre-wrap; margin: 0">{{ currentTemplate.content }}</pre>
-            </el-alert>
-          </el-form-item>
-          <el-button type="primary" @click="onTemplateGenerate" :loading="generating">📋 基于模板生成</el-button>
-        </el-form>
-      </div>
-    </el-card>
+      <h3 class="section-title" v-if="autoResult">📋 生成结果</h3>
+      <el-card v-if="autoResult" shadow="hover" class="result-card">
+        <el-row :gutter="16">
+          <el-col v-for="(agent, idx) in autoResult.agents" :key="idx" :xs="24" :sm="12" :md="8">
+            <el-card shadow="never" class="agent-mini">
+              <h4>{{ agent.name }}</h4>
+              <p class="role">{{ agent.role }}</p>
+              <el-tag v-for="cap in agent.capabilities" :key="cap" size="small" style="margin: 2px">{{ cap }}</el-tag>
+            </el-card>
+          </el-col>
+        </el-row>
+      </el-card>
+    </section>
 
-    <!-- 生成结果 -->
-    <el-card v-if="result.agents" class="result-card">
-      <template #header>
-        <div class="header">
-          <span>✅ 智能体群已生成 ({{ result.agents.length }} 个 Agent)</span>
-          <el-button type="primary" @click="onSave">💾 保存到市场</el-button>
-        </div>
-      </template>
-      <el-descriptions :column="2" border>
-        <el-descriptions-item label="群组 ID">{{ result.groupId }}</el-descriptions-item>
-        <el-descriptions-item label="协作模式">{{ result.collaboration }}</el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ result.createdAt }}</el-descriptions-item>
-        <el-descriptions-item label="状态">
-          <el-tag type="success">已就绪</el-tag>
-        </el-descriptions-item>
-      </el-descriptions>
-
-      <h4 style="margin-top: 16px">📋 Agent 列表</h4>
-      <el-table :data="result.agents" border>
-        <el-table-column prop="id" label="#" width="60" />
-        <el-table-column prop="name" label="名称" width="200" />
-        <el-table-column prop="role" label="角色" width="150" />
-        <el-table-column prop="tool" label="使用工具" width="180" />
-        <el-table-column prop="description" label="职责说明" />
-        <el-table-column label="操作" width="120">
-          <template #default="{ row }">
-            <el-button size="small" @click="onTestAgent(row)">测试</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-card>
+    <!-- 3. section: 模板模式 -->
+    <section v-else class="section">
+      <h3 class="section-title">📋 模板库 ({{ templates.length }})</h3>
+      <el-row :gutter="16">
+        <el-col v-for="tmpl in templates" :key="tmpl.id" :xs="24" :sm="12" :md="8">
+          <el-card shadow="hover" class="template-card">
+            <div class="tmpl-icon">{{ tmpl.icon || '📋' }}</div>
+            <h4>{{ tmpl.name }}</h4>
+            <p>{{ tmpl.description }}</p>
+            <el-button type="primary" :icon="Plus" @click="useTemplate(tmpl)" plain size="small">使用模板</el-button>
+          </el-card>
+        </el-col>
+      </el-row>
+      <el-empty v-if="!templates.length" description="暂无模板" />
+    </section>
   </div>
 </template>
-
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { autoAgentGroupGenerate, autoAgentGroupByTemplate, autoAgentGroupTemplates } from '@/api/ai'
 
+const { t } = useI18n()
 const mode = ref('auto')
 const generating = ref(false)
 const templates = ref([])

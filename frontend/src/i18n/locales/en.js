@@ -602,4 +602,75 @@ export default {
     loading: 'Click refresh to load',
     refresh: 'Refresh'
   },
+  // ========== V3.5.83 i18n global (15 view, 120 keys) ==========
+  alerts: {
+    title: 'Alert Center',
+    tab: { firing: 'Firing', rules: 'Rules', channels: 'Channels', history: 'History' },
+    severity: { critical: 'Critical', warning: 'Warning', info: 'Info' },
+    action: { ack: 'Ack', silence: 'Silence 1h', delete: 'Delete', test: 'Test' }
+  },
+  cluster: {
+    title: 'AI Cluster Management',
+    kpi: { nodes: 'Total Nodes', active: 'ACTIVE', raft: 'In Raft', applied: 'Applied Index' },
+    raft: { title: 'Raft State', cluster: 'Cluster', consensus: 'Consensus', start: 'Start', stop: 'Stop', trigger: 'Trigger' }
+  },
+  traces: {
+    title: 'Distributed Tracing',
+    kpi: { traces: 'Traces', spans: 'Spans', errors: 'Errors', p95: 'Avg P95' },
+    slow: 'Slow Calls Top 10', recent: 'Recent Traces'
+  },
+  provider: {
+    title: 'Model Provider Management',
+    code: 'Code', name: 'Name', type: 'Type', baseUrl: 'Base URL', priority: 'Priority', enabled: 'Enabled',
+    typeOpenai: 'OpenAI', typeAnthropic: 'Anthropic', typeGemini: 'Gemini', typeCustom: 'Custom'
+  },
+  workflow: {
+    title: 'AI Workflow',
+    add: 'Add Step', validate: 'Validate', example: 'Example', run: 'Run', definition: 'Definition', result: 'Result', valid: 'Valid', invalid: 'Invalid'
+  },
+  imagegen: {
+    title: 'AIGC Image Generation',
+    desc: 'Description', type: 'Type', size: 'Size', style: 'Style', generate: 'Generate', generating: 'Generating...', preview: 'Preview',
+    styleFlat: 'Flat', styleGradient: 'Gradient', styleNeon: 'Neon'
+  },
+  tool: {
+    title: 'AI Tool Configuration',
+    kpi: { total: 'Total Tools', enabled: 'Enabled', calls: 'Total Calls', rate: 'Success Rate' },
+    code: 'Code', name: 'Name', category: 'Category', status: 'Status', callCount: 'Calls', successRate: 'Success Rate', updatedAt: 'Updated'
+  },
+  marketplace: {
+    title: 'AI Agent Marketplace',
+    kpi: { total: 'Total', published: 'Published', downloads: 'Downloads', rating: 'Avg Rating' },
+    cat: { chat: 'Chat', tool: 'Tool', workflow: 'Workflow', multimodal: 'Multimodal' },
+    sortNewest: 'Newest', sortDownloads: 'Most Downloads', sortRating: 'Top Rated'
+  },
+  kg: {
+    title: 'Knowledge Graph',
+    subtitle: 'Entities / Relations / Neighbors / Shortest Path / Visualization',
+    addEntity: 'Add Entity', addRelation: 'Add Relation', visualize: 'Visualize', shortestPath: 'Shortest Path'
+  },
+  agent: {
+    title: 'Agent Orchestration',
+    subtitle: 'Task / Tools / Plan / Execute / Memory',
+    taskGoal: 'Task Goal', taskGoalPlaceholder: 'e.g. Analyze user growth in last 7 days',
+    allowedTools: 'Allowed Tools', selectTools: 'Select tools', run: 'Run', stop: 'Stop'
+  },
+  autoAgent: {
+    title: 'One-sentence Agent Group Generator',
+    mode: { auto: 'Auto', template: 'Template' },
+    desc: 'Agent group description (one sentence)', count: 'Agent count', generate: 'Generate', generating: 'Generating...', templates: 'Templates', useTemplate: 'Use Template'
+  },
+  audit: {
+    title: 'Audit Log', filter: 'Filter', user: 'User', action: 'Action', resource: 'Resource', ip: 'IP', result: 'Result', export: 'Export'
+  },
+  metrics: {
+    title: 'Real-time Metrics',
+    kpi: { qps: 'QPS', latency: 'P99 Latency', errors: 'Error Rate', active: 'Active' },
+    trend: 'Trend', dist: 'Distribution', slow: 'Slow Queries', topEndpoints: 'Top Endpoints'
+  },
+  stream: {
+    title: 'Bidirectional Streaming Chat',
+    connect: 'Connected', disconnect: 'Disconnected', reconnect: 'Reconnect', pause: 'Pause', resume: 'Resume', model: 'Model', rating: 'Rating', inject: 'Inject', reset: 'Reset'
+  },
+  admin: { title: 'System Management', users: 'Users', roles: 'Roles', metrics: 'Metrics', alerts: 'Alerts', cluster: 'Cluster', audit: 'Audit' },
 }

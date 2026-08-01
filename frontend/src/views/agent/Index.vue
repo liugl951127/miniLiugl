@@ -8,7 +8,14 @@
   @description 入口/列表
 -->
 <template>
-  <div class="page-index agent-container">
+  <div class="page-agent agent-container">
+    <!-- page-header -->
+    <header class="page-header">
+      <div>
+        <h2 class="page-title">🤖 {{ t('agent.title') }} <el-tag size="small" type="info">V2.0</el-tag></h2>
+        <p class="page-subtitle">{{ t('agent.subtitle') }}</p>
+      </div>
+    </header>
     <div class="agent-header">
       <h1>🤖 {{ t('agent.title') }} <span class="badge">V2.0</span></h1>
       <p class="sub">{{ t('agent.subtitle') }}</p>

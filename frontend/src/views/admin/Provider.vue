@@ -12,7 +12,7 @@
     <!-- 1. page-header -->
     <header class="page-header">
       <div>
-        <h2 class="page-title">🛠️ 模型 Provider 管理</h2>
+        <h2 class="page-title">{{ t('provider.title') }}</h2>
         <p class="page-subtitle">OpenAI / Anthropic / Gemini / 自定义 LLM 接口</p>
       </div>
       <el-button-group>
@@ -89,10 +89,12 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, reactive } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh, Connection, Edit, Delete } from '@element-plus/icons-vue'
 import { listProviders, createProvider, updateProvider, deleteProvider, testProvider } from '@/api/model'
 
+const { t } = useI18n()
 const providers = ref([])
 const loading = ref(false)
 const saving = ref(false)

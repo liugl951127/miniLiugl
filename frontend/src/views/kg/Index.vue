@@ -18,7 +18,14 @@
   @description 入口/列表
 -->
 <template>
-  <div class="page-index kg-container">
+  <div class="page-kg kg-container">
+    <!-- 1. page-header -->
+    <header class="page-header">
+      <div>
+        <h2 class="page-title">🕸️ {{ t('kg.title') }} <el-tag size="small" type="info">V5.6</el-tag></h2>
+        <p class="page-subtitle">{{ t('kg.subtitle') }}</p>
+      </div>
+    </header>
     <div class="kg-header">
       <h1>🕸️ {{ t('kg.title') }} <span class="badge">V5.6</span></h1>
       <p class="sub">{{ t('kg.subtitle') }}</p>

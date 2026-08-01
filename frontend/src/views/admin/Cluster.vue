@@ -12,7 +12,7 @@
     <!-- 1. page-header -->
     <header class="page-header">
       <div>
-        <h2 class="page-title">🖥️ AI 集群管理 <el-tag size="small" type="success">V3.5.48</el-tag></h2>
+        <h2 class="page-title">{{ t('cluster.title') }} <el-tag size="small" type="success">V3.5.48</el-tag></h2>
         <p class="page-subtitle">节点管理 · 路由 · Raft 共识 · leader 选举</p>
       </div>
       <div>
@@ -107,6 +107,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, reactive } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Upload } from '@element-plus/icons-vue'
 import {
@@ -116,6 +117,7 @@ import {
   raftAppend, raftVote, raftStatus, raftLog, raftTriggerElection
 } from '@/api/ai'
 
+const { t } = useI18n()
 const nodes = ref([])
 const me = ref(null)
 const leaderInfo = ref(null)

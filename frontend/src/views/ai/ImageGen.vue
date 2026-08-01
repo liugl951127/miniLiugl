@@ -12,7 +12,7 @@
     <!-- 1. page-header -->
     <header class="page-header">
       <div>
-        <h2 class="page-title">🎨 AIGC 图片生成 <el-tag size="small" type="info">V2.7.5</el-tag></h2>
+        <h2 class="page-title">{{ t('imagegen.title') }} <el-tag size="small" type="info">V2.7.5</el-tag></h2>
         <p class="page-subtitle">自研图像生成 · 0 外部 LLM 依赖 · SVG / PNG / 数据图 / Logo</p>
       </div>
       <el-button :icon="Refresh" @click="resetForm" plain>重置</el-button>
@@ -99,9 +99,11 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { generateImage, listImageTypes, inferImageType as inferApi } from '@/api/ai'
 
+const { t } = useI18n()
 const req = ref({ prompt: '蓝色渐变背景', type: '', width: 1024, height: 1024, seed: 42 })
 const sizePreset = ref('1024x1024')
 const imageTypes = ref(['abstract', 'gradient', 'pattern', 'text', 'scene', 'logo', 'infographic'])

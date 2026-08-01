@@ -8,189 +8,112 @@
   @description AI 市场
 -->
 <template>
-  <div class="page-marketplace marketplace-container">
-    <div class="mp-header">
-      <h1>🏪 AI Agent 市场 <span class="badge">V2.9.0</span></h1>
-      <p class="sub">浏览 / 上传 / 评分 · 用户共建的 Agent 生态</p>
-    </div>
+  <div class="page-marketplace">
+    <!-- 1. page-header -->
+    <header class="page-header">
+      <div>
+        <h2 class="page-title">{{ t('marketplace.title') }} <el-tag size="small" type="info">V2.9.0</el-tag></h2>
+        <p class="page-subtitle">浏览 / 上传 / 评分 · 用户共建的 Agent 生态</p>
+      </div>
+      <el-button-group>
+        <el-input v-model="search" placeholder="搜索 Agent..." clearable style="width: 240px" />
+        <el-button :icon="Refresh" @click="loadAll" />
+        <el-button type="primary" :icon="Upload" @click="showUpload = true">上传</el-button>
+      </el-button-group>
+    </header>
 
-    <!-- 统计 -->
-    <el-row :gutter="16" v-if="stats">
-      <el-col :span="6">
-        <el-card class="kpi">
-          <div class="kpi-label">总 Agent</div>
-          <div class="kpi-value">{{ stats.total }}</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card class="kpi success">
-          <div class="kpi-label">已发布</div>
-          <div class="kpi-value">{{ stats.published }}</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card class="kpi warn">
-          <div class="kpi-label">待审核</div>
-          <div class="kpi-value">{{ stats.pending }}</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card class="kpi primary">
-          <div class="kpi-label">总使用</div>
-          <div class="kpi-value">{{ stats.totalUsage.toLocaleString() }}</div>
-        </el-card>
-      </el-col>
-    </el-row>
+    <!-- 2. section: 4 KPI -->
+    <section class="section" v-if="stats">
+      <el-row :gutter="16">
+        <el-col :xs="12" :sm="6"><el-card shadow="hover" class="kpi-card"><el-statistic title="总 Agent" :value="stats.total" /></el-card></el-col>
+        <el-col :xs="12" :sm="6"><el-card shadow="hover" class="kpi-card"><el-statistic title="已发布" :value="stats.published" :value-style="{ color: '#10b981' }" /></el-card></el-col>
+        <el-col :xs="12" :sm="6"><el-card shadow="hover" class="kpi-card"><el-statistic title="总下载" :value="stats.downloads" :value-style="{ color: '#6366f1' }" /></el-card></el-col>
+        <el-col :xs="12" :sm="6"><el-card shadow="hover" class="kpi-card"><el-statistic title="平均评分" :value="stats.avgRating" :precision="1" suffix="/5" :value-style="{ color: '#a855f7' }" /></el-card></el-col>
+      </el-row>
+    </section>
 
-    <!-- 筛选 -->
-    <el-card style="margin-top: 16px">
-      <el-form :inline="true" size="small">
-        <el-form-item label="分类">
-          <el-select v-model="filterCategory" placeholder="全部分类" clearable style="width: 160px">
-            <el-option label="全部" value="" />
-            <el-option label="购物" value="SHOPPING" />
-            <el-option label="酒店" value="HOTEL" />
-            <el-option label="娱乐" value="ENTERTAINMENT" />
-            <el-option label="教育" value="EDUCATION" />
-            <el-option label="旅行" value="TRAVEL" />
-            <el-option label="生产" value="PRODUCTIVITY" />
-            <el-option label="自定义" value="CUSTOM" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="搜索">
-          <el-input v-model="filterKeyword" placeholder="名称/描述" clearable style="width: 220px" />
-        </el-form-item>
-        <el-form-item label="排序">
-          <el-select v-model="filterSort" style="width: 120px">
-            <el-option label="最新" value="" />
-            <el-option label="评分" value="rating" />
-            <el-option label="使用" value="usage" />
-          </el-select>
-        </el-form-item>
-        <el-button type="primary" @click="loadAgents" :loading="loading">🔍 搜索</el-button>
-        <el-button type="success" @click="showUpload = true" icon="Plus">📤 上传 Agent</el-button>
-      </el-form>
-    </el-card>
+    <!-- 3. section: 分类筛选 + 排序 -->
+    <section class="section">
+      <el-card shadow="hover">
+        <el-row :gutter="16" align="middle">
+          <el-col :xs="24" :sm="12">
+            <el-radio-group v-model="filterCategory">
+              <el-radio-button label="">全部</el-radio-button>
+              <el-radio-button label="CHAT">对话</el-radio-button>
+              <el-radio-button label="TOOL">工具</el-radio-button>
+              <el-radio-button label="WORKFLOW">工作流</el-radio-button>
+              <el-radio-button label="MULTIMODAL">多模态</el-radio-button>
+            </el-radio-group>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-select v-model="sortBy" style="width: 200px; float: right">
+              <el-option label="最新发布" value="newest" />
+              <el-option label="最多下载" value="downloads" />
+              <el-option label="最高评分" value="rating" />
+            </el-select>
+          </el-col>
+        </el-row>
+      </el-card>
+    </section>
 
-    <!-- Agent 卡片网格 -->
-    <el-row :gutter="16" style="margin-top: 16px" v-loading="loading">
-      <el-col :span="6" v-for="agent in agents" :key="agent.id" style="margin-bottom: 16px">
-        <el-card class="agent-card" shadow="hover" @click.native="showDetail(agent)">
-          <div class="agent-header">
-            <span class="agent-icon">{{ agent.icon || '🤖' }}</span>
+    <!-- 4. section: Agent 网格 -->
+    <section class="section">
+      <h3 class="section-title">📦 Agent 列表 ({{ filteredAgents.length }})</h3>
+      <el-row :gutter="16">
+        <el-col v-for="agent in filteredAgents" :key="agent.id" :xs="24" :sm="12" :md="8" :lg="6">
+          <el-card shadow="hover" class="agent-card">
+            <div class="agent-icon">{{ agent.icon || '🤖' }}</div>
+            <h4 class="agent-name">{{ agent.name }}</h4>
+            <p class="agent-desc">{{ agent.description }}</p>
             <div class="agent-meta">
-              <div class="agent-name">{{ agent.name }}</div>
-              <div class="agent-author">by {{ agent.authorName }}</div>
+              <el-tag size="small">{{ agent.category }}</el-tag>
+              <el-rate :model-value="agent.rating" :max="5" disabled show-score :score-template="agent.rating.toFixed(1)" />
             </div>
-            <el-tag size="small" :type="categoryType(agent.category)">{{ agent.category }}</el-tag>
-          </div>
-          <div class="agent-desc">{{ agent.description }}</div>
-          <div class="agent-tags">
-            <el-tag v-for="tag in (agent.tags || '').split(',').filter(t => t)" :key="tag" size="small" effect="plain" style="margin-right: 4px">
-              {{ tag }}
-            </el-tag>
-          </div>
-          <div class="agent-stats">
-            <span class="rating">⭐ {{ (agent.avgRating || 0).toFixed(1) }}</span>
-            <span class="usage">📊 {{ agent.usageCount }} 次</span>
-            <span class="version">v{{ agent.version }}</span>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
+            <div class="agent-stats">
+              <span>⬇️ {{ agent.downloads }}</span>
+              <span>⭐ {{ agent.rating.toFixed(1) }}</span>
+            </div>
+            <div class="agent-actions">
+              <el-button size="small" :icon="Download" @click="downloadAgent(agent)" type="primary" plain>下载</el-button>
+              <el-button size="small" :icon="View" @click="viewAgent(agent)">详情</el-button>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
+      <el-empty v-if="!filteredAgents.length" description="暂无 Agent" />
+    </section>
 
-    <el-empty v-if="!loading && agents.length === 0" description="暂无 Agent" />
-
-    <!-- 上传对话框 -->
-    <el-dialog v-model="showUpload" title="📤 上传 Agent" width="640px">
-      <el-form :model="uploadForm" label-width="100px">
-        <el-form-item label="名称" required>
-          <el-input v-model="uploadForm.name" placeholder="例如: 智能旅行规划师" />
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="uploadForm.description" type="textarea" :rows="2" />
-        </el-form-item>
+    <!-- 5. dialog: 上传 Agent -->
+    <el-dialog v-model="showUpload" title="上传 Agent" width="600px">
+      <el-form :model="uploadForm" label-width="100px" size="default">
+        <el-form-item label="名称"><el-input v-model="uploadForm.name" /></el-form-item>
+        <el-form-item label="描述"><el-input v-model="uploadForm.description" type="textarea" :rows="3" /></el-form-item>
         <el-form-item label="分类">
-          <el-select v-model="uploadForm.category" style="width:100%">
-            <el-option label="购物" value="SHOPPING" />
-            <el-option label="酒店" value="HOTEL" />
-            <el-option label="娱乐" value="ENTERTAINMENT" />
-            <el-option label="教育" value="EDUCATION" />
-            <el-option label="旅行" value="TRAVEL" />
-            <el-option label="生产" value="PRODUCTIVITY" />
-            <el-option label="自定义" value="CUSTOM" />
+          <el-select v-model="uploadForm.category" style="width: 100%">
+            <el-option label="对话" value="CHAT" />
+            <el-option label="工具" value="TOOL" />
+            <el-option label="工作流" value="WORKFLOW" />
+            <el-option label="多模态" value="MULTIMODAL" />
           </el-select>
         </el-form-item>
-        <el-form-item label="图标 (Emoji)">
-          <el-input v-model="uploadForm.icon" placeholder="🤖" maxlength="4" />
-        </el-form-item>
-        <el-form-item label="可见性">
-          <el-radio-group v-model="uploadForm.visibility">
-            <el-radio value="PRIVATE">私有 (仅自己)</el-radio>
-            <el-radio value="PUBLIC">公开 (需审核)</el-radio>
-            <el-radio value="UNLISTED">凭链接 (审核自动通过)</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="标签">
-          <el-input v-model="uploadForm.tags" placeholder="逗号分隔, 如: 旅行,LBS,推荐" />
-        </el-form-item>
-        <el-form-item label="能力">
-          <el-input v-model="uploadForm.capabilities" placeholder="逗号分隔, 如: travel_plan,poi_search" />
-        </el-form-item>
-        <el-form-item label="定义 JSON" required>
-          <el-input
-            v-model="uploadForm.definitionJson"
-            type="textarea"
-            :rows="8"
-            placeholder="{&quot;capabilities&quot;:[&quot;...&quot;],&quot;tools&quot;:[&quot;...&quot;],&quot;systemPrompt&quot;:&quot;...&quot;}"
-          />
-          <div class="hint">含 capabilities/tools/systemPrompt 的 JSON 对象</div>
-        </el-form-item>
+        <el-form-item label="JSON 配置"><el-input v-model="uploadForm.config" type="textarea" :rows="5" /></el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showUpload = false">取消</el-button>
-        <el-button type="primary" @click="submitUpload" :loading="uploading">上传</el-button>
+        <el-button type="primary" @click="uploadAgent" :loading="uploading">上传</el-button>
       </template>
-    </el-dialog>
-
-    <!-- 详情对话框 -->
-    <el-dialog v-model="showDetail_" :title="detail?.name" width="720px" v-if="detail">
-      <div class="detail-header">
-        <span class="agent-icon big">{{ detail.icon }}</span>
-        <div>
-          <h2>{{ detail.name }}</h2>
-          <p>{{ detail.description }}</p>
-          <el-tag size="small">{{ detail.category }}</el-tag>
-          <el-tag size="small" type="info" style="margin-left:8px">v{{ detail.version }}</el-tag>
-          <el-tag size="small" type="success" style="margin-left:8px">⭐ {{ (detail.avgRating || 0).toFixed(1) }}</el-tag>
-        </div>
-      </div>
-      <el-divider />
-      <h4>能力</h4>
-      <p><code>{{ detail.capabilities }}</code></p>
-      <h4>使用</h4>
-      <p>{{ detail.usageCount }} 次</p>
-      <h4>作者</h4>
-      <p>{{ detail.authorName }}</p>
-      <el-divider />
-      <h4>评分 ({{ detail.ratingCount }})</h4>
-      <div class="rate-section">
-        <el-rate v-model="myRating" :max="5" show-text />
-        <el-button type="primary" size="small" @click="submitRating" :disabled="!myRating">提交评分</el-button>
-      </div>
-      <h4>评论</h4>
-      <el-input v-model="myComment" type="textarea" :rows="2" placeholder="说说你的看法..." />
     </el-dialog>
   </div>
 </template>
-
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { marketplaceApi } from '@/api/marketplace'
 import { useUserStore } from '@/store/user'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const stats = ref(null)
 const agents = ref([])

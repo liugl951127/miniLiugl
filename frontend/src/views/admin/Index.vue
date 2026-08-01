@@ -17,7 +17,7 @@
     <!-- page-header: 标题 + 子导航 -->
     <header class="page-header">
       <div>
-        <h2 class="page-title">⚙️ 系统管理</h2>
+        <h2 class="page-title">{{ t('admin.title') }}</h2>
         <p class="page-subtitle">用户 / 角色 / 指标 / 告警 / 集群 / 审计</p>
       </div>
     </header>
@@ -89,9 +89,11 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { Setting, DataLine, TrendCharts, Connection, Monitor, Cpu, Trophy, ChatDotRound } from '@element-plus/icons-vue'
 
+const { t } = useI18n()
 const route = useRoute()
 const activeMenu = computed(() => route.path)
 </script>

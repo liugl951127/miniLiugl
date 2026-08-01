@@ -8,301 +8,98 @@
   @description AI 工具 (AiToolAdmin)
 -->
 <template>
-  <div class="page-ai-tool-admin ai-tool-admin">
-    <el-tabs v-model="activeTab">
-      <!-- 工具列表 -->
-      <el-tab-pane label="AI 工具" name="tools">
-        <el-card>
-          <template #header>
-            <div class="header">
-              <span>🤖 AI 工具配置中心</span>
-              <div>
-                <el-select v-model="filterCategory" placeholder="按分类筛选" clearable style="width: 180px; margin-right: 12px">
-                  <el-option label="数据清洗" value="DATA_CLEAN" />
-                  <el-option label="数据分析" value="DATA_ANALYZE" />
-                  <el-option label="代码生成" value="CODE_GEN" />
-                  <el-option label="SQL 查询" value="SQL_QUERY" />
-                  <el-option label="对话聊天" value="CHAT" />
-                </el-select>
-                <el-button type="primary" @click="loadTools">🔄 刷新</el-button>
-              </div>
-            </div>
-          </template>
+  <div class="page-ai-tool-admin">
+    <!-- 1. page-header -->
+    <header class="page-header">
+      <div>
+        <h2 class="page-title">{{ t('tool.title') }}</h2>
+        <p class="page-subtitle">工具列表 · 分类 · 状态 · 调用统计</p>
+      </div>
+      <el-button :icon="Refresh" @click="loadTools" :loading="loading">刷新</el-button>
+    </header>
 
-          <el-table :data="tools" v-loading="loading" stripe>
-            <el-table-column prop="code" label="编码" width="200" />
-            <el-table-column prop="name" label="名称" width="180" />
-            <el-table-column prop="category" label="分类" width="100">
-              <template #default="scope">
-                <el-tag :type="categoryTag(scope.row.category)">{{ categoryLabel(scope.row.category) }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="description" label="描述" />
-            <el-table-column prop="implType" label="实现" width="80">
-              <template #default="scope">
-                <el-tag size="small">{{ scope.row.implType }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="builtin" label="内置" width="60">
-              <template #default="scope">
-                <el-tag v-if="scope.row.builtin === 1" type="success" size="small">是</el-tag>
-                <el-tag v-else type="info" size="small">否</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="enabled" label="启用" width="60">
-              <template #default="scope">
-                <el-switch v-model="scope.row.enabled" :active-value="1" :inactive-value="0" @change="toggleTool(scope.row)" />
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="200" fixed="right">
-              <template #default="scope">
-                <el-button size="small" @click="openInvoke(scope.row)">调用</el-button>
-                <el-button size="small" type="primary" @click="openEdit(scope.row)">编辑</el-button>
-                <el-button size="small" type="danger" :disabled="scope.row.builtin === 1" @click="del(scope.row)">删</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
-      </el-tab-pane>
+    <!-- 2. section: 过滤器 (分类 + 状态) -->
+    <section class="section">
+      <el-card shadow="hover">
+        <el-row :gutter="16" align="middle">
+          <el-col :xs="24" :sm="8">
+            <el-select v-model="filterCategory" placeholder="按分类筛选" clearable style="width: 100%">
+              <el-option label="数据清洗" value="DATA_CLEAN" />
+              <el-option label="数据分析" value="DATA_ANALYZE" />
+              <el-option label="代码生成" value="CODE_GEN" />
+              <el-option label="SQL 查询" value="SQL_QUERY" />
+              <el-option label="对话聊天" value="CHAT" />
+            </el-select>
+          </el-col>
+          <el-col :xs="24" :sm="8">
+            <el-select v-model="filterStatus" placeholder="按状态筛选" clearable style="width: 100%">
+              <el-option label="启用" value="ENABLED" />
+              <el-option label="禁用" value="DISABLED" />
+            </el-select>
+          </el-col>
+          <el-col :xs="24" :sm="8">
+            <el-input v-model="search" placeholder="搜索工具名..." clearable :prefix-icon="Search" />
+          </el-col>
+        </el-row>
+      </el-card>
+    </section>
 
-      <!-- 数据源管理 -->
-      <el-tab-pane label="数据源" name="datasources">
-        <el-card>
-          <template #header>
-            <div class="header">
-              <span>🗄️ 数据源管理 (MySQL/PostgreSQL/Oracle/SQL Server/H2/ClickHouse)</span>
-              <el-button type="primary" @click="openDsEdit()">➕ 新增数据源</el-button>
-            </div>
-          </template>
+    <!-- 3. section: 4 KPI -->
+    <section class="section">
+      <el-row :gutter="16">
+        <el-col :xs="12" :sm="6"><el-card shadow="hover" class="kpi-card"><el-statistic title="工具总数" :value="tools.length" /></el-card></el-col>
+        <el-col :xs="12" :sm="6"><el-card shadow="hover" class="kpi-card"><el-statistic title="已启用" :value="enabledCount" :value-style="{ color: '#10b981' }" /></el-card></el-col>
+        <el-col :xs="12" :sm="6"><el-card shadow="hover" class="kpi-card"><el-statistic title="总调用" :value="totalCalls" :value-style="{ color: '#6366f1' }" /></el-card></el-col>
+        <el-col :xs="12" :sm="6"><el-card shadow="hover" class="kpi-card"><el-statistic title="成功率" :value="successRate" suffix="%" :value-style="{ color: '#a855f7' }" /></el-card></el-col>
+      </el-row>
+    </section>
 
-          <el-table :data="datasources" v-loading="dsLoading" stripe>
-            <el-table-column prop="id" label="ID" width="60" />
-            <el-table-column prop="name" label="名称" width="180" />
-            <el-table-column prop="type" label="类型" width="100">
-              <template #default="scope">
-                <el-tag>{{ scope.row.type }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="jdbcUrl" label="JDBC URL" show-overflow-tooltip />
-            <el-table-column prop="username" label="用户名" width="100" />
-            <el-table-column prop="testStatus" label="状态" width="100">
-              <template #default="scope">
-                <el-tag v-if="scope.row.testStatus === 'OK'" type="success" size="small">✓ OK</el-tag>
-                <el-tag v-else-if="scope.row.testStatus === 'FAILED'" type="danger" size="small">✗ 失败</el-tag>
-                <el-tag v-else type="info" size="small">未测试</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="enabled" label="启用" width="60">
-              <template #default="scope">
-                <el-switch v-model="scope.row.enabled" :active-value="1" :inactive-value="0" />
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="220" fixed="right">
-              <template #default="scope">
-                <el-button size="small" @click="testDs(scope.row)">测试连接</el-button>
-                <el-button size="small" type="primary" @click="openDsEdit(scope.row)">编辑</el-button>
-                <el-button size="small" type="danger" @click="delDs(scope.row)">删</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
-      </el-tab-pane>
-
-      <!-- 项目代码生成 -->
-      <el-tab-pane label="代码生成" name="codegen">
-        <el-card>
-          <template #header>
-            <span>🚀 AI 项目代码生成 (Spring Boot / Vue / React / Python Flask / Node Express / HTML)</span>
-          </template>
-          <el-form :model="genForm" label-width="120px" style="max-width: 700px">
-            <el-form-item label="项目类型">
-              <el-select v-model="genForm.projectType">
-                <el-option label="Spring Boot (Java)" value="spring-boot" />
-                <el-option label="Vue 3" value="vue" />
-                <el-option label="React" value="react" />
-                <el-option label="Python Flask" value="python-flask" />
-                <el-option label="Node Express" value="node-express" />
-                <el-option label="HTML 静态" value="html" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="项目名称">
-              <el-input v-model="genForm.projectName" placeholder="my-awesome-app" />
-            </el-form-item>
-            <el-form-item label="项目描述">
-              <el-input v-model="genForm.description" type="textarea" :rows="3" placeholder="用一段话描述项目要做什么" />
-            </el-form-item>
-            <el-form-item label="功能列表">
-              <el-input v-model="genForm.features" placeholder="逗号分隔: list, create, redis, security" />
-            </el-form-item>
-            <el-form-item label="数据库" v-if="genForm.projectType === 'spring-boot'">
-              <el-select v-model="genForm.database">
-                <el-option label="H2 (内存)" value="h2" />
-                <el-option label="MySQL" value="mysql" />
-                <el-option label="PostgreSQL" value="postgresql" />
-              </el-select>
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" @click="generate" :loading="genLoading">🚀 生成项目代码</el-button>
-            </el-form-item>
-          </el-form>
-
-          <el-divider v-if="genResult" />
-
-          <div v-if="genResult">
-            <h3>📁 {{ genResult.projectName }} ({{ genResult.totalFiles }} 个文件, ~{{ genResult.totalLines }} 行)</h3>
-            <p style="color: #666; font-size: 12px">耗时: {{ genResult.durationMs }}ms</p>
-            <el-tabs>
-              <el-tab-pane label="目录结构">
-                <pre style="background: #f5f5f5; padding: 12px; border-radius: 4px; overflow: auto; max-height: 400px">{{ genResult.structure }}</pre>
-              </el-tab-pane>
-              <el-tab-pane label="文件内容">
-                <el-select v-model="selectedFile" placeholder="选择文件" style="width: 300px; margin-bottom: 8px">
-                  <el-option v-for="(content, path) in genResult.files" :key="path" :label="path" :value="path" />
-                </el-select>
-                <pre v-if="selectedFile" style="background: #1e1e1e; color: #d4d4d4; padding: 12px; border-radius: 4px; overflow: auto; max-height: 500px; font-size: 12px">{{ genResult.files[selectedFile] }}</pre>
-              </el-tab-pane>
-              <el-tab-pane label="启动说明">
-                <pre style="background: #f0f8ff; padding: 12px; border-radius: 4px">{{ genResult.runInstructions }}</pre>
-                <el-button type="success" @click="downloadProject" style="margin-top: 12px">📥 下载项目 (zip)</el-button>
-              </el-tab-pane>
-            </el-tabs>
-          </div>
-        </el-card>
-      </el-tab-pane>
-
-      <!-- 数据分析 -->
-      <el-tab-pane label="数据分析" name="analysis">
-        <el-card>
-          <template #header>
-            <span>📊 数据智能分析 (描述统计 / 异常检测 / 趋势 / 分布)</span>
-          </template>
-          <el-form :model="analysisForm" label-width="120px" style="max-width: 600px">
-            <el-form-item label="数据源">
-              <el-select v-model="analysisForm.dataSourceId" placeholder="选择数据源">
-                <el-option v-for="ds in datasources" :key="ds.id" :label="ds.name" :value="ds.id" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="表名">
-              <el-input v-model="analysisForm.table" placeholder="user / order / log..." />
-            </el-form-item>
-            <el-form-item label="分析类型">
-              <el-select v-model="analysisForm.tool">
-                <el-option label="描述统计 (count/mean/std/分位数)" value="data.analyze.stats" />
-                <el-option label="异常检测 (Z-Score / IQR)" value="data.analyze.anomaly" />
-                <el-option label="趋势分析 (时间序列)" value="data.analyze.trend" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="列名">
-              <el-input v-model="analysisForm.column" placeholder="amount / age / price..." />
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" @click="runAnalysis" :loading="analysisLoading">🚀 启动分析</el-button>
-            </el-form-item>
-          </el-form>
-
-          <div v-if="analysisResult" style="margin-top: 24px">
-            <h3>📈 分析结果</h3>
-            <el-table :data="analysisTable" border>
-              <el-table-column v-for="(value, key) in analysisResult" :key="key" :label="key">
-                <template #default="scope">
-                  <code>{{ formatVal(scope.row[key]) }}</code>
-                </template>
-              </el-table-column>
-            </el-table>
-            <el-button @click="downloadAnalysis" type="success" style="margin-top: 12px">📥 下载结果 (JSON)</el-button>
-          </div>
-        </el-card>
-      </el-tab-pane>
-    </el-tabs>
-
-    <!-- 工具调用弹窗 -->
-    <el-dialog v-model="invokeVisible" :title="`调用工具: ${currentTool?.name}`" width="700px">
-      <el-form :model="invokeForm" label-width="150px">
-        <el-form-item label="数据源 ID" v-if="needsDs(currentTool)">
-          <el-input-number v-model="invokeForm.dataSourceId" :min="1" />
-        </el-form-item>
-        <el-form-item label="表名" v-if="needsTable(currentTool)">
-          <el-input v-model="invokeForm.table" />
-        </el-form-item>
-        <el-form-item label="列名" v-if="needsColumn(currentTool)">
-          <el-input v-model="invokeForm.column" />
-        </el-form-item>
-        <el-form-item label="输入参数 (JSON)">
-          <el-input v-model="invokeForm.json" type="textarea" :rows="6" placeholder="{&quot;key&quot;: &quot;value&quot;}" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="invokeVisible = false">取消</el-button>
-        <el-button type="primary" :loading="invokeLoading" @click="doInvoke">🚀 调用</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 工具编辑弹窗 -->
-    <el-dialog v-model="editVisible" :title="editForm.id ? '编辑工具' : '新增工具'" width="700px">
-      <el-form :model="editForm" label-width="120px">
-        <el-form-item label="编码"><el-input v-model="editForm.code" :disabled="!!editForm.builtin" /></el-form-item>
-        <el-form-item label="名称"><el-input v-model="editForm.name" /></el-form-item>
-        <el-form-item label="分类">
-          <el-select v-model="editForm.category">
-            <el-option label="数据清洗" value="DATA_CLEAN" />
-            <el-option label="数据分析" value="DATA_ANALYZE" />
-            <el-option label="代码生成" value="CODE_GEN" />
-            <el-option label="SQL 查询" value="SQL_QUERY" />
-            <el-option label="对话聊天" value="CHAT" />
-            <el-option label="自定义" value="CUSTOM" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="描述"><el-input v-model="editForm.description" type="textarea" :rows="2" /></el-form-item>
-        <el-form-item label="实现方式">
-          <el-select v-model="editForm.implType">
-            <el-option label="Java 类" value="java" />
-            <el-option label="SQL" value="sql" />
-            <el-option label="Prompt" value="prompt" />
-            <el-option label="HTTP" value="http" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="实现值"><el-input v-model="editForm.implValue" type="textarea" :rows="3" /></el-form-item>
-        <el-form-item label="限流 (次/分钟)"><el-input-number v-model="editForm.rateLimit" :min="0" :max="10000" /></el-form-item>
-        <el-form-item label="启用"><el-switch v-model="editForm.enabled" :active-value="1" :inactive-value="0" /></el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="editVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveTool">保存</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 数据源编辑弹窗 -->
-    <el-dialog v-model="dsEditVisible" :title="dsEdit.id ? '编辑数据源' : '新增数据源'" width="600px">
-      <el-form :model="dsEdit" label-width="120px">
-        <el-form-item label="名称"><el-input v-model="dsEdit.name" /></el-form-item>
-        <el-form-item label="类型">
-          <el-select v-model="dsEdit.type">
-            <el-option label="MySQL" value="mysql" />
-            <el-option label="PostgreSQL" value="postgresql" />
-            <el-option label="Oracle" value="oracle" />
-            <el-option label="SQL Server" value="sqlserver" />
-            <el-option label="H2" value="h2" />
-            <el-option label="ClickHouse" value="clickhouse" />
-            <el-option label="Doris" value="doris" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="JDBC URL"><el-input v-model="dsEdit.jdbcUrl" /></el-form-item>
-        <el-form-item label="用户名"><el-input v-model="dsEdit.username" /></el-form-item>
-        <el-form-item label="密码"><el-input v-model="dsEdit.password" type="password" show-password /></el-form-item>
-        <el-form-item label="连接池大小"><el-input-number v-model="dsEdit.poolSize" :min="1" :max="50" /></el-form-item>
-        <el-form-item label="描述"><el-input v-model="dsEdit.description" type="textarea" :rows="2" /></el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="dsEditVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveDs">保存</el-button>
-      </template>
-    </el-dialog>
+    <!-- 4. section: 工具列表 (表格) -->
+    <section class="section">
+      <h3 class="section-title">🛠️ 工具列表 ({{ filteredTools.length }})</h3>
+      <el-card shadow="hover">
+        <el-table :data="filteredTools" stripe>
+          <el-table-column prop="code" label="代码" width="140">
+            <template #default="{ row }">
+              <el-tag size="small">{{ row.code }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="name" label="名称" min-width="160" />
+          <el-table-column prop="category" label="分类" width="120">
+            <template #default="{ row }">
+              <el-tag :type="categoryColor(row.category)" size="small">{{ row.category }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="status" label="状态" width="100">
+            <template #default="{ row }">
+              <el-switch v-model="row.status" active-value="ENABLED" inactive-value="DISABLED" @change="toggleTool(row)" />
+            </template>
+          </el-table-column>
+          <el-table-column prop="callCount" label="调用次数" width="100" sortable />
+          <el-table-column prop="successRate" label="成功率" width="100">
+            <template #default="{ row }">
+              <el-progress :percentage="row.successRate" :stroke-width="6" />
+            </template>
+          </el-table-column>
+          <el-table-column prop="updatedAt" label="更新时间" width="180">
+            <template #default="{ row }">{{ formatTime(row.updatedAt) }}</template>
+          </el-table-column>
+          <el-table-column label="操作" width="140">
+            <template #default="{ row }">
+              <el-button size="small" @click="editTool(row)">编辑</el-button>
+              <el-button size="small" type="primary" @click="testTool(row)">测试</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-empty v-if="!filteredTools.length" description="暂无工具" />
+      </el-card>
+    </section>
   </div>
 </template>
-
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   listTools as apiListTools,
@@ -319,6 +116,7 @@ import {
   generateProject as apiGenerateProject
 } from '@/api/ai'
 
+const { t } = useI18n()
 const activeTab = ref('tools')
 
 // 工具列表

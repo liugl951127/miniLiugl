@@ -602,4 +602,75 @@ export default {
     loading: '点击刷新加载',
     refresh: '刷新'
   },
+  // ========== V3.5.83 i18n 全局化 (15 view, 120 keys) ==========
+  alerts: {
+    title: '告警中心',
+    tab: { firing: '触发中', rules: '告警规则', channels: '通知渠道', history: '历史记录' },
+    severity: { critical: '严重', warning: '警告', info: '信息' },
+    action: { ack: '确认', silence: '静默 1h', delete: '删除', test: '测试' }
+  },
+  cluster: {
+    title: 'AI 集群管理',
+    kpi: { nodes: '总节点数', active: 'ACTIVE 节点', raft: '已加入共识', applied: '已应用日志' },
+    raft: { title: 'Raft 状态', cluster: '集群', consensus: '共识', start: 'Start', stop: 'Stop', trigger: 'Trigger' }
+  },
+  traces: {
+    title: '分布式追踪',
+    kpi: { traces: 'Traces', spans: 'Spans', errors: '错误', p95: 'Avg P95' },
+    slow: '慢调用 Top 10', recent: '最近 Trace'
+  },
+  provider: {
+    title: '模型 Provider 管理',
+    code: '代码', name: '名称', type: '类型', baseUrl: 'Base URL', priority: '优先级', enabled: '启用',
+    typeOpenai: 'OpenAI', typeAnthropic: 'Anthropic', typeGemini: 'Gemini', typeCustom: '自研'
+  },
+  workflow: {
+    title: 'AI 工作流编排',
+    add: '添加节点', validate: '验证', example: '示例', run: '执行', definition: '工作流定义', result: '执行结果', valid: '有效', invalid: '错误'
+  },
+  imagegen: {
+    title: 'AIGC 图片生成',
+    desc: '描述', type: '类型', size: '尺寸', style: '风格', generate: '生成图片', generating: '生成中...', preview: '预览',
+    styleFlat: '扁平', styleGradient: '渐变', styleNeon: '霓虹'
+  },
+  tool: {
+    title: 'AI 工具配置中心',
+    kpi: { total: '工具总数', enabled: '已启用', calls: '总调用', rate: '成功率' },
+    code: '代码', name: '名称', category: '分类', status: '状态', callCount: '调用次数', successRate: '成功率', updatedAt: '更新时间'
+  },
+  marketplace: {
+    title: 'AI Agent 市场',
+    kpi: { total: '总 Agent', published: '已发布', downloads: '总下载', rating: '平均评分' },
+    cat: { chat: '对话', tool: '工具', workflow: '工作流', multimodal: '多模态' },
+    sortNewest: '最新发布', sortDownloads: '最多下载', sortRating: '最高评分'
+  },
+  kg: {
+    title: '知识图谱',
+    subtitle: '实体 / 关系 / 邻居 / 最短路径 / 可视化',
+    addEntity: '新增实体', addRelation: '新增关系', visualize: '可视化', shortestPath: '最短路径'
+  },
+  agent: {
+    title: 'Agent 编排',
+    subtitle: '任务 / 工具 / 计划 / 执行 / 记忆',
+    taskGoal: '任务目标', taskGoalPlaceholder: '例: 分析最近 7 天的用户增长趋势',
+    allowedTools: '可用工具', selectTools: '选择工具', run: '执行', stop: '停止'
+  },
+  autoAgent: {
+    title: '一句话生成智能体群',
+    mode: { auto: '一句话', template: '模板' },
+    desc: '智能体群描述 (一句话)', count: '智能体数量', generate: '生成智能体群', generating: '生成中...', templates: '模板库', useTemplate: '使用模板'
+  },
+  audit: {
+    title: '审计日志', filter: '过滤器', user: '用户', action: '操作', resource: '资源', ip: 'IP', result: '结果', export: '导出'
+  },
+  metrics: {
+    title: '实时指标',
+    kpi: { qps: 'QPS', latency: 'P99 延迟', errors: '错误率', active: '活跃连接' },
+    trend: '趋势', dist: '分布', slow: '慢查询', topEndpoints: 'Top 端点'
+  },
+  stream: {
+    title: '双向流式聊天',
+    connect: '已连接', disconnect: '未连接', reconnect: '重连', pause: '暂停', resume: '继续', model: '模型', rating: '评分', inject: '注入', reset: '重置'
+  },
+  admin: { title: '系统管理', users: '用户', roles: '角色', metrics: '指标', alerts: '告警', cluster: '集群', audit: '审计' },
 }

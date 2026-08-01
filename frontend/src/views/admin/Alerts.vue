@@ -12,7 +12,7 @@
     <!-- 1. page-header -->
     <header class="page-header">
       <div>
-        <h2 class="page-title">🔔 告警中心</h2>
+        <h2 class="page-title">{{ t('alerts.title') }}</h2>
         <p class="page-subtitle">{{ currentTabLabel }} · {{ totalAlerts }} 个告警 · {{ firingCount }} 个触发中</p>
       </div>
       <el-button :icon="Refresh" @click="loadAll" :loading="loading">刷新</el-button>
@@ -153,9 +153,11 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { monitorApi } from '@/api/monitor'
 
+const { t } = useI18n()
 const tab = ref('firing')
 const firing = ref([])
 const rules = ref([])

@@ -12,7 +12,7 @@
     <!-- 1. page-header -->
     <header class="page-header">
       <div>
-        <h2 class="page-title">💬 双向流式聊天 <el-tag size="small" type="info">V5.19</el-tag></h2>
+        <h2 class="page-title">{{ t('stream.title') }} <el-tag size="small" type="info">V5.19</el-tag></h2>
         <p class="page-subtitle">实时双向: 暂停 / 引导 / 评分反馈 / 注入上下文 / 切换模型</p>
       </div>
       <el-button-group>
@@ -102,9 +102,11 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const connected = ref(false)
 const streaming = ref(false)
