@@ -56,3 +56,13 @@ logging:
     com.alibaba.nacos: WARN
     org.springframework.cloud: WARN
     com.zaxxer.hikari: WARN
+
+# V3.5.90+ OpenTelemetry trace (W3C traceparent, OTLP → collector → jaeger)
+# jvm-env (docker-compose) 注入 OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+otel:
+  metrics:
+    export:
+      interval: 30s
+  java:
+    global-autoconfigure:
+      enabled: true
