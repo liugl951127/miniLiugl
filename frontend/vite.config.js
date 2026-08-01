@@ -26,6 +26,42 @@ export default defineConfig(({ mode }) => {
       // V5.8 优化: 移除 vite-plugin-compression (含 brotli native 依赖, 沙箱装不上)
       // nginx 端已配置运行时 gzip + br 压缩 (scripts/nginx-minimax-3000.conf)
     ],
+
+    // V3.6.15+ 依赖预优化 (避免 element-plus 全部组件被预打包)
+    optimizeDeps: {
+      include: [
+        'vue',
+        'vue-router',
+        'pinia',
+        'axios',
+        'dayjs',
+        'echarts/core',
+        'echarts/charts',
+        'echarts/components',
+        'echarts/renderers',
+        'element-plus/es/components/button/style/css',
+        'element-plus/es/components/input/style/css',
+        'element-plus/es/components/table/style/css',
+        'element-plus/es/components/dialog/style/css',
+        'element-plus/es/components/form/style/css',
+        'element-plus/es/components/select/style/css',
+        'element-plus/es/components/menu/style/css',
+        'element-plus/es/components/tag/style/css',
+        'element-plus/es/components/card/style/css',
+        'element-plus/es/components/dropdown/style/css',
+        'element-plus/es/components/popover/style/css',
+        'element-plus/es/components/empty/style/css',
+        'element-plus/es/components/message/style/css',
+        'element-plus/es/components/notification/style/css',
+        'element-plus/es/components/loading/style/css',
+      ],
+      exclude: [
+        'vue-demi',
+        'tesseract.js',
+        '@vueuse/core',
+        'fuse.js',
+      ],
+    },
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url))
