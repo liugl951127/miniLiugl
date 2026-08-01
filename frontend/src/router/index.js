@@ -276,6 +276,12 @@ const routes = [
             meta: { title: '仪表盘', icon: 'DataLine' }
           },
           {
+            path: 'dashboard',
+            name: 'AdminDashboard',
+            component: () => import('@/views/admin/Dashboard.vue'),
+            meta: { title: '指标仪表盘', icon: 'DataLine' }
+          },
+          {
             path: 'metrics',
             name: 'AdminMetrics',
             component: () => import('@/views/admin/Metrics.vue'),
