@@ -315,7 +315,7 @@ function fillAccount(acc) {
     const redirect = route.query.redirect || '/admin/dashboard'
     router.replace(redirect)
   } else {
-    toast.success(`已填入 ${acc.role} 账号, 点击登录`)
+    toast.info(`已填入 ${acc.role} 账号, 自动登录中...`); setTimeout(() => onSubmit(), 300)
   }
 }
 
