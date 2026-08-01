@@ -73,7 +73,9 @@
             <template #append><el-button @click="doSearch">{{ t('common.search') }}</el-button></template>
           </el-input>
           <el-scrollbar style="margin-top:12px;max-height:280px">
-            <div v-for="e in entities" :key="e.id"
+            <el-input v-model="entitySearchKw" placeholder="搜索实体 (名/类型/描述)" :prefix-icon="Search" clearable size="small" class="entity-search" />
+
+            <div v-for="e in filteredEntities" :key="e.id"
                  class="entity-item" :class="{ active: selectedEntity?.id === e.id }"
                  @click="selectEntity(e)">
               <el-tag size="small" :type="typeTag(e.entityType)">{{ e.entityType }}</el-tag>
@@ -88,12 +90,12 @@
           <el-form :inline="true" size="small">
             <el-form-item :label="t('kg.from')">
               <el-select v-model="pathFromId" filterable style="width:140px" :placeholder="t('kg.fromPlaceholder')">
-                <el-option v-for="e in entities" :key="e.id" :label="e.name" :value="e.id" />
+                <el-option v-for="e in filteredEntities" :key="e.id" :label="e.name" :value="e.id" />
               </el-select>
             </el-form-item>
             <el-form-item :label="t('kg.to')">
               <el-select v-model="pathToId" filterable style="width:140px" :placeholder="t('kg.toPlaceholder')">
-                <el-option v-for="e in entities" :key="e.id" :label="e.name" :value="e.id" />
+                <el-option v-for="e in filteredEntities" :key="e.id" :label="e.name" :value="e.id" />
               </el-select>
             </el-form-item>
             <el-form-item>
@@ -154,7 +156,7 @@
           <el-form :inline="true">
             <el-form-item :label="t('kg.targetEntity')">
               <el-select v-model="relForm.toId" filterable style="width:180px">
-                <el-option v-for="e in entities" :key="e.id" :label="e.name" :value="e.id" />
+                <el-option v-for="e in filteredEntities" :key="e.id" :label="e.name" :value="e.id" />
               </el-select>
             </el-form-item>
             <el-form-item :label="t('kg.relationType')">
@@ -210,6 +212,18 @@ const TYPE_COLOR: Record<string, string> = {
   concept: '#e6a23c',
   event: '#9c27b0',
 }
+
+// === V3.6.7+ 实体搜索 ===
+const entitySearchKw = ref('')
+const filteredEntities = computed(() => {
+  if (!entitySearchKw.value) return entities.value
+  const kw = entitySearchKw.value.toLowerCase()
+  return entities.value.filter(e =>
+    e.name?.toLowerCase().includes(kw) ||
+    e.entityType?.toLowerCase().includes(kw) ||
+    e.description?.toLowerCase().includes(kw)
+  )
+})
 function typeTag(t: string) {
   return ({ person: 'danger', place: 'success', org: '', concept: 'warning', event: 'info' } as any)[t] || ''
 }
@@ -705,6 +719,33 @@ function onNodeClick(params) {
   }
 }
 
+// V3.6.7+ 节点搜索跳转
+function jumpToEntity(entity) {
+  selectedEntity.value = entity
+  loadNeighbors()
+  nextTick(() => {
+    renderGraph()
+    // 滚动到 graph
+    if (chartEl.value) {
+      chartEl.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+    // 视觉高亮 1s
+    flashNode(entity.id)
+  })
+}
+
+function flashNode(id) {
+  if (!chart) return
+  chart.dispatchAction({
+    type: 'highlight',
+    seriesIndex: 0,
+    dataIndex: chart.getOption().series[0].data.findIndex(n => String(n.id) === String(id)),
+  })
+  setTimeout(() => {
+    chart?.dispatchAction({ type: 'downplay', seriesIndex: 0 })
+  }, 1500)
+}
+
 function loadMockData() {
   entities.value = MOCK_ENTITIES
   if (!selectedEntity.value) {
@@ -742,6 +783,9 @@ onMounted(async () => {
   color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;
 }
 .sub { color: #666; margin-bottom: 20px; }
+.entity-search {
+  margin-bottom: 8px;
+}
 .entity-item {
   padding: 8px 10px; cursor: pointer; border-radius: 4px; transition: all 0.2s;
   display: flex; align-items: center; gap: 6px;

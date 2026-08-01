@@ -317,6 +317,7 @@ export default {
     noPathFound: 'No path found',
     query: 'Query',
     build: 'Build Graph',
+    search: { placeholder: 'Search entity (name/type/desc)', doubleClick: 'Double-click to jump' }
   },
   collab: {
     title: 'Real-time Collaboration',

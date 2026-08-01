@@ -317,6 +317,7 @@ export default {
     noPathFound: '未找到路径',
     query: '查询',
     build: '构建图谱',
+    search: { placeholder: '搜索实体 (名/类型/描述)', doubleClick: '双击跳转到图谱' }
   },
   collab: {
     title: '实时协作',

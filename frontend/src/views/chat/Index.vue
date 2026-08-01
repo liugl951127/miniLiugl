@@ -142,6 +142,14 @@
           <el-checkbox v-model="useStream">流式</el-checkbox>
           <el-checkbox v-model="useTools">{{ t('chat.tools') }}</el-checkbox>
           <el-checkbox v-model="useRag">RAG</el-checkbox>
+          <!-- V3.6.7+ 响应深度 (el-segmented 单选) -->
+          <el-segmented
+            v-model="responseDepth"
+            :options="depthOptions"
+            size="small"
+            class="depth-segmented"
+            @change="onDepthChange"
+          />
           <!-- V3.6.0+ 语音播报开关 -->
           <el-checkbox v-model="autoSpeak">
             🔊 TTS
@@ -716,6 +724,11 @@ const agentModes = ref([
   { key: 'rag',    label: '📚 RAG 检索', icon: 'Document' },
   { key: 'flow',   label: '🔀 Flow 流程', icon: 'Share' },
 ])
+function onDepthChange(depth) {
+  const label = depthOptions.value.find(d => d.value === depth)?.label || depth
+  ElMessage.info(`响应深度: ${label}`)
+}
+
 function onAgentModeChange(modes) {
   if (!Array.isArray(modes) || !modes.length) {
     // 至少保留 chat
