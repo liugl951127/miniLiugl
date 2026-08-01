@@ -7,7 +7,9 @@
 <template>
   <div class="page-h5login">
     <!-- 1. page-header: 顶部品牌 + 切回 PC + 演示模式 -->
-    <header class="page-header">
+    <!-- V3.6.1+ 版本标识 (el-watermark) -->
+  <el-watermark v-if="false" content="V3.6.1" :font="{ size: 8 }" class="page-watermark" />
+  <header class="page-header">
       <div class="brand">
         <img src="/icons/icon-192.svg" alt="Liugl-AI" class="brand-logo" />
         <div>

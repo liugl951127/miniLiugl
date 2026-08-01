@@ -10,7 +10,9 @@
 <template>
   <div class="page-ai-tool-admin">
     <!-- 1. page-header -->
-    <header class="page-header">
+    <!-- V3.6.1+ 版本标识 (el-watermark) -->
+  <el-watermark v-if="false" content="V3.6.1" :font="{ size: 8 }" class="page-watermark" />
+  <header class="page-header">
       <div>
         <h2 class="page-title">{{ t('tool.title') }}</h2>
         <p class="page-subtitle">工具列表 · 分类 · 状态 · 调用统计</p>

@@ -18,7 +18,9 @@
 <template>
   <div class="page-login" :class="{ 'is-mobile': isMobile }">
     <!-- 1. page-header: 品牌 + 标题 + 副标题 + 主操作 -->
-    <header class="page-header">
+    <!-- V3.6.1+ 版本标识 (el-watermark) -->
+  <el-watermark v-if="false" content="V3.6.1" :font="{ size: 8 }" class="page-watermark" />
+  <header class="page-header">
       <div class="brand">
         <div class="brand-logo">M</div>
         <div>

@@ -49,8 +49,9 @@ export default {
     stop: 'Stop',
     newSession: 'New Chat',
     noSession: 'No sessions',
-    voice: { title: 'Voice Input', unsupported: 'Browser does not support voice', failed: 'Voice recognition failed', placeholder: 'Click mic to start...' }
-    tts: { title: 'Text-to-Speech', auto: 'Auto-speak', speaking: 'Speaking', unsupported: 'Browser does not support TTS' }
+    voice: { title: 'Voice Input', unsupported: 'Browser does not support voice', failed: 'Voice recognition failed', placeholder: 'Click mic to start...' },
+    tts: { title: 'Text-to-Speech', auto: 'Auto-speak', speaking: 'Speaking', unsupported: 'Browser does not support TTS' },
+    ocr: { title: 'OCR Recognition', processing: 'Recognizing...', completed: 'Completed, appended to input', failed: 'OCR failed', noText: 'No text detected' }
   },
   common: {
     confirm: 'Confirm',

@@ -10,7 +10,9 @@
 <template>
   <div class="page-provider">
     <!-- 1. page-header -->
-    <header class="page-header">
+    <!-- V3.6.1+ 版本标识 (el-watermark) -->
+  <el-watermark v-if="false" content="V3.6.1" :font="{ size: 8 }" class="page-watermark" />
+  <header class="page-header">
       <div>
         <h2 class="page-title">{{ t('provider.title') }}</h2>
         <p class="page-subtitle">OpenAI / Anthropic / Gemini / 自定义 LLM 接口</p>

@@ -10,7 +10,9 @@
 <template>
   <div class="page-cluster">
     <!-- 1. page-header -->
-    <header class="page-header">
+    <!-- V3.6.1+ 版本标识 (el-watermark) -->
+  <el-watermark v-if="false" content="V3.6.1" :font="{ size: 8 }" class="page-watermark" />
+  <header class="page-header">
       <div>
         <h2 class="page-title">{{ t('cluster.title') }} <el-tag size="small" type="success">V3.5.48</el-tag></h2>
         <p class="page-subtitle">节点管理 · 路由 · Raft 共识 · leader 选举</p>

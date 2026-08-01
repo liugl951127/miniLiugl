@@ -49,8 +49,9 @@ export default {
     stop: '停止',
     newSession: '新建对话',
     noSession: '暂无会话',
-    voice: { title: '语音输入', unsupported: '当前浏览器不支持语音', failed: '语音识别失败', placeholder: '点击麦克风开始...' }
-    tts: { title: '语音播报', auto: '自动播报', speaking: '播报中', unsupported: '当前浏览器不支持 TTS' }
+    voice: { title: '语音输入', unsupported: '当前浏览器不支持语音', failed: '语音识别失败', placeholder: '点击麦克风开始...' },
+    tts: { title: '语音播报', auto: '自动播报', speaking: '播报中', unsupported: '当前浏览器不支持 TTS' },
+    ocr: { title: 'OCR 识别', processing: '正在识别...', completed: '识别完成, 已追加到输入框', failed: 'OCR 识别失败', noText: '未识别到文字' }
   },
   common: {
     confirm: '确定',

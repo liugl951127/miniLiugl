@@ -10,7 +10,9 @@
 <template>
   <div class="page-workflow">
     <!-- 1. page-header -->
-    <header class="page-header">
+    <!-- V3.6.1+ 版本标识 (el-watermark) -->
+  <el-watermark v-if="false" content="V3.6.1" :font="{ size: 8 }" class="page-watermark" />
+  <header class="page-header">
       <div>
         <h2 class="page-title">{{ t('workflow.title') }} <el-tag size="small" type="info">V2.7.3</el-tag></h2>
         <p class="page-subtitle">节点编排 · 串行/并行 · 验证 · 执行 · 示例</p>

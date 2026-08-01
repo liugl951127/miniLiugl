@@ -10,7 +10,9 @@
 <template>
   <div class="page-stream">
     <!-- 1. page-header -->
-    <header class="page-header">
+    <!-- V3.6.1+ 版本标识 (el-watermark) -->
+  <el-watermark v-if="false" content="V3.6.1" :font="{ size: 8 }" class="page-watermark" />
+  <header class="page-header">
       <div>
         <h2 class="page-title">{{ t('stream.title') }} <el-tag size="small" type="info">V5.19</el-tag></h2>
         <p class="page-subtitle">实时双向: 暂停 / 引导 / 评分反馈 / 注入上下文 / 切换模型</p>

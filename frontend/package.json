@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
+    "@intlify/unplugin-vue-i18n": "^1.4.0",
     "@vueuse/core": "^7.7.0",
     "axios": "^1.6.7",
     "dayjs": "^1.11.10",
@@ -47,13 +48,13 @@
     "pinia": "^2.1.7",
     "pinia-plugin-persistedstate": "^3.2.1",
     "qrcode": "^1.5.4",
+    "tesseract.js": "^5.1.1",
     "vant": "^4.9.24",
     "vite-plugin-cdn-import": "^1.0.1",
     "vue": "^3.3.13",
     "vue-echarts": "^7.0.3",
     "vue-i18n": "^9.8.0",
-    "vue-router": "^4.2.5",
-    "@intlify/unplugin-vue-i18n": "^1.4.0"
+    "vue-router": "^4.2.5"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",

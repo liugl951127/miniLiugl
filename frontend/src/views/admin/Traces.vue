@@ -10,7 +10,9 @@
 <template>
   <div class="page-traces">
     <!-- 1. page-header -->
-    <header class="page-header">
+    <!-- V3.6.1+ 版本标识 (el-watermark) -->
+  <el-watermark v-if="false" content="V3.6.1" :font="{ size: 8 }" class="page-watermark" />
+  <header class="page-header">
       <div>
         <h2 class="page-title">{{ t('traces.title') }} <el-tag size="small" type="info">V5.14 OpenTelemetry</el-tag></h2>
         <p class="page-subtitle">Trace ID / 服务 / 慢调用 / Span / 自动刷新</p>

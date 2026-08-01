@@ -7,7 +7,9 @@
 <template>
   <div class="page-dashboard">
     <!-- 1. 页面标题 (统一格式: 标题 + 副标题 + 操作按钮) -->
-    <header class="page-header">
+    <!-- V3.6.1+ 版本标识 (el-watermark) -->
+  <el-watermark v-if="false" content="V3.6.1" :font="{ size: 8 }" class="page-watermark" />
+  <header class="page-header">
       <div>
         <h2 class="page-title">📊 指标仪表盘</h2>
         <p class="page-subtitle">平台 6 微服务实时健康 + 关键业务指标总览</p>

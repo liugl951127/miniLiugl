@@ -13,7 +13,9 @@
 <template>
   <div class="page-admin admin-container" :class="{ 'is-collapsed': collapsed }">
     <!-- 1. page-header: 面包屑 + 折叠按钮 + 用户信息 -->
-    <header class="page-header">
+    <!-- V3.6.1+ 版本标识 (el-watermark) -->
+  <el-watermark v-if="false" content="V3.6.1" :font="{ size: 8 }" class="page-watermark" />
+  <header class="page-header">
       <div class="header-left">
         <el-button :icon="Fold" @click="toggleCollapsed" plain circle :title="t('admin.collapse')" />
         <el-breadcrumb separator="/">

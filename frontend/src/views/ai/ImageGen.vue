@@ -10,7 +10,9 @@
 <template>
   <div class="page-image-gen">
     <!-- 1. page-header -->
-    <header class="page-header">
+    <!-- V3.6.1+ 版本标识 (el-watermark) -->
+  <el-watermark v-if="false" content="V3.6.1" :font="{ size: 8 }" class="page-watermark" />
+  <header class="page-header">
       <div>
         <h2 class="page-title">{{ t('imagegen.title') }} <el-tag size="small" type="info">V2.7.5</el-tag></h2>
         <p class="page-subtitle">自研图像生成 · 0 外部 LLM 依赖 · SVG / PNG / 数据图 / Logo</p>

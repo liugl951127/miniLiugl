@@ -10,7 +10,9 @@
 <template>
   <div class="page-ai-chat">
     <!-- 1. page-header: 标题 + 副标题 -->
-    <header class="page-header">
+    <!-- V3.6.1+ 版本标识 (el-watermark) -->
+  <el-watermark v-if="false" content="V3.6.1" :font="{ size: 8 }" class="page-watermark" />
+  <header class="page-header">
       <div>
         <h2 class="page-title">🤖 {{ t('aichat.title') }}</h2>
         <p class="page-subtitle">自研 AI 引擎 · 0 外部依赖 · 13 种意图识别</p>

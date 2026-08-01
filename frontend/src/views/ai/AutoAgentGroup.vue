@@ -10,7 +10,9 @@
 <template>
   <div class="page-auto-agent-group">
     <!-- 1. page-header -->
-    <header class="page-header">
+    <!-- V3.6.1+ 版本标识 (el-watermark) -->
+  <el-watermark v-if="false" content="V3.6.1" :font="{ size: 8 }" class="page-watermark" />
+  <header class="page-header">
       <div>
         <h2 class="page-title">{{ t('autoAgent.title') }} <el-tag size="small" type="success">V3.5.48</el-tag></h2>
         <p class="page-subtitle">3 端点: generate / template / templates</p>

@@ -21,7 +21,9 @@
 <template>
   <div class="page-chat">
     <!-- 1. page-header: 标题 + 模型选择 + 操作 -->
-    <header class="page-header">
+    <!-- V3.6.1+ 版本标识 (el-watermark) -->
+  <el-watermark v-if="false" content="V3.6.1" :font="{ size: 8 }" class="page-watermark" />
+  <header class="page-header">
       <div class="brand-info">
         <el-icon :size="20"><ChatDotRound /></el-icon>
         <div>
@@ -46,9 +48,14 @@
           </el-option>
         </el-select>
 
-        <el-select v-model="modelKey" size="small" class="model-select" @change="onModelChange">
-          <el-option v-for="m in models" :key="m.key" :label="m.label" :value="m.key" />
-        </el-select>
+        <!-- V3.6.1+ el-segmented 模型选择器 (移动端 P0 替代 el-select) -->
+        <el-segmented
+          v-model="modelKey"
+          :options="modelOptions"
+          size="small"
+          class="model-segmented"
+          @change="onModelChange"
+        />
         <el-button :icon="Plus" @click="newChat" plain>新对话</el-button>
         <el-button :icon="Folder" @click="drawerVisible = true" plain>历史</el-button>
         <el-button :icon="Delete" @click="clearAll" plain>清空</el-button>
@@ -123,7 +130,38 @@
             @click="toggleTTSTest"
             title="试听 TTS 播报"
           />
+          <!-- V3.6.1+ OCR 识别按钮 -->
+          <el-button
+            :icon="Document"
+            size="small"
+            plain
+            :loading="ocrProcessing"
+            @click="triggerOCR"
+            title="OCR 识别图片文字"
+          >
+            OCR
+          </el-button>
         </div>
+        <!-- V3.6.1+ OCR 状态面板 -->
+        <transition name="slide-up">
+          <div v-if="ocrProcessing || ocrText" class="ocr-panel">
+            <el-icon class="ocr-icon" :class="{ processing: ocrProcessing }">
+              <Document />
+            </el-icon>
+            <div class="ocr-content">
+              <div v-if="ocrProcessing" class="ocr-status">
+                <el-progress :percentage="ocrProgress" :stroke-width="6" />
+                <span class="ocr-hint">正在识别图片文字... {{ ocrProgress }}%</span>
+              </div>
+              <div v-else-if="ocrText" class="ocr-result">
+                <el-text type="success" size="small" truncated>✓ OCR 完成, 已追加到输入框</el-text>
+                <div class="ocr-text-preview">{{ ocrText.slice(0, 80) }}{{ ocrText.length > 80 ? '...' : '' }}</div>
+              </div>
+            </div>
+            <el-button text :icon="CircleClose" @click="ocrText = ''; ocrProgress = 0" size="small">关闭</el-button>
+          </div>
+        </transition>
+
         <!-- V3.5.99+ 语音输入按钮 -->
         <div class="input-row">
           <el-input
@@ -219,6 +257,13 @@ const currentSessionId = ref(null)
 const messages = ref([])
 const inputText = ref('')
 const selectedModel = ref('mock')
+
+// === V3.6.1+ 模型选择器 (el-segmented) ===
+const modelOptions = computed(() => models.value.map(m => ({
+  label: m.label,
+  value: m.key,
+  // el-segmented 支持自定义渲染, 但只用 label 也行
+})))
 
 // === V3.5.98+ RAG 知识库 ===
 const showRag = ref(true)
@@ -379,6 +424,78 @@ function toggleTTSTest() {
     stopSpeak()
   } else {
     speak('你好, 我是 Liugl-AI 智能助手, 有什么可以帮你的吗?')
+  }
+}
+
+// === V3.6.1+ OCR 图片识别 (Tesseract.js 客户端) ===
+const ocrProcessing = ref(false)
+const ocrProgress = ref(0)
+const ocrText = ref('')
+let tesseractWorker = null
+
+async function initOCR() {
+  if (tesseractWorker) return tesseractWorker
+  try {
+    const Tesseract = await import('tesseract.js')
+    tesseractWorker = await Tesseract.createWorker('chi_sim+eng', 1, {
+      logger: (m) => {
+        if (m.status === 'recognizing text') {
+          ocrProgress.value = Math.round(m.progress * 100)
+        }
+      },
+    })
+    return tesseractWorker
+  } catch (e) {
+    console.error('OCR 初始化失败:', e)
+    ElMessage.error('OCR 初始化失败: ' + e.message)
+    return null
+  }
+}
+
+async function triggerOCR() {
+  if (ocrProcessing.value) return
+
+  // 创建隐藏 input 选择图片
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.onchange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    await performOCR(file)
+  }
+  input.click()
+}
+
+async function performOCR(file) {
+  if (!file) return
+  ocrProcessing.value = true
+  ocrProgress.value = 0
+  ocrText.value = ''
+
+  try {
+    const worker = await initOCR()
+    if (!worker) {
+      ocrProcessing.value = false
+      return
+    }
+
+    const { data } = await worker.recognize(file)
+    ocrText.value = data.text.trim()
+
+    if (ocrText.value) {
+      // 自动追加到 input
+      input.value = input.value + (input.value ? ' ' : '') + ocrText.value
+      ElMessage.success(`✓ OCR 识别完成 (${ocrProgress.value}%, ${ocrText.value.length} 字符)`)
+    } else {
+      ElMessage.warning('OCR 未识别到文字')
+    }
+  } catch (e) {
+    console.error('OCR 错误:', e)
+    ElMessage.error('OCR 识别失败: ' + e.message)
+  } finally {
+    ocrProcessing.value = false
+    ocrProgress.value = 0
   }
 }
 
@@ -792,6 +909,60 @@ function formatTime(t) {
 }
 .slide-up-enter-active,
 .slide-up-leave-active { transition: all 0.3s ease; }
+
+// === V3.6.1+ OCR 面板 ===
+.ocr-panel {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #3b82f6;
+}
+
+.ocr-icon {
+  font-size: 20px;
+  color: #1e40af;
+  transition: all 0.2s;
+}
+.ocr-icon.processing {
+  color: #1d4ed8;
+  animation: pulse 1.5s infinite;
+}
+
+.ocr-content {
+  flex: 1;
+  font-size: 14px;
+  color: #1e3a8a;
+}
+
+.ocr-status {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ocr-hint {
+  font-size: 12px;
+  color: #1e40af;
+}
+
+.ocr-result {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ocr-text-preview {
+  font-size: 12px;
+  color: #1e3a8a;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+}
 .slide-up-enter-from,
 .slide-up-leave-to { opacity: 0; transform: translateY(10px); }
 

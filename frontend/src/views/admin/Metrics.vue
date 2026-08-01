@@ -10,7 +10,9 @@
 <template>
   <div class="page-metrics">
     <!-- 1. page-header -->
-    <header class="page-header">
+    <!-- V3.6.1+ 版本标识 (el-watermark) -->
+  <el-watermark v-if="false" content="V3.6.1" :font="{ size: 8 }" class="page-watermark" />
+  <header class="page-header">
       <div>
         <h2 class="page-title">📊 实时 Metrics 监控</h2>
         <p class="page-subtitle">{{ service || '选择服务' }} · {{ autoRefresh ? `10s 自动刷新` : '手动刷新' }}</p>

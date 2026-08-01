@@ -10,7 +10,9 @@
 <template>
   <div class="page-audit">
     <!-- 1. page-header -->
-    <header class="page-header">
+    <!-- V3.6.1+ 版本标识 (el-watermark) -->
+  <el-watermark v-if="false" content="V3.6.1" :font="{ size: 8 }" class="page-watermark" />
+  <header class="page-header">
       <div>
         <h2 class="page-title">📋 {{ t('audit.title') }}</h2>
         <p class="page-subtitle">合规要求保留 6 个月+ · 当前 {{ total }} 条记录</p>
