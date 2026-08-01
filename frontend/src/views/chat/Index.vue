@@ -45,7 +45,7 @@
       <el-card shadow="hover" class="messages-card">
         <div class="messages" ref="messagesRef">
           <div v-if="!messages.length" class="empty-chat">
-            <el-empty description="{{ t('chat.start') }}" :image-size="100" />
+            <el-empty :description="t('chat.start')" :image-size="100" />
             <div class="quick-prompts">
               <el-button v-for="qa in quickPrompts" :key="qa" size="small" @click="input = qa; send()">
                 {{ qa }}
@@ -123,7 +123,7 @@
           <div class="session-title">{{ s.title || '新会话' }}</div>
           <div class="session-time">{{ s.updatedAt || s.createdAt }}</div>
         </div>
-        <el-empty v-if="!sessions.length" description="{{ t('chat.empty.history') }}" />
+        <el-empty v-if="!sessions.length" :description="t('chat.empty.history')" />
       </div>
     </el-drawer>
   </div>
@@ -376,6 +376,8 @@ async function sendMessage() {
   messages.value.push(userMsg)
   inputText.value = ''
   pendingImages.value = []
+  toolCalls.value = []  // V3.5.94 清空上轮工具调用
+  sources.value = []    // V3.5.94 清空上轮来源
 
   // 2) 加占位 AI 消息
   const aiMsg = {
@@ -406,9 +408,11 @@ async function sendMessage() {
       },
       onToolCall: (tc) => {
         aiMsg.toolCalls.push(tc)
+        toolCalls.value.push(tc)  // V3.5.94 同步到顶层
       },
       onSource: (src) => {
         aiMsg.sources.push(src)
+        sources.value.push(src)  // V3.5.94 同步到顶层
       },
       onDone: () => {
         aiMsg.streaming = false
