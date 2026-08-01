@@ -602,7 +602,8 @@ export default {
     qq: { name: 'QQ', desc: 'QQ 一键登录' },
     alipay: { name: '支付宝', desc: '支付宝扫一扫' },
     app: '扫码下载移动 App',
-    platform: { detect: '自动识别' }
+    platform: { detect: '自动识别' },
+    demo: { title: '演示账号' }
   },
   chat: {
     title: 'AI 对话',

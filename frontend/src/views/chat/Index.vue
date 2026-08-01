@@ -30,6 +30,22 @@
         </div>
       </div>
       <el-button-group>
+        <!-- V3.5.98+ RAG 知识库选择器 -->
+        <el-select v-if="showRag" v-model="ragId" size="small" class="rag-select" placeholder="知识库" clearable @change="onRagChange">
+          <el-option v-for="k in knowledgeBases" :key="k.id" :label="k.name" :value="k.id">
+            <span style="float: left">{{ k.name }}</span>
+            <el-tag size="small" type="info" style="float: right">{{ k.docCount }} 文档</el-tag>
+          </el-option>
+        </el-select>
+
+        <!-- V3.5.98+ Agent 模式切换 -->
+        <el-select v-model="agentMode" size="small" class="agent-select" @change="onAgentModeChange">
+          <el-option v-for="m in agentModes" :key="m.key" :label="m.label" :value="m.key">
+            <el-icon style="margin-right: 4px; vertical-align: middle"><component :is="m.icon" /></el-icon>
+            {{ m.label }}
+          </el-option>
+        </el-select>
+
         <el-select v-model="modelKey" size="small" class="model-select" @change="onModelChange">
           <el-option v-for="m in models" :key="m.key" :label="m.label" :value="m.key" />
         </el-select>
@@ -140,7 +156,7 @@ import ChatMessage from '@/components/ChatMessage.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   EditPen, Search, ChatDotRound, MoreFilled, Promotion, Cpu, Clock, MagicStick,
-  UploadFilled, Picture, Loading, VideoPause, CircleCloseFilled,
+  UploadFilled, Picture, Loading, VideoPause, CircleCloseFilled, Document, Share,
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 
@@ -153,6 +169,33 @@ const currentSessionId = ref(null)
 const messages = ref([])
 const inputText = ref('')
 const selectedModel = ref('mock')
+
+// === V3.5.98+ RAG 知识库 ===
+const showRag = ref(true)
+const ragId = ref(null)
+const knowledgeBases = ref([
+  { id: 1, name: '产品手册',     docCount: 128 },
+  { id: 2, name: '技术文档',     docCount: 256 },
+  { id: 3, name: '用户 FAQ',     docCount: 64 },
+  { id: 4, name: '行业知识',     docCount: 512 },
+  { id: 5, name: '代码片段库',   docCount: 1024 },
+])
+function onRagChange(id) {
+  if (id) ElMessage.success(`📚 已启用 RAG 检索: ${knowledgeBases.value.find(k => k.id === id)?.name}`)
+}
+
+// === V3.5.98+ Agent 模式 ===
+const agentMode = ref('chat')
+const agentModes = ref([
+  { key: 'chat',   label: '💬 普通对话', icon: 'ChatDotRound' },
+  { key: 'agent',  label: '🤖 Agent 编排', icon: 'MagicStick' },
+  { key: 'rag',    label: '📚 RAG 检索', icon: 'Document' },
+  { key: 'flow',   label: '🔀 Flow 流程', icon: 'Share' },
+])
+function onAgentModeChange(mode) {
+  const m = agentModes.value.find(x => x.key === mode)
+  ElMessage.info(`已切换: ${m?.label || mode}`)
+}
 const models = ref([{ code: 'mock', displayName: 'Mock 模式' }])
 const streaming = ref(false)
 const streamId = ref(null)

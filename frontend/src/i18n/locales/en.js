@@ -602,7 +602,8 @@ export default {
     qq: { name: 'QQ', desc: 'QQ one-click login' },
     alipay: { name: 'Alipay', desc: 'Alipay scan' },
     app: 'Scan to download mobile app',
-    platform: { detect: 'Auto-detected' }
+    platform: { detect: 'Auto-detected' },
+    demo: { title: 'Demo Accounts' }
   },
   chat: {
     title: 'AI Chat',
