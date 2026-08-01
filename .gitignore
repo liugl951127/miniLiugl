@@ -67,3 +67,4 @@ ai-run.log
 ai-run.pid
 # V3.5.75+ view 重写备份
 frontend/.view-v*.*-backup/
+frontend/e2e-report/
