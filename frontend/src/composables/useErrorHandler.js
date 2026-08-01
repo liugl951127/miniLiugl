@@ -101,7 +101,11 @@ export function handleError(err, options = {}) {
     handled = true
   } else if (status >= 500) {
     type = 'server'
-    message = `服务异常 (${status}), 请稍后重试`
+    // V3.7.6+ 错误码细化
+    if (status === 502) message = '网关错误 (后端不可用)'
+    else if (status === 503) message = '服务暂不可用 (维护中或过载)'
+    else if (status === 504) message = '网关超时 (后端响应慢)'
+    else message = `服务异常 (${status}), 请稍后重试`
     if (showMessage) ElMessage.error(message)
     handled = true
   } else if (err?.code === 'ECONNABORTED' || message.includes('timeout')) {
