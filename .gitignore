@@ -81,3 +81,8 @@ frontend/e2e-report/
 .jwt-backup*/
 package.json.*.bak
 *.vue.*.bak
+
+# V3.6.22+ 临时文件
+vite.config.js.timestamp-*
+.env.development
+.eslintcache
