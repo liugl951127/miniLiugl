@@ -51,8 +51,9 @@ export default {
     noSession: 'No sessions',
     voice: { title: 'Voice Input', unsupported: 'Browser does not support voice', failed: 'Voice recognition failed', placeholder: 'Click mic to start...' },
     tts: { title: 'Text-to-Speech', auto: 'Auto-speak', speaking: 'Speaking', unsupported: 'Browser does not support TTS' },
-    ocr: { title: 'OCR Recognition', processing: 'Recognizing...', completed: 'Completed, appended to input', failed: 'OCR failed', noText: 'No text detected' }
+    ocr: { title: 'OCR Recognition', processing: 'Recognizing...', completed: 'Completed, appended to input', failed: 'OCR failed', noText: 'No text detected' },
     export: { title: 'Export', markdown: 'Markdown', json: 'JSON', txt: 'Plain Text', empty: 'No messages to export', success: 'Exported' }
+    sessionSearch: { placeholder: 'Search title / content / date', inContent: 'Search message content', found: 'sessions', clear: 'Clear', noMatch: 'No match' }
   },
   common: {
     confirm: 'Confirm',

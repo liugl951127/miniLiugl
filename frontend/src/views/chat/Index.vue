@@ -22,7 +22,14 @@
   <div class="page-chat">
     <!-- 1. page-header: 标题 + 模型选择 + 操作 -->
     <!-- V3.6.1+ 版本标识 (el-watermark) -->
-  <el-watermark v-if="false" content="V3.6.1" :font="{ size: 8 }" class="page-watermark" />
+  <!-- V3.6.3+ 启用 el-watermark (V3.6.1 标识 + 用户名 + 时间) -->
+  <el-watermark
+    v-if="true"
+    :content="['Liugl-AI V3.6.3', userStore.profile?.username || 'Guest', new Date().toLocaleDateString('zh-CN')]"
+    :font="{ size: 14, color: 'rgba(99, 102, 241, 0.06)' }"
+    :gap="[120, 80]"
+    class="page-watermark"
+  />
   <header class="page-header">
       <div class="brand-info">
         <el-icon :size="20"><ChatDotRound /></el-icon>
@@ -227,18 +234,41 @@
       </el-card>
     </section>
 
-    <!-- 5. section: 历史会话抽屉 -->
-    <el-drawer v-model="drawerVisible" title="📚 历史会话" direction="rtl" size="320px">
+    <!-- 5. section: 历史会话抽屉 (V3.6.3+ 搜索增强) -->
+    <el-drawer v-model="drawerVisible" title="历史会话" direction="rtl" size="380px">
       <div class="drawer-sessions">
+        <!-- V3.6.3+ 搜索框 -->
+        <el-input
+          v-model="searchKw"
+          placeholder="搜索标题 / 消息 / 日期"
+          :prefix-icon="Search"
+          clearable
+          size="small"
+          class="session-search"
+        />
+        <el-checkbox v-model="searchInContent" size="small" class="session-search-content">
+          搜索消息内容
+        </el-checkbox>
+
+        <!-- V3.6.3+ 搜索结果统计 -->
+        <div v-if="searchKw" class="search-stats">
+          <el-tag size="small" type="info">
+            {{ filteredSessions.length }} / {{ sessions.length }} 个会话
+          </el-tag>
+          <el-button text size="small" @click="searchKw = ''">清除</el-button>
+        </div>
+
         <div
-          v-for="s in sessions"
+          v-for="s in filteredSessions"
           :key="s.id"
           :class="['drawer-session', { active: sessionId === s.id }]"
           @click="loadSession(s); drawerVisible = false"
         >
           <div class="session-title">{{ s.title || '新会话' }}</div>
-          <div class="session-time">{{ s.updatedAt || s.createdAt }}</div>
+          <div class="session-time">{{ formatSessionTime(s.updatedAt || s.createdAt) }}</div>
+          <div v-if="s.preview" class="session-preview">{{ truncate(s.preview, 60) }}</div>
         </div>
+        <el-empty v-if="!filteredSessions.length && sessions.length" :description="`未找到 '${searchKw}' 匹配的会话`" />
         <el-empty v-if="!sessions.length" :description="t('chat.empty.history')" />
       </div>
     </el-drawer>
@@ -438,6 +468,23 @@ function toggleTTSTest() {
   } else {
     speak('你好, 我是 Liugl-AI 智能助手, 有什么可以帮你的吗?')
   }
+}
+
+// === V3.6.3+ 工具函数 ===
+function formatSessionTime(t) {
+  if (!t) return ''
+  const d = new Date(t)
+  const now = new Date()
+  const diff = now - d
+  // 1 天内: HH:MM
+  if (diff < 86400000) return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  // 7 天内: N 天前
+  if (diff < 604800000) return `${Math.floor(diff / 86400000)} 天前`
+  // 否则: YYYY-MM-DD
+  return d.toLocaleDateString('zh-CN')
+}
+function truncate(s, n) {
+  return s && s.length > n ? s.substring(0, n) + '...' : s
 }
 
 // === V3.6.2+ 导出 (Markdown / JSON / 纯文本) ===
@@ -1265,5 +1312,28 @@ function formatTime(t) {
   font-size: 11px;
   color: #9ca3af;
   margin-top: 4px;
+}
+
+.session-search {
+  margin-bottom: 8px;
+}
+.session-search-content {
+  margin-bottom: 12px;
+}
+.search-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--liugl-border, #e2e8f0);
+}
+.session-preview {
+  font-size: 11px;
+  color: var(--liugl-text-secondary, #94a3b8);
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

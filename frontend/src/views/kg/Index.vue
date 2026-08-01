@@ -21,7 +21,14 @@
   <div class="page-kg kg-container">
     <!-- 1. page-header -->
     <!-- V3.6.1+ 版本标识 (el-watermark) -->
-  <el-watermark v-if="false" content="V3.6.1" :font="{ size: 8 }" class="page-watermark" />
+  <!-- V3.6.3+ 启用 el-watermark (V3.6.1 标识 + 用户名 + 时间) -->
+  <el-watermark
+    v-if="true"
+    :content="['Liugl-AI V3.6.3', userStore.profile?.username || 'Guest', new Date().toLocaleDateString('zh-CN')]"
+    :font="{ size: 14, color: 'rgba(99, 102, 241, 0.06)' }"
+    :gap="[120, 80]"
+    class="page-watermark"
+  />
   <header class="page-header">
       <div>
         <h2 class="page-title">🕸️ {{ t('kg.title') }} <el-tag size="small" type="info">V5.6</el-tag></h2>
@@ -385,6 +392,13 @@ function renderGraph() {
       links: edges,
     }],
   })
+  // V3.6.3+ 拖拽建边事件
+  if (!chart._kgEventsBound) {
+    chart.on('nodeclick', 'series', onNodeClick)
+    chart.on('dragging', 'series', onGraphDragging)
+    chart.on('mouseup', 'series', onGraphDragEnd)
+    chart._kgEventsBound = true
+  }
 }
 
 async function renderPathGraph() {
@@ -420,6 +434,13 @@ async function renderPathGraph() {
       links: edges,
     }],
   })
+  // V3.6.3+ 拖拽建边事件
+  if (!chart._kgEventsBound) {
+    chart.on('nodeclick', 'series', onNodeClick)
+    chart.on('dragging', 'series', onGraphDragging)
+    chart.on('mouseup', 'series', onGraphDragEnd)
+    chart._kgEventsBound = true
+  }
 }
 
 window.addEventListener('resize', () => chart?.resize())
@@ -445,6 +466,91 @@ const MOCK_NEIGHBORS = [
   { entity: MOCK_ENTITIES[6], hop: 1, via: 'core_tech' },
   { entity: MOCK_ENTITIES[8], hop: 1, via: 'competitor' },
 ]
+
+// === V3.6.3+ 拖拽建边 ===
+const dragCreating = ref(false)
+const dragFromId = ref<number | null>(null)
+const dragToId = ref<number | null>(null)
+const relTypeInput = ref('related_to')
+const REL_TYPES = [
+  { value: 'related_to', label: '相关' },
+  { value: 'founder', label: '创始人' },
+  { value: 'works_at', label: '任职' },
+  { value: 'located_in', label: '位于' },
+  { value: 'part_of', label: '属于' },
+  { value: 'created', label: '创建' },
+  { value: 'mentions', label: '提及' },
+]
+
+function onGraphDragging(params) {
+  // 拖拽节点到另一个节点
+  if (!dragFromId.value) return
+  if (params.dataType === 'node') {
+    const targetId = parseInt(params.data.id)
+    if (!isNaN(targetId) && targetId !== dragFromId.value) {
+      dragToId.value = targetId
+    }
+  }
+}
+
+function onGraphDragEnd() {
+  if (dragFromId.value && dragToId.value) {
+    // 弹出关系类型选择
+    relTypeInput.value = 'related_to'
+    ElMessageBox.confirm(
+      `创建关系: ${dragFromId.value} → ${dragToId.value} ?`,
+      'V3.6.3+ 拖拽建边',
+      { confirmButtonText: '创建', cancelButtonText: '取消' }
+    ).then(() => {
+      submitDragRelation()
+    }).catch(() => {
+      resetDrag()
+    })
+  } else {
+    resetDrag()
+  }
+}
+
+async function submitDragRelation() {
+  try {
+    await axios.post(`${API}/api/v1/agent/kg/relations`, {
+      userId,
+      fromId: dragFromId.value,
+      toId: dragToId.value,
+      type: relTypeInput.value,
+      weight: 1.0,
+    }, auth())
+    ElMessage.success(`已创建关系: ${dragFromId.value} → ${dragToId.value} (${relTypeInput.value})`)
+    await loadNeighbors()
+    await nextTick()
+    renderGraph()
+  } catch (e: any) {
+    // 演示模式: 假成功
+    if (!e.response) {
+      ElMessage.success(`🎭 演示模式 - 假成功创建关系: ${dragFromId.value} → ${dragToId.value}`)
+    } else {
+      ElMessage.error(e?.response?.data?.message || e?.message)
+    }
+  } finally {
+    resetDrag()
+  }
+}
+
+function resetDrag() {
+  dragFromId.value = null
+  dragToId.value = null
+}
+
+function onNodeClick(params) {
+  if (params.dataType === 'node') {
+    const id = parseInt(params.data.id)
+    if (!isNaN(id)) {
+      // 单击: 设为拖拽起点
+      dragFromId.value = id
+      ElMessage.info('已选中节点 ' + params.data.name + ', 拖到目标节点上创建关系')
+    }
+  }
+}
 
 function loadMockData() {
   entities.value = MOCK_ENTITIES
