@@ -180,7 +180,35 @@
 
     <!-- 4. section: 输入区 -->
     <section class="section input-section">
-      <el-card shadow="hover" class="input-card">
+      <el-card>
+    <!-- V3.7.1+ 打字机进度条 + 暂停/继续 (独立控制条) -->
+    <section v-if="typewriterEnabled && typewriterTyping" class="section typewriter-controls-global">
+      <el-card shadow="hover" class="typewriter-card">
+        <div class="typewriter-row">
+          <span class="typewriter-label">⌨️ 打字机</span>
+          <el-progress
+            :percentage="typewriterProgress"
+            :stroke-width="8"
+            :show-text="true"
+            :format="() => `${typewriterProgress}% (${typewriterIndex}/${typewriterContent.length})`"
+            style="flex: 1; margin: 0 16px"
+            :status="typewriterPaused ? 'warning' : 'success'"
+          />
+          <el-button-group>
+            <el-button
+              :icon="typewriterPaused ? VideoPlay : VideoPause"
+              :type="typewriterPaused ? 'primary' : 'default'"
+              @click="typewriterPaused ? resumeTypewriter() : pauseTypewriter()"
+              size="small"
+            >
+              {{ typewriterPaused ? '继续' : '暂停' }}
+            </el-button>
+            <el-button :icon="Close" @click="stopTypewriter" size="small">停止</el-button>
+          </el-button-group>
+        </div>
+      </el-card>
+    </section>
+ shadow="hover" class="input-card">
         <el-space :size="8" wrap class="input-toolbar">
           <el-checkbox v-model="useStream">流式</el-checkbox>
           <el-checkbox v-model="useTools">{{ t('chat.tools') }}</el-checkbox>
@@ -826,6 +854,31 @@ function onAgentModeChange(modes) {
 }
 const models = ref([{ code: 'mock', displayName: 'Mock 模式' }])
 const streaming = ref(false)
+
+// V3.7.1+ 打字机进度条 + 暂停/继续
+const typewriterEnabled = ref(localStorage.getItem('minimax_typewriter') !== 'false')
+const typewriterSpeed = ref(20)
+const typewriterPaused = ref(false)
+const typewriterProgress = ref(0)
+const typewriterTyping = ref(false)
+const typewriterIndex = ref(0)
+const typewriterContent = ref('')
+let typewriterTimer = null
+
+watch(typewriterEnabled, (v) => localStorage.setItem('minimax_typewriter', String(v)))
+
+function pauseTypewriter() { typewriterPaused.value = true }
+
+function resumeTypewriter() { typewriterPaused.value = false }
+
+function stopTypewriter() {
+  if (typewriterTimer) { clearTimeout(typewriterTimer); typewriterTimer = null }
+  typewriterTyping.value = false
+  typewriterProgress.value = 0
+  typewriterIndex.value = 0
+}
+
+onUnmounted(() => { if (typewriterTimer) clearTimeout(typewriterTimer) })
 const streamId = ref(null)
 const dragging = ref(false)
 const pendingImages = ref([])

@@ -40,6 +40,7 @@ provide('appLoading', isLoading)
 
 // 路由切换时显示 loading - 配合 router/index.js
 onMounted(() => {
+  useDemoMode().initFromStorage()
   console.log('[App] 已挂载 V3.6.21+')
 })
 </script>
