@@ -31,7 +31,7 @@ export const authApi = {
    * me - 查询 /api/v1/auth/me
    * @returns GET /api/v1/auth/me 的响应 Promise
    */
-  me: () => http.get('/api/v1/auth/me'),
+  me: () => http.get('/api/v1/auth/me', { _silent: true }),  // V3.7.10+ 401 不跳走
   /**
    * refresh - 创建/更新 /api/v1/auth/refresh
    * @returns POST /api/v1/auth/refresh 的响应 Promise
