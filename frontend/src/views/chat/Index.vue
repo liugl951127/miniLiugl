@@ -68,7 +68,7 @@
               </el-button>
             </div>
           </div>
-          <ChatBubble
+          <ChatMessage
             v-for="m in messages"
             :key="m.id"
             :message="m"
@@ -108,6 +108,21 @@
           <el-checkbox v-model="useStream">流式</el-checkbox>
           <el-checkbox v-model="useTools">{{ t('chat.tools') }}</el-checkbox>
           <el-checkbox v-model="useRag">RAG</el-checkbox>
+          <!-- V3.6.0+ 语音播报开关 -->
+          <el-checkbox v-model="autoSpeak">
+            🔊 TTS
+            <el-tag v-if="ttsSpeaking" size="small" type="success" effect="dark" class="tts-tag">
+              播报中...
+            </el-tag>
+          </el-checkbox>
+          <el-button
+            v-if="ttsSupported && !autoSpeak"
+            :icon="ttsSpeaking ? VideoPause : VideoPlay"
+            size="small"
+            plain
+            @click="toggleTTSTest"
+            title="试听 TTS 播报"
+          />
         </div>
         <!-- V3.5.99+ 语音输入按钮 -->
         <div class="input-row">
@@ -190,8 +205,8 @@ import ChatMessage from '@/components/ChatMessage.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   EditPen, Search, ChatDotRound, MoreFilled, Promotion, Cpu, Clock, MagicStick,
-  UploadFilled, Picture, Loading, VideoPause, CircleCloseFilled, Document, Share,
-  Microphone, CircleClose,
+  UploadFilled, Picture, Loading, VideoPause, VideoPlay, CircleCloseFilled, Document, Share,
+  Microphone, CircleClose, Headset,
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 
@@ -310,6 +325,63 @@ function resetVoice() {
   voiceInterim.value = ''
 }
 
+// === V3.6.0+ 语音播报 (TTS, Web Speech API speechSynthesis) ===
+const ttsSupported = ref(false)
+const ttsSpeaking = ref(false)
+const autoSpeak = ref(false)
+let ttsUtterance = null
+
+function checkTTSSupport() {
+  if (typeof window === 'undefined') return
+  ttsSupported.value = 'speechSynthesis' in window
+}
+
+function speak(text) {
+  if (!ttsSupported.value || !text) return
+  // 停止之前的播报
+  window.speechSynthesis.cancel()
+
+  // 清理 markdown / HTML 标签
+  const cleanText = text
+    .replace(/<[^>]+>/g, '')      // 去除 HTML
+    .replace(/[*#_`>~\-]+/g, '') // 去除 markdown
+    .replace(/\[(.+?)\]\(.+?\)/g, '$1')  // 去除链接
+    .replace(/!\[(.+?)\]\(.+?\)/g, '$1') // 去除图片
+    .trim()
+
+  if (!cleanText) return
+
+  ttsUtterance = new SpeechSynthesisUtterance(cleanText)
+  ttsUtterance.lang = 'zh-CN'
+  ttsUtterance.rate = 1.0
+  ttsUtterance.pitch = 1.0
+  ttsUtterance.volume = 1.0
+
+  ttsUtterance.onstart = () => { ttsSpeaking.value = true }
+  ttsUtterance.onend = () => { ttsSpeaking.value = false }
+  ttsUtterance.onerror = (e) => {
+    console.error('TTS 错误:', e.error)
+    ttsSpeaking.value = false
+  }
+
+  window.speechSynthesis.speak(ttsUtterance)
+}
+
+function stopSpeak() {
+  if (ttsSupported.value) {
+    window.speechSynthesis.cancel()
+    ttsSpeaking.value = false
+  }
+}
+
+function toggleTTSTest() {
+  if (ttsSpeaking.value) {
+    stopSpeak()
+  } else {
+    speak('你好, 我是 Liugl-AI 智能助手, 有什么可以帮你的吗?')
+  }
+}
+
 // === V3.5.98+ Agent 模式 ===
 const agentMode = ref('chat')
 const agentModes = ref([
@@ -347,6 +419,7 @@ onMounted(async () => {
   await loadModels()
   await loadSessions()
   checkVoiceSupport()  // V3.5.99+
+  checkTTSSupport()    // V3.6.0+
   // V4.3: 从 Prompt 模板页填入内容
   const q = route.query
   if (q.prompt) {
@@ -590,6 +663,10 @@ async function sendMessage() {
         aiMsg.streaming = false
         streaming.value = false
         scrollToBottom()
+        // V3.6.0+ TTS 自动播报
+        if (autoSpeak.value && aiMsg.content) {
+          speak(aiMsg.content)
+        }
       },
       onError: (err) => {
         aiMsg.content += '\n\n[错误: ' + err.message + ']'

@@ -106,6 +106,18 @@
           <el-icon><Star /></el-icon>
           收藏
         </el-button>
+        <!-- V3.6.0+ TTS 播放按钮 -->
+        <el-button
+          v-if="!streaming && content"
+          text
+          size="small"
+          :type="ttsActive ? 'primary' : ''"
+          @click="$emit('speak', content)"
+          :title="ttsActive ? '停止播报' : '播放'"
+        >
+          <el-icon><component :is="ttsActive ? VideoPause : VideoPlay" /></el-icon>
+          {{ ttsActive ? '停止' : '播放' }}
+        </el-button>
       </div>
     </div>
   </div>
@@ -116,7 +128,7 @@
 import { computed } from 'vue'
 import {
   User, ChatDotRound, Loading, CircleClose, Tools,
-  CopyDocument, RefreshRight, Star, Document,
+  CopyDocument, VideoPlay, VideoPause, RefreshRight, Star, Document,
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import MarkdownView from './MarkdownView.vue'

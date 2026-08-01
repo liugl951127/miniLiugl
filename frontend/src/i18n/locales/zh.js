@@ -50,6 +50,7 @@ export default {
     newSession: '新建对话',
     noSession: '暂无会话',
     voice: { title: '语音输入', unsupported: '当前浏览器不支持语音', failed: '语音识别失败', placeholder: '点击麦克风开始...' }
+    tts: { title: '语音播报', auto: '自动播报', speaking: '播报中', unsupported: '当前浏览器不支持 TTS' }
   },
   common: {
     confirm: '确定',
