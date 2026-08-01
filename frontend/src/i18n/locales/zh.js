@@ -49,6 +49,7 @@ export default {
     stop: '停止',
     newSession: '新建对话',
     noSession: '暂无会话',
+    voice: { title: '语音输入', unsupported: '当前浏览器不支持语音', failed: '语音识别失败', placeholder: '点击麦克风开始...' }
   },
   common: {
     confirm: '确定',

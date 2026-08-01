@@ -49,6 +49,7 @@ export default {
     stop: 'Stop',
     newSession: 'New Chat',
     noSession: 'No sessions',
+    voice: { title: 'Voice Input', unsupported: 'Browser does not support voice', failed: 'Voice recognition failed', placeholder: 'Click mic to start...' }
   },
   common: {
     confirm: 'Confirm',

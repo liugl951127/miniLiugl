@@ -109,14 +109,48 @@
           <el-checkbox v-model="useTools">{{ t('chat.tools') }}</el-checkbox>
           <el-checkbox v-model="useRag">RAG</el-checkbox>
         </div>
-        <el-input
-          v-model="input"
-          type="textarea"
-          :rows="4"
-          :placeholder="t('chat.placeholder')"
-          @keydown.enter.exact.prevent="send"
-          :disabled="loading"
-        />
+        <!-- V3.5.99+ 语音输入按钮 -->
+        <div class="input-row">
+          <el-input
+            v-model="input"
+            type="textarea"
+            :rows="4"
+            :placeholder="t('chat.placeholder')"
+            @keydown.enter.exact.prevent="send"
+            :disabled="loading"
+            class="input-textarea"
+          />
+          <el-button
+            :icon="voiceRecording ? VideoPause : Microphone"
+            :type="voiceRecording ? 'danger' : 'default'"
+            :loading="voiceProcessing"
+            @click="toggleVoice"
+            :title="voiceRecording ? '点击停止' : '点击开始语音输入'"
+            size="large"
+            circle
+            class="voice-btn"
+          />
+        </div>
+
+        <!-- V3.5.99+ 语音识别状态面板 -->
+        <transition name="slide-up">
+          <div v-if="voiceRecording || voiceResult" class="voice-panel">
+            <el-icon class="voice-icon" :class="{ recording: voiceRecording }">
+              <Microphone />
+            </el-icon>
+            <div class="voice-content">
+              <div v-if="voiceRecording" class="voice-status">
+                <span class="voice-dot"></span>
+                正在聆听... {{ voiceInterim }}
+              </div>
+              <div v-else-if="voiceResult" class="voice-result">
+                ✓ 识别完成: {{ voiceResult }}
+              </div>
+            </div>
+            <el-button text :icon="CircleClose" @click="resetVoice" size="small">关闭</el-button>
+          </div>
+        </transition>
+
         <div class="input-actions">
           <span class="hint">内容由 AI 生成, 仅供参考</span>
           <el-button :icon="Refresh" @click="regenerate" :disabled="loading || !messages.length">{{ t('chat.regenerate') }}</el-button>
@@ -157,6 +191,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   EditPen, Search, ChatDotRound, MoreFilled, Promotion, Cpu, Clock, MagicStick,
   UploadFilled, Picture, Loading, VideoPause, CircleCloseFilled, Document, Share,
+  Microphone, CircleClose,
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 
@@ -182,6 +217,97 @@ const knowledgeBases = ref([
 ])
 function onRagChange(id) {
   if (id) ElMessage.success(`📚 已启用 RAG 检索: ${knowledgeBases.value.find(k => k.id === id)?.name}`)
+}
+
+// === V3.5.99+ 语音输入 (Web Speech API) ===
+const voiceSupported = ref(false)
+const voiceRecording = ref(false)
+const voiceProcessing = ref(false)
+const voiceResult = ref('')
+const voiceInterim = ref('')
+let voiceRecognition = null
+
+function checkVoiceSupport() {
+  if (typeof window === 'undefined') return
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+  voiceSupported.value = !!SR
+}
+
+function initVoice() {
+  if (!voiceSupported.value) return null
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+  const recognition = new SR()
+  recognition.lang = 'zh-CN'
+  recognition.interimResults = true
+  recognition.continuous = false
+  recognition.maxAlternatives = 1
+
+  recognition.onstart = () => {
+    voiceRecording.value = true
+    voiceInterim.value = ''
+    voiceResult.value = ''
+  }
+  recognition.onresult = (e) => {
+    let interim = ''
+    let final = ''
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const transcript = e.results[i][0].transcript
+      if (e.results[i].isFinal) {
+        final += transcript
+      } else {
+        interim += transcript
+      }
+    }
+    if (interim) voiceInterim.value = interim
+    if (final) {
+      voiceResult.value = final.trim()
+      input.value = input.value + (input.value ? ' ' : '') + final.trim()
+    }
+  }
+  recognition.onerror = (e) => {
+    console.error('语音识别错误:', e.error)
+    ElMessage.error(`语音识别失败: ${e.error}`)
+    voiceRecording.value = false
+    voiceProcessing.value = false
+  }
+  recognition.onend = () => {
+    voiceRecording.value = false
+    voiceProcessing.value = false
+    setTimeout(() => {
+      voiceResult.value = ''
+      voiceInterim.value = ''
+    }, 2000)
+  }
+  return recognition
+}
+
+async function toggleVoice() {
+  if (!voiceSupported.value) {
+    ElMessage.warning('当前浏览器不支持语音输入 (Chrome/Edge/Safari 支持)')
+    return
+  }
+  if (voiceRecording.value) {
+    voiceProcessing.value = true
+    voiceRecognition?.stop()
+  } else {
+    voiceRecognition = initVoice()
+    if (voiceRecognition) {
+      try {
+        voiceRecognition.start()
+      } catch (e) {
+        ElMessage.error('启动语音失败: ' + e.message)
+        voiceProcessing.value = false
+      }
+    }
+  }
+}
+
+function resetVoice() {
+  if (voiceRecording.value) voiceRecognition?.stop()
+  voiceRecording.value = false
+  voiceProcessing.value = false
+  voiceResult.value = ''
+  voiceInterim.value = ''
 }
 
 // === V3.5.98+ Agent 模式 ===
@@ -220,6 +346,7 @@ const canSend = computed(() => {
 onMounted(async () => {
   await loadModels()
   await loadSessions()
+  checkVoiceSupport()  // V3.5.99+
   // V4.3: 从 Prompt 模板页填入内容
   const q = route.query
   if (q.prompt) {
@@ -526,6 +653,71 @@ function formatTime(t) {
 </script>
 
 <style lang="scss" scoped>
+// === V3.5.99+ 语音输入 ===
+.input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.input-textarea {
+  flex: 1;
+}
+.voice-btn {
+  flex-shrink: 0;
+  height: 80px !important;
+  width: 80px !important;
+  font-size: 24px !important;
+}
+.voice-panel {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #f59e0b;
+}
+.voice-icon {
+  font-size: 20px;
+  color: #92400e;
+  transition: all 0.2s;
+}
+.voice-icon.recording {
+  color: #dc2626;
+  animation: pulse 1.5s infinite;
+}
+.voice-content {
+  flex: 1;
+  font-size: 14px;
+  color: #78350f;
+}
+.voice-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.voice-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: #dc2626;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+.voice-result {
+  color: #166534;
+  font-weight: 600;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+.slide-up-enter-active,
+.slide-up-leave-active { transition: all 0.3s ease; }
+.slide-up-enter-from,
+.slide-up-leave-to { opacity: 0; transform: translateY(10px); }
+
 .chat-page {
   display: flex;
   height: calc(100vh - 60px);
