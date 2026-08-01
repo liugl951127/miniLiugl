@@ -59,6 +59,12 @@ export function handleError(err, options = {}) {
 
   // 2. 分类
   if (status === 401) {
+    // V3.7.4: 登录页 401 不跳走
+    const isLoginRequest = router.currentRoute.value?.name === 'Login' || err?.config?.url?.includes('/auth/login')
+    if (isLoginRequest) {
+      return { type: 'login_error', handled: false, message }
+    }
+
     type = 'unauthorized'
     // 防止风暴: 5s 内只处理一次
     const now = Date.now()

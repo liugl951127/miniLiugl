@@ -86,6 +86,11 @@ http.interceptors.response.use(
 
     // V5.8: 401 / 1002 业务码 → 尝试 refresh 后重放
     if ((status === 401 || code === 1002) && !err.config?._retry) {
+      // V3.7.4: 登录页 401 不跳走, 让 Login.vue 显示错误
+      const isLoginRequest = err.config?.url?.includes('/auth/login') || err.config?.url?.includes('/sessions')
+      if (isLoginRequest) {
+        return Promise.reject(err)
+      }
       const userStore = useUserStore()
       if (userStore.refreshToken) {
         try {
