@@ -6,6 +6,12 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authApi } from '@/api/auth'
 
+// V3.5.93+ 演示模式 (无后端时模拟)
+function isDemoMode() {
+  return localStorage.getItem('minimax_demo_mode') === 'true' || 
+         (typeof window !== 'undefined' && window.location.search.includes('demo=1'))
+}
+
 /**
  * 用户态 Store（Pinia + persist）。
  * 关键设计：
@@ -45,9 +51,30 @@ export const useUserStore = defineStore(
     }
 
     async function fetchProfile() {
-      const res = await authApi.me()
-      profile.value = res.data
-      return res
+      try {
+        const res = await authApi.me()
+        profile.value = res.data
+        return res
+      } catch (e) {
+        // V3.5.93: 失败时设空 profile, 避免 layout 空白
+        // - 后端 5xx/网络错: profile = null (下游 layout 显示空态)
+        // - 后端 401: useErrorHandler 自动清 token + 跳登录
+        if (!profile.value) {
+          profile.value = { username: accessToken.value ? 'unknown' : '', roles: [] }
+        }
+        // V3.5.93: 调试模式 (无后端) 直接返 mock profile
+        if (isDemoMode()) {
+          profile.value = {
+            username: localStorage.getItem('minimax_demo_user') || 'demo',
+            nickname: '演示用户',
+            email: 'demo@minimax.io',
+            roles: ['ADMIN', 'USER'],
+            avatar: '🎭'
+          }
+          return { data: profile.value }
+        }
+        throw e
+      }
     }
 
     async function refreshAccessToken() {

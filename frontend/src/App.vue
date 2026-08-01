@@ -5,12 +5,15 @@
 -->
 <template>
   <PwaStatusBar />
-  <router-view />
+  <ErrorBoundary>
+    <router-view />
+  </ErrorBoundary>
 </template>
 
 <script setup>
 // ───── 依赖导入 ─────
 import PwaStatusBar from '@/components/PwaStatusBar.vue'
+import ErrorBoundary from '@/components/ErrorBoundary.vue'
 // V2.8.9: 加载 usePwa 以触发 SW 注册 (在 app 加载时)
 import { usePwa } from '@/composables/usePwa'
 const { swVersion } = usePwa()

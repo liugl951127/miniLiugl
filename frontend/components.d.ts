@@ -76,6 +76,7 @@ declare module 'vue' {
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
     ElTree: typeof import('element-plus/es')['ElTree']
     ElUpload: typeof import('element-plus/es')['ElUpload']
+    ErrorBoundary: typeof import('./src/components/ErrorBoundary.vue')['default']
     LangSwitcher: typeof import('./src/components/LangSwitcher.vue')['default']
     MarkdownView: typeof import('./src/components/MarkdownView.vue')['default']
     MyWechat: typeof import('./src/components/MyWechat.vue')['default']

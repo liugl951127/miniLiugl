@@ -188,9 +188,17 @@
       </el-row>
     </section>
 
-    <!-- 11. 底部版权 -->
+    <!-- 11. 底部版权 + 演示模式开关 -->
     <footer class="page-footer">
       <p>© 2026 Liugl-AI · 自研大模型平台 · 0 外部 LLM 依赖</p>
+      <div class="demo-toggle">
+        <el-checkbox v-model="demoMode" @change="onDemoToggle">
+          🎭 演示模式 (无后端本地演示)
+        </el-checkbox>
+        <p v-if="demoMode" class="demo-hint">
+          ✓ 已启用 - 跳过 API, 所有数据 mock 自 localStorage
+        </p>
+      </div>
     </footer>
   </div>
 </template>
@@ -212,6 +220,12 @@ const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
+// V3.5.93+ 演示模式检测
+function isDemoMode() {
+  return localStorage.getItem('minimax_demo_mode') === 'true' ||
+         (typeof window !== 'undefined' && window.location.search.includes('demo=1'))
+}
+
 // === 1. 状态 ===
 const mode = ref('login')                            // login / register / wechat
 const loading = ref(false)                           // 登录中 loading
@@ -221,6 +235,18 @@ const errorMsg = ref('')                             // 错误提示
 const shakeForm = ref(false)                         // 错误抖动
 const isMobile = ref(false)                          // 移动端
 const formRef = ref(null)                            // 表单 ref
+const demoMode = ref(isDemoMode())                   // V3.5.93 演示模式
+
+// V3.5.93 切换演示模式
+function onDemoToggle(val) {
+  if (val) {
+    localStorage.setItem('minimax_demo_mode', 'true')
+    ElMessage.success('🎭 演示模式已启用 - 无后端本地演示')
+  } else {
+    localStorage.removeItem('minimax_demo_mode')
+    ElMessage.info('演示模式已关闭 - 恢复 API 模式')
+  }
+}
 
 const form = reactive({
   username: '',
@@ -270,7 +296,15 @@ function fillAccount(acc) {
   form.username = acc.username
   form.password = acc.password
   mode.value = 'login'
-  ElMessage.success(`已填入 ${acc.role} 账号, 点击登录`)
+  // V3.5.93+: demo mode 下, fillAccount 直接跳 (不需点登录)
+  if (isDemoMode()) {
+    localStorage.setItem('minimax_demo_user', acc.username)
+    ElMessage.success(`🎭 演示模式 - 已切换到 ${acc.role}`)
+    const redirect = route.query.redirect || '/admin/dashboard'
+    router.replace(redirect)
+  } else {
+    ElMessage.success(`已填入 ${acc.role} 账号, 点击登录`)
+  }
 }
 
 // === 6. 忘记密码 ===
@@ -290,6 +324,18 @@ async function onSubmit() {
 
   errorMsg.value = ''
   loading.value = true
+
+  // V3.5.93+ 演示模式: 无后端时直接 mock login (本地保存)
+  if (isDemoMode()) {
+    await new Promise(r => setTimeout(r, 500))  // 模拟网络延迟
+    localStorage.setItem('minimax_demo_user', form.username)
+    localStorage.setItem('minimax_remember_user', form.username)
+    ElMessage.success('🎭 演示模式登录成功 (无后端)')
+    const redirect = route.query.redirect && route.query.redirect !== '/login' ? route.query.redirect : '/admin/dashboard'
+    router.replace(redirect)
+    loading.value = false
+    return
+  }
 
   try {
     if (mode.value === 'login') {
@@ -662,6 +708,18 @@ onUnmounted(() => {
 .slide-enter-to, .slide-leave-from {
   opacity: 1;
   max-height: 100px;
+}
+
+/* 演示模式 */
+.demo-toggle {
+  margin-top: 12px;
+  text-align: center;
+}
+
+.demo-hint {
+  font-size: 11px;
+  color: var(--liugl-success, #10b981);
+  margin: 4px 0 0;
 }
 
 /* 移动端适配 */

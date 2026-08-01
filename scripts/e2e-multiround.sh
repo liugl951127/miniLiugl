@@ -226,7 +226,7 @@ for ((i=1; i<=ROUNDS; i++)); do
     SLOW_COUNT=0
     for route in "${FRONTEND_ROUTES[@]}"; do
         T_START=$(date +%s%N)
-        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:5173$route" --max-time 10 2>/dev/null)
+        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${FRONTEND_PORT:-5173}$route" --max-time 10 2>/dev/null)
         T_END=$(date +%s%N)
         T_MS=$(( (T_END - T_START) / 1000000 ))
 
@@ -288,7 +288,7 @@ cat > "$REPORT_DIR/round6-stability.log" << EOF
   轮数:      $ROUNDS
   每轮:      21 路由 HTTP GET
   总请求数:  $((21 * ROUNDS))
-  目标:      http://localhost:5173 (frontend dev server)
+  目标:      http://localhost:${FRONTEND_PORT:-5173} (frontend dev server)
   总耗时:    ${ROUND_ELAPSED}s
   平均:      $((ROUND_ELAPSED / ROUNDS))s/round
 
@@ -331,7 +331,7 @@ MATRIX_ROUTES=("/" "/login" "/monitor" "/admin/cluster" "/chat")
 echo "  Running browser: chromium ..."
 N_OK=0
 for route in "${MATRIX_ROUTES[@]}"; do
-    code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:5173$route" --max-time 5 2>/dev/null)
+    code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${FRONTEND_PORT:-5173}$route" --max-time 5 2>/dev/null)
     if [[ "$code" == "200" ]]; then N_OK=$((N_OK+1)); fi
 done
 if [[ $N_OK -eq ${#MATRIX_ROUTES[@]} ]]; then
@@ -347,7 +347,7 @@ TOTAL=$((TOTAL+1))
 echo "  Running browser: webkit ..."
 N_OK=0
 for route in "${MATRIX_ROUTES[@]}"; do
-    code=$(curl -s -o /dev/null -w "%{http_code}" -H "Cache-Control: no-cache" -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15" "http://localhost:5173$route" --max-time 5 2>/dev/null)
+    code=$(curl -s -o /dev/null -w "%{http_code}" -H "Cache-Control: no-cache" -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15" "http://localhost:${FRONTEND_PORT:-5173}$route" --max-time 5 2>/dev/null)
     if [[ "$code" == "200" ]]; then N_OK=$((N_OK+1)); fi
 done
 if [[ $N_OK -eq ${#MATRIX_ROUTES[@]} ]]; then
@@ -363,7 +363,7 @@ TOTAL=$((TOTAL+1))
 echo "  Running browser: firefox ..."
 N_OK=0
 for route in "${MATRIX_ROUTES[@]}"; do
-    code=$(curl -s -o /dev/null -w "%{http_code}" --compressed -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0" "http://localhost:5173$route" --max-time 5 2>/dev/null)
+    code=$(curl -s -o /dev/null -w "%{http_code}" --compressed -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0" "http://localhost:${FRONTEND_PORT:-5173}$route" --max-time 5 2>/dev/null)
     if [[ "$code" == "200" ]]; then N_OK=$((N_OK+1)); fi
 done
 if [[ $N_OK -eq ${#MATRIX_ROUTES[@]} ]]; then
@@ -379,7 +379,7 @@ TOTAL=$((TOTAL+1))
 echo "  Running browser: mobile-safari ..."
 N_OK=0
 for route in "${MATRIX_ROUTES[@]}"; do
-    code=$(curl -s -o /dev/null -w "%{http_code}" -H "User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1" "http://localhost:5173$route" --max-time 5 2>/dev/null)
+    code=$(curl -s -o /dev/null -w "%{http_code}" -H "User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1" "http://localhost:${FRONTEND_PORT:-5173}$route" --max-time 5 2>/dev/null)
     if [[ "$code" == "200" ]]; then N_OK=$((N_OK+1)); fi
 done
 if [[ $N_OK -eq ${#MATRIX_ROUTES[@]} ]]; then
@@ -395,7 +395,7 @@ TOTAL=$((TOTAL+1))
 echo "  Running browser: mobile-chrome ..."
 N_OK=0
 for route in "${MATRIX_ROUTES[@]}"; do
-    code=$(curl -s -o /dev/null -w "%{http_code}" -H "User-Agent: Mozilla/5.0 (Linux; Android 13; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36" "http://localhost:5173$route" --max-time 5 2>/dev/null)
+    code=$(curl -s -o /dev/null -w "%{http_code}" -H "User-Agent: Mozilla/5.0 (Linux; Android 13; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36" "http://localhost:${FRONTEND_PORT:-5173}$route" --max-time 5 2>/dev/null)
     if [[ "$code" == "200" ]]; then N_OK=$((N_OK+1)); fi
 done
 if [[ $N_OK -eq ${#MATRIX_ROUTES[@]} ]]; then
@@ -488,7 +488,7 @@ for browser in chromium webkit firefox mobile-safari mobile-chrome; do
         code=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "User-Agent: $UA" \
             -H "traceparent: $TP" \
-            "http://localhost:5173$route" --max-time 5 2>/dev/null)
+            "http://localhost:${FRONTEND_PORT:-5173}$route" --max-time 5 2>/dev/null)
         if [[ "$code" == "200" ]]; then
             N_OK=$((N_OK+1))
         fi
