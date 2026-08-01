@@ -884,6 +884,28 @@ watch(typewriterPaused, (v) => { if (!v) typewriterProcessNext() })
 
 let typewriterTimer = null
 
+function typewriterAppendChunk(target, chunk) {
+  // V3.7.10+ 流式 chunk 集成 (SSE onChunk 段调用)
+  if (!target) return
+  if (typewriterPaused.value) {
+    // 暂停时累积, 不渲染
+    typewriterContent.value = (typewriterContent.value || '') + chunk
+    return
+  }
+  // 逐字符渲染
+  for (let i = 0; i < chunk.length; i++) {
+    if (typewriterPaused.value) {
+      // 暂停时停止, 把剩余 chunk 累积
+      typewriterContent.value = (typewriterContent.value || '') + chunk.slice(i)
+      return
+    }
+    const ch = chunk[i]
+    target.innerHTML += ch === '\n' ? '<br>' : ch
+  }
+  typewriterContent.value = (typewriterContent.value || '') + chunk
+  typewriterProgress.value = Math.min(100, Math.round((target.innerHTML.length / Math.max(1, (typewriterContent.value.length || 1))) * 100))
+}
+
 function typewriterType(target, fullText, onDone) {
   if (typewriterTimer) { clearTimeout(typewriterTimer); typewriterTimer = null }
   typewriterContent.value = fullText
@@ -1203,6 +1225,10 @@ async function sendMessage() {
       signal: streamAbortController?.signal,  // V3.7.7+
       onChunk: (chunk) => {
         aiMsg.content += chunk
+        // V3.7.10+ 打字机流式 chunk 集成
+        if (typewriterEnabled.value) {
+          typewriterAppendChunk(messagesRef.value?.lastChild?.querySelector?.('.message-content') || null, chunk)
+        }
         scrollToBottom()
       },
       onToolCall: (tc) => {
