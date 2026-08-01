@@ -8,6 +8,12 @@ build/
 dist/
 coverage/
 
+# 每日报告(每日自动生成,不入库)
+.daily-reports/
+.daily-logs/
+.cron-daemon.pid
+.cron-daemon.log
+
 # IDE
 .idea/
 .vscode/
