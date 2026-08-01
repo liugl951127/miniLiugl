@@ -73,7 +73,7 @@
             style="height: 350px"
             autoresize
           />
-          <el-empty v-else description="选择 run + tag 后加载" />
+          <EmptyState :description="'暂无数据'" />
         </el-card>
 
         <!-- 折线图 (带 ±std 阴影) -->
@@ -87,7 +87,7 @@
             style="height: 300px"
             autoresize
           />
-          <el-empty v-else description="无数据" />
+          <EmptyState :description="'暂无数据'" />
         </el-card>
       </el-col>
     </el-row>
@@ -131,6 +131,7 @@ import {
   TitleComponent, TooltipComponent, GridComponent, LegendComponent
 } from 'echarts/components'
 import { tensorboardApi } from '@/api/tensorboard'
+import EmptyState from '@/components/EmptyState.vue'
 
 use([CanvasRenderer, BarChart, LineChart, TitleComponent, TooltipComponent, GridComponent, LegendComponent])
 

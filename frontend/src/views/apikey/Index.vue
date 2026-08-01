@@ -34,7 +34,7 @@
       </template>
 
       <!-- 空状态 -->
-      <el-empty v-if="keys.length === 0 && !loading" :description="t('apikey.noKeys')" />
+      <EmptyState v-if="!keys.length" :description="t('apikey.noKeys')" />
 
       <!-- 密钥表格 -->
       <el-table v-else :data="keys" stripe v-loading="loading">
@@ -159,6 +159,7 @@ import { ElMessage } from 'element-plus'
 import { Plus, Refresh, Delete, DocumentCopy, Check, Close } from '@element-plus/icons-vue'
 import { t } from '@/i18n'
 import { apiKeyApi } from '@/api/apikey'
+import EmptyState from '@/components/EmptyState.vue'
 
 const keys = ref([])
 const loading = ref(false)

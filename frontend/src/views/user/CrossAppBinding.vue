@@ -59,7 +59,7 @@
               </el-button>
             </div>
           </div>
-          <el-empty v-else description="加载中..." />
+          <EmptyState :description="'暂无数据'" />
         </el-card>
       </el-col>
 
@@ -132,6 +132,7 @@ import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Unlock, FullScreen } from '@element-plus/icons-vue'
 import { getMyBinding, unbindMyself } from '@/api/wechat'
+import EmptyState from '@/components/EmptyState.vue'
 
 const myBinding = ref(null)
 const historyList = ref([])

@@ -94,7 +94,7 @@
             style="height: 400px"
             autoresize
           />
-          <el-empty v-else description="选择 run 和 tag 后显示图表" />
+          <EmptyState :description="'暂无数据'" />
         </el-card>
 
         <!-- 数据表 -->
@@ -136,6 +136,7 @@ import {
   LegendComponent, DataZoomComponent
 } from 'echarts/components'
 import { tensorboardApi } from '@/api/tensorboard'
+import EmptyState from '@/components/EmptyState.vue'
 
 use([CanvasRenderer, LineChart, TitleComponent, TooltipComponent, GridComponent, LegendComponent, DataZoomComponent])
 

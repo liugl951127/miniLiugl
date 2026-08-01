@@ -96,7 +96,7 @@ function execute(input) {
                 <pre>{{ execResult.error }}</pre>
               </div>
             </div>
-            <el-empty v-else :description="t('plugins.clickToExecute')" />
+            <EmptyState :description="t('plugins.clickToExecute')" />
           </section>
         </div>
       </el-tab-pane>
@@ -159,6 +159,7 @@ import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import http from '@/api/http'
 import { t } from '@/i18n'
+import EmptyState from '@/components/EmptyState.vue'
 
 const activeTab = ref('market')
 const activeTemplate = ref(null)

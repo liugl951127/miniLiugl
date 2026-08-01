@@ -70,7 +70,7 @@
             <el-button type="primary" :loading="running" @click="invoke">🚀 调用</el-button>
           </div>
         </el-card>
-        <el-empty v-else description="选择左侧工具开始" :image-size="100" />
+        <EmptyState :description="'暂无数据'" />
       </el-col>
 
       <!-- 右侧: 结果 -->
@@ -112,7 +112,7 @@
               </el-tabs>
             </div>
           </div>
-          <el-empty v-else description="执行后显示结果" :image-size="80" />
+          <EmptyState :description="'暂无数据'" />
         </el-card>
       </el-col>
     </el-row>

@@ -59,7 +59,7 @@
                 :is-streaming="m.streaming"
               />
               <div v-if="!messages.length" class="empty-chat">
-                <el-empty description="开始双向流式对话" :image-size="80" />
+                <EmptyState :description="'暂无数据'" />
               </div>
             </div>
 
@@ -119,6 +119,7 @@ import { ref, computed, nextTick, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'
+import EmptyState from '@/components/EmptyState.vue'
 
 const { t } = useI18n()
 const userStore = useUserStore()

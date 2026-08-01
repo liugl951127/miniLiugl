@@ -62,7 +62,7 @@
               </p>
             </template>
           </template>
-          <el-empty v-else description="左侧输入问题, 点击生成" />
+          <EmptyState :description="'暂无数据'" />
         </div>
       </div>
     </el-card>
@@ -74,6 +74,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { nl2sqlAsk, nl2sqlExplain, nl2qlFeedback, nl2sqlHistory, dryRunQuery } from '@/api/analytics'
+import EmptyState from '@/components/EmptyState.vue'
 
 const question = ref('')
 const asking = ref(false)

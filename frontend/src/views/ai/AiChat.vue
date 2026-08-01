@@ -54,7 +54,7 @@
                 <div class="session-title">{{ s.title || '新会话' }}</div>
                 <div class="session-time">{{ formatTime(s.updatedAt) }}</div>
               </div>
-              <el-empty v-if="!sessions.length" description="{{ t('aichat.empty') }}" :image-size="60" />
+              <EmptyState :description="'暂无数据'" />
             </div>
           </el-card>
         </section>
@@ -73,7 +73,7 @@
 
             <div class="messages" ref="messagesRef">
               <div v-if="!messages.length" class="empty-chat">
-                <el-empty description="{{ t('aichat.start') }}" :image-size="80" />
+                <EmptyState :description="'暂无数据'" />
               </div>
               <ChatBubble
                 v-for="m in messages"
@@ -115,6 +115,7 @@ import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/PageContainer.vue'
 import StateBlock from '@/components/StateBlock.vue'
 import { dispatchPrompt, listAiSessions, createAiSession } from '@/api/ai'
+import EmptyState from '@/components/EmptyState.vue'
 
 const examples = [
   { icon: '📊', label: '统计图表', text: '统计 user 表前 10 条, 柱状图' },

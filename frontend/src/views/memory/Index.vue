@@ -101,7 +101,7 @@
             <el-table-column label="内容" prop="content" min-width="400" show-overflow-tooltip />
             <el-table-column label="时间" prop="timestamp" width="170" />
             <template #empty>
-              <el-empty :description="sessionInput ? '该会话暂无消息' : '请先输入 Session ID'" />
+              <EmptyState :description="sessionInput ? '该会话暂无消息' : '请先输入 Session ID'" />
             </template>
           </el-table>
 
@@ -266,6 +266,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { ChatDotRound, DataAnalysis, Files, Star, Plus, Search, MagicStick, Delete, Refresh } from '@element-plus/icons-vue'
 import * as memApi from '@/api/memory'
 import { useUserStore } from '@/store/user'
+import EmptyState from '@/components/EmptyState.vue'
 
 const userStore = useUserStore()
 const userId = computed(() => userStore.userInfo?.id || 1)

@@ -57,7 +57,7 @@
               <el-input v-model="step.config" placeholder="config (JSON)" style="flex: 1" />
               <el-button size="small" :icon="Delete" @click="steps.splice(idx, 1)" type="danger" plain />
             </div>
-            <el-empty v-if="!steps.length" description="暂无节点, 点击上方「添加节点」或「示例」" />
+            <EmptyState :description="'暂无数据'" />
           </el-card>
         </section>
       </el-col>
@@ -66,7 +66,7 @@
         <section class="section">
           <h3 class="section-title">▶️ 执行结果</h3>
           <el-card shadow="hover">
-            <el-empty v-if="!lastResult" description="尚未执行" />
+            <EmptyState v-if="!lastResult" :description="'暂无数据'" />
             <pre v-else class="result-pre">{{ JSON.stringify(lastResult, null, 2) }}</pre>
           </el-card>
         </section>
@@ -80,6 +80,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { executeWorkflow, validateWorkflow as apiValidate, dispatchPrompt } from '@/api/ai'
+import EmptyState from '@/components/EmptyState.vue'
 
 const { t } = useI18n()
 const nodes = ref([

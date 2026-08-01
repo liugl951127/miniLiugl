@@ -123,7 +123,7 @@
               {{ providerInfo.maxFileSize || '-' }}
             </el-descriptions-item>
           </el-descriptions>
-          <el-empty v-else description="加载中..." />
+          <EmptyState :description="'暂无数据'" />
         </el-tab-pane>
       </el-tabs>
     </el-card>
@@ -137,6 +137,7 @@ import { ElMessage } from 'element-plus'
 import { PictureFilled, Upload, MagicStick } from '@element-plus/icons-vue'
 import http from '@/api/http'
 import { describeImageOld as describeImageApi, getMultimodalInfoOld as getInfoApi } from '@/api/multimodal'
+import EmptyState from '@/components/EmptyState.vue'
 
 const activeTab = ref('describe')
 

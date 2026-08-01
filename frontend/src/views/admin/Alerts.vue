@@ -46,7 +46,7 @@
 
     <!-- 3. section: 触发中告警 (firing) -->
     <section v-if="tab === 'firing'" class="section">
-      <el-empty v-if="!firing.length" description="暂无触发中告警" />
+      <EmptyState :description="'暂无数据'" />
       <el-card v-for="alert in firing" :key="alert.id" shadow="hover" class="alert-card-item">
         <el-alert
           :type="severityType(alert.severity)"
@@ -170,6 +170,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { monitorApi } from '@/api/monitor'
+import EmptyState from '@/components/EmptyState.vue'
 
 const { t } = useI18n()
 const tab = ref('firing')

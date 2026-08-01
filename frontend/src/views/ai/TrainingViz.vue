@@ -25,7 +25,7 @@
         <el-col :span="8">
           <el-card shadow="never">
             <template #header>📋 训练任务</template>
-            <el-empty v-if="!tasks.length" description="暂无任务, 点击右上角启动演示" />
+            <EmptyState v-if="!data" :description="'暂无数据'" />
             <div v-else class="task-list">
               <div v-for="t in tasks" :key="t.taskId"
                    :class="['task-item', { active: selected === t.taskId }]"
@@ -92,7 +92,7 @@
               <el-table-column prop="elapsedMs" label="ms" width="100" />
             </el-table>
           </el-card>
-          <el-empty v-else description="选择左侧任务查看训练曲线" />
+          <EmptyState :description="'暂无数据'" />
         </el-col>
       </el-row>
     </el-card>

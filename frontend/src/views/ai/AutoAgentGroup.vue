@@ -86,7 +86,7 @@
           </el-card>
         </el-col>
       </el-row>
-      <el-empty v-if="!templates.length" description="暂无模板" />
+      <EmptyState :description="'暂无数据'" />
     </section>
   </div>
 </template>
@@ -96,6 +96,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { autoAgentGroupGenerate, autoAgentGroupByTemplate, autoAgentGroupTemplates } from '@/api/ai'
+import EmptyState from '@/components/EmptyState.vue'
 
 const { t } = useI18n()
 const mode = ref('auto')

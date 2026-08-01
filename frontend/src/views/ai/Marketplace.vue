@@ -94,7 +94,7 @@
           </el-card>
         </el-col>
       </el-row>
-      <el-empty v-if="!filteredAgents.length" description="暂无 Agent" />
+      <EmptyState :description="'暂无数据'" />
     </section>
 
     <!-- 5. dialog: 上传 Agent -->
@@ -126,6 +126,7 @@ import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { marketplaceApi } from '@/api/marketplace'
 import { useUserStore } from '@/store/user'
+import EmptyState from '@/components/EmptyState.vue'
 
 const { t } = useI18n()
 const userStore = useUserStore()

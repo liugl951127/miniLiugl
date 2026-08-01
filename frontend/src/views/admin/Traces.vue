@@ -98,7 +98,7 @@
             <template #default="{ row }">{{ formatTime(row.timestamp) }}</template>
           </el-table-column>
         </el-table>
-        <el-empty v-if="!traces.length && !loading" description="未找到匹配的 Trace" />
+        <EmptyState :description="'暂无数据'" />
       </el-card>
     </section>
   </div>
@@ -109,6 +109,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import http from '@/api/http'
 import { ElMessage } from 'element-plus'
+import EmptyState from '@/components/EmptyState.vue'
 
 const { t } = useI18n()
 const service = ref('')

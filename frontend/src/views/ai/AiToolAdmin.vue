@@ -105,7 +105,7 @@
             </template>
           </el-table-column>
         </el-table>
-        <el-empty v-if="!filteredTools.length" description="暂无工具" />
+        <EmptyState :description="'暂无数据'" />
       </el-card>
     </section>
   </div>

@@ -102,7 +102,7 @@
               </el-form-item>
             </el-form>
           </template>
-          <el-empty v-else description="选择节点查看属性" :image-size="60" />
+          <EmptyState :description="'暂无数据'" />
         </div>
       </div>
     </el-card>
@@ -115,6 +115,7 @@ import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getWorkflow, createWorkflow, updateWorkflow, runWorkflow, validateWorkflow } from '@/api/pipeline'
+import EmptyState from '@/components/EmptyState.vue'
 
 const route = useRoute()
 const router = useRouter()

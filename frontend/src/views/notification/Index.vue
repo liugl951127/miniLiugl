@@ -32,7 +32,7 @@
     </div>
 
     <!-- 空状态 -->
-    <el-empty v-if="!loading && !notifStore.notifications.length" description="暂无通知" />
+    <EmptyState v-if="!notifStore.notifications.length" :description="'暂无数据'" />
 
     <!-- 通知列表 -->
     <div v-else class="notif-list">

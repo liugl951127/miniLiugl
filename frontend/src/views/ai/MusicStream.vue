@@ -89,8 +89,8 @@
                   <el-button size="small" @click="downloadChunk(c, i)">💾 下载</el-button>
                 </div>
               </el-card>
-              <el-empty v-if="!chunks.length && !running" description="点击 ▶️ 启动接收 MIDI 块" />
-              <el-empty v-else-if="!chunks.length" description="等待第一个 chunk..." />
+              <EmptyState :description="'暂无数据'" />
+              <EmptyState :description="'暂无数据'" />
             </div>
 
             <el-row :gutter="8" v-if="progress > 0" style="margin-top: 12px">
@@ -112,7 +112,7 @@
                 <span class="log-msg">{{ e.msg }}</span>
                 <span class="log-ts">{{ e.ts }}</span>
               </div>
-              <el-empty v-if="!events.length" description="暂无事件" :image-size="60" />
+              <EmptyState :description="'暂无数据'" />
             </div>
           </el-card>
         </el-col>
@@ -126,6 +126,7 @@
 import { ref, computed, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { cancelMusicStream } from '@/api/ai'
+import EmptyState from '@/components/EmptyState.vue'
 
 const cfg = ref({
   style: 'POP', key: 'C', scale: 'major', bpm: 120,

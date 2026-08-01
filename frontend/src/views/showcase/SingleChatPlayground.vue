@@ -109,7 +109,7 @@
 
         <div class="result-body">
           <pre v-if="result.content">{{ result.content }}<span v-if="streaming" class="cursor">▊</span></pre>
-          <el-empty v-else description="点 ⚡ 立即调用 发起请求" />
+          <EmptyState :description="'暂无数据'" />
         </div>
 
         <details v-if="result.raw" class="result-raw">
@@ -132,6 +132,7 @@ import { ref, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Promotion, VideoPause } from '@element-plus/icons-vue'
 import http from '@/api/http'
+import EmptyState from '@/components/EmptyState.vue'
 
 const form = reactive({
   model: 'mock',

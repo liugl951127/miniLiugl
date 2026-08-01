@@ -73,7 +73,7 @@
                   <span v-if="!isLast"> · {{ remaining }} remaining</span>
                 </div>
               </div>
-              <el-empty v-else description="点击 ▶️ 启动 接收流式帧" />
+              <EmptyState :description="'暂无数据'" />
             </div>
 
             <el-progress
@@ -110,7 +110,7 @@
                 <span class="log-msg">{{ e.msg }}</span>
                 <span class="log-ts">{{ e.ts }}</span>
               </div>
-              <el-empty v-if="!events.length" description="暂无事件" :image-size="60" />
+              <EmptyState :description="'暂无数据'" />
             </div>
           </el-card>
         </el-col>
@@ -124,6 +124,7 @@
 import { ref, computed, onUnmounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { cancelVideoStream } from '@/api/ai'
+import EmptyState from '@/components/EmptyState.vue'
 
 const cfg = ref({
   title: 'Liugl-AI Streaming Demo',

@@ -105,7 +105,7 @@
       </el-col>
     </el-row>
 
-    <el-empty v-if="!loading && models.length === 0" description="暂无模型" />
+    <EmptyState :description="'暂无数据'" />
 
     <!-- 发布对话框 -->
     <el-dialog v-model="showUpload" title="📤 发布模型" width="640px">
@@ -237,6 +237,7 @@ import { PieChart } from 'echarts/charts'
 import { TitleComponent, TooltipComponent, LegendComponent } from 'echarts/components'
 import { modelMarketApi } from '@/api/modelMarket'
 import { useUserStore } from '@/store/user'
+import EmptyState from '@/components/EmptyState.vue'
 
 use([CanvasRenderer, PieChart, TitleComponent, TooltipComponent, LegendComponent])
 
