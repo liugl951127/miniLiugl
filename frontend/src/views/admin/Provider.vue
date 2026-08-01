@@ -103,6 +103,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, reactive } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh, Connection, Edit, Delete } from '@element-plus/icons-vue'
@@ -110,6 +111,7 @@ import { listProviders, createProvider, updateProvider, deleteProvider, testProv
 
 const { t } = useI18n()
 const providers = ref([])
+const toast = useToast()
 const loading = ref(false)
 const saving = ref(false)
 const search = ref('')
@@ -150,7 +152,7 @@ async function loadProviders() {
     const res = await listProviders(1, 100)
     providers.value = res.data?.data || res.data || []
   } catch (e) {
-    ElMessage.error('加载失败: ' + (e.response?.data?.message || e.message))
+    toast.error('加载失败: ' + (e.response?.data?.message || e.message))
   } finally { loading.value = false }
 }
 
@@ -172,23 +174,23 @@ function editProvider(row) {
 
 async function handleSave() {
   if (!form.code.trim() || !form.name.trim() || !form.baseUrl.trim()) {
-    return ElMessage.warning('代码/名称/Base URL 必填')
+    return toast.warning('代码/名称/Base URL 必填')
   }
   saving.value = true
   try {
     form.enabled = form.enabledBool ? 1 : 0
     if (form.id) {
       await updateProvider(form.id, form)
-      ElMessage.success('更新成功')
+      toast.success('更新成功')
     } else {
       await createProvider(form)
-      ElMessage.success('创建成功')
+      toast.success('创建成功')
     }
     showForm.value = false
     resetForm()
     await loadProviders()
   } catch (e) {
-    ElMessage.error('保存失败: ' + (e.response?.data?.message || e.message))
+    toast.error('保存失败: ' + (e.response?.data?.message || e.message))
   } finally { saving.value = false }
 }
 
@@ -196,10 +198,10 @@ async function handleDelete(row) {
   await ElMessageBox.confirm(`确认删除 Provider "${row.name}"?`, '警告', { type: 'warning' })
   try {
     await deleteProvider(row.id)
-    ElMessage.success('删除成功')
+    toast.success('删除成功')
     await loadProviders()
   } catch (e) {
-    ElMessage.error('删除失败: ' + (e.response?.data?.message || e.message))
+    toast.error('删除失败: ' + (e.response?.data?.message || e.message))
   }
 }
 
@@ -221,9 +223,9 @@ async function toggleEnabled(row, val) {
   try {
     await updateProvider(row.id, { ...row, enabled: val ? 1 : 0, enabledBool: val })
     row.enabled = val ? 1 : 0
-    ElMessage.success(val ? '已启用' : '已停用')
+    toast.success(val ? '已启用' : '已停用')
   } catch (e) {
-    ElMessage.error('切换失败')
+    toast.error('切换失败')
     await loadProviders()
   }
 }

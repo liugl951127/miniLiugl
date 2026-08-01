@@ -82,7 +82,7 @@
 
             <div v-for="e in filteredEntities" :key="e.id"
                  class="entity-item" :class="{ active: selectedEntity?.id === e.id }"
-                 @click="selectEntity(e)">
+                 @click="openNodeDrawer(e)">
               <el-tag size="small" :type="typeTag(e.entityType)">{{ e.entityType }}</el-tag>
               <strong>{{ e.name }}</strong>
               <span v-if="e.description" class="desc">— {{ truncate(e.description, 20) }}</span>
@@ -148,6 +148,70 @@
 </div>
 <div ref="chartEl" class="kg-chart"></div>
         </el-card>
+    <!-- V3.6.26+ 节点属性面板 (右侧 drawer) -->
+    <el-drawer
+      v-model="nodeDrawerVisible"
+      :title="nodeDetail ? `节点详情 - ${nodeDetail.name}` : '节点详情'"
+      direction="rtl"
+      size="420px"
+      :destroy-on-close="true"
+    >
+      <div v-if="nodeDetail" class="node-drawer-content">
+        <section class="node-section">
+          <h4 class="section-title">📋 基本信息</h4>
+          <el-descriptions :column="1" border size="small">
+            <el-descriptions-item label="ID">{{ nodeDetail.id }}</el-descriptions-item>
+            <el-descriptions-item label="名称">
+              <el-input v-if="nodeEditing" v-model="nodeEditForm.name" size="small" />
+              <span v-else>{{ nodeDetail.name }}</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="类型">
+              <el-tag size="small">{{ nodeDetail.type || '未分类' }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="重要性">
+              <el-rate v-if="nodeEditing" v-model="nodeEditForm.importance" :max="10" />
+              <el-rate v-else :model-value="nodeDetail.importance || 5" disabled :max="10" />
+            </el-descriptions-item>
+            <el-descriptions-item label="创建时间">{{ nodeDetail.createdAt || 'N/A' }}</el-descriptions-item>
+          </el-descriptions>
+        </section>
+
+        <section class="node-section">
+          <h4 class="section-title">📝 描述</h4>
+          <el-input v-if="nodeEditing" v-model="nodeEditForm.description" type="textarea" :rows="4" placeholder="节点描述" />
+          <div v-else class="description-text">{{ nodeDetail.description || '暂无描述' }}</div>
+        </section>
+
+        <section class="node-section">
+          <h4 class="section-title">🔗 关联关系 ({{ nodeRelations.length }})</h4>
+          <el-empty v-if="!nodeRelations.length" description="暂无关联" :image-size="50" />
+          <el-table v-else :data="nodeRelations" stripe size="small" max-height="240">
+            <el-table-column prop="relation" label="关系" width="100" />
+            <el-table-column prop="targetName" label="目标节点" show-overflow-tooltip />
+            <el-table-column prop="weight" label="权重" width="70" sortable>
+              <template #default="{ row }">
+                <el-tag :type="row.weight > 7 ? 'success' : 'info'" size="small">{{ row.weight || 1 }}</el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+        </section>
+
+        <section class="node-section">
+          <div class="drawer-actions">
+            <template v-if="!nodeEditing">
+              <el-button type="primary" :icon="Edit" @click="startEditNode">编辑</el-button>
+              <el-button :icon="Refresh" @click="loadNodeRelations(nodeDetail.id)">刷新关系</el-button>
+              <el-button type="danger" :icon="Delete" @click="deleteNode">删除</el-button>
+            </template>
+            <template v-else>
+              <el-button type="primary" :icon="Check" @click="saveNodeEdit">保存</el-button>
+              <el-button :icon="Close" @click="cancelEditNode">取消</el-button>
+            </template>
+          </div>
+        </section>
+      </div>
+    </el-drawer>
+
 
         <el-card v-if="selectedEntity" style="margin-top:16px">
           <template #header><span>{{ t('kg.neighborList') }} ({{ neighbors.length }})</span></template>
@@ -389,6 +453,73 @@ async function selectEntity(e: any) {
   await loadNeighbors()
   await nextTick()
   renderGraph()
+}
+
+// V3.6.26+ 节点属性面板 (drawer)
+const nodeDrawerVisible = ref(false)
+const nodeDetail = ref<any>(null)
+const nodeEditing = ref(false)
+const nodeEditForm = reactive({ name: '', description: '', importance: 5 })
+const nodeRelations = ref<any[]>([])
+
+async function openNodeDrawer(e: any) {
+  selectedEntity.value = e
+  nodeDetail.value = e
+  nodeEditing.value = false
+  nodeEditForm.name = e.name || ''
+  nodeEditForm.description = e.description || ''
+  nodeEditForm.importance = e.importance || 5
+  nodeDrawerVisible.value = true
+  await loadNodeRelations(e.id)
+}
+
+async function loadNodeRelations(id: string) {
+  try {
+    const { data } = await axios.get(`${API}/api/v1/agent/kg/relations`,
+      { params: { userId, entityId: id }, ...auth() })
+    nodeRelations.value = data.data || []
+  } catch (err: any) {
+    nodeRelations.value = []
+  }
+}
+
+function startEditNode() { nodeEditing.value = true }
+
+function cancelEditNode() {
+  nodeEditing.value = false
+  if (nodeDetail.value) {
+    nodeEditForm.name = nodeDetail.value.name
+    nodeEditForm.description = nodeDetail.value.description
+    nodeEditForm.importance = nodeDetail.value.importance
+  }
+}
+
+async function saveNodeEdit() {
+  if (!nodeDetail.value) return
+  try {
+    await axios.put(`${API}/api/v1/agent/kg/entities/${nodeDetail.value.id}`,
+      { ...nodeEditForm, userId }, auth())
+    ElMessage.success('节点已更新')
+    nodeDetail.value = { ...nodeDetail.value, ...nodeEditForm }
+    nodeEditing.value = false
+    doSearch()
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || e?.message)
+  }
+}
+
+async function deleteNode() {
+  if (!nodeDetail.value) return
+  try {
+    await ElMessageBox.confirm(`确认删除节点 "${nodeDetail.value.name}" 吗?`, '提示', { type: 'warning' })
+    await axios.delete(`${API}/api/v1/agent/kg/entities/${nodeDetail.value.id}`,
+      { params: { userId }, ...auth() })
+    ElMessage.success('节点已删除')
+    nodeDrawerVisible.value = false
+    doSearch()
+  } catch (e: any) {
+    if (e !== 'cancel') ElMessage.error(e?.response?.data?.message || e?.message)
+  }
 }
 
 async function setHop(h: number) {
@@ -971,4 +1102,16 @@ onMounted(async () => {
   font-weight: bold;
   min-width: 24px;
 }
+
+.node-drawer-content { padding: 0 8px; }
+.node-section { margin-bottom: 24px; }
+.node-section .section-title {
+  font-size: 14px; font-weight: 600;
+  margin-bottom: 12px; color: var(--el-text-color-primary);
+}
+.description-text {
+  padding: 8px 12px; background: var(--el-fill-color-light);
+  border-radius: 4px; line-height: 1.6; min-height: 40px;
+}
+.drawer-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 </style>

@@ -203,6 +203,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted, readonly } from 'vue'
+import { useToast } from '@/composables/useToast'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
 import {
@@ -213,6 +214,7 @@ import {
 } from '@/api/ai'
 
 const tab = ref('subscriptions')
+const toast = useToast()
 const sending = ref(false)
 const detecting = ref(false)
 
@@ -235,7 +237,7 @@ async function loadSubscriptions() {
 }
 
 async function loadAllSubscriptions() {
-  try { const r = await pushAllSubscriptions(); subscriptions.value = r.data || []; ElMessage.success(`加载 ${subscriptions.value.length} 条`) } catch (e) {}
+  try { const r = await pushAllSubscriptions(); subscriptions.value = r.data || []; toast.success(`加载 ${subscriptions.value.length} 条`) } catch (e) {}
 }
 
 async function loadMessages() {
@@ -250,7 +252,7 @@ async function onSubscribe() {
   try {
     const keysObj = subForm.keys ? JSON.parse(subForm.keys) : {}
     await pushSubscribe({ endpoint: subForm.endpoint, keys: keysObj, userId: subForm.userId })
-    ElMessage.success('已订阅')
+    toast.success('已订阅')
     subForm.endpoint = ''; subForm.keys = ''; subForm.userId = ''
     loadSubscriptions()
   } catch (e) {}
@@ -260,13 +262,13 @@ async function onUnsubscribe(row) {
   try {
     await ElMessageBox.confirm('取消订阅?', '提示', { type: 'warning' })
     await pushUnsubscribe({ endpoint: row.endpoint })
-    ElMessage.success('已取消')
+    toast.success('已取消')
     loadSubscriptions()
   } catch (e) { if (e !== 'cancel') {} }
 }
 
 async function onSend() {
-  if (!sendForm.title || !sendForm.body) { ElMessage.warning('请填标题和内容'); return }
+  if (!sendForm.title || !sendForm.body) { toast.warning('请填标题和内容'); return }
   sending.value = true
   try {
     const payload = { title: sendForm.title, body: sendForm.body, icon: sendForm.icon, clickUrl: sendForm.clickUrl }
@@ -277,7 +279,7 @@ async function onSend() {
     } else {
       await pushBroadcast(payload)
     }
-    ElMessage.success('已发送')
+    toast.success('已发送')
     loadMessages()
   } catch (e) {} finally { sending.value = false }
 }
@@ -287,7 +289,7 @@ async function onAutoDetect() {
   try {
     const r = await pushIntegrationAuto()
     Object.assign(integration, r.data || {})
-    ElMessage.success('检测完成')
+    toast.success('检测完成')
   } catch (e) {} finally { detecting.value = false }
 }
 
@@ -301,7 +303,7 @@ async function loadVapidKey() {
 async function onHealth() {
   try {
     const r = await pushIntegrationHealth()
-    ElMessage.success(r.data?.message || '健康')
+    toast.success(r.data?.message || '健康')
   } catch (e) {}
 }
 
@@ -309,9 +311,9 @@ async function loadIntegrationStats() {
   try { const r = await pushIntegrationStats(); Object.assign(pushStat, r.data || {}) } catch (e) {}
 }
 
-async function onSaveApns() { try { await pushIntegrationApns(integration.apns); ElMessage.success('APNs 已保存') } catch (e) {} }
-async function onSaveFcm() { try { await pushIntegrationFcm(integration.fcm); ElMessage.success('FCM 已保存') } catch (e) {} }
-async function onSaveWeb() { try { await pushIntegrationWeb(integration.web); ElMessage.success('Web 已保存') } catch (e) {} }
+async function onSaveApns() { try { await pushIntegrationApns(integration.apns); toast.success('APNs 已保存') } catch (e) {} }
+async function onSaveFcm() { try { await pushIntegrationFcm(integration.fcm); toast.success('FCM 已保存') } catch (e) {} }
+async function onSaveWeb() { try { await pushIntegrationWeb(integration.web); toast.success('Web 已保存') } catch (e) {} }
 
 onMounted(() => {
   loadSubscriptions()

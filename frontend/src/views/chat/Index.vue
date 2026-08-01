@@ -361,7 +361,7 @@
     </el-drawer>
   </div>
 </template>
-<script setup>
+<script setup lang="ts">
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -830,6 +830,14 @@ const pendingImages = ref([])
 const searchKw = ref('')
 const messagesRef = ref(null)
 const toolCalls = ref([])  // V3.5.95: 工具调用列表 (顶层)
+
+// V3.6.26+ ToolCalls 统计 + JSON 格式化
+const successCount = computed(() => toolCalls.value.filter((t: any) => t.status === 'ok' || !t.status).length)
+
+function formatJson(obj: any) {
+  if (!obj) return ''
+  try { return JSON.stringify(obj, null, 2) } catch (e) { return String(obj) }
+}
 const sources = ref([])    // V3.5.95: 来源列表 (RAG 引用)
 
 // 计算

@@ -116,9 +116,26 @@
         </el-col>
       </el-row>
     </section>
+
+    <!-- V3.6.26+ 节点健康时间线 (滚动图) -->
+    <section class="section">
+      <h3 class="section-title">
+        📈 节点健康时间线
+        <el-button text type="primary" :icon="Refresh" @click="refreshHealthTimeline" style="float: right">
+          刷新
+        </el-button>
+        <el-tag size="small" style="float: right; margin-right: 8px" :type="autoRefresh ? 'success' : 'info'">
+          {{ autoRefresh ? '🔄 自动刷新 (5s)' : '⏸ 手动模式' }}
+        </el-tag>
+        <el-switch v-model="autoRefresh" size="small" style="float: right; margin-right: 8px" />
+      </h3>
+      <el-card shadow="hover">
+        <div ref="healthTimelineRef" class="chart-container" style="height: 360px"></div>
+      </el-card>
+    </section>
   </div>
 </template>
-<script setup>
+<script setup lang="ts">
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -217,6 +234,104 @@ async function onRaftSubmit() {
 }
 
 onMounted(loadAll)
+
+// V3.6.26+ 节点健康时间线
+import * as echarts from 'echarts'
+const healthTimelineRef = ref(null)
+const healthTimelineChart = ref(null)
+const autoRefresh = ref(true)
+let refreshTimer = null
+
+// 7 节点 mock 数据
+const timelineNodes = ['gateway-1', 'auth-1', 'chat-1', 'model-1', 'agent-1', 'rag-1', 'monitor-1']
+const healthTimelineData = ref(timelineNodes.map(n => ({
+  name: n,
+  data: generateMockHealth(n, 30),
+})))
+
+function generateMockHealth(name: string, count: number) {
+  const now = Date.now()
+  return Array.from({ length: count }, (_, i) => {
+    const t = new Date(now - (count - i) * 5000)
+    let value = 50 + Math.random() * 40
+    if (name.includes('auth')) value += Math.random() * 10 - 5
+    if (name.includes('monitor')) value = 90 + Math.random() * 5
+    return [t, Math.round(value)]
+  })
+}
+
+function renderHealthTimeline() {
+  if (!healthTimelineRef.value) return
+  if (!healthTimelineChart.value) healthTimelineChart.value = echarts.init(healthTimelineRef.value)
+  const colors = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#a855f7', '#06b6d4', '#ec4899']
+  healthTimelineChart.value.setOption({
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'cross' },
+      formatter: (params: any) => {
+        const t = new Date(params[0].value[0]).toLocaleString('zh-CN')
+        return params.map((p: any) => `${p.marker} ${p.seriesName}: ${p.value[1]}%`).join('<br>') + `<br/><small>${t}</small>`
+      },
+    },
+    legend: { data: timelineNodes, top: 0, type: 'scroll' },
+    grid: { left: 50, right: 30, top: 40, bottom: 30 },
+    xAxis: { type: 'time', smooth: true },
+    yAxis: { type: 'value', name: '健康度', min: 0, max: 100 },
+    dataZoom: [{ type: 'inside' }, { type: 'slider', height: 18 }],
+    series: healthTimelineData.value.map((d, i) => ({
+      name: d.name,
+      type: 'line',
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 5,
+      showSymbol: false,
+      sampling: 'lttb',
+      itemStyle: { color: colors[i % colors.length] },
+      lineStyle: { width: 2 },
+      data: d.data,
+    })),
+  })
+}
+
+function refreshHealthTimeline() {
+  healthTimelineData.value = timelineNodes.map(n => ({
+    name: n,
+    data: generateMockHealth(n, 30),
+  }))
+  renderHealthTimeline()
+  ElMessage.success('健康时间线已刷新')
+}
+
+function tickHealth() {
+  if (!autoRefresh.value) return
+  healthTimelineData.value = healthTimelineData.value.map(d => {
+    const last = d.data[d.data.length - 1]
+    const newVal = Math.max(20, Math.min(100, last[1] + (Math.random() - 0.5) * 10))
+    const newTime = new Date()
+    return { ...d, data: [...d.data.slice(1), [newTime, Math.round(newVal)]] }
+  })
+  renderHealthTimeline()
+}
+
+watch(autoRefresh, (v) => {
+  if (v) {
+    refreshTimer = setInterval(tickHealth, 5000)
+  } else if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = null
+  }
+})
+
+onMounted(() => {
+  if (autoRefresh.value) refreshTimer = setInterval(tickHealth, 5000)
+  nextTick(renderHealthTimeline)
+  window.addEventListener('resize', () => healthTimelineChart.value?.resize())
+})
+
+onUnmounted(() => {
+  if (refreshTimer) clearInterval(refreshTimer)
+  healthTimelineChart.value?.dispose()
+})
 </script>
 
 <style scoped>
