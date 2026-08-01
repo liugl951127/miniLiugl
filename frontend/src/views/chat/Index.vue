@@ -892,6 +892,8 @@ function resumeTypewriter() { typewriterPaused.value = false }
 
 function stopTypewriter() {
   if (typewriterTimer) { clearTimeout(typewriterTimer); typewriterTimer = null }
+  streamAbortController?.abort()  // V3.7.7+ 中断 SSE
+  streamAbortController = null
   typewriterTyping.value = false
   typewriterProgress.value = 0
   typewriterIndex.value = 0
@@ -1115,6 +1117,9 @@ function removeImage(i) {
   pendingImages.value.splice(i, 1)
 }
 
+// V3.7.7+ 流式 abort 控制 (module-scope, 让 stopTypewriter 可访问)
+let streamAbortController: AbortController | null = null
+
 async function sendMessage() {
   if (speechCall.state.value !== 'idle') speechCall.setProcessing()
   if (!canSend.value) return
@@ -1148,6 +1153,7 @@ async function sendMessage() {
   messages.value.push(aiMsg)
   streaming.value = true
   streamId.value = 'stream-' + Date.now()
+  streamAbortController = new AbortController()  // V3.7.7+ 流式中断
   await scrollToBottom()
 
   // 3) 调流式接口
@@ -1159,6 +1165,7 @@ async function sendMessage() {
       images: images,
     }, {
       streamId: streamId.value,
+      signal: streamAbortController?.signal,  // V3.7.7+
       onChunk: (chunk) => {
         aiMsg.content += chunk
         scrollToBottom()

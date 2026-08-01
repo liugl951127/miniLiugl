@@ -128,6 +128,7 @@
               <template #default>
                 <div class="error-actions">
                   <el-button text size="small" type="primary" :icon="Refresh" @click="retryLogin">重试</el-button>
+                  <span v-if="retryCountdown > 0" class="retry-countdown">{{ retryCountdown }}s 后自动重试</span>
                   <el-button v-if="isNetworkError" text size="small" type="warning" @click="enableDemo">切演示模式</el-button>
                 </div>
               </template>
@@ -333,6 +334,26 @@ function enableDemo() {
   onSubmit()
 }
 
+// V3.7.7+ 错误条倒计时重试 (网络错误时 5s 自动重试)
+const retryCountdown = ref(0)
+let retryTimer = null
+
+function startRetryCountdown(seconds = 5) {
+  retryCountdown.value = seconds
+  if (retryTimer) clearInterval(retryTimer)
+  retryTimer = setInterval(() => {
+    retryCountdown.value--
+    if (retryCountdown.value <= 0) { clearInterval(retryTimer); retryTimer = null; onSubmit() }
+  }, 1000)
+}
+
+function stopRetryCountdown() {
+  retryCountdown.value = 0
+  if (retryTimer) { clearInterval(retryTimer); retryTimer = null }
+}
+
+onUnmounted(() => { if (retryTimer) clearInterval(retryTimer) })
+
 async function onSubmit() {
   if (!formRef.value) return
   try {
@@ -373,7 +394,7 @@ async function onSubmit() {
     }
 
     // ✓ 成功 - 立刻跳, 不等 fetchProfile (layout 异步 hydrate)
-    toast.success(`${mode.value === 'login' ? '登录' : '注册'}成功`)
+    toast.success(`${mode.value === 'login' ? '登录' : '注册'}成功`); stopRetryCountdown()  // V3.7.7+
     const redirect = route.query.redirect && route.query.redirect !== '/login' ? route.query.redirect : '/admin/dashboard'
     router.replace(redirect)  // replace 不留 history
 
@@ -388,6 +409,7 @@ async function onSubmit() {
       errorMsg.value = '服务异常, 请稍后重试'
     } else if (msg.includes('Network') || msg.includes('timeout')) {
       errorMsg.value = '网络不可用, 请检查连接'
+      startRetryCountdown(5)  // V3.7.7+ 5s 倒计时
     } else {
       errorMsg.value = msg
     }
@@ -765,5 +787,6 @@ onUnmounted(() => {
   }
 }
 
+.retry-countdown { font-size: 12px; color: var(--el-color-warning); font-weight: 600; margin-left: 8px; }
 .error-actions { display: flex; gap: 8px; margin-top: 8px; padding-left: 24px; }
 </style>

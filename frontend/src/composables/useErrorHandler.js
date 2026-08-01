@@ -106,7 +106,12 @@ export function handleError(err, options = {}) {
     else if (status === 503) message = '服务暂不可用 (维护中或过载)'
     else if (status === 504) message = '网关超时 (后端响应慢)'
     else message = `服务异常 (${status}), 请稍后重试`
-    if (showMessage) ElMessage.error(message)
+    if (showMessage) {
+      // V3.7.7+ 错误码 toast 类型区分
+      if (status === 502 || status === 504) ElMessage.warning(message)
+      else if (status === 503) ElMessage({ message, type: 'info', duration: 5000 })
+      else ElMessage.error(message)
+    }
     handled = true
   } else if (err?.code === 'ECONNABORTED' || message.includes('timeout')) {
     type = 'timeout'
