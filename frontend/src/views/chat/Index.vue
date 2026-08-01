@@ -884,6 +884,37 @@ watch(typewriterPaused, (v) => { if (!v) typewriterProcessNext() })
 
 let typewriterTimer = null
 
+function typewriterType(target, fullText, onDone) {
+  if (typewriterTimer) { clearTimeout(typewriterTimer); typewriterTimer = null }
+  typewriterContent.value = fullText
+  typewriterTyping.value = true
+  typewriterPaused.value = false
+  typewriterIndex.value = 0
+  typewriterProgress.value = 0
+  target.innerHTML = ''
+
+  function tick() {
+    // V3.7.9+ 暂停保留 typewriterIndex (恢复点)
+    if (typewriterPaused.value) {
+      typewriterTimer = setTimeout(tick, 100)
+      return
+    }
+    if (typewriterIndex.value >= fullText.length) {
+      typewriterTyping.value = false
+      typewriterProgress.value = 100
+      typewriterTimer = null
+      if (onDone) onDone()
+      return
+    }
+    const ch = fullText[typewriterIndex.value]
+    target.innerHTML += ch === '\n' ? '<br>' : ch
+    typewriterIndex.value++
+    typewriterProgress.value = Math.round(typewriterIndex.value / fullText.length * 100)
+    typewriterTimer = setTimeout(tick, typewriterSpeed.value)
+  }
+  tick()
+}
+
 watch(typewriterEnabled, (v) => localStorage.setItem('minimax_typewriter', String(v)))
 
 function pauseTypewriter() { typewriterPaused.value = true }

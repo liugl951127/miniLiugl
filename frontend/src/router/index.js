@@ -522,6 +522,12 @@ const routes = [
       }
     ]
   },
+  {
+    path: '/error',
+    name: 'Error',
+    component: () => import('@/views/Error.vue'),
+    meta: { title: '错误页', public: true }
+  },
   { path: '/:pathMatch(.*)*', redirect: '/' },
   // V3.5.8: 不用精简版页面, /mobile 路径重定向到 desktop layout
   // 所有设备 (desktop / mobile / tablet) 用同一 layout + 响应式适配

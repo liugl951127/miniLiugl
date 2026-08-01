@@ -90,15 +90,25 @@ export function handleError(err, options = {}) {
     }
     handled = true
   } else if (status === 403) {
-    type = 'forbidden'
-    message = '权限不足, 请联系管理员'
-    if (showMessage) ElMessage.error(message)
-    handled = true
+      type = 'forbidden'
+      message = '权限不足, 请联系管理员'
+      if (showMessage) ElMessage.error(message)
+      // V3.7.9+ 跳错误页 (ErrorState 组件)
+      const currentPath = router.currentRoute.value.fullPath
+      if (currentPath !== '/error/403') {
+        router.push({ name: 'Error', query: { type: 'forbidden', from: currentPath } })
+      }
+      handled = true
   } else if (status === 404) {
-    type = 'notfound'
-    message = '请求的资源不存在'
-    if (showMessage) ElMessage.warning(message)
-    handled = true
+      type = 'notfound'
+      message = '请求的资源不存在'
+      if (showMessage) ElMessage.warning(message)
+      // V3.7.9+ 跳错误页 (ErrorState 组件)
+      const currentPath = router.currentRoute.value.fullPath
+      if (currentPath !== '/error/404') {
+        router.push({ name: 'Error', query: { type: 'notfound', from: currentPath } })
+      }
+      handled = true
   } else if (status >= 500) {
     type = 'server'
     // V3.7.6+ 错误码细化

@@ -257,9 +257,13 @@ function onDemoToggle(val) {
 
   if (val) {
     localStorage.setItem('minimax_demo_mode', 'true')
+      // V3.7.9+ 跨标签同步
+      window.dispatchEvent(new StorageEvent('storage', { key: 'minimax_demo_mode', newValue: 'true' }))
     toast.success('🎭 演示模式已启用 - 无后端本地演示')
   } else {
     localStorage.removeItem('minimax_demo_mode')
+      // V3.7.9+ 跨标签同步
+      window.dispatchEvent(new StorageEvent('storage', { key: 'minimax_demo_mode', newValue: null }))
     toast.info('演示模式已关闭 - 恢复 API 模式')
   }
 }
@@ -455,6 +459,15 @@ function checkResponsive() {
 
 // === 13. 生命周期 ===
 onMounted(() => {
+  // V3.7.9+ 跨标签同步演示模式
+  function onStorage(e: StorageEvent) {
+    if (e.key === 'minimax_demo_mode') {
+      demoMode.value = e.newValue === 'true'
+      toast.info(demoMode.value ? '🎭 演示模式已启用 (跨标签同步)' : '演示模式已关闭 (跨标签同步)')
+    }
+  }
+  window.addEventListener('storage', onStorage)
+  onUnmounted(() => window.removeEventListener('storage', onStorage))
   checkResponsive()
   window.addEventListener('resize', checkResponsive, { passive: true })
   // 恢复记住的用户名
