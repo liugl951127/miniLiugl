@@ -89,6 +89,44 @@ dual-record:
   auto-archive-days: 365
   block-chain-event-async: true
 
+# LLM AI 质检配置
+llm:
+  primary: qwen
+  fallback: deepseek
+  qwen:
+    api-key: ${QWEN_API_KEY:}
+    endpoint: https://dashscope.aliyuncs.com/compatible-mode/v1
+    model: qwen-max
+  deepseek:
+    api-key: ${DEEPSEEK_API_KEY:}
+    endpoint: https://api.deepseek.com/v1
+    model: deepseek-chat
+
+# Kafka 配置
+spring.kafka:
+  bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+  consumer:
+    group-id: chain-event-consumer
+    auto-offset-reset: earliest
+    enable-auto-commit: false
+  producer:
+    acks: all
+    retries: 3
+    properties:
+      enable.idempotence: true
+
+# WebRTC SFU 配置
+webrtc:
+  sfu-url: ${SFU_URL:wss://sfu.bank.com/ws}
+  ice-servers:
+    - urls: stun:stun.l.google.com:19302
+
+# 银保监报送
+csrc:
+  institution-code: ${CSRC_INSTITUTION_CODE:BANK0001}
+  institution-name: ${CSRC_INSTITUTION_NAME:XX 银行}
+  report-path: /opt/dual-record/csrc-report/
+
 # 日志
 logging:
   level:
