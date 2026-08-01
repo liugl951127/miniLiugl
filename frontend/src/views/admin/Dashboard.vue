@@ -208,6 +208,7 @@
  */
 import * as echarts from 'echarts'
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useRoleDashboard } from '@/composables/useRoleDashboard'
 import {
   Refresh, CircleCheck, CircleClose, TrendCharts, PieChart, CaretTop, CaretBottom,
   User, ChatDotRound, Cpu, Tools
@@ -222,6 +223,10 @@ const health = ref({
 const stats = ref({
   userCount: 0, sessionCount: 0, callCount: 0, toolCount: 0
 })
+
+// V3.7.4+ 角色 dashboard (不同角色不同 KPI)
+const { kpis: roleKpis, roleColor, roleLabel, roleIcon, currentRole } = useRoleDashboard()
+
 const recentAudits = ref([])
 
 // === 2. KPI 配置 (数据驱动, 模板 v-for 渲染) ===

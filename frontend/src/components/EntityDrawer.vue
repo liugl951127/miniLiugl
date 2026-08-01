@@ -113,6 +113,45 @@ const emit = defineEmits<{
 }>()
 
 const editing = ref(false)
+
+// V3.7.4+ 保存草稿 / 取消恢复
+const savedDraft = ref<any>(null)
+
+function getDraftKey() {
+  return 'entity-draft-' + (props.entity?.id || 'new')
+}
+
+function loadDraft() {
+  if (!props.entity) return
+  const saved = localStorage.getItem(getDraftKey())
+  if (saved) {
+    try {
+      savedDraft.value = JSON.parse(saved)
+      editForm.value = { ...editForm.value, ...savedDraft.value }
+      console.log('[EntityDrawer] 草稿已恢复:', getDraftKey())
+    } catch (e) {
+      console.warn('[EntityDrawer] 草稿数据损坏:', e)
+    }
+  }
+}
+
+function saveDraft() {
+  if (!props.entity) return
+  localStorage.setItem(getDraftKey(), JSON.stringify(editForm.value))
+}
+
+function clearDraft() {
+  if (!props.entity) return
+  localStorage.removeItem(getDraftKey())
+  savedDraft.value = null
+}
+
+watch(editForm, () => {
+  if (editing.value) saveDraft()
+}, { deep: true })
+
+watch(() => props.entity, () => loadDraft(), { immediate: true })
+
 const editForm = ref<any>({})
 
 const defaultEntityName = computed(() => props.entityName || '实体')
@@ -146,7 +185,11 @@ function startEdit() {
 }
 
 function cancelEdit() {
-  editing.value = false
+  if (savedDraft.value) {
+    editForm.value = { ...editForm.value, ...savedDraft.value }
+  } else {
+    editing.value = false
+  }
 }
 
 async function saveEdit() {

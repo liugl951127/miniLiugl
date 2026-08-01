@@ -31,6 +31,7 @@ export async function sendMessageStream(sessionId, body, opts = {}) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
       body: JSON.stringify(payload),
+      signal: opts.signal,  // V3.7.4+ 支持 AbortSignal (暂停/继续)
     })
 
     if (!resp.ok || !resp.body) {
@@ -44,6 +45,7 @@ export async function sendMessageStream(sessionId, body, opts = {}) {
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
+      if (opts.signal?.aborted) throw new DOMException('Aborted', 'AbortError')
       buffer += decoder.decode(value, { stream: true })
 
       const lines = buffer.split('\n')
