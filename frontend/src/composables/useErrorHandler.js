@@ -68,14 +68,14 @@ export function handleError(err, options = {}) {
     type = 'unauthorized'
     // 防止风暴: 5s 内只处理一次
     const now = Date.now()
-    if (now - last401At > 5000) {
+    if (now - last401At > 10000) {  // V3.7.8+ 10s 防风暴 (更长)
       last401At = now
       const userStore = useUserStore()
       userStore.logout()
       if (!silent) {
         ElNotification({
           title: '🔒 登录已过期',
-          message: '请重新登录后继续操作',
+          message: '您的会话已过期, 登录后自动返回当前页',
           type: 'warning',
           duration: 3000,
           position: 'top-right',

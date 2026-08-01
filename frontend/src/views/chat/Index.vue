@@ -1120,6 +1120,9 @@ function removeImage(i) {
 // V3.7.7+ 流式 abort 控制 (module-scope, 让 stopTypewriter 可访问)
 let streamAbortController: AbortController | null = null
 
+// V3.7.8+ 当前 AI 消息 (让 stopTypewriter 可访问)
+let currentAiMsg: any = null
+
 async function sendMessage() {
   if (speechCall.state.value !== 'idle') speechCall.setProcessing()
   if (!canSend.value) return
@@ -1151,6 +1154,7 @@ async function sendMessage() {
     sources: [],
   }
   messages.value.push(aiMsg)
+  currentAiMsg = aiMsg  // V3.7.8+ 让 stopTypewriter 可访问
   streaming.value = true
   streamId.value = 'stream-' + Date.now()
   streamAbortController = new AbortController()  // V3.7.7+ 流式中断

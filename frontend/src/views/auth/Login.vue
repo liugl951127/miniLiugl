@@ -29,6 +29,9 @@
         </div>
       </div>
       <div class="header-actions">
+        <el-tooltip :content="demoMode ? '关闭演示模式' : '开启演示模式 (无后端)'" placement="bottom">
+          <el-switch v-model="demoMode" @change="onDemoToggle" :active-icon="VideoPlay" :inactive-icon="VideoPause" inline-prompt size="default" style="--el-switch-off-color: #94a3b8; --el-switch-on-color: #a855f7" />
+        </el-tooltip>
         <el-button :icon="ChatLineRound" @click="goGuest" plain round size="small">
           {{ t('login.guest') }}
         </el-button>
