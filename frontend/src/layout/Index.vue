@@ -92,6 +92,7 @@
                 {{ userStore.profile?.nickname?.[0] || 'U' }}
               </el-avatar>
               <span class="user-name">{{ userStore.profile?.nickname || '未登录' }}</span>
+              <el-tooltip v-if="isDemoMode" content="演示模式 - 切换账号" placement="bottom"><el-dropdown trigger="click" @command="switchToUser" style="margin-left: 8px"><el-tag effect="dark" size="small" style="cursor: pointer; color: white; border: none">🎭 {{ currentDemoUser }} ▾</el-tag><template #dropdown><el-dropdown-menu><el-dropdown-item v-for="u in allUsers" :key="u.key" :command="u.key" :disabled="u.key === currentDemoUser">{{ u.nickname }} <el-tag size="small" effect="plain" style="margin-left: 4px">{{ u.roles[0] }}</el-tag></el-dropdown-item></el-dropdown-menu></template></el-dropdown></el-tooltip><el-button v-if="isDemoMode" text size="small" type="danger" @click="exitDemoMode" style="margin-left: 4px">退出演示</el-button>
               <el-tag v-if="userStore.isSuperAdmin" type="danger" size="small" effect="dark" style="margin-left:6px">
                 👑 SUPER
               </el-tag>
@@ -132,12 +133,21 @@ import {ref, computed, onMounted, onUnmounted} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'
+import { useDemoMode } from '@/composables/useDemoMode'
+import { useToast } from '@/composables/useToast'
 import { useNotificationStore } from '@/store/notification'
 import { systemApi } from '@/api/system'
 import LangSwitcher from '@/components/LangSwitcher.vue'
 
 const route = useRoute()
 const router = useRouter()
+const toast = useToast()
+// V3.7.1+ 演示模式 2.0
+const { isDemoMode, currentDemoUser, allUsers, switchUser, setDemoMode } = useDemoMode()
+
+function switchToUser(key) { if (!isDemoMode.value) { setDemoMode(true, key); toast.success('已进入演示模式 (' + key + ')'); } else { switchUser(key); toast.success('已切换到 ' + key); } setTimeout(() => location.reload(), 500) }
+function exitDemoMode() { setDemoMode(false); toast.info('已退出演示模式'); setTimeout(() => location.reload(), 500) }
+
 const userStore = useUserStore()
 const notifStore = useNotificationStore()
 const collapsed = ref(false)
