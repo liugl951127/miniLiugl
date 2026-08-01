@@ -1,6 +1,6 @@
 // e2e/login.spec.js
 // 登录页 E2E 测试
-const { test, expect } = require('@playwright/test')
+import { test, expect } from '@playwright/test'
 
 test.describe('登录页面', () => {
   test.beforeEach(async ({ page }) => {

@@ -1,6 +1,6 @@
 // e2e/chat.spec.js
 // 对话页面 E2E 测试
-const { test, expect } = require('@playwright/test')
+import { test, expect } from '@playwright/test'
 
 test.describe('对话页面', () => {
   test.beforeEach(async ({ page }) => {

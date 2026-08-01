@@ -145,7 +145,7 @@ import {
   User, ChatDotRound, Cpu, Tools
 } from '@element-plus/icons-vue'
 import { getMonitorHealth, getMonitorInfo } from '@/api/monitor'
-import { listAudits } from '@/api/admin'
+import { getRecentAudit } from '@/api/admin'
 
 // === 1. 状态 ===
 const loading = ref(false)

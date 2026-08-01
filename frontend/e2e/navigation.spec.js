@@ -1,6 +1,6 @@
 // e2e/navigation.spec.js
 // 导航与侧边栏 E2E 测试
-const { test, expect } = require('@playwright/test')
+import { test, expect } from '@playwright/test'
 
 test.describe('应用导航', () => {
   // 使用 localStorage mock 登录状态，跳过真实登录

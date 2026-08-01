@@ -22,7 +22,7 @@
  * @since V2.8.9
  */
 
-const CACHE_VERSION = 'v3.5.74'
+const CACHE_VERSION = 'v3.5.76'
 const CACHE_NAME = `minimax-${CACHE_VERSION}`
 const RUNTIME_CACHE = 'liugl-runtime'
 const API_CACHE = 'liugl-api'

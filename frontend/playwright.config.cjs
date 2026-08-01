@@ -24,7 +24,25 @@ module.exports = defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    // V3.5.76+: 跨浏览器 E2E (Safari / Firefox)
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    // 移动端: iPhone Safari + Pixel 5 Chrome
+    {
+      name: 'mobile-safari',
+      use: { ...devices['iPhone 13'] },
+    },
+    {
+      name: 'mobile-chrome',
+      use: { ...devices['Pixel 5'] },
+    },
   ],
   // 全局 teardown
-  globalTeardown: './e2e/global-teardown.js',
+  globalTeardown: './e2e/global-teardown.cjs',
 })
