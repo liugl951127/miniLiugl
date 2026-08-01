@@ -185,11 +185,10 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/store/user'
-import {
-  Fold, Setting, DataLine, TrendCharts, Connection, Monitor, Cpu, Trophy, Key,
+import {Fold, Setting, DataLine, TrendCharts, Connection, Monitor, Cpu, Trophy, Key,
   ChatDotRound, Bell, CircleCheck, CircleClose, Document, Warning, Share, Files,
-  Lock, Notebook, Promotion, Link, ChatLineRound, User, MagicStick, DataAnalysis, ChatDotSquare
-} from '@element-plus/icons-vue'
+  Lock, Notebook, Promotion, Link, ChatLineRound, User, MagicStick, DataAnalysis, ChatDotSquare,
+  Search} from '@element-plus/icons-vue'
 
 const { t } = useI18n()
 const route = useRoute()

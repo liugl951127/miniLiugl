@@ -94,6 +94,44 @@
       </el-button-group>
     </header>
 
+  <!-- V3.6.9+ 语音通话面板 -->
+  <transition name="call-fade">
+    <div v-if="speechCall.isCallActive.value" class="call-panel">
+      <div class="call-header">
+        <span class="call-status">
+          <span class="call-dot"></span>
+          通话中 {{ speechCall.callDurationFormatted.value }}
+        </span>
+        <el-space :size="6">
+          <el-button size="small" :type="speechCall.isMuted.value ? 'warning' : 'default'" @click="speechCall.toggleMute()">
+            {{ speechCall.isMuted.value ? '取消静音' : '静音' }}
+          </el-button>
+          <el-button size="small" type="danger" @click="speechCall.stop()">挂断</el-button>
+        </el-space>
+      </div>
+      <div class="call-body">
+        <div class="volume-bar">
+          <div
+            v-for="i in 20"
+            :key="i"
+            class="volume-bar-cell"
+            :class="{ active: i <= Math.ceil(speechCall.volume.value / 5) }"
+          ></div>
+        </div>
+        <div class="call-text">
+          <div v-if="speechCall.interimText.value" class="call-interim">
+            🎤 {{ speechCall.interimText.value }}
+          </div>
+          <div v-else-if="speechCall.finalText.value" class="call-final">
+            ✓ {{ speechCall.finalText.value }}
+          </div>
+          <div v-else class="call-hint">请说话...</div>
+        </div>
+      </div>
+    </div>
+  </transition>
+
+
     <!-- 2. section: 消息区 (流式 + Markdown + 工具调用) -->
     <section class="section chat-section">
       <h3 class="section-title">💬 对话</h3>
@@ -162,6 +200,16 @@
             size="small"
             class="font-size-segmented"
           />
+          <!-- V3.6.9+ 语音通话 -->
+          <el-tooltip content="语音通话 (V3.6.9+)" placement="top">
+            <el-button
+              :icon="Phone"
+              circle
+              :type="speechCall.isCallActive.value ? 'danger' : 'primary'"
+              size="small"
+              @click="toggleCall"
+            />
+          </el-tooltip>
           <!-- V3.6.0+ 语音播报开关 -->
           <el-checkbox v-model="autoSpeak">
             🔊 TTS
@@ -322,16 +370,20 @@ import { useUserStore } from '@/store/user'
 import { modelApi } from '@/api/model'
 import { listSessions, createSession, sendMessageStream, deleteSession as deleteSessionApi } from '@/api/session'
 import ChatMessage from '@/components/ChatMessage.vue'
+import { useSpeechCall } from '@/composables/useSpeechCall'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   EditPen, Search, ChatDotRound, MoreFilled, Promotion, Cpu, Clock, MagicStick,
   UploadFilled, Picture, Loading, VideoPause, VideoPlay, CircleCloseFilled, Document, Share,
-  Microphone, CircleClose, Headset, Download, ArrowDown, Bell, BellFilled,
+  Microphone, CircleClose, Headset, Download, ArrowDown, Bell, BellFilled, Phone,
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 
 const userStore = useUserStore()
 const route = useRoute()
+
+// V3.6.9+ 语音通话
+const speechCall = useSpeechCall()
 
 // 状态
 const sessions = ref([])
@@ -736,6 +788,15 @@ const agentModes = ref([
   { key: 'rag',    label: '📚 RAG 检索', icon: 'Document' },
   { key: 'flow',   label: '🔀 Flow 流程', icon: 'Share' },
 ])
+// V3.6.9+ 语音通话切换
+async function toggleCall() {
+  if (speechCall.isCallActive.value) {
+    speechCall.stop()
+  } else {
+    await speechCall.start()
+  }
+}
+
 function onDepthChange(depth) {
   const label = depthOptions.value.find(d => d.value === depth)?.label || depth
   ElMessage.info(`响应深度: ${label}`)

@@ -152,6 +152,24 @@
         <el-card v-if="selectedEntity" style="margin-top:16px">
           <template #header><span>{{ t('kg.neighborList') }} ({{ neighbors.length }})</span></template>
           <el-empty v-if="!neighbors.length" :description="t('kg.noRelations')" />
+    <!-- V3.6.9+ 右键菜单 -->
+    <ul
+      v-if="contextMenu.visible"
+      class="kg-context-menu"
+      :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
+      @click.stop
+    >
+      <template v-if="contextMenu.type === 'entity'">
+        <li @click="editEntity"><el-icon><Edit /></el-icon> 编辑名称</li>
+        <li @click="copyEntityName"><el-icon><DocumentCopy /></el-icon> 复制名称</li>
+        <li @click="jumpToWiki"><el-icon><Link /></el-icon> 跳转 Wiki</li>
+        <li class="danger" @click="deleteEntity(contextMenu.target)"><el-icon><Delete /></el-icon> 删除节点</li>
+      </template>
+      <template v-else-if="contextMenu.type === 'relation'">
+        <li class="danger" @click="deleteRelation(contextMenu.target.source, contextMenu.target.target)"><el-icon><Delete /></el-icon> 删除关系</li>
+      </template>
+      <li class="cancel" @click="closeContextMenu">取消</li>
+    </ul>
           <el-scrollbar v-else style="height:200px">
             <div v-for="(n, i) in neighbors" :key="i" class="neighbor">
           <el-button text size="small" type="danger" :icon="Delete" @click="deleteRelation(selectedEntity.id, n.entity?.id, n.via)" title="删除关系" />
@@ -564,29 +582,17 @@ function clearDragLine() {
 
 // V3.6.6+ 右击节点删除
 function onNodeContextMenu(params) {
-  if (params.event?.event?.preventDefault) params.event.event.preventDefault()
-  const id = parseInt(params.data.id)
-  if (isNaN(id)) return
-  ElMessageBox.confirm(
-    `删除实体 #${id} (${params.data.name}) ?`,
-    'V3.6.6+ 右击删除',
-    { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
-  ).then(() => deleteEntity(id)).catch(() => {})
+  // V3.6.9+ 用 openContextMenu
+  openContextMenu('entity', params.data, params.event.event.clientX, params.event.event.clientY)
+  params.event.event.preventDefault()
 }
 
 // V3.6.6+ 右击边删除
 function onEdgeContextMenu(params) {
-  if (params.event?.event?.preventDefault) params.event.event.preventDefault()
-  const { source, target, label } = params.data
-  const sourceId = parseInt(source)
-  const targetId = parseInt(target)
-  if (isNaN(sourceId) || isNaN(targetId)) return
-  const typeLabel = label?.formatter || label || 'related_to'
-  ElMessageBox.confirm(
-    `删除关系 ${source} -[${typeLabel}]-> ${target} ?`,
-    'V3.6.6+ 右击删除边',
-    { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
-  ).then(() => deleteRelation(sourceId, targetId, typeLabel)).catch(() => {})
+  // V3.6.9+ 用 openContextMenu
+  const [source, target] = params.data.id.split('->')
+  openContextMenu('relation', { source, target, ...params.data }, params.event.event.clientX, params.event.event.clientY)
+  params.event.event.preventDefault()
 }
 
 function onGraphDragging(params) {
@@ -815,6 +821,40 @@ onMounted(async () => {
   padding: 10px; border-bottom: 1px dashed #eee; display: flex; align-items: center;
 }
 .via { color: #999; margin-left: 8px; font-size: 12px; font-style: italic; }
+.kg-context-menu {
+  position: fixed;
+  z-index: 9999;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 4px 0;
+  min-width: 140px;
+  list-style: none;
+  margin: 0;
+}
+.kg-context-menu li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.15s;
+}
+.kg-context-menu li:hover {
+  background: #f1f5f9;
+}
+.kg-context-menu li.danger {
+  color: #ef4444;
+}
+.kg-context-menu li.danger:hover {
+  background: #fee2e2;
+}
+.kg-context-menu li.cancel {
+  border-top: 1px solid #e2e8f0;
+  color: #64748b;
+}
 .kg-chart {
   height: 480px;
   width: 100%;
