@@ -21,12 +21,17 @@
   <div class="page-kg kg-container">
     <!-- 1. page-header -->
     <!-- V3.6.1+ 版本标识 (el-watermark) -->
-  <!-- V3.6.3+ 启用 el-watermark (V3.6.1 标识 + 用户名 + 时间) -->
+  <!-- V3.6.8+ 增强 el-watermark (用户名 + 角色 + 时间) -->
   <el-watermark
     v-if="true"
-    :content="['Liugl-AI V3.6.3', userStore.profile?.username || 'Guest', new Date().toLocaleDateString('zh-CN')]"
-    :font="{ size: 14, color: 'rgba(99, 102, 241, 0.06)' }"
-    :gap="[120, 80]"
+    :content="[
+      'Liugl-AI V3.6.8',
+      userStore.profile?.username || 'Guest',
+      (userStore.profile?.roles || ['USER'])[0],
+      new Date().toLocaleString('zh-CN')
+    ]"
+    :font="{ size: 12, color: 'rgba(99, 102, 241, 0.05)' }"
+    :gap="[160, 100]"
     class="page-watermark"
   />
   <header class="page-header">
@@ -128,7 +133,20 @@
             </el-tag>
           </template>
 
-          <div ref="chartEl" class="kg-chart"></div>
+          <!-- V3.6.8+ Force 调整面板 -->
+<div class="kg-force-panel">
+  <el-space :size="8" wrap>
+    <span>斥力: {{ forceConfig.repulsion }}</span>
+    <el-slider v-model="forceConfig.repulsion" :min="20" :max="500" :step="10" style="width: 100px" />
+    <span>引力: {{ forceConfig.gravity.toFixed(2) }}</span>
+    <el-slider v-model="forceConfig.gravity" :min="0.01" :max="0.3" :step="0.01" style="width: 100px" />
+    <span>边长: {{ forceConfig.edgeLength }}</span>
+    <el-slider v-model="forceConfig.edgeLength" :min="30" :max="200" :step="10" style="width: 100px" />
+    <el-button size="small" type="primary" :icon="Refresh" @click="applyForceLayout">应用</el-button>
+    <el-button size="small" :icon="Position" @click="centerGraph">居中</el-button>
+  </el-space>
+</div>
+<div ref="chartEl" class="kg-chart"></div>
         </el-card>
 
         <el-card v-if="selectedEntity" style="margin-top:16px">

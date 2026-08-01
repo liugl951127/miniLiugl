@@ -19,15 +19,20 @@
   @description 入口/列表
 -->
 <template>
-  <div class="page-chat">
+  <div class="page-chat" :class="[`font-${fontSize}`]">
     <!-- 1. page-header: 标题 + 模型选择 + 操作 -->
     <!-- V3.6.1+ 版本标识 (el-watermark) -->
-  <!-- V3.6.3+ 启用 el-watermark (V3.6.1 标识 + 用户名 + 时间) -->
+  <!-- V3.6.8+ 增强 el-watermark (用户名 + 角色 + 时间) -->
   <el-watermark
     v-if="true"
-    :content="['Liugl-AI V3.6.3', userStore.profile?.username || 'Guest', new Date().toLocaleDateString('zh-CN')]"
-    :font="{ size: 14, color: 'rgba(99, 102, 241, 0.06)' }"
-    :gap="[120, 80]"
+    :content="[
+      'Liugl-AI V3.6.8',
+      userStore.profile?.username || 'Guest',
+      (userStore.profile?.roles || ['USER'])[0],
+      new Date().toLocaleString('zh-CN')
+    ]"
+    :font="{ size: 12, color: 'rgba(99, 102, 241, 0.05)' }"
+    :gap="[160, 100]"
     class="page-watermark"
   />
   <header class="page-header">
@@ -149,6 +154,13 @@
             size="small"
             class="depth-segmented"
             @change="onDepthChange"
+          />
+          <!-- V3.6.8+ 字体大小 -->
+          <el-segmented
+            v-model="fontSize"
+            :options="fontSizeOptions"
+            size="small"
+            class="font-size-segmented"
           />
           <!-- V3.6.0+ 语音播报开关 -->
           <el-checkbox v-model="autoSpeak">
