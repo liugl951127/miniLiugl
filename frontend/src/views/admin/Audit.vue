@@ -8,129 +8,92 @@
   @description 审计日志
 -->
 <template>
-  <div class="page-audit audit">
-    <el-card>
-      <template #header>
-        <div class="header">
-          <span>📋 审计日志 (合规要求保留 6 个月+)</span>
-          <el-button @click="exportData" type="primary" size="small">📥 导出</el-button>
-        </div>
-      </template>
+  <div class="page-audit">
+    <!-- 1. page-header -->
+    <header class="page-header">
+      <div>
+        <h2 class="page-title">📋 审计日志</h2>
+        <p class="page-subtitle">合规要求保留 6 个月+ · 当前 {{ total }} 条记录</p>
+      </div>
+      <el-button-group>
+        <el-button :icon="Refresh" @click="loadList" :loading="loading">刷新</el-button>
+        <el-button :icon="Download" @click="exportData" type="primary">导出 CSV</el-button>
+      </el-button-group>
+    </header>
 
-      <!-- 过滤 -->
-      <el-form :inline="true" :model="filters" style="margin-bottom: 16px">
-        <el-form-item label="用户">
-          <el-input v-model="filters.username" placeholder="用户名" clearable style="width: 140px" />
-        </el-form-item>
-        <el-form-item label="操作">
-          <el-select v-model="filters.action" placeholder="全部" clearable style="width: 160px">
-            <el-option label="登录" value="LOGIN" />
-            <el-option label="登出" value="LOGOUT" />
-            <el-option label="数据导出" value="EXPORT_DATA" />
-            <el-option label="AI 调用" value="AI_GENERATE" />
-            <el-option label="文件上传" value="FILE_UPLOAD" />
-            <el-option label="配置变更" value="CONFIG_CHANGE" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="结果">
-          <el-select v-model="filters.result" placeholder="全部" clearable style="width: 120px">
-            <el-option label="成功" value="SUCCESS" />
-            <el-option label="失败" value="FAILURE" />
-            <el-option label="拒绝" value="DENIED" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="资源类型">
-          <el-select v-model="filters.resourceType" placeholder="全部" clearable style="width: 140px">
-            <el-option label="用户" value="user" />
-            <el-option label="对话" value="chat" />
-            <el-option label="AI 模型" value="model" />
-            <el-option label="Agent" value="agent" />
-            <el-option label="文件" value="file" />
-            <el-option label="配置" value="config" />
-            <el-option label="API Key" value="api_key" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="时间">
-          <el-date-picker
-            v-model="filters.dateRange"
-            type="datetimerange"
-            range-separator="-"
-            start-placeholder="开始"
-            end-placeholder="结束"
-            style="width: 380px"
-          />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="loadLogs">🔍 查询</el-button>
-          <el-button @click="resetFilters">重置</el-button>
-        </el-form-item>
-      </el-form>
+    <!-- 2. section: 过滤器 (el-form inline) -->
+    <section class="section">
+      <el-card shadow="hover" class="filter-card">
+        <el-form :inline="true" :model="filters" size="default">
+          <el-form-item label="用户">
+            <el-input v-model="filters.username" placeholder="用户名" clearable style="width: 140px" />
+          </el-form-item>
+          <el-form-item label="操作">
+            <el-select v-model="filters.action" placeholder="全部" clearable style="width: 160px">
+              <el-option v-for="a in actionOptions" :key="a.value" :label="a.label" :value="a.value" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="日期">
+            <el-date-picker
+              v-model="filters.dateRange"
+              type="daterange"
+              range-separator="至"
+              start-placeholder="开始"
+              end-placeholder="结束"
+              value-format="YYYY-MM-DD"
+            />
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" :icon="Search" @click="loadList">查询</el-button>
+            <el-button :icon="RefreshLeft" @click="resetFilters">重置</el-button>
+          </el-form-item>
+        </el-form>
+      </el-card>
+    </section>
 
-      <!-- 表格 -->
-      <el-table :data="logs" stripe v-loading="loading">
-        <el-table-column prop="createdAt" label="时间" width="170" />
-        <el-table-column prop="username" label="用户" width="120" />
-        <el-table-column prop="userIp" label="IP" width="140" />
-        <el-table-column prop="action" label="操作" width="120">
-          <template #default="scope">
-            <el-tag size="small">{{ scope.row.action }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="resourceType" label="资源" width="100" />
-        <el-table-column prop="path" label="路径" />
-        <el-table-column prop="result" label="结果" width="80">
-          <template #default="scope">
-            <el-tag :type="resultType(scope.row.result)" size="small">{{ scope.row.result }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="durationMs" label="耗时" width="80">
-          <template #default="scope">{{ scope.row.durationMs }}ms</template>
-        </el-table-column>
-        <el-table-column label="操作" width="80">
-          <template #default="scope">
-            <el-button size="small" link @click="showDetail(scope.row)">详情</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+    <!-- 3. section: 审计表格 -->
+    <section class="section">
+      <el-card shadow="hover">
+        <el-table :data="audits" stripe v-loading="loading">
+          <el-table-column prop="time" label="时间" width="180">
+            <template #default="{ row }">{{ formatTime(row.createdAt || row.time) }}</template>
+          </el-table-column>
+          <el-table-column prop="user" label="用户" width="120">
+            <template #default="{ row }">
+              <el-tag size="small">{{ row.username || row.user }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="action" label="操作" width="120">
+            <template #default="{ row }">
+              <el-tag :type="actionType(row.action)" size="small">{{ actionLabel(row.action) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="resource" label="资源" min-width="200" show-overflow-tooltip />
+          <el-table-column prop="ip" label="IP" width="140" />
+          <el-table-column prop="result" label="结果" width="100">
+            <template #default="{ row }">
+              <el-tag :type="row.result === 'SUCCESS' ? 'success' : 'danger'" size="small">
+                {{ row.result === 'SUCCESS' ? '成功' : '失败' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+        </el-table>
 
-      <el-pagination
-        v-model:current-page="page"
-        v-model:page-size="pageSize"
-        :total="total"
-        :page-sizes="[20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        @size-change="loadLogs"
-        @current-change="loadLogs"
-        style="margin-top: 16px; text-align: right"
-      />
-    </el-card>
-
-    <!-- 详情对话框 -->
-    <el-dialog v-model="detailVisible" title="审计日志详情" width="700px">
-      <el-descriptions :column="1" border>
-        <el-descriptions-item label="时间">{{ detail.createdAt }}</el-descriptions-item>
-        <el-descriptions-item label="用户">{{ detail.username }} (ID: {{ detail.userId }})</el-descriptions-item>
-        <el-descriptions-item label="IP">{{ detail.userIp }}</el-descriptions-item>
-        <el-descriptions-item label="UA">{{ detail.userAgent }}</el-descriptions-item>
-        <el-descriptions-item label="操作">{{ detail.action }}</el-descriptions-item>
-        <el-descriptions-item label="资源">{{ detail.resourceType }} / {{ detail.resourceId }}</el-descriptions-item>
-        <el-descriptions-item label="方法">{{ detail.method }} {{ detail.path }}</el-descriptions-item>
-        <el-descriptions-item label="请求体">
-          <pre style="background: #f5f5f5; padding: 8px; max-height: 200px; overflow: auto">{{ detail.requestBody }}</pre>
-        </el-descriptions-item>
-        <el-descriptions-item label="结果">
-          <el-tag :type="resultType(detail.result)">{{ detail.result }}</el-tag>
-          <span v-if="detail.errorMsg" style="color: red; margin-left: 8px">{{ detail.errorMsg }}</span>
-        </el-descriptions-item>
-        <el-descriptions-item label="耗时">{{ detail.durationMs }}ms</el-descriptions-item>
-        <el-descriptions-item label="链路 ID">
-          <code>{{ detail.traceId }}</code>
-        </el-descriptions-item>
-      </el-descriptions>
-    </el-dialog>
+        <!-- 4. section: 分页 -->
+        <el-pagination
+          v-model:current-page="page"
+          v-model:page-size="size"
+          :total="total"
+          :page-sizes="[20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          @current-change="loadList"
+          @size-change="loadList"
+          class="pagination"
+        />
+      </el-card>
+    </section>
   </div>
 </template>
-
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'

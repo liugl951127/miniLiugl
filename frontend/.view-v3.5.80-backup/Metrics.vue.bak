@@ -8,108 +8,90 @@
   @description 指标
 -->
 <template>
-  <div class="page-metrics">
-    <!-- 1. page-header -->
-    <header class="page-header">
-      <div>
-        <h2 class="page-title">📊 实时 Metrics 监控</h2>
-        <p class="page-subtitle">{{ service || '选择服务' }} · {{ autoRefresh ? `10s 自动刷新` : '手动刷新' }}</p>
-      </div>
-      <el-button-group>
-        <el-select v-model="service" placeholder="选择服务" style="width:240px" @change="loadAll" size="default">
+  <div class="page-metrics metrics-page">
+    <div class="header">
+      <h2>📊 实时 Metrics 监控 (V5.10)</h2>
+      <div class="header-right">
+        <el-select v-model="service" placeholder="选择服务" style="width:240px" @change="loadAll">
           <el-option label="minimax-gateway" value="gateway" />
           <el-option v-for="s in services" :key="s" :label="s" :value="s" />
         </el-select>
-        <el-switch v-model="autoRefresh" active-text="自动" inactive-text="手动" @change="toggleAuto" />
-        <el-button :icon="Refresh" @click="loadAll" :loading="loading">刷新</el-button>
-      </el-button-group>
-    </header>
+        <el-button @click="loadAll" :loading="loading">刷新</el-button>
+        <el-switch v-model="autoRefresh" active-text="10s 自动刷新" @change="toggleAuto" />
+      </div>
+    </div>
 
-    <!-- 2. section: 4 概览卡片 (KPI) -->
-    <section class="section">
-      <h3 class="section-title">概览</h3>
-      <el-row :gutter="16">
-        <el-col v-for="kpi in kpis" :key="kpi.key" :xs="12" :sm="6">
-          <el-card shadow="hover" class="kpi-card">
-            <el-statistic :value="kpi.value" :title="kpi.label" :value-style="{ color: kpi.color }" />
-          </el-card>
-        </el-col>
-      </el-row>
-    </section>
+    <!-- 概览卡片 -->
+    <el-row :gutter="16" class="cards">
+      <el-col :span="6">
+        <el-card><div class="num">{{ summary.totalReq || 0 }}</div><div class="lbl">总请求数</div></el-card>
+      </el-col>
+      <el-col :span="6">
+        <el-card><div class="num err">{{ summary.error4xx || 0 }}</div><div class="lbl">4xx 错误</div></el-card>
+      </el-col>
+      <el-col :span="6">
+        <el-card><div class="num err">{{ summary.error5xx || 0 }}</div><div class="lbl">5xx 错误</div></el-card>
+      </el-col>
+      <el-col :span="6">
+        <el-card><div class="num">{{ summary.avgMs || 0 }} ms</div><div class="lbl">平均延迟</div></el-card>
+      </el-col>
+    </el-row>
 
-    <!-- 3. section: 趋势图 -->
-    <section class="section">
-      <el-row :gutter="16">
-        <el-col :xs="24" :md="12">
-          <el-card shadow="hover">
-            <template #header>
-              <div class="card-header">
-                <el-icon><TrendCharts /></el-icon>
-                <span>请求趋势 (近 1h)</span>
-              </div>
-            </template>
-            <v-chart :option="trendOption" autoresize style="height: 280px" />
-          </el-card>
-        </el-col>
-        <el-col :xs="24" :md="12">
-          <el-card shadow="hover">
-            <template #header>
-              <div class="card-header">
-                <el-icon><PieChart /></el-icon>
-                <span>响应分布</span>
-              </div>
-            </template>
-            <v-chart :option="pieOption" autoresize style="height: 280px" />
-          </el-card>
-        </el-col>
-      </el-row>
-    </section>
+    <!-- Top 10 URI -->
+    <el-row :gutter="16">
+      <el-col :span="12">
+        <el-card>
+          <template #header><span>🔥 Top 10 高频 URI</span></template>
+          <el-table :data="topUris" stripe size="small" empty-text="暂无数据">
+            <el-table-column type="index" width="50" />
+            <el-table-column prop="uri" label="URI" min-width="180" />
+            <el-table-column prop="count" label="请求数" width="100" />
+            <el-table-column label="占比" width="100">
+              <template #default="s">
+                <el-progress :percentage="pct(s.row.count)" :stroke-width="8" />
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </el-col>
+      <el-col :span="12">
+        <el-card>
+          <template #header><span>🐢 Top 10 慢 URI (平均 ms)</span></template>
+          <el-table :data="slowUris" stripe size="small" empty-text="暂无数据">
+            <el-table-column type="index" width="50" />
+            <el-table-column prop="uri" label="URI" min-width="180" />
+            <el-table-column prop="avgMs" label="平均 (ms)" width="100" />
+            <el-table-column prop="maxMs" label="最大 (ms)" width="100" />
+          </el-table>
+        </el-card>
+      </el-col>
+    </el-row>
 
-    <!-- 4. section: 慢查询 / Top 端点 -->
-    <section class="section">
-      <el-row :gutter="16">
-        <el-col :xs="24" :md="12">
-          <el-card shadow="hover">
-            <template #header>
-              <div class="card-header">
-                <el-icon><Loading /></el-icon>
-                <span>🐢 慢查询 Top 10</span>
-              </div>
-            </template>
-            <el-table :data="slowQueries" stripe size="small">
-              <el-table-column prop="endpoint" label="端点" min-width="200" />
-              <el-table-column prop="avgMs" label="平均 ms" width="100">
-                <template #default="{ row }">
-                  <el-tag :type="row.avgMs > 1000 ? 'danger' : 'warning'" size="small">{{ row.avgMs }}</el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column prop="p99" label="p99" width="80" />
-            </el-table>
-          </el-card>
-        </el-col>
-        <el-col :xs="24" :md="12">
-          <el-card shadow="hover">
-            <template #header>
-              <div class="card-header">
-                <el-icon><DataLine /></el-icon>
-                <span>🔥 Top 端点</span>
-              </div>
-            </template>
-            <el-table :data="topEndpoints" stripe size="small">
-              <el-table-column prop="endpoint" label="端点" min-width="200" />
-              <el-table-column prop="count" label="请求数" width="100" />
-              <el-table-column prop="errorRate" label="错误率" width="100">
-                <template #default="{ row }">
-                  <el-progress :percentage="row.errorRate" :stroke-width="8" :color="row.errorRate > 5 ? 'var(--liugl-danger)' : 'var(--liugl-success)'" />
-                </template>
-              </el-table-column>
-            </el-table>
-          </el-card>
-        </el-col>
-      </el-row>
-    </section>
+    <!-- 状态码分布 -->
+    <el-row :gutter="16" style="margin-top:16px">
+      <el-col :span="12">
+        <el-card>
+          <template #header><span>📈 状态码分布</span></template>
+          <v-chart :option="statusPieOption" autoresize style="height:280px" />
+        </el-card>
+      </el-col>
+      <el-col :span="12">
+        <el-card>
+          <template #header><span>⏱️ URI 耗时 Top 5 (折线)</span></template>
+          <v-chart :option="durationOption" autoresize style="height:280px" />
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 原始 Prometheus 文本 (折叠) -->
+    <el-collapse style="margin-top:16px">
+      <el-collapse-item title="📋 原始 Prometheus 输出 (调试用)" name="raw">
+        <pre class="raw">{{ rawText }}</pre>
+      </el-collapse-item>
+    </el-collapse>
   </div>
 </template>
+
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, onUnmounted, markRaw } from 'vue'

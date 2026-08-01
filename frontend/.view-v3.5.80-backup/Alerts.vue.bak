@@ -8,148 +8,190 @@
   @description 告警列表
 -->
 <template>
-  <div class="page-alerts">
-    <!-- 1. page-header -->
-    <header class="page-header">
-      <div>
-        <h2 class="page-title">🔔 告警中心</h2>
-        <p class="page-subtitle">{{ currentTabLabel }} · {{ totalAlerts }} 个告警 · {{ firingCount }} 个触发中</p>
-      </div>
-      <el-button :icon="Refresh" @click="loadAll" :loading="loading">刷新</el-button>
-    </header>
+  <div class="page-alerts alerts">
+    <el-card>
+      <template #header>
+        <div class="header">
+          <span>🔔 告警中心</span>
+          <el-button-group>
+            <el-button :type="tab === 'firing' ? 'primary' : ''" @click="tab = 'firing'">触发中</el-button>
+            <el-button :type="tab === 'rules' ? 'primary' : ''" @click="tab = 'rules'">告警规则</el-button>
+            <el-button :type="tab === 'channels' ? 'primary' : ''" @click="tab = 'channels'">通知渠道</el-button>
+            <el-button :type="tab === 'history' ? 'primary' : ''" @click="tab = 'history'">历史记录</el-button>
+          </el-button-group>
+        </div>
+      </template>
 
-    <!-- 2. section: 4 tabs (firing/rules/channels/history) -->
-    <section class="section">
-      <el-tabs v-model="tab" @tab-change="onTabChange" class="alert-tabs">
-        <el-tab-pane label="触发中" name="firing">
-          <span class="tab-label">触发中 <el-badge :value="firingCount" :max="99" type="danger" /></span>
-        </el-tab-pane>
-        <el-tab-pane label="告警规则" name="rules" />
-        <el-tab-pane label="通知渠道" name="channels" />
-        <el-tab-pane label="历史记录" name="history" />
-      </el-tabs>
-    </section>
-
-    <!-- 3. section: 触发中告警 (firing) -->
-    <section v-if="tab === 'firing'" class="section">
-      <el-empty v-if="!firing.length" description="暂无触发中告警" />
-      <el-card v-for="alert in firing" :key="alert.id" shadow="hover" class="alert-card-item">
-        <el-alert
-          :type="severityType(alert.severity)"
-          :title="`${alert.name} - ${alert.message}`"
-          :closable="false"
-          show-icon
-        >
-          <template #default>
-            <div class="alert-content">
-              <p class="alert-meta">
-                <el-tag size="small">{{ alert.service }}</el-tag>
-                <el-tag size="small" type="info">阈值: {{ alert.threshold }}</el-tag>
-                <el-tag size="small" type="warning">当前: {{ alert.currentValue }}</el-tag>
-                <span class="time">{{ formatTime(alert.firedAt) }}</span>
-              </p>
-              <div class="alert-actions">
-                <el-button size="small" type="primary" @click="acknowledgeAlert(alert)">确认</el-button>
-                <el-button size="small" @click="silenceAlert(alert)">静默 1h</el-button>
-              </div>
-            </div>
-          </template>
-        </el-alert>
-      </el-card>
-    </section>
-
-    <!-- 4. section: 告警规则 (rules) -->
-    <section v-else-if="tab === 'rules'" class="section">
-      <el-card shadow="hover">
-        <template #header>
-          <div class="card-header">
-            <el-icon><SetUp /></el-icon>
-            <span>告警规则 ({{ rules.length }})</span>
-            <el-button :icon="Plus" type="primary" size="small" @click="openRuleDialog" style="margin-left: auto">新增</el-button>
+      <!-- 触发中告警 -->
+      <div v-if="tab === 'firing'">
+        <div v-for="alert in firing" :key="alert.id" class="alert-card">
+          <el-alert
+            :type="severityType(alert.severity)"
+            :title="alert.name + ' - ' + alert.message"
+            show-icon
+            :closable="false"
+          />
+          <div class="alert-meta">
+            <span style="color: #999; font-size: 12px">
+              触发时间: {{ alert.firedAt }} | 持续: {{ alert.duration }}
+            </span>
+            <el-button size="small" @click="acknowledge(alert)">确认</el-button>
           </div>
-        </template>
+        </div>
+        <el-empty v-if="!firing.length" description="没有触发中的告警" />
+      </div>
+
+      <!-- 告警规则 -->
+      <div v-else-if="tab === 'rules'">
+        <el-button type="primary" @click="newRule" style="margin-bottom: 12px">+ 新建规则</el-button>
         <el-table :data="rules" stripe>
-          <el-table-column prop="name" label="规则名" min-width="160" />
-          <el-table-column prop="service" label="服务" width="160" />
-          <el-table-column prop="metric" label="指标" width="120" />
+          <el-table-column prop="name" label="名称" />
+          <el-table-column prop="metric" label="指标" width="160" />
+          <el-table-column prop="operator" label="条件" width="100" />
           <el-table-column prop="threshold" label="阈值" width="100" />
-          <el-table-column prop="severity" label="级别" width="100">
-            <template #default="{ row }">
-              <el-tag :type="severityType(row.severity)" size="small">{{ row.severity }}</el-tag>
+          <el-table-column prop="severity" label="严重度" width="100">
+            <template #default="scope">
+              <el-tag :type="severityType(scope.row.severity)">{{ scope.row.severity }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="enabled" label="启用" width="80">
-            <template #default="{ row }">
-              <el-switch v-model="row.enabled" @change="toggleRule(row)" />
+            <template #default="scope">
+              <el-switch v-model="scope.row.enabled" @change="toggleRule(scope.row)" />
             </template>
           </el-table-column>
           <el-table-column label="操作" width="160">
-            <template #default="{ row }">
-              <el-button size="small" @click="editRule(row)">编辑</el-button>
-              <el-button size="small" type="danger" @click="deleteRule(row)">删除</el-button>
+            <template #default="scope">
+              <el-button size="small" @click="editRule(scope.row)">编辑</el-button>
+              <el-button size="small" type="danger" @click="deleteRule(scope.row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
-      </el-card>
-    </section>
+      </div>
 
-    <!-- 5. section: 通知渠道 (channels) -->
-    <section v-else-if="tab === 'channels'" class="section">
-      <el-card shadow="hover">
-        <template #header>
-          <div class="card-header">
-            <el-icon><Promotion /></el-icon>
-            <span>通知渠道 ({{ channels.length }})</span>
-            <el-button :icon="Plus" type="primary" size="small" @click="openChannelDialog" style="margin-left: auto">新增</el-button>
-          </div>
-        </template>
+      <!-- 通知渠道 -->
+      <div v-else-if="tab === 'channels'">
+        <el-button type="primary" @click="openChannelDialog()" style="margin-bottom: 12px">+ 新建渠道</el-button>
         <el-table :data="channels" stripe>
-          <el-table-column prop="name" label="渠道名" min-width="140" />
+          <el-table-column prop="name" label="名称" />
           <el-table-column prop="type" label="类型" width="120">
-            <template #default="{ row }">
-              <el-tag size="small">{{ channelTypeLabel(row.type) }}</el-tag>
+            <template #default="scope">
+              <el-tag>{{ channelTypeLabel(scope.row.type) }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="enabled" label="启用" width="80">
-            <template #default="{ row }">
-              <el-switch v-model="row.enabled" @change="toggleChannel(row)" />
-            </template>
-          </el-table-column>
-          <el-table-column prop="lastTestAt" label="最近测试" width="180">
-            <template #default="{ row }">{{ formatTime(row.lastTestAt) }}</template>
-          </el-table-column>
-          <el-table-column label="操作" width="180">
-            <template #default="{ row }">
-              <el-button size="small" @click="testChannel(row)">测试</el-button>
-              <el-button size="small" type="danger" @click="deleteChannel(row)">删除</el-button>
+          <el-table-column prop="target" label="目标" show-overflow-tooltip />
+          <el-table-column label="操作" width="220">
+            <template #default="scope">
+              <el-button size="small" @click="testChannel(scope.row)" :loading="testingId === scope.row.id">测试</el-button>
+              <el-button size="small" @click="openChannelDialog(scope.row)">编辑</el-button>
+              <el-button size="small" type="danger" @click="deleteChannel(scope.row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
-      </el-card>
-    </section>
+      </div>
 
-    <!-- 6. section: 历史记录 (history) -->
-    <section v-else class="section">
-      <el-card shadow="hover">
+      <!-- 历史 -->
+      <div v-else-if="tab === 'history'">
         <el-table :data="history" stripe>
-          <el-table-column prop="time" label="时间" width="180">
-            <template #default="{ row }">{{ formatTime(row.firedAt) }}</template>
-          </el-table-column>
-          <el-table-column prop="name" label="规则" min-width="160" />
-          <el-table-column prop="severity" label="级别" width="100">
-            <template #default="{ row }">
-              <el-tag :type="severityType(row.severity)" size="small">{{ row.severity }}</el-tag>
+          <el-table-column prop="firedAt" label="时间" width="180" />
+          <el-table-column prop="name" label="告警" />
+          <el-table-column prop="severity" label="严重度" width="100">
+            <template #default="scope">
+              <el-tag :type="severityType(scope.row.severity)">{{ scope.row.severity }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="message" label="内容" min-width="200" />
-          <el-table-column prop="resolvedAt" label="恢复时间" width="180">
-            <template #default="{ row }">{{ formatTime(row.resolvedAt) }}</template>
-          </el-table-column>
+          <el-table-column prop="status" label="状态" width="100" />
+          <el-table-column prop="duration" label="持续" width="100" />
         </el-table>
-      </el-card>
-    </section>
+      </div>
+    </el-card>
+
+    <!-- 新建/编辑规则对话框 -->
+    <el-dialog v-model="ruleDialogVisible" :title="editingRule.id ? '编辑规则' : '新建规则'" width="600px">
+      <el-form :model="editingRule" label-width="100px">
+        <el-form-item label="名称">
+          <el-input v-model="editingRule.name" />
+        </el-form-item>
+        <el-form-item label="指标">
+          <el-select v-model="editingRule.metric">
+            <el-option label="CPU 使用率" value="cpu_usage" />
+            <el-option label="内存使用率" value="memory_usage" />
+            <el-option label="磁盘使用率" value="disk_usage" />
+            <el-option label="API 错误率" value="api_error_rate" />
+            <el-option label="响应时间" value="response_time" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="条件">
+          <el-select v-model="editingRule.operator">
+            <el-option label=">" value=">" />
+            <el-option label=">=" value=">=" />
+            <el-option label="<" value="<" />
+            <el-option label="<=" value="<=" />
+            <el-option label="==" value="==" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="阈值">
+          <el-input-number v-model="editingRule.threshold" />
+        </el-form-item>
+        <el-form-item label="严重度">
+          <el-select v-model="editingRule.severity">
+            <el-option label="严重" value="critical" />
+            <el-option label="警告" value="warning" />
+            <el-option label="信息" value="info" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="ruleDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveRule">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 新建/编辑渠道对话框 (Day 26) -->
+    <el-dialog v-model="channelDialogVisible" :title="editingChannel.id ? '编辑渠道' : '新建渠道'" width="500px">
+      <el-form :model="editingChannel" label-width="90px">
+        <el-form-item label="名称" required>
+          <el-input v-model="editingChannel.name" placeholder="如: 运维钉钉群" />
+        </el-form-item>
+        <el-form-item label="类型" required>
+          <el-select v-model="editingChannel.type" style="width: 100%">
+            <el-option label="钉钉群机器人" value="dingtalk" />
+            <el-option label="邮件" value="email" />
+            <el-option label="飞书 Webhook" value="feishu" />
+            <el-option label="企业微信" value="wechat" />
+            <el-option label="自定义 Webhook" value="webhook" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="目标地址" required>
+          <el-input
+            v-model="editingChannel.target"
+            :placeholder="channelTargetPlaceholder"
+            type="textarea"
+            :rows="2"
+          />
+        </el-form-item>
+        <el-form-item v-if="editingChannel.type === 'email'" label="收件人">
+          <el-input v-model="editingChannel.config" placeholder="{&quot;email&quot;:&quot;ops@example.com&quot;}" />
+        </el-form-item>
+        <el-form-item label="通知模板">
+          <el-input
+            v-model="editingChannel.template"
+            type="textarea"
+            :rows="3"
+            placeholder="支持变量替换，不填则用默认模板。&#10;可用变量: ${ruleName} ${severity} ${metricName} ${metricValue} ${threshold} ${message} ${firedAt}&#10;示例: 【${severity}】告警: ${ruleName} 当前值 ${metricValue} 超过阈值 ${threshold}"
+          />
+          <div style="color: #999; font-size: 12px; margin-top: 4px">
+            变量: ${ruleName} ${severity} ${metricName} ${metricValue} ${threshold} ${message} ${firedAt}
+          </div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="channelDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveChannel" :loading="savingChannel">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
+
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, onUnmounted } from 'vue'

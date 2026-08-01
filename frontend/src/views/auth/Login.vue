@@ -12,22 +12,22 @@
         <img src="/icons/icon-192.svg" alt="Liugl-AI" class="brand-logo" />
         <div>
           <h1 class="brand-title gradient-text">Liugl-AI Platform</h1>
-          <p class="brand-tagline">企业级 AI · 智能协作 · 自研大模型</p>
+          <p class="brand-tagline">{{ t("login.subtitle") }}</p>
         </div>
       </div>
-      <el-button :icon="ChatLineRound" @click="router.push('/chat')" plain>访客试用</el-button>
+      <el-button :icon="ChatLineRound" @click="router.push('/chat')" plain>{{ t("login.guest") }}</el-button>
     </header>
 
     <!-- 2. section: 4 标签页 (login/register/wechat/quick) -->
     <section class="section">
       <el-tabs v-model="mode" class="login-tabs" stretch>
-        <el-tab-pane label="账号密码" name="login">
+        <el-tab-pane :label="t('login.tab.account')" name="login">
           <el-icon><Lock /></el-icon>
         </el-tab-pane>
-        <el-tab-pane label="注册账号" name="register">
+        <el-tab-pane :label="t('login.tab.register')" name="register">
           <el-icon><User /></el-icon>
         </el-tab-pane>
-        <el-tab-pane label="微信扫码" name="wechat">
+        <el-tab-pane :label="t('login.tab.wechat')" name="wechat">
           <el-icon><ChatDotRound /></el-icon>
         </el-tab-pane>
       </el-tabs>
@@ -158,8 +158,10 @@ import {
   User, Lock, Message, ChatDotRound, ChatLineRound, Cpu, DataLine, Connection, TrendCharts
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'
+import { useI18n } from 'vue-i18n'
 import WechatScanLogin from '@/components/WechatScanLogin.vue'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()

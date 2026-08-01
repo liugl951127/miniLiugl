@@ -533,4 +533,73 @@ export default {
       start: 'Launch',
     },
 
+  // ========== V3.5.81 P0 view i18n (English) ==========
+  login: {
+    title: 'Sign In',
+    subtitle: 'Enterprise AI · Smart Collaboration · Self-developed LLM',
+    guest: 'Guest Trial',
+    tab: { account: 'Account', register: 'Register', wechat: 'WeChat' },
+    label: { username: 'Username', password: 'Password', nickname: 'Nickname', email: 'Email' },
+    placeholder: { username: 'Enter username', password: 'Enter password', nickname: 'Enter nickname', email: 'Enter email' },
+    remember: 'Remember me',
+    forgot: 'Forgot password?',
+    submit: 'Sign In',
+    register: 'Register',
+    demos: { title: 'Demo Accounts (Dev Mode)' },
+    feature: {
+      microservices: '17 Microservices · 145+ Unit Tests',
+      ai: 'Self-developed AI · 0 External LLM',
+      stream: 'Real-time Stream · SSE / WebSocket',
+      otel: 'OpenTelemetry · Full Tracing'
+    }
+  },
+  h5login: {
+    title: 'Sign In',
+    pc: 'PC Login',
+    platforms: 'Choose Login Method',
+    wechat: { scan: 'WeChat Scan' },
+    mp: { name: 'WeChat MP', desc: 'Follow then auth' },
+    qq: { name: 'QQ', desc: 'QQ one-click login' },
+    alipay: { name: 'Alipay', desc: 'Alipay scan' },
+    app: 'Scan to download mobile app',
+    platform: { detect: 'Auto-detected' }
+  },
+  chat: {
+    title: 'AI Chat',
+    placeholder: 'Type a message... (Enter to send / Shift+Enter for newline)',
+    start: 'Start chatting with AI',
+    empty: { history: 'No history' },
+    tools: 'Tool Calls',
+    tool: { name: 'Tool', status: 'Status', duration: 'Duration', result: 'Result' },
+    feature: { stream: 'Stream', tools: 'Tools', rag: 'RAG' },
+    regenerate: 'Regenerate',
+    send: 'Send',
+    stop: 'Stop'
+  },
+  aichat: {
+    title: 'AI Assistant',
+    subtitle: 'Self-developed AI · 0 External Deps · 13 Intents',
+    new: 'New Chat',
+    sessions: 'Sessions',
+    intent: 'Intent',
+    waiting: 'Waiting',
+    placeholder: 'Type a message... (Ctrl+Enter to send)',
+    start: 'Start chatting',
+    empty: 'No sessions',
+    typing: 'AI thinking...',
+    send: 'Send',
+    clear: 'Clear'
+  },
+  monitor: {
+    title: 'System Monitor',
+    subtitle: 'Realtime Metrics + JVM + DB + Disk + Alerts',
+    health: 'Service Health',
+    metrics: 'Realtime Metrics',
+    jvm: 'JVM Memory',
+    disk: 'Disk + DB',
+    alerts: 'Active Alerts',
+    alert: { name: 'Alert', severity: 'Severity', time: 'Time', content: 'Content', ack: 'Ack' },
+    loading: 'Click refresh to load',
+    refresh: 'Refresh'
+  },
 }

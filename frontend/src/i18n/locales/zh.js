@@ -533,4 +533,73 @@ export default {
       start: '启动',
     },
 
+  // ========== V3.5.81 P0 view i18n (中文) ==========
+  login: {
+    title: '登录',
+    subtitle: '企业级 AI · 智能协作 · 自研大模型',
+    guest: '访客试用',
+    tab: { account: '账号密码', register: '注册账号', wechat: '微信扫码' },
+    label: { username: '用户名', password: '密码', nickname: '昵称', email: '邮箱' },
+    placeholder: { username: '请输入用户名', password: '请输入密码', nickname: '请输入昵称', email: '请输入邮箱' },
+    remember: '记住用户名',
+    forgot: '忘记密码？',
+    submit: '登录',
+    register: '注册',
+    demos: { title: '演示账号 (开发模式)' },
+    feature: {
+      microservices: '17 微服务 · 145+ 单元测试',
+      ai: '自研 AI · 0 外部 LLM 依赖',
+      stream: '实时流式 · SSE / WebSocket',
+      otel: 'OpenTelemetry · 全链路追踪'
+    }
+  },
+  h5login: {
+    title: '登录',
+    pc: 'PC 登录',
+    platforms: '选择登录方式',
+    wechat: { scan: '微信扫码登录' },
+    mp: { name: '公众号', desc: '关注后授权登录' },
+    qq: { name: 'QQ', desc: 'QQ 一键登录' },
+    alipay: { name: '支付宝', desc: '支付宝扫一扫' },
+    app: '扫码下载移动 App',
+    platform: { detect: '自动识别' }
+  },
+  chat: {
+    title: 'AI 对话',
+    placeholder: '输入消息... (Enter 发送 / Shift+Enter 换行)',
+    start: '开始跟 AI 对话',
+    empty: { history: '暂无历史会话' },
+    tools: '工具调用',
+    tool: { name: '工具', status: '状态', duration: '耗时', result: '结果' },
+    feature: { stream: '流式', tools: '工具调用', rag: 'RAG' },
+    regenerate: '重新生成',
+    send: '发送',
+    stop: '停止'
+  },
+  aichat: {
+    title: 'AI 智能助手',
+    subtitle: '自研 AI 引擎 · 0 外部依赖 · 13 种意图识别',
+    new: '新建会话',
+    sessions: '会话',
+    intent: '意图',
+    waiting: '等待输入',
+    placeholder: '输入消息... (Ctrl+Enter 发送)',
+    start: '开始对话',
+    empty: '暂无会话',
+    typing: 'AI 思考中...',
+    send: '发送',
+    clear: '清空'
+  },
+  monitor: {
+    title: '系统监控',
+    subtitle: '实时指标 + JVM + DB + 磁盘 + 告警',
+    health: '服务健康',
+    metrics: '实时业务指标',
+    jvm: 'JVM 内存',
+    disk: '磁盘 + DB',
+    alerts: '当前告警',
+    alert: { name: '告警名', severity: '级别', time: '时间', content: '内容', ack: '确认' },
+    loading: '点击刷新加载',
+    refresh: '刷新'
+  },
 }

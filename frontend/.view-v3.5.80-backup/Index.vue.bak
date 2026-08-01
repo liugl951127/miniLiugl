@@ -13,14 +13,7 @@
   @description 入口/列表
 -->
 <template>
-  <div class="page-admin admin-container">
-    <!-- page-header: 标题 + 子导航 -->
-    <header class="page-header">
-      <div>
-        <h2 class="page-title">⚙️ 系统管理</h2>
-        <p class="page-subtitle">用户 / 角色 / 指标 / 告警 / 集群 / 审计</p>
-      </div>
-    </header>
+  <div class="page-index admin-container">
     <el-aside width="220px" class="admin-aside">
       <div class="aside-header">
         <el-icon :size="24" color="#5b8def"><Setting /></el-icon>

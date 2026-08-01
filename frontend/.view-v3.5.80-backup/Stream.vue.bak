@@ -8,97 +8,123 @@
   @description AI 流式对话
 -->
 <template>
-  <div class="page-stream">
-    <!-- 1. page-header -->
-    <header class="page-header">
-      <div>
-        <h2 class="page-title">💬 双向流式聊天 <el-tag size="small" type="info">V5.19</el-tag></h2>
-        <p class="page-subtitle">实时双向: 暂停 / 引导 / 评分反馈 / 注入上下文 / 切换模型</p>
-      </div>
-      <el-button-group>
-        <el-button :icon="Connection" :type="connected ? 'success' : 'info'" plain>
-          {{ connected ? '🟢 已连接' : '⚫ 未连接' }}
-        </el-button>
-        <el-button :icon="Refresh" @click="reconnect">重连</el-button>
-      </el-button-group>
-    </header>
+  <div class="page-stream chat-stream">
+    <div class="header">
+      <h1>💬 双向流式聊天 <span class="badge">V5.19</span></h1>
+      <p class="sub">实时双向: 你可以暂停 / 引导方向 / 评分反馈 / 注入上下文 / 切换模型</p>
+    </div>
 
     <el-row :gutter="16">
-      <!-- 2. section: 主聊天区 -->
-      <el-col :xs="24" :md="16">
-        <section class="section chat-section">
-          <h3 class="section-title">💬 实时对话</h3>
-          <el-card shadow="hover" class="chat-card">
-            <div class="chat-meta">
-              <el-tag :type="connected ? 'success' : 'info'">{{ connected ? '🟢 已连接' : '⚫ 未连接' }}</el-tag>
-              <el-tag>stream: {{ streamId || '-' }}</el-tag>
-              <el-tag>model: {{ currentModel }}</el-tag>
-              <el-tag v-if="paused" type="warning">⏸ 暂停中</el-tag>
+      <el-col :span="16">
+        <el-card class="chat-card">
+          <template #header>
+            <div class="chat-head">
+              <el-tag :type="connected ? 'success' : 'info'">
+                {{ connected ? '🟢 已连接' : '⚫ 未连接' }}
+              </el-tag>
+              <el-tag style="margin-left:8px">stream: {{ streamId || '-' }}</el-tag>
+              <el-tag style="margin-left:8px">model: {{ currentModel }}</el-tag>
+              <el-tag v-if="paused" type="warning" style="margin-left:8px">⏸ 暂停中</el-tag>
             </div>
+          </template>
 
-            <div class="messages" ref="messagesRef">
-              <ChatBubble
-                v-for="m in messages"
-                :key="m.id"
-                :message="m"
-                :is-user="m.role === 'user'"
-                :is-streaming="m.streaming"
-              />
-              <div v-if="!messages.length" class="empty-chat">
-                <el-empty description="开始双向流式对话" :image-size="80" />
+          <div class="messages" ref="msgBox">
+            <div v-for="(m, i) in messages" :key="i" :class="['msg', m.type]">
+              <div class="msg-head">
+                <span class="msg-type">{{ typeLabel(m.type) }}</span>
+                <span v-if="m.progress !== null && m.progress !== undefined" class="msg-progress">
+                  {{ Math.round(m.progress * 100) }}%
+                </span>
               </div>
+              <div class="msg-content">{{ m.content }}</div>
             </div>
+            <div v-if="streaming" class="msg streaming">
+              <span class="cursor">▊</span>
+            </div>
+          </div>
 
-            <!-- 3. section: 输入 + 控制 -->
-            <div class="input-bar">
-              <el-input
-                v-model="input"
-                type="textarea"
-                :rows="2"
-                placeholder="输入消息... (Enter 发送 / Shift+Enter 换行)"
-                @keydown.enter.exact.prevent="send"
-                :disabled="!connected"
-              />
-              <div class="input-actions">
-                <el-button v-if="!paused" :icon="VideoPause" @click="pauseStream" :disabled="!streaming">暂停</el-button>
-                <el-button v-else :icon="VideoPlay" @click="resumeStream" type="primary">继续</el-button>
-                <el-button :icon="Promotion" :loading="streaming" @click="send" type="primary">
-                  {{ streaming ? '停止' : '发送' }}
-                </el-button>
-              </div>
+          <div class="input-bar">
+            <el-input v-model="prompt" type="textarea" :rows="2"
+              :disabled="!connected" placeholder="输入问题, Enter 发送 (Shift+Enter 换行)"
+              @keydown.enter.exact.prevent="send" />
+            <div class="input-actions">
+              <el-button type="primary" :disabled="!connected" @click="send">🚀 发送</el-button>
+              <el-button :disabled="!connected" @click="disconnect">🔌 断开</el-button>
+              <el-button type="success" :disabled="!connected" @click="connect">🔗 连接</el-button>
             </div>
-          </el-card>
-        </section>
+          </div>
+        </el-card>
       </el-col>
 
-      <!-- 4. section: 侧栏 (模型 + 评分反馈) -->
-      <el-col :xs="24" :md="8">
-        <section class="section side-section">
-          <h3 class="section-title">⚙️ 控制台</h3>
-          <el-card shadow="hover" class="side-card">
-            <el-form label-position="top" size="default">
-              <el-form-item label="模型">
-                <el-select v-model="currentModel" style="width: 100%">
-                  <el-option v-for="m in models" :key="m.key" :label="m.label" :value="m.key" />
-                </el-select>
-              </el-form-item>
-              <el-form-item label="评分 (上一条回复)">
-                <el-rate v-model="lastRating" :max="5" show-text />
-              </el-form-item>
-              <el-form-item label="注入上下文">
-                <el-input v-model="contextHint" type="textarea" :rows="3" placeholder="附加上下文..." />
-                <el-button size="small" @click="injectContext" style="margin-top: 8px">注入</el-button>
-              </el-form-item>
-              <el-form-item>
-                <el-button :icon="RefreshRight" @click="resetStream" plain style="width: 100%">重置会话</el-button>
-              </el-form-item>
-            </el-form>
-          </el-card>
-        </section>
+      <el-col :span="8">
+        <!-- 双向交互面板 -->
+        <el-card>
+          <template #header>🎮 双向交互</template>
+
+          <el-button-group style="width:100%; margin-bottom:12px">
+            <el-button :disabled="!connected || paused" @click="pause" style="flex:1">
+              ⏸ 暂停
+            </el-button>
+            <el-button :disabled="!connected || !paused" @click="resume" style="flex:1">
+              ▶ 恢复
+            </el-button>
+            <el-button :disabled="!connected" @click="cancel" style="flex:1">
+              ⏹ 取消
+            </el-button>
+          </el-button-group>
+
+          <el-divider>引导方向 (steer)</el-divider>
+          <el-input v-model="steerText" placeholder="例如: 用更简洁的语言回答" size="small" />
+          <el-button :disabled="!connected" size="small" style="margin-top:6px; width:100%"
+        @click="steer">
+🎯 发送引导
+</el-button>
+
+          <el-divider>反馈评分 (feedback)</el-divider>
+          <el-rate v-model="feedbackScore" :max="5" />
+          <el-input v-model="feedbackText" placeholder="反馈内容 (可选)" size="small" />
+          <el-button :disabled="!connected" size="small" style="margin-top:6px; width:100%"
+        @click="sendFeedback">
+⭐ 提交反馈
+</el-button>
+
+          <el-divider>注入上下文 (inject)</el-divider>
+          <el-input v-model="injectText" type="textarea" :rows="3" placeholder="注入的额外上下文 (RAG 召回结果等)"
+            size="small" />
+          <el-button :disabled="!connected" size="small" style="margin-top:6px; width:100%"
+        @click="inject">
+📥 注入
+</el-button>
+
+          <el-divider>切换模型 (set_model)</el-divider>
+          <el-select v-model="selectedModel" placeholder="选择模型" size="small" style="width:100%">
+            <el-option label="mock (演示)" value="mock" />
+            <el-option label="gpt-4o-mini" value="gpt-4o-mini" />
+            <el-option label="gpt-4o" value="gpt-4o" />
+            <el-option label="claude-3-haiku-20240307" value="claude-3-haiku-20240307" />
+            <el-option label="gemini-1.5-flash" value="gemini-1.5-flash" />
+          </el-select>
+          <el-button :disabled="!connected" size="small" style="margin-top:6px; width:100%"
+        @click="setModel">
+🔄 切换
+</el-button>
+        </el-card>
+
+        <!-- 事件日志 -->
+        <el-card style="margin-top:16px">
+          <template #header>📋 事件日志</template>
+          <div class="event-log">
+            <div v-for="(log, i) in logs.slice(-10)" :key="i" class="log-item">
+              <span class="log-type">{{ log.type }}</span>
+              <span class="log-msg">{{ log.msg }}</span>
+            </div>
+          </div>
+        </el-card>
       </el-col>
     </el-row>
   </div>
 </template>
+
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, nextTick } from 'vue'
