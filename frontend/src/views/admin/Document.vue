@@ -101,7 +101,7 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, readonly } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Refresh, UploadFilled } from '@element-plus/icons-vue'
 import { documentParse, documentKeywords, documentFormats } from '@/api/ai'

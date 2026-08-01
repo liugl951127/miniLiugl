@@ -210,7 +210,7 @@
 
 <script setup lang="ts">
 // ───── 依赖导入 ─────
-import { ref, reactive, onMounted, nextTick, h } from 'vue'
+import { ref, reactive, onMounted, nextTick, h, computed } from 'vue'
 import axios from 'axios'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'

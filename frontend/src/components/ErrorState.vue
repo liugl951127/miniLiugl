@@ -25,7 +25,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, defineProps, defineEmits } from 'vue'
 import { useRouter } from 'vue-router'
 import { Refresh, Back, Promotion } from '@element-plus/icons-vue'
 

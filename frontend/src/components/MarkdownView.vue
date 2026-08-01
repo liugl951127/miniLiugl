@@ -14,7 +14,7 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, defineProps } from 'vue'
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github-dark.css'

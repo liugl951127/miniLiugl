@@ -115,7 +115,7 @@
 </template>
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'
@@ -287,7 +287,7 @@ function sendFeedback() {
   }
 }
 
-function inject() {
+function doInject() {
   if (!injectText.value.trim()) return ElMessage.warning('请输入注入内容')
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({

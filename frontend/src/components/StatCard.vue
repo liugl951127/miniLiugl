@@ -22,7 +22,7 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { computed } from 'vue'
+import { computed, defineProps } from 'vue'
 const props = defineProps({
   label: String,
   value: { type: [Number, String], default: 0 },

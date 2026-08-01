@@ -202,7 +202,7 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, readonly } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
 import {

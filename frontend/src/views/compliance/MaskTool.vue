@@ -71,7 +71,7 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, computed } from 'vue'
+import { ref, computed, readonly } from 'vue'
 import { ElMessage } from 'element-plus'
 import { maskText } from '@/api/ai'
 

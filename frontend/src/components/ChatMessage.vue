@@ -125,7 +125,7 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { computed } from 'vue'
+import { computed, defineProps, defineEmits } from 'vue'
 import {
   User, ChatDotRound, Loading, CircleClose, Tools,
   CopyDocument, VideoPlay, VideoPause, RefreshRight, Star, Document,

@@ -48,7 +48,7 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, defineProps, defineEmits } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
 import QRCode from 'qrcode'

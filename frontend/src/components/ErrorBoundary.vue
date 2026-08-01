@@ -16,7 +16,7 @@
 </template>
 
 <script setup>
-import { ref, onErrorCaptured } from 'vue'
+import { ref, onErrorCaptured, computed } from 'vue'
 import ErrorState from './ErrorState.vue'
 import { useRouter } from 'vue-router'
 
