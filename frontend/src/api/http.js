@@ -12,7 +12,6 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'
 import router from '@/router'
-import { handleError } from '@/composables/useErrorHandler'
 let last401At = 0  // V3.7.5+ 防止 401 风暴 (多接口同时 401)
 
 
