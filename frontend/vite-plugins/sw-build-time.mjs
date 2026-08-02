@@ -1,24 +1,12 @@
 /**
- * V3.6.13+ Vite plugin: HTML sw.js ?v={ts}
- * V3.7.19+ 简化: dist/sw.js 注入移到 scripts/inject-sw-build-time.mjs
- * (Vite 5+ writeBundle 不可靠)
+ * V3.7.20+ 简化: vite plugin 已弃用
+ * 之前 transformIndexHtml 改 src="/sw.js" (但实际是 inline script, 改不到)
+ * 现在所有注入统一在 scripts/inject-sw-build-time.mjs (postbuild)
  *
- * 保留能力:
- * 1. HTML 引用加 ?v={ts} 强制浏览器拉新
+ * 保留: 空 plugin 占位 (config 引用存在)
  */
 export default function swBuildTime() {
   return {
-    name: 'sw-build-time',
-    transformIndexHtml: {
-      order: 'post',
-      handler(html) {
-        const ts = Date.now()
-        const updated = html.replace(/src="\/sw\.js"/g, `src="/sw.js?v=${ts}"`)
-        if (updated !== html) {
-          process.stderr.write(`[sw-build-time] Injected ?v=${ts} into index.html\n`)
-        }
-        return updated
-      },
-    },
+    name: 'sw-build-time-noop',
   }
 }
