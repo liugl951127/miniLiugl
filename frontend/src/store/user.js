@@ -43,8 +43,9 @@ export const useUserStore = defineStore(
 
     async function login(payload) {
       const res = await authApi.login(payload)
-      // V3.7.22+ http.js 自动剥 Result.data, res.data 直接是 LoginResponse
-      const { accessToken: at, refreshToken: rt, user } = res.data || {}
+      // V3.7.38+ http.js 自动剥, res 是业务数据; 兼容老 res.data 双层
+      const data = (res && res.data && res.data.accessToken) ? res.data : res
+      const { accessToken: at, refreshToken: rt, user } = data || {}
       accessToken.value = at || ''
       refreshToken.value = rt || ''
       profile.value = user || null
