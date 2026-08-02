@@ -1,2 +1,21 @@
 test-results/
 components.d.ts
+
+# V3.7.16+ 一键清理 (build/cache/测试报告)
+dist/
+coverage/
+e2e-report/
+playwright-report/
+.cache/
+.parcel-cache/
+.vite/
+.nuxt/
+.output/
+.next/
+.turbo/
+.rollup.cache/
+.tmp/
+*.log
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
