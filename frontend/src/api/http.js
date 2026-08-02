@@ -64,9 +64,10 @@ http.interceptors.request.use(
 // 响应拦截器: 业务码处理 + 401 自动 refresh
 http.interceptors.response.use(
   (resp) => {
-    const data = resp.data
+    let data = resp.data
     // V5.8: 把 traceId 暴露到全局, 错误提示可显示
     const respTraceId = resp.headers['x-trace-id']
+    // V3.7.22+ 业务码处理 (Result 包装)
     if (data && typeof data === 'object' && data.code !== undefined && data.code !== 0) {
       ElMessage.error({
         message: data.message || '请求失败',
@@ -76,7 +77,26 @@ http.interceptors.response.use(
       const err = new Error(data.message || 'Request failed')
       err.code = data.code
       err.traceId = respTraceId
+      // V3.7.22+ 失败时返回整个 Result (业务可能要 code/message)
+      err.result = data
       return Promise.reject(err)
+    }
+    // V3.7.22+ 自动剥 Result.data (成功时)
+    // 业务代码 res.data 直接拿到业务数据, 不用 res.data.data
+    // 兼容: data 不是 Result 包装 (没 code 字段) 时, 直接返回原 data
+    if (data && typeof data === 'object' && 'code' in data && 'data' in data) {
+      // 保留 code/message/timestamp 在 result 字段, 方便业务需要时访问
+      const original = data
+      data = data.data
+      // V3.7.22+ 兼容老代码 res.data.data.data 模式 (双层嵌套)
+      if (data && typeof data === 'object' && 'code' in data && 'data' in data) {
+        data = data.data
+      }
+      // 挂载原 result 方便业务需要时访问
+      if (data && typeof data === 'object') {
+        data.__result = original
+      }
+      return data
     }
     return data
   },
