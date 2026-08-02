@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import com.minimax.common.sse.SseResult;
+import com.minimax.common.sse.SseUtil;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -450,7 +450,7 @@ public class AgentService {
     }
 
     /**
-     * V3.7.30+ 委托 SseResult (路由表在 SseResult.EVENT_TO_TYPE)
+     * V3.7.30+ 委托 SseResult (路由表在 SseUtil.EVENT_TO_TYPE)
      * 业务 sendBusiness 自动根据 event 找 type
      */
     private void sendEvent(SseEmitter emitter, String event, Object data) {
@@ -458,12 +458,12 @@ public class AgentService {
             String msg = data instanceof java.util.Map 
                 ? (String) ((java.util.Map<?,?>) data).getOrDefault("message", "业务错误")
                 : String.valueOf(data);
-            SseResult.sendError(emitter, msg);
+            SseUtil.sendError(emitter, msg);
         } else if ("done".equals(event)) {
-            SseResult.sendDone(emitter);
+            SseUtil.sendDone(emitter);
         } else {
             // V3.7.30+ sendBusiness 自动根据 event 查 type
-            SseResult.sendBusiness(emitter, event, data);
+            SseUtil.sendBusiness(emitter, event, data);
         }
     }
 

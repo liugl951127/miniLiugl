@@ -3,7 +3,7 @@ package com.minimax.ai.generation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import com.minimax.common.sse.SseResult;
+import com.minimax.common.sse.SseUtil;
 
 import java.io.IOException;
 import java.util.*;
@@ -114,7 +114,7 @@ public class StreamingVideoGen {
         // 心跳 (反向代理超时保护)
         ScheduledFuture<?> hb = heartbeat.scheduleAtFixedRate(() -> {
             if (status.state.equals("RUNNING")) {
-                SseResult.sendBusiness(emitter, "heartbeat", Map.of("ping", System.currentTimeMillis()));
+                SseUtil.sendBusiness(emitter, "heartbeat", Map.of("ping", System.currentTimeMillis()));
             }
         }, 5, 5, TimeUnit.SECONDS);
 
@@ -172,7 +172,7 @@ public class StreamingVideoGen {
             } catch (Exception e) {
                 log.error("Stream failed", e);
                 markFailed(cfg.taskId, e.getMessage());
-                SseResult.sendError(emitter, e.getMessage());
+                SseUtil.sendError(emitter, e.getMessage());
                 emitter.completeWithError(e);
             } finally {
                 hb.cancel(false);

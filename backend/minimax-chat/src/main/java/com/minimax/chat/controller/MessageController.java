@@ -6,7 +6,7 @@ import com.minimax.chat.dto.AppendMessageRequest;
 import com.minimax.chat.dto.MessageVO;
 import com.minimax.chat.service.MessageService;
 import com.minimax.common.result.Result;
-import com.minimax.common.sse.SseResult;
+import com.minimax.common.sse.SseUtil;
 import com.minimax.common.security.JwtAuthenticationFilter.AuthenticatedUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -43,9 +43,9 @@ public class MessageController {
      * V3.7.32+ SSE 流式对话 (V3.7.31 统一 sendBusiness, V3.7.32 清理 unused import)
      *
      * 跟 HTTP 接口统一:
-     *   - 业务事件: SseResult.sendBusiness(emitter, "content", {content: "..."}) → 自动查 type=content
-     *   - 完成: SseResult.sendDone(emitter) → {code:0, status:"finished"}
-     *   - 错误: SseResult.sendError(emitter, "msg") → {code:1, message:"msg"}
+     *   - 业务事件: SseUtil.sendBusiness(emitter, "content", {content: "..."}) → 自动查 type=content
+     *   - 完成: SseUtil.sendDone(emitter) → {code:0, status:"finished"}
+     *   - 错误: SseUtil.sendError(emitter, "msg") → {code:1, message:"msg"}
      *
      * 前端: useBusinessStream 自动剥 Result.data + 错误处理
      */
@@ -60,7 +60,7 @@ public class MessageController {
             try {
                 // V3.7.31+ sendBusiness 自动查 type (start→content, content→content, done→sendDone)
                 // 1. start 事件 (自动 type=content, 走 onContent)
-                SseResult.sendBusiness(emitter, "start", Map.of(
+                SseUtil.sendBusiness(emitter, "start", Map.of(
                     "streamId", UUID.randomUUID().toString(),
                     "sessionId", sessionId,
                     "status", "started"
@@ -71,16 +71,16 @@ public class MessageController {
                 String[] words = ("收到你的消息: " + req.getContent()).split("");
                 for (String word : words) {
                     if (word.isEmpty()) continue;
-                    SseResult.sendBusiness(emitter, "content", Map.of("content", word));
+                    SseUtil.sendBusiness(emitter, "content", Map.of("content", word));
                     Thread.sleep(50);
                 }
                 
                 // 3. done 事件 (专用 sendDone)
-                SseResult.sendDone(emitter);
+                SseUtil.sendDone(emitter);
             } catch (Exception e) {
-                SseResult.sendError(emitter, e.getMessage());
+                SseUtil.sendError(emitter, e.getMessage());
             } finally {
-                SseResult.complete(emitter);
+                SseUtil.complete(emitter);
             }
         });
         
