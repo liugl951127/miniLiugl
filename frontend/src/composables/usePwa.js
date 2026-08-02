@@ -49,14 +49,12 @@ export function usePwa() {
         newSw.addEventListener('statechange', () => {
           if (newSw.state === 'installed' && navigator.serviceWorker.controller) {
             needRefresh.value = true
-            ElNotification({
-              title: '🔄 新版本可用',
-              message: '点击"立即更新"加载新版本',
-              type: 'info',
-              duration: 0,
-              position: 'bottom-right',
-              onClick: update
-            })
+            // V3.7.12+ 通知带"立即更新"按钮 (ElMessageBox)
+            ElMessageBox.confirm(
+              '新版本已就绪, 立即更新加载?',
+              '🔄 新版本可用',
+              { confirmButtonText: '立即更新', cancelButtonText: '稍后', type: 'info' }
+            ).then(() => update()).catch(() => { ElMessage.info('稍后更新, 刷新页面即可') })
           }
         })
       })
