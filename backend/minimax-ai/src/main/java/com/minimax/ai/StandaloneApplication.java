@@ -4,6 +4,7 @@ import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 /**
@@ -29,11 +30,12 @@ import org.springframework.scheduling.annotation.EnableAsync;
  * <h3>已禁用的能力</h3>
  * <ul>
  *   <li>JWT 鉴权 (单服务模式不需要)</li>
- *   <li>Nacos 服务发现 (不注册)</li>
  *   <li>跨服务调用 (如需调 chat/memory, 请用主模式)</li>
  * </ul>
+ * <p>V5.7: 已启用 Nacos 服务发现 (注册至 minimax-dev 命名空间, gateway 通过 lb://minimax-ai 调用)。</p>
  */
 @EnableAsync
+@EnableDiscoveryClient
 @SpringBootApplication
 @MapperScan({"com.minimax.ai.mapper", "com.minimax.ai.marketplace", "com.minimax.ai.modelmarket", "com.minimax.ai.template", "com.minimax.ai.webhook"})
 @ConfigurationPropertiesScan("com.minimax.ai.intent")

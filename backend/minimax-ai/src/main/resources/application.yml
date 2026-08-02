@@ -121,3 +121,17 @@ otel:
   java:
     global-autoconfigure:
       enabled: true
+
+# =============================================================
+# V5.7 Nacos 服务发现 (注册当前微服务, gateway 通过 lb:// 调用)
+# =============================================================
+spring.cloud.nacos:
+  discovery:
+    server-addr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
+    namespace: ${NACOS_NS:minimax-dev}
+    username: ${NACOS_USER:nacos}
+    password: ${NACOS_PASS:nacos}
+    register-enabled: true
+    metadata:
+      version: 5.7.0
+      group: minimax
