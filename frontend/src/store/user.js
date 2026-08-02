@@ -54,8 +54,8 @@ export const useUserStore = defineStore(
     async function fetchProfile() {
       try {
         const res = await authApi.me()
-        // V3.7.22+ http.js 自动剥, res.data 直接是 UserInfo
-        profile.value = res.data
+        // V3.7.22+ http.js 自动剥, res 本身已经是 UserInfo
+        profile.value = res.data || res || null
         return res
       } catch (e) {
         // V3.5.93: 失败时设空 profile, 避免 layout 空白
@@ -83,7 +83,8 @@ export const useUserStore = defineStore(
       if (!refreshToken.value) throw new Error('no refresh token')
       try {
       const res = await authApi.refresh(refreshToken.value)
-      const data = res.data || {}
+      // V3.7.22+ res 本身是剥后数据
+      const data = res.data || res || {}
       accessToken.value = data.accessToken || ''
       refreshToken.value = data.refreshToken || ''
       return data.accessToken
