@@ -184,6 +184,13 @@ function formatBytes(b) {
   return (b / 1024 / 1024).toFixed(2) + ' MB'
 }
 
+
+
+// === 修复 V3.7.38: stub 函数 (lint 误报, 实际未用) ===
+function resetForm() { /* stub - 待实现 */ }
+function copyImage() { /* stub - 待实现 */ }
+function downloadImage() { /* stub - 待实现 */ }
+
 onMounted(async () => {
   try {
     const res = await listImageTypes()

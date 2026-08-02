@@ -410,6 +410,35 @@ async function deleteChannel(ch) {
   }
 }
 
+// === 加载全部告警数据 ===
+async function loadAll() {
+  loading.value = true
+  try {
+    // 触发中告警
+    const firingRes = await monitorApi.getFiringAlerts().catch(() => ({ data: [] }))
+    firing.value = firingRes.data || []
+    
+    // 告警规则
+    const rulesRes = await monitorApi.listAlertRules().catch(() => ({ data: [] }))
+    rules.value = rulesRes.data || []
+    
+    // 通知渠道
+    const channelsRes = await monitorApi.listAlertChannels().catch(() => ({ data: [] }))
+    channels.value = channelsRes.data || []
+    
+    // 历史记录
+    const historyRes = await monitorApi.getAlertHistory().catch(() => ({ data: [] }))
+    history.value = historyRes.data || []
+  } finally {
+    loading.value = false
+  }
+}
+
+// === Tab 切换 ===
+function onTabChange(name) {
+  tab.value = name
+}
+
 onMounted(() => {
   loadFiring()
   loadRules()

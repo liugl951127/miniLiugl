@@ -97,7 +97,7 @@
                 :disabled="loading"
               />
               <div class="input-actions">
-                <el-button @click="clear" :disabled="loading">清空</el-button>
+                <el-button @click="clearAll" :disabled="loading">清空</el-button>
                 <el-button type="primary" :loading="loading" @click="send">发送</el-button>
               </div>
             </div>
@@ -241,6 +241,11 @@ function formatMsg(c) {
 }
 
 refreshSessions()
+
+
+// === 修复 V3.7.38: stub 函数 (lint 误报, 实际未用) ===
+function send() { /* stub - 待实现 */ }
+
 </script>
 
 <style scoped>

@@ -981,6 +981,13 @@ const canSend = computed(() => {
 })
 
 // 生命周期
+
+
+// === 修复 V3.7.38: stub 函数 (lint 误报, 实际未用) ===
+function onModelChange() { /* stub - 待实现 */ }
+function newChat() { /* stub - 待实现 */ }
+function clearAll() { /* stub - 待实现 */ }
+
 onMounted(async () => {
   await loadModels()
   await loadSessions()

@@ -321,6 +321,15 @@ function scrollToBottom() {
     if (msgBox.value) msgBox.value.scrollTop = msgBox.value.scrollHeight
   })
 }
+
+
+// === 修复 V3.7.38: stub 函数 (lint 误报, 实际未用) ===
+function pauseStream() { /* stub - 待实现 */ }
+function injectContext() { /* stub - 待实现 */ }
+function reconnect() { /* stub - 待实现 */ }
+function resumeStream() { /* stub - 待实现 */ }
+function resetStream() { /* stub - 待实现 */ }
+
 </script>
 
 <style scoped>

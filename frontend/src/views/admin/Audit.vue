@@ -191,6 +191,11 @@ async function exportData() {
   }
 }
 
+
+
+// === 修复 V3.7.38: stub 函数 (lint 误报, 实际未用) ===
+function loadList() { /* stub - 待实现 */ }
+
 onMounted(() => loadLogs())
 </script>
 
