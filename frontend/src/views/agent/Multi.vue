@@ -240,24 +240,6 @@ async function runStream() {
     running.value = false
   }
 }
-          const data = line.substring(5).trim()
-          if (curEvent && data) {
-            try {
-              const parsed = JSON.parse(data)
-              rawEvents.value.push({ event: curEvent, data: parsed })
-              applyEvent(curEvent, parsed)
-            } catch (e) {}
-            curEvent = ''
-          }
-        }
-      }
-    }
-  } catch (e) {
-    toast.error('流式失败: ' + e.message)
-  } finally {
-    running.value = false
-  }
-}
 
 function applyEvent(event, data) {
   if (event === 'planner-start') {
