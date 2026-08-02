@@ -29,10 +29,14 @@ function makeResponseInterceptor(resp) {
   if (data && typeof data === 'object' && 'code' in data && data.code !== 0) {
     return { error: true, data }
   }
-  // V3.7.22+ 自动剥 Result.data
+  // V3.7.22+ 自动剥 Result.data (支持双层嵌套)
   if (data && typeof data === 'object' && 'code' in data && 'data' in data) {
     const original = data
     data = data.data
+    // 兼容双层嵌套
+    if (data && typeof data === 'object' && 'code' in data && 'data' in data) {
+      data = data.data
+    }
     if (data && typeof data === 'object') {
       data.__result = original
     }
