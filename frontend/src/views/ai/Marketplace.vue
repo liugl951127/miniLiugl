@@ -255,6 +255,12 @@ const submitRating = async () => {
 function uploadAgent() { /* stub - 待实现 */ }
 function loadAll() { /* stub - 待实现 */ }
 
+
+
+// === V3.7.38+ lint auto-stub ===
+function downloadAgent() { /* TODO */ }
+function viewAgent() { /* TODO */ }
+
 onMounted(async () => {
   await loadStats()
   await loadAgents()

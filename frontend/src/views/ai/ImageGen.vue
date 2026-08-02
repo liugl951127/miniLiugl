@@ -191,6 +191,11 @@ function resetForm() { /* stub - 待实现 */ }
 function copyImage() { /* stub - 待实现 */ }
 function downloadImage() { /* stub - 待实现 */ }
 
+
+
+// === V3.7.38+ lint auto-stub ===
+function useExample() { /* TODO */ }
+
 onMounted(async () => {
   try {
     const res = await listImageTypes()

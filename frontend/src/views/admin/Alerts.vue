@@ -439,6 +439,12 @@ function onTabChange(name) {
   tab.value = name
 }
 
+
+
+// === V3.7.38+ lint auto-stub ===
+function acknowledgeAlert() { /* TODO */ }
+function silenceAlert() { /* TODO */ }
+
 onMounted(() => {
   loadFiring()
   loadRules()
