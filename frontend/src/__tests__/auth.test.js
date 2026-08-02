@@ -58,7 +58,7 @@ describe('Auth API', () => {
       mockHttp.get.mockResolvedValueOnce(mockResponse({ data: { id: 1, username: 'admin' } }))
       const { authApi } = await import('../api/auth.js')
       const result = await authApi.me()
-      expect(mockHttp.get).toHaveBeenCalledWith('/api/v1/auth/me')
+      expect(mockHttp.get).toHaveBeenCalledWith('/api/v1/auth/me', expect.objectContaining({ _silent: true }))
       expect(result.data.data.username).toBe('admin')
     })
   })
