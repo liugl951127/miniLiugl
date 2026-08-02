@@ -43,7 +43,7 @@ spring.cloud.gateway:
         allowed-origin-patterns:
           - http://localhost*
           - http://127.0.0.1*
-          - https://*.your-domain.com
+          - https://*.liugeliang.com
         allowed-methods: "*"
         allowed-headers: "*"
         exposed-headers:
@@ -65,9 +65,8 @@ spring.cloud.gateway:
     - id: auth
       uri: lb://minimax-auth
       predicates:
-        - Path=/api/v1/auth/**,/api/auth/**
+        - Path=/api/v1/auth/**
       filters:
-        - StripPrefix=2
         - name: RequestRateLimiter
           args:
             redis-rate-limiter.replenishRate: 100
