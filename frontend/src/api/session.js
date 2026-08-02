@@ -1,8 +1,11 @@
 /**
- * @file session API 调用层 (V3.5.12+)
+ * @file session API 调用层 (V3.7.26+ 委托 useBusinessStream)
  *
+ * 之前 V3.7.3+ session.js 自己写 SSE 解析 (重复实现)
+ * V3.7.26+ 改用 useBusinessStream, 统一 chat/agent/rag SSE
  */
 import http from './http'
+import { useBusinessStream } from '@/composables/useBusinessStream'
 
 /** 会话管理 */
 export const listSessions = (params) => http.get('/sessions', { params })
@@ -16,85 +19,37 @@ export const listMessages = (sessionId, params) => http.get(`/sessions/${session
 export const appendMessage = (sessionId, data) => http.post(`/sessions/${sessionId}/messages`, data)
 
 /**
- * 流式发送消息 (SSE / fetch ReadableStream)
+ * V3.7.26+ 流式发送消息 (委托 useBusinessStream)
+ *
+ * 协议:
+ *   - HTTP: POST /sessions/{id}/messages/stream
+ *   - 返: text/event-stream
+ *   - 5 type: start / content / tool_call / source / done / error
+ *   - Result 包装: {code, message, data, timestamp}
+ *
  * @param {number} sessionId
- * @param {object} body  { role, content, modelCode, images }
- * @param {object} opts  { streamId, onChunk, onToolCall, onSource, onDone, onError }
+ * @param {object} body
+ * @param {object} opts { onStart, onContent, onToolCall, onSource, onDone, onError, signal, streamId }
  */
 export async function sendMessageStream(sessionId, body, opts = {}) {
-  const { streamId, onChunk, onToolCall, onSource, onDone, onError } = opts
+  const { streamId, onStart, onContent, onToolCall, onSource, onDone, onError, signal } = opts
   const url = `/sessions/${sessionId}/messages/stream`
   const payload = { ...body, streamId }
 
-  try {
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
-      body: JSON.stringify(payload),
-      signal: opts.signal,  // V3.7.4+ 支持 AbortSignal (暂停/继续)
-    })
-
-    if (!resp.ok || !resp.body) {
-      throw new Error(`HTTP ${resp.status}`)
-    }
-
-    const reader = resp.body.getReader()
-    const decoder = new TextDecoder()
-    let buffer = ''
-
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      if (opts.signal?.aborted) throw new DOMException('Aborted', 'AbortError')
-      buffer += decoder.decode(value, { stream: true })
-
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
-
-      for (const line of lines) {
-        if (line.startsWith('data:')) {
-          const data = line.substring(5).trim()
-          if (data === '[DONE]') {
-            onDone && onDone()
-            return
-          }
-          try {
-            let obj = JSON.parse(data)
-            // V3.7.25+ Result 包装自动剥
-            if (obj && typeof obj === 'object' && 'code' in obj && 'data' in obj && obj.code === 0) {
-              obj = obj.data
-            }
-            // V3.7.25+ 业务错误 (code !== 0)
-            if (obj && typeof obj === 'object' && 'code' in obj && obj.code !== 0) {
-              const err = new Error(obj.message || 'SSE 业务错误')
-              err.__result = obj
-              onError && onError(err)
-              return
-            }
-            // V3.7.25+ 5 type 统一 (兼容老 chunk)
-            if ((obj.type === 'content' || obj.type === 'chunk') && obj.content) {
-              onChunk && onChunk(obj.content)
-            } else if (obj.type === 'tool_call' && onToolCall) {
-              onToolCall(obj.toolCall)
-            } else if (obj.type === 'source' && onSource) {
-              onSource(obj.source)
-            } else if (obj.type === 'done') {
-              onDone && onDone()
-            } else if (obj.type === 'error') {
-              const err = new Error(obj.message || obj.error || '业务错误')
-              err.__result = obj
-              onError && onError(err)
-            }
-          } catch (e) {
-            // 非 JSON 行忽略
-          }
-        }
-      }
-    }
-    onDone && onDone()
-  } catch (e) {
-    onError && onError(e)
+  // V3.7.26+ 委托 useBusinessStream (统一 5 type + Result 兼容)
+  const stream = useBusinessStream()
+  
+  // 转换: 业务 onXxx → useBusinessStream onXxx
+  const wrappedOpts = {
+    onContent: (c) => { onContent && onContent(c) },
+    onToolCall: (tc) => { onToolCall && onToolCall(tc) },
+    onSource: (s) => { onSource && onSource(s) },
+    onDone: () => { onDone && onDone() },
+    onError: (e) => { onError && onError(e) },
+    signal,
   }
+  
+  return stream.send(url, payload, wrappedOpts)
 }
 
 /** 停止流式生成 */

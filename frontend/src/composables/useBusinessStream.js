@@ -67,7 +67,9 @@ export function useBusinessStream() {
    * @param {object} callbacks - { onContent, onToolCall, onSource, onDone, onError, signal }
    */
   async function send(url, payload, callbacks = {}) {
-    const { onContent, onToolCall, onSource, onDone, onError, signal } = callbacks
+    // V3.7.26+ 兼容老别名 (V3.7.3+ useChatStream 用 onChunk)
+    const { onContent, onChunk, onMessage, onToolCall, onSource, onDone, onError, signal } = callbacks
+    const _onContent = onContent || onChunk || onMessage  // 3 个别名
     messages.value = []
     toolCalls.value = []
     sources.value = []
@@ -130,7 +132,7 @@ export function useBusinessStream() {
               const type = TYPE_MAP[json.type] || json.type
               if (type === 'content' && json.content !== undefined) {
                 messages.value.push(json.content)
-                if (onContent) onContent(json.content)
+                if (_onContent) _onContent(json.content)
               } else if (type === 'tool_call' && json.toolCall) {
                 toolCalls.value.push(json.toolCall)
                 if (onToolCall) onToolCall(json.toolCall)
@@ -150,7 +152,7 @@ export function useBusinessStream() {
             } catch (e) {
               // 纯文本 fallback
               messages.value.push(data)
-              if (onContent) onContent(data)
+              if (_onContent) _onContent(data)
             }
           }
         }
