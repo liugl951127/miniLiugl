@@ -15,7 +15,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -41,7 +40,7 @@ public class MessageController {
     }
 
     /**
-     * V3.7.31+ SSE 流式对话 (统一 sendBusiness + sendDone + sendError)
+     * V3.7.32+ SSE 流式对话 (V3.7.31 统一 sendBusiness, V3.7.32 清理 unused import)
      *
      * 跟 HTTP 接口统一:
      *   - 业务事件: SseResult.sendBusiness(emitter, "content", {content: "..."}) → 自动查 type=content
@@ -55,7 +54,6 @@ public class MessageController {
     public SseEmitter streamMessage(@AuthenticationPrincipal AuthenticatedUser principal,
                                     @PathVariable Long sessionId,
                                     @Valid @RequestBody AppendMessageRequest req) {
-        Long userId = principal != null ? principal.id() : null;
         SseEmitter emitter = new SseEmitter(120_000L);  // 2 分钟超时
         
         SSE_EXECUTOR.execute(() -> {

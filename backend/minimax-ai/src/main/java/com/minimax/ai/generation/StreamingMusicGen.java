@@ -6,7 +6,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import com.minimax.common.sse.SseResult;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -107,7 +107,8 @@ public class StreamingMusicGen {
 
         ScheduledFuture<?> hb = heartbeat.scheduleAtFixedRate(() -> {
             if ("RUNNING".equals(info.state)) {
-                try { emitter.send(SseEmitter.event().name("heartbeat").data("ping")); } catch (Exception ignored) {}
+                // V3.7.32+ 走 sendBusiness 统一 (heartbeat → content type)
+                SseResult.sendBusiness(emitter, "heartbeat", Map.of("ping", System.currentTimeMillis()));
             }
         }, 5, 5, TimeUnit.SECONDS);
 
@@ -217,8 +218,11 @@ public class StreamingMusicGen {
     }
 
     // === SSE 事件 ===
-    private void sendStart(SseEmitter e, MusicStreamConfig cfg, StreamInfo info) throws IOException {
-        e.send(SseEmitter.event().name("start").data(Map.of(
+    /**
+     * V3.7.32+ 走 SseResult.sendBusiness (start → content)
+     */
+    private void sendStart(SseEmitter e, MusicStreamConfig cfg, StreamInfo info) {
+        SseResult.sendBusiness(e, "start", Map.of(
                 "taskId", info.taskId,
                 "totalBars", info.totalBars,
                 "style", cfg.config.style.name(),
@@ -226,23 +230,29 @@ public class StreamingMusicGen {
                 "scale", cfg.config.scale,
                 "bpm", cfg.config.bpm,
                 "chunkBars", cfg.chunkBars
-        )));
+        ));
     }
 
+    /**
+     * V3.7.32+ 走 SseResult.sendBusiness (chunk → content, 走 onContent)
+     */
     private void sendChunk(SseEmitter e, String taskId, int chunkIndex, int startBar, int chunkBars,
-                           String base64, boolean isLast) throws IOException {
-        e.send(SseEmitter.event().name("chunk").data(Map.of(
+                           String base64, boolean isLast) {
+        SseResult.sendBusiness(e, "chunk", Map.of(
                 "taskId", taskId,
                 "chunkIndex", chunkIndex,
                 "startBar", startBar,
                 "bars", chunkBars,
                 "data", base64,
                 "isLast", isLast
-        )));
+        ));
     }
 
-    private void sendProgress(SseEmitter e, StreamInfo info) throws IOException {
-        e.send(SseEmitter.event().name("progress").data(Map.of(
+    /**
+     * V3.7.32+ 走 SseResult.sendBusiness (progress → content, 走 onContent)
+     */
+    private void sendProgress(SseEmitter e, StreamInfo info) {
+        SseResult.sendBusiness(e, "progress", Map.of(
                 "taskId", info.taskId,
                 "done", info.doneBars,
                 "total", info.totalBars,
@@ -250,14 +260,17 @@ public class StreamingMusicGen {
                 "elapsedMs", info.elapsedMs,
                 "etaMs", info.etaMs,
                 "totalBytes", info.totalBytes
-        )));
+        ));
     }
 
-    private void sendComplete(SseEmitter e, String taskId, long bytes, long dur) throws IOException {
-        e.send(SseEmitter.event().name("complete").data(Map.of(
+    /**
+     * V3.7.32+ 走 SseResult.sendBusiness (complete → content, 走 onContent)
+     */
+    private void sendComplete(SseEmitter e, String taskId, long bytes, long dur) {
+        SseResult.sendBusiness(e, "complete", Map.of(
                 "taskId", taskId,
                 "totalBytes", bytes,
                 "durationMs", dur
-        )));
+        ));
     }
 }

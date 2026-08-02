@@ -114,7 +114,7 @@ public class StreamingVideoGen {
         // 心跳 (反向代理超时保护)
         ScheduledFuture<?> hb = heartbeat.scheduleAtFixedRate(() -> {
             if (status.state.equals("RUNNING")) {
-                try { emitter.send(SseEmitter.event().name("heartbeat").data("ping")); } catch (Exception ignored) {}
+                SseResult.sendBusiness(emitter, "heartbeat", Map.of("ping", System.currentTimeMillis()));
             }
         }, 5, 5, TimeUnit.SECONDS);
 
