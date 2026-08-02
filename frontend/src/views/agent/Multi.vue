@@ -118,6 +118,7 @@
 </template>
 
 <script setup>
+import { useBusinessStream } from '@/composables/useBusinessStream'
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
@@ -214,40 +215,25 @@ async function runStream() {
   running.value = true
   roundsData.value = []  // 实时追加
   let currentRound = null
+  // V3.7.27+ 用 useBusinessStream (统一 5 type + Result 包装)
+  const stream = useBusinessStream()
   try {
-    const resp = await fetch('/api/v1/agent/multi/stream', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + (userStore.accessToken || ''),
-        'Accept': 'text/event-stream',
+    await stream.send('/api/v1/agent/multi/stream', {
+      userId: userStore.profile?.id || 1,
+      goal: goal.value,
+      tools: tools.value,
+    }, {
+      signal: esController?.signal,
+      onContent: (data) => {
+        if (data && typeof data === 'object' && 'event' in data) {
+          events.value.push(data)
+        } else if (data && typeof data === 'object') {
+          events.value.push({ event: 'content', data })
+        }
       },
-      body: JSON.stringify({
-        userId: userStore.profile?.id || 1,
-        goal: goal.value,
-        tools: tools.value,
-      }),
+      onDone: () => {},
+      onError: (err) => toast.error('启动失败: ' + err.message),
     })
-
-    if (!resp.ok) {
-      toast.error('启动失败: ' + resp.status)
-      running.value = false
-      return
-    }
-
-    const reader = resp.body.getReader()
-    const decoder = new TextDecoder()
-    let buffer = ''
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
-
-      let curEvent = ''
-      for (const line of lines) {
-        if (line.startsWith('event:')) curEvent = line.substring(6).trim()
         else if (line.startsWith('data:')) {
           const data = line.substring(5).trim()
           if (curEvent && data) {

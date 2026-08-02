@@ -3,6 +3,7 @@ package com.minimax.ai.generation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import com.minimax.common.sse.SseResult;
 
 import java.io.IOException;
 import java.util.*;
@@ -171,7 +172,7 @@ public class StreamingVideoGen {
             } catch (Exception e) {
                 log.error("Stream failed", e);
                 markFailed(cfg.taskId, e.getMessage());
-                try { emitter.send(SseEmitter.event().name("error").data(Map.of("message", e.getMessage()))); } catch (IOException ignored) {}
+                SseResult.sendError(emitter, e.getMessage());
                 emitter.completeWithError(e);
             } finally {
                 hb.cancel(false);

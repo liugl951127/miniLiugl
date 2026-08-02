@@ -397,7 +397,8 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { modelApi } from '@/api/model'
-import { listSessions, createSession, sendMessageStream, deleteSession as deleteSessionApi } from '@/api/session'
+import { listSessions, createSession, deleteSession as deleteSessionApi } from '@/api/session'
+import { useBusinessStream } from '@/composables/useBusinessStream'
 import ChatMessage from '@/components/ChatMessage.vue'
 import { useSpeechCall } from '@/composables/useSpeechCall'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -1215,15 +1216,16 @@ async function sendMessage() {
 
   // 3) 调流式接口
   try {
-    await sendMessageStream(currentSessionId.value || 0, {
+    // V3.7.27+ 直接用 useBusinessStream.send (统一 5 type + Result)
+    await stream.send(`/sessions/${currentSessionId.value || 0}/messages/stream`, {
       role: 'user',
       content: text,
       modelCode: selectedModel.value,
       images: images,
-    }, {
       streamId: streamId.value,
+    }, {
       signal: streamAbortController?.signal,  // V3.7.7+
-      onChunk: (chunk) => {
+      onContent: (chunk) => {
         aiMsg.content += chunk
         // V3.7.10+ 打字机流式 chunk 集成
         if (typewriterEnabled.value) {

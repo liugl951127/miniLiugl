@@ -99,6 +99,8 @@
 </template>
 
 <script setup>
+import { useBusinessStream } from '@/composables/useBusinessStream'
+
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
@@ -174,60 +176,38 @@ async function execute() {
 async function runStreamMode() {
   running.value = true
   esController = new AbortController()
+  // V3.7.27+ 用 useBusinessStream (统一 5 type + Result 包装)
+  const stream = useBusinessStream()
   try {
-    // V5.22: 用 userStore.accessToken 代替 localStorage
-    const token = userStore.accessToken || ''
-    const resp = await fetch('/api/v1/agent/run-stream', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + token,
-        'Accept': 'text/event-stream',
+    await stream.send('/api/v1/agent/run-stream', {
+      userId: userStore.profile?.id || 1,
+      goal: goal.value,
+      tools: tools.value.length ? tools.value : null,
+    }, {
+      signal: esController.signal,
+      // agent stream 有多种 event: start / step / thought / tool_call / observation / final / done
+      // useBusinessStream 5 type + onDone 已覆盖, 其他通过 onContent 收集
+      onContent: (data) => {
+        // data 是 Result.data (即原始 {event, data})
+        if (data && typeof data === 'object' && 'event' in data) {
+          events.value.push(data)
+          if (data.event === 'final' && data.data?.answer) finalAnswer.value = data.data.answer
+        } else if (data && typeof data === 'object') {
+          // 普通 content chunk
+          events.value.push({ event: 'content', data })
+        }
       },
-      body: JSON.stringify({
-        userId: userStore.profile?.id || 1,
-        goal: goal.value,
-        tools: tools.value.length ? tools.value : null,
-      }),
-    })
-
-    if (!resp.ok) {
-      toast.error('启动失败: ' + resp.status)
-      running.value = false
-      return
-    }
-
-    const reader = resp.body.getReader()
-    const decoder = new TextDecoder()
-    let buffer = ''
-
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      buffer += decoder.decode(value, { stream: true })
-
-      // 解析 SSE: event: ... \n data: ... \n\n
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
-
-      let curEvent = ''
-      for (const line of lines) {
-        if (line.startsWith('event:')) {
-          curEvent = line.substring(6).trim()
-        } else if (line.startsWith('data:')) {
-          const data = line.substring(5).trim()
-          if (curEvent && data) {
-            try {
-              const parsed = JSON.parse(data)
-              events.value.push({ event: curEvent, data: parsed })
-              if (curEvent === 'final') finalAnswer.value = parsed.answer
-              if (curEvent === 'done') {
-                rounds.value = parsed.rounds
-                duration.value = parsed.durationMs
-              }
-            } catch (e) {
-              events.value.push({ event: curEvent, data: { raw: data } })
-            }
+      onDone: () => {
+        const doneEvent = events.value.find(e => e.event === 'done')
+        if (doneEvent) {
+          rounds.value = doneEvent.data?.rounds
+          duration.value = doneEvent.data?.durationMs
+        }
+      },
+      onError: (err) => {
+        toast.error('启动失败: ' + err.message)
+      },
+    }) }
             curEvent = ''
           }
         }
