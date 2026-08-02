@@ -95,6 +95,34 @@ export function usePwa() {
     location.reload()
   }
 
+  // V3.7.18+ 主动检查更新 (用户点"检查更新"或 5min 周期)
+  const checkForUpdate = async () => {
+    if (!('serviceWorker' in navigator)) {
+      ElMessage.warning('当前浏览器不支持 Service Worker')
+      return false
+    }
+    if (!registration) {
+      // 重新注册
+      await registerSw()
+      ElMessage.info('Service Worker 已重新注册')
+      return true
+    }
+    try {
+      await registration.update()
+      // 检查有没有 waiting worker
+      if (registration.waiting) {
+        ElMessage.success('发现新版本, 点击"立即更新"加载')
+        return true
+      } else {
+        ElMessage.success('当前已是最新版本 (SW ' + swVersion.value + ')')
+        return false
+      }
+    } catch (e) {
+      ElMessage.error('检查更新失败: ' + e.message)
+      return false
+    }
+  }
+
   const clearCache = async () => {
     if (!navigator.serviceWorker.controller) {
       ElMessage.warning('Service Worker 未激活')
@@ -157,6 +185,13 @@ export function usePwa() {
     // 缓存统计
     updateCacheInfo()
     cachePoller = setInterval(updateCacheInfo, 10000)
+    
+    // V3.7.18+ 5min 周期检查更新
+    setInterval(() => {
+      if (registration && navigator.onLine) {
+        registration.update().catch(() => {})
+      }
+    }, 5 * 60 * 1000)
   })
 
   onUnmounted(() => {
@@ -174,6 +209,7 @@ export function usePwa() {
     cacheInfo,
     install,
     update,
+    checkForUpdate,  // V3.7.18+
     clearCache,
     updateCacheInfo
   }
