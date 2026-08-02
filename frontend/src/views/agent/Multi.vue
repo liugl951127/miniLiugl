@@ -234,7 +234,12 @@ async function runStream() {
       onDone: () => {},
       onError: (err) => toast.error('启动失败: ' + err.message),
     })
-        else if (line.startsWith('data:')) {
+  } catch (e) {
+    toast.error('流式执行失败: ' + e.message)
+  } finally {
+    running.value = false
+  }
+}
           const data = line.substring(5).trim()
           if (curEvent && data) {
             try {
