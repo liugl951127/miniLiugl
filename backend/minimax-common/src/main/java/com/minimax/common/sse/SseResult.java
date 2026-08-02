@@ -26,9 +26,36 @@ public final class SseResult {
 
     /**
      * 发成功事件 (自动包 Result, code=0)
+     * 5 type 业务: start / content / tool_call / source / done
      */
     public static void send(SseEmitter emitter, String event, Object data) {
         send(emitter, event, data, 0, "success");
+    }
+
+    /**
+     * V3.7.28+ 业务自定义 event 类型
+     * 用于 agent 业务: step / thought / observation / final / planner-start / planner-plan / executor-step 等
+     * 跟标准 5 type 走一样的 Result 包装, 业务用 useBusinessStream 5 type 别名兼容 (chunk/toolcall/src/finish/err)
+     *
+     * @param emitter SseEmitter 实例
+     * @param event 事件名 (业务自定义, 例: "step", "thought", "observation")
+     * @param type 标准 type (例: "content" / "tool_call" / "source" / "done" / "error")
+     *              决定前端 useBusinessStream 路由到哪个 onXxx
+     * @param data 业务数据
+     */
+    public static void sendCustom(SseEmitter emitter, String event, String type, Object data) {
+        // V3.7.28+ 自定义 event + 标准 type 组合
+        // 实际发出去的结构: {code:0, message:"success", data:{type:"content", event:"step", content:"..."}, timestamp}
+        // 前端 useBusinessStream: 剥 Result.data, 看 data.type 路由, data.event 给业务用
+        try {
+            java.util.Map<String, Object> wrapped = new LinkedHashMap<>();
+            wrapped.put("event", event);
+            wrapped.put("type", type);
+            wrapped.putAll((java.util.Map) data);
+            send(emitter, event, wrapped);
+        } catch (Exception e) {
+            // ignore
+        }
     }
 
     /**
