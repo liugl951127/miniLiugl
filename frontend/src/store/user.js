@@ -43,8 +43,17 @@ export const useUserStore = defineStore(
 
     async function login(payload) {
       const res = await authApi.login(payload)
-      // V3.7.38+ http.js 自动剥, res 是业务数据; 兼容老 res.data 双层
-      const data = (res && res.data && res.data.accessToken) ? res.data : res
+      // V3.7.38+ http.js 自动剥, res 是业务数据; 兼容老 res.data 双层 + 各种 mock
+      // 1. res = {accessToken, ...} (V3.7.22+ 剥后)
+      // 2. res = {data: {accessToken, ...}} (老代码)
+      // 3. res = {data: {data: {accessToken, ...}}} (双层)
+      let data = res
+      if (data && data.data && (data.data.accessToken || data.data.user)) {
+        data = data.data
+        if (data && data.data && (data.data.accessToken || data.data.user)) {
+          data = data.data
+        }
+      }
       const { accessToken: at, refreshToken: rt, user } = data || {}
       accessToken.value = at || ''
       refreshToken.value = rt || ''
