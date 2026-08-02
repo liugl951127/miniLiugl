@@ -79,10 +79,20 @@ export const useUserStore = defineStore(
 
     async function refreshAccessToken() {
       if (!refreshToken.value) throw new Error('no refresh token')
+      try {
       const res = await authApi.refresh(refreshToken.value)
       accessToken.value = res.data.accessToken
       refreshToken.value = res.data.refreshToken
       return res.data.accessToken
+      } catch (e) {
+        // V3.7.11+ refreshToken 401 → 标记 invalid, 跳 login
+        if (e?.response?.status === 401) {
+          const err = new Error('refresh token invalid')
+          err.refreshTokenInvalid = true
+          throw err
+        }
+        throw e
+      }
     }
 
     async function logout() {
