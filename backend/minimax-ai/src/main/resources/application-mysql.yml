@@ -35,13 +35,6 @@ spring:
       lettuce:
         pool:
           max-active: 16
-  cloud:
-    nacos:
-      discovery:
-        enabled: false
-      config:
-        enabled: false
-
 # 关闭 OTEL exporter (避免连 localhost:4318 失败)
 otel:
   metrics:
