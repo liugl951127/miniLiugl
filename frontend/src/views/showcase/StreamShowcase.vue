@@ -173,7 +173,7 @@
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage } from 'element-plus'
+
 
 const activeType = ref('chat')
 const toast = useToast()

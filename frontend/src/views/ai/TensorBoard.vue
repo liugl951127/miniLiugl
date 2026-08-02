@@ -126,9 +126,8 @@
 // ───── 依赖导入 ─────
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage } from 'element-plus'
+
 import { Folder } from '@element-plus/icons-vue'
-import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { LineChart } from 'echarts/charts'

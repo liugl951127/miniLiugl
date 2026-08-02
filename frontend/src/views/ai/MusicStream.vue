@@ -125,7 +125,7 @@
 // ───── 依赖导入 ─────
 import { ref, computed, onUnmounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage } from 'element-plus'
+
 import { cancelMusicStream } from '@/api/ai'
 import EmptyState from '@/components/EmptyState.vue'
 

@@ -401,7 +401,7 @@ import { listSessions, createSession, deleteSession as deleteSessionApi } from '
 import { useBusinessStream } from '@/composables/useBusinessStream'
 import ChatMessage from '@/components/ChatMessage.vue'
 import { useSpeechCall } from '@/composables/useSpeechCall'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import {
   EditPen, Search, ChatDotRound, MoreFilled, Promotion, Cpu, Clock, MagicStick,
   UploadFilled, Picture, Loading, VideoPause, VideoPlay, CircleCloseFilled, Document, Share,

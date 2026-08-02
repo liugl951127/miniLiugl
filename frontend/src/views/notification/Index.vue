@@ -70,7 +70,7 @@
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import { useNotificationStore } from '@/store/notification'
 import {
   Bell, ChatDotRound, DocumentChecked, MagicStick,

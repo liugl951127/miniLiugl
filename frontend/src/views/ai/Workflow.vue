@@ -79,7 +79,7 @@
 import { ref } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
-import { ElMessage, ElMessageBox } from 'element-plus'
+
 import { executeWorkflow, validateWorkflow as apiValidate, dispatchPrompt } from '@/api/ai'
 import EmptyState from '@/components/EmptyState.vue'
 

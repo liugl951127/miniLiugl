@@ -134,7 +134,7 @@
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage } from 'element-plus'
+
 import { PictureFilled, Upload, MagicStick } from '@element-plus/icons-vue'
 import http from '@/api/http'
 import { describeImageOld as describeImageApi, getMultimodalInfoOld as getInfoApi } from '@/api/multimodal'

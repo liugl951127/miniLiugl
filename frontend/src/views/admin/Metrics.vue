@@ -129,13 +129,12 @@
 import { ref, computed, onMounted, onUnmounted, markRaw } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
-import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { PieChart, BarChart } from 'echarts/charts'
 import { TitleComponent, TooltipComponent, LegendComponent, GridComponent } from 'echarts/components'
 import http from '@/api/http'
-import { ElMessage } from 'element-plus'
+
 
 use([CanvasRenderer, PieChart, BarChart, TitleComponent, TooltipComponent, LegendComponent, GridComponent])
 

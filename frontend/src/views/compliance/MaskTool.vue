@@ -73,7 +73,7 @@
 // ───── 依赖导入 ─────
 import { ref, computed, readonly } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage } from 'element-plus'
+
 import { maskText } from '@/api/ai'
 
 const input = ref('')

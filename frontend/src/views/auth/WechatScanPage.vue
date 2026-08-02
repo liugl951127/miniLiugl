@@ -77,7 +77,7 @@ import { useToast } from '@/composables/useToast'
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
 import { useUserStore } from '@/store/user'
-import { ElMessage } from 'element-plus'
+
 import { ArrowLeft, HomeFilled, User } from '@element-plus/icons-vue'
 import { t } from '@/i18n'
 import { getMyBinding } from '@/api/wechat'

@@ -130,7 +130,7 @@
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage } from 'element-plus'
+
 import { pptGenerate, pptAuto, pptThemes, pptParse } from '@/api/ai'
 
 const mode = ref('manual')

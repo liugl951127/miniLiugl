@@ -165,7 +165,7 @@
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage } from 'element-plus'
+
 import { Refresh } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { trainingApi } from '@/api/training'

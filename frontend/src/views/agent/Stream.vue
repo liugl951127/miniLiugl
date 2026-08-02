@@ -105,7 +105,7 @@ import { useBusinessStream } from '@/composables/useBusinessStream'
 import { ref, computed, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 import http from '@/api/http'
-import { ElMessage } from 'element-plus'
+
 import { useUserStore } from '@/store/user'
 
 const goal = ref('查明天上海天气, 然后用计算器算 (123+456)*789, 最后把结果发邮件给 admin@minimax.com')

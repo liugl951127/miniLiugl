@@ -77,7 +77,7 @@
 import { ref } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { systemApi } from '@/api/system'
-import { ElMessage } from 'element-plus'
+
 
 const cards = [
   { day: 1, title: '项目骨架', desc: 'Spring Boot + Vue 3 + Docker 一键启动', icon: 'Box', color: '#5b8def', status: 'done' },

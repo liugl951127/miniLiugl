@@ -103,7 +103,7 @@
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import {
   demoTraining, listTrainingTasks, getTrainingHistory, deleteTrainingTask
 } from '@/api/ai'

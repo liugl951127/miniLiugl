@@ -68,7 +68,6 @@ test.describe('chat 流式交互', () => {
 
   test('4. 5 type 业务兼容 (chat 模式)', async ({ page }) => {
     // 验证 chat 页面 5 type 兼容 (onContent 流式累积)
-    const startTime = Date.now()
     await page.fill('[data-testid="chat-input"]', '测试')
     await page.click('[data-testid="chat-send"]')
 

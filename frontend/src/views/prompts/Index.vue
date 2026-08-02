@@ -169,7 +169,7 @@
 import { ref, reactive, computed, watch, onMounted, readonly } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import { Edit, Delete } from '@element-plus/icons-vue'
 import { promptApi } from '@/api/prompt'
 import { useUserStore } from '@/store/user'

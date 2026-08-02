@@ -156,7 +156,7 @@
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage } from 'element-plus'
+
 import { Plus, Refresh, Delete, DocumentCopy, Check, Close } from '@element-plus/icons-vue'
 import { t } from '@/i18n'
 import { apiKeyApi } from '@/api/apikey'

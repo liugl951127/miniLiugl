@@ -92,7 +92,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+
 import { Loading, User } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import http from '@/api/http'

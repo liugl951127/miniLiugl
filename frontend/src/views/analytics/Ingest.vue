@@ -84,7 +84,7 @@
 import { ref, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { UploadFilled } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+
 import { uploadIngestFile, getIngestTask, getIngestQuality } from '@/api/analytics'
 
 const tasks = ref([])

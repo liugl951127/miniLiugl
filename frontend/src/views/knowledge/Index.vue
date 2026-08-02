@@ -332,7 +332,7 @@
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import { Files, Document, Reading, Histogram, Plus, FolderOpened, Delete, Search, MagicStick, Upload, Edit, EditPen } from '@element-plus/icons-vue'
 import * as ragApi from '@/api/rag'
 import { promptApi } from '@/api/prompt'

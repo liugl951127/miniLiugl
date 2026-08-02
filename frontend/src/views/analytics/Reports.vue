@@ -64,7 +64,7 @@
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage } from 'element-plus'
+
 import { listDataSources, generateReport, getReport } from '@/api/analytics'
 
 const reports = ref([])

@@ -94,9 +94,7 @@ function getSubtitle(relPath, fileName) {
 
 // 找 view 第一个 el-table 或 el-card 或 main div, 在它前面插一个 section
 // 简化: 我们不重构内部, 只包外层
-function wrapWithPageContainer(content, fileName) {
   const title = TITLE_MAP[fileName] || `📄 ${fileName}`
-  const subtitle = getSubtitle('', fileName)
   return `<!--
   @file views/...${fileName}.vue (V3.5.75 标准化模板)
   @description ${title} - 套用 V3.5.74 page-dashboard 标准外壳
@@ -114,7 +112,6 @@ function getPageClass(fileName) {
 // 主函数
 function processFile(filePath) {
   const rel = path.relative(VIEWS_DIR, filePath)
-  const dirName = path.dirname(rel)
   const fileBase = path.basename(filePath, '.vue')
 
   // 跳过已 V3.5.74 改的

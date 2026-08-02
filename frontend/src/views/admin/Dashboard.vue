@@ -207,7 +207,6 @@
  *   6. i18n: 文案用 $t('key') 不硬编码
  */
 import * as echarts from 'echarts'
-import VChart from 'vue-echarts'
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoleDashboard } from '@/composables/useRoleDashboard'
 import {

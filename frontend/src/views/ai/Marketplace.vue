@@ -124,7 +124,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
-import { ElMessage } from 'element-plus'
+
 import { marketplaceApi } from '@/api/marketplace'
 import { useUserStore } from '@/store/user'
 import EmptyState from '@/components/EmptyState.vue'

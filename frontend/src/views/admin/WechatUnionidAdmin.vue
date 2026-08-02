@@ -134,7 +134,7 @@
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import { User } from '@element-plus/icons-vue'
 import http from '@/api/http'
 import dayjs from 'dayjs'

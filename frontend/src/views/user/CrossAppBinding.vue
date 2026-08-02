@@ -130,7 +130,7 @@
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import { Refresh, Unlock, FullScreen } from '@element-plus/icons-vue'
 import { getMyBinding, unbindMyself } from '@/api/wechat'
 import EmptyState from '@/components/EmptyState.vue'

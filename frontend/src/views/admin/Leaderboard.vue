@@ -109,7 +109,7 @@
 // ───── 依赖导入 ─────
 import { ref, onMounted, reactive } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage } from 'element-plus'
+
 import { Refresh } from '@element-plus/icons-vue'
 import {
   leaderboardOverall, leaderboardLatency,

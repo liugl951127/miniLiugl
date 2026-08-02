@@ -73,7 +73,7 @@
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage } from 'element-plus'
+
 import { nl2sqlAsk, nl2sqlExplain, nl2qlFeedback, nl2sqlHistory, dryRunQuery } from '@/api/analytics'
 import EmptyState from '@/components/EmptyState.vue'
 

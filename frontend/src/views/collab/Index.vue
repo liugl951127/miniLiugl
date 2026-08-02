@@ -240,7 +240,7 @@ import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import { Link } from '@element-plus/icons-vue'
 import {
   createRoom, getRoom, listPublicRooms, closeRoom,

@@ -43,7 +43,6 @@ const SYNC_TAG = 'minimax-bg-sync'
 
 // Periodic Background Sync
 const PERIODIC_TAG = 'minimax-periodic-sync'
-const PERIODIC_MIN_INTERVAL = 60 * 60 * 1000  // 1 小时
 
 // ========== Install / Activate (no cache) ==========
 

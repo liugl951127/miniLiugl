@@ -273,7 +273,7 @@
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import { ChatDotRound, DataAnalysis, Files, Star, Plus, Search, MagicStick, Delete, Refresh } from '@element-plus/icons-vue'
 import * as memApi from '@/api/memory'
 import { useUserStore } from '@/store/user'

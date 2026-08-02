@@ -95,7 +95,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
-import { ElMessage } from 'element-plus'
+
 import { autoAgentGroupGenerate, autoAgentGroupByTemplate, autoAgentGroupTemplates } from '@/api/ai'
 import EmptyState from '@/components/EmptyState.vue'
 

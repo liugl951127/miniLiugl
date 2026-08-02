@@ -6,7 +6,7 @@
 // 提供: 注册 SW / 安装提示 / 离线检测 / 更新提示 / 缓存控制
 
 import { ref, onMounted, onUnmounted } from 'vue'
-import { ElMessage, ElNotification } from 'element-plus'
+import { ElMessage } from 'element-plus'
 
 /**
  * PWA 能力封装

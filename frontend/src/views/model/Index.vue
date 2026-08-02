@@ -142,7 +142,7 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import EntityDrawer from '@/components/EntityDrawer.vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import { Cpu, Refresh, Plus } from '@element-plus/icons-vue'
 import http from '@/api/http'
 import { modelApi } from '@/api/model'

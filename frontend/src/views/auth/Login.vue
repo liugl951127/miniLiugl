@@ -169,7 +169,7 @@
     <section class="section demos-section">
       <h3 class="section-title">⚡ {{ t('login.demos.title') }}</h3>
       <el-row :gutter="12">
-        <el-col v-for="acc in demoAccounts"  :key="acc.username" :xs="12" :sm="8" :md="4">
+        <el-col v-for="acc in demoAccounts" :key="acc.username" :xs="12" :sm="8" :md="4">
           <el-card
             shadow="hover"
             class="demo-card"
@@ -220,7 +220,7 @@
 import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+
 import {
   User, UserFilled, Lock, Message, ChatLineRound, ChatDotRound, Plus,
   Cpu, Connection, ChatLineSquare, Promotion

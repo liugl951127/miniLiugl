@@ -123,7 +123,6 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive, computed, onMounted, watch } from 'vue'
-import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { BarChart, LineChart } from 'echarts/charts'

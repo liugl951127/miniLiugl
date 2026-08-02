@@ -170,7 +170,7 @@
 // ───── 依赖导入 ─────
 import { ref, computed, onUnmounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage } from 'element-plus'
+
 import { Microphone, VideoPause } from '@element-plus/icons-vue'
 import http from '@/api/http'
 import EmptyState from '@/components/EmptyState.vue'

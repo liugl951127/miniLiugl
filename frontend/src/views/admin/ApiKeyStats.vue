@@ -100,7 +100,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
-import { ElMessage } from 'element-plus'
+
 import { getApiKeyStats } from '@/api/admin'
 
 const { t } = useI18n()

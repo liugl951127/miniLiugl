@@ -94,7 +94,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import { Edit, Refresh, Delete, Check, Close } from '@element-plus/icons-vue'
 
 const props = defineProps<{

@@ -189,7 +189,7 @@
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import {
   intentPredict, intentPredictBatch, intentAddKeyword, intentAddPhrase,
   intentList, intentStats, intentBenchmark, intentGetConfig, intentUpdateConfig,

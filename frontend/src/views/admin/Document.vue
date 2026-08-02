@@ -103,7 +103,7 @@
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted, readonly } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage } from 'element-plus'
+
 import { Refresh, UploadFilled } from '@element-plus/icons-vue'
 import { documentParse, documentKeywords, documentFormats } from '@/api/ai'
 

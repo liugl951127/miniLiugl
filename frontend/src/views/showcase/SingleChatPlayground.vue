@@ -130,7 +130,7 @@
 // ───── 依赖导入 ─────
 import { ref, reactive } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage } from 'element-plus'
+
 import { Promotion, VideoPause } from '@element-plus/icons-vue'
 import http from '@/api/http'
 import EmptyState from '@/components/EmptyState.vue'

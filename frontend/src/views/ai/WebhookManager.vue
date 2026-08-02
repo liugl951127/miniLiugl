@@ -146,7 +146,7 @@
 // ───── 依赖导入 ─────
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import { webhookApi } from '@/api/webhook'
 import { useUserStore } from '@/store/user'
 

@@ -112,8 +112,7 @@
 import { ref, nextTick } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
-import { ElMessage } from 'element-plus'
-import PageContainer from '@/components/PageContainer.vue'
+
 import StateBlock from '@/components/StateBlock.vue'
 import { dispatchPrompt, listAiSessions, createAiSession } from '@/api/ai'
 import EmptyState from '@/components/EmptyState.vue'

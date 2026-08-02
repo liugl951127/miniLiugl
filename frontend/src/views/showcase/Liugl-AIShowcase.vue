@@ -172,7 +172,7 @@
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage } from 'element-plus'
+
 import { Promotion, Warning } from '@element-plus/icons-vue'
 import http from '@/api/http'
 import dayjs from 'dayjs'

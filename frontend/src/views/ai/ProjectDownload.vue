@@ -88,7 +88,7 @@
 // ───── 依赖导入 ─────
 import { reactive, ref } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage } from 'element-plus'
+
 import { Download } from '@element-plus/icons-vue'
 import { projectDownloadGet, projectDownloadPost } from '@/api/ai'
 

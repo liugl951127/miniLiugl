@@ -155,7 +155,7 @@
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage } from 'element-plus'
+
 import { CircleCheckFilled, Loading, WarningFilled } from '@element-plus/icons-vue'
 import { listProviders } from '@/api/model'
 

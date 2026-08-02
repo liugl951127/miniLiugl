@@ -123,7 +123,7 @@
 // ───── 依赖导入 ─────
 import { ref, computed, onUnmounted, nextTick } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { ElMessage } from 'element-plus'
+
 import { cancelVideoStream } from '@/api/ai'
 import EmptyState from '@/components/EmptyState.vue'
 
