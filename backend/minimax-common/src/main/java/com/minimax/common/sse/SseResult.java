@@ -20,12 +20,13 @@ import java.util.Map;
  *   SseResult 自动根据路由表找 type (content/tool_call/source/error)
  *   前端 useBusinessStream 按 type 路由到 onXxx
  *
- * 用法:
+ * 用法 (V3.7.33+ 推荐):
  *   SseEmitter emitter = new SseEmitter(120_000L);
- *   SseResult.send(emitter, "content", Map.of("content", "hello"));  // 5 type 标准
  *   SseResult.sendBusiness(emitter, "thought", Map.of("content", "..."));  // 业务自动路由
- *   SseResult.sendError(emitter, "stream failed");
- *   SseResult.complete(emitter);
+ *   SseResult.sendBusiness(emitter, "content", Map.of("content", "hello"));  // 标准 5 type
+ *   SseResult.sendDone(emitter);  // 完成
+ *   SseResult.sendError(emitter, "stream failed");  // 错误
+ *   SseResult.complete(emitter);  // 关闭 emitter
  */
 public final class SseResult {
 
