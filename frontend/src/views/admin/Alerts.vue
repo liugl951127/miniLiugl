@@ -180,8 +180,7 @@
 </template>
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, computed, onMounted, onUnmounted, watch, nextTick} from 'vue'
-import * as echarts from 'echarts'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { ElMessageBox } from 'element-plus'
