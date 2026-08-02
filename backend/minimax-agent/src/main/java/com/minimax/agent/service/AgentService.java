@@ -451,9 +451,23 @@ public class AgentService {
 
     private void sendEvent(SseEmitter emitter, String event, Object data) {
         try {
+            // V3.7.25+ error/done 事件自动包 Result (跟 HTTP 接口统一)
+            Object payload = data;
+            if ("error".equals(event) || "done".equals(event)) {
+                int code = "error".equals(event) ? 1 : 0;
+                String msg = "error".equals(event) 
+                    ? (data instanceof java.util.Map ? (String) ((java.util.Map<?,?>) data).get("message") : "业务错误")
+                    : "success";
+                payload = java.util.Map.of(
+                    "code", code,
+                    "message", msg,
+                    "data", data,
+                    "timestamp", System.currentTimeMillis()
+                );
+            }
             emitter.send(SseEmitter.event()
                 .name(event)
-                .data(data, MediaType.APPLICATION_JSON));
+                .data(payload, MediaType.APPLICATION_JSON));
         } catch (IOException e) {
             log.warn("SSE 发送失败 event={}: {}", event, e.getMessage());
         }

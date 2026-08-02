@@ -59,8 +59,20 @@ export async function sendMessageStream(sessionId, body, opts = {}) {
             return
           }
           try {
-            const obj = JSON.parse(data)
-            if (obj.type === 'chunk' && obj.content) {
+            let obj = JSON.parse(data)
+            // V3.7.25+ Result 包装自动剥
+            if (obj && typeof obj === 'object' && 'code' in obj && 'data' in obj && obj.code === 0) {
+              obj = obj.data
+            }
+            // V3.7.25+ 业务错误 (code !== 0)
+            if (obj && typeof obj === 'object' && 'code' in obj && obj.code !== 0) {
+              const err = new Error(obj.message || 'SSE 业务错误')
+              err.__result = obj
+              onError && onError(err)
+              return
+            }
+            // V3.7.25+ 5 type 统一 (兼容老 chunk)
+            if ((obj.type === 'content' || obj.type === 'chunk') && obj.content) {
               onChunk && onChunk(obj.content)
             } else if (obj.type === 'tool_call' && onToolCall) {
               onToolCall(obj.toolCall)
@@ -69,7 +81,9 @@ export async function sendMessageStream(sessionId, body, opts = {}) {
             } else if (obj.type === 'done') {
               onDone && onDone()
             } else if (obj.type === 'error') {
-              onError && onError(new Error(obj.message))
+              const err = new Error(obj.message || obj.error || '业务错误')
+              err.__result = obj
+              onError && onError(err)
             }
           } catch (e) {
             // 非 JSON 行忽略
