@@ -41,13 +41,13 @@ public class MessageController {
     }
 
     /**
-     * V3.7.26+ SSE 流式对话
-     * 
+     * V3.7.31+ SSE 流式对话 (统一 sendBusiness + sendDone + sendError)
+     *
      * 跟 HTTP 接口统一:
-     *   - 成功: SseResult.send(emitter, "content", {content: "..."}) → {code:0, data:{content:"..."}}
-     *   - 错误: SseResult.sendError(emitter, "msg") → {code:1, data:{message:"msg"}}
-     *   - 完成: SseResult.sendDone(emitter) → {code:0, data:{status:"finished"}}
-     * 
+     *   - 业务事件: SseResult.sendBusiness(emitter, "content", {content: "..."}) → 自动查 type=content
+     *   - 完成: SseResult.sendDone(emitter) → {code:0, status:"finished"}
+     *   - 错误: SseResult.sendError(emitter, "msg") → {code:1, message:"msg"}
+     *
      * 前端: useBusinessStream 自动剥 Result.data + 错误处理
      */
     @Operation(summary = "SSE 流式对话 (V3.7.26+ Result 包装)")
@@ -60,23 +60,24 @@ public class MessageController {
         
         SSE_EXECUTOR.execute(() -> {
             try {
-                // 1. start 事件 (V3.7.26+ 5 type 统一)
-                Map<String, Object> startData = new LinkedHashMap<>();
-                startData.put("streamId", UUID.randomUUID().toString());
-                startData.put("sessionId", sessionId);
-                startData.put("status", "started");
-                SseResult.send(emitter, "start", startData);
+                // V3.7.31+ sendBusiness 自动查 type (start→content, content→content, done→sendDone)
+                // 1. start 事件 (自动 type=content, 走 onContent)
+                SseResult.sendBusiness(emitter, "start", Map.of(
+                    "streamId", UUID.randomUUID().toString(),
+                    "sessionId", sessionId,
+                    "status", "started"
+                ));
                 
                 // 2. 调 service 拿流式内容 (这里简化: 用 mock 演示)
                 // 实际生产: messageService.streamAppend(userId, sessionId, req, emitter)
                 String[] words = ("收到你的消息: " + req.getContent()).split("");
                 for (String word : words) {
                     if (word.isEmpty()) continue;
-                    SseResult.send(emitter, "content", Map.of("content", word));
+                    SseResult.sendBusiness(emitter, "content", Map.of("content", word));
                     Thread.sleep(50);
                 }
                 
-                // 3. done 事件
+                // 3. done 事件 (专用 sendDone)
                 SseResult.sendDone(emitter);
             } catch (Exception e) {
                 SseResult.sendError(emitter, e.getMessage());
