@@ -66,7 +66,7 @@ describe('chat/agent 端到端业务流', () => {
 
     // 完整流式回复累积
     expect(messages.value.join('')).toBe('你好，世界!')
-    expect(onContent).toHaveBeenCalledTimes(7) // start + 6 content
+    expect(onContent).toHaveBeenCalledTimes(6) // 6 content (start 没 content 字段, 但有 streamId)
   })
 
   it('2. agent 完整业务流: 用户目标 → 思考 → 工具 → 最终', async () => {
