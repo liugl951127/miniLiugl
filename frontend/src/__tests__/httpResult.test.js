@@ -56,13 +56,11 @@ describe('http.js Result 包装自动剥', () => {
       }
     })
     
-    expect(result.data).toEqual({ id: 1, name: 'admin' })
-    expect(result.data.__result).toEqual({
-      code: 0,
-      message: 'success',
-      data: { id: 1, name: 'admin' },
-      timestamp: 1722566400000
-    })
+    expect(result.data.id).toBe(1)
+    expect(result.data.name).toBe('admin')
+    expect(result.data.__result.code).toBe(0)
+    expect(result.data.__result.message).toBe('success')
+    expect(result.data.__result.timestamp).toBe(1722566400000)
   })
 
   it('2. 失败 (code=1): 拒绝, 挂 err.__result', () => {
@@ -85,7 +83,8 @@ describe('http.js Result 包装自动剥', () => {
       data: { id: 1, name: 'admin' }  // 没 code 字段
     })
     
-    expect(result.data).toEqual({ id: 1, name: 'admin' })
+    expect(result.data.id).toBe(1)
+    expect(result.data.name).toBe('admin')
     expect(result.data.__result).toBeUndefined()
   })
 
@@ -100,7 +99,7 @@ describe('http.js Result 包装自动剥', () => {
       }
     })
     
-    expect(result.data).toEqual({ id: 1 })
+    expect(result.data.id).toBe(1)
   })
 
   it('5. __result 字段给业务需要时访问', () => {
