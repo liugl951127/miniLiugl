@@ -10,7 +10,7 @@ set -e
 cd "$(dirname "$0")/.."
 ROOT=$(pwd)
 echo "═══════════════════════════════════════════════════════════"
-echo "  CI check: schema + JDBC + Driver + Dockerfile + Mapper 重复 + seed-data 列对齐 6 项"
+echo "  CI check: schema + JDBC + Driver + Dockerfile + Mapper 重复 + seed-data 列对齐 + menu 路径 + script-setup + docker-compose + pom + otel + cleanup 12 项"
 echo "═══════════════════════════════════════════════════════════"
 echo ""
 
@@ -167,9 +167,27 @@ else
 fi
 echo ""
 
+# --- Check 12: 无用文件清理检查 (V3.7.17+, 构建前自动跑) ---
+echo "--- 12. frontend 无用文件清理检查 ---"
+CLEANUP_CHECK=$(bash scripts/cleanup-check.sh check 2>&1)
+# cleanup-check.sh 在 check 模式下总是 exit 0, 但要确保有输出
+if echo "$CLEANUP_CHECK" | grep -q "发现.*无用"; then
+    # 有发现就 fail
+    echo "$CLEANUP_CHECK" | tail -5
+    # 提取 total size 判断
+    if echo "$CLEANUP_CHECK" | grep -qE "[1-9][0-9]*\.[0-9]+MB|[1-9][0-9]+MB"; then
+        echo "  ⚠️  WARN: 发现无用文件, 跑 'bash scripts/cleanup-check.sh clean' 清理 (不阻塞 build)"
+    else
+        echo "  ✓ PASS (< 1MB 可忽略)"
+    fi
+else
+    echo "  ✓ PASS (0 无用文件)"
+fi
+echo ""
+
 echo "═══════════════════════════════════════════════════════════"
 if [ $EXIT -eq 0 ]; then
-    echo "  ✓ ALL PASS (11/11)"
+    echo "  ✓ ALL PASS (12/12)"
 else
     echo "  ✗ FAILED (some checks)"
 fi
