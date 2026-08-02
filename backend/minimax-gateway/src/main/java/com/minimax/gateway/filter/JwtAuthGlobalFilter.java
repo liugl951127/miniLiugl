@@ -188,8 +188,16 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
         try {
             // 5. 懒加载 HMAC 密钥 (第一次请求时构造, 后续复用)
             if (key == null) {
-                // hmacShaKeyFor: 字节数组转 SecretKey
-                key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+                // V3.7.13+ 跟 auth 保持一致: SHA-256 规整成 32 字节, 强制 HS256
+                // 之前用 jwtSecret.getBytes(UTF_8) = 64 bytes, JJWT 自动选 HS512
+                // 但 auth.signWith(Jwts.SIG.HS256) 用 SHA-256(secret), 算法不一致 → 401
+                try {
+                    java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+                    byte[] hash = md.digest(jwtSecret.getBytes(StandardCharsets.UTF_8));
+                    key = Keys.hmacShaKeyFor(hash);
+                } catch (java.security.NoSuchAlgorithmException e) {
+                    throw new IllegalStateException("SHA-256 not available", e);
+                }
             }
 
             // 6. 解析并验证 JWT (签名 + 过期)
