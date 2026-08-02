@@ -47,9 +47,9 @@ describe('useBusinessStream 6 type E2E', () => {
   it('1. agent 8 事件: 5 type 路由 + content/tool_call/source', async () => {
     fetch.mockResolvedValueOnce(mockSSE([
       { event: 'start', data: { type: 'content', streamId: 's1' } },
-      { event: 'tools', data: { type: 'source', tools: [{ name: 'search' }] } },
+      { event: "tools", data: { type: "source", source: { tools: [{ name: "search" }] } } },
       { event: 'thought', data: { type: 'content', content: 'thinking' } },
-      { event: 'tool-call', data: { type: 'tool_call', name: 'search', args: { q: 'x' } } },
+      { event: "tool-call", data: { type: "tool_call", toolCall: { name: "search", args: { q: "x" } } } },
       { event: 'observation', data: { type: 'content', content: 'result' } },
     ]))
 
@@ -131,8 +131,8 @@ describe('useBusinessStream 6 type E2E', () => {
   it('5. 6 type 路由分别触发', async () => {
     fetch.mockResolvedValueOnce(mockSSE([
       { event: 'start', data: { type: 'content', content: 'x' } },
-      { event: 'tool-call', data: { type: 'tool_call', name: 'x' } },
-      { event: 'tools', data: { type: 'source', tools: [] } },
+      { event: "tool-call", data: { type: "tool_call", toolCall: { name: "x" } } },
+      { event: "tools", data: { type: "source", source: { tools: [] } } },
     ]))
 
     const { send } = useBusinessStream()
@@ -149,8 +149,8 @@ describe('useBusinessStream 6 type E2E', () => {
   it('6. 5 type 兼容别名 (chunk/toolcall/src/finish/err)', async () => {
     fetch.mockResolvedValueOnce(mockSSE([
       { event: 'chunk', data: { type: 'content', content: 'old chunk' } },
-      { event: 'toolcall', data: { type: 'tool_call', name: 'old' } },
-      { event: 'src', data: { type: 'source', url: 'old' } },
+      { event: "toolcall", data: { type: "tool_call", toolCall: { name: "old" } } },
+      { event: "src", data: { type: "source", source: { url: "old" } } },
     ]))
 
     const { messages, toolCalls, sources, send } = useBusinessStream()
