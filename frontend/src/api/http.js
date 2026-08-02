@@ -77,9 +77,8 @@ http.interceptors.response.use(
       const err = new Error(data.message || 'Request failed')
       err.code = data.code
       err.traceId = respTraceId
-      // V3.7.22+ 失败时返回整个 Result (业务可能要 code/message)
-      err.result = data
-      err.__result = data  // V3.7.23+ 跟成功路径统一字段名
+      // V3.7.24+ 成功/失败统一 __result 字段 (业务 e.__result 始终可用)
+      err.__result = data
       return Promise.reject(err)
     }
     // V3.7.22+ 自动剥 Result.data (成功时)
@@ -93,7 +92,7 @@ http.interceptors.response.use(
       if (data && typeof data === 'object' && 'code' in data && 'data' in data) {
         data = data.data
       }
-      // 挂载原 result 方便业务需要时访问
+      // V3.7.24+ 挂载 __result 给业务 (成功/失败统一字段名)
       if (data && typeof data === 'object') {
         data.__result = original
       }

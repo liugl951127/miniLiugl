@@ -67,7 +67,19 @@ export function useChatStream() {
               return
             }
             try {
-              const json = JSON.parse(data)
+              let json = JSON.parse(data)
+              // V3.7.24+ chat SSE 也支持 Result 包装: {code, data: {type, content, toolCall, ...}}
+              // 自动剥 data 字段 (跟 http.js 拦截器逻辑一致)
+              if (json && typeof json === 'object' && 'code' in json && 'data' in json && json.code === 0) {
+                json = json.data
+              }
+              // V3.7.24+ 业务错误 (code !== 0)
+              if (json && typeof json === 'object' && 'code' in json && json.code !== 0) {
+                const err = new Error(json.message || 'Chat SSE 业务错误')
+                err.__result = json
+                if (onError) onError(err)
+                return
+              }
               if (json.type === 'content' && json.content) {
                 messages.value.push(json.content)
                 if (onMessage) onMessage(json.content)
@@ -81,7 +93,9 @@ export function useChatStream() {
                 if (onDone) onDone()
                 return
               } else if (json.type === 'error') {
-                if (onError) onError(json.error)
+                const err = new Error(json.error || '业务错误')
+                err.__result = json
+                if (onError) onError(err)
                 return
               }
             } catch (e) {
