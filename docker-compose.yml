@@ -173,6 +173,8 @@ services:
     environment:
       <<: *jvm-env
       SERVER_PORT: "7080"
+      JWT_SECRET: "7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6"
+      MINIMAX_JWT_SECRET: "7add49533ee0e8f59e581884ff053c2f916a0673985e65d6b549a4f81d7dc0a6"
     ports: ["7080:7080"]
     volumes: *maven-volumes
     networks: [minimax-net]

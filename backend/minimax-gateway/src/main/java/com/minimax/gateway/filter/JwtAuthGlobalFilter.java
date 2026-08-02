@@ -213,7 +213,7 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
             //    sub: 用户 ID (Long 类型, 与 auth-service 签发时一致)
             //    uname: 用户名
             //    roles: 角色列表 (e.g. ["USER", "ADMIN"])
-            Long userId = claims.get(CLAIM_SUB, Long.class);
+            Long userId = Long.parseLong(claims.getSubject());
             String username = claims.get(CLAIM_UNAME, String.class);
             List<String> roles = claims.get(CLAIM_ROLES, List.class);
 
