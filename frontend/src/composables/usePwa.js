@@ -36,7 +36,13 @@ export function usePwa() {
       return
     }
     try {
-      registration = await navigator.serviceWorker.register('/sw.js?v=3.5.92', {
+      // V3.7.19+ 动态版本号 (vite plugin 编译时注入, dev 模式用 Date.now)
+      // 之前硬编码 v3.5.92, 浏览器缓存了老 SW, 新 SW install 后没法触发 needRefresh
+      // 改用动态 __SW_BUILD_TIME__ (vite plugin 替换) 或 build time (dev fallback)
+      const buildVersion = (typeof __SW_BUILD_TIME__ !== 'undefined') 
+        ? __SW_BUILD_TIME__ 
+        : new Date().toISOString()
+      registration = await navigator.serviceWorker.register(`/sw.js?v=${encodeURIComponent(buildVersion)}`, {
         scope: '/'
       })
       swRegistered.value = true

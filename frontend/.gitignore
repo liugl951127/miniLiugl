@@ -19,3 +19,4 @@ playwright-report/
 *.tsbuildinfo
 .DS_Store
 Thumbs.db
+.sw-build-time.json
