@@ -455,9 +455,11 @@ public class AgentService {
      */
     private void sendEvent(SseEmitter emitter, String event, Object data) {
         if ("error".equals(event) || "step-error".equals(event)) {
+            // V3.7.37+ 修: 用 .get() 避免 capture#1 of ? 错误
             String msg = data instanceof java.util.Map 
-                ? (String) ((java.util.Map<?,?>) data).getOrDefault("message", "业务错误")
+                ? String.valueOf(((java.util.Map<?,?>) data).get("message"))
                 : String.valueOf(data);
+            if (msg == null || msg.isEmpty()) msg = "业务错误";
             SseUtil.sendError(emitter, msg);
         } else if ("done".equals(event)) {
             SseUtil.sendDone(emitter);

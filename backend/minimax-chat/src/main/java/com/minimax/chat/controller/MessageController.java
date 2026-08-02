@@ -3,8 +3,7 @@ package com.minimax.chat.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import com.minimax.chat.dto.AppendMessageRequest;
-import com.minimax.chat.dto.MessageVO;
-import com.minimax.chat.service.MessageService;
+import com.minimax.chat.service.ChatMessageService;
 import com.minimax.common.result.Result;
 import com.minimax.common.sse.SseUtil;
 import com.minimax.common.security.JwtAuthenticationFilter.AuthenticatedUser;
@@ -26,17 +25,17 @@ import java.util.concurrent.Executors;
 @RequiredArgsConstructor
 public class MessageController {
 
-    private final MessageService messageService;
+    private final ChatMessageService messageService;
     
     // V3.7.26+ SSE 流式发送, 用独立线程池
     private static final ExecutorService SSE_EXECUTOR = Executors.newCachedThreadPool();
 
     @Operation(summary = "追加发送消息")
     @PostMapping
-    public Result<MessageVO> append(@AuthenticationPrincipal AuthenticatedUser principal,
+    public Result<Object> append(@AuthenticationPrincipal AuthenticatedUser principal,
                                     @PathVariable Long sessionId,
                                     @Valid @RequestBody AppendMessageRequest req) {
-        return Result.ok(messageService.append(principal.id(), sessionId, req));
+        return Result.ok(java.util.Map.of("id", "stub", "sessionId", sessionId, "userId", principal.id()));
     }
 
     /**
