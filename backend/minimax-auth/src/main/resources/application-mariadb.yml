@@ -90,7 +90,7 @@ minimax:
     super-admin-password: ${SUPER_ADMIN_PASSWORD:Liugl@2026}
     super-admin-email: ${SUPER_ADMIN_EMAIL:liugl951127@gmail.com}
   jwt:
-    secret: ${JWT_SECRET:mVsZlpnzIoXX8f+SxZPIJbsbQyatC3J+9EKrE6pJA2w=}
+    secret: ${MINIMAX_JWT_SECRET:a9b33d29b5e2728699fc02fe5f1aad70d2a0eb95c4313b786005573f6b913478}
     access-token-expire-seconds: 1800
     refresh-token-expire-seconds: 604800
   captcha:
