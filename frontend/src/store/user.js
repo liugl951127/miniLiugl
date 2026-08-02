@@ -43,17 +43,21 @@ export const useUserStore = defineStore(
 
     async function login(payload) {
       const res = await authApi.login(payload)
-      const { accessToken: at, refreshToken: rt, user } = res.data
-      accessToken.value = at
-      refreshToken.value = rt
-      profile.value = user
+      // V3.7.21+ 后端用 Result<LoginResponse> 包装, 前端剥 data.data
+      // 之前 res.data = { code, message, data: LoginResponse, timestamp } 整个 Result
+      // 解构顶层 accessToken/refreshToken/user 全是 undefined → profile.value = undefined → 渲染错
+      const { accessToken: at, refreshToken: rt, user } = res.data.data || res.data || {}
+      accessToken.value = at || ''
+      refreshToken.value = rt || ''
+      profile.value = user || null
       return res
     }
 
     async function fetchProfile() {
       try {
         const res = await authApi.me()
-        profile.value = res.data
+        // V3.7.21+ 剥 Result.data
+        profile.value = res.data.data || res.data
         return res
       } catch (e) {
         // V3.5.93: 失败时设空 profile, 避免 layout 空白
@@ -81,9 +85,11 @@ export const useUserStore = defineStore(
       if (!refreshToken.value) throw new Error('no refresh token')
       try {
       const res = await authApi.refresh(refreshToken.value)
-      accessToken.value = res.data.accessToken
-      refreshToken.value = res.data.refreshToken
-      return res.data.accessToken
+      // V3.7.21+ 剥 Result.data
+      const data = res.data.data || res.data || {}
+      accessToken.value = data.accessToken || ''
+      refreshToken.value = data.refreshToken || ''
+      return data.accessToken
       } catch (e) {
         // V3.7.11+ refreshToken 401 → 标记 invalid, 跳 login
         if (e?.response?.status === 401) {
