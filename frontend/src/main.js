@@ -50,4 +50,8 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }
 
+// V3.7.38+ 全局注册 vue-echarts 组件 (10+ view 用 <v-chart>)
+import VChart from 'vue-echarts'
+app.component('v-chart', VChart)
+
 app.mount('#app')
