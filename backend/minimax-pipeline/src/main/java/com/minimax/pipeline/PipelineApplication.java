@@ -2,9 +2,10 @@ package com.minimax.pipeline;
 
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
-import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.scheduling.annotation.EnableAsync;
+
 
 /**
  * 画布工作流数据分析模块 (V5.32)
