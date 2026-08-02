@@ -329,7 +329,7 @@ const onCreate = async () => {
       isPublic: createForm.isPublic,
       maxParticipants: createForm.maxParticipants
     })
-    const room = res.data.data
+    const room = res.data
     toast.success(`房间已创建: ${room.roomId}`)
     doJoin(room.roomId)
   } catch (e) {
@@ -490,7 +490,7 @@ const connectWs = async (rid) => {
   try {
     const res = await getRoom(rid)
     if (res.data?.code === 0 && res.data?.data) {
-      roomInfo.value = res.data.data
+      roomInfo.value = res.data
     } else {
       toast.error('房间不存在')
       joined.value = false

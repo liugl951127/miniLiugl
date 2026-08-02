@@ -79,6 +79,7 @@ http.interceptors.response.use(
       err.traceId = respTraceId
       // V3.7.22+ 失败时返回整个 Result (业务可能要 code/message)
       err.result = data
+      err.__result = data  // V3.7.23+ 跟成功路径统一字段名
       return Promise.reject(err)
     }
     // V3.7.22+ 自动剥 Result.data (成功时)

@@ -66,7 +66,12 @@ export function useSSEStream() {
               return
             }
             try {
-              const json = JSON.parse(data)
+              let json = JSON.parse(data)
+              // V3.7.23+ SSE 也支持 Result 包装: {code, data: {content, done}, ...}
+              // 自动剥 data 字段
+              if (json && typeof json === 'object' && 'code' in json && 'data' in json && json.code === 0) {
+                json = json.data
+              }
               // 处理 chunk
               if (json.content) {
                 fullText.value += json.content
@@ -75,6 +80,12 @@ export function useSSEStream() {
               if (json.done) {
                 isStreaming.value = false
                 progress.value = 100
+              }
+              // V3.7.23+ 业务错误 (code !== 0)
+              if (json && typeof json === 'object' && 'code' in json && json.code !== 0) {
+                error.value = new Error(json.message || 'SSE 业务错误')
+                error.value.__result = json
+                isStreaming.value = false
               }
             } catch (e) {
               // 纯文本

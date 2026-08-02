@@ -221,7 +221,7 @@ const test = async (wh) => {
   try {
     const res = await webhookApi.test(wh.webhookId)
     if (res.data?.code === 0) {
-      const d = res.data.data
+      const d = res.data
       toast.success(`测试投递 ${d.status} (${d.responseStatus || 'N/A'})`)
       loadAll()
       showDeliveries(wh)

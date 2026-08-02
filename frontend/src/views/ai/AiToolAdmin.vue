@@ -221,7 +221,7 @@ async function doInvoke() {
     const res = await apiInvokeTool(t.code, input)
     if (res.data && res.data.success) {
       toast.success(`调用成功 (${res.data.durationMs || 0}ms)`)
-      let body = res.data.data || res.data
+      let body = res.data
       if (body && body.zipBase64) {
         try {
           const bin = atob(body.zipBase64)
@@ -387,7 +387,7 @@ async function runAnalysis() {
       column: analysisForm.value.column
     })
     if (res.data.success) {
-      analysisResult.value = res.data.data
+      analysisResult.value = res.data
       toast.success(`分析完成 (${res.data.durationMs}ms)`)
     } else {
       toast.error('分析失败: ' + res.data.message)
