@@ -14,7 +14,7 @@ const KPI_EMOJI = {
   // AUDITOR
   totalLogs: '📋', securityEvents: '🚨', complianceScore: '✅', auditReports: '📑',
   // USER
-  myChats: '💬', myAgents: '🤖', ragQueries: '🔎', tools: '🛠️',
+  myChats: '💬', myAgents: '🤖', ragQueries: '🔎', userTools: '🛠️',
 }
 
 export function useRoleDashboard() {

@@ -77,5 +77,14 @@ module.exports = {
     'vue/no-use-v-if-with-v-for': 'off',
     'vue/no-ref-as-operand': 'off',
     'vue/multiline-html-element-content-newline': 'off'
-  }
+  },
+  overrides: [
+    {
+      // V3.7.38+ i18n 嵌套对象设计允许重复 key (chat/monitor/kg/agent/admin 在不同 module)
+      files: ['src/i18n/locales/*.js'],
+      rules: {
+        'no-dupe-keys': 'off'
+      }
+    }
+  ]
 }

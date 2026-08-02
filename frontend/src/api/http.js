@@ -110,13 +110,13 @@ http.interceptors.response.use(
     if ((status === 401 || code === 1002) && !err.config?._retry) {
       // V3.7.4: 登录页 401 不跳走, 让 Login.vue 显示错误
       const isLoginRequest = err.config?.url?.includes('/auth/login') || err.config?.url?.includes('/sessions')
+      // V3.7.4: 登录页 401 不跳走, 让 Login.vue 显示错误
       if (isLoginRequest) {
         return Promise.reject(err)
-
+      }
       // V3.7.10+ silent 模式: 401 不跳走, 让调用方 catch 处理
       if (err.config?._silent) {
         return Promise.reject(err)
-      }
       }
       const userStore = useUserStore()
       if (userStore.refreshToken) {

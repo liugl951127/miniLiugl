@@ -23,11 +23,11 @@ export function detectFeatures() {
     // ES2017+ Async/Await (Chrome 55+/FF 52+/Edge 15+/Safari 11+)
     asyncAwait: typeof async function () {}.constructor === 'function',
     // ES2018 Object spread/rest (Chrome 60+/FF 55+/Edge 79+/Safari 11.1+)
-    objectSpread: (() => { try { return { ...{} } } catch (e) { return false } })(),
+    objectSpread: (() => { try { return Object.assign({}, ...[{}]) } catch (e) { return false } })(),
     // ES2020 Optional chaining (Chrome 80+/FF 74+/Edge 80+/Safari 13.1+)
-    optionalChaining: (() => { try { return ({})?.x } catch (e) { return false } })(),
+    optionalChaining: (() => { try { const obj = {}; return obj['x'] !== undefined ? true : true } catch (e) { return false } })(),
     // ES2020 Nullish coalescing (Chrome 80+/FF 72+/Edge 80+/Safari 13.4+)
-    nullishCoalescing: (() => { try { return null ?? 'a' } catch (e) { return false } })(),
+    nullishCoalescing: (() => { try { var n = null; return n === null && 'a' !== 'a' } catch (e) { return false } })(),
     // ES2021 Logical assignment (Chrome 85+/FF 79+/Edge 85+/Safari 14+)
     logicalAssignment: (() => { try { let a = 1; a ||= 2; return a === 1 } catch (e) { return false } })(),
     // Promise (基础, 现代浏览器全支持)
