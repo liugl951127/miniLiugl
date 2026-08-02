@@ -174,7 +174,7 @@
             shadow="hover"
             class="demo-card"
             :class="`role-${acc.roleKey}`"
-            @click="fillAccount(acc.roleKey)"
+            @click="fillAccount(acc)"
           >
             <div class="demo-avatar">{{ acc.avatar }}</div>
             <div class="demo-role">{{ acc.role }}</div>
