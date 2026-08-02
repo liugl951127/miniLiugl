@@ -44,7 +44,7 @@ const GLOBALS = new Set([
   'JSON', 'Date', 'Math', 'Array', 'Object', 'Boolean', 'Promise',
   'Map', 'Set', 'Symbol', 'Error', 'RegExp', 'encodeURI', 'decodeURI',
   'encodeURIComponent', 'decodeURIComponent',
-  't', '$emit', 'formatTime', 'truncate', 'formatDate', 'formatSize', 'formatTimestamp',
+  't', '$emit', 'emit', 'url', 'formatTime', 'truncate', 'formatDate', 'formatSize', 'formatTimestamp',
   'toast', 'router', 'route', 'var', 'rgba',
 ])
 
