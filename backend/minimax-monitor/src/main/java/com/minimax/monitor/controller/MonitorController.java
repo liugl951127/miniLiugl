@@ -13,6 +13,10 @@ import com.minimax.monitor.entity.AlertRule;
 import com.minimax.monitor.entity.MetricSnapshot;
 import com.minimax.monitor.health.HealthDetailService;
 import com.minimax.monitor.service.AlertChannelService;
+import com.minimax.monitor.service.AlertRcaService;
+import com.minimax.monitor.service.AlertRcaService.RcaResult;
+import com.minimax.monitor.service.LogAnomalyDetector;
+import com.minimax.monitor.service.LogAnomalyDetector.AnomalyResult;
 import com.minimax.monitor.service.SnapshotService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,6 +36,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -74,6 +79,8 @@ public class MonitorController {
     private final AlertNotifierManager notifierManager;
     private final AlertStreamRegistry alertStreamRegistry;
     private final AlertEventMapper alertEventMapper;
+    private final AlertRcaService rcaService;
+    private final LogAnomalyDetector anomalyDetector;
 
     // V5.10: Java HttpClient 复用 (跨服务调 /actuator/prometheus)
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -248,6 +255,95 @@ public class MonitorController {
     public Result<Void> deleteChannel(@PathVariable Long id) {
         alertChannelService.delete(id);
         return Result.ok();
+    }
+
+    // ---------- Day 31: RCA 根因分析 + 异常检测 ----------
+
+    /**
+     * 对指定告警事件进行 RCA 根因分析 (Day 31).
+     */
+    @Operation(summary = "告警 RCA 分析 (Day 31)")
+    @PostMapping("/alerts/{id}/rca")
+    public Result<Map<String, Object>> rcaAnalysis(@PathVariable Long id,
+                                                    @RequestBody(required = false) Map<String, Object> body) {
+        AlertEvent event = alertEventMapper.selectById(id);
+        if (event == null) {
+            return Result.fail("告警事件不存在: " + id);
+        }
+        // 取最近 10 条同类告警做上下文
+        List<AlertEvent> recent = alert.recentEvents(10).stream()
+                .filter(e -> e.getMetricName() != null
+                        && e.getMetricName().equals(event.getMetricName())
+                        && e.getId() != id)
+                .toList();
+        RcaResult rca = rcaService.analyze(event, recent);
+
+        Map<String, Object> resp = new LinkedHashMap<>();
+        resp.put("alertId", id);
+        resp.put("alert", Map.of(
+                "ruleName", event.getRuleName(),
+                "metricName", event.getMetricName(),
+                "severity", event.getSeverity(),
+                "metricValue", event.getMetricValue(),
+                "message", event.getMessage()
+        ));
+        resp.put("rca", Map.of(
+                "category", rca.getCategory() != null ? rca.getCategory().name() : null,
+                "cause", rca.getCause(),
+                "suggestedActions", rca.getSuggestedActions(),
+                "analysisMs", rca.getAnalysisMs(),
+                "method", rca.getMethod(),
+                "confidence", rca.getConfidence(),
+                "error", rca.getError()
+        ));
+        return Result.ok(resp);
+    }
+
+    /**
+     * 手动触发异常检测 (Day 31).
+     */
+    @Operation(summary = "手动异常检测 (Day 31)")
+    @PostMapping("/anomaly/detect")
+    public Result<AnomalyResult> detectAnomaly(@RequestBody Map<String, Object> body) {
+        String metric = (String) body.get("metric");
+        Double value = body.get("value") != null ? ((Number) body.get("value")).doubleValue() : null;
+        String instanceId = (String) body.get("instanceId");
+
+        if (metric == null || value == null) {
+            return Result.fail("metric 和 value 不能为空");
+        }
+        return Result.ok(anomalyDetector.detect(metric, value, instanceId));
+    }
+
+    /**
+     * 异常检测指标摘要 (Day 31).
+     */
+    @Operation(summary = "异常检测摘要 (Day 31)")
+    @GetMapping("/anomaly/summary")
+    public Result<Map<String, Object>> anomalySummary(
+            @RequestParam String metric,
+            @RequestParam(required = false) String instanceId) {
+        LogAnomalyDetector.MetricSummary summary = anomalyDetector.getSummary(metric, instanceId);
+        return Result.ok(Map.of(
+                "metric", summary.getMetric(),
+                "instanceId", summary.getInstanceId(),
+                "sampleCount", summary.getSampleCount(),
+                "mean", summary.getMean(),
+                "std", summary.getStd(),
+                "min", summary.getMinValue(),
+                "max", summary.getMaxValue(),
+                "currentZScore", summary.getCurrentZScore(),
+                "currentlyAnomalous", summary.isCurrentlyAnomalous()
+        ));
+    }
+
+    /**
+     * 异常检测活跃指标列表 (Day 31).
+     */
+    @Operation(summary = "活跃异常检测指标 (Day 31)")
+    @GetMapping("/anomaly/active-metrics")
+    public Result<Set<String>> activeAnomalyMetrics() {
+        return Result.ok(anomalyDetector.activeMetrics());
     }
 
     // ---------- 服务信息 ----------

@@ -551,7 +551,28 @@
 - [ ] AlertRcaService 与 AlertEngine 联动
 - [ ] LogAnomalyDetector 与告警规则绑定
 
-## Day 31 - 待开始
+## Day 31 - 2026-08-02 ✅ 智能化集成落地（投票对话 / RAG展开检索 / 告警RCA联动 / 异常检测告警）
+
+**今日完成：**
+- [x] VotingChatController（多模型投票对话，置信度自动触发 / 强制投票，3 端点）
+- [x] RagService 深度集成 QueryExpander（默认启用展开检索，RagAnswer 新增 strategy/elapsedMs）
+- [x] AlertEngine 接入 AlertRcaService（告警触发时自动 RCA 分析，结果写库并追加到消息）
+- [x] AlertEngine 接入 LogAnomalyDetector（异常分触发独立告警事件，5min 冷却）
+- [x] MonitorController 新增 RCA + 异常检测 4 个端点
+- [x] 自检通过：13/13 ✅ | 静态检查 5/5 ✅ | 前端 dist ✅
+
+**关键文件数：** +4 文件修改
+**报告：** `reports/day-31-report.md`
+
+**明日计划 Day 32：**
+- [ ] 告警前端 UI 接入 RCA 结果展示
+- [ ] 异常检测历史趋势图（前端图表接入 anomaly API）
+- [ ] 前端投票对话 UI（展示多模型答案 + 一致率）
+- [ ] V4.3 收尾文档更新
+
+---
+
+## Day 32 - 待开始
 
 ## Day 21 - 2026-06-26 ✅ API 文档体系 + 压测模板
 

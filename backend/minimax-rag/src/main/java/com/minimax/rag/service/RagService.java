@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * RAG 增强的问答。
@@ -43,6 +44,7 @@ public class RagService {
     private int timeout;
 
     private final Retriever retriever;
+    private final QueryExpander queryExpander;
     private final ObjectMapper json = new ObjectMapper();
     private final HttpClient client = HttpClient.newHttpClient();
 
@@ -57,14 +59,17 @@ public class RagService {
      */
     public RagAnswer ask(Long kbId, String question, String history, int topK, String systemPrompt) {
         if (question == null || question.isBlank()) {
-            return new RagAnswer("问题不能为空", List.of());
+            return new RagAnswer("问题不能为空", List.of(), null, 0);
         }
-        // 1) 检索
-        List<Retriever.Hit> hits = retriever.retrieve(kbId, question, topK);
+        // 1) 检索（默认启用 QueryExpander 展开检索，Day 31）
+        QueryExpander.ExpansionResult expansionResult = queryExpander.expandRetrieve(kbId, question, topK);
+        List<Retriever.Hit> hits = expansionResult.getHits();
+        String expStrategy = expansionResult.getStrategy();
+
         if (hits.isEmpty()) {
-            log.info("RAG: 检索为空 kbId={} 走普通 chat", kbId);
+            log.info("RAG: 检索为空 kbId={} 走普通 chat (strategy={})", kbId, expStrategy);
             String plain = plainChat(question, history, systemPrompt);
-            return new RagAnswer(plain, List.of());
+            return new RagAnswer(plain, List.of(), expStrategy, expansionResult.getElapsedMs());
         }
 
         // 3) 拼 messages
@@ -79,6 +84,7 @@ public class RagService {
 
         // 4) 调 LLM
         String answer;
+        long llmStart = System.currentTimeMillis();
         try {
             answer = callChat(messages);
         } catch (Exception e) {
@@ -89,6 +95,7 @@ public class RagService {
             }
             answer = sb.toString();
         }
+        long llmElapsed = System.currentTimeMillis() - llmStart;
 
         // 5) sources
         List<Source> sources = new ArrayList<>();
@@ -96,7 +103,15 @@ public class RagService {
             sources.add(new Source(h.chunkId, h.docId, h.docTitle, h.chunkIndex,
                     truncate(h.content, 200), h.score));
         }
-        return new RagAnswer(answer, sources);
+
+        // 6) 完整耗时 = 检索(含展开) + LLM
+        long totalElapsed = expansionResult.getElapsedMs() + llmElapsed;
+
+        log.info("RAG ask kbId={} strategy={} hits={} elapsed={}ms (expand={}ms + llm={}ms)",
+                kbId, expStrategy, hits.size(), totalElapsed,
+                expansionResult.getElapsedMs(), llmElapsed);
+
+        return new RagAnswer(answer, sources, expStrategy, totalElapsed);
     }
 
     private String plainChat(String question, String history, String systemPrompt) {
@@ -159,5 +174,13 @@ public class RagService {
     public record Source(Long chunkId, Long docId, String docTitle, Integer chunkIndex,
                           String snippet, Double score) {}
 
-    public record RagAnswer(String answer, List<Source> sources) {}
+    /**
+     * RAG 问答结果 (Day 31: 新增 strategy/elapsedMs).
+     *
+     * @param answer       LLM 生成的回答
+     * @param sources      引用来源列表
+     * @param strategy     查询展开策略 (NONE / SYNTACTIC / SEMANTIC_LLM / HYBRID)
+     * @param elapsedMs    端到端耗时 ms (含检索+LLM)
+     */
+    public record RagAnswer(String answer, List<Source> sources, String strategy, long elapsedMs) {}
 }

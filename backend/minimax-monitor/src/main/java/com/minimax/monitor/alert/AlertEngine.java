@@ -6,6 +6,11 @@ import com.minimax.monitor.entity.AlertEvent;
 import com.minimax.monitor.entity.AlertRule;
 import com.minimax.monitor.mapper.AlertEventMapper;
 import com.minimax.monitor.mapper.AlertRuleMapper;
+import com.minimax.monitor.service.AlertRcaService;
+import com.minimax.monitor.service.AlertRcaService.RcaResult;
+import com.minimax.monitor.service.LogAnomalyDetector;
+import com.minimax.monitor.service.LogAnomalyDetector.AnomalyResult;
+import com.minimax.monitor.service.LogAnomalyDetector.AnomalyLevel;
 import com.minimax.monitor.service.SnapshotService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +42,8 @@ public class AlertEngine {
     private final MetricsCollector collector;
     private final AlertNotifierManager notifierManager;
     private final AlertStreamRegistry streamRegistry;
+    private final AlertRcaService rcaService;
+    private final LogAnomalyDetector anomalyDetector;
 
     /** 每 30s 检查一次 */
     @Scheduled(fixedDelay = 30_000, initialDelay = 15_000)
@@ -54,6 +61,19 @@ public class AlertEngine {
     public void evaluateRule(AlertRule r) {
         Double v = readMetric(r.getMetricName(), r.getService());
         if (v == null) return;
+
+        // Day 31: 异常检测 — 指标值送入 LogAnomalyDetector
+        // 如果 anomaly score >= WARNING，额外触发一条 anomaly 事件
+        if (anomalyDetector.isEnabled()) {
+            try {
+                AnomalyResult ar = anomalyDetector.detect(r.getMetricName(), v, r.getService());
+                if (ar.needsAlert()) {
+                    fireAnomalyAlert(r, v, ar);
+                }
+            } catch (Exception anomEx) {
+                log.debug("[Anomaly] {} detection error: {}", r.getMetricName(), anomEx.getMessage());
+            }
+        }
 
         boolean trigger = compare(v, r.getOperator(), r.getThreshold().doubleValue());
 
@@ -78,6 +98,26 @@ public class AlertEngine {
                     r.getName(), r.getMetricName(), r.getOperator(), r.getThreshold(), v));
             eventMapper.insert(e);
             log.warn("ALERT FIRED: {}", e.getMessage());
+
+            // Day 31: 自动触发 RCA 根因分析
+            try {
+                RcaResult rca = rcaService.analyze(e);
+                if (rca != null && rca.isAnalyzed()) {
+                    log.info("[RCA] alertId={} category={} cause='{}' actions={}ms (method={})",
+                            e.getId(), rca.getCategory(), truncate(rca.getCause(), 100),
+                            rca.getAnalysisMs(), rca.getMethod());
+                    // 将 RCA 原因追加到告警消息（方便前端展示）
+                    if (e.getMessage() != null && rca.getCause() != null) {
+                        String enhancedMsg = e.getMessage() + " | RCA: " + truncate(rca.getCause(), 200);
+                        e.setMessage(enhancedMsg);
+                        eventMapper.updateById(e);
+                    }
+                } else if (rca != null && rca.getError() != null) {
+                    log.warn("[RCA] alertId={} skipped: {}", e.getId(), rca.getError());
+                }
+            } catch (Exception rcaEx) {
+                log.warn("[RCA] alertId={} analysis error: {}", e.getId(), rcaEx.getMessage());
+            }
             // V5.33: 触发所有通知渠道 (邮件/钉钉)
             try {
                 notifierManager.notifyAll(e);
@@ -223,5 +263,53 @@ public class AlertEngine {
     /** 软删除 */
     public void deleteRule(Long id) {
         ruleMapper.deleteById(id);
+    }
+
+    // ── 辅助方法 ─────────────────────────────────────────────────────────
+
+    private String truncate(String s, int maxLen) {
+        if (s == null) return "";
+        return s.length() <= maxLen ? s : s.substring(0, maxLen) + "…";
+    }
+
+    // ── 异常检测告警 ─────────────────────────────────────────────────────
+
+    /**
+     * 触发异常检测告警（独立于规则告警）。
+     * 与普通规则告警共享冷却机制，防止风暴。
+     */
+    private void fireAnomalyAlert(AlertRule r, Double value, AnomalyResult ar) {
+        // 复用规则的冷却检测（通过 metricName + service 找最新事件）
+        List<AlertEvent> recent = eventMapper.selectRecent(10);
+        AlertEvent latestSame = recent.stream()
+                .filter(e -> r.getMetricName().equals(e.getMetricName())
+                        && (r.getService() == null || r.getService().equals(e.getMetricName())))
+                .findFirst().orElse(null);
+
+        // 检查冷却（用 metricName 做 key，5 分钟冷却）
+        if (latestSame != null && "firing".equals(latestSame.getStatus())
+                && latestSame.getFiredAt() != null
+                && latestSame.getFiredAt().isAfter(LocalDateTime.now().minusMinutes(5))) {
+            return; // 还在冷却，跳过
+        }
+
+        AlertEvent e = new AlertEvent();
+        e.setRuleId(r.getId());
+        e.setRuleName("ANOMALY:" + r.getName());
+        e.setSeverity(ar.getLevel() == AnomalyLevel.CRITICAL ? "critical" : "warning");
+        e.setMetricName(r.getMetricName());
+        e.setMetricValue(BigDecimal.valueOf(value));
+        e.setThreshold(BigDecimal.valueOf(ar.getScore()));
+        e.setStatus("firing");
+        String msg = String.format("异常检测告警 [%s]: %s=%.4f (score=%.3f) %s",
+                ar.getLevel(), r.getMetricName(), value, ar.getScore(), ar.getReason());
+        e.setMessage(msg);
+
+        eventMapper.insert(e);
+        log.warn("[ANOMALY] fired: {} score={} level={}", msg, ar.getScore(), ar.getLevel());
+
+        // 触发通知 + 推送
+        try { notifierManager.notifyAll(e); } catch (Exception ex) { /* already logged elsewhere */ }
+        try { streamRegistry.broadcast(e); } catch (Exception ex) { /* already logged elsewhere */ }
     }
 }
