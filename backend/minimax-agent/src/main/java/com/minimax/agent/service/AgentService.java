@@ -450,30 +450,8 @@ public class AgentService {
     }
 
     /**
-     * V3.7.29+ 业务 event 路由表 (event name → 标准 5 type)
-     * 决定前端 useBusinessStream onContent/onToolCall/onSource 哪个收
-     */
-    private static final java.util.Map<String, String> EVENT_TO_TYPE;
-    static {
-        EVENT_TO_TYPE = new java.util.HashMap<>();
-        EVENT_TO_TYPE.put("start", "content");          // 流开始
-        EVENT_TO_TYPE.put("tools", "source");           // 工具列表
-        EVENT_TO_TYPE.put("step-start", "content");     // 步骤开始
-        EVENT_TO_TYPE.put("thought", "content");        // 思考过程
-        EVENT_TO_TYPE.put("tool-call", "tool_call");    // 工具调用
-        EVENT_TO_TYPE.put("observation", "content");    // 工具返回
-        EVENT_TO_TYPE.put("step-error", "error");       // 步骤错误
-        EVENT_TO_TYPE.put("final", "content");          // 最终答案
-    }
-
-    /**
-     * V3.7.29+ 业务自定义 event 统一入口
-     * 
-     * 路由表:
-     *   - error → SseResult.sendError (code=1)
-     *   - done → SseResult.sendDone (code=0)
-     *   - start/tools/step-start/thought/tool-call/observation/final → SseResult.sendCustom (event+type 组合)
-     *   - 未知 event → SseResult.sendCustom (默认 type=content)
+     * V3.7.30+ 委托 SseResult (路由表在 SseResult.EVENT_TO_TYPE)
+     * 业务 sendBusiness 自动根据 event 找 type
      */
     private void sendEvent(SseEmitter emitter, String event, Object data) {
         if ("error".equals(event) || "step-error".equals(event)) {
@@ -484,9 +462,8 @@ public class AgentService {
         } else if ("done".equals(event)) {
             SseResult.sendDone(emitter);
         } else {
-            // 业务自定义 event: 走 sendCustom 包装 event+type
-            String type = EVENT_TO_TYPE.getOrDefault(event, "content");
-            SseResult.sendCustom(emitter, event, type, data);
+            // V3.7.30+ sendBusiness 自动根据 event 查 type
+            SseResult.sendBusiness(emitter, event, data);
         }
     }
 
