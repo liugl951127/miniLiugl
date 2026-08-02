@@ -207,14 +207,7 @@ async function runStreamMode() {
       onError: (err) => {
         toast.error('启动失败: ' + err.message)
       },
-    }) }
-            curEvent = ''
-          }
-        }
-      }
-    }
-  } catch (e) {
-    toast.error('流式执行失败: ' + e.message)
+    })
   } finally {
     running.value = false
   }
