@@ -414,16 +414,23 @@ const toast = useToast()
 const route = useRoute()
 
 // V3.6.9+ 语音通话
-const speechCall = useSpeechCall()
+let speechCall = null  // V3.7.38+ lazy init (避免 setup 时 strict mode 错)
 
 // V3.6.16+ 语音交互链路
 // STT 完成 → 调 sendMessage → 流式字符时打字机 + TTS 同步
-speechCall.setCallbacks({
-  onRecognized: (text) => {
-    // STT 识别完成, 把识别到的文字填入输入框
-    inputMessage.value = text
-    toast.info(`识别: ${text.slice(0, 20)}...`)
-  },
+onMounted(() => {
+  try {
+    speechCall = useSpeechCall()
+    speechCall.setCallbacks({
+      onRecognized: (text) => {
+        // STT 识别完成, 把识别到的文字填入输入框
+        inputMessage.value = text
+        toast.info(`识别: ${text.slice(0, 20)}...`)
+      },
+    })
+  } catch (e) {
+    console.warn('[Chat] useSpeechCall init failed:', e?.message || e)
+  }
 })
 
 // 状态
