@@ -88,12 +88,11 @@ public class VotingChatController {
             // 低置信：触发多模型投票
             log.info("[VotingChat] 低置信触发投票 text='{}'", text.length() > 40 ? text.substring(0, 40) : text);
             votingResult = votingService.vote(text, sessionId);
-            singleResp = new ChatResponse(
-                    votingResult.getConsensus(),
-                    null, null, null,
-                    "multi-model-voting",
-                    votingResult.getElapsedMs() > 0 ? (int) votingResult.getElapsedMs() : null
-            );
+            singleResp = ChatResponse.builder()
+                    .content(votingResult.getConsensus())
+                    .model("multi-model-voting")
+                    .latencyMs(votingResult.getElapsedMs() > 0 ? votingResult.getElapsedMs() : null)
+                    .build();
         } else {
             // 高置信：直接调单模型
             singleResp = callSingleModel(text, model);
@@ -149,12 +148,11 @@ public class VotingChatController {
 
         VotingResult result = votingService.vote(text, sessionId);
 
-        ChatResponse resp = new ChatResponse(
-                result.getConsensus(),
-                null, null, null,
-                "forced-voting:" + result.getStrategy().name(),
-                (int) result.getElapsedMs()
-        );
+        ChatResponse resp = ChatResponse.builder()
+                .content(result.getConsensus())
+                .model("forced-voting:" + result.getStrategy().name())
+                .latencyMs(result.getElapsedMs())
+                .build();
 
         Map<String, Object> body = new HashMap<>();
         body.put("response", resp);
@@ -211,14 +209,13 @@ public class VotingChatController {
             Object data = resp.get("data");
             if (data instanceof Map) {
                 Map<String, Object> d = (Map<String, Object>) data;
-                return new ChatResponse(
-                        (String) d.get("content"),
-                        toInt(d.get("prompt_tokens")),
-                        toInt(d.get("completion_tokens")),
-                        toInt(d.get("total_tokens")),
-                        model,
-                        null
-                );
+                return ChatResponse.builder()
+                        .content((String) d.get("content"))
+                        .promptTokens(toInt(d.get("prompt_tokens")))
+                        .completionTokens(toInt(d.get("completion_tokens")))
+                        .totalTokens(toInt(d.get("total_tokens")))
+                        .model(model)
+                        .build();
             }
             return fallback(text);
 
@@ -229,12 +226,10 @@ public class VotingChatController {
     }
 
     private ChatResponse fallback(String text) {
-        return new ChatResponse(
-                "(模型服务不可用) 你说的是：" + text,
-                null, null, null,
-                "fallback",
-                null
-        );
+        return ChatResponse.builder()
+                .content("(模型服务不可用) 你说的是：" + text)
+                .model("fallback")
+                .build();
     }
 
     private Integer toInt(Object v) {
