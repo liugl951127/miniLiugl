@@ -9,6 +9,7 @@ import com.minimax.common.sse.SseUtil;
 import com.minimax.common.security.JwtAuthenticationFilter.AuthenticatedUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +23,7 @@ import java.util.concurrent.Executors;
 @Tag(name = "会话消息")
 @RestController
 @RequestMapping("/api/v1/sessions/{sessionId}/messages")
+@Slf4j
 @RequiredArgsConstructor
 public class MessageController {
 
