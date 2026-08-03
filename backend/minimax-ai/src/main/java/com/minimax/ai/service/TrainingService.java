@@ -142,10 +142,12 @@ public class TrainingService {
      */
     private static List<String> loadCorpus() throws IOException {
         // 1. 外部文件 (生产环境配置的训练数据)
+        // V5.4+: 显式 UTF-8 编码读取 (避免 Windows/中文系统默认 GBK 乱码)
         File external = new File("./data/ai/training-data.txt");
         if (external.exists()) {
             log.info("从外部加载训练数据: {}", external);
-            return Files.readAllLines(Paths.get(external.toURI()));
+            return Files.readAllLines(Paths.get(external.toURI()),
+                    java.nio.charset.StandardCharsets.UTF_8);
         }
 
         // 2. 内部资源 (内置训练数据)

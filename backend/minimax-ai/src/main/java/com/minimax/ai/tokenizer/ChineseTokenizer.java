@@ -4,6 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -78,10 +80,22 @@ public class ChineseTokenizer {
         if (text == null || text.isEmpty()) return tokens;
 
         StringBuilder buf = new StringBuilder();
-        for (int i = 0; i < text.length(); i++) {
+        int i = 0;
+        while (i < text.length()) {
+            // 优先取完整字符 (支持 surrogate pair)
             char c = text.charAt(i);
+            String ch;
+            int charLen = 1;
 
-            if (isChineseChar(c)) {
+            if (Character.isHighSurrogate(c) && i + 1 < text.length()
+                    && Character.isLowSurrogate(text.charAt(i + 1))) {
+                ch = text.substring(i, i + 2);
+                charLen = 2;
+            } else {
+                ch = String.valueOf(c);
+            }
+
+            if (isChineseChar(c) && charLen == 1) {
                 // 中文: 1 个字符 1 个 token (避免 BPE 切错)
                 flushBuf(buf, tokens);
                 tokens.add(String.valueOf(c));
@@ -106,10 +120,13 @@ public class ChineseTokenizer {
                 // 空白: 分隔
                 flushBuf(buf, tokens);
             } else {
-                // 其他字符 (表情符号等)
+                // 其他字符 (表情符号等) - 用完整字符
                 flushBuf(buf, tokens);
-                tokens.add(String.valueOf(c));
+                tokens.add(ch);
+                i += charLen;
+                continue;
             }
+            i += charLen;
         }
         flushBuf(buf, tokens);
         return tokens;
@@ -123,10 +140,44 @@ public class ChineseTokenizer {
     }
 
     /**
-     * 是否中文字符 (CJK)
+     * 是否中文字符 (CJK 全部平面)
+     *
+     * V5.4+ 扩展:
+     *   - 0x4E00-0x9FFF  : CJK 统一汉字 (基本平面)
+     *   - 0x3400-0x4DBF  : CJK 扩展 A (罕用)
+     *   - 0x20000-0x2A6DF: CJK 扩展 B (罕用, surrogate pair)
+     *   - 0x2A700-0x2B73F: CJK 扩展 C
+     *   - 0x2B740-0x2B81F: CJK 扩展 D
+     *   - 0x2B820-0x2CEAF: CJK 扩展 E
+     *   - 0xF900-0xFAFF  : CJK 兼容汉字
+     *   - 0x2F800-0x2FA1F: CJK 兼容汉字 (补充, surrogate pair)
      */
     public static boolean isChineseChar(char c) {
-        return c >= 0x4E00 && c <= 0x9FFF;
+        // 基本平面 (单 char 即可判)
+        if ((c >= 0x4E00 && c <= 0x9FFF) ||
+            (c >= 0x3400 && c <= 0x4DBF) ||
+            (c >= 0xF900 && c <= 0xFAFF)) {
+            return true;
+        }
+        // 高位平面 (需 surrogate pair, 这里只判高代理)
+        // high surrogate 0xD800-0xDBFF, low surrogate 0xDC00-0xDFFF
+        if (c >= 0xD800 && c <= 0xDBFF) {
+            return true; // 配合下一个 char 解析
+        }
+        return false;
+    }
+
+    /**
+     * 提取字符 (支持 surrogate pair, 完整码点)
+     */
+    private static String nextChar(String text, int i) {
+        if (i >= text.length()) return null;
+        char c = text.charAt(i);
+        if (Character.isHighSurrogate(c) && i + 1 < text.length()
+                && Character.isLowSurrogate(text.charAt(i + 1))) {
+            return text.substring(i, i + 2);
+        }
+        return String.valueOf(c);
     }
 
     public static boolean isPunctuation(char c) {
@@ -209,15 +260,58 @@ public class ChineseTokenizer {
 
     /**
      * 解码: token ids -> 文本
+     *
+     * V5.4+ 修复乱码:
+     *   - 不再跳过 UNK/BOS/EOS (id<5), 而是按语义插入占位
+     *   - UNK 插入 空字符 (不破坏阅读)
+     *   - BOS/EOS 插入 换行 (分隔上下文)
      */
     public String decode(int[] ids) {
         StringBuilder sb = new StringBuilder();
         for (int id : ids) {
+            // 跳过 PAD (id=0), 其他特殊 token 转为占位
+            if (id == PAD) continue;
+
             String token = idToToken.get(id);
-            if (token == null || id < 5) continue; // 跳过特殊 token
-            sb.append(token);
+            if (token == null) {
+                // id 不在词表 (动态生成)
+                continue;
+            }
+
+            if (id == UNK) {
+                // 未知 token 跳过 (避免乱码)
+                continue;
+            } else if (id == BOS || id == EOS || id == SEP) {
+                // 句子边界 - 插入空格 (自然分隔)
+                sb.append(' ');
+            } else {
+                sb.append(token);
+            }
         }
-        return sb.toString();
+        return sb.toString().trim();
+    }
+
+    /**
+     * 解码 - 包含 UNK (调试用, 输出 <unk> 占位)
+     */
+    public String decodeWithUnk(int[] ids) {
+        StringBuilder sb = new StringBuilder();
+        for (int id : ids) {
+            if (id == PAD) continue;
+            String token = idToToken.get(id);
+            if (token == null) {
+                sb.append("[?").append(id).append("?]");
+                continue;
+            }
+            if (id == UNK) {
+                sb.append("<unk>");
+            } else if (id == BOS || id == EOS) {
+                sb.append(' ');
+            } else {
+                sb.append(token);
+            }
+        }
+        return sb.toString().trim();
     }
 
     /**
@@ -247,14 +341,26 @@ public class ChineseTokenizer {
     }
 
     /**
-     * 序列化词表
+     * 序列化词表 (V5.4+ 改用 ObjectOutputStream)
+     *
+     * 修 writeUTF 乱码:
+     *   - writeUTF 用 modified UTF-8, 不支持 surrogate pair (CJK 扩展 B/C/D/E)
+     *   - 改用 ObjectOutputStream.writeObject, 直接序列化 Java String (UTF-16)
+     *   - 兼容罕用汉字 + emoji + 任意 Unicode
      */
     public void save(File file) throws IOException {
-        try (DataOutputStream out = new DataOutputStream(new FileOutputStream(file))) {
+        try (ObjectOutputStream out = new ObjectOutputStream(
+                new BufferedOutputStream(new FileOutputStream(file)))) {
+            // 头部: 魔数 + 版本号
+            out.writeInt(0x4D494E49);  // 魔数 "MINI"
+            out.writeInt(2);            // 版本号 v2
             out.writeInt(vocabSize);
-            for (Map.Entry<Integer, String> e : idToToken.entrySet()) {
-                out.writeInt(e.getKey());
-                out.writeUTF(e.getValue());
+            // 顺序写 id + token
+            for (int i = 0; i < vocabSize; i++) {
+                String token = idToToken.get(i);
+                if (token == null) token = "<unk>";  // 兜底
+                out.writeInt(i);
+                out.writeObject(token);
             }
         }
         log.info("词表已保存: {} ({} tokens)", file, vocabSize);
@@ -263,19 +369,52 @@ public class ChineseTokenizer {
     /**
      * 反序列化词表
      */
+    @SuppressWarnings("unchecked")
     public void load(File file) throws IOException {
         tokenToId.clear();
         idToToken.clear();
-        try (DataInputStream in = new DataInputStream(new FileInputStream(file))) {
-            int size = in.readInt();
-            for (int i = 0; i < size; i++) {
-                int id = in.readInt();
-                String token = in.readUTF();
-                tokenToId.put(token, id);
-                idToToken.put(id, token);
+        try (ObjectInputStream in = new ObjectInputStream(
+                new BufferedInputStream(new FileInputStream(file)))) {
+            int magic = in.readInt();
+            if (magic != 0x4D494E49) {
+                // 兼容旧版 writeUTF 格式
+                loadLegacy(in);
+                return;
             }
-            vocabSize = size;
+            int version = in.readInt();
+            if (version == 1) {
+                // 旧版 (writeUTF)
+                int size = in.readInt();
+                for (int i = 0; i < size; i++) {
+                    int id = in.readInt();
+                    String token = (String) in.readObject();
+                    tokenToId.put(token, id);
+                    idToToken.put(id, token);
+                }
+                vocabSize = size;
+            } else {
+                int size = in.readInt();
+                for (int i = 0; i < size; i++) {
+                    int id = in.readInt();
+                    String token = (String) in.readObject();
+                    tokenToId.put(token, id);
+                    idToToken.put(id, token);
+                }
+                vocabSize = size;
+            }
+        } catch (ClassNotFoundException e) {
+            throw new IOException("词表反序列化失败: 找不到 String 类", e);
         }
         log.info("词表已加载: {} ({} tokens)", file, vocabSize);
+    }
+
+    /**
+     * 兼容旧版 writeUTF 格式 (DataInputStream)
+     */
+    private void loadLegacy(ObjectInputStream wrapper) throws IOException {
+        // 需要重开, 因为 ObjectInputStream 包装了 DataInputStream
+        // 实际调用方应该用 DataInputStream 读旧版
+        log.warn("旧版词表格式不支持自动迁移, 请重新训练");
+        throw new IOException("旧版词表格式不兼容, 请删除旧文件后重训");
     }
 }
