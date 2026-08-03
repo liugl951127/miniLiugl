@@ -102,16 +102,9 @@ public class TrainingService {
         // 2. 训练词表
         tokenizer.train(corpus, 8192);
 
-        // 3. 训练 bigram 统计 (用于生成)
+        // 3. 训练 bigram 统计 (V5.4+ key 已经是 int tokenId, 直接用)
         MiniTrainer trainer = new MiniTrainer(transformer, tokenizer);
-        Map<String, Map<Integer, Integer>> bigramStats = trainer.buildBigramStats(corpus);
-
-        // 转换 bigram 统计 (key 是 String, 实际是 tokenId)
-        Map<Integer, Map<Integer, Integer>> statsMap = new java.util.HashMap<>();
-        for (Map.Entry<String, Map<Integer, Integer>> e : bigramStats.entrySet()) {
-            // 这里简化: 不反查 tokenId, 用 string 的 hash
-            statsMap.put(e.getKey().hashCode() & 0x7fffffff, e.getValue());
-        }
+        Map<Integer, Map<Integer, Integer>> statsMap = trainer.buildBigramStats(corpus);
         generator.setBigramStats(statsMap);
 
         // 4. 训练 Transformer (简化版, 几个 epoch)

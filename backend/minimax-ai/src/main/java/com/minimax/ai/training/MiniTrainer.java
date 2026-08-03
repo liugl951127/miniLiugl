@@ -146,15 +146,15 @@ public class MiniTrainer {
      *
      * 这不是真正的深度学习训练, 但能让生成的文本更合理
      */
-    public Map<String, Map<Integer, Integer>> buildBigramStats(List<String> corpus) {
-        Map<String, Map<Integer, Integer>> stats = new java.util.HashMap<>();
+    public Map<Integer, Map<Integer, Integer>> buildBigramStats(List<String> corpus) {
+        Map<Integer, Map<Integer, Integer>> stats = new java.util.HashMap<>();
 
         for (String line : corpus) {
             int[] tokens = tokenizer.encodeForTraining(line);
             for (int i = 0; i < tokens.length - 1; i++) {
                 int a = tokens[i];
                 int b = tokens[i + 1];
-                stats.computeIfAbsent(String.valueOf(a), k -> new HashMap<>())
+                stats.computeIfAbsent(a, k -> new HashMap<>())
                         .merge(b, 1, Integer::sum);
             }
         }
