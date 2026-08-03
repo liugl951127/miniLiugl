@@ -138,3 +138,17 @@ export const kgTwoHop = (id) => http.get(`/agent/kg/entities/${id}/2hop`)
 /** 路径 */
 export const kgPath = (userId, fromId, toId) =>
   http.get('/agent/kg/path', { params: { userId, fromId, toId } })
+
+// ==================== Day 32: RCA 根因分析 + 异常检测 API ====================
+
+/** 告警 RCA 分析 (Day 32) */
+export const rcaAnalysis = (alertId, context) => http.post(`/monitor/alerts/${alertId}/rca`, context || {})
+
+/** 手动触发异常检测 (Day 32) */
+export const anomalyDetect = (params) => http.post('/monitor/anomaly/detect', params)
+
+/** 异常检测摘要 (Day 32) */
+export const anomalySummary = (params) => http.get('/monitor/anomaly/summary', { params })
+
+/** 活跃异常检测指标 (Day 32) */
+export const activeAnomalyMetrics = () => http.get('/monitor/anomaly/active-metrics')

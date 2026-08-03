@@ -628,3 +628,14 @@ export const webhookPublish = (data) => http.post('/ai/webhooks/publish', data)
 export const webhookEvents = () => http.get('/ai/webhooks/events')
 /** webhook 统计 */
 export const webhookStats = () => http.get('/ai/webhooks/stats')
+
+// ==================== Day 32: 投票对话 API ====================
+
+/** 智能对话（自动投票，低置信度触发多模型）(Day 32) */
+export const votingChat = (data) => http.post('/ai/chat', data)
+
+/** 强制多模型投票（绕过置信度预判）(Day 32) */
+export const forceVotingChat = (data) => http.post('/ai/chat/voting', data)
+
+/** 查询投票配置信息 (Day 32) */
+export const votingInfo = () => http.get('/ai/chat/voting-info')

@@ -31,8 +31,14 @@
       </div>
       <el-button-group>
         <el-tag size="large" :type="lastResult ? 'success' : 'info'">
-          {{ lastResult ? `意图: ${lastResult.intent}` : '等待输入' }}
+          {{ lastResult ? lastResult.intent : '等待输入' }}
         </el-tag>
+        <!-- Day 32: 投票模式切换 -->
+        <el-tooltip content="开启后强制多模型投票" placement="bottom">
+          <el-button :type="votingMode ? 'warning' : 'default'" size="large" @click="votingMode = !votingMode">
+            🗳 投票 {{ votingMode ? 'ON' : 'OFF' }}
+          </el-button>
+        </el-tooltip>
         <el-button :icon="Plus" @click="newSession" type="primary">{{ t('aichat.new') }}</el-button>
       </el-button-group>
     </header>
@@ -87,6 +93,31 @@
               </div>
             </div>
 
+            <!-- Day 32: 投票结果面板 -->
+            <div v-if="votingResults?.meta?.votingTriggered" class="voting-panel">
+              <div class="voting-header">
+                <span class="voting-tag">🗳 投票触发</span>
+                <el-tag size="small" type="warning">{{ votingResults.meta.votingStrategy }}</el-tag>
+                <span class="voting-stat">⏱ {{ votingResults.meta.votingElapsedMs }}ms</span>
+                <span class="voting-stat">📊 一致率: <strong>{{ ((votingResults.meta.agreementScore || 0) * 100).toFixed(0) }}%</strong></span>
+                <span class="voting-stat">🤖 {{ votingResults.meta.modelCount }} 模型</span>
+              </div>
+              <!-- 各模型答案 -->
+              <div class="model-answers">
+                <div v-for="(ans, i) in votingResults.meta.modelAnswers" :key="i" class="model-answer-item">
+                  <div class="model-answer-header">
+                    <el-tag size="small" :type="i === 0 ? 'primary' : 'info'">
+                      {{ ans.model || 'Model ' + (i+1) }}
+                    </el-tag>
+                    <span class="model-provider">{{ ans.provider }}</span>
+                    <span class="model-latency">{{ ans.latencyMs }}ms</span>
+                    <span v-if="ans.error" class="model-error">❌ {{ ans.error }}</span>
+                  </div>
+                  <div v-if="ans.answer" class="model-answer-content">{{ ans.answer }}</div>
+                </div>
+              </div>
+            </div>
+
             <div class="input-bar">
               <el-input
                 v-model="input"
@@ -109,12 +140,12 @@
 </template>
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, reactive } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 
 import StateBlock from '@/components/StateBlock.vue'
-import { dispatchPrompt, listAiSessions, createAiSession } from '@/api/ai'
+import { votingChat, forceVotingChat, votingInfo, listAiSessions, createAiSession } from '@/api/ai'
 import EmptyState from '@/components/EmptyState.vue'
 
 const examples = [
@@ -133,6 +164,17 @@ const loading = ref(false)
 const messages = ref([])
 const lastResult = ref(null)
 const messagesRef = ref()
+
+// Day 32: 投票对话状态
+const votingMode = ref(false)   // true = 强制多模型投票
+const votingInfo_ = ref(null)   // 投票配置信息
+const votingResults = ref(null) // 最近投票结果
+const quickActions = ref([
+  { label: '📊 统计', text: '统计 user 表前 10 条, 柱状图' },
+  { label: '🥧 饼图', text: '画一个产品销量饼图' },
+  { label: '💻 代码', text: '生成一个 Spring Boot 项目, 叫 demo' },
+  { label: '🎨 AIGC', text: '生成一张蓝色渐变背景图' },
+])
 
 // 会话管理
 const sessions = ref([])
@@ -158,6 +200,7 @@ async function newSession() {
     messages.value = []
     lastResult.value = null
     await refreshSessions()
+    loadVotingInfo()
     toast.success('新会话已创建')
   } catch (e) {
     // 失败也允许继续
@@ -188,33 +231,58 @@ function fillExample(text) {
   toast.info('已填入, 按 Ctrl+Enter 发送')
 }
 
+async function loadVotingInfo() {
+  try {
+    const { data } = await votingInfo()
+    votingInfo_.value = data.data || data
+  } catch (_) { votingInfo_.value = null }
+}
+
 async function handleSend() {
   const text = userInput.value.trim()
-  if (!text) {
-    toast.warning('请输入内容')
-    return
-  }
+  if (!text) { toast.warning('请输入内容'); return }
+
   loading.value = true
+  votingResults.value = null
   messages.value.push({ role: 'user', content: text })
   userInput.value = ''
   await nextTick()
   scrollToBottom()
 
   try {
-    const res = await dispatchPrompt(text, currentSessionId.value)
-    const r = res.data
-    lastResult.value = r
+    let res
+    if (votingMode.value) {
+      // 强制投票模式
+      res = await forceVotingChat({ text, sessionId: currentSessionId.value })
+    } else {
+      // 智能对话（自动投票）
+      res = await votingChat({ text, sessionId: currentSessionId.value })
+    }
+    const body = res.data
+    const resp = body.response || body
+    const meta = body.meta || {}
+    votingResults.value = body
+
+    // 显示 AI 回复
     messages.value.push({
       role: 'assistant',
-      content: r.message || `已处理 (${r.intent})`,
-      intent: r.intent,
-      handler: r.handler,
-      data: r.data
+      content: resp.content || '(无内容)',
+      model: resp.model,
+      votingMeta: meta
     })
-    if (r.sessionId) currentSessionId.value = r.sessionId
+
+    // 更新意图标签
+    if (meta.votingTriggered) {
+      lastResult.value = { intent: `投票(${meta.votingStrategy || 'AUTO'}) 一致率 ${((meta.agreementScore || 0) * 100).toFixed(0)}%` }
+    } else {
+      lastResult.value = { intent: meta.confidence > 0.8 ? '高置信' : '中置信' }
+    }
+
+    if (resp.sessionId) currentSessionId.value = resp.sessionId
     await refreshSessions()
+    loadVotingInfo()
   } catch (e) {
-    messages.value.push({ role: 'assistant', content: '❌ 错误: ' + (e.message || '未知') })
+    messages.value.push({ role: 'assistant', content: '❌ 错误: ' + (e?.message || '未知') })
   } finally {
     loading.value = false
     await nextTick()
@@ -240,15 +308,19 @@ function formatMsg(c) {
 }
 
 refreshSessions()
+loadVotingInfo()
 
 
-// === 修复 V3.7.38: stub 函数 (lint 误报, 实际未用) ===
-function send() { /* stub - 待实现 */ }
+// 发送消息（快捷键 Ctrl+Enter）
+function send() { handleSend() }
 
 
 
-// === V3.7.38+ lint auto-stub ===
-function sendQuick() { /* TODO */ }
+// 快捷操作
+function sendQuickAction(label) {
+  const qa = quickActions.value.find(a => a.label === label)
+  if (qa) userInput.value = qa.text
+}
 
 </script>
 
@@ -314,4 +386,65 @@ function sendQuick() { /* TODO */ }
 }
 .message-extra pre { margin: 0; white-space: pre-wrap; }
 .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.voting-panel {
+  margin-bottom: 12px;
+  border: 1px solid #e6a23c;
+  border-radius: 8px;
+  background: #fef9f0;
+  padding: 12px;
+}
+.voting-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.voting-tag {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e6a23c;
+}
+.voting-stat {
+  font-size: 12px;
+  color: #666;
+  margin-left: 8px;
+}
+.model-answers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.model-answer-item {
+  background: white;
+  border-radius: 6px;
+  padding: 8px 10px;
+  border: 1px solid #eee;
+}
+.model-answer-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.model-provider {
+  font-size: 11px;
+  color: #999;
+}
+.model-latency {
+  font-size: 11px;
+  color: #409eff;
+  margin-left: auto;
+}
+.model-error {
+  font-size: 11px;
+  color: #f56c6c;
+}
+.model-answer-content {
+  font-size: 12px;
+  color: #333;
+  line-height: 1.6;
+  max-height: 80px;
+  overflow: auto;
+}
 </style>

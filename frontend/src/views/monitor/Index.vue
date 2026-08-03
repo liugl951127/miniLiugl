@@ -144,9 +144,10 @@
             </template>
           </el-table-column>
           <el-table-column prop="message" :label="t('monitor.alert.content')" />
-          <el-table-column label="操作" width="100">
+          <el-table-column label="操作" width="180">
             <template #default="{ row }">
               <el-button size="small" type="primary" @click="ackAlert(row)">确认</el-button>
+              <el-button size="small" type="warning" @click="openRcaDialog(row)">RCA</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -166,11 +167,83 @@
       </el-card>
     </section>
 
+    <!-- Day 32: 异常检测趋势图 -->
+    <section class="section">
+      <h3 class="section-title">📉 异常检测
+        <el-select v-model="anomalySelectedMetric" placeholder="选择指标" size="small" style="float:right;width:200px;margin-right:8px" @change="loadAnomalyTrend">
+          <el-option v-for="m in anomalyMetrics" :key="m" :label="m" :value="m" />
+        </el-select>
+        <el-button text type="primary" :icon="Refresh" @click="loadAnomalyMetrics" size="small" style="float:right;margin-right:8px">刷新</el-button>
+      </h3>
+      <el-card shadow="hover">
+        <div v-if="anomalyMetrics.length === 0" style="text-align:center;padding:40px;color:#999">
+          暂无活跃检测指标，请先配置告警规则
+        </div>
+        <div v-else ref="anomalyChartRef" class="chart-container" style="height: 320px"></div>
+      </el-card>
+    </section>
+
+    <!-- Day 32: RCA 分析结果弹窗 -->
+    <el-dialog v-model="rcaDialog" title="🔍 告警 RCA 根因分析" width="680px" :close-on-click-modal="false">
+      <el-skeleton v-if="rcaLoading" :rows="5" animated />
+      <div v-else-if="rcaResult">
+        <!-- 告警基本信息 -->
+        <el-descriptions title="告警信息" :column="2" border size="small" style="margin-bottom:16px">
+          <el-descriptions-item label="规则">{{ rcaResult.alert?.ruleName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="严重程度">
+            <el-tag size="small" :type="rcaResult.alert?.severity === 'critical' ? 'danger' : 'warning'">
+              {{ rcaResult.alert?.severity || '-' }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="指标">{{ rcaResult.alert?.metricName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="指标值">{{ rcaResult.alert?.metricValue || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="消息" :span="2">{{ rcaResult.alert?.message || '-' }}</el-descriptions-item>
+        </el-descriptions>
+
+        <!-- RCA 结果 -->
+        <el-divider content-position="left">根因分析结果</el-divider>
+        <div v-if="rcaResult.error" class="rca-error">
+          <el-alert type="danger" :title="rcaResult.error" :closable="false" show-icon />
+        </div>
+        <div v-else>
+          <el-row :gutter="12" style="margin-bottom:12px">
+            <el-col :span="8">
+              <el-statistic title="根因类别" :value="rcaResult.rca?.category || '-'">
+                <template #prefix><el-tag size="small" :type="rcaCategoryColor(rcaResult.rca?.category)">{{ rcaResult.rca?.category || 'N/A' }}</el-tag></template>
+              </el-statistic>
+            </el-col>
+            <el-col :span="8">
+              <el-statistic title="分析方法" :value="rcaResult.rca?.method || '-'">
+                <template #suffix><span style="font-size:12px;color:#999">ms</span></template>
+              </el-statistic>
+            </el-col>
+            <el-col :span="8">
+              <el-statistic title="置信度" :value="((rcaResult.rca?.confidence || 0) * 100).toFixed(0) + '%'" />
+            </el-col>
+          </el-row>
+
+          <el-card shadow="never" style="margin-bottom:12px">
+            <template #header><strong>🔎 根因描述</strong></template>
+            <div style="font-size:14px;line-height:1.8">{{ rcaResult.rca?.cause || '未检测到根因' }}</div>
+          </el-card>
+
+          <el-card shadow="never" v-if="rcaResult.rca?.suggestedActions?.length">
+            <template #header><strong>🛠 建议操作</strong></template>
+            <el-timeline>
+              <el-timeline-item v-for="(action, idx) in rcaResult.rca.suggestedActions" :key="idx" :icon="idx === 0 ? 'Operation' : undefined" :color="idx === 0 ? '#409EFF' : undefined">
+                {{ action }}
+              </el-timeline-item>
+            </el-timeline>
+          </el-card>
+        </div>
+      </div>
+    </el-dialog>
+
   </div>
 </template>
 <script setup lang="ts">
 // ───── 依赖导入 ─────
-import { ref, reactive, onMounted, onUnmounted, watch, nextTick} from 'vue'
+import { ref, reactive, onMounted, onUnmounted, watch, nextTick, computed } from 'vue'
 import * as echarts from 'echarts'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
@@ -179,7 +252,7 @@ import { ElMessageBox } from 'element-plus'
 import { CircleCheck, CircleClose } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { useUserStore } from '@/store/user'
-import { getMonitorAlertRules, createMonitorAlertRule, updateMonitorAlertRule, deleteMonitorAlertRule, getAlertChannels, createAlertChannel, updateAlertChannel, deleteAlertChannel } from '@/api/monitor'
+import { getMonitorAlertRules, createMonitorAlertRule, updateMonitorAlertRule, deleteMonitorAlertRule, getAlertChannels, createAlertChannel, updateAlertChannel, deleteAlertChannel, rcaAnalysis, anomalySummary, activeAnomalyMetrics } from '@/api/monitor'
 
 const userStore = useUserStore()
 const toast = useToast()
@@ -311,6 +384,111 @@ async function loadAlerts() {
     const { data } = await axios.get(`${API}/api/v1/monitor/alerts/firing`, auth())
     alerts.value = data.data || []
   } catch (_) { alerts.value = [] }
+}
+
+// Day 32: RCA 分析状态
+const rcaDialog = ref(false)
+const rcaLoading = ref(false)
+const rcaResult = ref(null)
+const rcaAlertId = ref(null)
+
+// Day 32: 异常检测状态
+const anomalyChartRef = ref(null)
+let anomalyChart = null
+const anomalyMetrics = ref([])
+const anomalySelectedMetric = ref('')
+const anomalyTrendData = ref([])
+
+async function loadAnomalyMetrics() {
+  try {
+    const { data } = await activeAnomalyMetrics()
+    anomalyMetrics.value = data.data || []
+    if (anomalyMetrics.value.length > 0 && !anomalySelectedMetric.value) {
+      anomalySelectedMetric.value = anomalyMetrics.value[0]
+    }
+  } catch (_) { anomalyMetrics.value = [] }
+}
+
+async function loadAnomalyTrend(metric) {
+  if (!metric) return
+  anomalySelectedMetric.value = metric
+  try {
+    const { data } = await anomalySummary({ metric })
+    anomalyTrendData.value = data.data || {}
+    await nextTick()
+    renderAnomalyChart()
+  } catch (_) { anomalyTrendData.value = {} }
+}
+
+function renderAnomalyChart() {
+  if (!anomalyChartRef.value) return
+  if (!anomalyChart) {
+    anomalyChart = echarts.init(anomalyChartRef.value)
+  }
+  const summary = anomalyTrendData.value
+  const zScore = summary.currentZScore || 0
+  const isAnomaly = summary.currentlyAnomalous || false
+
+  // Build simple indicator chart
+  const option = {
+    title: {
+      text: `📈 ${anomalySelectedMetric.value} 异常检测`,
+      subtext: `Z-Score: ${zScore.toFixed(3)} | ${isAnomaly ? '🚨 异常' : '✅ 正常'} | 样本: ${summary.sampleCount || 0}`,
+      left: 'center'
+    },
+    tooltip: { trigger: 'axis' },
+    series: [{
+      type: 'gauge',
+      startAngle: 180,
+      endAngle: 0,
+      min: -5,
+      max: 5,
+      splitNumber: 10,
+      axisLine: {
+        lineStyle: {
+          width: 6,
+          color: [
+            [0.2, '#67c23a'], [0.4, '#95d475'],
+            [0.6, '#e6a23c'], [0.8, '#f56c6c'],
+            [1, '#c0392b']
+          ]
+        }
+      },
+      pointer: { icon: 'path://M12.8,0.7l12,40.1H0.7L12.8,0.7z', length: '12%', width: 20, offsetCenter: [0, '-60%'], itemStyle: { color: '#409EFF' } },
+      axisTick: { length: 12, lineStyle: { color: 'auto', width: 2 } },
+      splitLine: { length: 20, lineStyle: { color: 'auto', width: 5 } },
+      axisLabel: { distance: -60, color: '#999', fontSize: 12, formatter: function(v) { return v.toFixed(1) } },
+      title: { offsetCenter: [0, '-10%'], fontSize: 14 },
+      detail: {
+        fontSize: 28, offsetCenter: [0, '0%'],
+        valueAnimation: true,
+        formatter: function(v) { return v.toFixed(3) },
+        color: isAnomaly ? '#f56c6c' : '#67c23a'
+      },
+      data: [{ value: zScore, name: 'Z-Score' }]
+    }]
+  }
+  anomalyChart.setOption(option)
+}
+
+async function openRcaDialog(alertRow) {
+  rcaAlertId.value = alertRow.id
+  rcaResult.value = null
+  rcaDialog.value = true
+  rcaLoading.value = true
+  try {
+    const { data } = await rcaAnalysis(alertRow.id, {})
+    rcaResult.value = data.data || data
+  } catch (e) {
+    rcaResult.value = { error: 'RCA 分析失败: ' + (e?.message || '未知') }
+  } finally {
+    rcaLoading.value = false
+  }
+}
+
+function rcaCategoryColor(cat) {
+  const map = { RESOURCE: 'warning', CONFIG: 'info', EXTERNAL: 'primary', CODE: 'danger', TRAFFIC: 'success', NETWORK: 'warning', UNKNOWN: 'info' }
+  return map[cat] || 'info'
 }
 
 async function loadAll() {
@@ -493,8 +671,14 @@ function toggleAuto(v: boolean) {
 onMounted(async () => {
   await loadAll()
   if (autoRefresh.value) timer = window.setInterval(loadAll, refreshSec * 1000)
+  await loadAnomalyMetrics()
+  if (anomalySelectedMetric.value) await loadAnomalyTrend(anomalySelectedMetric.value)
+  window.addEventListener('resize', () => { anomalyChart?.resize() })
 })
-onUnmounted(() => { if (timer) clearInterval(timer) })
+onUnmounted(() => {
+  if (timer) clearInterval(timer)
+  if (anomalyChart) { anomalyChart.dispose(); anomalyChart = null }
+})
 </script>
 
 <style scoped>
@@ -552,4 +736,5 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
 }
 .alert-msg { font-size: 12px; color: #666; margin: 4px 0; }
 .alert-time { font-size: 11px; color: #999; }
+.rca-error { margin: 8px 0; }
 </style>
