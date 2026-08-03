@@ -37,7 +37,7 @@ public class LlmSummarizer {
     @Value("${minimax.memory.summary.model:MiniMax-Text-01}")
     private String model;
 
-    @Value("${minimax.memory.summary.base-url:http://localhost:8083}")
+    @Value("${minimax.memory.summary.base-url:http://localhost:8084}")
     private String baseUrl;
 
     @Value("${minimax.memory.summary.token:}")

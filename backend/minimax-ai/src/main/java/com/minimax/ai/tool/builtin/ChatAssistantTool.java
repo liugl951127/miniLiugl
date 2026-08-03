@@ -61,11 +61,12 @@ public class ChatAssistantTool implements AiToolExecutor {
             session.setTitle(generateTitle(message));
             sessionMapper.insert(session);
         } else {
-            // 更新 updated_at
-            AiChatSession update = new AiChatSession();
-            update.setSessionId(sessionId); // 这个 setSessionId 不会更新主键, 但有逻辑删除问题
-            // 直接用 SQL 更新吧
-            // 实际生产用 UpdateWrapper
+            // V5.4+ 真更新 updated_at (用 UpdateWrapper, 不用 setSessionId 错位)
+            sessionMapper.update(null,
+                    new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<AiChatSession>()
+                            .eq("session_id", sessionId)
+                            .set("updated_at", java.time.LocalDateTime.now())
+            );
         }
 
         // 2. 获取历史 (最近 10 轮)
