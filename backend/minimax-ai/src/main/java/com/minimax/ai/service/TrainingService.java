@@ -107,14 +107,18 @@ public class TrainingService {
         Map<Integer, Map<Integer, Integer>> statsMap = trainer.buildBigramStats(corpus);
         generator.setBigramStats(statsMap);
 
-        // 4. 训练 Transformer (简化版, 几个 epoch)
+        // 4. 训练 Transformer (V5.4+ 真训, 之前是 stub)
         log.info("开始训练 Transformer...");
         for (int epoch = 0; epoch < 3; epoch++) {
             log.info("Epoch {}/3", epoch + 1);
-            // 实际生产应该用完整 BPTT, 这里用简化版
-            // trainer.trainEpoch(corpus, 0.01);
+            try {
+                double loss = trainer.trainEpoch(corpus, 0.01);
+                log.info("  Epoch {} loss={}", epoch + 1, String.format("%.4f", loss));
+            } catch (Exception e) {
+                log.warn("  Epoch {} 训练异常: {}", epoch + 1, e.getMessage());
+            }
         }
-        log.info("Transformer 训练完成 (简化版, 仅展示流程)");
+        log.info("Transformer 训练完成 (3 epochs)");
 
         // 5. 保存模型 (暂时不存, 重启重新训练)
         log.info("模型就绪, 词表: {} tokens", tokenizer.getVocabSize());
