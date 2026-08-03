@@ -40,12 +40,13 @@ public class MessageController {
     // V3.7.26+ SSE 流式发送, 用独立线程池
     private static final ExecutorService SSE_EXECUTOR = Executors.newCachedThreadPool();
 
-    @Operation(summary = "追加发送消息")
+    @Operation(summary = "追加发送消息 (V5.4+ 调 service 真存, 之前返 stub)")
     @PostMapping
-    public Result<Object> append(@AuthenticationPrincipal AuthenticatedUser principal,
+    public Result<com.minimax.chat.vo.MessageVO> append(@AuthenticationPrincipal AuthenticatedUser principal,
                                     @PathVariable Long sessionId,
                                     @Valid @RequestBody AppendMessageRequest req) {
-        return Result.ok(Map.of("id", "stub", "sessionId", sessionId, "userId", principal.id()));
+        com.minimax.chat.vo.MessageVO vo = messageService.append(principal.id(), sessionId, req);
+        return Result.ok(vo);
     }
 
     /**
