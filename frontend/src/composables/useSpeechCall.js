@@ -14,6 +14,7 @@
  */
 import { ref, computed, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { ttsNormalize } from '@/utils/ttsNormalize'
 
 export function useSpeechCall() {
   // === 状态 ===
@@ -171,8 +172,8 @@ export function useSpeechCall() {
     if (!synth) return
     if (state.value === 'idle') return
 
-    // 清理 markdown
-    const clean = text
+    // 清理 markdown + 规范化数字/金额/日期/单位 (V5.4+ TTS 读音优化)
+    const clean = ttsNormalize(text)
       .replace(/[*_`#>]/g, '')
       .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
       .replace(/!\[([^\]]*)\]\([^)]+\)/g, '')

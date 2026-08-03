@@ -401,6 +401,7 @@ import { listSessions, createSession, deleteSession as deleteSessionApi } from '
 import { useBusinessStream } from '@/composables/useBusinessStream'
 import ChatMessage from '@/components/ChatMessage.vue'
 import { useSpeechCall } from '@/composables/useSpeechCall'
+import { ttsNormalize } from '@/utils/ttsNormalize'
 import { ElMessageBox } from 'element-plus'
 import {
   EditPen, Search, ChatDotRound, MoreFilled, Promotion, Cpu, Clock, MagicStick,
@@ -568,8 +569,8 @@ function speak(text) {
   // 停止之前的播报
   window.speechSynthesis.cancel()
 
-  // 清理 markdown / HTML 标签
-  const cleanText = text
+  // 清理 markdown / HTML 标签 + TTS 规范化数字/金额/日期/单位 (V5.4+)
+  const cleanText = ttsNormalize(text)
     .replace(/<[^>]+>/g, '')      // 去除 HTML
     .replace(/[*#_`>~\-]+/g, '') // 去除 markdown
     .replace(/\[(.+?)\]\(.+?\)/g, '$1')  // 去除链接
