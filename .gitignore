@@ -32,7 +32,6 @@ yarn-error.log*
 .env.*.local
 
 # Data
-data/
 logs/
 *.pid
 *.seed

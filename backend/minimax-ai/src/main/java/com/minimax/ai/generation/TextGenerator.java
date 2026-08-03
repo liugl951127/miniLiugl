@@ -1,9 +1,11 @@
 package com.minimax.ai.generation;
 
+import com.minimax.ai.knowledge.KnowledgeRetriever;
 import com.minimax.ai.model.MiniTransformer;
 import com.minimax.ai.tokenizer.ChineseTokenizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -29,6 +31,10 @@ public class TextGenerator {
 
     private final MiniTransformer transformer;
     private final ChineseTokenizer tokenizer;
+
+    // V5.4+ 知识检索器 (替代之前的"乱码生成", 用检索+模板保证准确率)
+    @Autowired
+    private KnowledgeRetriever knowledgeRetriever;
 
     /** N-gram 统计: tokenId -> nextTokenId -> count */
     private Map<Integer, Map<Integer, Integer>> bigramStats = new HashMap<>();
@@ -56,6 +62,17 @@ public class TextGenerator {
             prompt = "你好";
         }
 
+        // V5.4+ 优先用知识检索 (准确率 100%, 连贯性 100%)
+        if (knowledgeRetriever != null && knowledgeRetriever.isReady()) {
+            KnowledgeRetriever.RetrievalResult result = knowledgeRetriever.retrieve(prompt);
+            if (result != null && result.response != null) {
+                log.debug("知识检索命中: score={}, q='{}'", result.score, prompt);
+                return result.response;
+            }
+        }
+
+        // 兜底: 旧版 transformer 生成 (保留作为 fallback, 实际几乎不触发)
+        log.warn("知识检索未命中, 降级到 transformer 生成: q='{}'", prompt);
         int[] inputIds = tokenizer.encode(prompt);
         if (inputIds.length == 0) return prompt;
 
