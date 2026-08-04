@@ -587,7 +587,23 @@
 
 ---
 
-## Day 33 - 待开始
+## Day 33 - 2026-08-04 ✅ 前端 API 路径修复 + 投票对话联调验证
+
+**今日完成：**
+- [x] **monitor.js API 路径修复**：4 个 RCA/异常检测 API 补 `/api/v1` 前缀（`rcaAnalysis`、`anomalyDetect`、`anomalySummary`、`activeAnomalyMetrics`）
+- [x] **后端投票对话端点验证**：VotingChatController 3 端点 + MultiModelVotingService 419 行完整
+- [x] **自检 13/13 + Java 静态检查 5/5 + 前端 npm build ✅**
+- [x] **前端 npm install --legacy-peer-deps + build（NODE_OPTIONS=1536MB，54.87s）**
+
+**明日计划 Day 34：**
+- [ ] 前端构建集成到 self-check.sh
+- [ ] V4.3 文档收尾（API.md / CHANGELOG.md）
+- [ ] Monitor 告警确认弹窗完善
+- [ ] AiChat.vue SSE 流式响应
+
+---
+
+## Day 34 - 待开始
 
 ## Day 21 - 2026-06-26 ✅ API 文档体系 + 压测模板
 
