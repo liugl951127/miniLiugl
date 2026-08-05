@@ -108,13 +108,15 @@ export class CrdtDoc {
     const target = ordered[pos]
     if (this.tombstones.has(idKey(target.id))) return null
     const newId = this.idFactory.next()
-    const op = {
+    // op 内部: 描述 CRDT 删除操作
+    const _op = {
       type: 'delete',
       id: newId,           // 删除操作的 id (任意, 标识此次删除)
       // 实际指向被删 item:
       targetId: target.id,
       parentId: null
     }
+    // 后续通过 opManager.apply(_op) 应用
     // 简化: 直接用 target.id 作为被删
     const deleteOp = {
       type: 'delete',

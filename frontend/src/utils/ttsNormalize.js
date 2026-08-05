@@ -301,7 +301,7 @@ function bigNumberToSpeech(text) {
  * 主函数: 规范化 TTS 文本
  */
 export function ttsNormalize(text, options = {}) {
-  const { lang = 'zh' } = options
+  // const { lang = 'zh' } = options  // V3.7.38+ reserved for multilingual TTS
   if (!text) return ''
   
   let result = text
