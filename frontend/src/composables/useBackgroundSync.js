@@ -11,7 +11,9 @@
  *   onSyncResult((result) => toast(`已发送: ${result.url}`))
  *   const pending = await getPendingCount()  // 当前队列数
  */
-import { ref, onMounted, onBeforeUnmount } from 'vue'const syncResults = ref([])
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+
+const syncResults = ref([])
 const pendingCount = ref(0)
 const isSupported = ref(false)
 const isOnline = ref(navigator.onLine)
