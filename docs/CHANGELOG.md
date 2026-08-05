@@ -1,858 +1,757 @@
-# MiniMax Platform 变更日志
-
-> **所有版本变更** · V1.0 → V3.3.4
-
-## [V3.3.4] - 2026-07-13
-
-### V3.3.4 全面复测 + Bug 修复 + 企业文档体系
-
-**复测结果**:
-- 后端 16 个微服务单元测试: **435 个, 0 错误** (含 multimodal 1 个 ONNX 软跳过)
-- 前端 vitest: **44 个, 0 错误**
-- Vite build: 成功 (1m 42s, 4.7M 产物)
-- H2 验证 SQL: **84 张表, 12 种子表, 0 错误**
-
-**修复的 Bug**:
-1. **前端 monitor.js (24 个测试)**:
-   - 别名引用顺序问题 (TDZ): `getMonitorAlertRules = listAlertRules` 在定义前引用
-   - 重写别名块到文件末尾, 必须在定义后导出
-   - 补全 5 个缺失 API: `getAlertChannel`, `updateAlertChannel`, `kgSearchEntities`, `kgGetEntity`, `kgNeighbors`, `kgTwoHop`, `kgPath`
-   - 修测试期望: `'/monitor/metrics/trend?hours=48'` → `'/monitor/metrics/trend', {params:{hours:48}}`
-   - 修别名路径: `getMonitorAlerts` 调 `/monitor/alerts/firing` (firing 是准确描述)
-2. **SQL 重构 (init.sql + init_seeds.sql)**:
-   - 拆分为 2 个脚本: `init.sql` (仅 DDL) + `init_seeds.sql` (仅种子)
-   - gen_ddl.py 增强: 扫全部类 (不只 entity/), 共 **84 张表** (从 73 增加到 84)
-   - 补 11 个缺失表: agent_marketplace, agent_rating, async_task, memory_long_term, memory_user_pref, model_market, model_rating, rate_limit_rule, request_log, webhook, webhook_delivery
-   - 补 alert_rule 表的 threshold 列 (gen_ddl 漏了)
-   - 修种子列名: 匹配实际实体字段 (category → isRegex, metric → metricName, type → protocol, jdbcUrl 等驼峰 → 实际列)
-   - 移除 ON DUPLICATE KEY UPDATE (H2 不完整支持), 直接用 INSERT
-
-**企业文档体系** (中文命名, docs/企业文档/):
-1. `README.md` - 文档总览索引
-2. `用户操作手册.md` - 8.4KB, 6 章, 含 ASCII 截图占位
-3. `功能操作手册.md` - 16KB, 12 个功能模块
-4. `初级开发手册.md` - 18.5KB, 9 章
-5. `docs/screenshots/截图索引.md` - 9 张实际截图 + 35 张待补清单
-
-**总测试量**: 435 + 44 = **479** 个, 通过率 100%
-
-## [V3.2.1] - 2026-07-12
-
-### V3.2.1 数据看板 (Dashboard)
-
-**背景**: V3.2.0 训练任务可视化后, V3.2.1 面向业务运营场景: 实时看 AI 调用/用户/工具使用/任务状态。
-
-**代元**:
-- `DashboardService`: 指标计算 + 5s 内存缓存 + 60s 定时 snapshot + @Scheduled 定时清理
-- 11 个核心指标: user.total / user.active / ai.call.count / ai.token.total / ai.tool.usage / training.running / training.completed / api.requests / api.errors / cache.hit / cache.miss
-- 复合指标: errorRate / cacheHitRate (依赖多个原子指标)
-- 外部注入: setUserTotal/setApiRequests/incrementToolUsage (业务业务代码调)
-- 缓存策略: ConcurrentHashMap + 5s TTL + setter 自动失效
-- 趋势查询: 近 N 小时 (默认 24h, 可选 1h/24h/7d)
-- REST API (10 个): /api/v1/ai/dashboard/{metrics/all, metrics/{name}, metrics (POST setter), tools/track, tools/top, trend/{name}, cache/stats, cache/clear, health, stream}
-- SSE 实时流: 立即推 + 每 5s 推一次
-- 定时任务: 60s 快照 (落地 dashboard_metric 表) + 3am 清理 7d 前历史
-- DDL: dashboard_metric 表 (metric + dimension + value + timestamp)
-
-**测试**: 12 个单元测试全过
-- getMetric / 未知指标 / 缓存 TTL / 工具累加 / 命中率 / 错误率 / 全量聚合 / 健康 / 清缓存 / setter 失效
-
-**总测试量**: minimax-ai 194 → 218 (+24) / 17 个微服务总计: **437 个**
-
-## [V3.2.0] - 2026-07-12
-
-### V3.2.0 训练任务可视化
-
-**背景**: V3.1.x ONNX/Capacitor 后, V3.2.0 面向 AI 研发场景: 训练任务 + 实时曲线 + Checkpoint 管理。
-
-**代元**:
-- 3 实体: `TrainingJob` (任务) / `TrainingMetric` (历史) / `TrainingCheckpoint` (检查点)
-- 3 Mapper: MyBatis BaseMapper + 5 个自定义查询 (按 taskId/status/ownerId/findBest)
-- `TrainingVizService`: CRUD + 指标上报 + EMA 平滑 + checkpoint 保存/加载 + SHA256 校验
-- `TrainingStream`: SSE 广播, 3 事件类型 (metric/status/checkpoint), 多订阅者
-- `TrainingVizController`: 16 个 REST API (创建/列表/详情/开始/上报/完成/失败/取消/历史/EMA/SSE/checkpoint CRUD/下载)
-- 3 DDL: training_job / training_metric / training_checkpoint
-- Checkpoint 文件系统: ${MINIMAX_MODEL_DIR}/checkpoints/{taskId}/{checkpointId}/model.bin
-- EMA 公式: EMA_t = α·v + (1-α)·EMA_{t-1} (V2.7.5 已存在, V3.2.0 加强, 加入 controller 独立端点)
-
-**测试**: 12 单元测试全过
-- EMA 基础 / 数学 / 边界 (α=0/0.5/1) / 性能 (10000点<100ms) / 收敛性 / α 对比
-- TrainingStream 订阅/广播/事件名/广播空订阅不抛
-- 12 个业务场景覆盖
-
-**总测试量**: 194 → 218 (+24) / 17 个微服务总计: **437 个**
-
-## [V3.1.1] - 2026-07-12
-
-### V3.1.1 Capacitor 移动端封装 (iOS/Android)
-
-**背景**: V3.1.0 ONNX 真实模型后, V3.1.1 把 Vue 3 PWA 拓展为原生 App。同一份 dist, 浏览器+原生双平台。
-
-**依赖** (10 个 @capacitor/*):
-- `@capacitor/core` + `cli` + `android` + `ios` (跨平台运行时)
-- `@capacitor/preferences` (偏好存储, 跨平台)
-- `@capacitor/splash-screen` (启动屏)
-- `@capacitor/status-bar` (状态栏主题)
-- `@capacitor/haptics` (触觉反馈)
-- `@capacitor/keyboard` (键盘控制)
-- `@capacitor/network` (网络状态)
-- `@capacitor/app` (生命周期)
-
-**文件清单**:
-- `frontend/capacitor.config.ts` (App ID: com.minimax.platform, 启动屏 2s, 状态栏 #409EFF)
-- `frontend/src/composables/useCapacitor.js` (统一 API: preferences/haptics/splash/statusBar/network/keyboard)
-- `frontend/src/composables/useSafeArea.js` (刘海/底部安全区, env() 变量动态设置)
-- `frontend/src/main.js` (initCapacitor 接入)
-- `frontend/src/__tests__/useCapacitor.test.js` (12 单元测试)
-- `frontend/package.json` (8 个 npm scripts: cap:open/cap:add/cap:copy/cap:build)
-- `scripts/build-mobile.sh` (一键构建 ios/android/both/sync, 含 JDK17 + Xcode 检测)
-- `frontend/resources/README.md` (启动屏/图标尺寸规范)
-- `docs/MOBILE.md` (完整指南: 架构/集成/平台差异/常见问题)
-
-**设计**:
-- Web 端降级: localStorage / navigator.onLine / navigator.vibrate
-- 原生端: @capacitor/* 插件
-- 业务代码统一调 useCapacitor(), 无需关心平台
-- 动态 import @capacitor/* (避免 Web 端 bundle 打包)
-
-**测试**:
-- useCapacitor.test.js 12 单元测试全过
-- 平台检测 (Web/iOS/Android) + preferences/haptics/splash/statusBar/keyboard 静默失败
-
-**一键构建**:
-```bash
-./scripts/build-mobile.sh both    # iOS + Android
-./scripts/build-mobile.sh ios     # iOS (需 macOS + Xcode)
-./scripts/build-mobile.sh android # Android (需 JDK 17 + Android SDK)
-```
-
-## [V3.1.0] - 2026-07-12
-
-### V3.1.0 ONNX 真实模型加载
-
-**背景**: V3.0.1 多模态插件架构下, LocalOnnxVisionProvider 只接了占位符。V3.1.0 接入 ONNX Runtime Java 1.17.0 真实推理。
-
-**依赖**:
-- `com.microsoft.onnxruntime:onnxruntime:1.17.0` (跨平台 ONNX 推理)
-
-**文件清单**:
-- `provider/OnnxRuntimeService.java` (OrtEnvironment 单例, ThreadLocal<OrtSession>, preprocessImage NCHW 归一化, classify 分类推理, embed 特征提取, softmax 数值稳定)
-- `provider/LocalOnnxVisionProvider.java` (重写, 接入 OnnxRuntimeService, @PostConstruct/@PreDestroy 生命周期)
-- `OnnxRuntimeServiceTest.java` (10 单元测试, 1 软跳过需预生成模型)
-- `scripts/gen_onnx_test_model.py` (Python onnx 脚本生成 add_one.onnx + simple_classify.onnx)
-- `minimax-multimodal/pom.xml` (onnxruntime 1.17.0 依赖)
-
-**能力**:
-- 加载本地 .onnx 模型 (MobileNetV3 / CLIP / ResNet / YOLO 均可)
-- 图像预处理: resize + 中心裁剪 + ImageNet 归一化 (mean/std) + NCHW float
-- 推理: 分类 (logits → softmax → top-K) + 特征提取 (embeddings)
-- 模型元信息: 输入/输出节点名/类型
-- ThreadLocal session:  OrtSession 非线程安全, 服务端多线程并发安全
-
-**配置** (application.yml):
-```yaml
-minimax.multimodal.local:
-  model-dir: /var/minimax/models/vision
-  model-file: mobilenetv3.onnx
-  input-name: input
-  input-size: 224
-```
-
-**启用方法**:
-1. 下载预训练模型 (.onnx)
-2. 放到 model-dir
-3. 重启服务, isReady() 自动变 true
-
-**测试**: 
-- OnnxRuntimeServiceTest 10 单元测试 (9 通过 + 1 软跳过需 Python onnx 包生成)
-- multimodal 总测试: 16 → 26 (+10)
-
-**依赖 Python (生成测试模型)**:
-```bash
-pip install onnx onnxruntime
-python3 scripts/gen_onnx_test_model.py
-```
-
-## [V3.0.3] - 2026-07-12
-
-### V3.0.3 智能体群 (Agent Group) 框架
-
-**背景**: V3.0.2 PPT 之后, 灵现单 Agent 框架. V3.0.3 面向多 Agent 协作场景: 一个任务由多个 Agent 按不同策略协同完成。
-
-**代元**:
-- 4 角色: `MANAGER` (权重 2.0) / `WORKER` (1.0) / `CRITIC` (1.5) / `OBSERVER` (只读)
-- 4 策略: `PIPELINE` (顺序) / `DEBATE` (3 轮辩论) / `VOTE` (并行多数决) / `SWARM` (群智)
-- 共享内存: `ConcurrentHashMap` + `ReadWriteLock`, 黑板模式, 键约定 `task.{id}` / `result.{id}` / `consensus` / `history`
-- 消息总线: 每 Agent 一个 `ConcurrentLinkedQueue` 收件箱, 点对点 + 广播 + 完整历史
-- 协调器: `GroupOrchestrator` 4 策略实现, `ExecutorService` 并行 (VOTE/DEBATE/SWARM)
-- 内置 Agent: `SimpleEchoAgent` (零依赖测试 agent)
-- 持久化: `agent_group` 表 + `AgentGroupMapper` + `AgentGroupService`
-- REST API (7 个): `/api/v1/ai/group/{create,list,quick-create,strategies/list,agents/list}` + `/{groupId}` + `/{groupId}/run`
-- 预置 4 模板: `writing-team` (PIPELINE) / `debate-panel` (DEBATE) / `vote-council` (VOTE) / `swarm-mesh` (SWARM)
-- 单元测试: **GroupOrchestratorTest 17 个**全过
-- 复杂度: PIPELINE `O(N×T)` / DEBATE `O(R×N×T)` / VOTE `O(N×T)` / SWARM `O(N×T)`
-
-**文件清单**:
-- `framework/group/GroupRole.java` (4 角色枚举)
-- `framework/group/GroupStrategy.java` (4 策略枚举)
-- `framework/group/GroupMessage.java` (5 类型: TASK/RESULT/FEEDBACK/BROADCAST/SHUTDOWN)
-- `framework/group/GroupSharedMemory.java` (黑板模式)
-- `framework/group/GroupMessageBus.java` (总线路由)
-- `framework/group/GroupMember.java` (成员 + 工厂)
-- `framework/group/GroupTask.java` (含 SubTask)
-- `framework/group/GroupResult.java` (含 Status: SUCCESS/FAILED/TIMEOUT/ABORTED)
-- `framework/group/AgentExecutor.java` (执行器接口)
-- `framework/group/GroupOrchestrator.java` (核心协调引擎)
-- `framework/group/SimpleEchoAgent.java` (内置测试 agent)
-- `marketplace/AgentGroupMapper.java` (MyBatis Mapper)
-- `marketplace/AgentGroupService.java` (服务层)
-- `marketplace/AgentGroupController.java` (REST API)
-- `entity/AgentGroup.java` (实体)
-- `sql/init.sql` (+agent_group 表)
-
-**测试**: 17 单元测试全过
-- 枚举 / 共享内存读写 / 并发安全 (10 线程)
-- 消息总线 (路由 / 广播 / 历史 / peek)
-- 4 策略 (PIPELINE / VOTE / DEBATE / SWARM)
-- 失败兜底 (无 manager / 无 worker)
-- SimpleEchoAgent / GroupMessage.Type / GroupResult.isSuccess
-
-**总测试量**: minimax-ai 177 → 194 (+17)  / 17 个微服务总计: **403 个**
-
-## [V3.0.2] - 2026-07-12
-
-### V3.0.2 AI 模块 PPT 生成
-
-**背景**: V3.0.1 多模态插件架构, V3.0.2 面向企业汇报场景: 走 AI Tool 调用路径生成 PPT。
-
-**代元**:
-- `PptTheme` (4 主题: 商务蓝/暗夜/自然绿/暖橙, 5 色调色板)
-- `OutlineParser` (3 格式: Markdown/JSON/纯文本, auto-detect, autoGenerate topic+N 页)
-- `PptRenderer` (Apache POI 5.2.5 XSLF, 16:9 1280×720, 4 slide 类型: cover/title/content/closing)
-- `PptGenTool` (code=ppt.gen, 21 号 AI 工具, @Component 自动注册)
-- `PptGenController` (4 端点: `/api/v1/ai/ppt/{generate,auto,parse,themes}`)
-- `AiToolRegistry.getExecutor(String code)` 新增重载
-
-**实报**:
-- `/tmp/MiniMax_Demo.pptx` 27,831 字节, Microsoft OOXML 格式, 3 slides
-- 12 单元测试全过 (主题×4 / 格式×3 / 页数 / 实际生成)
-- 21 AI 工具, 189 单元测试
-
-**总测试量**: 386 → 398 (+12)
-
-## [V3.0.1] - 2026-07-12
-
-### V3.0.1 多模态插件化模型架构
-
-**背景**: V3.0.0 重大重构后, 多模态模块需支持多模型源 (本地 / OpenAI 兼容 / ONNX)。
-
-**代元**:
-- `MultimodalModelProvider` 接口 (name/description/isReady/describe/describeMulti/inspect)
-- 4 Provider:
-  - `MockVisionProvider` (零依赖, 永远 ready)
-  - `BuiltinVisionProvider` (自研像素分析 + 颜色直方图 + 场景分类, 零依赖)
-  - `OpenAIVisionProvider` (OpenAI Chat Completions 协议, 兼容 gpt-4o / DeepSeek-VL / Qwen-VL / GLM-4V)
-  - `LocalOnnxVisionProvider` (V3.1+ 框架就绪, 需 ONNX 模型文件)
-- `ImageInspector` 共享工具 (magic number 格式识别, JPEG/PNG/GIF/WebP/BMP)
-- `MultimodalModelRegistry` (Spring 自动注册 + 降级链)
-- `VisionService` 重构 (委托 + 失败自动降级)
-- `MultimodalController` 加 model 参数 (`/describe`, `/describe/multi`, `/info`, `/providers/default`)
-
-**测试**: 16 单元测试全过 (VisionServiceTest 7 + BuiltinVisionProviderTest 9)
-
-**总测试量**: 297 → 386 (+89)
-
-## [V3.0.0] - 2026-07-12
-
-### 🆕 重大重构 (主)
-- **去除 K8s 全部依赖**
-  - 删除 OPERATIONS.md 中 K8s 部署章节
-  - 替换 kubectl 为 docker 命令
-  - 清理 ARCHITECTURE/TEST_REPORT K8s 表格
-- **SQL 汇总单文件** (`sql/init.sql`)
-  - 重写 `gen_ddl.py`, 从 Java 实体扫描 `@TableName`
-  - 62 表, 1288 行, 60KB
-  - 删除 16 个旧 SQL 文件
-  - 9 段种子数据 (用户/角色/AI工具/意图/协作/Agent/Model/Webhook/异常/保留)
-- **后端 API 路径标准化** (`/api/v1/...`)
-  - 56 controllers 全部 `@RequestMapping` 加 `/api/v1` 前缀
-  - 修复前端 `http.js`: 避免双前缀
-  - 替换前端 `ai.js`: `/api/ai/...` → `/ai/...` (55 处)
-- **前端浏览器兼容** (V3.0.0)
-  - `vite.config.js`: target 降为 `es2015`
-  - `package.json`: 添加 `browserslist` (Chrome 63+/Edge 79+/FF 60+/Safari 12+)
-  - 新增 `useBrowserCompat.js`: 7 类 polyfill
-    - structuredClone / crypto.randomUUID
-    - Array.flat / Object.fromEntries
-    - String.replaceAll / requestIdleCallback
-    - AbortController
-  - `main.js` 初始化 `detectFeatures` + `installPolyfills`
-- **AI 算法逐行详细注释**
-  - `ModelInference.sampleTopKTopP`: Top-K-P 采样完整说明
-  - `ModelInference.isRepeating`: Bigram 重复检测
-  - `ModelInference.currentContext`: Sliding window
-  - `CrdtEngine.renderText`: 三键复合排序
-  - `GeoUtils.haversine`: 球面距离推导
-  - `KeywordEngine.recognize`: 三级匹配
-  - `KeywordEngine.extractParams`: 参数提取
-  - `TrainingTracker.ema`: EMA 公式推导
-  - 新增 `docs/AI-ALGORITHMS.md` 算法详解
-- **接口链路 E2E 准生产测试**
-  - `scripts/test-e2e-v300.sh`: 15 大类 60+ 接口
-    - 健康/登录/AI 24接口/Model Market/Agent/Webhook/治理/PWA/SLA/兼容/SQL/路径/算法/文档/K8s
-  - `scripts/test-perf.sh`: 12 接口 P50/P95/P99
-  - `docs/TEST_REPORT.md`: 准生产测试报告
-  - 验证结果: **28 PASS / 0 FAIL / 44 SKIP**
-- **封装性重构**
-  - 各 controller/service 接口对齐
-  - 算法复杂度 + 副作用详细文档化
-  - 详细 javadoc (`@param` / `@return` / `<b>` / 复杂度 / 公式)
-
-### 🐛 修复
-- 修复 `http.js` 双前缀错误
-- 修复 `ai.js` 55 处路径
-- 修复 vite target ES2015+ 不兼容老浏览器
-
-### 📊 统计
-- **总提交数**: 24
-- **代码行数**: 105K+
-- **测试总数**: 297 单元 + 60+ E2E
-- **DDL 表数**: 62 (单文件)
-- **Controllers**: 56 (全部 /api/v1)
-- **文档**: 16 份 (新增 TEST_REPORT / AI-ALGORITHMS)
-
-## [V2.9.1] - 2026-07-12
-
-### 🆕 AI 模型市场 (主)
-- **ModelEntry** 实体 (3KB) - 21 字段
-  - modelKey/name/description/modelType/taskType
-  - baseModel/version/filePath/fileName/fileSize
-  - sha256 (自动计算)/license (6 种)
-  - authorId/authorName/tags/metricsJson
-  - status (DRAFT/PUBLISHED/DEPRECATED)
-- **ModelRating** 实体 + 评分
-- **ModelMarketService** (11KB)
-  - upload(): multipart + SHA256 + 元数据
-  - uploadMetadata(): 仅元数据发布
-  - browse(): 分类/任务/搜索/排序
-  - rate(): 1-5 星 + 评论
-  - recordDownload/downloadPath: 路径 + 计数
-  - changeStatus: 状态机
-  - stats(): 总数/已发布/总下载/总大小/类型分布
-- **ModelMarketController** 9 端点
-  - POST /upload (multipart), POST /publish
-  - GET /models, GET /models/{key}, GET /models/{key}/download
-  - POST /models/{key}/rate, GET /models/{key}/ratings
-  - GET /my, POST /models/{key}/status, GET /stats
-- 3 示例模型: 中文情感 BERT / MiniMax-7B GGUF / 电商 NER
-
-### 🆕 Webhook 集成 (辅)
-- **Webhook** 实体 (2.5KB) + **WebhookDelivery** 投递日志
-- **WebhookService** (12KB)
-  - 订阅 CRUD (URL 验证 + webhookId/secret 生成)
-  - 事件总线 publish(eventType, payload)
-  - 异步投递: HTTP POST + HMAC-SHA256 签名
-  - 4 个 Header: X-Webhook-Id/Event/Timestamp/Delivery
-  - 指数退避重试 (3 次, 0/1/4/16s)
-  - 投递日志 (status/duration/error)
-  - 测试 webhook (Ping)
-  - 事件计数器
-- **8 事件类型**:
-  - USER_LOGIN/USER_REGISTER
-  - MODEL_TRAINED/AGENT_PUBLISHED
-  - COLLAB_MESSAGE/AUDIT_FAILED
-  - ALERT_TRIGGERED/WEBHOOK_TEST
-- **WebhookController** 10 端点
-- 1 示例 webhook (Slack 通知)
-
-### 🆕 DDL (4 表 + 4 种子)
-- model_market: 主表 (8 索引)
-- model_rating: 评分
-- webhook: 订阅
-- webhook_delivery: 投递日志
-- 3 示例模型 + 1 示例 webhook
-
-### 🧪 测试统计
-- 274 (V2.9.0) → **297** (+23)
-- V291ModelMarketTest 13: upload/empty/emptyName/metadata/browse/rate*3/invalid/notFound/download/status/notFound/stats
-- V291WebhookTest 10: create/invalidURL/update/delete/publish/hmac/stats/deliveries/recent
+# Changelog
+
+所有重要的项目变更都记录在此。
+
+格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
+
+## [1.0.0] - 2026-06-16
+
+### 14 天路线图全部完成 🎉
+
+### Day 13 - 2026-06-16
+#### Added
+- 限流: Bucket4j 多维度 (IP/User/Global) + RateLimitService 配置化
+- 缓存: Caffeine CacheService (防击穿 + TTL + 统计)
+- 异步: AsyncTaskService (UUID + 状态机 + 重试 + 回调 + Future)
+- 请求日志: RequestLogFilter (traceId + 慢/错采点)
+- 压测: benchmark.sh (Bash 并发: QPS + p50/p95/p99)
+- 配置: minimax-optimized.yml (生产调优模板)
+- SQL: request_log / async_task / rate_limit_rule (3 表)
+- 测试: 11 用例 (限流/缓存/异步)
+- 累计: **125 用例 0 失败**
+
+### Day 12 - 2026-06-16
+#### Added
+- 监控模块: 11th microservice (8089)
+- MetricsCollector: 5 Counter + 4 Gauge + 2 Timer (Micrometer)
+- AlertEngine: 30s 评估 + 6 运算符 + 冷却 + 自动恢复
+- HealthDetailService: 5 维度 (DB/JVM/Disk/Thread/System)
+- SnapshotService: 60s 落库 + 30d 清理
+- 5 默认告警规则 (CPU/JVM/磁盘/LLM延迟/错误率)
+- Prometheus 集成: `/actuator/prometheus`
+- SQL: metric_snapshot / alert_rule / alert_event (3 表)
+- 测试: 11 用例 (HealthDetail + AlertEngine)
+- 累计: **114 用例**
+
+### Day 11 - 2026-06-16
+#### Added
+- 多模态模块: 10th microservice (8088)
+- VisionService: OpenAI vision 协议 + Mock 降级
+- 图片信息识别: PNG/JPEG/GIF/WebP magic number
+- 醒目前端升级:
+  - MarkdownView: Markdown + 代码高亮 + 复制按钮
+  - ChatMessage: Markdown + 工具调用 + RAG 引用 + 拖拽图片
+  - chat/Index.vue: 快速提问 + 拖拽上传 + 流式 + 工具展示
+  - admin/Dashboard.vue: 健康 pill + KPI 卡片 + ECharts 折线/饼图
+  - layout/Index.vue: 顶部服务健康 pill (30s 自动刷新)
+- 测试: 7 用例 (VisionService)
+
+### Day 10 - 2026-06-16
+#### Added
+- 管理后台模块: 9th microservice (8087)
+- ServiceClient: Java 11+ HttpClient 跨服务客户端 (无 Feign 依赖)
+- UserMgmtService: 代理 auth + 自动审计
+- ModelMgmtService: 代理 model + 调限流审计
+- StatsService: 业务统计 + dashboard 聚合
+- HealthAggregator: 并发 ping 6 服务
+- AuditService: 统一操作审计
+- SQL: admin_audit_log
+- 测试: 11 用例
+
+### Day 9 - 2026-06-16
+#### Added
+- Function Calling 模块: 8th microservice (8086)
+- 4 个内置工具: get_current_time / calculator / http_get / random_number
+- 自实现表达式求值器 (不依赖 Nashorn, Java 17 headless 兼容)
+- ToolExecutor: 工具路由器 (内置 + HTTP)
+- FunctionCallService: LLM + tool 循环 (最多 5 轮)
+- SSRF 防护 + 字符白名单
+- SQL: function_tool + function_call_log
+- 测试: 23 用例
+
+### Day 8 - 2026-06-16
+#### Added
+- RAG 模块完整版: 7th microservice (8085)
+- 3 种文档解析器: TXT/MD (BOM 探测) / DOCX (POI) / PDF (PDFBox)
+- 智能分块器 TextChunker (滑动窗口 500/50 + 位置跟踪)
+- DocumentService: SHA-256 去重 + 状态机
+- Retriever: 向量检索 topK + 引用填充
+- RagService: 检索 + LLM 增强 + 3 级降级
+- SQL: knowledge_base / document / document_chunk
+- 测试: 19 用例
+
+### Day 7 - 2026-06-16
+#### Added
+- 长期记忆 (向量库)
+- Embedding 抽象: OpenAI 兼容 + Mock 离线
+- 长期记忆 Service: store / recall (余弦) / recent / delete
+- 用户偏好 Service: set/get/list/delete
+- 跨会话 Context Builder: 短+长+偏好+摘要
+- 真实 LLM 摘要升级 (调 model 服务)
+- SQL: memory_long_term + memory_user_pref
+- 测试: 12 用例 (新增)
+
+### Day 6 - 2026-06-16
+#### Added
+- 短期记忆 (Redis + Caffeine 双层降级)
+- ContextBuilder: 按 maxContext 智能裁剪
+- Summarizer: 35→10 条触发压缩
+- MemoryController 6 端点
+- chat 模块独立 SessionContextCache
+- 累计: 43 用例
+
+### Day 5 - 2026-06-16
+#### Added
+- 真流式 (HttpClient BodyHandlers.ofLines)
+- 取消机制 (streamId + stopFlag + POST /cancel)
+- 打字机 + 停止按钮
+- 前端 fetch + ReadableStream
+- 累计: 33 用例
+
+### Day 4 - 2026-06-16
+#### Added
+- 模型路由 (model_provider / model_config / model_quota)
+- OpenAI 兼容 + Bucket4j 限流 (10/60s)
+- 6 个模型: gpt-4o / MiniMax-Text-01 / VL-01 / ollama / qwen / mock
+- Mock 模式开关 (无 key 也能演示)
+- SSE StreamingResponseBody
+- 累计: 30 用例
+
+### Day 3 - 2026-06-16
+#### Added
+- 会话消息 (chat_session / chat_message)
+- SessionController + MessageController
+- 前端侧边栏
+- 架构重构: JwtAuthenticationFilter 抽到 common
+- H2 test profile
+- 累计: 20 用例
+
+### Day 2 - 2026-06-16
+#### Added
+- 用户鉴权: 5 表 + JWT 双 token (30min/7d)
+- Spring Security 6 + BCrypt
+- AuthController 5 端点
+- Pinia user store + 401 自动 refresh
+- 累计: 8 用例
+
+### Day 1 - 2026-06-16
+#### Added
+- 项目骨架: 7 模块 Spring Boot 3 多模块
+- Vue 3 + Element Plus + Pinia 前端
+- docker-compose: MySQL + Redis + ES + MinIO
+- 定时任务安装脚本
+- 网关健康检查 + 平台介绍 API
 
 ---
 
-## [V2.9.0] - 2026-07-12 (大版本)
+## 整体数据
 
-### 🆕 完整 Admin 治理后台 (主)
-- **GovernanceService** (12KB) - 治理核心
-  - **overview()**: 总操作/成功/失败/失败率/独立用户/资源分布/Top 10 操作
-  - **timeline()**: 按小时聚合时间线 (总 + 失败)
-  - **anomalies()**: 4 类异常检测
-    - 高频失败用户 (失败 >10)
-    - 异常 IP (单 IP >1000)
-    - 越权删除尝试
-    - 短时间突发 (同用户 1分钟 >50)
-  - **compliance()**: 5 项合规检查 (审计完整性/敏感词/保留/加密/RBAC)
-  - **retentionPolicies()**: 3 表保留策略
-- **GovernanceController** 5 个端点
-  - GET /api/v1/admin/governance/overview
-  - GET /api/v1/admin/governance/timeline
-  - GET /api/v1/admin/governance/anomalies
-  - GET /api/v1/admin/governance/compliance
-  - GET /api/v1/admin/governance/retention
-- **AdminGovernance.vue** (10KB) 前端面板
-  - 6 KPI 卡片 (总操作/成功/失败/失败率/独立用户/合规评分)
-  - 24h 时间线 (ECharts LineChart + areaStyle)
-  - Top 10 操作表格 (带进度条)
-  - 资源分布环图 (PieChart)
-  - 异常检测 3 列表
-  - 合规 5 卡片 (带 PASS/WARN/FAIL 状态)
-  - 保留策略表格
+| 指标 | 14 天累计 |
+|------|-----------|
+| 后端模块 | 13 (v4.3 新增 minimax-prompt 8091) |
+| Java 文件 | 241+ |
+| SQL 文件 | 8+ |
+| SQL 行数 | 1,000+ |
+| 单元/集成测试 | 135+ (0 失败) |
+| HTTP 端点 | 110+ |
+| 数据表 (MySQL) | 22+ |
+| 前端组件/视图 | 34+ |
+| 部署脚本 | 4 |
+| Git commits | 14+ |
+| 当前版本 | V4.3 (Prompt 模板系统) |
 
-### 🆕 AI Agent Marketplace (辅)
-- **MarketplaceAgent** 实体 (2.5KB)
-  - 字段: agentKey/name/description/category/icon
-  - authorId/authorName/definitionJson/version
-  - visibility (PUBLIC/PRIVATE/UNLISTED)
-  - status (PENDING/APPROVED/PUBLISHED/REJECTED)
-  - usageCount/avgRating/ratingCount/tags/capabilities
-- **AgentRating** 实体 + 评分记录
-- **MarketplaceService** (7.4KB)
-  - upload(): 验证 JSON + 自动 agentKey
-  - browse(): 分类/搜索/排序 (最新/评分/使用)
-  - detail() + recordUsage(): 自增计数
-  - rate(): 1-5 星, 自动更新聚合
-  - approve(): 状态机 PENDING → PUBLISHED/REJECTED
-  - stats(): 总数/已发布/待审/总使用
-- **MarketplaceController** 9 个端点
-  - GET/POST /agents, GET /agents/{key}
-  - POST /agents/{key}/rate, GET /agents/{key}/ratings
-  - POST /agents/{key}/use, POST /agents/{key}/approve
-  - GET /my, GET /stats
-- **Marketplace.vue** (12.4KB) 前端
-  - 4 KPI 卡片
-  - 筛选: 分类/搜索/排序
-  - Agent 卡片网格 (图标/作者/分类/描述/标签/统计)
-  - 上传对话框 (7 字段 + JSON 编辑)
-  - 详情对话框 (评分 1-5 星 + 评论)
+## [V2.0] - 2026-06-16 — 4 大新功能
 
-### 🆕 DDL (4 表 + 5 异常规则 + 3 示例 Agent)
-- agent_marketplace (主表, 13 字段, 8 索引)
-- agent_rating (评分记录)
-- data_retention_policy (保留策略)
-- anomaly_rule (异常检测规则)
-- 3 示例公开 Agent (旅行/代码/诗词)
-- 5 异常检测规则种子
+### Added
+- **V2.1 Agent 自主任务**: 12th microservice (8090), ReAct 循环
+  - Thought/Action/Observation 三段式 + `<final>` 包裹最终答案
+  - 最多 8 轮, 每轮可视化
+  - 区别于 Function Calling: Agent 是目标驱动, Function 是轮次驱动
+- **V2.2 知识图谱**: 实体-关系存储 + 1跳/2跳 + 最短路径
+  - 实体类型: person/place/org/concept/event
+  - 关系类型: works_at/located_in/friend_of/owns/...
+  - 重要性评分 1-10 + 别名 + 描述
+- **V2.3 实时协作**: WebSocket 多人编辑会话
+  - 消息广播 / typing 指示 / cursor 位置 / edit 同步
+  - 房间创建/加入/关闭, owner/editor/viewer 角色
+  - 持久化: collab_session + collab_member
+- **V2.4 插件市场**: 系统插件 + 用户发布
+  - 4 类型: Java class / HTTP / JS / WASM
+  - 评分/下载量/启停
+  - 4 个内置系统插件: weather-widget / markdown-export / code-formatter / translation
+- **V2.5 前端可视化**: 4 页面
+  - /agent: Agent 思考时间线 (步骤卡片 + 高亮颜色)
+  - /kg: 知识图谱 (实体搜索 + 1跳/2跳邻居 + 关系创建)
+  - /collab: WebSocket 多人协作 (在线列表 + 消息流 + typing)
+  - /plugins: 插件市场卡片 (评分 + 下载 + 一键发布)
 
-### 🧪 测试统计
-- 256 (V2.8.9) → **274** (+18)
-- V290GovernanceTest 7: overview/empty/timeline/高频失败/越权/compliance/retention
-- V290MarketplaceTest 11: upload基本/PUBLIC/无效JSON/browse/rate新/更新/无效/不存在/approve/不存在/use
+### SQL
+- 6 张新表: agent_task / kg_entity / kg_relation / collab_session / collab_member / plugin
+- 4 个内置插件种子数据
 
----
+### Test
+- 5 个新单测 (AgentServiceTest 2 + KnowledgeGraphServiceTest 3)
+- Agent 模块 BUILD SUCCESS
 
-## [V2.8.9] - 2026-07-12
+### Build
+- 12 个后端模块 BUILD SUCCESS
+- 前端 4 新页面集成到路由
+- vite proxy 加 /api/v1/agent (8090) + /ws (WebSocket)
 
-### 🆕 PWA 离线支持 (主)
-- **manifest.json** 完整配置 (display_override/shortcuts/share_target)
-  - 4 个快捷入口: AI对话/工具/协作/TensorBoard
-  - share_target: 图片/视频/音频/文本/PDF 接收
-  - 多图标 (192/512 + SVG fallback)
-- **sw.js** (8KB) 企业级 Service Worker
-  - 5 类策略: PRECACHE/RUNTIME/API_GET/NAV/WRITE
-  - API GET NetworkFirst + 3s 超时 + 缓存降级
-  - 写操作 (POST/PUT) NetworkOnly, 失败返 503
-  - WebSocket 透传不缓存
-  - 运行时缓存容量限制 (50 资源 FIFO)
-  - Push 通知 + notificationclick 路由
-  - 消息协议: SKIP_WAITING/CLEAR_CACHE/GET_VERSION/CACHE_URLS
-- **offline.html** 优雅离线页面
-  - 自动检测网络恢复 (online 事件)
-  - 列出可访问的已缓存页面
-- **usePwa.js** Vue composable (4.8KB)
-  - install/clearCache/update 三件套
-  - 缓存统计 (static/api/runtime 三类)
-  - online/offline 事件自动提示
-- **PwaStatusBar.vue** 顶部状态条
-  - 离线时:橙色警告条 + 回首页
-  - 可安装时:紫色提示条 + 安装按钮
+## [V3.0] - 2026-06-16 — adminLiugl 超级管理员
 
-### 🆕 TensorBoard 分布面板 (辅)
-- **TfEventReader.computeStats()** - 10 个统计指标
-  - count/min/max/mean/std/median/p25/p75/p95/p99
-  - 线性插值计算百分位
-- **TfEventReader.computeHistogram()** - 直方图
-  - 默认 20 bins, 可配置 5-100
-  - 返回 binEdges + counts
-- **TfEventReader.compareRunsStats()** - 多 run 对比
-- **TensorBoardController** 3 个新端点
-  - GET /runs/{id}/stats/{tag}
-  - GET /runs/{id}/histogram/{tag}?bins=20
-  - POST /runs/compare
-- **TensorBoardStats.vue** (10KB) 前端面板
-  - 左侧: 统计指标 (10 字段描述列表)
-  - 右侧: 直方图 (ECharts BarChart)
-  - 趋势 + ±1σ 阴影 (均值线, 上下1σ)
-  - 多 run 对比表格 (8 列)
-- **tensorboard.js** SDK 3 新方法 (readStats/readHistogram/compareRuns)
+### Added
+- **adminLiugl 超级管理员**: 唯一超级管理员 (独立于普通 admin)
+  - 账号: `adminLiugl` / `Liugl@2026` / 邮箱 `liugl951127@gmail.com`
+  - 角色: `SUPER_ADMIN` (独立于 `ADMIN`)
+  - 启动时由 `AdminDataInitializer` BCrypt 编码
+- **SuperAdminGuard**: 通用权限检查工具
+  - `isSuperAdmin()`: 当前用户是超级管理员?
+  - `requireSuperAdmin()`: 强制要求超级管理员 (否则 403)
+  - `isAdminOrAbove()`: ADMIN 或 SUPER_ADMIN
+- **SuperAdminController**: 专属 API
+  - `GET  /auth/super/me`              - 当前超级管理员信息 + 能力列表
+  - `GET  /auth/super/users`           - 列出所有用户
+  - `POST /auth/super/users/{id}/disable` - 禁用用户 (不能禁 adminLiugl)
+  - `POST /auth/super/users/{id}/enable`  - 启用用户
+  - `POST /auth/super/users/{id}/reset-pwd` - 重置密码
+- **UserInfo.superAdmin**: 登录/me 返回新增布尔字段
+  - adminLiugl 登录: `superAdmin: true`
+  - admin 登录: `superAdmin: false`
+- **前端超级管理控制台** (`/super`)
+  - 顶部 👑 SUPER 徽章 (仅 adminLiugl 可见)
+  - 侧边栏菜单 "超级管理" (仅 adminLiugl 可见)
+  - 用户表格: 禁用/启用/重置密码
+  - 平台统计: 总用户/活跃/禁用
+  - 路由 guard: 强制要求 super admin
+- **登录页提示**: adminLiugl 账号说明
+- **SQL 16_super_admin.sql**: SUPER_ADMIN 角色 + 独立密码 (兼容已有库)
 
-### 🧪 测试统计
-- 248 (V2.8.8) → **256** (+8)
-- V289TensorBoardStatsTest 8: 基础统计/空/单值/直方图基础/直方图同值/bins限制/多run/百分位插值
+### Security
+- adminLiugl 唯一超级管理员
+- 不能被自己禁用 (`super admin 不能禁自己`)
+- 普通 admin 无法访问 `/auth/super/*` (403)
+- 前端路由 guard: 普通用户访问 `/super` → 跳首页
 
----
+### Test
+- 5 个 SuperAdminGuardTest (isSuperAdmin / requireSuperAdmin / admin 拒绝 等)
+- 端到端验证:
+  - adminLiugl 登录 → superAdmin:true ✅
+  - admin 登录 → superAdmin:false ✅
+  - adminLiugl 访问 /auth/super/me → success ✅
+  - admin 访问 /auth/super/me → 403 ✅
+  - adminLiugl 禁用 admin → success ✅
+  - adminLiugl 禁用自己 → 异常 “禁止禁用超级管理员” ✅
 
-## [V2.8.8] - 2026-07-12
+### Build
+- 12 个后端模块 BUILD SUCCESS
+- 135 个测试 0 失败 (从 130 + 5)
+- 前端 BUILD SUCCESS (含新增 super 页面)
+- 端到端验证: H2 内存模式启动 auth 模块, 登录 + 权限检查全过
 
-### 🆕 CRDT 真实多人编辑 (主功能)
-- **CrdtEngine** (8KB) - 后端 CRDT 引擎
-  - 每个字符有唯一 ID: (clientId, clock)
-  - Insert/Delete 操作, 树状 parentId 引用
-  - Tombstone 删除历史保留
-  - 字典序排序 (parent, clientId, clock)
-  - Snapshot/Diff/Render 文本
-- **CollabWebSocketHandler.handleEdit()** 替换为 CRDT op 批量
-  - 6 种客户端消息 → 7 种服务端推送 + DOC_UPDATE
-  - 冲突解决: clientId 大的排前
-  - 删除总是 win
-- **前端 CrdtDoc** (4.3KB) - Y.js 协议子集兼容
-  - IdFactory: 唯一 clientId + 递增 clock
-  - 本地 insertAt(pos)/deleteAt(pos) 生成 op
-  - observe() 订阅变更
-  - 文本位置 ⇄ CRDT id 互转
-- **前端 Index.vue** 集成 CRDT 编辑器 (Doc tab)
-  - 自动检测增删字符, 生成对应 op
-  - 远程 DOC_UPDATE 自动合并
-  - 显示 CRDT 版本号/客户端 ID/AI 来源
-- **9 个新测试** (V288CrdtTest): 单/并发/删除/批量/diff/snapshot
+## [V4.3] - 2026-06-18 — Prompt 模板系统
 
-### 🆕 AI 协作接入真实 Pipeline
-- **AiCollabBridge** - 软依赖 minimax-ai 服务
-  - 配置: `minimax.ai.enabled=true` + `minimax.ai.url=http://...`
-  - HTTP 调 PipelineExecutor: `POST /api/v1/pipeline/execute`
-  - Fallback: minimax-ai 未启时走 mock (V2.8.7 行为)
-- **handleAi()** 增强: 优先真实 Pipeline, 失败 fallback
-  - 真实响应会显示 "AI 接入真实 Pipeline" 标签
-  - 流式输出保留 15ms/token
+### Added
+- **minimax-prompt 模块**: 14th microservice (8091), Prompt 模板管理
+  - PromptTemplate 实体: id / name / description / category / content / variables(JSON) / creatorId / isPublic / useCount / createdAt
+  - PromptTemplateController 7 端点:
+    - `GET  /prompts`            - 列表 (分页 + 分类过滤 + 搜索)
+    - `GET  /prompts/{id}`       - 详情
+    - `POST /prompts`            - 创建 (支持变量占位符 `{{variable}}`)
+    - `PUT  /prompts/{id}`       - 更新
+    - `DELETE /prompts/{id}`     - 删除 (软删)
+    - `POST /prompts/{id}/use`   - 使用计数 +1
+    - `GET  /prompts/categories` - 全部分类
+  - PromptTemplateService: CRUD + 变量解析 (正则提取 `{{...}}`) + 分类聚合
+  - 5 个系统内置模板: 翻译助手 / 代码审查 / 会议纪要 / 营销文案 / 故障排查
+  - SQL: `prompt_template` 表
+- **前端模板管理页面** (`/prompts`):
+  - 卡片列表 + 搜索 + 分类筛选
+  - 模板编辑器 (textarea + 变量高亮)
+  - 变量填值弹窗 + 预览效果
+  - 快速使用 (一键填入 chat 输入框)
+  - 创建/编辑/删除交互
+- **集成到 Chat 输入框**:
+  - chat/Index.vue 顶部加 "📝 用模板" 快捷入口
+  - 点击模板自动展开变量填写，填完直接填入消息框
 
-### 🆕 TensorBoard 自托管可视化 (前端)
-- **TensorBoard.vue** (10.5KB) - ECharts 渲染多 run 标量
-  - 左侧 runs 列表 (切换显示)
-  - 右侧多 tag 多选 (颜色编码)
-  - 折线图: X=Step, Y=Value
-  - 平滑 (EMA 0-0.99)
-  - Y 轴: 线性 / 对数
-  - 实时刷新: 3s 轮询 (可关)
-  - 数据缩放 (dataZoom)
-  - 数据表: 最新点
-- **tensorboard.js** SDK: 6 端点 (listRuns/listTags/readScalar/readEvents/health/writeScalar)
-- **4 个新测试** (V288TensorBoardSelfHostedTest): 多 run 对比/多 tag/实时刷新/health
-
-### 🆕 DDL (3 表)
-- `collab_doc` - CRDT 文档快照 (roomId+docId 唯一)
-- `collab_op` - CRDT 操作日志 (供回放, 24h 保留)
-- `tensorboard_run` - TB runs 缓存 (避免重读文件系统)
-
-### 🧪 测试统计
-- 224 (V2.8.7) → **248** (+24)
-- V288CrdtTest: 9 (CRDT 引擎/插入/删除/批量/diff/snapshot)
-- V288TensorBoardSelfHostedTest: 4 (多 run/多 tag/实时/health)
+### Build
+- 13 个后端模块 BUILD SUCCESS (新增 minimax-prompt)
+- 前端 BUILD SUCCESS
 
 ---
 
-## [V2.8.7] - 2026-07-12
+## [V4.2] - 2026-06-18 — WebSocket 流式 + PWA + i18n + 视频生成 + Agent DAG
 
-### 🆕 实时协作 (核心)
-- **CollabRoom / CollabParticipant / CollabMessage** 3 实体 + 3 表 (DDL: `sql/ddl-v2.8.7-collab.sql`)
-- **CollabService** - 房间生命周期 / 参与者 / 消息持久化
-- **CollabWebSocketHandler** - 实时 WebSocket 处理器
-  - 端点: `/ws/collab?roomId=XXX&userId=N&username=...`
-  - 消息: chat / cursor / edit / ai / heartbeat / leave
-  - 广播: 房间内 (排除自己可选)
-  - 限制: 单消息 2000 字, 50 字符
-- **CollabController** - REST API
-  - POST /rooms / GET /rooms/{id} / GET /rooms/public / DELETE /rooms/{id}
-  - GET /rooms/{id}/participants / GET /rooms/{id}/messages
-- **前端**: 重写 `Index.vue` (21KB)
-  - 公开房间列表 + 创建房间表单
-  - 实时在线参与者面板 (头像+状态点+光标位置)
-  - 实时光标地图 (彩色光标 + 名称标签)
-  - 聊天 / AI 协作 / 流式输出
-  - WebSocket 自动重连 / 心跳 (30s)
-- **18 个测试** (V287TensorBoardTest 7 + V287CollabTest 11)
+### Added
+- **minimax-ws 模块**: 13th microservice (8092), WebSocket 统一流式网关
+  - StreamGatewayHandler 5 类型流式协议:
+    - `chat`  / `vision`  / `audio`  / `agent`  / `battle`
+    - 客户端: `cancel`  / `ping`  控制帧
+    - 服务端: `ready`  / `chunk`  / `done`  / `error`  推送帧
+  - WsApplication (Spring Boot 3, 独立端口)
+  - WebSocketConfig 注册 `/ws/stream` 端点
+  - SecurityConfig 全公开 (业务内 token 校验)
+- **前端新页面**:
+  - `StreamShowcase.vue` WebSocket 流式演示台 (5 类型 + 事件日志面板)
+  - `VideoGenShowcase.vue` 文生视频 (6 模型: Sora/可灵/CogVideoX/万相/AnimateDiff/Mock)
+  - `DagShowcase.vue` Agent DAG 工作流 (6 节点类型 + 拖拽 + 3 内置模板)
+- **PWA 离线支持**: manifest.json + service worker
+- **i18n 国际化**: 中文 + 英文双语 (vue-i18n)
 
-### 🆕 TensorBoard 协议集成
-- **TfEventWriter** - 手写 events.tfevents 二进制格式
-  - 魔数 0xA55A0001 + 32 字节头 + 变长记录 + CRC32
-  - 支持 ScalarEvent (loss/accuracy/lr) + TextEvent
-- **TfEventReader** - 解析回读
-  - 反向工程 protobuf 字段
-  - 支持按 tag 过滤 / 最近 N 个点
-- **TensorBoardController** - 8 个端点
-  - GET /runs / GET /runs/{id}/tags / GET /runs/{id}/scalars
-  - POST /runs/{id}/scalars/{tag} (供训练回调)
-  - GET /runs/{id}/events (WandB 兼容)
-  - GET /health
-- **TrainingTracker 集成** - 训练指标自动同步到 events.tfevents
-  - loss / val_loss / accuracy / learning_rate 4 个 tag
-  - TensorBoard 可直接可视化 (`tensorboard --logdir /tmp/minimax-runs`)
-
-### 📊 数据
-- **3 张表** (collab_room / collab_participant / collab_message)
-- **8 个 HTTP 端点** (TF 兼容)
-- **1 个 WebSocket 端点** (/ws/collab)
-- **公开房间示例数据** (3 房间: AI/TRAINING/DOC)
-
-### 🧪 测试统计
-- 213 (ai) + 11 (ws) = **224 tests**, 0 失败
-- V2.8.6: 206 → V2.8.7: 224 (+18)
-
-### 📚 文档
-- CHANGELOG.md 更新 (V2.8.7)
-- DDL: `sql/ddl-v2.8.7-collab.sql`
+### Build
+- 13 个后端模块 BUILD SUCCESS (新增 minimax-ws)
+- 前端 BUILD SUCCESS
 
 ---
 
-## [V2.8.6] - 2026-07-12
+## [V4.1] - 2026-06-18 — 文生图 + ASR/TTS + 排行榜 + Plugin SDK
 
-### 🆕 新增 (MiniMax AI 框架)
-- **framework/agent/** - Agent 基类 + ReAct 推理循环
-- **framework/tool/** - 工具抽象 + 3 个位置感知工具
-- **framework/memory/** - 短期 + 长期记忆系统
-- **framework/permission/** - 权限门控 (7 类内置权限)
-- **framework/location/** - LBS 服务 (Haversine 算法)
-- **FrameworkBootstrap** - Spring 启动钩子
-- **AgentRegistry** - 智能路由 (capability 评分)
-- **3 业务 Agent**:
-  - ShoppingAgent (商品推荐)
-  - HotelAgent (酒店推荐)
-  - EntertainmentAgent (影院/KTV/餐厅/公园)
+### Added
+- **ImageGenController** (minimax-model, 5 模型):
+  - FLUX / SDXL / Kolors / 通义万相 / DALL-E
+  - Mock 模式: prompt 哈希生成 SVG 渐变图 (data URI, 离线可用)
+  - 真实模式: SILICONFLOW_API_KEY 调用
+  - 端点: `GET /imagegen/models` , `POST /imagegen/generate`
+- **AudioController** 语音能力 (ASR + TTS):
+  - ASR: Whisper V3 / SenseVoice Small / Mock
+  - TTS: Edge-TTS 5 个音色 (晓晓/云希/云扬/Jenny/Mock)
+  - 端点: `/audio/asr/{models,transcribe}` , `/audio/tts/{voices,synthesize}`
+  - Mock: 生成 1 秒静音 WAV (标准 RIFF/WAVE 头)
+- **LeaderboardController** 模型对决排行榜:
+  - `GET /leaderboard/overall` 综合评分 (按 avg_score 降序)
+  - `POST /leaderboard/battle` 发起对决
+  - `GET /leaderboard/history` 对决历史
+  - model_battle_log 表 (新增)
+- **Plugin SDK** (minimax-agent):
+  - Plugin 接口 + PluginContext + PluginExecutor
+  - 插件注册表热加载 (动态发现)
 
-### 📊 真实数据
-- **42 个真实 POI** (北京/上海/广州/深圳)
-  - 5 商城 + 5 酒店 + 5 娱乐 (北京)
-  - 5 商城 + 5 酒店 + 5 娱乐 (上海)
-  - 3 商城 + 2 酒店 + 1 娱乐 (广州)
-  - 3 商城 + 2 酒店 + 1 娱乐 (深圳)
-- **27 个真实商品** (iPhone/MacBook/华为/小米等)
-- 真实经纬度 (百度地图可验证)
-- 真实价格 + 库存
-
-### 🧪 测试
-- 15 个新测试 (V286FrameworkTest)
-- 总测试: 191 → 206 (100% 通过)
-- 端到端业务场景: 3 (购物/酒店/娱乐)
-
-### 📚 文档
-- `docs/ARCHITECTURE.md` - 完整重写 (11KB)
-- `docs/DEVELOPMENT.md` - 详细开发文档 (14KB)
-- `docs/OPERATIONS.md` - 详细运维手册 (16KB)
-- `docs/TEST_REPORT_V286.md` - 端到端测试报告 (6KB)
-- `docs/screenshots/` - 9 张测试截图 (Pillow 生成)
+### Build
+- 12 个后端模块 BUILD SUCCESS
+- 前端 BUILD SUCCESS (含 ASR/TTS/ImageGen UI)
 
 ---
 
-## [V2.8.5] - 2026-07-12
+## [V4.0] - 2026-06-17 — 真实 AI 对接 + 多模型对决 + 视觉对决 + PlayGround
 
-### 🆕 新增 (13 阶段 AI Pipeline)
-- **pipeline/config/PipelineConfig** - 静态配置 + 9 个枚举
-- **pipeline/stage/** - 13 个阶段实现
-  - GatewayDispatcher
-  - MultimodalParser (复用 ImageAnalyzer/AudioAnalyzer)
-  - ContextAssembler (历史+系统提示)
-  - RiskControl (前/后置风控)
-  - RagToolAgentEnhancer (RAG/工具/智能体)
-  - Tokenizer (BPE 简化版)
-  - ModelInference (CPU/GPU 开关)
-  - FormatProcessor
-  - LogStore
-- **PipelineExecutor** - 主编排
-- **PipelineController** - 6 个端点
-- **IntentService** - DB 驱动关键词
+### Added
+- **RealAiTestController** (minimax-model, 3 端点):
+  - `GET  /api/v1/test/ping`       健康检查
+  - `POST /api/v1/test/single`     单次非流式 (真 OpenAI 协议)
+  - `POST /api/v1/test/battle`     多模型并发对决 (8 线程池, 120s 超时)
+- **真实 AI 对接**:
+  - siliconflow / dashscope / deepseek 3 个新 provider
+  - 10 个新模型: Qwen2-VL / InternVL / GLM-4V / Qwen-Max / DeepSeek V3 / R1 等
+  - SecurityConfig 开放 `/api/v1/test/**` 和 `/openai/**`
+- **PlayGround** 前端页面 (`/playground`):
+  - 单次对话 / 流式对话 / 对决 3 种模式
+  - 模型选择 + 参数调节 (temperature / top_p / max_tokens)
+  - 视觉对决: 图片上传 + 双模型并发理解
+- **model_battle_log** SQL 表 (对决日志)
 
-### 🗄️ 数据库
-- `ai_intent_keyword` 表 (动态关键词配置)
-- `pipeline_log` 表 (执行日志)
+### Build
+- 12 个后端模块 BUILD SUCCESS
+- 前端 BUILD SUCCESS (含 playground 页面)
+- 真实 API key 验证 (需要 SILICONFLOW_API_KEY / DASHSCOPE_API_KEY / DEEPSEEK_API_KEY)
 
-### 🧪 测试
-- 9 个新测试 (V285PipelineTest)
-- 总测试: 182 → 191
 
-### 🌱 种子
-- `sql/seed-v2.8.5-pipeline.sql` - 80+ 关键词种子
+## [V5.9] - 2026-06-21 — Dashboard 真实图表 + 告警规则 CRUD + WebSocket 精确分流
 
----
+### Added
+- **Dashboard 真实折线图** (admin 模块):
+  - 新增 `countByDay(since, action)` mapper 方法 (MySQL DATE GROUP BY)
+  - 新增 `GET /admin/audit/by-day?days=7&action=user_op` 端点
+  - Dashboard.vue 折线图从 mock `[12, 28, 18, ...]` 改为接 3 条 API 真实数据:
+    - 全部操作 / 用户类 / 工具调用 (各 fetch 一次 by-day)
+- **告警规则 CRUD UI** (monitor 模块, V5.9.2):
+  - 后端 4 个新端点: `GET/POST/PUT/DELETE /monitor/alerts/rules` + `GET /monitor/alerts/rules/all`
+  - AlertEngine 新增 allRules/createRule/updateRule/deleteRule 方法
+  - 前端 monitor/Index.vue 新增告警规则管理卡片 + 编辑弹窗 (含 9 个表单字段: 名称/服务/指标/运算符/阈值/级别/冷却/通知渠道/启用)
+  - 13 个服务选项下拉 (gateway + 12 业务模块)
+  - 支持新建/编辑/删除/刷新
+- **WebSocket 精确分流** (V5.9.3 nginx):
+  - 解决: `@ServerEndpoint` (Jakarta WS) vs WebFlux Gateway 协议不兼容
+  - nginx location 拆分:
+    - `location = /ws/notifications` → 直连 auth:8081 (Jakarta WS 绕过 gateway)
+    - `location /ws/` 和 `location /ws` → gateway :8080 → lb:ws://minimax-ws (Spring WebSocketHandler)
 
-## [V2.8.4] - 2026-07-12
+### Changed
+- Dashboard.vue `loadAll()` 增加 `loadTrend()` 并行调用, 新增 `dailyOps/dailyUserOps/dailyToolOps` 3 个 ref
+- monitor.js 新增 5 个 API 函数 (getMonitorAlertRules / create / update / delete / summary)
+- frontend api/admin.js 新增 `getAuditByDay(days, action)` 函数
 
-### 🆕 新增 (AI 意图识别升级)
-- **TypoTolerance** - 错别字容错 (50+ 词典)
-- **ConversationContext** - 多轮对话
-- **routeWithContext()** - 上下文感知路由
-- 拼音首字母匹配 (shuj → 数据)
-- 同义词扩展 (看看 → 分析)
+### Files
+- backend: 5 files (AdminController / AuditService / AdminAuditLogMapper + xml / AlertEngine / MonitorController)
+- frontend: 3 files (api/admin.js, api/monitor.js, admin/Dashboard.vue, monitor/Index.vue)
+- scripts: 1 file (nginx-minimax-3000.conf)
 
-### 🆕 新增 (Java 企业项目生成器)
-- **ProjectPackager** (59KB) - 60+ 文件 ZIP
-  - Dockerfile (多阶段, < 200MB)
-  - docker-compose.yml (7 服务)
-  - K8s manifests (5 yaml)
-  - SQL (schema + seed + migration)
-  - 运维脚本 (7 个 sh)
-  - CI/CD (3 个)
-  - 文档 (5 份)
-- **JavaProjectGenTool** - 工具包装
-- **ProjectDownloadController** - GET 直接下载
 
-### 🧪 测试
-- 10 个新测试 (V284FeaturesTest)
-- 总测试: 172 → 182
+## [V5.10] - 2026-06-21 — Prometheus 全链路监控 + BaseController 落地
 
----
+### Added
+- **HTTP 自动指标** (common/MetricsFilter):
+  - `minimax.http.requests.total` Counter (method, uri, status)
+  - `minimax.http.requests.duration` Timer (含 p50/p95/p99 histogram)
+  - `minimax.http.4xx.errors.total` / `minimax.http.5xx.errors.total` Counter
+  - URI 归一化 (防高基数标签): `/api/v1/user/123` → `/api/v1/user/{id}`
+- **Prometheus 端点统一启用** (application-common.yml):
+  - management.endpoints.web.exposure.include: health,info,metrics,prometheus
+  - management.metrics.tags.application = ${spring.application.name} (Grafana 按服务分组)
+  - percentiles-histogram 启用 http.server.requests + minimax.llm.latency
+- **依赖**: spring-boot-starter-actuator + micrometer-registry-prometheus (common pom)
+- **跨服务 Prometheus 转发** (monitor 模块):
+  - ServiceEndpoints: 12 微服务 + gateway URL 解析
+  - `GET /monitor/forward-prometheus?service=minimax-auth` 透传 prometheus 文本
+- **前端 Metrics Dashboard** (`/admin/metrics`):
+  - 服务选择下拉 (12 微服务 + gateway)
+  - 概览卡片 (总请求 / 4xx / 5xx / 平均延迟)
+  - Top 10 高频 URI / Top 10 慢 URI / 状态码饼图 / 耗时 Top 5 柱图
+  - 10s 自动刷新 + 原始 Prometheus 文本折叠
+- **V5.10 BaseController 落地演示**:
+  - ProviderController (minimax-model): 5 个标准 CRUD + 1 个 `/test` 业务专属端点
+  - 模板: 直接使用 mapper + Result + Swagger 注解, 风格与 BaseController 一致
 
-## [V2.8.3] - 2026-07-11
+### Docs
+- `docs/METRICS-GUIDE.md` (5.7KB): Prometheus + Grafana 接入指南, PromQL 示例
 
-### 🆕 新增 (10 个 AI 工具)
-- AbstractSimpleTool (抽象基类)
-- TextSummaryTool (摘要/情感/实体/关键词, 9 类正则)
-- VisionTool (颜色/pHash 相似度)
-- AudioTool (音量/频谱/情绪)
-- FileConverterTool (JSON/YAML/CSV/Base64)
-- CorrelationTool (Pearson/Spearman)
-- PredictionTool (线性回归/MA/指数平滑)
-- DateTimeTool (8 时区)
-- ImageGenTool/ChartGenTool/MusicGenTool
+### Files (10)
+- backend: 6 files (common/MetricsFilter + common/pom + common/yml + monitor/ServiceEndpoints + monitor/Controller + model/ProviderController)
+- frontend: 2 files (views/admin/Metrics.vue + router/index.js)
+- docs: 1 file (METRICS-GUIDE.md)
+- config: 1 file (CHANGELOG.md)
 
-### 🆕 独立运行模式
-- application-standalone.yml
-- application-dev.yml
-- StandaloneApplication
-- AiConfig (MiniTransformer bean)
-- **AiSecurityConfig (开关模式)** - minimax.ai.security.enabled
+## [V5.11] - 2026-06-21 — API 文档聚合中心 + knife4j 统一配置下沉重构
 
-### 🧪 测试
-- 14 个新测试 (V283ToolsTest)
-- 总测试: 158 → 172
+### Added
+- **API 文档聚合中心** (`/api-docs`):
+  - 新增 `static/api-docs.html` (7KB) — 13 服务 tab 切换 + iframe 嵌入
+  - 新增 `ApiDocsController` (`/monitor/api-docs` → 静态资源)
+  - 入口: `/api-docs` / `/doc.html` → 302 重定向到 monitor 聚合页
+  - 单服务直访: `/api/v1/{module}/doc.html` (走 gateway lb:// 转发)
+- **knife4j 统一配置下沉重构**:
+  - 10 个业务 yml 的 knife4j/springdoc 重复块全部清理
+  - 配置统一在 `application-common.yml` (V5.11 顺手修潜在 DuplicateKeyException)
+  - knife4j 中文 UI + 实体类列表 + 多版本切换
 
----
+### Changed
+- `scripts/nginx-minimax-3000.conf` 加 3 个 location (302 重定向)
+- `application-common.yml` 加 springdoc + knife4j 块 (13 模块自动继承)
 
-## [V2.8.2] - 2026-07-11
+### Docs
+- `docs/API-DOCS-GUIDE.md` (3.6KB): 入口/架构/文件清单/PromQL
 
-### 🆕 文档
-- `ARCHITECTURE.md` (9.5KB)
-- `USER_GUIDE.md` (4.4KB)
-- `API.md` (6.9KB)
-- `DEPLOYMENT.md` (7.5KB)
-- `OPERATIONS.md` (5.4KB)
-- `CHANGELOG.md` (4.5KB)
+### Files (16)
+- backend: 5 new (ApiDocsController + static/api-docs.html + common yml 增量 + 10 yml 去重)
+- frontend: 0
+- docs: 1 new (API-DOCS-GUIDE.md)
+- config: 1 modified (nginx-minimax-3000.conf)
 
-### 🆕 DDL
-- `scripts/gen_ddl.py` - Java 实体自动生成 DDL
-- `sql/schema-v2.8.2.sql` (62 表, 45KB)
-- `sql/seed-v2.8.2.sql` (12 类种子, 8.4KB)
-- `scripts/rebuild-schema.sh`
+## [V5.12] - 2026-06-21 — 部署脚本集成 Nacos + Gateway + E2E 健康检查
 
-### 🆕 UI
-- PageContainer/StatCard/StateBlock 公共组件
-- Login/Dashboard/AiChat 升级
+### Added (deploy-linux.sh)
+- **install_nacos**: 下载 Nacos 2.3.2, 配 MySQL 持久化, standalone 启动脚本
+- **install_redis**: apt 装 Redis, 配密码 + bind 127.0.0.1
+- **build_backend**: 拷贝 gateway.jar (Spring Cloud Gateway)
+- **generate_systemd**: 加 minimax-nacos.service + minimax-gateway.service
+- **start_services**: 启动顺序重写 (nacos→gateway→微服务→nginx), sleep 25+12 等依赖
+- **stop_services**: 倒序停 (微服务→gateway→nacos)
+- **show_status**: 加 nacos/gateway/redis 行
+- **show_logs**: 加 nacos/redis 特殊路径
+- **e2e_health_check (新子命令)**: 一键 HTTP 检查 13 服务 + nacos + redis + nginx
+- **install_all**: 加 install_redis + install_nacos, 改 3000 端口 + 新提示
 
-### 🧪 测试
-- 9 + 4 + 11 + 7 = 158 测试
+### Changed
+- nginx listen 80 → 3000 (V5.12 统一入口)
+- 子命令提示加 e2e
+- 用法文档更新 (Nacos 启动等待 25s, gateway 12s)
 
----
+### Docs
+- `docs/DEPLOY-GUIDE.md` (6.6KB): 架构图/端口分配/E2E 示例/systemd 清单/升级路径/故障排查
 
-## [V2.8.1] - 2026-07-11
+### Files (3)
+- scripts: 1 modified (deploy-linux.sh, 581→834 行)
+- docs: 1 new (DEPLOY-GUIDE.md)
+- config: 1 modified (CHANGELOG.md)
 
-### 🆕 音乐流式生成 (SSE)
-- StreamingMusicGen (9.6KB)
-- MusicStreamController
-- MusicStream.vue (10.2KB)
-- 5 个新测试
+## [V5.13] - 2026-06-21 — 架构总览文档完善 (README + ARCHITECTURE)
 
----
+### Added
+- **README.md 全面升级** (V5.12 反映):
+  - 标题行: 13 个微服务 / Spring Cloud Gateway / Nacos / Prometheus / TraceId
+  - 架构图重画: 浏览器 → nginx :3000 → gateway :8080 → Nacos → 12 微服务 → MariaDB/Redis
+  - 新增"V5 架构升级"章节 (8 个版本 + commit hash)
+  - 启动方式更新: 推荐 deploy-linux.sh + e2e 健康检查
+  - 总结表加 V5 关键创新 7 条
+- **docs/ARCHITECTURE.md** (11KB, 新文档):
+  - 一句话定位 + 顶层视图
+  - 分层架构: Client/Edge/Gateway/Microservice/Infrastructure
+  - 13 微服务职责矩阵 (端口/表/职责/依赖)
+  - 3 大数据流: HTTP / SSE / Agent 工具循环
+  - 9 个关键技术决策 (V5.5-V5.12)
+  - 可观测性分层: HTTP/业务/JVM + 5 条告警规则
+  - 部署架构 + 16 个 systemd 清单
+  - 4 条扩展路径 (新微服务/告警/Provider/水平扩展)
+  - 故障转移矩阵
+  - 技术选型对照表
+  - 演进路线 V5 → V6
 
-## [V2.8.0] - 2026-07-11
+### Files (3)
+- docs: 1 new (ARCHITECTURE.md, 11KB)
+- root: 1 modified (README.md)
+- config: 1 modified (CHANGELOG.md)
 
-### 🆕 CI/CD
-- `.github/workflows/ci.yml` (4 job)
-- `Dockerfile.module`
-- `docker-compose.yml`
-- `scripts/local-ci.sh`
-- RBAC 按钮级权限 (PermissionService + v-permission)
+## [V5.14] - 2026-06-21 — OpenTelemetry 分布式追踪 (从单点 trace 到全链路 span)
 
----
+### Added
+- **OpenTelemetry 接入** (root pom + common pom):
+  - opentelemetry-bom:1.36.0 + opentelemetry-instrumentation-bom:2.2.0
+  - opentelemetry-spring-boot-starter (auto-config 模式)
+  - opentelemetry-exporter-otlp (OTLP/HTTP 协议)
+- **W3C traceparent 注入** (gateway TraceFilter V5.14 升级):
+  - 32+16 hex 格式, 复用 V5.8 的 16 位 traceId 填充
+  - 13 个微服务自动识别, 创建 child span
+- **零代码 instrumentation** (auto-detect):
+  - HTTP Server/Client, JDBC, Kafka, RabbitMQ, gRPC
+  - Spring WebFlux, Spring Cloud Gateway, @Scheduled
+- **OTLP 配置** (application-common.yml):
+  - 默认 endpoint: http://localhost:4318
+  - W3C tracecontext + baggage 传播器
+  - 采样率 1.0 (dev), 生产建议 0.1
+- **前端 Traces Dashboard** (`/admin/traces`):
+  - 服务名 + Trace ID 搜索
+  - 概览 (Traces / Spans / 平均耗时 / 错误率)
+  - Span 树展开 (层级 + service + 耗时)
+  - 一键跳转 Jaeger UI
+  - 10s 自动刷新
+- **docs/TRACES-GUIDE.md** (6.5KB): 部署/配置/auto-instrumentation/自定义 span
 
-## [V2.7.x] - 2026-07-08
+### Files (7)
+- backend: 4 (root pom + common pom + common yml + gateway TraceFilter)
+- frontend: 2 (admin/Traces.vue + router)
+- docs: 1 new (TRACES-GUIDE.md)
 
-### V2.7.9: RBAC 按钮级权限
-- PermissionService (4 角色)
-- PermissionAspect (AOP)
-- SecurityContext
-- v-permission 指令
-- 11 个新测试
+## [V5.15] - 2026-06-21 — 完整 E2E 自动化测试 (健康 + JWT + TraceId + Prometheus)
 
-### V2.7.8: i18n 国际化
-- I18nUtil + LocaleConfig
-- LangSwitcher.vue
-- 80 keys
-- 5 个新测试
+### Added
+- **scripts/e2e-full-test.sh** (10KB, 新):
+  - 7 个 Phase 自动化测试:
+    1. 基础设施健康 (nginx/nacos/redis/mariadb)
+    2. 13 服务健康检查 (gateway + 12 微服务)
+    3. JWT 鉴权全链路 (401 → 登录 → 200)
+    4. 跨服务调用 (admin/monitor/chat/model/rag)
+    5. TraceId 透传验证 (V5.14 OTel W3C traceparent)
+    6. Prometheus 指标验证 (V5.10)
+    7. 错误码一致性
+  - 支持 `--quick` (只跑 Phase 1+2) 和 `--full` (跑全部)
+  - 支持自定义 BASE/GATEWAY/NACOS/账号 环境变量
+  - 35+ 测试用例, 彩色输出 + 汇总表 + 退出码
+- **deploy-linux.sh 加 e2e-full 子命令**:
+  - `e2e` (V5.12 旧): 快速健康检查 (inline)
+  - `e2e-full` (V5.15 新): 调用 e2e-full-test.sh 跑完整测试
 
-### V2.7.7: 文档智能解析
-- DocumentParser (Tika + POI, 11.9KB)
-- DocumentController
-- 9 个新测试
+### Docs
+- **docs/E2E-GUIDE.md** (5KB): 用法/CI 集成/故障排查
 
-### V2.7.6: 视频流式生成 (SSE)
-- StreamingVideoGen (10.6KB)
-- VideoStreamController
-- VideoStream.vue (9.8KB)
-- 7 个新测试
+### Files (4)
+- scripts: 2 (e2e-full-test.sh + deploy-linux.sh 加子命令)
+- docs: 1 new (E2E-GUIDE.md)
+- config: 1 modified (CHANGELOG.md)
 
-### V2.7.5: 训练可视化 + AIGC + 移动端
-- TrainingTracker (5.7KB)
-- TrainingViz.vue (8.7KB, TensorBoard 风格)
-- ImageGenerator (11.3KB, 7 类型)
-- Discover.vue + Market.vue (移动端 6→8 页)
+## [V5.16] - 2026-06-22 — Agent 增强 (流式 SSE + Plan 模式 + 记忆集成)
 
-### V2.7.4: 告警/审计 + AI 工作流
-- WorkflowEngine DAG + 4 端点
+### Added (后端)
+- **Agent 流式执行 (SSE)**: `runStream()` 用 SseEmitter 实时推送事件
+  - 事件类型: start / tools / step-start / thought / tool-call / observation / final / done / error
+  - 2 分钟超时, 异步执行不阻塞 Tomcat
+  - 端点: `POST /agent/run-stream` (V5.16)
+- **Plan 模式**: `plan()` LLM 拆解目标为 3-7 步骤, 用户确认后 `runPlan()` 串行执行
+  - 端点: `POST /agent/plan` / `POST /agent/run-plan`
+- **RAG 长期记忆集成**: `runWithMemory()` 调 RAG /retrieve 召回相关记忆, 拼入 system prompt
+  - 端点: `POST /agent/run-with-memory`
+- **ReAct 循环保留**: 6 个 event 类型 (thought/tool-call/observation/final/done/error)
 
-### V2.7.3: AI 工具补全 + 智能表单
+### Added (前端)
+- **`/agent/stream` 页面** (V5.16, 11KB):
+  - 三模式: 流式执行 / Plan 模式 / 带记忆
+  - SSE 事件流可视化 (timeline 渲染)
+  - Plan 步骤可编辑 (textarea inline edit)
+  - 工具列表 + 原始 JSON 调试面板
+  - fetch + ReadableStream 替代 EventSource (支持 POST + JWT)
 
-### V2.7.2: 补全前端 (告警/审计/脱敏)
+### Files (4)
+- backend: 2 (AgentService + AgentController)
+- frontend: 2 (Stream.vue + router)
+- config: 1 modified (CHANGELOG.md)
 
-### V2.7.1: 前后端集成
+## [V5.17] - 2026-06-22 — Multi-Agent 多智能体协作 (Planner + Executor + Critic)
 
-### V2.7.0: 多模态 AI 平台
-- 7 图表/6 音乐/5 视频
-- 仪表盘 + Nl2Chart
-- 158 测试
+### Added (后端)
+- **MultiAgentService** (14KB, 新):
+  - 3 角色: Planner 规划 / Executor 执行 / Critic 评估
+  - 失败自动重规划 (max 3 轮, Critic 反馈给 Planner)
+  - LLM 直调 (不走工具循环) — Planner/Critic 温度 0.3/0.2
+  - Executor 复用 V5.16 AgentService.run (ReAct + tools)
+- **4 个新端点**:
+  - `POST /agent/multi/run` — 同步多智能体
+  - `POST /agent/multi/stream` — SSE 流式 (10 种事件)
+  - `POST /agent/multi/plan` — 单独 Planner
+  - `POST /agent/multi/critic` — 单独 Critic
+- **SSE 事件类型**: multi-agent-start / planner-start / planner-plan / executor-step / executor-result / critic-eval / critic-result / critic-retry / final / done / error
+- **DTO**: MultiAgentResult + StepRecord + CriticRecord + CriticEval
 
----
+### Added (前端)
+- **`/agent/multi` 页面** (Multi.vue 12KB):
+  - 流式/同步双模式
+  - 3 角色实时展示 (蓝=Planner, 绿=Executor, 黄=Critic)
+  - Critic 通过/不通过 (绿/红背景高亮)
+  - 失败自动重规划可视化
+  - 原始事件流 JSON 调试
 
-## [V2.6] - 2026-07-08
-- 多模态 + 合规
-- 图像/音频/视频理解
-- 审计/告警基础
+### Docs
+- **docs/MULTI-AGENT-GUIDE.md** (5KB): 架构图/端点/事件类型/角色模型
 
-## [V2.5] - 2026-07-08
-- **自研 AI 模块** `minimax-ai` (port 8094)
-- MiniTransformer (Java 自研)
-- 1 工具 + 数据源管理
+### Files (5)
+- backend: 2 (MultiAgentService + AgentController)
+- frontend: 2 (Multi.vue + router)
+- docs: 1 new (MULTI-AGENT-GUIDE.md)
+- config: 1 modified (CHANGELOG.md)
 
-## [V2.0-V2.4] - 2026-07-07
-- V2.0: JVM 优化 (G1GC)
-- V2.1: 状态/备份/OPERATIONS/Knife4j
-- V2.2: 升级/日志/种子
-- V2.3: 修复编译错误
-- V2.4: JWT Secret 规范化
+## [V5.18] - 2026-06-22 — 真实 LLM API 接入 (Claude + Gemini + 多 Key 轮询)
 
-## [V1.0-V1.9] - 2026-07-06
-- V1.0: 项目初始化
-- V1.9: 17 微服务 + 14 控制器
-- V1.9.4-1.9.8: nginx 修复
+### Added (后端)
+- **AnthropicAdapter** (11KB, 新): Claude Messages API 协议
+  - 适用: claude-3-5-sonnet / claude-3-opus / claude-3-haiku
+  - 协议: x-api-key header + anthropic-version + 流式 SSE
+- **GeminiAdapter** (11KB, 新): Google Generative Language API 协议
+  - 适用: gemini-1.5-pro / gemini-1.5-flash
+  - 协议: URL ?key= 认证, contents/parts 结构
+- **ApiKeyProviderService** (4.7KB, 新): 多源 API Key 管理
+  - 优先级: 环境变量 > DB api_key > mock fallback
+  - 多 Key 轮询 (逗号分隔, Round-Robin)
+  - 失败熔断 (>= 3 次跳过 5 分钟)
+  - 环境变量: OPENAI_API_KEY / ANTHROPIC_API_KEY / GEMINI_API_KEY / DEEPSEEK_API_KEY
 
----
+### Changed
+- ModelServiceImpl: 优先用 ApiKeyProviderService 解析 key, 成功清零计数, 失败 +1
 
-**总提交数**: 22 个 feat commit
-**总代码**: 92K 行
-**总测试**: 206 个
-**总文档**: 14 份
+### SQL
+- `sql/21_anthropic_gemini.sql` (新): 插入 anthropic + gemini 2 个 provider, 5 个模型
+  - claude-3-5-sonnet-20241022 / claude-3-opus-20240229 / claude-3-haiku-20240307
+  - gemini-1.5-pro / gemini-1.5-flash
+
+### Docs
+- **docs/LLM-PROVIDER-GUIDE.md** (4.8KB): 6 个 provider 矩阵/配置/协议差异/测试
+
+### Files (7)
+- backend: 4 (AnthropicAdapter + GeminiAdapter + ApiKeyProviderService + ModelServiceImpl)
+- sql: 1 new (21_anthropic_gemini.sql)
+- docs: 1 new (LLM-PROVIDER-GUIDE.md)
+- config: 1 modified (CHANGELOG.md)
+
+## [V5.19] - 2026-06-22 — WebSocket 双向流 (pause/resume/steer/feedback/inject)
+
+### Added (后端)
+- **BidirectionalStreamHandler** (13.5KB, 新):
+  - 路径: ws://host:8095/ws/bidi?type=chat&model=xxx
+  - 服务端 → 客户端 (推): ready / chunk / thinking / tool_call / observation / status / done / error
+  - 客户端 → 服务端 (推): ping / cancel / pause / resume / steer / feedback / inject / set_model
+  - StreamState 跨线程共享 (volatile + CopyOnWriteArrayList)
+  - 推送线程池 (cached, daemon, 不阻塞 Tomcat)
+- **WebSocketConfig 加 /ws/bidi 路由**
+- **2 种流式类型**: chat (mock 流式) + agent (模拟多步骤)
+
+### Added (前端)
+- **`/chat/stream` 页面** (Stream.vue 12KB):
+  - 实时消息渲染 (chunk/thinking/tool_call/observation/status/done/error 颜色编码)
+  - 双向交互面板: 暂停/恢复/取消 + steer 引导 + feedback 评分 + inject 注入 + set_model 切换
+  - 事件日志面板 (last 10 events)
+  - 自动滚动到底部
+  - 5 个模型下拉: mock / gpt-4o-mini / gpt-4o / claude-3-haiku / gemini-1.5-flash
+
+### Files (5)
+- backend: 2 (BidirectionalStreamHandler + WebSocketConfig)
+- frontend: 2 (chat/Stream.vue + router)
+- config: 1 modified (CHANGELOG.md)
+
+## [V5.20] - 2026-06-22 — Docker Compose 全栈中间件 + PWA 升级 + 后端 i18n
+
+### Added (基础设施)
+- **docker-compose.yml 重写** (200 行, 4 profile 分组):
+  - 必选: MariaDB 10.5 + Redis 7.2 + Nacos 2.3.2 + Adminer
+  - profile=monitoring: Prometheus 2.50 + Grafana 10.2
+  - profile=tracing: Jaeger 1.55 (含 OTLP gRPC/HTTP)
+  - profile=search: Elasticsearch 8.11 + Kibana 8.11
+  - 数据持久化: ./data/ (mariadb/redis/nacos/prometheus/grafana/jaeger/es)
+  - 健康检查: depends_on + healthcheck
+- **一行启动所有中间件**:
+  - `docker compose up -d` (必选)
+  - `docker compose --profile monitoring up -d` (+监控)
+  - `docker compose --profile tracing up -d` (+追踪)
+  - `docker compose --profile search up -d` (+搜索)
+
+### Added (PWA)
+- **frontend/public/sw.js 重写** (78→110 行):
+  - 缓存版本号 (v5.20.0)
+  - 3 种 fetch 策略: API=Network First, 静态=Cache First, 导航=Network First + SPA fallback
+  - 离线降级: API 请求返回 `{code:-1, offline:true}` 503
+  - 后台 sync 监听 + skipWaiting 消息
+
+### Added (后端 i18n)
+- **LocaleConfig.java** (新, 1.5KB):
+  - SessionLocaleResolver 默认 zh_CN
+  - LocaleChangeInterceptor (?lang=en_US 切换)
+  - WebMvcConfigurer 注册
+  - 业务用 LocaleContextHolder.getLocale()
+
+### Docs
+- **docs/INFRA-DOCKER-GUIDE.md** (4.2KB): profile 分组/端口/启动/接入/Troubleshooting
+- **docs/DB-SHARDING-GUIDE.md** (3.4KB): 41 表分库分表策略 + V6.x 计划
+
+### Files (6)
+- infra: 1 modified (docker-compose.yml 125→200 行)
+- backend: 1 new (LocaleConfig)
+- frontend: 1 modified (sw.js 78→110 行)
+- docs: 2 new (INFRA-DOCKER-GUIDE.md + DB-SHARDING-GUIDE.md)
+- config: 1 modified (CHANGELOG.md)
+
+## [V5.21] - 2026-06-22 — 统一 SQL 脚本 + 一键部署脚本 (清理 15 个分文件)
+
+### Changed (清理 + 整合)
+- **删除 15 个分 SQL 文件** (02-21):
+  - 02_user_auth / 03_chat / 04_model / 07_memory_long / 08_rag /
+    09_function_calling / 10_admin / 12_monitor / 13_optimization /
+    15_v2_features / 16_super_admin / 17_tenant / 19_prompt_template /
+    20_notification / 21_anthropic_gemini
+- **删除 sql/init/ 18 个子文件** (01-22)
+- **统一为单文件**: `sql/init-minimax.sql` (1448 行, 41 张表)
+
+### Added
+- **sql/init-minimax.sql** (单文件, 完整初始化):
+  - 41 张表 + 40 个 INSERT 预置数据
+  - adminLiugl / Liugl@2026 (唯一超级管理员)
+  - 6 个 LLM Provider (openai/minimax/ollama/anthropic/gemini/deepseek)
+  - 10 个 LLM 模型 (gpt-4o / claude-3-5-sonnet / gemini-1.5 等)
+  - 4 类工具 (get_current_time / calculator / http_get / send_email)
+  - 5 条预置告警规则 (CPU / JVM / 磁盘 / LLM 延迟 / 错误率)
+  - 11 个微信扫码 / Unionid / 多租户表
+  - 通知表 (V4.11)
+  - 文件头说明: 用法 / 包含内容 / 预置账号
+  - 软链到 sql/init/ (Docker 兼容)
+
+- **scripts/deploy-minimax.sh** (16KB, 一键脚本):
+  - 9 个子命令: install / start / stop / restart / status / test / backup / update / uninstall
+  - 2 种模式: --docker (默认, 一行启动中间件) / --native (apt 装)
+  - 自动检测 OS (Ubuntu/Debian/CentOS)
+  - 13 微服务 + gateway + nginx 完整 systemd 配置
+  - MariaDB 自动初始化 (含 init-minimax.sql 导入)
+  - Redis/Nacos 自动配置
+  - E2E 健康检查 (15 个服务)
+  - 数据库备份 (含时间戳)
+  - Git pull + 重打包
+  - 完整 uninstall (保留数据)
+
+### Files
+- sql: 删除 33 个分文件, 新增 init-minimax.sql
+- scripts: 新增 deploy-minimax.sh (替换 deploy-linux.sh 作为推荐入口)
+- config: 1 modified (CHANGELOG.md)

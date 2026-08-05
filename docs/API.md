@@ -1,403 +1,449 @@
-# MiniMax Platform API 参考 (V2.8.2)
+# MiniMax Platform — API 文档
 
-> 完整 REST API 文档 · 适用 V2.5+ V2.8
+> 完整的 HTTP API 端点参考。所有请求需 `Authorization: Bearer <accessToken>` 除公开端点。
+>
+> Base URL: `http://localhost:8080` (经 Gateway) 或 `http://localhost:808X` (直连)
 
-## 1. 通用规范
+---
 
-### 1.1 基础 URL
-```
-http://{host}:7080/api/{version}/{module}
-https://your-domain.com/api/{version}/{module}
-```
+## 通用约定
 
-### 1.2 响应格式
-所有 API 统一返回:
+### 响应格式
 ```json
 {
-  "code": 0,          // 0 = 成功, 非 0 = 错误
-  "message": "success",
-  "data": { ... },     // 业务数据
-  "timestamp": 1700000000000
+  "code": 0,
+  "message": "OK",
+  "data": { ... },
+  "timestamp": 1234567890
 }
 ```
 
-### 1.3 鉴权
-请求头: `Authorization: Bearer {jwt_token}`
+### 错误码
+- `0` 成功
+- `1000` 业务异常
+- `1001` 参数校验失败
+- `1002` 未登录或登录已过期
+- `1003` 无权限
+- `1500` 服务降级
+- `1500+` 限流触发
 
-获取方式: `POST /api/v1/auth/login`
+### 限流头
+- `X-Trace-Id`: 链路追踪 ID
+- `X-RateLimit-Remaining`: 剩余配额
+- `X-RateLimit-Reset`: 重置时间
 
-### 1.4 错误码
-| 码 | 含义 |
-|----|------|
-| 0 | 成功 |
-| 400 | 参数错误 |
-| 401 | 未登录 |
-| 403 | 无权限 |
-| 404 | 资源不存在 |
-| 500 | 服务器异常 |
+---
 
-## 2. 认证 (auth)
+## 1. Auth 模块 `:8081/api/v1`
 
-### 2.1 登录
-```
-POST /api/v1/auth/login
-Content-Type: application/json
+### 1.1 公开端点
 
+#### `POST /auth/register`
+注册新用户。
+```json
+// Request
 {
-  "username": "admin",
-  "password": "admin@123"
+  "username": "alice",
+  "password": "alice@123",
+  "nickname": "Alice",
+  "email": "alice@example.com"
 }
-
-→ 200 OK
+// Response
 {
   "code": 0,
   "data": {
-    "token": "eyJhbGciOi...",
-    "userId": 1,
-    "nickname": "Admin",
-    "role": "ADMIN"
+    "id": 2,
+    "username": "alice",
+    "nickname": "Alice"
   }
 }
 ```
 
-### 2.2 注册
-```
-POST /api/v1/auth/register
-{
-  "username": "newuser",
-  "password": "Pass@123",
-  "nickname": "新用户",
-  "email": "user@example.com"
-}
-```
-
-## 3. AI 平台 (V2.5+ V2.7+)
-
-> Base path: `/api/ai/`
-
-### 3.1 智能路由
-```
-POST /api/ai/dispatch
-{
-  "text": "画一个柱状图, 维度是 type"
-}
-
-→ 200 OK
+#### `POST /auth/login`
+登录获取双 token。
+```json
+// Request
+{"username": "admin", "password": "admin@123"}
+// Response
 {
   "code": 0,
   "data": {
-    "intent": "GENERATE_CHART",
-    "params": {"type": "bar", "dimension": "type"},
-    "handler": "ChartGenerator",
-    "result": {...}
+    "accessToken": "eyJ...",
+    "refreshToken": "eyJ...",
+    "expiresIn": 1800,
+    "userInfo": {
+      "id": 1,
+      "username": "admin",
+      "nickname": "管理员",
+      "roles": ["ADMIN"]
+    }
   }
 }
 ```
 
-### 3.2 图表生成
+#### `POST /auth/refresh`
+用 refresh_token 续期。
+```json
+{"refreshToken": "eyJ..."}
 ```
-POST /api/ai/chart/render
+
+#### `GET /auth/health`
+健康检查（公开）。
+
+### 1.2 鉴权端点
+
+#### `GET /auth/me`
+当前用户信息。
+
+#### `GET /auth/users`
+用户列表（admin）。
+
+#### `PUT /auth/users/{id}`
+更新用户。
+
+#### `POST /auth/logout`
+登出（使 token 失效）。
+
+---
+
+## 2. Chat 模块 `:8082/api/v1`
+
+#### `GET /sessions`
+列当前用户会话。
+
+#### `POST /sessions`
+创建会话。
+```json
+{"title": "新对话", "modelCode": "gpt-4o"}
+```
+
+#### `GET /sessions/{id}`
+会话详情。
+
+#### `DELETE /sessions/{id}`
+删除会话。
+
+#### `GET /sessions/{id}/messages`
+会话的所有消息。
+
+#### `POST /sessions/{id}/messages`
+非流式发消息。
+```json
+{"role": "user", "content": "你好"}
+```
+
+#### `POST /sessions/{id}/messages/stream?streamId=xxx`
+**流式发消息** (SSE)。
+```json
+// Request
 {
-  "type": "BAR",      // BAR/LINE/PIE/SCATTER/RADAR/HEATMAP/SANKEY
-  "title": "用户分布",
-  "series": [
-    {"name": "总数", "values": [10, 20, 30]}
-  ]
+  "role": "user",
+  "content": "你好",
+  "modelCode": "gpt-4o"
 }
+// Response: text/event-stream
+data: {"type":"chunk","content":"你"}
+data: {"type":"chunk","content":"好"}
+data: {"type":"done"}
+```
 
-→ 200 OK
+#### `POST /sessions/stop-stream`
+停止流式。
+```json
+{"streamId": "stream-123"}
+```
+
+---
+
+## 3. Model 模块 `:8083/api/v1`
+
+#### `GET /models`
+列出可用模型。
+
+#### `GET /models/providers`
+列出 Provider。
+
+#### `GET /models/{code}`
+模型详情。
+
+#### `POST /models/chat`
+OpenAI 兼容 chat 端点。
+```json
 {
-  "code": 0,
-  "data": {
-    "imageBase64": "iVBORw0KGgo...",
-    "mimeType": "image/png",
-    "width": 1024,
-    "height": 600
-  }
-}
-```
-
-### 3.3 音乐生成
-```
-POST /api/ai/music/generate
-{
-  "style": "POP",
-  "key": "C",
-  "scale": "major",
-  "bpm": 120,
-  "bars": 8
-}
-
-→ 200 OK
-{
-  "code": 0,
-  "data": {
-    "midiBase64": "TVRoZAAAAAY...",
-    "size": 1024
-  }
-}
-```
-
-### 3.4 AIGC 图片
-```
-POST /api/ai/image/generate
-{
-  "prompt": "蓝色渐变",
-  "type": "gradient",        // 可选, 自动推断
-  "width": 1024,
-  "height": 1024,
-  "seed": 42                  // 确定性
-}
-
-→ 200 OK
-{
-  "code": 0,
-  "data": {
-    "base64": "iVBORw0KGgo...",
-    "type": "gradient",
-    "sizeBytes": 50000
-  }
-}
-```
-
-### 3.5 视频流式生成 (SSE)
-```
-GET /api/ai/video/stream/sse?title=test&width=640&height=360&fps=12&duration=4
-Accept: text/event-stream
-
-→ event: start
-  data: {"taskId":"stream-123","totalFrames":48}
-
-→ event: frame
-  data: {"taskId":"stream-123","index":0,"data":"<base64>","isLast":false}
-
-→ event: progress
-  data: {"taskId":"stream-123","percent":50,"elapsedMs":2000}
-
-→ event: complete
-  data: {"taskId":"stream-123","durationMs":4000}
-```
-
-### 3.6 音乐流式生成 (SSE)
-```
-GET /api/ai/music/stream/sse?style=POP&key=C&scale=major&bpm=120&bars=8
-```
-
-### 3.7 文档解析
-```
-POST /api/ai/document/parse
-Content-Type: multipart/form-data
-
-file: <binary>
-
-→ 200 OK
-{
-  "code": 0,
-  "data": {
-    "type": "pdf",
-    "content": "...",
-    "paragraphs": [...],
-    "tables": [...],
-    "keywords": ["人工智能", "深度学习", ...],
-    "summary": "...",
-    "wordCount": 5000
-  }
-}
-```
-
-### 3.8 训练任务
-```
-POST /api/ai/training/start
-{
-  "name": "训练任务1",
-  "model": "mini-transformer",
-  "epochs": 5,
-  "learningRate": 0.01
-}
-
-→ 200 OK
-{
-  "code": 0,
-  "data": {"taskId": "train-1700000000-1234"}
-}
-
-GET /api/ai/training/tasks/{id}/history
-→ { "points": [...], "emaLoss": [...], "finalLoss": 4.2 }
-```
-
-### 3.9 工作流编排
-```
-POST /api/ai/workflow/execute
-{
-  "name": "ad-hoc",
-  "nodes": [
-    {"id": "s1", "toolCode": "sql.query", "input": {"dataSourceId": 1, "question": "..."}},
-    {"id": "s2", "toolCode": "data.analyze.stats", "input": {"dataSourceId": 1, "table": "user"}}
+  "model": "gpt-4o",
+  "messages": [
+    {"role": "user", "content": "你好"}
   ],
-  "edges": [{"from": "s1", "to": "s2"}]
+  "temperature": 0.7
 }
 ```
 
-### 3.10 AI 工具管理
-```
-GET  /api/ai/tools                # 列出所有工具
-GET  /api/ai/tools/{code}         # 工具详情
-POST /api/ai/tools/{code}/invoke  # 调用工具
-{
-  "dataSourceId": 1,
-  "table": "user",
-  "column": "age"
-}
-```
+#### `POST /models/chat/stream?streamId=xxx`
+流式 chat (SSE)。
 
-### 3.11 AI 会话管理
-```
-GET    /api/ai/chat/sessions?userId=1
-GET    /api/ai/chat/sessions/{id}
-POST   /api/ai/chat/sessions       { title, userId }
-DELETE /api/ai/chat/sessions/{id}
-```
+#### `POST /models/chat/cancel?streamId=xxx`
+取消流式。
 
-## 4. 权限 (V2.7.9)
+---
 
-```
-GET  /api/ai/permission/me          # 当前用户权限
-GET  /api/ai/permission/roles       # 所有角色
-POST /api/ai/permission/check       { role, permissions: ["ai.use"] }
-```
+## 4. Memory 模块 `:8084/api/v1`
 
-## 5. 多模态分析
+### 短期记忆
+- `GET /memory/short-term/{sid}` 拉取
+- `POST /memory/short-term/{sid}` 追加
+- `DELETE /memory/short-term/{sid}` 清空
+- `GET /memory/short-term/{sid}/size` 统计
 
-### 5.1 图像
-```
-POST /api/multimodal/image/analyze  (multipart: file)
-→ { pHash, histogram, embedding, colorTone, dominantColor }
-```
+### 上下文
+- `POST /memory/cross-context` 跨会话 context
+  ```json
+  {
+    "userId": 1,
+    "sessionId": 100,
+    "systemPrompt": "你是助手",
+    "maxContext": 4096,
+    "recallTopK": 5
+  }
+  ```
 
-### 5.2 音频
-```
-POST /api/multimodal/audio/analyze  (multipart: file)
-→ { duration, rms, dBFS, zcr, spectrum, emotion }
-```
+### 摘要
+- `POST /memory/summarize/{sid}` 触发摘要
+- `GET /memory/summary/{sid}` 读摘要
 
-### 5.3 视频
-```
-POST /api/multimodal/video/analyze  (multipart: file)
-→ { duration, format, tracks, bitrate }
-```
+### 长期记忆
+- `POST /memory/long-term` 存储
+  ```json
+  {
+    "userId": 1,
+    "sessionId": 100,
+    "role": "user",
+    "content": "我喜欢川菜",
+    "tags": "food"
+  }
+  ```
+- `POST /memory/long-term/recall` 召回
+  ```json
+  {"userId": 1, "query": "宠物", "topK": 5}
+  ```
+- `GET /memory/long-term/recent?userId=1&limit=20` 列最近
+- `DELETE /memory/long-term/{id}?userId=1` 删除
 
-## 6. 监控 (monitor)
+### 偏好
+- `PUT /memory/pref/{key}?userId=1` 设置
+- `GET /memory/pref/{key}?userId=1` 读取
+- `GET /memory/pref?userId=1` 列出
+- `DELETE /memory/pref/{key}?userId=1` 删除
 
-### 6.1 告警
-```
-GET  /api/monitor/alerts?limit=20
-GET  /api/monitor/alerts/firing
-GET  /api/monitor/alerts/rules
-GET  /api/monitor/alerts/channels
-GET  /api/monitor/alerts/summary
-POST /api/monitor/alerts/rules
-PUT  /api/monitor/alerts/rules/{id}
-DELETE /api/monitor/alerts/rules/{id}
-POST /api/monitor/alerts/ack/{eventId}
-```
+---
 
-### 6.2 审计
-```
-GET /api/admin/audit/recent?limit=50
-GET /api/admin/audit/by-actor/{userId}
-GET /api/admin/audit/by-day
-GET /api/admin/audit/export
-```
+## 5. RAG 模块 `:8085/api/v1`
 
-## 7. 数据源管理
+### 知识库
+- `POST /rag/kb` 创建
+- `GET /rag/kb?ownerId=1` 列我的
+- `GET /rag/kb/public` 列公开
+- `GET /rag/kb/{id}?ownerId=1` 详情
+- `DELETE /rag/kb/{id}?ownerId=1` 删除
 
-```
-GET  /api/ai/datasources
-POST /api/ai/datasources      { name, type, url, username, password }
-PUT  /api/ai/datasources/{id}
-DELETE /api/ai/datasources/{id}
-POST /api/ai/datasources/{id}/test    # 测试连接
-GET  /api/ai/datasources/{id}/schema  # 查表结构
-POST /api/ai/datasources/{id}/query   # 查数据
-```
+### 文档
+- `POST /rag/doc/upload?ownerId=1&kbId=1` 上传 (multipart)
+- `GET /rag/doc?kbId=1` 列文档
+- `GET /rag/doc/{id}/chunks` 切片
+- `DELETE /rag/doc/{id}?ownerId=1` 删除
 
-**支持类型**: MySQL, PostgreSQL, Oracle, SQLServer, H2, ClickHouse, Doris
+### 检索
+- `POST /rag/retrieve` 纯检索
+- `POST /rag/ask` RAG 问答
+  ```json
+  {
+    "kbId": 1,
+    "question": "支付方式有哪些?",
+    "topK": 5
+  }
+  // Response
+  {
+    "data": {
+      "answer": "支持微信、支付宝...",
+      "sources": [
+        {"chunkId": 10, "docTitle": "产品手册", "score": 0.92, "snippet": "..."}
+      ]
+    }
+  }
+  ```
 
-## 8. 合规 (V2.6+)
+---
 
-### 8.1 数据脱敏
-```
-POST /api/ai/multimodal/compliance/mask
-{
-  "text": "手机 13800138000, 身份证 110101199001011234",
-  "types": ["MOBILE", "ID_CARD"]
-}
+## 6. Function 模块 `:8086/api/v1`
 
-→ { "masked": "手机 138****8000, 身份证 110***********1234" }
-```
+### 工具 CRUD
+- `GET /function/tools` 列出
+- `GET /function/tools/{id}` 详情
+- `POST /function/tools?ownerId=1` 注册
+  ```json
+  {
+    "name": "my_tool",
+    "displayName": "我的工具",
+    "description": "...",
+    "parameters": "{\"type\":\"object\",\"properties\":{...}}",
+    "endpoint": "http://my-service/tool",
+    "httpMethod": "POST"
+  }
+  ```
+- `PUT /function/tools/{id}?ownerId=1` 更新
+- `DELETE /function/tools/{id}?ownerId=1` 删除
 
-### 8.2 文件加密
-```
-POST /api/ai/multimodal/compliance/encrypt  (file)
-→ { "encryptedBase64": "MMX1..." }
-POST /api/ai/multimodal/compliance/decrypt  (file)
-→ { "decryptedBase64": "..." }
-```
+### 调用
+- `POST /function/invoke/{name}?userId=1` 直接调用
+- `GET /function/logs?userId=1` 调用历史
 
-## 9. WebSocket 协议
+### Chat
+- `POST /function/chat` chat + 工具循环
+  ```json
+  {
+    "userId": 1,
+    "message": "上海现在几点?",
+    "enableTools": true,
+    "toolNames": ["get_current_time"]
+  }
+  ```
 
-### 9.1 端点
-```
-ws://{host}:7080/ws/queue
-```
+---
 
-### 9.2 消息格式
+## 7. Admin 模块 `:8087/api/v1`
+
+### 用户管理
+- `GET /admin/users?page=1&size=20`
+- `POST /admin/users?actorId=1`
+- `POST /admin/users/{id}/reset-password?actorId=1`
+- `PUT /admin/users/{id}/status?actorId=1&enabled=true`
+
+### 模型管理
+- `GET /admin/models/providers`
+- `GET /admin/models`
+- `PUT /admin/models/{code}/rate-limit?actorId=1`
+
+### 统计
+- `GET /admin/stats/ops`
+- `GET /admin/stats/dashboard`
+
+### 监控
+- `GET /admin/health` 跨服务 health
+- `GET /admin/ping`
+
+### 审计
+- `GET /admin/audit/recent?limit=50`
+- `GET /admin/audit/by-actor/{id}?limit=20`
+
+---
+
+## 8. Multimodal 模块 `:8088/api/v1`
+
+- `POST /multimodal/upload` 上传图片
+- `POST /multimodal/describe` 图片理解
+  ```json
+  {
+    "imageBase64": "...",
+    "mimeType": "image/png",
+    "prompt": "描述这张图"
+  }
+  ```
+- `GET /multimodal/info` 模型信息
+
+---
+
+## 9. Monitor 模块 `:8089/api/v1`
+
+### 健康
+- `GET /monitor/health` 深度健康
+- `GET /monitor/health/database` DB
+- `GET /monitor/health/jvm` JVM
+- `GET /monitor/health/disk` 磁盘
+
+### 指标
+- `GET /monitor/metrics` 业务指标
+- `GET /monitor/metrics/snapshot` 快照
+- `GET /monitor/metrics/trend` 趋势
+- `POST /monitor/metrics/inc` 自助计数
+
+### 告警
+- `GET /monitor/alerts` 最近
+- `GET /monitor/alerts/firing` firing
+- `GET /monitor/alerts/rules` 规则
+- `GET /monitor/alerts/summary` 摘要
+
+### Prometheus
+- `GET /actuator/prometheus`
+
+---
+
+## 10. 错误响应示例
+
+### 401 未登录
 ```json
-// 入站
-{"type": "subscribe", "channel": "user-1"}
-
-// 出站 (服务器推送)
 {
-  "type": "message",
-  "channel": "user-1",
-  "payload": {
-    "text": "...",
-    "from": "agent-1"
+  "code": 1002,
+  "message": "未登录或登录已过期",
+  "timestamp": 1781594520220
+}
+```
+
+### 403 无权限
+```json
+{
+  "code": 1003,
+  "message": "无权限访问此资源"
+}
+```
+
+### 429 限流
+```json
+{
+  "code": 1500,
+  "message": "Rate limit exceeded, please retry later",
+  "headers": {
+    "X-RateLimit-Remaining": "0",
+    "X-RateLimit-Reset": "60"
   }
 }
 ```
 
-## 10. SDK
-
-### 10.1 前端 (ai.js)
-```javascript
-import { dispatchPrompt, generateImage, demoTraining } from '@/api/ai'
-
-const r = await dispatchPrompt('画个饼图')
-const img = await generateImage({ prompt: '蓝色', type: 'gradient' })
-const task = await demoTraining()
+### 500 服务异常
+```json
+{
+  "code": 1500,
+  "message": "[function unavailable] ...",
+  "traceId": "abc123def456"
+}
 ```
 
-### 10.2 权限指令
-```vue
-<el-button v-permission="'ai.admin'">删除</el-button>
-```
+---
 
-## 11. 错误排查
+## 11. 速率限制
 
-| 错误 | 原因 | 解决 |
-|------|------|------|
-| 401 Unauthorized | Token 过期 | 重新登录 |
-| 403 Forbidden | 无权限 | 联系管理员分配角色 |
-| 404 Not Found | API 不存在 | 检查 URL/版本号 |
-| 500 Internal Error | 后端异常 | 查看日志 |
-| SSE 连接立即关闭 | Nginx 缓冲 | 加 `proxy_buffering off;` |
+| Scope | 默认容量 | 补充周期 |
+|-------|----------|----------|
+| IP | 100 | 60s |
+| User | 60 | 60s |
+| Global | 1000 | 60s |
+| 登录端点 (IP) | 10 | 60s |
+| 聊天端点 (IP) | 60 | 60s |
+| RAG 上传 (IP) | 20 | 60s |
 
-## 12. 限流
+配置: `application.yml` 的 `minimax.ratelimit.*`
 
-默认配置 (Bucket4j):
-- 全局: 100 req/s
-- 单 IP: 20 req/s
-- 写操作: 10 req/s
+---
 
-超限返回: `429 Too Many Requests`
+## 12. 完整端点数
+
+| 模块 | 端点数 |
+|------|--------|
+| auth | 8 |
+| chat | 8 |
+| memory | 16 |
+| model | 6 |
+| rag | 11 |
+| function | 10 |
+| admin | 14 |
+| multimodal | 3 |
+| monitor | 15 + /actuator/* |
+| **合计** | **92+** |

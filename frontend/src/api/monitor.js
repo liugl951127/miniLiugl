@@ -52,8 +52,9 @@ export const deleteAlertRule = (id) => http.delete(`/api/v1/monitor/alerts/rules
 export const toggleAlertRule = (id, enabled) =>
   http.post(`/api/v1/monitor/alerts/rules/${id}/toggle`, { enabled })
 
-/** 确认告警 */
-export const acknowledgeAlert = (id) => http.post(`/api/v1/monitor/alerts/${id}/ack`)
+/** 确认告警 (Day 34: 支持备注) */
+export const acknowledgeAlert = (id, notes = '') =>
+  http.post(`/api/v1/monitor/alerts/${id}/ack`, notes ? { notes } : {})
 
 /** 通知渠道列表 */
 export const listAlertChannels = () => http.get('/api/v1/monitor/alerts/channels')

@@ -1464,6 +1464,7 @@ CREATE TABLE IF NOT EXISTS `alert_event` (
     `resolved_at` TIMESTAMP DEFAULT NULL COMMENT 'resolved_at(resolved_at)',
     `acked_at` TIMESTAMP DEFAULT NULL COMMENT 'acked_at(acked_at)',
     `acked_by` BIGINT DEFAULT 0 COMMENT 'acked_by(acked_by)',
+    `notes` VARCHAR(500) DEFAULT NULL COMMENT 'notes(notes)',
     `duration` BIGINT DEFAULT 0 COMMENT 'duration(duration)',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='alert_event (auto-generated V3.5.5)';

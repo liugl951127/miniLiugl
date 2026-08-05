@@ -23,5 +23,6 @@ public class AlertEvent {
     private LocalDateTime resolvedAt;
     private LocalDateTime ackedAt;
     private Long ackedBy;
+    private String notes;             // 确认备注 (Day 34)
     private Long duration;            // 持续时间(秒)
 }

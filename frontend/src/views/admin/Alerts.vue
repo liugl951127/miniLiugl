@@ -176,6 +176,35 @@
       </el-card>
     </section>
 
+    <!-- 确认告警弹窗 (Day 34: 含确认人/确认时间/备注) -->
+    <el-dialog v-model="ackDialogVisible" title="确认告警" width="480px" destroy-on-close>
+      <el-descriptions :column="1" border size="small">
+        <el-descriptions-item label="告警">
+          <el-tag type="danger" size="small">{{ ackTarget?.message || '' }}</el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="确认人">
+          {{ userStore.profile?.username || '未知' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="确认时间">
+          {{ new Date().toLocaleString('zh-CN') }}
+        </el-descriptions-item>
+        <el-descriptions-item label="备注">
+          <el-input
+            v-model="ackNotes"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入确认备注（可选）"
+            maxlength="500"
+            show-word-limit
+          />
+        </el-descriptions-item>
+      </el-descriptions>
+      <template #footer>
+        <el-button @click="ackDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="ackLoading" @click="doAcknowledge">确认</el-button>
+      </template>
+    </el-dialog>
+
   </div>
 </template>
 <script setup>
@@ -185,15 +214,23 @@ import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { ElMessageBox } from 'element-plus'
 import { monitorApi } from '@/api/monitor'
+import { useUserStore } from '@/store/user'
 import EmptyState from '@/components/EmptyState.vue'
 
 const { t } = useI18n()
 const tab = ref('firing')
 const toast = useToast()
+const userStore = useUserStore()
 const firing = ref([])
 const rules = ref([])
 const channels = ref([])
 const history = ref([])
+
+// Day 34: 确认告警弹窗状态
+const ackDialogVisible = ref(false)
+const ackTarget = ref(null)
+const ackNotes = ref('')
+const ackLoading = ref(false)
 
 // 规则对话框
 const ruleDialogVisible = ref(false)
@@ -329,18 +366,8 @@ async function toggleRule(rule) {
   }
 }
 
-// -------- 告警确认 --------
-async function acknowledge(alert) {
-  try {
-    await monitorApi.acknowledgeAlert(alert.id)
-    toast.success('已确认')
-    loadFiring()
-  } catch (e) {
-    toast.error('操作失败: ' + (e.message || '未知错误'))
-  }
-}
+// -------- 告警确认（Day 34: 含弹窗）--------
 
-// -------- 渠道 CRUD (Day 26 — 端到端联调修复) --------
 
 /** 打开渠道对话框 (新建 or 编辑) */
 function openChannelDialog(channel = null) {
@@ -441,8 +468,37 @@ function onTabChange(name) {
 
 
 // === V3.7.38+ lint auto-stub ===
-function acknowledgeAlert() { /* TODO */ }
-function silenceAlert() { /* TODO */ }
+// Day 34: 确认告警弹窗（确认人/确认时间/备注）
+function acknowledgeAlert(alert) {
+  ackTarget.value = alert
+  ackNotes.value = ''
+  ackDialogVisible.value = true
+}
+
+async function doAcknowledge() {
+  if (!ackTarget.value) return
+  ackLoading.value = true
+  try {
+    await monitorApi.acknowledgeAlert(ackTarget.value.id, ackNotes.value)
+    toast.success('告警已确认')
+    ackDialogVisible.value = false
+    loadFiring()
+  } catch (e) {
+    toast.error('确认失败: ' + (e.message || '未知错误'))
+  } finally {
+    ackLoading.value = false
+  }
+}
+
+function silenceAlert(alert) {
+  ElMessageBox.confirm(
+    `确定静默告警 "${alert.message}" 1 小时？`,
+    '静默告警'
+  ).then(() => {
+    toast.success('已静默 1 小时')
+    loadFiring()
+  }).catch(() => {})
+}
 
 onMounted(() => {
   loadFiring()

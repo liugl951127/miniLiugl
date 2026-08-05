@@ -85,6 +85,7 @@
                 v-for="m in messages"
                 :key="m.id"
                 :message="m"
+                :streaming="m.streaming"
                 :is-user="m.role === 'user'"
               />
               <div v-if="loading" class="typing">
@@ -145,7 +146,7 @@ import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 
 import StateBlock from '@/components/StateBlock.vue'
-import { votingChat, forceVotingChat, votingInfo, listAiSessions, createAiSession } from '@/api/ai'
+import { votingChat, forceVotingChat, votingInfo, chatStream, listAiSessions, createAiSession } from '@/api/ai'
 import EmptyState from '@/components/EmptyState.vue'
 
 const examples = [
@@ -250,39 +251,59 @@ async function handleSend() {
   scrollToBottom()
 
   try {
-    let res
     if (votingMode.value) {
-      // 强制投票模式
-      res = await forceVotingChat({ text, sessionId: currentSessionId.value })
+      // 强制投票模式 — 走 REST，等完整响应
+      const res = await forceVotingChat({ text, sessionId: currentSessionId.value })
+      const body = res.data
+      const resp = body.response || body
+      const meta = body.meta || {}
+      votingResults.value = body
+      messages.value.push({
+        role: 'assistant',
+        content: resp.content || '(无内容)',
+        model: resp.model,
+        votingMeta: meta
+      })
+      if (meta.votingTriggered) {
+        lastResult.value = { intent: `投票(${meta.votingStrategy || 'AUTO'}) 一致率 ${((meta.agreementScore || 0) * 100).toFixed(0)}%` }
+      } else {
+        lastResult.value = { intent: meta.confidence > 0.8 ? '高置信' : '中置信' }
+      }
+      if (resp.sessionId) currentSessionId.value = resp.sessionId
     } else {
-      // 智能对话（自动投票）
-      res = await votingChat({ text, sessionId: currentSessionId.value })
+      // Day 34: 正常模式 — SSE 流式响应
+      const assistantMsg = { role: 'assistant', content: '', streaming: true, model: '' }
+      messages.value.push(assistantMsg)
+
+      await new Promise((resolve, reject) => {
+        chatStream(
+          { text, sessionId: currentSessionId.value },
+          (chunk) => {
+            assistantMsg.content += chunk
+            scrollToBottom()
+          },
+          (err) => {
+            assistantMsg.content += '\n❌ 流式错误: ' + (err?.message || err)
+            assistantMsg.streaming = false
+            reject(err)
+          },
+          () => {
+            assistantMsg.streaming = false
+            lastResult.value = { intent: '高置信' }
+            resolve()
+          }
+        )
+      })
+
+      if (assistantMsg.content) {
+        await refreshSessions()
+        loadVotingInfo()
+      }
     }
-    const body = res.data
-    const resp = body.response || body
-    const meta = body.meta || {}
-    votingResults.value = body
-
-    // 显示 AI 回复
-    messages.value.push({
-      role: 'assistant',
-      content: resp.content || '(无内容)',
-      model: resp.model,
-      votingMeta: meta
-    })
-
-    // 更新意图标签
-    if (meta.votingTriggered) {
-      lastResult.value = { intent: `投票(${meta.votingStrategy || 'AUTO'}) 一致率 ${((meta.agreementScore || 0) * 100).toFixed(0)}%` }
-    } else {
-      lastResult.value = { intent: meta.confidence > 0.8 ? '高置信' : '中置信' }
-    }
-
-    if (resp.sessionId) currentSessionId.value = resp.sessionId
-    await refreshSessions()
-    loadVotingInfo()
   } catch (e) {
-    messages.value.push({ role: 'assistant', content: '❌ 错误: ' + (e?.message || '未知') })
+    if (e?.message !== 'HTTP 401') {
+      messages.value.push({ role: 'assistant', content: '❌ 错误: ' + (e?.message || '未知') })
+    }
   } finally {
     loading.value = false
     await nextTick()

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# MiniMax Platform 自检脚本 (Day 30)
+# MiniMax Platform 自检脚本 (Day 34)
 # 检查: SQL 文件数 / Maven 模块 / 前端构建 / 关键文件存在
 
 BASE="/workspace/minimax-platform"
@@ -18,6 +18,30 @@ check() {
     else
         echo "❌"
         FAIL=$((FAIL+1))
+    fi
+}
+
+check_build() {
+    # npm run build with memory limit; output first/last 5 lines on failure
+    local name="$1"
+    local dir="$2"
+    echo -n "  [$name] ... "
+    if [ -d "$dir/node_modules" ]; then
+        # actual build
+        if NODE_OPTIONS="--max-old-space-size=1536" npm run build --prefix "$dir" > /tmp/npm-build.log 2>&1; then
+            echo "✅"
+            PASS=$((PASS+1))
+            return 0
+        else
+            echo "❌ (构建失败，详见 /tmp/npm-build.log)"
+            tail -5 /tmp/npm-build.log
+            FAIL=$((FAIL+1))
+            return 1
+        fi
+    else
+        echo "⚠️ 跳过（node_modules 不存在，请先 npm install）"
+        # still count as skip but don't fail
+        return 0
     fi
 }
 
@@ -58,8 +82,9 @@ check "QueryExpander 存在" "[ -f backend/minimax-rag/src/main/java/com/minimax
 check "AlertRcaService 存在" "[ -f backend/minimax-monitor/src/main/java/com/minimax/monitor/service/AlertRcaService.java ]"
 check "LogAnomalyDetector 存在" "[ -f backend/minimax-monitor/src/main/java/com/minimax/monitor/service/LogAnomalyDetector.java ]"
 
-# 5. 前端 dist 存在
-check "前端构建产物存在" "[ -d frontend/dist ]"
+# 5. 前端 node_modules + npm run build (Day 34: 主动构建)
+check "node_modules 存在" "[ -d frontend/node_modules ]"
+check_build "npm run build（前端构建）" "frontend"
 
 # 6. 配置文件
 check "pom.xml 存在" "[ -f backend/pom.xml ]"

@@ -24,6 +24,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.bind.annotation.*;
 
@@ -377,24 +379,34 @@ public class MonitorController {
     // ════════════════════════════════════════════════════════════
 
     /**
-     * 确认告警 (标记已处理)
+     * 确认告警 (标记已处理, 含备注)
      *
      * @param id 告警 ID
+     * @param notes 确认备注 (可选, Day 34)
      * @return 成功状态
      */
     @Operation(summary = "确认告警")
     @PostMapping("/alerts/{id}/ack")
-    public Result<Boolean> acknowledgeAlert(@PathVariable Long id) {
-        log.info("[monitor] acknowledge alert id={}", id);
-        // Day 28: 真正写库
+    public Result<Boolean> acknowledgeAlert(@PathVariable Long id,
+                                            @RequestBody(required = false) Map<String, String> body) {
+        log.info("[monitor] acknowledge alert id={} notes={}", id, body);
         AlertEvent e = alertEventMapper.selectById(id);
         if (e == null) {
             return Result.fail("告警事件不存在: " + id);
         }
         e.setStatus("acked");
         e.setAckedAt(java.time.LocalDateTime.now());
+        // Day 34: 从安全上下文拿确认人 ID
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof Long) {
+            e.setAckedBy((Long) auth.getPrincipal());
+        }
+        // Day 34: notes
+        if (body != null && body.get("notes") != null) {
+            e.setNotes(body.get("notes"));
+        }
         alertEventMapper.updateById(e);
-        log.info("[monitor] alert {} acked", id);
+        log.info("[monitor] alert {} acked by {}", id, e.getAckedBy());
         return Result.ok(true);
     }
 

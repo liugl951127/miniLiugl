@@ -596,14 +596,26 @@
 - [x] **前端 npm install --legacy-peer-deps + build（NODE_OPTIONS=1536MB，54.87s）**
 
 **明日计划 Day 34：**
-- [ ] 前端构建集成到 self-check.sh
-- [ ] V4.3 文档收尾（API.md / CHANGELOG.md）
-- [ ] Monitor 告警确认弹窗完善
-- [ ] AiChat.vue SSE 流式响应
+- [x] 前端构建集成到 self-check.sh
+- [x] V4.3 文档收尾（API.md / CHANGELOG.md）
+- [x] Monitor 告警确认弹窗完善
+- [x] AiChat.vue SSE 流式响应
 
 ---
 
-## Day 34 - 待开始
+## Day 34 - 2026-08-05 ✅ 前端构建自动化 + Monitor 确认弹窗 + SSE 流式聊天
+
+**今日完成：**
+- [x] **self-check.sh**：`check_build()` 函数，`npm run build` 实际执行（14/14 ✅）
+- [x] **文档收尾**：`docs/CHANGELOG.md` / `docs/API.md` 与根目录同步；README.md 版本号 V5.26 → V4.3
+- [x] **Monitor 确认弹窗**：SQL `notes` 列 → Entity → Controller → API → Alerts.vue 弹窗（确认人/确认时间/备注）
+- [x] **AiChat SSE**：新增 `chatStream()` API，`handleSend` 分流（SSE 流式 / REST 投票），ChatBubble 打字光标
+
+**明日计划 Day 35：**
+- [ ] 前端错误边界（ErrorBoundary 组件）
+- [ ] Monitor 静默功能后端 API
+- [ ] AiChat.vue 流式光标 CSS 优化
+- [ ] 平台首页 SEO / Sitemap
 
 ## Day 21 - 2026-06-26 ✅ API 文档体系 + 压测模板
 

@@ -641,3 +641,62 @@ export const forceVotingChat = (data) => http.post('/ai/chat/voting', data)
 
 /** 查询投票配置信息 (Day 32) */
 export const votingInfo = () => http.get('/ai/chat/voting-info')
+
+// ==================== Day 34: 流式聊天 SSE ====================
+/**
+ * 流式聊天 (SSE via fetch + ReadableStream)
+ * @param {object} data { text, model, sessionId }
+ * @param {Function} onChunk - 每次收到 SSE data 行时调用，参数为字符串内容
+ * @param {Function} onError
+ * @param {Function} onComplete
+ * @returns {Function} cancel - 调用以取消流
+ */
+export const chatStream = (data, onChunk, onError, onComplete) => {
+  // 从 Pinia persist 读取 token
+  let token = ''
+  try {
+    const stored = localStorage.getItem('minimax-user')
+    if (stored) token = JSON.parse(stored)?.state?.accessToken || ''
+  } catch (_) {}
+
+  const base = import.meta.env.VITE_API_BASE || 'http://localhost:8080'
+  const url = `${base}/api/v1/model/chat/stream`
+
+  fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    },
+    body: JSON.stringify({ text: data.text, model: data.model || 'gpt-4o-mini', sessionId: data.sessionId }),
+    credentials: 'include'
+  }).then(async (response) => {
+    if (!response.ok) throw new Error('HTTP ' + response.status)
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    const read = () => {
+      reader.read().then(({ done, value }) => {
+        if (done) { onComplete && onComplete(); return }
+        const text = decoder.decode(value, { stream: true })
+        // 解析 SSE lines: "data: {...}\n\n"
+        for (const line of text.split('\n')) {
+          const trimmed = line.trim()
+          if (trimmed.startsWith('data: ')) {
+            const json = trimmed.slice(6)
+            if (json === '[DONE]') { onComplete && onComplete(); return }
+            try {
+              const parsed = JSON.parse(json)
+              const content = parsed?.choices?.[0]?.delta?.content || ''
+              if (content) onChunk(content)
+            } catch (_) { /* ignore parse errors */ }
+          }
+        }
+        read()
+      }).catch(err => onError && onError(err))
+    }
+    read()
+  }).catch(err => onError && onError(err))
+
+  // 返回取消函数
+  return () => reader && reader.cancel && reader.cancel()
+}
