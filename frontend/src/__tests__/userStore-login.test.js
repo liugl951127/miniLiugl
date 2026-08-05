@@ -49,7 +49,7 @@ describe('userStore.login 数据格式验证', () => {
     })
 
     const store = useUserStore()
-    const res = await store.login({ username: 'admin', password: 'admin' })
+    await store.login({ username: 'admin', password: 'admin' })
 
     expect(store.accessToken).toBe('at-1')
     expect(store.refreshToken).toBe('rt-1')

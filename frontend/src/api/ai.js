@@ -44,7 +44,9 @@ export const generateTextStream = (data, onChunk, onError, onComplete) => {
   return http.post('/ai/generate/stream', data, {
     responseType: 'stream',
     onDownloadProgress: (e) => {
-      // 处理 SSE 流
+      // 处理 SSE 流 (e.loaded/total 可用于进度)
+      // 暂未使用, 留 hook
+      void e
     }
   }).then(response => {
     const reader = response.data.getReader()
