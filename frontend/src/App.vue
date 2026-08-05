@@ -34,7 +34,7 @@ import ErrorBoundary from '@/components/ErrorBoundary.vue'
 // V2.8.9: 加载 usePwa 以触发 SW 注册
 import { usePwa } from '@/composables/usePwa'
 import { useDemoMode } from '@/composables/useDemoMode'
-const { swVersion } = usePwa()
+usePwa()  // 触发 SW 注册 (swVersion 在 PwaStatusBar 组件用)
 
 const isLoading = ref(false)
 provide('appLoading', isLoading)

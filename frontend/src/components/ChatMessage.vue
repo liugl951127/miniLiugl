@@ -145,7 +145,7 @@ const props = defineProps({
   onRetry: Function,
   onLike: Function,
 })
-defineEmits(['retry', 'like', 'openSource'])
+defineEmits(['retry', 'like', 'openSource', 'speak'])
 
 const roleLabel = computed(() => {
   return { user: '我', assistant: 'AI 助手', system: '系统', tool: '工具' }[props.role] || 'AI'
