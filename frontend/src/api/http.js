@@ -130,8 +130,8 @@ http.interceptors.response.use(
       }
       // V3.7.5+ 5s 内只跳一次 (防风暴)
       const now = Date.now()
-      if (now - last401At < 10000)  // V3.7.8+ 10s 防风暴 (避免误判还没 refresh 完) {
-        return Promise.reject(err)
+      if (now - last401At < 10000) {
+        return Promise.reject(err)  // V3.7.8+ 10s 防风暴
       }
       last401At = now
       ElMessage.error('登录已过期，请重新登录')
