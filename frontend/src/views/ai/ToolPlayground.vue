@@ -128,18 +128,18 @@ import PageContainer from '@/components/PageContainer.vue'
 import StateBlock from '@/components/StateBlock.vue'
 import { ElInput, ElInputNumber, ElSelect, ElOption, ElSwitch } from 'element-plus'
 import {
-  analyzeText, analyzeVision, analyzeAudio, convertFile,
+  analyzeText, analyzeVision, _analyzeAudio, convertFile,
   analyzeCorrelation, predictData, timeConvert,
   generateImageTool, generateChartTool, generateMusicTool,
-  generateJavaProject, downloadJavaProject, downloadJavaProjectFromBase64,
-  listTools
+  generateJavaProject, _downloadJavaProject, downloadJavaProjectFromBase64,
+  _listTools
 } from '@/api/ai'
 
 const Input = markRaw(ElInput)
 const toast = useToast()
 const NumberInput = markRaw(ElInputNumber)
 const Select = markRaw(ElSelect)
-const Switch = markRaw(ElSwitch)
+const _Switch = markRaw(ElSwitch)
 
 // 工具定义 (前端, 与后端 AI 工具对应)
 const toolDefs = [

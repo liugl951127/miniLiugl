@@ -172,7 +172,7 @@ const entityDrawerVisible = ref(false)
 const entityDrawerItem = ref<any>(null)
 const entityDrawerRelations = ref<any[]>([])
 
-function openEntityDrawer(item: any) {
+function _openEntityDrawer(item: any) {
   entityDrawerItem.value = item
   entityDrawerVisible.value = true
 }

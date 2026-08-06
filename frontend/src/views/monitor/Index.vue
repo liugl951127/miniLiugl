@@ -243,10 +243,10 @@
 </template>
 <script setup lang="ts">
 // ───── 依赖导入 ─────
-import { ref, reactive, onMounted, onUnmounted, watch, nextTick, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, _watch, nextTick, _computed } from 'vue'
 import * as echarts from 'echarts'
 import { useToast } from '@/composables/useToast'
-import { useI18n } from 'vue-i18n'
+import { _useI18n } from 'vue-i18n'
 import axios from 'axios'
 import { ElMessageBox } from 'element-plus'
 import { CircleCheck, CircleClose } from '@element-plus/icons-vue'
@@ -278,7 +278,7 @@ const alerts = ref<any[]>([])
 
 // V5.9: 告警规则管理
 const rules = ref<any[]>([])
-const canEditRules = ref(true)  // 是否能编辑 (根据角色控制)
+const _canEditRules = ref(true)  // 是否能编辑 (根据角色控制)
 const ruleDialog = ref(false)
 const ruleSaving = ref(false)
 const ruleForm = reactive<any>({
@@ -286,7 +286,7 @@ const ruleForm = reactive<any>({
   operator: '>', threshold: 0, severity: 'warning',
   cooldownMinutes: 15, notifyChannel: 'websocket', enabled: 1,
 })
-const serviceOptions = [
+const _serviceOptions = [
   'minimax-gateway', 'minimax-auth', 'minimax-chat', 'minimax-model',
   'minimax-memory', 'minimax-rag', 'minimax-function', 'minimax-agent',
   'minimax-admin', 'minimax-prompt', 'minimax-multimodal', 'minimax-monitor', 'minimax-ws',
@@ -504,14 +504,14 @@ async function loadRules() {
 }
 
 // V5.9: 严重程度 → el-tag 类型
-function severityType(s: string) {
+function _severityType(s: string) {
   if (s === 'critical') return 'danger'
   if (s === 'warning') return 'warning'
   return 'info'
 }
 
 // V5.9: 打开编辑弹窗 (row 可为 null → 新增)
-function openRuleDialog(row?: any) {
+function _openRuleDialog(row?: any) {
   if (row) {
     Object.assign(ruleForm, row)
   } else {
@@ -525,7 +525,7 @@ function openRuleDialog(row?: any) {
 }
 
 // V5.9: 保存规则
-async function saveRule() {
+async function _saveRule() {
   if (!ruleForm.name?.trim()) return toast.warning('请输入名称')
   if (!ruleForm.metricName?.trim()) return toast.warning('请输入指标名')
   ruleSaving.value = true
@@ -547,7 +547,7 @@ async function saveRule() {
 }
 
 // V5.9: 删除规则 (二次确认)
-async function removeRule(row: any) {
+async function _removeRule(row: any) {
   try {
     await ElMessageBox.confirm(`确认删除规则 [${row.name}]?`, '提示', { type: 'warning' })
     await deleteMonitorAlertRule(row.id)
@@ -574,7 +574,7 @@ async function loadChannels() {
   } catch (_) { channels.value = [] }
 }
 
-function channelConfigPreview(cfg: any) {
+function _channelConfigPreview(cfg: any) {
   if (!cfg) return '-'
   if (typeof cfg === 'string') {
     try { cfg = JSON.parse(cfg) } catch (_) { return cfg }
@@ -584,13 +584,13 @@ function channelConfigPreview(cfg: any) {
   return JSON.stringify(cfg)
 }
 
-function channelTypeTag(type: string) {
+function _channelTypeTag(type: string) {
   if (type === 'EMAIL') return 'primary'
   if (type === 'DINGTALK') return 'success'
   return 'warning'
 }
 
-function openChannelDialog(row?: any) {
+function _openChannelDialog(row?: any) {
   if (row) {
     channelForm.id = row.id
     channelForm.name = row.name
@@ -613,7 +613,7 @@ function openChannelDialog(row?: any) {
   channelDialog.value = true
 }
 
-async function saveChannel() {
+async function _saveChannel() {
   if (!channelForm.name?.trim()) return toast.warning('请输入名称')
   channelSaving.value = true
   try {
@@ -651,7 +651,7 @@ async function saveChannel() {
   }
 }
 
-async function removeChannel(row: any) {
+async function _removeChannel(row: any) {
   try {
     await deleteAlertChannel(row.id)
     toast.success('已删除')

@@ -32,15 +32,15 @@ export function useSpeechCall() {
   let analyser = null
   let recognition = null
   let synth = window.speechSynthesis
-  let mediaRecorder = null
+  let _mediaRecorder = null
   let durationTimer = null
   let volumeTimer = null
   let callStartTime = 0
 
   // === 回调 (由 chat/Index 注入) ===
   let onRecognizedCallback = null  // STT 完成时调
-  let onTypewriterCallback = null  // 打字机显示调
-  let onSpeakCallback = null       // TTS 播报调
+  let _onTypewriterCallback = null  // 打字机显示调
+  let _onSpeakCallback = null       // TTS 播报调
 
   function setCallbacks({ onRecognized, onTypewriter, onSpeak } = {}) {
     onRecognizedCallback = onRecognized

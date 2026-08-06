@@ -202,7 +202,7 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, reactive, onMounted, readonly } from 'vue'
+import { ref, reactive, onMounted, _readonly } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { ElMessageBox } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
@@ -210,7 +210,7 @@ import {
   pushSubscribe, pushUnsubscribe, pushSubscriptions, pushAllSubscriptions,
   pushSendToUser, pushSendToPlatform, pushBroadcast, pushMessages, pushStats,
   pushIntegrationAuto, pushIntegrationApns, pushIntegrationFcm, pushIntegrationWeb,
-  pushIntegrationHealth, pushIntegrationStats, pushIntegrationDetect, pushIntegrationVapidKey
+  pushIntegrationHealth, pushIntegrationStats, _pushIntegrationDetect, pushIntegrationVapidKey
 } from '@/api/ai'
 
 const tab = ref('subscriptions')
@@ -244,7 +244,7 @@ async function loadMessages() {
   try { const r = await pushMessages({ limit: 50 }); messages.value = r.data || [] } catch (e) {}
 }
 
-async function loadStats() {
+async function _loadStats() {
   try { const r = await pushStats(); Object.assign(pushStat, r.data || {}) } catch (e) {}
 }
 

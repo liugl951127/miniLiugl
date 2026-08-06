@@ -256,14 +256,14 @@ const forcePresets = {
 const currentPreset = ref('custom')
 const savedLayout = ref(null)
 
-function applyPreset(preset: string) {
+function _applyPreset(preset: string) {
   currentPreset.value = preset
   Object.assign(forceConfig.value, forcePresets[preset as keyof typeof forcePresets])
   applyForceLayout()
   toast.success(`已应用 ${preset} 预设`)
 }
 
-function saveLayout() {
+function _saveLayout() {
   if (!chart) { toast.warning('图表未初始化'); return }
   const option = chart.getOption()
   const series = option.series?.[0]
@@ -276,7 +276,7 @@ function saveLayout() {
   toast.success(`已保存 ${savedLayout.value.nodes.length} 个节点位置`)
 }
 
-function restoreLayout() {
+function _restoreLayout() {
   if (!chart) return
   let layout: any = savedLayout.value
   if (!layout) {
@@ -298,7 +298,7 @@ function restoreLayout() {
   }
 }
 
-function resetLayout() {
+function _resetLayout() {
   if (!chart) return
   const option = chart.getOption()
   const series = option.series?.[0]
@@ -397,7 +397,7 @@ async function doSearch() {
   } catch (e: any) { toast.error(e?.response?.data?.message || e?.message) }
 }
 
-async function selectEntity(e: any) {
+async function _selectEntity(e: any) {
   selectedEntity.value = e
   pathFromId.value = e.id
   await loadNeighbors()
@@ -433,9 +433,9 @@ async function loadNodeRelations(id: string) {
   }
 }
 
-function startEditNode() { nodeEditing.value = true }
+function _startEditNode() { nodeEditing.value = true }
 
-function cancelEditNode() {
+function _cancelEditNode() {
   nodeEditing.value = false
   if (nodeDetail.value) {
     nodeEditForm.name = nodeDetail.value.name
@@ -722,7 +722,7 @@ const MOCK_NEIGHBORS = [
 ]
 
 // === V3.6.3+ 拖拽建边 ===
-const dragCreating = ref(false)
+const _dragCreating = ref(false)
 const dragFromId = ref<number | null>(null)
 const dragToId = ref<number | null>(null)
 const relTypeInput = ref('related_to')
@@ -917,7 +917,7 @@ function onNodeClick(params) {
 }
 
 // V3.6.7+ 节点搜索跳转
-function jumpToEntity(entity) {
+function _jumpToEntity(entity) {
   selectedEntity.value = entity
   loadNeighbors()
   nextTick(() => {

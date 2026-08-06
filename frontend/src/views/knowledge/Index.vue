@@ -333,7 +333,7 @@
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { ElMessageBox } from 'element-plus'
-import { Files, Document, Reading, Histogram, Plus, FolderOpened, Delete, Search, MagicStick, Upload, Edit, EditPen } from '@element-plus/icons-vue'
+import { Files, Document, Reading, Histogram, Plus, FolderOpened, Delete, Search, MagicStick, Upload, Edit, _EditPen } from '@element-plus/icons-vue'
 import * as ragApi from '@/api/rag'
 import { promptApi } from '@/api/prompt'
 import { useUserStore } from '@/store/user'
@@ -347,7 +347,7 @@ const entityDrawerVisible = ref(false)
 const entityDrawerItem = ref<any>(null)
 const entityDrawerRelations = ref<any[]>([])
 
-function openEntityDrawer(item: any) {
+function _openEntityDrawer(item: any) {
   entityDrawerItem.value = item
   entityDrawerVisible.value = true
 }

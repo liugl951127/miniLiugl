@@ -122,7 +122,7 @@ import EmptyState from '@/components/EmptyState.vue'
 const { t } = useI18n()
 const req = ref({ prompt: '蓝色渐变背景', type: '', width: 1024, height: 1024, seed: 42 })
 const toast = useToast()
-const sizePreset = ref('1024x1024')
+const _sizePreset = ref('1024x1024')
 const imageTypes = ref(['abstract', 'gradient', 'pattern', 'text', 'scene', 'logo', 'infographic'])
 const result = ref(null)
 const loading = ref(false)
@@ -132,13 +132,13 @@ const imageUrl = computed(() => {
   return `data:${result.value.mime};base64,${result.value.base64}`
 })
 
-function changeSize(label) {
+function _changeSize(label) {
   const [w, h] = label.split('x').map(Number)
   req.value.width = w
   req.value.height = h
 }
 
-function randomSeed() {
+function _randomSeed() {
   req.value.seed = Math.floor(Math.random() * 1_000_000)
 }
 
@@ -159,7 +159,7 @@ async function generate() {
   }
 }
 
-async function inferType() {
+async function _inferType() {
   if (!req.value.prompt) return
   try {
     const res = await inferApi(req.value.prompt)
@@ -170,7 +170,7 @@ async function inferType() {
   }
 }
 
-function download() {
+function _download() {
   if (!result.value) return
   const link = document.createElement('a')
   link.href = imageUrl.value
@@ -178,7 +178,7 @@ function download() {
   link.click()
 }
 
-function formatBytes(b) {
+function _formatBytes(b) {
   if (b < 1024) return b + ' B'
   if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB'
   return (b / 1024 / 1024).toFixed(2) + ' MB'

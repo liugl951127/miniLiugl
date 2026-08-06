@@ -87,10 +87,10 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { reactive, ref } from 'vue'
-import { useToast } from '@/composables/useToast'
+import { _useToast } from '@/composables/useToast'
 
 import { Download } from '@element-plus/icons-vue'
-import { projectDownloadGet, projectDownloadPost } from '@/api/ai'
+import { _projectDownloadGet, projectDownloadPost } from '@/api/ai'
 
 const form = reactive({
   projectName: 'minimax-erp',

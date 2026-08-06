@@ -139,7 +139,7 @@ import { useToast } from '@/composables/useToast'
 import { Refresh } from '@element-plus/icons-vue'
 import { apiKeyApi } from '@/api/apikey'
 
-const t = (k, def) => k  // i18n placeholder
+const t = (k, _def) => k  // i18n placeholder
 const toast = useToast()
 
 const stats = ref(null)

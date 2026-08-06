@@ -170,7 +170,7 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, _onUnmounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 
 import { Promotion, Warning } from '@element-plus/icons-vue'
@@ -183,7 +183,7 @@ const battling = ref(false)
 const results = ref([])
 const history = ref([])
 const battleCount = ref(0)
-let pollTimer = null
+let _pollTimer = null
 
 const availableModels = ref([
   { code: 'gpt-4o-mini', displayName: 'GPT-4o mini', supportsVision: true },

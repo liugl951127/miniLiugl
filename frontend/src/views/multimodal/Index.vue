@@ -137,11 +137,11 @@ import { useToast } from '@/composables/useToast'
 
 import { PictureFilled, Upload, MagicStick } from '@element-plus/icons-vue'
 import http from '@/api/http'
-import { describeImageOld as describeImageApi, getMultimodalInfoOld as getInfoApi } from '@/api/multimodal'
+import { describeImageOld as describeImageApi, getMultimodalInfoOld as _getInfoApi } from '@/api/multimodal'
 import EmptyState from '@/components/EmptyState.vue'
 
 const activeTab = ref('describe')
-const toast = useToast()
+const _toast = useToast()
 
 // 图像描述
 const imgUploadRef = ref()

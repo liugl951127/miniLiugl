@@ -73,8 +73,8 @@ import { useToast } from '@/composables/useToast'
 import { ElMessageBox } from 'element-plus'
 import { useNotificationStore } from '@/store/notification'
 import {
-  Bell, ChatDotRound, DocumentChecked, MagicStick,
-  FolderChecked, Loading
+  Bell, _ChatDotRound, _DocumentChecked, _MagicStick,
+  _FolderChecked, Loading
 } from '@element-plus/icons-vue'
 
 const notifStore = useNotificationStore()

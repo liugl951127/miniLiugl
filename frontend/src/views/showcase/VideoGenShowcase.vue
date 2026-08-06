@@ -201,7 +201,7 @@ async function generate() {
   toast.success(`生成完成! ${results.value.length} 个视频`)
 }
 
-function playMock(r) {
+function playMock(_r) {
   toast.info('Mock 模式: 真实部署时这里播放生成的 mp4')
 }
 </script>

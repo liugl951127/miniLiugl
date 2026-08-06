@@ -106,7 +106,7 @@ import { ref, computed, onMounted, reactive } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { ElMessageBox } from 'element-plus'
-import { Plus, Refresh, Connection, Edit, Delete } from '@element-plus/icons-vue'
+import { Plus, Refresh, _Connection, _Edit, _Delete } from '@element-plus/icons-vue'
 import { listProviders, createProvider, updateProvider, deleteProvider, testProvider } from '@/api/model'
 
 const { t } = useI18n()
@@ -136,12 +136,12 @@ const filteredProviders = computed(() => {
   )
 })
 
-function maskKey(k) {
+function _maskKey(k) {
   if (!k) return ''
   return k.length > 12 ? k.slice(0, 4) + '***' + k.slice(-4) : '***'
 }
 
-function typeColor(t) {
+function _typeColor(t) {
   const m = { openai: '', anthropic: 'success', gemini: 'warning', ollama: 'info', mock: '', custom: '' }
   return m[t] || ''
 }
@@ -172,7 +172,7 @@ function editProvider(row) {
   showForm.value = true
 }
 
-async function handleSave() {
+async function _handleSave() {
   if (!form.code.trim() || !form.name.trim() || !form.baseUrl.trim()) {
     return toast.warning('代码/名称/Base URL 必填')
   }
@@ -194,7 +194,7 @@ async function handleSave() {
   } finally { saving.value = false }
 }
 
-async function handleDelete(row) {
+async function _handleDelete(row) {
   await ElMessageBox.confirm(`确认删除 Provider "${row.name}"?`, '警告', { type: 'warning' })
   try {
     await deleteProvider(row.id)
@@ -205,7 +205,7 @@ async function handleDelete(row) {
   }
 }
 
-async function handleTest(row) {
+async function _handleTest(row) {
   testing.value[row.id] = true
   try {
     const res = await testProvider(row.id)
@@ -219,7 +219,7 @@ async function handleTest(row) {
   }
 }
 
-async function toggleEnabled(row, val) {
+async function _toggleEnabled(row, val) {
   try {
     await updateProvider(row.id, { ...row, enabled: val ? 1 : 0, enabledBool: val })
     row.enabled = val ? 1 : 0

@@ -124,12 +124,12 @@ let timer = null
 const jaegerUrl = ref(import.meta.env.VITE_JAEGER_URL || 'http://localhost:16686')
 
 const totalSpans = computed(() => traces.value.reduce((a, t) => a + (t.spans?.length || 0), 0))
-const avgDuration = computed(() => {
+const _avgDuration = computed(() => {
   if (traces.value.length === 0) return 0
   const sum = traces.value.reduce((a, t) => a + (t.durationUs || 0), 0)
   return sum / traces.value.length / 1000  // ms
 })
-const errorRate = computed(() => {
+const _errorRate = computed(() => {
   if (totalSpans.value === 0) return 0
   const errors = traces.value.reduce((a, t) => {
     return a + (t.spans || []).filter(s => s.tags?.error || s.tags?.['error.type']).length
@@ -144,7 +144,7 @@ function formatMs(us) {
   return (us / 1000000).toFixed(2) + ' s'
 }
 
-function formatRel(trace) {
+function _formatRel(trace) {
   if (!trace.durationUs) return '-'
   return formatMs(trace.durationUs)
 }
@@ -155,7 +155,7 @@ function formatTime(us) {
   return new Date(us / 1000).toLocaleString('zh-CN')
 }
 
-function openJaeger(tid) {
+function _openJaeger(tid) {
   window.open(`${jaegerUrl.value}/trace/${tid}`, '_blank')
 }
 

@@ -115,7 +115,7 @@ function onLogin(payload) {
   setTimeout(() => router.push('/chat'), 1000)
 }
 
-function onBind(payload) {
+function onBind(_payload) {
   currentStep.value = 4
   toast.success('绑定成功')
   loadBinding()

@@ -262,7 +262,7 @@ function channelTypeLabel(type) {
   return CHANNEL_TYPE_MAP[type] || type
 }
 
-const channelTargetPlaceholder = computed(() => {
+const _channelTargetPlaceholder = computed(() => {
   return CHANNEL_TARGET_PLACEHOLDER[editingChannel.value.type] || '输入目标地址'
 })
 
@@ -320,7 +320,7 @@ async function loadHistory() {
 }
 
 // -------- 规则 CRUD --------
-function newRule() {
+function _newRule() {
   editingRule.value = { name: '', metric: 'cpu_usage', operator: '>', threshold: 80, severity: 'warning', enabled: true }
   ruleDialogVisible.value = true
 }
@@ -330,7 +330,7 @@ function editRule(rule) {
   ruleDialogVisible.value = true
 }
 
-async function saveRule() {
+async function _saveRule() {
   try {
     if (editingRule.value.id) {
       await monitorApi.updateAlertRule(editingRule.value.id, editingRule.value)
@@ -378,7 +378,7 @@ function openChannelDialog(channel = null) {
 }
 
 /** 保存渠道 (新建/编辑) */
-async function saveChannel() {
+async function _saveChannel() {
   if (!editingChannel.value.name || !editingChannel.value.target) {
     toast.warning('请填写名称和目标地址')
     return

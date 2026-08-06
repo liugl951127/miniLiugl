@@ -115,7 +115,7 @@
 </template>
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, computed, nextTick, inject } from 'vue'
+import { ref, _computed, nextTick, _inject } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 
@@ -179,7 +179,7 @@ function connect() {
     log('close', '连接关闭')
   }
 
-  ws.onerror = (e) => {
+  ws.onerror = (_e) => {
     log('error', 'WS 连接错误, 请检查登录状态')
     toast.error('WebSocket 连接失败, 请先登录')
   }
@@ -251,25 +251,25 @@ function handleEvent(m) {
   }
 }
 
-function pause() {
+function _pause() {
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ action: 'pause' }))
   }
 }
 
-function resume() {
+function _resume() {
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ action: 'resume' }))
   }
 }
 
-function cancel() {
+function _cancel() {
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ action: 'cancel' }))
   }
 }
 
-function steer() {
+function _steer() {
   if (!steerText.value.trim()) return toast.warning('请输入引导方向')
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ action: 'steer', direction: steerText.value }))
@@ -277,7 +277,7 @@ function steer() {
   }
 }
 
-function sendFeedback() {
+function _sendFeedback() {
   if (!feedbackScore.value) return toast.warning('请评分')
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({
@@ -290,7 +290,7 @@ function sendFeedback() {
   }
 }
 
-function doInject() {
+function _doInject() {
   if (!injectText.value.trim()) return toast.warning('请输入注入内容')
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({
@@ -301,14 +301,14 @@ function doInject() {
   }
 }
 
-function setModel() {
+function _setModel() {
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ action: 'set_model', model: selectedModel.value }))
     currentModel.value = selectedModel.value
   }
 }
 
-function typeLabel(t) {
+function _typeLabel(t) {
   return {
     chunk: 'AI', thinking: '思考', tool_call: '工具', observation: '结果',
     status: '状态', done: '完成', error: '错误', system: '系统'

@@ -297,7 +297,7 @@ const quotaVisible = ref(false)
 const currentTenant = ref(null)
 const newQuota = ref(0)
 
-function openQuotaDialog(row) {
+function _openQuotaDialog(row) {
   currentTenant.value = row
   newQuota.value = row.monthlyQuota
   quotaVisible.value = true

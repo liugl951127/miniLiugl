@@ -65,7 +65,7 @@ import { listDataSources, listDatabases, listTables, describeTable, profileTable
 const sources = ref([])
 const dsId = ref(null)
 const dbs = ref([])
-const tables = ref([])
+const _tables = ref([])
 const tableDetail = ref(null)
 const profile = ref(null)
 const expanded = ref([])

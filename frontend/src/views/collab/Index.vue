@@ -236,7 +236,7 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick, _watch } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -249,7 +249,7 @@ import {
 import { CrdtDoc, CrdtIdFactory } from '@/utils/crdt'
 import { useUserStore } from '@/store/user'
 
-const { t } = useI18n()
+const { _t } = useI18n()
 const router = useRouter()
 const userStore = useUserStore()
 const toast = useToast()
@@ -399,7 +399,7 @@ const loadDocSnapshot = async (rid) => {
   }
 }
 
-const onDocInput = (e) => {
+const onDocInput = (_e) => {
   // 简化: 检测增删字符, 生成对应 op
   if (isApplyingRemote || !crdtDoc || !ws) return
   const oldText = crdtDoc.toText()

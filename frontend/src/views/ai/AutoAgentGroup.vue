@@ -132,11 +132,11 @@ async function loadTemplates() {
   }
 }
 
-function onTemplateChange(code) {
+function _onTemplateChange(code) {
   currentTemplate.value = templates.value.find(t => t.code === code) || null
 }
 
-async function onGenerate() {
+async function _onGenerate() {
   if (!autoForm.description) {
     toast.warning('请输入描述')
     return
@@ -156,7 +156,7 @@ async function onGenerate() {
   }
 }
 
-async function onTemplateGenerate() {
+async function _onTemplateGenerate() {
   if (!templateForm.code) {
     toast.warning('请选择模板')
     return
@@ -175,11 +175,11 @@ async function onTemplateGenerate() {
   }
 }
 
-function onSave() {
+function _onSave() {
   toast.info('保存到市场功能 V3.5.49 上线')
 }
 
-function onTestAgent(row) {
+function _onTestAgent(row) {
   toast.info(`测试 Agent: ${row.name}`)
 }
 

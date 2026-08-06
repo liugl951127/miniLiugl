@@ -114,7 +114,7 @@ import { ref, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 
-import { monitorApi } from '@/api/monitor'
+import { _monitorApi } from '@/api/monitor'
 
 const { t } = useI18n()
 const logs = ref([])
@@ -127,7 +127,7 @@ const filters = ref({ username: '', action: '', result: '', resourceType: '', da
 const detailVisible = ref(false)
 const detail = ref({})
 
-function resultType(r) {
+function _resultType(r) {
   return { SUCCESS: 'success', FAILURE: 'danger', DENIED: 'warning' }[r] || ''
 }
 
@@ -170,7 +170,7 @@ function resetFilters() {
   loadLogs()
 }
 
-function showDetail(log) {
+function _showDetail(log) {
   detail.value = log
   detailVisible.value = true
 }

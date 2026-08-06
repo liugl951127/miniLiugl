@@ -137,16 +137,16 @@
 </template>
 <script setup lang="ts">
 // ───── 依赖导入 ─────
-import { ref, computed, onMounted, reactive } from 'vue'
+import { ref, computed, onMounted, _reactive } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { ElMessageBox } from 'element-plus'
-import { Refresh, Upload } from '@element-plus/icons-vue'
+import { Refresh, _Upload } from '@element-plus/icons-vue'
 import {
-  clusterListNodes, clusterActiveNodes, clusterNode, clusterMe, clusterLeader,
-  clusterRoute, clusterDrainNode, clusterStats,
-  raftStart, raftStop, raftState, raftLeader, raftSubmit, raftApplied,
-  raftAppend, raftVote, raftStatus, raftLog, raftTriggerElection
+  clusterListNodes, _clusterActiveNodes, _clusterNode, clusterMe, clusterLeader,
+  _clusterRoute, clusterDrainNode, _clusterStats,
+  raftStart, raftStop, raftState, _raftLeader, raftSubmit, raftApplied,
+  _raftAppend, _raftVote, _raftStatus, _raftLog, raftTriggerElection
 } from '@/api/ai'
 
 const { t } = useI18n()
@@ -155,15 +155,15 @@ const toast = useToast()
 const raftNodes = computed(() => nodes.value)  // V3.5.95: 别名 (模板用 raftNodes)
 const me = ref(null)
 const leaderInfo = ref(null)
-const stats = ref(null)
+const _stats = ref(null)
 const raftStateInfo = ref(null)
 const raftAppliedInfo = ref(null)
 const nodeFilter = ref('all')
 const raftLogCmd = ref('')
-const recentLogs = ref([])
+const _recentLogs = ref([])
 
 const activeCount = computed(() => nodes.value.filter(n => n.status === 'ACTIVE').length)
-const filteredNodes = computed(() => {
+const _filteredNodes = computed(() => {
   if (nodeFilter.value === 'active') return nodes.value.filter(n => n.status === 'ACTIVE')
   return nodes.value
 })
@@ -204,7 +204,7 @@ async function loadRaftState() {
   } catch (e) {}
 }
 
-async function onDrain(row) {
+async function _onDrain(row) {
   try {
     await ElMessageBox.confirm(`排空节点 ${row.nodeId}?`, '警告', { type: 'warning' })
     await clusterDrainNode(row.nodeId)
@@ -213,19 +213,19 @@ async function onDrain(row) {
   } catch (e) { if (e !== 'cancel') {} }
 }
 
-async function onRaftStart() {
+async function _onRaftStart() {
   try { await raftStart(); toast.success('Raft 已启动'); loadRaftState() } catch (e) {}
 }
 
-async function onRaftStop() {
+async function _onRaftStop() {
   try { await raftStop(); toast.success('Raft 已停止'); loadRaftState() } catch (e) {}
 }
 
-async function onTriggerElection() {
+async function _onTriggerElection() {
   try { await raftTriggerElection(); toast.success('已触发选举'); loadRaftState() } catch (e) {}
 }
 
-async function onRaftSubmit() {
+async function _onRaftSubmit() {
   if (!raftLogCmd.value) return
   try {
     const r = await raftSubmit({ command: raftLogCmd.value })

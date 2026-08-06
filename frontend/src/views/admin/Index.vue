@@ -188,7 +188,7 @@ import { useUserStore } from '@/store/user'
 import {Fold, Setting, DataLine, TrendCharts, Connection, Monitor, Cpu, Trophy, Key,
   ChatDotRound, Bell, CircleCheck, CircleClose, Document, Warning, Share, Files,
   Lock, Notebook, Promotion, Link, ChatLineRound, User, MagicStick, DataAnalysis, ChatDotSquare,
-  Search} from '@element-plus/icons-vue'
+  _Search} from '@element-plus/icons-vue'
 
 const { t } = useI18n()
 const route = useRoute()

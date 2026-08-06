@@ -166,7 +166,7 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, reactive, computed, watch, onMounted, readonly } from 'vue'
+import { ref, reactive, _computed, watch, onMounted, _readonly } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
@@ -257,10 +257,10 @@ function updateVarList() {
 
 watch([editorForm, () => editorForm.content], () => {
   const vars = extractVars(editorForm.content)
-  vars.forEach(v => { if (!editorForm._vars) editorForm._vars = [] })
+  vars.forEach(_v => { if (!editorForm._vars) editorForm._vars = [] })
 }, { deep: true })
 
-watch(() => editorForm.content, (val) => {
+watch(() => editorForm.content, (_val) => {
   // Update preview in use dialog if open
   if (showUseDialog.value && activeTemplate.value) {
     let content = activeTemplate.value.content

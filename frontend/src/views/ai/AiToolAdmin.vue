@@ -118,7 +118,7 @@ import { useI18n } from 'vue-i18n'
 import { ElMessageBox } from 'element-plus'
 import {
   listTools as apiListTools,
-  getTool as apiGetTool,
+  getTool as _apiGetTool,
   createTool as apiCreateTool,
   updateTool as apiUpdateTool,
   deleteTool as apiDeleteTool,
@@ -132,7 +132,7 @@ import {
 } from '@/api/ai'
 
 const { t } = useI18n()
-const activeTab = ref('tools')
+const _activeTab = ref('tools')
 const toast = useToast()
 
 // 工具列表
@@ -151,10 +151,10 @@ async function loadTools() {
   }
 }
 
-function categoryLabel(c) {
+function _categoryLabel(c) {
   return { DATA_CLEAN: '数据清洗', DATA_ANALYZE: '数据分析', CODE_GEN: '代码生成', SQL_QUERY: 'SQL查询', CHAT: '对话', CUSTOM: '自定义' }[c] || c
 }
-function categoryTag(c) {
+function _categoryTag(c) {
   return { DATA_CLEAN: 'success', DATA_ANALYZE: 'warning', CODE_GEN: 'primary', SQL_QUERY: 'info', CHAT: '', CUSTOM: '' }[c] || ''
 }
 
@@ -184,7 +184,7 @@ function needsLimit(t) {
   return code.includes('analyze') || code.includes('clean') || code.includes('deduplicate')
 }
 
-function openInvoke(t) {
+function _openInvoke(t) {
   currentTool.value = t
   invokeForm.value = {
     dataSourceId: 1, table: '', column: '', buckets: 10, limit: 10000,
@@ -194,7 +194,7 @@ function openInvoke(t) {
   invokeVisible.value = true
 }
 
-async function doInvoke() {
+async function _doInvoke() {
   invokeLoading.value = true
   try {
     let input = {}
@@ -251,11 +251,11 @@ async function doInvoke() {
 // 工具编辑
 const editVisible = ref(false)
 const editForm = ref({})
-function openEdit(t) {
+function _openEdit(t) {
   editForm.value = { ...t }
   editVisible.value = true
 }
-async function saveTool() {
+async function _saveTool() {
   try {
     if (editForm.value.id) {
       await apiUpdateTool(editForm.value.id, editForm.value)
@@ -277,7 +277,7 @@ async function toggleTool(t) {
     toast.error('更新失败: ' + e.message)
   }
 }
-async function del(t) {
+async function _del(t) {
   await ElMessageBox.confirm(`确定删除工具 ${t.name}?`, '确认', { type: 'warning' })
   try {
     await apiDeleteTool(t.id)
@@ -302,7 +302,7 @@ async function loadDatasources() {
     dsLoading.value = false
   }
 }
-async function testDs(ds) {
+async function _testDs(ds) {
   try {
     const res = await apiTestDataSource(ds.id)
     if (res.data.success) {
@@ -317,11 +317,11 @@ async function testDs(ds) {
 }
 const dsEditVisible = ref(false)
 const dsEdit = ref({})
-function openDsEdit(ds) {
+function _openDsEdit(ds) {
   dsEdit.value = ds ? { ...ds } : { name: '', type: 'mysql', jdbcUrl: '', username: '', password: '', poolSize: 10, description: '' }
   dsEditVisible.value = true
 }
-async function saveDs() {
+async function _saveDs() {
   try {
     if (dsEdit.value.id) {
       await apiUpdateDataSource(dsEdit.value.id, dsEdit.value)
@@ -335,7 +335,7 @@ async function saveDs() {
     toast.error('保存失败: ' + e.message)
   }
 }
-async function delDs(ds) {
+async function _delDs(ds) {
   await ElMessageBox.confirm(`确定删除数据源 ${ds.name}?`, '确认', { type: 'warning' })
   await apiDeleteDataSource(ds.id)
   toast.success('已删除')
@@ -347,7 +347,7 @@ const genForm = ref({ projectType: 'spring-boot', projectName: 'my-app', descrip
 const genLoading = ref(false)
 const genResult = ref(null)
 const selectedFile = ref(null)
-async function generate() {
+async function _generate() {
   genLoading.value = true
   try {
     const res = await apiGenerateProject(genForm.value)
@@ -360,7 +360,7 @@ async function generate() {
     genLoading.value = false
   }
 }
-function downloadProject() {
+function _downloadProject() {
   // 简单 zip 打包
   const blob = new Blob([JSON.stringify(genResult.value.files, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
@@ -374,7 +374,7 @@ function downloadProject() {
 const analysisForm = ref({ dataSourceId: null, table: '', tool: 'data.analyze.stats', column: '' })
 const analysisLoading = ref(false)
 const analysisResult = ref(null)
-async function runAnalysis() {
+async function _runAnalysis() {
   if (!analysisForm.value.dataSourceId || !analysisForm.value.table || !analysisForm.value.column) {
     toast.warning('请填写完整')
     return
@@ -398,15 +398,15 @@ async function runAnalysis() {
     analysisLoading.value = false
   }
 }
-const analysisTable = computed(() => {
+const _analysisTable = computed(() => {
   if (!analysisResult.value) return []
   return [analysisResult.value]
 })
-function formatVal(v) {
+function _formatVal(v) {
   if (typeof v === 'number') return v.toFixed(4)
   return JSON.stringify(v)
 }
-function downloadAnalysis() {
+function _downloadAnalysis() {
   const blob = new Blob([JSON.stringify(analysisResult.value, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')

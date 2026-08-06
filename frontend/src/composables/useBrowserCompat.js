@@ -431,7 +431,7 @@ export function initBrowserCompat() {
 
   // 不兼容警告
   const missing = Object.entries(features)
-    .filter(([k, v]) => !v)
+    .filter(([_k, v]) => !v)
     .map(([k]) => k)
   if (missing.length > 0) {
     console.warn('[BrowserCompat] 不支持特性 (已尝试 polyfill):', missing)
@@ -439,7 +439,7 @@ export function initBrowserCompat() {
 
   // CSS 特性警告
   const cssMissing = Object.entries(cssFeatures)
-    .filter(([k, v]) => !v)
+    .filter(([_k, v]) => !v)
     .map(([k]) => k)
   if (cssMissing.length > 0) {
     console.info('[BrowserCompat] CSS 降级:', cssMissing)

@@ -32,7 +32,7 @@ export const appendMessage = (sessionId, data) => http.post(`/sessions/${session
  * @param {object} opts { onStart, onContent, onToolCall, onSource, onDone, onError, signal, streamId }
  */
 export async function sendMessageStream(sessionId, body, opts = {}) {
-  const { streamId, onStart, onContent, onToolCall, onSource, onDone, onError, signal } = opts
+  const { streamId, _onStart, onContent, onToolCall, onSource, onDone, onError, signal } = opts
   const url = `/sessions/${sessionId}/messages/stream`
   const payload = { ...body, streamId }
 

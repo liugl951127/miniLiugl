@@ -171,7 +171,7 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, _reactive, computed, onMounted } from 'vue'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { LineChart, BarChart, PieChart } from 'echarts/charts'

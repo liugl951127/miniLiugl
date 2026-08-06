@@ -126,8 +126,8 @@
 </template>
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, computed, onMounted, onUnmounted, markRaw } from 'vue'
-import { useToast } from '@/composables/useToast'
+import { ref, computed, onMounted, onUnmounted, _markRaw } from 'vue'
+import { _useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
@@ -138,7 +138,7 @@ import http from '@/api/http'
 
 use([CanvasRenderer, PieChart, BarChart, TitleComponent, TooltipComponent, LegendComponent, GridComponent])
 
-const { t } = useI18n()
+const { _t } = useI18n()
 const services = [
   'minimax-auth', 'minimax-chat', 'minimax-model', 'minimax-memory',
   'minimax-rag', 'minimax-function', 'minimax-agent', 'minimax-admin',
@@ -151,7 +151,7 @@ const rawText = ref('')
 const metrics = ref({})  // 解析后的指标 map
 let timer = null
 
-const summary = computed(() => {
+const _summary = computed(() => {
   const totalReq = sumByTag('minimax_http_requests_total')
   const error4xx = sumByTag('minimax_http_4xx_errors_total')
   const error5xx = sumByTag('minimax_http_5xx_errors_total')
@@ -160,9 +160,9 @@ const summary = computed(() => {
 })
 
 const topUris = computed(() => aggregateByUri('minimax_http_requests_total').slice(0, 10))
-const slowUris = computed(() => aggregateDuration().sort((a, b) => b.avgMs - a.avgMs).slice(0, 10))
+const _slowUris = computed(() => aggregateDuration().sort((a, b) => b.avgMs - a.avgMs).slice(0, 10))
 
-const statusPieOption = computed(() => {
+const _statusPieOption = computed(() => {
   const statusMap = {}
   Object.entries(metrics.value).forEach(([k, v]) => {
     if (k.startsWith('minimax_http_requests_total{') && k.includes('status=')) {
@@ -187,7 +187,7 @@ const statusPieOption = computed(() => {
   }
 })
 
-const durationOption = computed(() => {
+const _durationOption = computed(() => {
   const top = aggregateDuration().slice(0, 5)
   return {
     tooltip: { trigger: 'axis' },
@@ -203,7 +203,7 @@ const durationOption = computed(() => {
   }
 })
 
-function pct(n) {
+function _pct(n) {
   const max = Math.max(...topUris.value.map(x => x.count), 1)
   return Math.round((n / max) * 100)
 }

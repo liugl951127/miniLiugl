@@ -152,7 +152,7 @@ const detail = ref(null)
 const myRating = ref(0)
 const myComment = ref('')
 
-const categoryType = (cat) => {
+const _categoryType = (cat) => {
   const map = {
     SHOPPING: 'danger', HOTEL: 'warning', ENTERTAINMENT: 'success',
     EDUCATION: 'primary', TRAVEL: 'info', PRODUCTIVITY: '',
@@ -184,7 +184,7 @@ const loadAgents = async () => {
   }
 }
 
-const submitUpload = async () => {
+const _submitUpload = async () => {
   if (!uploadForm.name) {
     toast.warning('请填写名称')
     return
@@ -212,7 +212,7 @@ const submitUpload = async () => {
   }
 }
 
-const showDetail = async (agent) => {
+const _showDetail = async (agent) => {
   try {
     const res = await marketplaceApi.detail(agent.agentKey)
     detail.value = res.data
@@ -224,7 +224,7 @@ const showDetail = async (agent) => {
   }
 }
 
-const submitRating = async () => {
+const _submitRating = async () => {
   if (!myRating.value) {
     toast.warning('请选择评分')
     return

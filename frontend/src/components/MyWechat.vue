@@ -50,7 +50,7 @@ import { useUserStore } from '@/store/user'
 import dayjs from 'dayjs'
 
 const router = useRouter()
-const userStore = useUserStore()
+const _userStore = useUserStore()
 const loading = ref(true)
 const bound = ref(false)
 const binding = ref({})

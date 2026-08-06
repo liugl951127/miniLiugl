@@ -77,10 +77,10 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref } from 'vue'
-import { useToast } from '@/composables/useToast'
+import { _useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 
-import { executeWorkflow, validateWorkflow as apiValidate, dispatchPrompt } from '@/api/ai'
+import { executeWorkflow, validateWorkflow as apiValidate, _dispatchPrompt } from '@/api/ai'
 import EmptyState from '@/components/EmptyState.vue'
 
 const { t } = useI18n()
@@ -91,7 +91,7 @@ const nodes = ref([
 const running = ref(false)
 const lastResult = ref(null)
 
-function nodeStatusType(s) {
+function _nodeStatusType(s) {
   return { PENDING: 'info', RUNNING: 'warning', SUCCESS: 'success', FAILED: 'danger', TIMEOUT: 'danger' }[s] || ''
 }
 
@@ -100,7 +100,7 @@ function addStep() {
   nodes.value.push({ id, toolCode: '', inputJson: '{}', status: 'PENDING' })
 }
 
-function removeNode(idx) {
+function _removeNode(idx) {
   nodes.value.splice(idx, 1)
 }
 
@@ -183,7 +183,7 @@ function loadExample() {
   toast.success('已加载示例')
 }
 
-function formatOutput(o) {
+function _formatOutput(o) {
   if (typeof o === 'string') return o
   try { return JSON.stringify(o, null, 2) } catch { return String(o) }
 }

@@ -102,7 +102,7 @@
 import { useBusinessStream } from '@/composables/useBusinessStream'
 
 // ───── 依赖导入 ─────
-import { ref, computed, onMounted } from 'vue'
+import { ref, _computed, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 import http from '@/api/http'
 

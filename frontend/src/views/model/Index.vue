@@ -139,7 +139,7 @@
 
 <script setup lang="ts">
 // ───── 依赖导入 ─────
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, onMounted, _onUnmounted } from 'vue'
 import EntityDrawer from '@/components/EntityDrawer.vue'
 import { useToast } from '@/composables/useToast'
 import { ElMessageBox } from 'element-plus'
@@ -175,7 +175,7 @@ const entityDrawerVisible = ref(false)
 const entityDrawerItem = ref<any>(null)
 const entityDrawerRelations = ref<any[]>([])
 
-function openEntityDrawer(item: any) {
+function _openEntityDrawer(item: any) {
   entityDrawerItem.value = item
   entityDrawerVisible.value = true
 }

@@ -113,7 +113,7 @@ describe('useCapacitor (V3.1.1)', () => {
 
   it('测试 12: preferences.clear (web)', async () => {
     const { preferences } = useCapacitor()
-    const m = vi.spyOn(global.localStorage || {}, 'clear').mockImplementation(() => {})
+    const _m = vi.spyOn(global.localStorage || {}, 'clear').mockImplementation(() => {})
     await preferences.clear()
     // 至少调了 clear 或没报错
   })

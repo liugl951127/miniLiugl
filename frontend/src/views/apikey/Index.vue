@@ -157,7 +157,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 
-import { Plus, Refresh, Delete, DocumentCopy, Check, Close } from '@element-plus/icons-vue'
+import { Plus, Refresh, Delete, DocumentCopy, _Check, _Close } from '@element-plus/icons-vue'
 import { t } from '@/i18n'
 import { apiKeyApi } from '@/api/apikey'
 import EmptyState from '@/components/EmptyState.vue'

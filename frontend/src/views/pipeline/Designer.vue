@@ -111,7 +111,7 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, reactive, onMounted, computed, watch } from 'vue'
+import { ref, reactive, onMounted, _computed, watch } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -120,7 +120,7 @@ import EmptyState from '@/components/EmptyState.vue'
 
 const route = useRoute()
 const toast = useToast()
-const router = useRouter()
+const _router = useRouter()
 const canvasRef = ref(null)
 const canvasWidth = ref(2000)
 const canvasHeight = ref(1200)

@@ -223,7 +223,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import {
   User, UserFilled, Lock, Message, ChatLineRound, ChatDotRound, Plus,
-  Cpu, Connection, ChatLineSquare, Promotion
+  Cpu, Connection, _ChatLineSquare, Promotion
 } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/store/user'

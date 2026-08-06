@@ -141,15 +141,15 @@
 </template>
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, nextTick, reactive } from 'vue'
-import { useToast } from '@/composables/useToast'
-import { useI18n } from 'vue-i18n'
+import { ref, nextTick, _reactive } from 'vue'
+import { _useToast } from '@/composables/useToast'
+import { _useI18n } from 'vue-i18n'
 
 import StateBlock from '@/components/StateBlock.vue'
-import { votingChat, forceVotingChat, votingInfo, chatStream, listAiSessions, createAiSession } from '@/api/ai'
+import { _votingChat, forceVotingChat, votingInfo, chatStream, listAiSessions, createAiSession } from '@/api/ai'
 import EmptyState from '@/components/EmptyState.vue'
 
-const examples = [
+const _examples = [
   { icon: '📊', label: '统计图表', text: '统计 user 表前 10 条, 柱状图' },
   { icon: '🥧', label: '饼图', text: '画一个产品销量饼图, 苹果香蕉橙子, 占比 50/30/20' },
   { icon: '🎵', label: '音乐', text: '生成 C 大调 120bpm 8 小节音乐' },
@@ -227,7 +227,7 @@ function formatTime(t) {
   return d.toLocaleDateString()
 }
 
-function fillExample(text) {
+function _fillExample(text) {
   userInput.value = text
   toast.info('已填入, 按 Ctrl+Enter 发送')
 }
@@ -323,7 +323,7 @@ function clearAll() {
   toast.success('已清空')
 }
 
-function formatMsg(c) {
+function _formatMsg(c) {
   if (!c) return ''
   return c.replace(/\n/g, '<br>')
 }
@@ -338,7 +338,7 @@ function send() { handleSend() }
 
 
 // 快捷操作
-function sendQuickAction(label) {
+function _sendQuickAction(label) {
   const qa = quickActions.value.find(a => a.label === label)
   if (qa) userInput.value = qa.text
 }

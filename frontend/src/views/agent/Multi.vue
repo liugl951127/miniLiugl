@@ -214,7 +214,7 @@ function rebuildRoundsData(steps, criticEvals) {
 async function runStream() {
   running.value = true
   roundsData.value = []  // 实时追加
-  let currentRound = null
+  let _currentRound = null
   // V3.7.27+ 用 useBusinessStream (统一 5 type + Result 包装)
   const stream = useBusinessStream()
   try {
@@ -241,7 +241,7 @@ async function runStream() {
   }
 }
 
-function applyEvent(event, data) {
+function _applyEvent(event, data) {
   if (event === 'planner-start') {
     // 新一轮开始
     currentRound = { results: [], critic: null, plan: [] }

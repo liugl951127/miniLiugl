@@ -393,20 +393,20 @@
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { useI18n } from 'vue-i18n'
+import { _useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { modelApi } from '@/api/model'
 import { listSessions, createSession, deleteSession as deleteSessionApi } from '@/api/session'
-import { useBusinessStream } from '@/composables/useBusinessStream'
+import { _useBusinessStream } from '@/composables/useBusinessStream'
 import ChatMessage from '@/components/ChatMessage.vue'
 import { useSpeechCall } from '@/composables/useSpeechCall'
 import { ttsNormalize } from '@/utils/ttsNormalize'
 import { ElMessageBox } from 'element-plus'
 import {
-  EditPen, Search, ChatDotRound, MoreFilled, Promotion, Cpu, Clock, MagicStick,
-  UploadFilled, Picture, Loading, VideoPause, VideoPlay, CircleCloseFilled, Document, Share,
-  Microphone, CircleClose, Headset, Download, ArrowDown, Bell, BellFilled, Phone,
+  _EditPen, Search, ChatDotRound, _MoreFilled, Promotion, _Cpu, _Clock, _MagicStick,
+  _UploadFilled, _Picture, Loading, VideoPause, VideoPlay, _CircleCloseFilled, Document, _Share,
+  Microphone, CircleClose, _Headset, Download, ArrowDown, Bell, BellFilled, Phone,
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 
@@ -827,7 +827,7 @@ async function performOCR(file) {
 // === V3.5.98+ Agent 模式 ===
 // V3.6.6+ 多选模式 (Agent + RAG + Flow 可同时启用)
 const agentMode = ref(['chat'])
-const enabledModes = computed({
+const _enabledModes = computed({
   get: () => agentMode.value,
   set: (v) => { agentMode.value = v }
 })
@@ -876,7 +876,7 @@ const typewriterContent = ref('')
 const typewriterQueue = ref<{ msgId: string, target: HTMLElement, fullText: string, onDone?: () => void }[]>([])
 const typewriterCurrent = ref<any>(null)
 
-function typewriterEnqueue(msgId: string, target: HTMLElement, fullText: string, onDone?: () => void) {
+function _typewriterEnqueue(msgId: string, target: HTMLElement, fullText: string, onDone?: () => void) {
   typewriterQueue.value.push({ msgId, target, fullText, onDone })
   if (!typewriterTyping.value) typewriterProcessNext()
 }
@@ -970,9 +970,9 @@ const messagesRef = ref(null)
 const toolCalls = ref([])  // V3.5.95: 工具调用列表 (顶层)
 
 // V3.6.26+ ToolCalls 统计 + JSON 格式化
-const successCount = computed(() => toolCalls.value.filter((t: any) => t.status === 'ok' || !t.status).length)
+const _successCount = computed(() => toolCalls.value.filter((t: any) => t.status === 'ok' || !t.status).length)
 
-function formatJson(obj: any) {
+function _formatJson(obj: any) {
   if (!obj) return ''
   try { return JSON.stringify(obj, null, 2) } catch (e) { return String(obj) }
 }
@@ -1048,7 +1048,7 @@ async function loadSessions() {
 /**
  * 新建对话会话 (POST /api/v1/sessions)
  */
-async function newSession() {
+async function _newSession() {
   if (streaming.value) {
     toast.warning('正在生成中, 请先停止')
     return
@@ -1093,7 +1093,7 @@ async function switchSession(id) {
 /**
  * 删除会话 (DELETE /api/v1/sessions/:id)
  */
-async function deleteSession(id) {
+async function _deleteSession(id) {
   try {
     await ElMessageBox.confirm('确定删除该会话?', '提示', { type: 'warning' })
   } catch { return }
@@ -1111,7 +1111,7 @@ async function deleteSession(id) {
 /**
  * 重命名会话 (PUT /api/v1/sessions/:id)
  */
-function renameSession(s) {
+function _renameSession(s) {
   ElMessageBox.prompt('输入新标题', '重命名', { inputValue: s.title })
     .then(({ value }) => {
       s.title = value
@@ -1122,7 +1122,7 @@ function renameSession(s) {
 /**
  * 发送快捷短语 (同 sendMessage)
  */
-function sendQuick(text) {
+function _sendQuick(text) {
   inputText.value = text
   sendMessage()
 }
@@ -1130,7 +1130,7 @@ function sendQuick(text) {
 /**
  * 键盘事件处理 (Enter 发送, Shift+Enter 换行)
  */
-function onKey(e) {
+function _onKey(e) {
   if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
     e.preventDefault()
     if (canSend.value) sendMessage()
@@ -1153,7 +1153,7 @@ function onKey(e) {
 /**
  * 文件选择处理 (上传 /api/v1/multimodal/upload)
  */
-function onFileChange(file) {
+function _onFileChange(file) {
   const reader = new FileReader()
   reader.onload = (e) => {
     pendingImages.value.push({
@@ -1168,7 +1168,7 @@ function onFileChange(file) {
 /**
  * 拖拽文件处理 (drop event)
  */
-function onDrop(e) {
+function _onDrop(e) {
   dragging.value = false
   const files = e.dataTransfer.files
   for (const f of files) {
@@ -1182,7 +1182,7 @@ function onDrop(e) {
   }
 }
 
-function removeImage(i) {
+function _removeImage(i) {
   pendingImages.value.splice(i, 1)
 }
 
@@ -1190,7 +1190,7 @@ function removeImage(i) {
 let streamAbortController: AbortController | null = null
 
 // V3.7.8+ 当前 AI 消息 (让 stopTypewriter 可访问)
-let currentAiMsg: any = null
+let _currentAiMsg: any = null
 
 async function sendMessage() {
   if (speechCall.state.value !== 'idle') speechCall.setProcessing()
@@ -1296,7 +1296,7 @@ async function mockStreamResponse(aiMsg, userText) {
   scrollToBottom()
 }
 
-function stopStream() {
+function _stopStream() {
   // 实际应调 /cancel 端点
   const last = messages.value[messages.value.length - 1]
   if (last && last.streaming) {
@@ -1306,7 +1306,7 @@ function stopStream() {
   streaming.value = false
 }
 
-function retryMessage(idx) {
+function _retryMessage(idx) {
   if (idx === 0) return
   const userMsg = messages.value[idx - 1]
   if (userMsg && userMsg.role === 'user') {
@@ -1323,7 +1323,7 @@ async function scrollToBottom() {
   }
 }
 
-function formatTime(t) {
+function _formatTime(t) {
   return dayjs(t).format('MM-DD HH:mm')
 }
 </script>

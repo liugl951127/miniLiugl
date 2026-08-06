@@ -140,7 +140,7 @@ function saveDraft() {
   localStorage.setItem(getDraftKey(), JSON.stringify(editForm.value))
 }
 
-function clearDraft() {
+function _clearDraft() {
   if (!props.entity) return
   localStorage.removeItem(getDraftKey())
   savedDraft.value = null
@@ -154,7 +154,7 @@ watch(() => props.entity, () => loadDraft(), { immediate: true })
 
 const editForm = ref<any>({})
 
-const defaultEntityName = computed(() => props.entityName || '实体')
+const _defaultEntityName = computed(() => props.entityName || '实体')
 
 watch(
   () => props.entity,

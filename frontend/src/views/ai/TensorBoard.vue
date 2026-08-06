@@ -141,7 +141,7 @@ import EmptyState from '@/components/EmptyState.vue'
 use([CanvasRenderer, LineChart, TitleComponent, TooltipComponent, GridComponent, LegendComponent, DataZoomComponent])
 
 const runs = ref([])
-const toast = useToast()
+const _toast = useToast()
 const selectedRuns = ref([])
 const availableTags = ref([])     // { runId, tag, color }
 const selectedTags = ref([])      // ["runId|tag", ...]

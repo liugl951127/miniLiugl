@@ -206,8 +206,8 @@
  *   5. 加载/空/错 三态用 el-skeleton / el-empty / el-alert
  *   6. i18n: 文案用 $t('key') 不硬编码
  */
-import * as echarts from 'echarts'
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import * as _echarts from 'echarts'
+import { ref, onMounted, _onUnmounted, computed } from 'vue'
 import { useRoleDashboard } from '@/composables/useRoleDashboard'
 import {
   Refresh, CircleCheck, CircleClose, TrendCharts, PieChart, CaretTop, CaretBottom,
@@ -225,7 +225,7 @@ const stats = ref({
 })
 
 // V3.7.4+ 角色 dashboard (不同角色不同 KPI)
-const { kpis: roleKpis, roleColor, roleLabel, roleIcon, currentRole } = useRoleDashboard()
+const { kpis: _roleKpis, _roleColor, _roleLabel, _roleIcon, _currentRole } = useRoleDashboard()
 
 const recentAudits = ref([])
 

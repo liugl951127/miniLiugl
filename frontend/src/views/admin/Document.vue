@@ -101,7 +101,7 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, reactive, onMounted, readonly } from 'vue'
+import { ref, reactive, onMounted, _readonly } from 'vue'
 import { useToast } from '@/composables/useToast'
 
 import { Refresh, UploadFilled } from '@element-plus/icons-vue'
