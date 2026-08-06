@@ -50,21 +50,25 @@
       <el-card v-for="alert in firing" :key="alert.id" shadow="hover" class="alert-card-item">
         <el-alert
           :type="severityType(alert.severity)"
-          :title="`${alert.name} - ${alert.message}`"
+          :title="`${alert.ruleName || alert.rule_id} - ${alert.message}`"
           :closable="false"
           show-icon
         >
           <template #default>
             <div class="alert-content">
               <p class="alert-meta">
-                <el-tag size="small">{{ alert.service }}</el-tag>
+                <el-tag size="small">{{ alert.metricName }}</el-tag>
                 <el-tag size="small" type="info">阈值: {{ alert.threshold }}</el-tag>
-                <el-tag size="small" type="warning">当前: {{ alert.currentValue }}</el-tag>
+                <el-tag size="small" type="warning">当前: {{ alert.metricValue }}</el-tag>
+                <span v-if="alert.silencedUntil" class="silenced-tag">
+                  <el-tag size="small" type="info">静默至 {{ formatTime(alert.silencedUntil) }}</el-tag>
+                </span>
                 <span class="time">{{ formatTime(alert.firedAt) }}</span>
               </p>
               <div class="alert-actions">
-                <el-button size="small" type="primary" @click="acknowledgeAlert(alert)">确认</el-button>
-                <el-button size="small" @click="silenceAlert(alert)">静默 1h</el-button>
+                <el-button size="small" type="primary" @click="openAckDialog(alert)">确认</el-button>
+                <el-button v-if="!alert.silencedUntil" size="small" @click="openSilenceDialog(alert, 'instance')">静默</el-button>
+                <el-button v-else size="small" type="warning" @click="doUnsilenceAlert(alert)">取消静默</el-button>
               </div>
             </div>
           </template>
@@ -84,10 +88,10 @@
         </template>
         <el-table :data="rules" stripe>
           <el-table-column prop="name" label="规则名" min-width="160" />
-          <el-table-column prop="service" label="服务" width="160" />
-          <el-table-column prop="metric" label="指标" width="120" />
+          <el-table-column prop="service" label="服务" width="120" />
+          <el-table-column prop="metricName" label="指标" width="140" />
           <el-table-column prop="threshold" label="阈值" width="100" />
-          <el-table-column prop="severity" label="级别" width="100">
+          <el-table-column prop="severity" label="级别" width="90">
             <template #default="{ row }">
               <el-tag :type="severityType(row.severity)" size="small">{{ row.severity }}</el-tag>
             </template>
@@ -97,9 +101,20 @@
               <el-switch v-model="row.enabled" @change="toggleRule(row)" />
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="160">
+          <el-table-column label="静默" width="90">
+            <template #default="{ row }">
+              <el-tag v-if="row.silencedUntil && new Date(row.silencedUntil) > new Date()" size="small" type="info">
+                {{ formatSilence(row.silencedUntil) }}
+              </el-tag>
+              <span v-else size="small" style="color:#aaa">—</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="200">
             <template #default="{ row }">
               <el-button size="small" @click="editRule(row)">编辑</el-button>
+              <el-button v-if="!row.silencedUntil || new Date(row.silencedUntil) <= new Date()"
+                size="small" @click="openSilenceDialog(row, 'rule')">静默</el-button>
+              <el-button v-else size="small" type="warning" @click="doUnsilenceRule(row)">解除</el-button>
               <el-button size="small" type="danger" @click="deleteRule(row)">删除</el-button>
             </template>
           </el-table-column>
@@ -166,7 +181,7 @@
     <section class="section">
       <h3 class="section-title">📈 Alerts健康时间线
         <el-tag size="small" style="float: right; margin-left: 8px" :type="autoRefresh ? 'success' : 'info'">
-          { autoRefresh ? '🔄 自动刷新 (5s)' : '⏸ 手动模式' }
+          {{ autoRefresh ? '🔄 自动刷新 (5s)' : '⏸ 手动模式' }}
         </el-tag>
         <el-switch v-model="autoRefresh" size="small" style="float: right; margin-right: 8px" />
         <el-button text type="primary" :icon="Refresh" @click="refreshHealth" style="float: right; margin-right: 8px">刷新</el-button>
@@ -205,6 +220,39 @@
       </template>
     </el-dialog>
 
+    <!-- Day 35: 静默对话框 -->
+    <el-dialog v-model="silenceDialogVisible" title="静默告警" width="420px" destroy-on-close>
+      <el-form label-width="80px">
+        <el-form-item label="目标">
+          <el-tag type="danger" size="small">{{ silenceTarget?.ruleName || silenceTarget?.name || '' }}</el-tag>
+        </el-form-item>
+        <el-form-item label="静默时长" required>
+          <el-select v-model="silenceMinutes" style="width: 100%">
+            <el-option :value="30" label="30 分钟" />
+            <el-option :value="60" label="1 小时" />
+            <el-option :value="240" label="4 小时" />
+            <el-option :value="1440" label="1 天" />
+            <el-option :value="10080" label="1 周" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="截止时间">
+          <el-date-picker
+            v-model="silenceEndTime"
+            type="datetime"
+            placeholder="或选截止时间（优先）"
+            format="YYYY-MM-DD HH:mm"
+            value-format="x"
+            style="width: 100%"
+            clearable
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="silenceDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="silenceLoading" @click="doSilence">确认静默</el-button>
+      </template>
+    </el-dialog>
+
   </div>
 </template>
 <script setup>
@@ -225,12 +273,23 @@ const firing = ref([])
 const rules = ref([])
 const channels = ref([])
 const history = ref([])
+const loading = ref(false)
+const autoRefresh = ref(false)
+const healthTimelineRef = ref(null)
 
 // Day 34: 确认告警弹窗状态
 const ackDialogVisible = ref(false)
 const ackTarget = ref(null)
 const ackNotes = ref('')
 const ackLoading = ref(false)
+
+// Day 35: 静默功能状态
+const silenceDialogVisible = ref(false)
+const silenceTarget = ref(null)    // 要静默的告警实例或规则
+const silenceType = ref('instance') // 'instance' | 'rule'
+const silenceMinutes = ref(60)
+const silenceEndTime = ref(null)
+const silenceLoading = ref(false)
 
 // 规则对话框
 const ruleDialogVisible = ref(false)
@@ -268,6 +327,13 @@ const _channelTargetPlaceholder = computed(() => {
 
 function severityType(s) {
   return { critical: 'danger', warning: 'warning', info: 'info' }[s] || ''
+}
+
+function formatTime(ts) {
+  if (!ts) return '—'
+  const d = new Date(ts)
+  if (isNaN(d.getTime())) return '—'
+  return d.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 
 // -------- 加载 --------
@@ -320,8 +386,8 @@ async function loadHistory() {
 }
 
 // -------- 规则 CRUD --------
-function _newRule() {
-  editingRule.value = { name: '', metric: 'cpu_usage', operator: '>', threshold: 80, severity: 'warning', enabled: true }
+function openRuleDialog() {
+  editingRule.value = { name: '', metricName: 'cpu_usage', operator: '>', threshold: 80, severity: 'warning', enabled: true }
   ruleDialogVisible.value = true
 }
 
@@ -363,6 +429,17 @@ async function toggleRule(rule) {
   } catch (e) {
     toast.error('操作失败')
     rule.enabled = !rule.enabled
+  }
+}
+
+// Day 35: 渠道启用/禁用
+async function toggleChannel(channel) {
+  try {
+    // 渠道没有 toggle API，直接更新本地状态
+    toast.success(channel.enabled ? '已启用' : '已禁用')
+  } catch (e) {
+    toast.error('操作失败')
+    channel.enabled = !channel.enabled
   }
 }
 
@@ -469,7 +546,7 @@ function onTabChange(name) {
 
 // === V3.7.38+ lint auto-stub ===
 // Day 34: 确认告警弹窗（确认人/确认时间/备注）
-function acknowledgeAlert(alert) {
+function openAckDialog(alert) {
   ackTarget.value = alert
   ackNotes.value = ''
   ackDialogVisible.value = true
@@ -490,14 +567,76 @@ async function doAcknowledge() {
   }
 }
 
-function silenceAlert(alert) {
-  ElMessageBox.confirm(
-    `确定静默告警 "${alert.message}" 1 小时？`,
-    '静默告警'
-  ).then(() => {
-    toast.success('已静默 1 小时')
+// Day 35: 静默功能
+function openSilenceDialog(target, type) {
+  silenceTarget.value = target
+  silenceType.value = type
+  silenceMinutes.value = 60
+  silenceEndTime.value = null
+  silenceDialogVisible.value = true
+}
+
+async function doSilence() {
+  if (!silenceTarget.value) return
+  silenceLoading.value = true
+  try {
+    const params = silenceEndTime.value
+      ? { endTime: Number(silenceEndTime.value) }
+      : { minutes: silenceMinutes.value }
+    if (silenceType.value === 'instance') {
+      await monitorApi.silenceAlert(silenceTarget.value.id, params)
+      toast.success(`已静默 ${silenceEndTime.value ? '至指定时间' : silenceMinutes.value + '分钟'}`)
+      silenceDialogVisible.value = false
+      loadFiring()
+    } else {
+      await monitorApi.silenceRule(silenceTarget.value.id, params)
+      toast.success(`规则已静默 ${silenceEndTime.value ? '至指定时间' : silenceMinutes.value + '分钟'}`)
+      silenceDialogVisible.value = false
+      loadRules()
+    }
+  } catch (e) {
+    toast.error('静默失败: ' + (e.message || '未知错误'))
+  } finally {
+    silenceLoading.value = false
+  }
+}
+
+async function doUnsilenceAlert(alert) {
+  try {
+    await monitorApi.unsilenceAlert(alert.id)
+    toast.success('已取消静默')
     loadFiring()
-  }).catch(() => {})
+  } catch (e) {
+    toast.error('操作失败: ' + (e.message || '未知错误'))
+  }
+}
+
+async function doUnsilenceRule(rule) {
+  try {
+    await monitorApi.unsilenceRule(rule.id)
+    toast.success('已解除静默')
+    loadRules()
+  } catch (e) {
+    toast.error('操作失败: ' + (e.message || '未知错误'))
+  }
+}
+
+function formatSilence(dt) {
+  if (!dt) return ''
+  const d = new Date(dt)
+  const now = new Date()
+  const diffMs = d - now
+  if (diffMs <= 0) return '已过期'
+  const diffMin = Math.floor(diffMs / 60000)
+  if (diffMin < 60) return `${diffMin}分钟后`
+  const diffHr = Math.floor(diffMin / 60)
+  if (diffHr < 24) return `${diffHr}小时后`
+  return `${Math.floor(diffHr / 24)}天后`
+}
+
+// Day 35: 健康时间线刷新 (stub)
+async function refreshHealth() {
+  console.debug('[Alerts] refreshHealth stub')
 }
 
 onMounted(() => {

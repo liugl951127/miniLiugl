@@ -27,7 +27,7 @@
       <div class="msg-meta">
         <span class="msg-role">{{ roleLabel }}</span>
         <span class="msg-time">{{ timeStr }}</span>
-        <span v-if="streaming" class="msg-status">
+        <span v-if="streaming" class="msg-status" :data-streaming="String(streaming)">
           <el-icon class="is-loading"><Loading /></el-icon>
           生成中...
         </span>
@@ -230,6 +230,14 @@ function previewImage(url) {
 .msg-role { font-weight: 600; color: #374151; }
 .msg-time { color: #9ca3af; }
 .msg-status { display: inline-flex; align-items: center; gap: 2px; color: #6366f1; }
+/* Day 35: 流式状态柔和脉冲 */
+.msg-status[data-streaming="true"] {
+  animation: status-pulse 2s ease-in-out infinite;
+}
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
 .msg-status-error { color: #ef4444; }
 .is-loading { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -274,13 +282,19 @@ function previewImage(url) {
   0%, 80%, 100% { transform: scale(0); }
   40% { transform: scale(1); }
 }
+/* Day 35: 优化打字光标 - 更平滑 + 渐变色 */
 .typing-cursor {
   display: inline-block;
-  color: #6366f1;
-  animation: blink 1s infinite;
-  font-weight: bold;
+  color: #818cf8;
+  font-size: 1.2em;
+  animation: cursor-blink 0.8s ease-in-out infinite;
+  text-shadow: 0 0 6px rgba(99, 102, 241, 0.4);
+  margin-left: 1px;
 }
-@keyframes blink { 50% { opacity: 0; } }
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
 
 .msg-tools {
   margin-top: 8px;

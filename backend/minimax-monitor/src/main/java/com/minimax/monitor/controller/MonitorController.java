@@ -12,6 +12,7 @@ import com.minimax.monitor.mapper.AlertEventMapper;
 import com.minimax.monitor.entity.AlertRule;
 import com.minimax.monitor.entity.MetricSnapshot;
 import com.minimax.monitor.health.HealthDetailService;
+import com.minimax.monitor.mapper.AlertRuleMapper;
 import com.minimax.monitor.service.AlertChannelService;
 import com.minimax.monitor.service.AlertRcaService;
 import com.minimax.monitor.service.AlertRcaService.RcaResult;
@@ -81,6 +82,7 @@ public class MonitorController {
     private final AlertNotifierManager notifierManager;
     private final AlertStreamRegistry alertStreamRegistry;
     private final AlertEventMapper alertEventMapper;
+    private final AlertRuleMapper ruleMapper;
     private final AlertRcaService rcaService;
     private final LogAnomalyDetector anomalyDetector;
 
@@ -407,6 +409,107 @@ public class MonitorController {
         }
         alertEventMapper.updateById(e);
         log.info("[monitor] alert {} acked by {}", id, e.getAckedBy());
+        return Result.ok(true);
+    }
+
+    // ---------- Day 35: 静默功能 ----------
+
+    /**
+     * 静默告警事件 (实例级, 防止同一 rule 重复触发).
+     * @param id 告警 ID
+     * @param body minutes=静默时长(分钟), 默认 60; 或 endTime=截止时间戳(ms)
+     */
+    @Operation(summary = "静默告警事件 (Day 35)")
+    @PostMapping("/alerts/{id}/silence")
+    public Result<Boolean> silenceAlert(@PathVariable Long id,
+                                        @RequestBody(required = false) Map<String, Object> body) {
+        log.info("[monitor] silence alert id={} body={}", id, body);
+        AlertEvent e = alertEventMapper.selectById(id);
+        if (e == null) {
+            return Result.fail("告警事件不存在: " + id);
+        }
+        LocalDateTime until;
+        if (body != null && body.get("endTime") != null) {
+            // endTime: 毫秒时间戳
+            long ts = ((Number) body.get("endTime")).longValue();
+            until = java.time.LocalDateTime.ofInstant(
+                    java.time.Instant.ofEpochMilli(ts),
+                    java.time.ZoneId.systemDefault());
+        } else {
+            int minutes = 60;
+            if (body != null && body.get("minutes") != null) {
+                minutes = ((Number) body.get("minutes")).intValue();
+            }
+            until = java.time.LocalDateTime.now().plusMinutes(minutes);
+        }
+        e.setSilencedUntil(until);
+        alertEventMapper.updateById(e);
+        log.info("[monitor] alert {} silenced until {}", id, until);
+        return Result.ok(true);
+    }
+
+    /**
+     * 取消静默告警事件.
+     */
+    @Operation(summary = "取消静默告警事件 (Day 35)")
+    @PostMapping("/alerts/{id}/unsilence")
+    public Result<Boolean> unsilenceAlert(@PathVariable Long id) {
+        log.info("[monitor] unsilence alert id={}", id);
+        AlertEvent e = alertEventMapper.selectById(id);
+        if (e == null) {
+            return Result.fail("告警事件不存在: " + id);
+        }
+        e.setSilencedUntil(null);
+        alertEventMapper.updateById(e);
+        return Result.ok(true);
+    }
+
+    /**
+     * 静默告警规则 (规则级, 期间内该规则所有告警不触发).
+     * @param id 规则 ID
+     * @param body minutes=静默时长(分钟), 默认 60; 或 endTime=截止时间戳(ms)
+     */
+    @Operation(summary = "静默告警规则 (Day 35)")
+    @PostMapping("/alerts/rules/{id}/silence")
+    public Result<Boolean> silenceRule(@PathVariable("id") Long id,
+                                        @RequestBody(required = false) Map<String, Object> body) {
+        log.info("[monitor] silence rule id={} body={}", id, body);
+        AlertRule r = ruleMapper.selectById(id);
+        if (r == null) {
+            return Result.fail("告警规则不存在: " + id);
+        }
+        LocalDateTime until;
+        if (body != null && body.get("endTime") != null) {
+            long ts = ((Number) body.get("endTime")).longValue();
+            until = java.time.LocalDateTime.ofInstant(
+                    java.time.Instant.ofEpochMilli(ts),
+                    java.time.ZoneId.systemDefault());
+        } else {
+            int minutes = 60;
+            if (body != null && body.get("minutes") != null) {
+                minutes = ((Number) body.get("minutes")).intValue();
+            }
+            until = java.time.LocalDateTime.now().plusMinutes(minutes);
+        }
+        r.setSilencedUntil(until);
+        ruleMapper.updateById(r);
+        log.info("[monitor] rule {} silenced until {}", id, until);
+        return Result.ok(true);
+    }
+
+    /**
+     * 取消静默告警规则.
+     */
+    @Operation(summary = "取消静默告警规则 (Day 35)")
+    @PostMapping("/alerts/rules/{id}/unsilence")
+    public Result<Boolean> unsilenceRule(@PathVariable("id") Long id) {
+        log.info("[monitor] unsilence rule id={}", id);
+        AlertRule r = ruleMapper.selectById(id);
+        if (r == null) {
+            return Result.fail("告警规则不存在: " + id);
+        }
+        r.setSilencedUntil(null);
+        ruleMapper.updateById(r);
         return Result.ok(true);
     }
 

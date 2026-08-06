@@ -22,6 +22,7 @@ public class AlertRule {
     private Integer enabled;
     private String tags;
     private String notifyChannel;     // 兼容旧字段 (逗号分隔 ID)
+    private LocalDateTime silencedUntil; // 静默截止时间 (Day 35)
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

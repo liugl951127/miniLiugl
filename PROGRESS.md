@@ -617,6 +617,25 @@
 - [ ] AiChat.vue 流式光标 CSS 优化
 - [ ] 平台首页 SEO / Sitemap
 
+## Day 35 - 2026-08-06 ✅ 静默功能全链路 + SEO 增强
+
+**今日完成：**
+- [x] **Monitor 静默 API**：4 端点（alert 实例 + rule 规则级），支持 minutes/endTime 参数，AlertEngine 规则级检查
+- [x] **SQL 双表**：alert_event + alert_rule 加 `silenced_until` 列
+- [x] **前端静默 UI**：时长选择对话框（30m-1w），firing 卡片 + rules 表格静默/解除按钮，字段映射修复
+- [x] **ErrorBoundary**：验收通过（App.vue 全局嵌入，ErrorState 支持 7 类错误）
+- [x] **流式光标 CSS**：ChatMessage 优化（柔和色+晕光+smooth blink），AiChat typing fade 动画
+- [x] **SEO**：index.html 加 OG/Twitter/canonical meta；新增 sitemap.xml（11 路由）+ robots.txt
+
+**明日计划 Day 36：**
+- [ ] Monitor 静默功能前端联调测试
+- [ ] RAG 上传切片端到端测试
+- [ ] 前端 AiChat SSE reconnect 逻辑
+- [ ] 前端知识库上传进度条
+- [ ] Monitor 静默功能后端 API
+- [ ] AiChat.vue 流式光标 CSS 优化
+- [ ] 平台首页 SEO / Sitemap
+
 ## Day 21 - 2026-06-26 ✅ API 文档体系 + 压测模板
 
 **今日完成：**

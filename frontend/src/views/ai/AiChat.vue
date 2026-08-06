@@ -468,4 +468,18 @@ function _sendQuickAction(label) {
   max-height: 80px;
   overflow: auto;
 }
+/* Day 35: 优化流式加载态 */
+.typing {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  color: #6366f1;
+  font-size: 13px;
+  animation: typing-fade 1.5s ease-in-out infinite;
+}
+@keyframes typing-fade {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
 </style>

@@ -1466,6 +1466,7 @@ CREATE TABLE IF NOT EXISTS `alert_event` (
     `acked_by` BIGINT DEFAULT 0 COMMENT 'acked_by(acked_by)',
     `notes` VARCHAR(500) DEFAULT NULL COMMENT 'notes(notes)',
     `duration` BIGINT DEFAULT 0 COMMENT 'duration(duration)',
+    `silenced_until` TIMESTAMP DEFAULT NULL COMMENT '静默截止时间(silenced_until, Day 35)',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='alert_event (auto-generated V3.5.5)';
 
@@ -1484,6 +1485,7 @@ CREATE TABLE IF NOT EXISTS `alert_rule` (
     `enabled` INT DEFAULT 0 COMMENT '是否启用(enabled)',
     `tags` VARCHAR(255) DEFAULT NULL COMMENT 'tags(tags)',
     `notify_channel` VARCHAR(255) DEFAULT NULL COMMENT 'notify_channel(notify_channel)',
+    `silenced_until` TIMESTAMP DEFAULT NULL COMMENT '静默截止时间(silenced_until, Day 35)',
     `created_at` TIMESTAMP DEFAULT NULL COMMENT 'created_at(created_at)',
     `updated_at` TIMESTAMP DEFAULT NULL COMMENT 'updated_at(updated_at)',
     PRIMARY KEY (`id`)

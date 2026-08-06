@@ -59,6 +59,12 @@ public class AlertEngine {
     }
 
     public void evaluateRule(AlertRule r) {
+        // Day 35: 规则级静默检查
+        if (r.getSilencedUntil() != null && r.getSilencedUntil().isAfter(LocalDateTime.now())) {
+            log.debug("[Alert] rule {} is silenced until {}, skip evaluation", r.getName(), r.getSilencedUntil());
+            return;
+        }
+
         Double v = readMetric(r.getMetricName(), r.getService());
         if (v == null) return;
 
@@ -279,6 +285,11 @@ public class AlertEngine {
      * 与普通规则告警共享冷却机制，防止风暴。
      */
     private void fireAnomalyAlert(AlertRule r, Double value, AnomalyResult ar) {
+        // Day 35: 规则级静默检查
+        if (r.getSilencedUntil() != null && r.getSilencedUntil().isAfter(LocalDateTime.now())) {
+            log.debug("[Anomaly] rule {} is silenced, skip", r.getName());
+            return;
+        }
         // 复用规则的冷却检测（通过 metricName + service 找最新事件）
         List<AlertEvent> recent = eventMapper.selectRecent(10);
         AlertEvent latestSame = recent.stream()

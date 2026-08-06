@@ -56,6 +56,34 @@ export const toggleAlertRule = (id, enabled) =>
 export const acknowledgeAlert = (id, notes = '') =>
   http.post(`/api/v1/monitor/alerts/${id}/ack`, notes ? { notes } : {})
 
+// ==================== 静默功能 (Day 35) ====================
+
+/**
+ * 静默告警事件
+ * @param {number} id 告警 ID
+ * @param {number} [minutes=60] 静默时长(分钟), 默认 60
+ * @param {number} [endTime] 可选: 截止时间戳(ms), 优先级高于 minutes
+ */
+export const silenceAlert = (id, { minutes = 60, endTime = null } = {}) =>
+  http.post(`/api/v1/monitor/alerts/${id}/silence`, endTime ? { endTime } : { minutes })
+
+/** 取消静默告警事件 */
+export const unsilenceAlert = (id) =>
+  http.post(`/api/v1/monitor/alerts/${id}/unsilence`)
+
+/**
+ * 静默告警规则
+ * @param {number} id 规则 ID
+ * @param {number} [minutes=60] 静默时长(分钟), 默认 60
+ * @param {number} [endTime] 可选: 截止时间戳(ms)
+ */
+export const silenceRule = (id, { minutes = 60, endTime = null } = {}) =>
+  http.post(`/api/v1/monitor/alerts/rules/${id}/silence`, endTime ? { endTime } : { minutes })
+
+/** 取消静默告警规则 */
+export const unsilenceRule = (id) =>
+  http.post(`/api/v1/monitor/alerts/rules/${id}/unsilence`)
+
 /** 通知渠道列表 */
 export const listAlertChannels = () => http.get('/api/v1/monitor/alerts/channels')
 
@@ -98,7 +126,9 @@ const monitorApi = {
   getMetrics, getMetricsSnapshot,
   getFiringAlerts, getAlertSummary,
   listAlertRules, createAlertRule, updateAlertRule, deleteAlertRule, toggleAlertRule,
-  acknowledgeAlert, listAlertChannels, createAlertChannel, deleteAlertChannel,
+  acknowledgeAlert, silenceAlert, unsilenceAlert,
+  silenceRule, unsilenceRule,
+  listAlertChannels, createAlertChannel, deleteAlertChannel,
   testAlertChannel, getAlertHistory,
   getAuditLogs, getAuditByUser, getAuditByDay, exportAuditLogs
 }
