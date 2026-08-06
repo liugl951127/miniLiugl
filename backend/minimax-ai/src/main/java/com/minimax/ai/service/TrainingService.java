@@ -107,18 +107,22 @@ public class TrainingService {
         Map<Integer, Map<Integer, Integer>> statsMap = trainer.buildBigramStats(corpus);
         generator.setBigramStats(statsMap);
 
-        // 4. 训练 Transformer (V5.4+ 真训, 之前是 stub)
+        // 4. 训练 Transformer (V5.4+ 真训, 之前是 stub; V6.0+ 加到 5 epoch, 学习率衰减)
         log.info("开始训练 Transformer...");
-        for (int epoch = 0; epoch < 3; epoch++) {
-            log.info("Epoch {}/3", epoch + 1);
+        int totalEpochs = 5;  // V6.0: 3 → 5 epochs (数据从 372 → 1003 行, 训练更充分)
+        double baseLr = 0.01;
+        for (int epoch = 0; epoch < totalEpochs; epoch++) {
+            // 学习率衰减: 0.95^epoch
+            double lr = baseLr * Math.pow(0.95, epoch);
+            log.info("Epoch {}/{} (lr={})", epoch + 1, totalEpochs, String.format("%.5f", lr));
             try {
-                double loss = trainer.trainEpoch(corpus, 0.01);
+                double loss = trainer.trainEpoch(corpus, lr);
                 log.info("  Epoch {} loss={}", epoch + 1, String.format("%.4f", loss));
             } catch (Exception e) {
                 log.warn("  Epoch {} 训练异常: {}", epoch + 1, e.getMessage());
             }
         }
-        log.info("Transformer 训练完成 (3 epochs)");
+        log.info("Transformer 训练完成 ({} epochs, {} 行语料)", totalEpochs, corpus.size());
 
         // 5. 保存模型 (暂时不存, 重启重新训练)
         log.info("模型就绪, 词表: {} tokens", tokenizer.getVocabSize());
