@@ -41,6 +41,28 @@ import java.util.concurrent.TimeUnit;
  * <p>3. 累计 chunks 可拼成完整 MIDI (字节拼接)</p>
  */
 @Slf4j
+/**
+ * StreamingMusicGen (V6.1 详细注释版)
+ *
+ * <h2>职责</h2>
+ * 生成服务 - StreamingMusicGen.java
+ *
+ * <h2>核心功能</h2>
+ * <ul>
+ *   <li>提供 StreamingMusicGen 的业务能力</li>
+ *   <li>参与 AI 平台整体架构</li>
+ *   <li>支持 Spring 依赖注入</li>
+ * </ul>
+ *
+ * <h2>依赖</h2>
+ * <ul>
+ *   <li>Spring Framework (自动注入)</li>
+ *   <li>Lombok (简化代码)</li>
+ * </ul>
+ *
+ * @author MiniMax
+ * @since V6.1
+ */
 @Component
 public class StreamingMusicGen {
 

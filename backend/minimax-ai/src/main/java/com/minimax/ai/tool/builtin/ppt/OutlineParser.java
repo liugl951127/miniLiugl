@@ -38,7 +38,29 @@ import java.util.regex.Pattern;
  * </ol>
  *
  * <p>自动检测格式, 统一输出 List&lt;Slide&gt;
+ *//**
+ * OutlineParser (V6.1 详细注释版)
+ *
+ * <h2>职责</h2>
+ * ppt - OutlineParser.java
+ *
+ * <h2>核心功能</h2>
+ * <ul>
+ *   <li>提供 OutlineParser 的业务能力</li>
+ *   <li>参与 AI 平台整体架构</li>
+ *   <li>支持 Spring 依赖注入</li>
+ * </ul>
+ *
+ * <h2>依赖</h2>
+ * <ul>
+ *   <li>Spring Framework (自动注入)</li>
+ *   <li>Lombok (简化代码)</li>
+ * </ul>
+ *
+ * @author MiniMax
+ * @since V6.1
  */
+
 public class OutlineParser {
 
     /** Slide 数据结构 (标题 + 副标题 + 要点) */

@@ -40,6 +40,28 @@ import java.util.Map;
  * 用户说 "做一个 AI 主题的 PPT", 关键词引擎路由到此工具, AI 先自动生成大纲, 再调用本工具渲染
  */
 @Slf4j
+/**
+ * PptGenTool (V6.1 详细注释版)
+ *
+ * <h2>职责</h2>
+ * builtin - PptGenTool.java
+ *
+ * <h2>核心功能</h2>
+ * <ul>
+ *   <li>提供 PptGenTool 的业务能力</li>
+ *   <li>参与 AI 平台整体架构</li>
+ *   <li>支持 Spring 依赖注入</li>
+ * </ul>
+ *
+ * <h2>依赖</h2>
+ * <ul>
+ *   <li>Spring Framework (自动注入)</li>
+ *   <li>Lombok (简化代码)</li>
+ * </ul>
+ *
+ * @author MiniMax
+ * @since V6.1
+ */
 @Component
 public class PptGenTool extends AbstractSimpleTool {
 

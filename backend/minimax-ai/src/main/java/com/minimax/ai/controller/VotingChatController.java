@@ -42,6 +42,28 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/ai/chat")
 @RequiredArgsConstructor
+/**
+ * VotingChatController (V6.1 详细注释版)
+ *
+ * <h2>职责</h2>
+ * REST API 控制器 - VotingChatController.java
+ *
+ * <h2>核心功能</h2>
+ * <ul>
+ *   <li>提供 VotingChatController 的业务能力</li>
+ *   <li>参与 AI 平台整体架构</li>
+ *   <li>支持 Spring 依赖注入</li>
+ * </ul>
+ *
+ * <h2>依赖</h2>
+ * <ul>
+ *   <li>Spring Framework (自动注入)</li>
+ *   <li>Lombok (简化代码)</li>
+ * </ul>
+ *
+ * @author MiniMax
+ * @since V6.1
+ */
 @Tag(name = "AI 投票对话", description = "多模型投票路由 — 高置信走单模型，低置信自动触发多模型投票")
 public class VotingChatController {
 

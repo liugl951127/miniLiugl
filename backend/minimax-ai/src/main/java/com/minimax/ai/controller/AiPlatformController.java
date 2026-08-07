@@ -38,21 +38,6 @@ import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-/**
- * AI 平台统一接口 (V2.7)
- *
- * 提供前端调用的所有 AI 能力:
- *   - 报表生成 (chart/render)
- *   - 音乐生成 (music/generate)
- *   - 动画生成 (animation/*)
- *   - 视频合成 (video/compose)
- *   - 数据看板 (dashboard/render)
- *   - 关键词路由 (route)
- *   - NL2Chart (nl2chart)
- *   - 代码生成 (codegen)
- *
- * 所有接口统一前缀 /api/ai
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/ai")

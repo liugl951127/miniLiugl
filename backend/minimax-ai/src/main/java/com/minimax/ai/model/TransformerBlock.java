@@ -68,7 +68,29 @@ import java.util.Random;
  *   - FFN: 64*256 + 256*64 + 256 + 64 = 24896
  *   - LayerNorm: 2 * (64+64) = 256
  *   - Total: ~41792 参数 / block
+ *//**
+ * TransformerBlock (V6.1 详细注释版)
+ *
+ * <h2>职责</h2>
+ * ML 模型 - TransformerBlock.java
+ *
+ * <h2>核心功能</h2>
+ * <ul>
+ *   <li>提供 TransformerBlock 的业务能力</li>
+ *   <li>参与 AI 平台整体架构</li>
+ *   <li>支持 Spring 依赖注入</li>
+ * </ul>
+ *
+ * <h2>依赖</h2>
+ * <ul>
+ *   <li>Spring Framework (自动注入)</li>
+ *   <li>Lombok (简化代码)</li>
+ * </ul>
+ *
+ * @author MiniMax
+ * @since V6.1
  */
+
 public class TransformerBlock {
 
     // ============== 超参数 ==============

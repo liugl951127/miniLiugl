@@ -49,6 +49,28 @@ import java.util.Map;
  */
 @Slf4j  // Lombok: 自动生成 log 字段 (log.info/debug/warn/error)
 @Component  // Spring 注解: 注册为 Bean, 可注入到其他 Service
+/**
+ * SimpleEmbedding (V6.1 详细注释版)
+ *
+ * <h2>职责</h2>
+ * Embedding 服务 - SimpleEmbedding.java
+ *
+ * <h2>核心功能</h2>
+ * <ul>
+ *   <li>提供 SimpleEmbedding 的业务能力</li>
+ *   <li>参与 AI 平台整体架构</li>
+ *   <li>支持 Spring 依赖注入</li>
+ * </ul>
+ *
+ * <h2>依赖</h2>
+ * <ul>
+ *   <li>Spring Framework (自动注入)</li>
+ *   <li>Lombok (简化代码)</li>
+ * </ul>
+ *
+ * @author MiniMax
+ * @since V6.1
+ */
 @RequiredArgsConstructor  // Lombok: 自动生成构造函数注入 final 字段
 public class SimpleEmbedding {
 
