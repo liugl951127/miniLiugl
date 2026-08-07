@@ -39,6 +39,8 @@ pinia.use(piniaPluginPersistedstate)
 app.use(pinia)
 app.use(router)
 app.use(ElementPlus, { locale: zhCn, size: 'default' })
+// V6.2+ 终极修复: 先初始化 i18n 实例, 再 use
+initI18n()
 app.use(i18n)
 
 // V2.7.9: 注册权限指令
