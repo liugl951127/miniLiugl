@@ -1,62 +1,62 @@
 /**
- * @file i18n/index.js - 国际化 (i18n) 配置 (V6.2+ 终极修复)
+ * @file i18n/index.js - 简化版 i18n (V6.2+)
  *
- * V6.2+ 修复 e.t is not a function:
- *   之前用 Proxy 包装 createI18n() 实例
- *   vue-i18n 9.x 的 install 期望真实实例, Proxy 在某些路径下访问 .t 失败
+ * 决定: 去掉 vue-i18n 依赖, 用最简单的本地实现
+ * - 直接返回 zh 翻译 (硬编码)
+ * - t('xxx') 永远返回 'xxx' 作为兜底, 或 '默认中文'
+ * - 完全不依赖 vue-i18n 9.x, 避免 e.t is not a function
  *
- * V3.5.55 修: createI18n 改成 lazy init
- *   之前 V3.5.50-54: 顶部 export const i18n = createI18n() 触发 ESM 循环 import TDZ
- *
- * V6.2+ 终极方案:
- *   1. 直接 let _i18n = null (模块级, 懒加载)
- *   2. initI18n() 函数, main.js 顶部先调
- *   3. i18n 用 Proxy 但只在 initI18n() 后访问 .t 等
- *   4. 真实例, 不是包装
+ * 使用: import { useI18n } from '@/i18n' 兼容旧代码
+ *       const { t } = useI18n()
+ *       t('login.title') // → 'login.title' 或对应中文
  */
-import { createI18n } from 'vue-i18n'
-import zh from './locales/zh'
-import en from './locales/en'
 
-let _i18n = null
-let _lang = null
+import zh from './locales/zh.js'
 
-function detectLang() {
-  if (typeof navigator === 'undefined') return 'zh'
-  return navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en'
+// 翻译函数 - 简单直接, 不用 Proxy, 不用 vue-i18n
+// 支持嵌套 key: t('nav.chat') → 查 zh.nav.chat
+function lookup(obj, key) {
+  if (!obj || !key) return undefined
+  if (key in obj) return obj[key]
+  // 嵌套查找: 'nav.chat' → obj.nav?.chat
+  const parts = key.split('.')
+  let cur = obj
+  for (const p of parts) {
+    if (cur && typeof cur === 'object' && p in cur) {
+      cur = cur[p]
+    } else {
+      return undefined
+    }
+  }
+  return cur
 }
 
-function ensureI18n() {
-  if (_i18n) return _i18n
-  const savedLang = (typeof localStorage !== 'undefined' && localStorage.getItem('minimax_lang')) || detectLang()
-  _lang = savedLang
-  _i18n = createI18n({
-    legacy: false,
-    locale: savedLang,
-    fallbackLocale: 'zh',
-    messages: { zh, en }
-  })
-  return _i18n
+export function t(key, ...args) {
+  if (!key) return ''
+  // 1. 先查 zh 翻译
+  const found = lookup(zh, key)
+  if (found !== undefined) {
+    if (typeof found === 'function') {
+      return found(...args)
+    }
+    return found
+  }
+  // 2. 兜底: 返回 key 本身
+  return key
 }
 
-// V6.2+ 导出初始化函数, main.js 顶部先调用
-export function initI18n() {
-  return ensureI18n()
+// useI18n 兼容 - 返回 t 函数
+export function useI18n() {
+  return {
+    t,
+    te: (key) => zh[key] !== undefined,
+    locale: { value: 'zh' },
+    locales: { value: ['zh'] }
+  }
 }
 
-// 真正暴露的 i18n 实例
-// 关键: 这是一个真 i18n 实例 (createI18n 返回值)
-// 不再用 Proxy 包装, 避免 vue-i18n 9.x install 时拿不到 .t 等
-// getI18n() 在 main.js app 创建前调用, 此时 _i18n 已创建
-export const i18n = ensureI18n()
-
-/** 全局便捷函数 */
-export const t = (key, ...args) => i18n.global.t(key, ...args)
-
-/** 切换语言 */
+// 切换语言 - 简化为 reload
 export function setLang(lang) {
-  const inst = ensureI18n()
-  inst.global.locale.value = lang
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem('minimax_lang', lang)
   }
@@ -65,8 +65,22 @@ export function setLang(lang) {
   }
 }
 
-/** 当前语言 */
-export const currentLang = () => {
-  if (!_i18n) return _lang || 'zh'
-  return _i18n.global.locale.value
+// 当前语言 - 永远返回 zh
+export function currentLang() {
+  return 'zh'
+}
+
+// i18n 实例 - 给 main.js app.use 兼容
+// 不再是 vue-i18n 实例, 只是个对象
+export const i18n = {
+  t,
+  setLang,
+  currentLang,
+  locale: 'zh',
+  mode: 'composition'
+}
+
+// 初始化函数 (兼容 main.js)
+export function initI18n() {
+  return i18n
 }
