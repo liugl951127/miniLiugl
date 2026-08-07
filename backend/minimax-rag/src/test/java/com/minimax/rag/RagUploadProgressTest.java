@@ -111,12 +111,12 @@ class RagUploadProgressTest {
 
         // 验证所有 chunk 有 charCount 和 content
         for (TextChunker.Chunk c : tiny) {
-            assertTrue(c.charCount > 0);
-            assertNotNull(c.content);
+            assertTrue(c.charCount() > 0);
+            assertNotNull(c.content());
         }
         for (TextChunker.Chunk c : medium) {
-            assertTrue(c.charCount > 0);
-            assertNotNull(c.content);
+            assertTrue(c.charCount() > 0);
+            assertNotNull(c.content());
         }
 
     }
