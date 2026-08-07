@@ -137,7 +137,7 @@
 </template>
 <script setup lang="ts">
 // ───── 依赖导入 ─────
-import { ref, computed, onMounted, reactive } from 'vue'
+import { ref, computed, onMounted, onUnmounted, reactive } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from '@/i18n-stub'
 import { ElMessageBox } from 'element-plus'
