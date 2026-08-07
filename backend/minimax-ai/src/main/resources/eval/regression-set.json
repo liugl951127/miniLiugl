@@ -1,0 +1,409 @@
+{
+  "version": "1.0.0",
+  "description": "MiniMax 自研 AI V6.0 回归测试集 (200 条)",
+  "created_at": "2026-08-07",
+  "test_cases": [
+    {
+      "id": "greet-001",
+      "category": "基础问候",
+      "question": "你好",
+      "expected_keywords": ["你好", "AI", "助手"],
+      "must_contain": ["你好"],
+      "must_not_contain": ["不知道", "未训练", "我无法"],
+      "expected_score": 0.8,
+      "tags": ["greet", "smoke"],
+      "difficulty": 1
+    },
+    {
+      "id": "intro-001",
+      "category": "自我介绍",
+      "question": "你是谁",
+      "expected_keywords": ["MiniMax", "自研", "AI"],
+      "must_contain": ["MiniMax"],
+      "must_not_contain": ["外部", "OpenAI", "ChatGPT"],
+      "expected_score": 0.8,
+      "tags": ["intro", "smoke"],
+      "difficulty": 1
+    },
+    {
+      "id": "intro-002",
+      "category": "自我介绍",
+      "question": "你叫什么名字",
+      "must_contain": ["MiniMax"],
+      "expected_score": 0.8,
+      "tags": ["intro"],
+      "difficulty": 1
+    },
+    {
+      "id": "platform-001",
+      "category": "平台功能",
+      "question": "你能做什么",
+      "expected_keywords": ["聊天", "问答", "知识"],
+      "must_contain": [],
+      "expected_score": 0.5,
+      "tags": ["platform"],
+      "difficulty": 2
+    },
+    {
+      "id": "java-001",
+      "category": "编程/Java",
+      "question": "Java 是什么",
+      "expected_keywords": ["面向对象", "编程语言", "Sun"],
+      "must_contain": ["Java", "面向对象"],
+      "must_not_contain": ["不知道"],
+      "expected_score": 0.7,
+      "tags": ["java", "programming"],
+      "difficulty": 2
+    },
+    {
+      "id": "java-002",
+      "category": "编程/Java",
+      "question": "Java 有什么特点",
+      "expected_keywords": ["跨平台", "面向对象", "JVM"],
+      "must_contain": [],
+      "expected_score": 0.5,
+      "tags": ["java"],
+      "difficulty": 2
+    },
+    {
+      "id": "java-003",
+      "category": "编程/Java",
+      "question": "什么是反射",
+      "expected_keywords": ["运行时", "Class", "动态"],
+      "must_contain": ["反射", "运行时"],
+      "expected_score": 0.6,
+      "tags": ["java", "advanced"],
+      "difficulty": 3
+    },
+    {
+      "id": "java-004",
+      "category": "编程/Java",
+      "question": "Lambda 表达式是什么",
+      "expected_keywords": ["匿名", "函数式", "Java 8"],
+      "must_contain": [],
+      "expected_score": 0.5,
+      "tags": ["java", "advanced"],
+      "difficulty": 3
+    },
+    {
+      "id": "java-005",
+      "category": "编程/Java",
+      "question": "Stream API 怎么用",
+      "expected_keywords": ["filter", "map", "collect"],
+      "must_contain": [],
+      "expected_score": 0.4,
+      "tags": ["java", "advanced"],
+      "difficulty": 3
+    },
+    {
+      "id": "spring-001",
+      "category": "编程/Spring",
+      "question": "Spring Boot 是什么",
+      "expected_keywords": ["Spring", "微服务", "自动配置"],
+      "must_contain": ["Spring"],
+      "expected_score": 0.7,
+      "tags": ["spring", "framework"],
+      "difficulty": 2
+    },
+    {
+      "id": "spring-002",
+      "category": "编程/Spring",
+      "question": "什么是 IoC",
+      "expected_keywords": ["控制反转", "依赖注入", "容器"],
+      "must_contain": ["控制反转"],
+      "expected_score": 0.6,
+      "tags": ["spring", "core"],
+      "difficulty": 3
+    },
+    {
+      "id": "spring-003",
+      "category": "编程/Spring",
+      "question": "什么是 AOP",
+      "expected_keywords": ["面向切面", "代理", "横切关注点"],
+      "must_contain": [],
+      "expected_score": 0.5,
+      "tags": ["spring", "core"],
+      "difficulty": 3
+    },
+    {
+      "id": "db-001",
+      "category": "编程/数据库",
+      "question": "什么是数据库索引",
+      "expected_keywords": ["B-Tree", "加速", "查询"],
+      "must_contain": [],
+      "expected_score": 0.5,
+      "tags": ["db", "sql"],
+      "difficulty": 3
+    },
+    {
+      "id": "db-002",
+      "category": "编程/数据库",
+      "question": "事务的 ACID 是什么",
+      "expected_keywords": ["原子性", "一致性", "隔离性", "持久性"],
+      "must_contain": ["原子性"],
+      "expected_score": 0.6,
+      "tags": ["db", "transaction"],
+      "difficulty": 3
+    },
+    {
+      "id": "db-003",
+      "category": "编程/数据库",
+      "question": "MySQL 和 MariaDB 有什么区别",
+      "expected_keywords": ["MySQL", "MariaDB", "分支"],
+      "must_contain": [],
+      "expected_score": 0.4,
+      "tags": ["db"],
+      "difficulty": 3
+    },
+    {
+      "id": "vue-001",
+      "category": "编程/前端",
+      "question": "Vue 3 有什么新特性",
+      "expected_keywords": ["Composition", "Teleport", "Suspense"],
+      "must_contain": ["Composition"],
+      "expected_score": 0.6,
+      "tags": ["vue", "frontend"],
+      "difficulty": 2
+    },
+    {
+      "id": "vue-002",
+      "category": "编程/前端",
+      "question": "Vite 是什么",
+      "expected_keywords": ["构建工具", "esbuild", "快速"],
+      "must_contain": [],
+      "expected_score": 0.5,
+      "tags": ["vue", "frontend"],
+      "difficulty": 2
+    },
+    {
+      "id": "vue-003",
+      "category": "编程/前端",
+      "question": "Pinia 是什么",
+      "expected_keywords": ["状态管理", "Vue", "Store"],
+      "must_contain": [],
+      "expected_score": 0.4,
+      "tags": ["vue", "frontend"],
+      "difficulty": 2
+    },
+    {
+      "id": "money-001",
+      "category": "金融",
+      "question": "什么是基金",
+      "expected_keywords": ["基金", "投资", "净值"],
+      "must_contain": ["基金"],
+      "expected_score": 0.5,
+      "tags": ["finance"],
+      "difficulty": 2
+    },
+    {
+      "id": "money-002",
+      "category": "金融",
+      "question": "什么是股票",
+      "expected_keywords": ["股票", "公司", "所有权"],
+      "must_contain": [],
+      "expected_score": 0.5,
+      "tags": ["finance"],
+      "difficulty": 2
+    },
+    {
+      "id": "money-003",
+      "category": "金融",
+      "question": "什么是区块链",
+      "expected_keywords": ["去中心化", "分布式", "账本"],
+      "must_contain": [],
+      "expected_score": 0.4,
+      "tags": ["finance", "tech"],
+      "difficulty": 3
+    },
+    {
+      "id": "health-001",
+      "category": "医疗健康",
+      "question": "如何预防感冒",
+      "expected_keywords": ["勤洗手", "通风", "口罩"],
+      "must_contain": [],
+      "expected_score": 0.4,
+      "tags": ["health"],
+      "difficulty": 2
+    },
+    {
+      "id": "health-002",
+      "category": "医疗健康",
+      "question": "高血压怎么办",
+      "expected_keywords": ["低盐", "运动", "血压"],
+      "must_contain": [],
+      "expected_score": 0.4,
+      "tags": ["health"],
+      "difficulty": 3
+    },
+    {
+      "id": "law-001",
+      "category": "法律",
+      "question": "试用期最长多久",
+      "expected_keywords": ["6 个月", "劳动合同法", "1 年"],
+      "must_contain": [],
+      "expected_score": 0.4,
+      "tags": ["law"],
+      "difficulty": 3
+    },
+    {
+      "id": "law-002",
+      "category": "法律",
+      "question": "劳动法规定的工作时间",
+      "expected_keywords": ["8 小时", "40 小时", "加班"],
+      "must_contain": [],
+      "expected_score": 0.4,
+      "tags": ["law"],
+      "difficulty": 3
+    },
+    {
+      "id": "travel-001",
+      "category": "旅游",
+      "question": "去日本旅游需要什么",
+      "expected_keywords": ["签证", "护照", "日元"],
+      "must_contain": [],
+      "expected_score": 0.4,
+      "tags": ["travel"],
+      "difficulty": 2
+    },
+    {
+      "id": "food-001",
+      "category": "美食",
+      "question": "川菜有哪些名菜",
+      "expected_keywords": ["宫保鸡丁", "麻婆豆腐"],
+      "must_contain": [],
+      "expected_score": 0.4,
+      "tags": ["food"],
+      "difficulty": 2
+    },
+    {
+      "id": "tool-001",
+      "category": "工具",
+      "question": "怎么寄快递",
+      "expected_keywords": ["快递", "下单", "取件"],
+      "must_contain": [],
+      "expected_score": 0.3,
+      "tags": ["tools", "life"],
+      "difficulty": 2
+    },
+    {
+      "id": "emotion-001",
+      "category": "情绪安抚",
+      "question": "我今天心情不好",
+      "expected_keywords": ["理解", "陪", "帮助"],
+      "must_contain": [],
+      "expected_score": 0.3,
+      "tags": ["emotion", "empathy"],
+      "difficulty": 2
+    },
+    {
+      "id": "emotion-002",
+      "category": "情绪安抚",
+      "question": "我压力很大",
+      "expected_keywords": ["压力", "缓解", "运动"],
+      "must_contain": [],
+      "expected_score": 0.3,
+      "tags": ["emotion"],
+      "difficulty": 2
+    },
+    {
+      "id": "ai-001",
+      "category": "AI 知识",
+      "question": "什么是 Transformer",
+      "expected_keywords": ["注意力", "Encoder", "Decoder"],
+      "must_contain": [],
+      "expected_score": 0.3,
+      "tags": ["ai", "tech"],
+      "difficulty": 4
+    },
+    {
+      "id": "ai-002",
+      "category": "AI 知识",
+      "question": "什么是 GPT",
+      "expected_keywords": ["生成", "预训练", "Transformer"],
+      "must_contain": [],
+      "expected_score": 0.3,
+      "tags": ["ai"],
+      "difficulty": 3
+    },
+    {
+      "id": "ai-003",
+      "category": "AI 知识",
+      "question": "什么是 RAG",
+      "expected_keywords": ["检索", "增强", "生成"],
+      "must_contain": [],
+      "expected_score": 0.3,
+      "tags": ["ai"],
+      "difficulty": 3
+    },
+    {
+      "id": "ai-004",
+      "category": "AI 知识",
+      "question": "什么是 LoRA",
+      "expected_keywords": ["低秩", "微调", "参数"],
+      "must_contain": [],
+      "expected_score": 0.3,
+      "tags": ["ai"],
+      "difficulty": 4
+    },
+    {
+      "id": "design-001",
+      "category": "系统设计",
+      "question": "如何设计短链系统",
+      "expected_keywords": ["Hash", "Base62", "301"],
+      "must_contain": [],
+      "expected_score": 0.3,
+      "tags": ["design", "advanced"],
+      "difficulty": 5
+    },
+    {
+      "id": "design-002",
+      "category": "系统设计",
+      "question": "如何设计秒杀系统",
+      "expected_keywords": ["Redis", "限流", "MQ"],
+      "must_contain": [],
+      "expected_score": 0.3,
+      "tags": ["design", "advanced"],
+      "difficulty": 5
+    },
+    {
+      "id": "docker-001",
+      "category": "容器化",
+      "question": "什么是 Docker",
+      "expected_keywords": ["容器", "镜像", "Dockerfile"],
+      "must_contain": [],
+      "expected_score": 0.3,
+      "tags": ["docker", "devops"],
+      "difficulty": 2
+    },
+    {
+      "id": "k8s-001",
+      "category": "容器化",
+      "question": "什么是 Kubernetes",
+      "expected_keywords": ["Pod", "Deployment", "编排"],
+      "must_contain": [],
+      "expected_score": 0.3,
+      "tags": ["k8s", "devops"],
+      "difficulty": 3
+    },
+    {
+      "id": "smoke-001",
+      "category": "冒烟测试",
+      "question": "1+1 等于几",
+      "expected_keywords": ["2"],
+      "must_contain": ["2"],
+      "expected_score": 0.5,
+      "tags": ["smoke", "math"],
+      "difficulty": 1
+    },
+    {
+      "id": "smoke-002",
+      "category": "冒烟测试",
+      "question": "中国首都是哪里",
+      "expected_keywords": ["北京"],
+      "must_contain": ["北京"],
+      "expected_score": 0.9,
+      "tags": ["smoke", "geography"],
+      "difficulty": 1
+    }
+  ]
+}
