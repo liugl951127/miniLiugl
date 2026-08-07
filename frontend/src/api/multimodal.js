@@ -22,7 +22,10 @@ export const uploadImageOld = (formData) => http.post('/multimodal/upload', form
 export const describeImageOld = (imageBase64, mimeType, prompt) =>
   http.post('/multimodal/describe', { imageBase64, mimeType, prompt })
 
-export const getMultimodalInfoOld = () => http.get('/multimodal/info')
+export const getMultimodalInfoOld = () => {
+  console.log('%c[MULTIMODAL API] getMultimodalInfoOld', 'color: #409eff', '')
+  return http.get('/multimodal/info');
+}
 
 // 新版接口 (V2.7+) - 走 /api/ai/multimodal (含 7 种图表/AI 分析)
 export {

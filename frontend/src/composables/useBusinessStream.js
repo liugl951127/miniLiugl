@@ -75,6 +75,12 @@ export function useBusinessStream() {
     sources.value = []
     errors.value = []
 
+    // V6.2+ 请求日志
+    const startTime = Date.now()
+    console.groupCollapsed(`%c[SSE 请求] POST ${url}`, 'color: #409eff; font-weight: bold')
+    console.log('payload:', payload)
+    console.groupEnd()
+
     try {
       const response = await fetch(url, {
         method: 'POST',
@@ -86,8 +92,22 @@ export function useBusinessStream() {
         signal: signal || sse.abortController?.signal,
       })
 
-      if (!response.ok) throw new Error(`HTTP ${response.status}`)
-      if (!response.body) throw new Error('Response body is null')
+      // V6.2+ HTTP 错误日志
+      if (!response.ok) {
+        const errorMsg = `HTTP ${response.status}: ${response.statusText}`
+        const duration = Date.now() - startTime
+        console.groupCollapsed(`%c[SSE 错误] ${errorMsg} (${duration}ms)`, 'color: #f56c6c; font-weight: bold')
+        console.log('url:', url)
+        console.log('status:', response.status)
+        console.log('statusText:', response.statusText)
+        console.log('duration:', duration + 'ms')
+        console.groupEnd()
+        throw new Error(errorMsg)
+      }
+      if (!response.body) {
+        console.error('[SSE 错误] Response body is null, url=', url)
+        throw new Error('Response body is null')
+      }
 
       const reader = response.body.getReader()
       const decoder = new TextDecoder('utf-8')
@@ -122,6 +142,12 @@ export function useBusinessStream() {
               }
               // V3.7.25+ 业务错误 (code !== 0)
               if (json && typeof json === 'object' && 'code' in json && json.code !== 0) {
+                // V6.2+ 业务错误日志
+                console.groupCollapsed(`%c[SSE 业务错误] code=${json.code}`, 'color: #e6a23c; font-weight: bold')
+                console.log('message:', json.message)
+                console.log('data:', json)
+                console.log('url:', url)
+                console.groupEnd()
                 const err = new Error(json.message || 'SSE 业务错误')
                 err.__result = json
                 errors.value.push(err)
@@ -158,8 +184,19 @@ export function useBusinessStream() {
         }
       }
 
+      // V6.2+ 成功结束日志
+      const totalDuration = Date.now() - startTime
+      console.log(`%c[SSE 完成] ${url} (${totalDuration}ms, ${messages.value.length} chunks)`,
+                  'color: #67c23a; font-weight: bold')
       if (onDone) onDone()
     } catch (e) {
+      // V6.2+ 异常日志
+      const duration = Date.now() - startTime
+      console.groupCollapsed(`%c[SSE 异常] ${e.message} (${duration}ms)`, 'color: #f56c6c; font-weight: bold')
+      console.log('url:', url)
+      console.log('error:', e)
+      console.log('duration:', duration + 'ms')
+      console.groupEnd()
       if (onError) onError(e)
     }
   }

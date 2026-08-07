@@ -106,6 +106,12 @@ export const deleteDoc = (id, ownerId) =>
   http.delete(`/rag/doc/${id}?ownerId=${ownerId}`)
 
 // 检索 + 问答
-export const retrieve = (body) => http.post('/rag/retrieve', body)
+export const retrieve = (body) => {
+  console.log('%c[RAG API] retrieve', 'color: #409eff', body)
+  return http.post('/rag/retrieve', body);
+}
 
-export const ask = (body) => http.post('/rag/ask', body)
+export const ask = (body) => {
+  console.log('%c[RAG API] ask', 'color: #409eff', body)
+  return http.post('/rag/ask', body);
+}

@@ -9,7 +9,10 @@ import { useBusinessStream } from '@/composables/useBusinessStream'
 
 /** 会话管理 */
 export const listSessions = (params) => http.get('/sessions', { params })
-export const createSession = (data) => http.post('/sessions', data)
+export const createSession = (data) => {
+  console.log('%c[SESSION API] createSession', 'color: #409eff', data)
+  return http.post('/sessions', data);
+}
 export const getSession = (id) => http.get(`/sessions/${id}`)
 export const updateSession = (id, data) => http.put(`/sessions/${id}`, data)
 export const deleteSession = (id) => http.delete(`/sessions/${id}`)

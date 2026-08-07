@@ -6,7 +6,10 @@
 import http from './http'
 
 // Runs
-export const listRuns = () => http.get('/tensorboard/runs')
+export const listRuns = () => {
+  console.log('%c[TENSORBOARD API] listRuns', 'color: #409eff', '')
+  return http.get('/tensorboard/runs');
+}
 
 // Tags
 export const listTags = (runId) => http.get(`/tensorboard/runs/${runId}/tags`)
@@ -29,7 +32,10 @@ export const compareRuns = (runIds, tag) =>
   http.post('/tensorboard/runs/compare', { runIds, tag })
 
 // Health
-export const health = () => http.get('/tensorboard/health')
+export const health = () => {
+  console.log('%c[TENSORBOARD API] health', 'color: #409eff', '')
+  return http.get('/tensorboard/health');
+}
 
 // 写入 (供训练回调)
 export const writeScalar = (runId, tag, step, value) =>

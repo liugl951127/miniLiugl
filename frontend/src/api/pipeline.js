@@ -19,10 +19,16 @@ import http from './http'
 // ===== 工作流 CRUD =====
 export const listWorkflows = (params) => http.get('/api/v1/pipeline/workflows', { params })
 export const getWorkflow = (id) => http.get(`/api/v1/pipeline/workflows/${id}`)
-export const createWorkflow = (data) => http.post('/api/v1/pipeline/workflows', data)
+export const createWorkflow = (data) => {
+  console.log('%c[PIPELINE API] createWorkflow', 'color: #409eff', data)
+  return http.post('/api/v1/pipeline/workflows', data);
+}
 export const updateWorkflow = (id, data) => http.put(`/api/v1/pipeline/workflows/${id}`, data)
 export const deleteWorkflow = (id) => http.delete(`/api/v1/pipeline/workflows/${id}`)
-export const validateWorkflow = (data) => http.post('/api/v1/pipeline/workflows/validate', data)
+export const validateWorkflow = (data) => {
+  console.log('%c[PIPELINE API] validateWorkflow', 'color: #409eff', data)
+  return http.post('/api/v1/pipeline/workflows/validate', data);
+}
 
 // ===== 工作流执行 =====
 export const runWorkflow = (id, params) =>

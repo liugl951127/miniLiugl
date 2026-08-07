@@ -6,7 +6,10 @@
 import http from './http'
 
 // ===== 房间 CRUD =====
-export const createRoom = (data) => http.post('/collab/rooms', data)
+export const createRoom = (data) => {
+  console.log('%c[COLLAB API] createRoom', 'color: #409eff', data)
+  return http.post('/collab/rooms', data);
+}
 export const getRoom = (roomId) => http.get(`/collab/rooms/${roomId}`)
 export const listPublicRooms = (limit = 50) => http.get('/collab/rooms/public', { params: { limit } })
 export const closeRoom = (roomId, userId) => http.delete(`/collab/rooms/${roomId}`, { params: { userId } })
