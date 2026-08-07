@@ -112,7 +112,7 @@
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { useI18n } from 'vue-i18n'
+import { useI18n } from '@/i18n-stub'
 
 import { monitorApi } from '@/api/monitor'
 

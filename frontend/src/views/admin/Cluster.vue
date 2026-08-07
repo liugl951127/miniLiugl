@@ -139,7 +139,7 @@
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { useI18n } from 'vue-i18n'
+import { useI18n } from '@/i18n-stub'
 import { ElMessageBox } from 'element-plus'
 import { Refresh, Upload } from '@element-plus/icons-vue'
 import { clusterListNodes, clusterActiveNodes, clusterNode, clusterMe, clusterLeader, clusterRoute, clusterDrainNode, clusterStats, raftStart, raftStop, raftState, raftLeader, raftSubmit, raftApplied, raftAppend, raftVote, raftStatus, raftLog, raftTriggerElection } from '@/api/ai'

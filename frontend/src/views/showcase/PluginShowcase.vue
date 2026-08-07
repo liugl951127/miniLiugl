@@ -159,7 +159,7 @@ import { ref } from 'vue'
 import { useToast } from '@/composables/useToast'
 
 import http from '@/api/http'
-import { t } from '@/i18n'
+import { t } from '@/i18n-stub'
 import EmptyState from '@/components/EmptyState.vue'
 
 const activeTab = ref('market')

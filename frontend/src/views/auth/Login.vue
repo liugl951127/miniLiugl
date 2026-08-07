@@ -222,7 +222,7 @@ import { useToast } from '@/composables/useToast'
 import { useRoute, useRouter } from 'vue-router'
 
 import { User, UserFilled, Lock, Message, ChatLineRound, ChatDotRound, Plus, Cpu, Connection, ChatLineSquare, Promotion } from '@element-plus/icons-vue'
-import { useI18n } from 'vue-i18n'
+import { useI18n } from '@/i18n-stub'
 import { useUserStore } from '@/store/user'
 import WechatScanLogin from '@/components/WechatScanLogin.vue'
 

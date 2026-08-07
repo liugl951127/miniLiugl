@@ -140,7 +140,7 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { useI18n } from 'vue-i18n'
+import { useI18n } from '@/i18n-stub'
 import { useRouter } from 'vue-router'
 
 import { Back, Close, Check, Promotion, ChatDotRound, ChatLineRound, Money } from '@element-plus/icons-vue'

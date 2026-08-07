@@ -173,7 +173,7 @@ import { ElMessageBox } from 'element-plus'
 import { Edit, Delete } from '@element-plus/icons-vue'
 import { promptApi } from '@/api/prompt'
 import { useUserStore } from '@/store/user'
-import { t } from '@/i18n'
+import { t } from '@/i18n-stub'
 
 const router = useRouter()
 const userStore = useUserStore()

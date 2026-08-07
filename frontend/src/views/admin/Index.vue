@@ -183,7 +183,7 @@
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
+import { useI18n } from '@/i18n-stub'
 import { useUserStore } from '@/store/user'
 import { Fold, Setting, DataLine, TrendCharts, Connection, Monitor, Cpu, Trophy, Key, ChatDotRound, Bell, CircleCheck, CircleClose, Document, Warning, Share, Files, Lock, Notebook, Promotion, Link, ChatLineRound, User, MagicStick, DataAnalysis, ChatDotSquare, Search } from '@element-plus/icons-vue'
 

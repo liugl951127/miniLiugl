@@ -94,7 +94,7 @@
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { useI18n } from 'vue-i18n'
+import { useI18n } from '@/i18n-stub'
 
 import { autoAgentGroupGenerate, autoAgentGroupByTemplate, autoAgentGroupTemplates } from '@/api/ai'
 import EmptyState from '@/components/EmptyState.vue'

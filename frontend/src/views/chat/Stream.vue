@@ -117,7 +117,7 @@
 // ───── 依赖导入 ─────
 import { ref, computed, nextTick, inject } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { useI18n } from 'vue-i18n'
+import { useI18n } from '@/i18n-stub'
 
 import { useUserStore } from '@/store/user'
 import EmptyState from '@/components/EmptyState.vue'

@@ -85,7 +85,7 @@
             <el-button text @click="reload"><el-icon><Refresh /></el-icon></el-button>
           </el-tooltip>
           <!-- V2.7.8: 语言切换 -->
-          <LangSwitcher />
+          
           <el-dropdown @command="onCommand">
             <span class="user-info">
               <el-avatar :size="28" :src="userStore.profile?.avatar">
@@ -137,7 +137,6 @@ import { useDemoMode } from '@/composables/useDemoMode'
 import { useToast } from '@/composables/useToast'
 import { useNotificationStore } from '@/store/notification'
 import { systemApi } from '@/api/system'
-import LangSwitcher from '@/components/LangSwitcher.vue'
 
 const route = useRoute()
 const router = useRouter()

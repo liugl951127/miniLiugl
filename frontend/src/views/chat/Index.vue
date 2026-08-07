@@ -393,7 +393,7 @@
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { useI18n } from 'vue-i18n'
+import { useI18n } from '@/i18n-stub'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { modelApi } from '@/api/model'

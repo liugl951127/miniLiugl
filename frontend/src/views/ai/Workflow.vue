@@ -78,7 +78,7 @@
 // ───── 依赖导入 ─────
 import { ref } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { useI18n } from 'vue-i18n'
+import { useI18n } from '@/i18n-stub'
 
 import { executeWorkflow, validateWorkflow as apiValidate, dispatchPrompt } from '@/api/ai'
 import EmptyState from '@/components/EmptyState.vue'

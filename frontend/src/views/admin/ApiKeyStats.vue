@@ -99,7 +99,7 @@
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { useI18n } from 'vue-i18n'
+import { useI18n } from '@/i18n-stub'
 
 import { getApiKeyStats } from '@/api/admin'
 
