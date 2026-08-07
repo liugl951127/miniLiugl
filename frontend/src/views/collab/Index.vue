@@ -236,16 +236,13 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, reactive, computed, onMounted, onUnmounted, nextTick, _watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import { Link } from '@element-plus/icons-vue'
-import {
-  createRoom, getRoom, listPublicRooms, closeRoom,
-  buildCollabWsUrl
-} from '@/api/collab'
+import { createRoom, getRoom, listPublicRooms, closeRoom, buildCollabWsUrl } from '@/api/collab'
 import { CrdtDoc, CrdtIdFactory } from '@/utils/crdt'
 import { useUserStore } from '@/store/user'
 

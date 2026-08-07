@@ -127,13 +127,7 @@ import { useToast } from '@/composables/useToast'
 import PageContainer from '@/components/PageContainer.vue'
 import StateBlock from '@/components/StateBlock.vue'
 import { ElInput, ElInputNumber, ElSelect, ElOption, ElSwitch } from 'element-plus'
-import {
-  analyzeText, analyzeVision, _analyzeAudio, convertFile,
-  analyzeCorrelation, predictData, timeConvert,
-  generateImageTool, generateChartTool, generateMusicTool,
-  generateJavaProject, _downloadJavaProject, downloadJavaProjectFromBase64,
-  _listTools
-} from '@/api/ai'
+import { analyzeText, analyzeVision, analyzeAudio, convertFile, analyzeCorrelation, predictData, timeConvert, generateImageTool, generateChartTool, generateMusicTool, generateJavaProject, downloadJavaProject, downloadJavaProjectFromBase64, listTools } from '@/api/ai'
 
 const Input = markRaw(ElInput)
 const toast = useToast()

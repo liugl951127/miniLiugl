@@ -106,7 +106,7 @@ import { ref, computed, onMounted, reactive } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { ElMessageBox } from 'element-plus'
-import { Plus, Refresh, _Connection, _Edit, _Delete } from '@element-plus/icons-vue'
+import { Plus, Refresh, Connection, Edit, Delete } from '@element-plus/icons-vue'
 import { listProviders, createProvider, updateProvider, deleteProvider, testProvider } from '@/api/model'
 
 const { t } = useI18n()

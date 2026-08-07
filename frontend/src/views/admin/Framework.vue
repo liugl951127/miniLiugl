@@ -175,12 +175,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { ElMessageBox } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
-import {
-  frameworkAgentExecute, frameworkAgentRoute, frameworkAgentsList,
-  frameworkPermissionList, frameworkPermissionGrant,
-  frameworkPermissionRevoke, frameworkPermissionRevokeAll,
-  frameworkMemoryStats, frameworkMemoryClear, frameworkProductSearch
-} from '@/api/ai'
+import { frameworkAgentExecute, frameworkAgentRoute, frameworkAgentsList, frameworkPermissionList, frameworkPermissionGrant, frameworkPermissionRevoke, frameworkPermissionRevokeAll, frameworkMemoryStats, frameworkMemoryClear, frameworkProductSearch } from '@/api/ai'
 
 const tab = ref('agents')
 const toast = useToast()

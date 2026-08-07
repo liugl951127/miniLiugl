@@ -170,7 +170,7 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, computed, onMounted, _onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 
 import { Promotion, Warning } from '@element-plus/icons-vue'

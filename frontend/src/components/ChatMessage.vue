@@ -126,10 +126,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { computed, defineProps, defineEmits } from 'vue'
-import {
-  User, ChatDotRound, Loading, CircleClose, Tools,
-  CopyDocument, VideoPlay, VideoPause, RefreshRight, Star, Document,
-} from '@element-plus/icons-vue'
+import { User, ChatDotRound, Loading, CircleClose, Tools, CopyDocument, VideoPlay, VideoPause, RefreshRight, Star, Document } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import MarkdownView from './MarkdownView.vue'
 

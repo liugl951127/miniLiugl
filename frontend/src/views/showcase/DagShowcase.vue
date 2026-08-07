@@ -153,7 +153,7 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, _reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 
 import { CircleCheckFilled, Loading, WarningFilled } from '@element-plus/icons-vue'

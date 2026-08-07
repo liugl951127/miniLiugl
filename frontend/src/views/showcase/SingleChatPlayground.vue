@@ -129,7 +129,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, reactive } from 'vue'
-import { _useToast } from '@/composables/useToast'
+import { useToast } from '@/composables/useToast'
 
 import { Promotion, VideoPause } from '@element-plus/icons-vue'
 import http from '@/api/http'

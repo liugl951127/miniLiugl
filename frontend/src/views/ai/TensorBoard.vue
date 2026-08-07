@@ -131,10 +131,7 @@ import { Folder } from '@element-plus/icons-vue'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { LineChart } from 'echarts/charts'
-import {
-  TitleComponent, TooltipComponent, GridComponent,
-  LegendComponent, DataZoomComponent
-} from 'echarts/components'
+import { TitleComponent, TooltipComponent, GridComponent, LegendComponent, DataZoomComponent } from 'echarts/components'
 import { tensorboardApi } from '@/api/tensorboard'
 import EmptyState from '@/components/EmptyState.vue'
 

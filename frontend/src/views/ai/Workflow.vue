@@ -77,10 +77,10 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref } from 'vue'
-import { _useToast } from '@/composables/useToast'
+import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 
-import { executeWorkflow, validateWorkflow as apiValidate, _dispatchPrompt } from '@/api/ai'
+import { executeWorkflow, validateWorkflow as apiValidate, dispatchPrompt } from '@/api/ai'
 import EmptyState from '@/components/EmptyState.vue'
 
 const { t } = useI18n()

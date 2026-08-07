@@ -166,7 +166,7 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, reactive, _computed, watch, onMounted, _readonly } from 'vue'
+import { ref, reactive, computed, watch, onMounted, readonly } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'

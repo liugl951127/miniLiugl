@@ -190,11 +190,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { ElMessageBox } from 'element-plus'
-import {
-  intentPredict, intentPredictBatch, intentAddKeyword, intentAddPhrase,
-  intentList, intentStats, intentBenchmark, intentGetConfig, intentUpdateConfig,
-  intentResetConfig, intentClearContext
-} from '@/api/ai'
+import { intentPredict, intentPredictBatch, intentAddKeyword, intentAddPhrase, intentList, intentStats, intentBenchmark, intentGetConfig, intentUpdateConfig, intentResetConfig, intentClearContext } from '@/api/ai'
 
 const tab = ref('predict')
 const toast = useToast()

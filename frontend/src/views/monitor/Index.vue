@@ -243,10 +243,10 @@
 </template>
 <script setup lang="ts">
 // ───── 依赖导入 ─────
-import { ref, reactive, onMounted, onUnmounted, _watch, nextTick, _computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, watch, nextTick, computed } from 'vue'
 import * as echarts from 'echarts'
 import { useToast } from '@/composables/useToast'
-import { _useI18n } from 'vue-i18n'
+import { useI18n } from 'vue-i18n'
 import axios from 'axios'
 import { ElMessageBox } from 'element-plus'
 import { CircleCheck, CircleClose } from '@element-plus/icons-vue'

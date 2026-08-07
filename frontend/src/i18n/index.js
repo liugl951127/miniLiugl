@@ -13,7 +13,7 @@
  *   2. 首次访问 i18n 才创建 createI18n (延后到 main.js app.use(i18n) 之后)
  *   3. 合并到 vue-i18n 实例
  */
-import { createI18n as _createI18n } from 'vue-i18n'
+import { createI18n } from 'vue-i18n'
 import zh from './locales/zh'
 import en from './locales/en'
 
@@ -30,7 +30,7 @@ function ensureI18n() {
   if (_i18n) return _i18n
   const savedLang = (typeof localStorage !== 'undefined' && localStorage.getItem('minimax_lang')) || detectLang()
   _lang = savedLang
-  _i18n = _createI18n({
+  _i18n = createI18n({
     legacy: false,
     locale: savedLang,
     fallbackLocale: 'zh',

@@ -71,7 +71,7 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, _computed, _readonly } from 'vue'
+import { ref, computed, readonly } from 'vue'
 import { useToast } from '@/composables/useToast'
 
 import { maskText } from '@/api/ai'

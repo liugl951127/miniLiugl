@@ -202,16 +202,11 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, reactive, onMounted, _readonly } from 'vue'
+import { ref, reactive, onMounted, readonly } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { ElMessageBox } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
-import {
-  pushSubscribe, pushUnsubscribe, pushSubscriptions, pushAllSubscriptions,
-  pushSendToUser, pushSendToPlatform, pushBroadcast, pushMessages, pushStats,
-  pushIntegrationAuto, pushIntegrationApns, pushIntegrationFcm, pushIntegrationWeb,
-  pushIntegrationHealth, pushIntegrationStats, _pushIntegrationDetect, pushIntegrationVapidKey
-} from '@/api/ai'
+import { pushSubscribe, pushUnsubscribe, pushSubscriptions, pushAllSubscriptions, pushSendToUser, pushSendToPlatform, pushBroadcast, pushMessages, pushStats, pushIntegrationAuto, pushIntegrationApns, pushIntegrationFcm, pushIntegrationWeb, pushIntegrationHealth, pushIntegrationStats, pushIntegrationDetect, pushIntegrationVapidKey } from '@/api/ai'
 
 const tab = ref('subscriptions')
 const toast = useToast()

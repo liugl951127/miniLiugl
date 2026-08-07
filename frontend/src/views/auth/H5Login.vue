@@ -143,10 +143,7 @@ import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
-import {
-  Back, Close, Check, Promotion,
-  ChatDotRound, ChatLineRound, Money,
-} from '@element-plus/icons-vue'
+import { Back, Close, Check, Promotion, ChatDotRound, ChatLineRound, Money } from '@element-plus/icons-vue'
 import WechatScanLogin from '@/components/WechatScanLogin.vue'
 
 const { t } = useI18n()

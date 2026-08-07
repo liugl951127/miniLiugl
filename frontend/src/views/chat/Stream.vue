@@ -115,7 +115,7 @@
 </template>
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, _computed, nextTick, _inject } from 'vue'
+import { ref, computed, nextTick, inject } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 

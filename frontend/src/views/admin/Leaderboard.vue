@@ -111,10 +111,7 @@ import { ref, onMounted, reactive } from 'vue'
 import { useToast } from '@/composables/useToast'
 
 import { Refresh } from '@element-plus/icons-vue'
-import {
-  leaderboardOverall, leaderboardLatency,
-  leaderboardRecent, leaderboardCategories
-} from '@/api/model'
+import { leaderboardOverall, leaderboardLatency, leaderboardRecent, leaderboardCategories } from '@/api/model'
 
 const activeTab = ref('overall')
 const toast = useToast()

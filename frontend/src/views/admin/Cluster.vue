@@ -137,17 +137,12 @@
 </template>
 <script setup lang="ts">
 // ───── 依赖导入 ─────
-import { ref, computed, onMounted, _reactive } from 'vue'
+import { ref, computed, onMounted, reactive } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { ElMessageBox } from 'element-plus'
-import { Refresh, _Upload } from '@element-plus/icons-vue'
-import {
-  clusterListNodes, _clusterActiveNodes, _clusterNode, clusterMe, clusterLeader,
-  _clusterRoute, clusterDrainNode, _clusterStats,
-  raftStart, raftStop, raftState, _raftLeader, raftSubmit, raftApplied,
-  _raftAppend, _raftVote, _raftStatus, _raftLog, raftTriggerElection
-} from '@/api/ai'
+import { Refresh, Upload } from '@element-plus/icons-vue'
+import { clusterListNodes, clusterActiveNodes, clusterNode, clusterMe, clusterLeader, clusterRoute, clusterDrainNode, clusterStats, raftStart, raftStop, raftState, raftLeader, raftSubmit, raftApplied, raftAppend, raftVote, raftStatus, raftLog, raftTriggerElection } from '@/api/ai'
 
 const { t } = useI18n()
 const nodes = ref([])

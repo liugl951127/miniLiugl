@@ -207,12 +207,9 @@
  *   6. i18n: 文案用 $t('key') 不硬编码
  */
 import * as _echarts from 'echarts'
-import { ref, onMounted, _onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoleDashboard } from '@/composables/useRoleDashboard'
-import {
-  Refresh, CircleCheck, CircleClose, TrendCharts, PieChart, CaretTop, CaretBottom,
-  User, ChatDotRound, Cpu, Tools
-} from '@element-plus/icons-vue'
+import { Refresh, CircleCheck, CircleClose, TrendCharts, PieChart, CaretTop, CaretBottom, User, ChatDotRound, Cpu, Tools } from '@element-plus/icons-vue'
 import { getMonitorHealth, getMonitorInfo } from '@/api/monitor'
 import { getRecentAudit } from '@/api/admin'
 

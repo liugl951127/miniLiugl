@@ -168,7 +168,7 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, _computed, onUnmounted } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 
 import { Microphone, VideoPause } from '@element-plus/icons-vue'

@@ -121,8 +121,8 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, computed, onUnmounted, _nextTick } from 'vue'
-import { _useToast } from '@/composables/useToast'
+import { ref, computed, onUnmounted, nextTick } from 'vue'
+import { useToast } from '@/composables/useToast'
 
 import { cancelVideoStream } from '@/api/ai'
 import EmptyState from '@/components/EmptyState.vue'

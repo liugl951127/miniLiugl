@@ -104,9 +104,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { ElMessageBox } from 'element-plus'
-import {
-  demoTraining, listTrainingTasks, getTrainingHistory, deleteTrainingTask
-} from '@/api/ai'
+import { demoTraining, listTrainingTasks, getTrainingHistory, deleteTrainingTask } from '@/api/ai'
 
 const tasks = ref([])
 const toast = useToast()

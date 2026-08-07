@@ -393,21 +393,17 @@
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { _useI18n } from 'vue-i18n'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { modelApi } from '@/api/model'
 import { listSessions, createSession, deleteSession as deleteSessionApi } from '@/api/session'
-import { _useBusinessStream } from '@/composables/useBusinessStream'
+import { useBusinessStream } from '@/composables/useBusinessStream'
 import ChatMessage from '@/components/ChatMessage.vue'
 import { useSpeechCall } from '@/composables/useSpeechCall'
 import { ttsNormalize } from '@/utils/ttsNormalize'
 import { ElMessageBox } from 'element-plus'
-import {
-  _EditPen, Search, ChatDotRound, _MoreFilled, Promotion, _Cpu, _Clock, _MagicStick,
-  _UploadFilled, _Picture, Loading, VideoPause, VideoPlay, _CircleCloseFilled, Document, _Share,
-  Microphone, CircleClose, _Headset, Download, ArrowDown, Bell, BellFilled, Phone,
-} from '@element-plus/icons-vue'
+import { EditPen, Search, ChatDotRound, MoreFilled, Promotion, Cpu, Clock, MagicStick, UploadFilled, Picture, Loading, VideoPause, VideoPlay, CircleCloseFilled, Document, Share, Microphone, CircleClose, Headset, Download, ArrowDown, Bell, BellFilled, Phone } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 
 const userStore = useUserStore()

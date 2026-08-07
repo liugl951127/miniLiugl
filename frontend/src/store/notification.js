@@ -6,13 +6,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useUserStore } from './user'
 import { createNotificationWS } from '@/utils/ws'
-import {
-  listNotifications,
-  unreadCount as apiUnreadCount,
-  markRead as apiMarkRead,
-  markAllRead as apiMarkAllRead,
-  clearNotifications as apiClear
-} from '@/api/notification'
+import { listNotifications, unreadCount as apiUnreadCount, markRead as apiMarkRead, markAllRead as apiMarkAllRead, clearNotifications as apiClear } from '@/api/notification'
 
 export const useNotificationStore = defineStore('notification', () => {
   const notifications = ref([])

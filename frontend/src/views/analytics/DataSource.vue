@@ -75,9 +75,7 @@ import { ref, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessageBox } from 'element-plus'
-import {
-  listDataSources, createDataSource, updateDataSource, deleteDataSource, testDataSource
-} from '@/api/analytics'
+import { listDataSources, createDataSource, updateDataSource, deleteDataSource, testDataSource } from '@/api/analytics'
 
 const sources = ref([])
 const toast = useToast()

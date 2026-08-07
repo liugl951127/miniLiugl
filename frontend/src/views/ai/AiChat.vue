@@ -151,12 +151,12 @@
 </template>
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, nextTick, _reactive } from 'vue'
-import { _useToast } from '@/composables/useToast'
-import { _useI18n } from 'vue-i18n'
+import { ref, nextTick, reactive } from 'vue'
+import { useToast } from '@/composables/useToast'
+import { useI18n } from 'vue-i18n'
 
 import StateBlock from '@/components/StateBlock.vue'
-import { _votingChat, forceVotingChat, votingInfo, chatStream, listAiSessions, createAiSession } from '@/api/ai'
+import { votingChat, forceVotingChat, votingInfo, chatStream, listAiSessions, createAiSession } from '@/api/ai'
 import EmptyState from '@/components/EmptyState.vue'
 
 const _examples = [

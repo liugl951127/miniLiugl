@@ -126,9 +126,7 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { BarChart, LineChart } from 'echarts/charts'
-import {
-  TitleComponent, TooltipComponent, GridComponent, LegendComponent
-} from 'echarts/components'
+import { TitleComponent, TooltipComponent, GridComponent, LegendComponent } from 'echarts/components'
 import { tensorboardApi } from '@/api/tensorboard'
 import EmptyState from '@/components/EmptyState.vue'
 

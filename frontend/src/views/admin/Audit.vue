@@ -114,7 +114,7 @@ import { ref, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 
-import { _monitorApi } from '@/api/monitor'
+import { monitorApi } from '@/api/monitor'
 
 const { t } = useI18n()
 const logs = ref([])
