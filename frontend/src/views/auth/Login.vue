@@ -400,10 +400,22 @@ async function onSubmit() {
     // ✓ 成功 - 立刻跳, 不等 fetchProfile (layout 异步 hydrate)
     toast.success(`${mode.value === 'login' ? '登录' : '注册'}成功`); stopRetryCountdown()  // V3.7.7+
     const redirect = route.query.redirect && route.query.redirect !== '/login' ? route.query.redirect : '/admin/dashboard'
+    // V6.2+ 调试日志: 登录成功跳转详情
+    console.log('%c[Login 成功] 准备跳转', 'color: #67c23a; font-weight: bold', {
+      from: route.fullPath,
+      to: redirect,
+      token: userStore.accessToken ? `${userStore.accessToken.substring(0, 20)}...` : '(空)',
+      hasProfile: !!userStore.profile,
+      isLogin: userStore.isLogin,
+      isSuperAdmin: userStore.isSuperAdmin
+    })
     router.replace(redirect)  // replace 不留 history
+    console.log('%c[Login 成功] 跳转已触发', 'color: #67c23a; font-weight: bold')
 
     // 异步 fetchProfile (不阻塞跳转)
-    userStore.fetchProfile().catch(() => { /* 失败也允许, layout 自己处理 */ })
+    userStore.fetchProfile()
+      .then(() => console.log('%c[Login] fetchProfile 成功', 'color: #67c23a'))
+      .catch((e) => console.warn('[Login] fetchProfile 失败 (非阻塞):', e))
   } catch (e) {
     // 错误处理 - 区分网络错 / 401 / 500
     const msg = e?.response?.data?.message || e?.message || '操作失败'

@@ -581,6 +581,14 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   document.title = to.meta.title ? `${to.meta.title} - Liugl-AI` : 'Liugl-AI 大模型平台'
   const userStore = useUserStore()
+  // V6.2+ 调试日志: 路由跳转详情
+  console.log('%c[Router] ' + (from.fullPath || '/') + ' → ' + to.fullPath, 'color: #909399', {
+    public: !!to.meta.public,
+    requiresSuper: !!to.meta.requiresSuper,
+    isLogin: userStore.isLogin,
+    isSuperAdmin: userStore.isSuperAdmin,
+    hasToken: !!userStore.accessToken
+  })
   if (!to.meta.public && !userStore.isLogin) {
     next({ name: 'Login', query: { redirect: to.fullPath } })
   } else if (to.name === 'Login' && userStore.isLogin) {

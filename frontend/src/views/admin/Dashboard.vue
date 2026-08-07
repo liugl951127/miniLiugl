@@ -222,7 +222,7 @@ const stats = ref({
 })
 
 // V3.7.4+ 角色 dashboard (不同角色不同 KPI)
-const { kpis: _roleKpis, _roleColor, _roleLabel, _roleIcon, _currentRole } = useRoleDashboard()
+const { kpis: roleKpis, roleColor, roleLabel, roleIcon, currentRole } = useRoleDashboard()
 
 const recentAudits = ref([])
 
@@ -301,6 +301,13 @@ async function loadAll() {
 // === 修复 V3.7.38: stub 函数 (lint 误报, 实际未用) ===
 function refreshTopPaths() { /* stub - 待实现 */ }
 function refreshHeatmap() { /* stub - 待实现 */ }
+
+// V6.2+ 调试日志
+console.log('%c[Dashboard] 加载中', 'color: #409eff', {
+  hasToken: !!localStorage.getItem('minimax_access_token'),
+  currentRole: 'unknown',
+  isDemoMode: localStorage.getItem('minimax_demo_mode') === 'true'
+})
 
 onMounted(loadAll)
 </script>
