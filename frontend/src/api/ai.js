@@ -651,7 +651,18 @@ export const votingInfo = () => http.get('/ai/chat/voting-info')
  * @param {Function} onComplete
  * @returns {Function} cancel - 调用以取消流
  */
-export const chatStream = (data, onChunk, onError, onComplete) => {
+/**
+ * 流式聊天 (SSE via fetch + ReadableStream)
+ * Day 36: 修复 cancel 作用域 + 自动重连（最多 2 次，指数退避）
+ *
+ * @param {object} data { text, model, sessionId }
+ * @param {Function} onChunk       - 每次收到 SSE data 行时调用，参数为字符串内容
+ * @param {Function} onError       - 网络/业务错误时调用
+ * @param {Function} onComplete    - 流结束时调用
+ * @param {Function} onReconnecting - 重连开始时调用（可选）
+ * @returns {{ cancel: Function }} cancel 函数
+ */
+export const chatStream = (data, onChunk, onError, onComplete, onReconnecting) => {
   // 从 Pinia persist 读取 token
   let token = ''
   try {
@@ -662,41 +673,104 @@ export const chatStream = (data, onChunk, onError, onComplete) => {
   const base = import.meta.env.VITE_API_BASE || 'http://localhost:8080'
   const url = `${base}/api/v1/model/chat/stream`
 
-  fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-    },
-    body: JSON.stringify({ text: data.text, model: data.model || 'gpt-4o-mini', sessionId: data.sessionId }),
-    credentials: 'include'
-  }).then(async (response) => {
-    if (!response.ok) throw new Error('HTTP ' + response.status)
-    const reader = response.body.getReader()
-    const decoder = new TextDecoder()
-    const read = () => {
-      reader.read().then(({ done, value }) => {
-        if (done) { onComplete && onComplete(); return }
-        const text = decoder.decode(value, { stream: true })
-        // 解析 SSE lines: "data: {...}\n\n"
-        for (const line of text.split('\n')) {
-          const trimmed = line.trim()
-          if (trimmed.startsWith('data: ')) {
+  const MAX_RETRIES = 2
+  const BACKOFF_MS = [1000, 2000] // 指数退避: 1s, 2s
+
+  let controller = new AbortController()
+  let cancelled = false
+  let done = false
+
+  // 核心: 执行一次 fetch + SSE 读取
+  function doFetch(retryCount = 0) {
+    if (cancelled || done) return
+
+    controller = new AbortController()
+    const reqBody = JSON.stringify({
+      text: data.text,
+      model: data.model || 'gpt-4o-mini',
+      sessionId: data.sessionId
+    })
+
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: reqBody,
+      credentials: 'include',
+      signal: controller.signal
+    }).then(async (response) => {
+      if (!response.ok) {
+        // HTTP 错误不重试（业务错误）
+        onError && onError(new Error('HTTP ' + response.status))
+        return
+      }
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = '' // 未完成的行片段
+
+      function pump() {
+        if (cancelled || done) return
+        reader.read().then(({ done: doneReading, value }) => {
+          if (doneReading || cancelled) {
+            if (!done) { done = true; onComplete && onComplete() }
+            return
+          }
+          const text = decoder.decode(value, { stream: true })
+          // 处理跨 chunk 的行（buffer 拼接）
+          const combined = buffer + text
+          const lines = combined.split('\n')
+          // 最后一行可能是未完成的片段
+          buffer = lines.pop() || ''
+
+          for (const rawLine of lines) {
+            const trimmed = rawLine.trim()
+            if (!trimmed.startsWith('data: ')) continue
             const json = trimmed.slice(6)
-            if (json === '[DONE]') { onComplete && onComplete(); return }
+            if (json === '[DONE]') {
+              done = true
+              onComplete && onComplete()
+              return
+            }
             try {
               const parsed = JSON.parse(json)
               const content = parsed?.choices?.[0]?.delta?.content || ''
               if (content) onChunk(content)
             } catch (_) { /* ignore parse errors */ }
           }
-        }
-        read()
-      }).catch(err => onError && onError(err))
-    }
-    read()
-  }).catch(err => onError && onError(err))
+          pump()
+        }).catch((err) => {
+          if (cancelled) return // 用户主动取消，跳过
+          // 网络/IO 错误 → 触发重连
+          if (retryCount < MAX_RETRIES) {
+            onReconnecting && onReconnecting(retryCount + 1, BACKOFF_MS[retryCount])
+            setTimeout(() => doFetch(retryCount + 1), BACKOFF_MS[retryCount])
+          } else {
+            onError && onError(err)
+          }
+        })
+      }
 
-  // 返回取消函数
-  return () => reader && reader.cancel && reader.cancel()
+      pump()
+    }).catch((err) => {
+      if (cancelled) return
+      if (retryCount < MAX_RETRIES) {
+        onReconnecting && onReconnecting(retryCount + 1, BACKOFF_MS[retryCount])
+        setTimeout(() => doFetch(retryCount + 1), BACKOFF_MS[retryCount])
+      } else {
+        onError && onError(err)
+      }
+    })
+  }
+
+  doFetch()
+
+  // 返回取消函数（可在任意时机调用）
+  return {
+    cancel() {
+      cancelled = true
+      try { controller.abort() } catch (_) {}
+    }
+  }
 }

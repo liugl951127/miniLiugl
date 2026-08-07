@@ -119,6 +119,12 @@
               </div>
             </div>
 
+            <!-- Day 36: reconnect 状态行 -->
+            <div v-if="reconnectingStatus" class="reconnecting-bar">
+              <el-icon class="is-loading"><Loading /></el-icon>
+              {{ reconnectingStatus }}
+            </div>
+
             <div class="input-bar">
               <el-input
                 v-model="input"
@@ -126,11 +132,15 @@
                 :rows="3"
                 :placeholder="t('aichat.placeholder')"
                 @keydown.ctrl.enter="send"
-                :disabled="loading"
+                :disabled="loading && !isStreaming"
               />
               <div class="input-actions">
                 <el-button @click="clearAll" :disabled="loading">清空</el-button>
-                <el-button type="primary" :loading="loading" @click="send">发送</el-button>
+                <!-- Day 36: 流式中显示停止按钮 -->
+                <el-button v-if="isStreaming" type="danger" @click="stopStream">
+                  ⏹ 停止
+                </el-button>
+                <el-button v-else type="primary" :loading="loading" @click="send">发送</el-button>
               </div>
             </div>
           </el-card>
@@ -181,6 +191,24 @@ const quickActions = ref([
 const sessions = ref([])
 const currentSessionId = ref(null)
 const loadingSessions = ref(false)
+
+// Day 36: 当前流式连接（用于 stop 按钮）
+const currentStream = ref(null)
+// Day 36: 正在流式中（用于停止按钮显示）
+const isStreaming = ref(false)
+// Day 36: 重连状态文字
+const reconnectingStatus = ref('')
+
+function stopStream() {
+  if (currentStream.value) {
+    currentStream.value.cancel()
+    currentStream.value = null
+    isStreaming.value = false
+    reconnectingStatus.value = ''
+    loading.value = false
+    toast.info('已停止生成')
+  }
+}
 
 async function refreshSessions() {
   loadingSessions.value = true
@@ -272,27 +300,47 @@ async function handleSend() {
       if (resp.sessionId) currentSessionId.value = resp.sessionId
     } else {
       // Day 34: 正常模式 — SSE 流式响应
-      const assistantMsg = { role: 'assistant', content: '', streaming: true, model: '' }
+      // Day 36: reconnect 逻辑 (最多 2 次重连)
+      const assistantMsg = { role: 'assistant', content: '', streaming: true, model: '', reconnecting: false }
       messages.value.push(assistantMsg)
+      isStreaming.value = true
+      reconnectingStatus.value = ''
 
       await new Promise((resolve, reject) => {
-        chatStream(
+        const stream = chatStream(
           { text, sessionId: currentSessionId.value },
+          // onChunk
           (chunk) => {
             assistantMsg.content += chunk
             scrollToBottom()
           },
+          // onError
           (err) => {
             assistantMsg.content += '\n❌ 流式错误: ' + (err?.message || err)
             assistantMsg.streaming = false
+            isStreaming.value = false
+            reconnectingStatus.value = ''
             reject(err)
           },
+          // onComplete
           () => {
             assistantMsg.streaming = false
+            isStreaming.value = false
+            reconnectingStatus.value = ''
             lastResult.value = { intent: '高置信' }
             resolve()
+          },
+          // onReconnecting (Day 36)
+          (attempt, waitMs) => {
+            assistantMsg.reconnecting = true
+            reconnectingStatus.value = `🔄 第 ${attempt} 次重连中 (${(waitMs / 1000).toFixed(1)}s)...`
+            assistantMsg.content += `\n🔄 连接断开，第 ${attempt} 次重连中... `
+            scrollToBottom()
           }
         )
+
+        // Day 36: 记录 cancel 供 stop 使用
+        currentStream.value = stream
       })
 
       if (assistantMsg.content) {
@@ -481,5 +529,19 @@ function _sendQuickAction(label) {
 @keyframes typing-fade {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
+}
+
+/* Day 36: 重连状态行 */
+.reconnecting-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #c2410c;
+  margin-bottom: 8px;
 }
 </style>

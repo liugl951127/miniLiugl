@@ -632,9 +632,22 @@
 - [ ] RAG 上传切片端到端测试
 - [ ] 前端 AiChat SSE reconnect 逻辑
 - [ ] 前端知识库上传进度条
-- [ ] Monitor 静默功能后端 API
-- [ ] AiChat.vue 流式光标 CSS 优化
-- [ ] 平台首页 SEO / Sitemap
+
+## Day 36 - 2026-08-07 ✅ SSE Reconnect + Monitor 静默验证 + RAG E2E
+
+**今日完成：**
+- [x] **AiChat SSE Reconnect**：`chatStream()` 全面重构（AbortController / 指数退避 / buffer 跨 chunk 拼接 / 最多 2 次重连）
+- [x] **AiChat.vue 增强**：isStreaming / reconnectingStatus / stopStream / 停止按钮 / 重连状态条
+- [x] **Monitor 静默联调验证**：API 路径前后端一致（4 端点全对）；AlertEngine 规则/实例级 silencedUntil 检查 ✅
+- [x] **AlertSilenceTest**：3 用例（正常触发 / 实例静默持久化 / 规则静默跳过 evaluateRule）
+- [x] **RagUploadProgressTest**：3 用例（TXT 切片 / 长文本多 chunk / TextChunker 边界）
+- [x] **自检**：14/14 ✅ | 静态检查 5/5 ✅ | npm build ✅
+
+**明日计划 Day 37：**
+- [ ] 前端知识库批量上传 UI
+- [ ] 投票对话一致率 ECharts 图表
+- [ ] ErrorBoundary 与静默通知联动
+- [ ] V4.3 release notes
 
 ## Day 21 - 2026-06-26 ✅ API 文档体系 + 压测模板
 

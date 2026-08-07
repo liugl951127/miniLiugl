@@ -8,10 +8,8 @@ cd "$BASE"
 PASS=0
 FAIL=0
 
-NEW_FILES="backend/minimax-ai/src/main/java/com/minimax/ai/intent/MultiModelVotingService.java
-backend/minimax-rag/src/main/java/com/minimax/rag/service/QueryExpander.java
-backend/minimax-monitor/src/main/java/com/minimax/monitor/service/AlertRcaService.java
-backend/minimax-monitor/src/main/java/com/minimax/monitor/service/LogAnomalyDetector.java"
+NEW_FILES="backend/minimax-monitor/src/test/java/com/minimax/monitor/AlertSilenceTest.java
+backend/minimax-rag/src/test/java/com/minimax/rag/RagUploadProgressTest.java"
 
 echo "=== Java 静态检查 ==="
 echo ""
