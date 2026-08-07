@@ -128,7 +128,6 @@
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, onUnmounted, markRaw } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { useI18n } from 'vue-i18n'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { PieChart, BarChart } from 'echarts/charts'
@@ -138,7 +137,6 @@ import http from '@/api/http'
 
 use([CanvasRenderer, PieChart, BarChart, TitleComponent, TooltipComponent, LegendComponent, GridComponent])
 
-const { _t } = useI18n()
 const services = [
   'minimax-auth', 'minimax-chat', 'minimax-model', 'minimax-memory',
   'minimax-rag', 'minimax-function', 'minimax-agent', 'minimax-admin',
