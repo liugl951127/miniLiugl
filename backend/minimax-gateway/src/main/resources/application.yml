@@ -166,11 +166,11 @@ spring.cloud.gateway:
       filters:
         - StripPrefix=2
 
-    # V2.5: 自研 AI 路由
+    # V2.5: 自研 AI 路由 (兼容 /api/ai/** 和 /api/v1/ai/**)
     - id: ai
       uri: lb://minimax-ai
       predicates:
-        - Path=/api/v1/ai/**
+        - Path=/api/ai/**,/api/v1/ai/**
       filters:
         - StripPrefix=0
 
@@ -179,15 +179,136 @@ spring.cloud.gateway:
       predicates:
         - Path=/api/v1/ws/**,/ws/**
       filters:
-        - StripPrefix=2
+        - StripPrefix=0
+
+    # ============== 兼容路由 (前端缺少 /v1 前缀的路径) ==============
+    # AI 服务使用 /api/ai (无 v1), 前端请求 /ai/**
+    - id: compat-ai
+      uri: lb://minimax-ai
+      predicates:
+        - Path=/ai/**
+      filters:
+        - RewritePath=/ai/(?<remaining>.*), /api/ai/$\{remaining}
+
+    - id: compat-auth
+      uri: lb://minimax-auth
+      predicates:
+        - Path=/auth/**
+      filters:
+        - RewritePath=/auth/(?<remaining>.*), /api/v1/auth/$\{remaining}
+
+    - id: compat-chat
+      uri: lb://minimax-chat
+      predicates:
+        - Path=/chat/**,/sessions/**,/messages/**
+      filters:
+        - RewritePath=/(?<segment>chat|sessions|messages)/(?<remaining>.*), /api/v1/$\{segment}/$\{remaining}
+
+    - id: compat-memory
+      uri: lb://minimax-chat
+      predicates:
+        - Path=/memory/**
+      filters:
+        - RewritePath=/memory/(?<remaining>.*), /api/v1/memory/$\{remaining}
+
+    - id: compat-model
+      uri: lb://minimax-model
+      predicates:
+        - Path=/model/**,/models/**,/leaderboard/**,/test/**,/openai/**,/imagegen/**,/audio/**
+      filters:
+        - RewritePath=/(?<segment>model|models|leaderboard|test|openai|imagegen|audio)/(?<remaining>.*), /api/v1/$\{segment}/$\{remaining}
+
+    - id: compat-rag
+      uri: lb://minimax-rag
+      predicates:
+        - Path=/rag/**
+      filters:
+        - RewritePath=/rag/(?<remaining>.*), /api/v1/rag/$\{remaining}
+
+    - id: compat-function
+      uri: lb://minimax-pipeline
+      predicates:
+        - Path=/function/**
+      filters:
+        - RewritePath=/function/(?<remaining>.*), /api/v1/function/$\{remaining}
+
+    - id: compat-multimodal
+      uri: lb://minimax-multimodal
+      predicates:
+        - Path=/multimodal/**,/multi/**
+      filters:
+        - RewritePath=/(?<segment>multimodal|multi)/(?<remaining>.*), /api/v1/$\{segment}/$\{remaining}
+
+    - id: compat-monitor
+      uri: lb://minimax-monitor
+      predicates:
+        - Path=/monitor/**
+      filters:
+        - RewritePath=/monitor/(?<remaining>.*), /api/v1/monitor/$\{remaining}
+
+    - id: compat-agent
+      uri: lb://minimax-agent
+      predicates:
+        - Path=/agent/**
+      filters:
+        - RewritePath=/agent/(?<remaining>.*), /api/v1/agent/$\{remaining}
+
+    - id: compat-prompt
+      uri: lb://minimax-model
+      predicates:
+        - Path=/prompt/**,/prompts/**
+      filters:
+        - RewritePath=/(?<segment>prompt|prompts)/(?<remaining>.*), /api/v1/$\{segment}/$\{remaining}
+
+    - id: compat-analytics
+      uri: lb://minimax-analytics
+      predicates:
+        - Path=/analytics/**
+      filters:
+        - RewritePath=/analytics/(?<remaining>.*), /api/v1/analytics/$\{remaining}
+
+    - id: compat-pipeline
+      uri: lb://minimax-pipeline
+      predicates:
+        - Path=/pipeline/**
+      filters:
+        - RewritePath=/pipeline/(?<remaining>.*), /api/v1/pipeline/$\{remaining}
+
+    - id: compat-collab
+      uri: lb://minimax-ws
+      predicates:
+        - Path=/collab/**
+      filters:
+        - RewritePath=/collab/(?<remaining>.*), /api/v1/collab/$\{remaining}
+
+    - id: compat-tensorboard
+      uri: lb://minimax-ai
+      predicates:
+        - Path=/tensorboard/**
+      filters:
+        - RewritePath=/tensorboard/(?<remaining>.*), /api/v1/tensorboard/$\{remaining}
+
+    - id: compat-training
+      uri: lb://minimax-model
+      predicates:
+        - Path=/training/**
+      filters:
+        - RewritePath=/training/(?<remaining>.*), /api/v1/training/$\{remaining}
+
+    - id: compat-admin
+      uri: lb://minimax-admin
+      predicates:
+        - Path=/admin/**
+      filters:
+        - RewritePath=/admin/(?<remaining>.*), /api/v1/admin/$\{remaining}
 
     # ============== 后台管理 ==============
     - id: admin
       uri: lb://minimax-admin
       predicates:
-        - Path=/api/v1/admin/**,/admin/**
+        - Path=/api/v1/admin/**
       filters:
-        - StripPrefix=2
+        - StripPrefix=0
         - name: RequestRateLimiter
           args:
             redis-rate-limiter.replenishRate: 20
@@ -259,6 +380,7 @@ minimax:
         - /api/v1/auth/oauth
         - /api/v1/auth/wechat
         - /api/v1/health
+        - /api/ai/intro
         - /health
         - /v3/api-docs
         - /swagger-ui

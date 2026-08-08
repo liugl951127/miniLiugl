@@ -69,7 +69,7 @@ export function usePwa() {
       navigator.serviceWorker.controller?.postMessage({ type: 'GET_VERSION' })
       navigator.serviceWorker.addEventListener('message', (e) => {
         if (e.data?.type === 'SW_VERSION') {
-          swVersion.value = e.data.version
+          swVersion.value = e.data.buildTime || e.data.version
         }
       })
     } catch (e) {

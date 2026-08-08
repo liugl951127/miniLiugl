@@ -89,6 +89,10 @@ public class StreamGatewayHandler extends TextWebSocketHandler {
                 case "agent":
                     streamAgent(session, params, streamId);
                     break;
+                case "notifications":
+                    // 通知推送: 保持连接, 等待服务端推送 (不主动发流)
+                    log.info("WS 通知连接保持: streamId={}", streamId);
+                    break;
                 default:
                     sendError(session, "未知 type: " + type, streamId);
             }

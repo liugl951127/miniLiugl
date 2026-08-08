@@ -85,3 +85,4 @@ package.json.*.bak
 vite.config.js.timestamp-*
 .env.development
 .eslintcache
+.docker-data/

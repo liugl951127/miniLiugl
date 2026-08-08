@@ -268,6 +268,9 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
                 || path.startsWith("/api/v1/auth/wechat")
                 || path.equals("/api/v1/health")
                 || path.equals("/health")
+                || path.equals("/api/v1/admin/health")
+                || path.startsWith("/api/ai/intro")
+                || path.startsWith("/ws/")               // WebSocket 端点
                 || path.startsWith("/v3/api-docs")         // OpenAPI JSON
                 || path.startsWith("/swagger-ui")          // Swagger UI
                 || path.startsWith("/doc.html")            // Knife4j UI

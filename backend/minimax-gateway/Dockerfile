@@ -51,6 +51,9 @@ RUN java -Djarmode=layertools -jar \
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
+# 安装 curl 用于健康检查 (Alpine 默认不含 curl)
+RUN apk add --no-cache curl
+
 # V3.5.8: 4 层按 变化少→变化多 顺序 COPY
 # 1. dependencies     (~80MB, 几乎不变)
 # 2. spring-boot-loader (~2MB, 启动器)

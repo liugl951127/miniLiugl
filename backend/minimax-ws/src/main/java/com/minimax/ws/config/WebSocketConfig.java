@@ -27,5 +27,8 @@ public class WebSocketConfig implements WebSocketConfigurer {
         // V2.8.7: 实时协作
         registry.addHandler(collabHandler, "/ws/collab")
                 .setAllowedOriginPatterns("*");
+        // V6.3+: 通知推送
+        registry.addHandler(streamHandler, "/ws/notifications")
+                .setAllowedOriginPatterns("*");
     }
 }

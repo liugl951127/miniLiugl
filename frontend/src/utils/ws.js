@@ -173,7 +173,7 @@ export function createNotificationWS(token, { onMessage, onOpen, onClose, onErro
   return createWS({
     url: '/ws/notifications',
     token,
-    params: {},
+    params: { type: 'notifications' },
     onOpen,
     onMessage,
     onClose,
