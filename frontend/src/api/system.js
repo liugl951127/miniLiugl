@@ -71,17 +71,17 @@ export const sessionApi = {
    * detail - 查询 
    * @returns GET  的响应 Promise
    */
-  detail: (id) => http.get('/sessions/${id}`),
+  detail: (id) => http.get(`/sessions/${id}`),
   /**
    * update - 替换 
    * @returns PUT  的响应 Promise
    */
-  update: (id, data) => http.put('/sessions/${id}`, data),
+  update: (id, data) => http.put(`/sessions/${id}`, data),
   /**
    * remove - 删除 
    * @returns DELETE  的响应 Promise
    */
-  remove: (id) => http.delete('/sessions/${id}`),
+  remove: (id) => http.delete(`/sessions/${id}`),
   /**
    * messages - 查询 
    * @returns GET  的响应 Promise

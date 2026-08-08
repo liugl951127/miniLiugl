@@ -25,12 +25,12 @@ export const functionApi = {
    * getTool - 查询 
    * @returns GET  的响应 Promise
    */
-  getTool: (id) => http.get('/function/tools/${id}`),
+  getTool: (id) => http.get(`/function/tools/${id}`),
   /**
    * getToolByName - 查询 
    * @returns GET  的响应 Promise
    */
-  getToolByName: (name) => http.get('/function/tools/by-name/${name}`),
+  getToolByName: (name) => http.get(`/function/tools/by-name/${name}`),
   /**
    * createTool - 创建/更新 /api/v1/function/tools
    * @returns POST /api/v1/function/tools 的响应 Promise
@@ -40,12 +40,12 @@ export const functionApi = {
    * updateTool - 替换 
    * @returns PUT  的响应 Promise
    */
-  updateTool: (id, data) => http.put('/function/tools/${id}`, data),
+  updateTool: (id, data) => http.put(`/function/tools/${id}`, data),
   /**
    * deleteTool - 删除 
    * @returns DELETE  的响应 Promise
    */
-  deleteTool: (id) => http.delete('/function/tools/${id}`),
+  deleteTool: (id) => http.delete(`/function/tools/${id}`),
   /**
    * invoke - 创建/更新 
    * @returns POST  的响应 Promise

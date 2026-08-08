@@ -83,7 +83,7 @@ export const deleteAlertRule = (id) => http.delete('/monitor/alerts/rules/${id}`
 
 /** 启用/禁用告警规则 */
 export const toggleAlertRule = (id, enabled) =>
-  http.post('/monitor/alerts/rules/${id}/toggle`, { enabled })
+  http.post(`/monitor/alerts/rules/${id}/toggle`, { enabled })
 
 /** 确认告警 (Day 34: 支持备注) */
 export const acknowledgeAlert = (id, notes = '') =>
