@@ -360,7 +360,7 @@ services:
     ports: ["8095:8095"]
     volumes: *maven-volumes
     networks: [minimax-net]
-    deploy: { resources: { limits: { memory: 256M } } }
+    deploy: { resources: { limits: { memory: 512M } } }
 
   # ============== Nginx 单端口 80 入口 (V3.5.19 单文件) ==============
   nginx:
