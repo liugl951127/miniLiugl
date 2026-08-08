@@ -24,23 +24,23 @@ export const modelApi = {
    * list - 查询 /api/v1/admin/models
    * @returns GET /api/v1/admin/models 的响应 Promise
    */
-  list: () => http.get('/api/v1/admin/models'),
+  list: () => http.get('/admin/models'),
   /**
    * providers - 查询 /api/v1/admin/models/providers
    * @returns GET /api/v1/admin/models/providers 的响应 Promise
    */
-  providers: () => http.get('/api/v1/admin/models/providers'),
+  providers: () => http.get('/admin/models/providers'),
   // 聊天端点保持原样 (minimax-model 模块有 /api/v1/models/chat)
   /**
    * chat - 创建/更新 /api/v1/models/chat
    * @returns POST /api/v1/models/chat 的响应 Promise
    */
-  chat: (data) => http.post('/api/v1/models/chat', data),
+  chat: (data) => http.post('/models/chat', data),
   /**
    * cancel - 创建/更新 
    * @returns POST  的响应 Promise
    */
-  cancel: (streamId) => http.post(`/api/v1/models/chat/cancel?streamId=${streamId}`)
+  cancel: (streamId) => http.post('/models/chat/cancel?streamId=${streamId}`)
 }
 
 // Provider 管理 (V5.10 + V5.24 完整 CRUD)

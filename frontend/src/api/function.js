@@ -19,41 +19,41 @@ import http from './http'
 
 export const functionApi = {
   listTools: (category) => category
-    ? http.get(`/api/v1/function/tools/category/${category}`)
-    : http.get('/api/v1/function/tools'),
+    ? http.get('/function/tools/category/${category}`)
+    : http.get('/function/tools'),
   /**
    * getTool - 查询 
    * @returns GET  的响应 Promise
    */
-  getTool: (id) => http.get(`/api/v1/function/tools/${id}`),
+  getTool: (id) => http.get('/function/tools/${id}`),
   /**
    * getToolByName - 查询 
    * @returns GET  的响应 Promise
    */
-  getToolByName: (name) => http.get(`/api/v1/function/tools/by-name/${name}`),
+  getToolByName: (name) => http.get('/function/tools/by-name/${name}`),
   /**
    * createTool - 创建/更新 /api/v1/function/tools
    * @returns POST /api/v1/function/tools 的响应 Promise
    */
-  createTool: (data) => http.post('/api/v1/function/tools', data),
+  createTool: (data) => http.post('/function/tools', data),
   /**
    * updateTool - 替换 
    * @returns PUT  的响应 Promise
    */
-  updateTool: (id, data) => http.put(`/api/v1/function/tools/${id}`, data),
+  updateTool: (id, data) => http.put('/function/tools/${id}`, data),
   /**
    * deleteTool - 删除 
    * @returns DELETE  的响应 Promise
    */
-  deleteTool: (id) => http.delete(`/api/v1/function/tools/${id}`),
+  deleteTool: (id) => http.delete('/function/tools/${id}`),
   /**
    * invoke - 创建/更新 
    * @returns POST  的响应 Promise
    */
-  invoke: (name, args) => http.post(`/api/v1/function/invoke/${name}`, args),
+  invoke: (name, args) => http.post('/function/invoke/${name}`, args),
   /**
    * logs - 查询 /api/v1/function/logs
    * @returns GET /api/v1/function/logs 的响应 Promise
    */
-  logs: (params) => http.get('/api/v1/function/logs', { params })
+  logs: (params) => http.get('/function/logs', { params })
 }

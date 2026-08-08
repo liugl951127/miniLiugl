@@ -21,32 +21,32 @@ import http from './http'
 
 export const getMonitorInfo = () => {
   console.log('%c[MONITOR API] getMonitorInfo', 'color: #409eff', '')
-  return http.get('/api/v1/monitor/info');
+  return http.get('/monitor/info');
 }
 export const getMonitorHealth = () => {
   console.log('%c[MONITOR API] getMonitorHealth', 'color: #409eff', '')
-  return http.get('/api/v1/monitor/health');
+  return http.get('/monitor/health');
 }
 export const getJvmHealth = () => {
   console.log('%c[MONITOR API] getJvmHealth', 'color: #409eff', '')
-  return http.get('/api/v1/monitor/health/jvm');
+  return http.get('/monitor/health/jvm');
 }
 export const getDbHealth = () => {
   console.log('%c[MONITOR API] getDbHealth', 'color: #409eff', '')
-  return http.get('/api/v1/monitor/health/database');
+  return http.get('/monitor/health/database');
 }
 export const getDiskHealth = () => {
   console.log('%c[MONITOR API] getDiskHealth', 'color: #409eff', '')
-  return http.get('/api/v1/monitor/health/disk');
+  return http.get('/monitor/health/disk');
 }
 
 export const getMetrics = () => {
   console.log('%c[MONITOR API] getMetrics', 'color: #409eff', '')
-  return http.get('/api/v1/monitor/metrics');
+  return http.get('/monitor/metrics');
 }
 export const getMetricsSnapshot = () => {
   console.log('%c[MONITOR API] getMetricsSnapshot', 'color: #409eff', '')
-  return http.get('/api/v1/monitor/metrics/snapshot');
+  return http.get('/monitor/metrics/snapshot');
 }
 
 // ==================== 告警 (V2.7.1 新增) ====================
@@ -54,40 +54,40 @@ export const getMetricsSnapshot = () => {
 /** 触发中的告警 */
 export const getFiringAlerts = () => {
   console.log('%c[MONITOR API] getFiringAlerts', 'color: #409eff', '')
-  return http.get('/api/v1/monitor/alerts/firing');
+  return http.get('/monitor/alerts/firing');
 }
 
 /** 告警摘要 */
 export const getAlertSummary = () => {
   console.log('%c[MONITOR API] getAlertSummary', 'color: #409eff', '')
-  return http.get('/api/v1/monitor/alerts/summary');
+  return http.get('/monitor/alerts/summary');
 }
 
 /** 告警规则列表 */
 export const listAlertRules = () => {
   console.log('%c[MONITOR API] listAlertRules', 'color: #409eff', '')
-  return http.get('/api/v1/monitor/alerts/rules');
+  return http.get('/monitor/alerts/rules');
 }
 
 /** 创建告警规则 */
 export const createAlertRule = (rule) => {
   console.log('%c[MONITOR API] createAlertRule', 'color: #409eff', rule)
-  return http.post('/api/v1/monitor/alerts/rules', rule);
+  return http.post('/monitor/alerts/rules', rule);
 }
 
 /** 更新告警规则 */
-export const updateAlertRule = (id, rule) => http.put(`/api/v1/monitor/alerts/rules/${id}`, rule)
+export const updateAlertRule = (id, rule) => http.put('/monitor/alerts/rules/${id}`, rule)
 
 /** 删除告警规则 */
-export const deleteAlertRule = (id) => http.delete(`/api/v1/monitor/alerts/rules/${id}`)
+export const deleteAlertRule = (id) => http.delete('/monitor/alerts/rules/${id}`)
 
 /** 启用/禁用告警规则 */
 export const toggleAlertRule = (id, enabled) =>
-  http.post(`/api/v1/monitor/alerts/rules/${id}/toggle`, { enabled })
+  http.post('/monitor/alerts/rules/${id}/toggle`, { enabled })
 
 /** 确认告警 (Day 34: 支持备注) */
 export const acknowledgeAlert = (id, notes = '') =>
-  http.post(`/api/v1/monitor/alerts/${id}/ack`, notes ? { notes } : {})
+  http.post('/monitor/alerts/${id}/ack`, notes ? { notes } : {})
 
 // ==================== 静默功能 (Day 35) ====================
 
@@ -98,11 +98,11 @@ export const acknowledgeAlert = (id, notes = '') =>
  * @param {number} [endTime] 可选: 截止时间戳(ms), 优先级高于 minutes
  */
 export const silenceAlert = (id, { minutes = 60, endTime = null } = {}) =>
-  http.post(`/api/v1/monitor/alerts/${id}/silence`, endTime ? { endTime } : { minutes })
+  http.post('/monitor/alerts/${id}/silence`, endTime ? { endTime } : { minutes })
 
 /** 取消静默告警事件 */
 export const unsilenceAlert = (id) =>
-  http.post(`/api/v1/monitor/alerts/${id}/unsilence`)
+  http.post('/monitor/alerts/${id}/unsilence`)
 
 /**
  * 静默告警规则
@@ -111,53 +111,53 @@ export const unsilenceAlert = (id) =>
  * @param {number} [endTime] 可选: 截止时间戳(ms)
  */
 export const silenceRule = (id, { minutes = 60, endTime = null } = {}) =>
-  http.post(`/api/v1/monitor/alerts/rules/${id}/silence`, endTime ? { endTime } : { minutes })
+  http.post('/monitor/alerts/rules/${id}/silence`, endTime ? { endTime } : { minutes })
 
 /** 取消静默告警规则 */
 export const unsilenceRule = (id) =>
-  http.post(`/api/v1/monitor/alerts/rules/${id}/unsilence`)
+  http.post('/monitor/alerts/rules/${id}/unsilence`)
 
 /** 通知渠道列表 */
 export const listAlertChannels = () => {
   console.log('%c[MONITOR API] listAlertChannels', 'color: #409eff', '')
-  return http.get('/api/v1/monitor/alerts/channels');
+  return http.get('/monitor/alerts/channels');
 }
 
 /** 查通知渠道 */
-export const getAlertChannel = (id) => http.get(`/api/v1/monitor/alerts/channels/${id}`)
+export const getAlertChannel = (id) => http.get('/monitor/alerts/channels/${id}`)
 
 /** 创建通知渠道 */
 export const createAlertChannel = (channel) => {
   console.log('%c[MONITOR API] createAlertChannel', 'color: #409eff', channel)
-  return http.post('/api/v1/monitor/alerts/channels', channel);
+  return http.post('/monitor/alerts/channels', channel);
 }
 
 /** 更新通知渠道 */
-export const updateAlertChannel = (id, channel) => http.put(`/api/v1/monitor/alerts/channels/${id}`, channel)
+export const updateAlertChannel = (id, channel) => http.put('/monitor/alerts/channels/${id}`, channel)
 
 /** 删除通知渠道 */
-export const deleteAlertChannel = (id) => http.delete(`/api/v1/monitor/alerts/channels/${id}`)
+export const deleteAlertChannel = (id) => http.delete('/monitor/alerts/channels/${id}`)
 
 /** 测试通知渠道 */
-export const testAlertChannel = (id) => http.post(`/api/v1/monitor/alerts/channels/${id}/test`)
+export const testAlertChannel = (id) => http.post('/monitor/alerts/channels/${id}/test`)
 
 /** 告警历史 */
-export const getAlertHistory = (params) => http.get('/api/v1/monitor/alerts/history', { params })
+export const getAlertHistory = (params) => http.get('/monitor/alerts/history', { params })
 
 // ==================== 审计日志 (V2.7.1 新增) ====================
 
 /** 审计日志列表 */
-export const getAuditLogs = (params) => http.get('/api/v1/admin/audit/recent', { params })
+export const getAuditLogs = (params) => http.get('/admin/audit/recent', { params })
 
 /** 按用户查询审计 */
-export const getAuditByUser = (userId) => http.get(`/api/v1/admin/audit/by-actor/${userId}`)
+export const getAuditByUser = (userId) => http.get('/admin/audit/by-actor/${userId}`)
 
 /** 按天统计 */
-export const getAuditByDay = (params) => http.get('/api/v1/admin/audit/by-day', { params })
+export const getAuditByDay = (params) => http.get('/admin/audit/by-day', { params })
 
 /** 导出审计日志 */
 export const exportAuditLogs = (params) =>
-  http.get('/api/v1/admin/audit/export', { params, responseType: 'blob' })
+  http.get('/admin/audit/export', { params, responseType: 'blob' })
 
 // 默认导出 (兼容 import monitorApi)
 const monitorApi = {
@@ -184,7 +184,7 @@ export const getMonitorJvm = getJvmHealth
 export const getMonitorDisk = getDiskHealth
 export const getMonitorDb = getDbHealth
 export const getMonitorMetrics = getMetrics
-export const getMonitorTrend = (hours) => http.get('/api/v1/monitor/metrics/trend', { params: { hours } })
+export const getMonitorTrend = (hours) => http.get('/monitor/metrics/trend', { params: { hours } })
 export const getMonitorSnapshot = getMetricsSnapshot
 export const getMonitorAlerts = getFiringAlerts
 export const getMonitorAlertsFiring = getFiringAlerts
@@ -212,19 +212,19 @@ export const kgPath = (userId, fromId, toId) =>
 // ==================== Day 32: RCA 根因分析 + 异常检测 API ====================
 
 /** 告警 RCA 分析 (Day 33 修: 加 /api/v1 前缀) */
-export const rcaAnalysis = (alertId, context) => http.post(`/api/v1/monitor/alerts/${alertId}/rca`, context || {})
+export const rcaAnalysis = (alertId, context) => http.post('/monitor/alerts/${alertId}/rca`, context || {})
 
 /** 手动触发异常检测 (Day 33 修: 加 /api/v1 前缀) */
 export const anomalyDetect = (params) => {
   console.log('%c[MONITOR API] anomalyDetect', 'color: #409eff', params)
-  return http.post('/api/v1/monitor/anomaly/detect', params);
+  return http.post('/monitor/anomaly/detect', params);
 }
 
 /** 异常检测摘要 (Day 33 修: 加 /api/v1 前缀) */
-export const anomalySummary = (params) => http.get('/api/v1/monitor/anomaly/summary', { params })
+export const anomalySummary = (params) => http.get('/monitor/anomaly/summary', { params })
 
 /** 活跃异常检测指标 (Day 33 修: 加 /api/v1 前缀) */
 export const activeAnomalyMetrics = () => {
   console.log('%c[MONITOR API] activeAnomalyMetrics', 'color: #409eff', '')
-  return http.get('/api/v1/monitor/anomaly/active-metrics');
+  return http.get('/monitor/anomaly/active-metrics');
 }

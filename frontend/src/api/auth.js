@@ -21,25 +21,25 @@ export const authApi = {
    * login - 创建/更新 /api/v1/auth/login
    * @returns POST /api/v1/auth/login 的响应 Promise
    */
-  login: (data) => http.post('/api/v1/auth/login', data),
+  login: (data) => http.post('/auth/login', data),
   /**
    * register - 创建/更新 /api/v1/auth/register
    * @returns POST /api/v1/auth/register 的响应 Promise
    */
-  register: (data) => http.post('/api/v1/auth/register', data),
+  register: (data) => http.post('/auth/register', data),
   /**
    * me - 查询 /api/v1/auth/me
    * @returns GET /api/v1/auth/me 的响应 Promise
    */
-  me: () => http.get('/api/v1/auth/me', { _silent: true }),  // V3.7.10+ 401 不跳走
+  me: () => http.get('/auth/me', { _silent: true }),  // V3.7.10+ 401 不跳走
   /**
    * refresh - 创建/更新 /api/v1/auth/refresh
    * @returns POST /api/v1/auth/refresh 的响应 Promise
    */
-  refresh: (refreshToken) => http.post('/api/v1/auth/refresh', { refreshToken }),
+  refresh: (refreshToken) => http.post('/auth/refresh', { refreshToken }),
   /**
    * logout - 创建/更新 /api/v1/auth/logout
    * @returns POST /api/v1/auth/logout 的响应 Promise
    */
-  logout: (refreshToken) => http.post('/api/v1/auth/logout', { refreshToken })
+  logout: (refreshToken) => http.post('/auth/logout', { refreshToken })
 }

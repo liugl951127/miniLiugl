@@ -19,60 +19,60 @@ import http from './http'
 
 export const getAdminHealth = () => {
   console.log('%c[ADMIN API] getAdminHealth', 'color: #409eff', '')
-  return http.get('/api/v1/admin/health');
+  return http.get('/admin/health');
 }
 export const getAdminPing = () => {
   console.log('%c[ADMIN API] getAdminPing', 'color: #409eff', '')
-  return http.get('/api/v1/admin/ping');
+  return http.get('/admin/ping');
 }
 export const getOpsStats = () => {
   console.log('%c[ADMIN API] getOpsStats', 'color: #409eff', '')
-  return http.get('/api/v1/admin/stats/ops');
+  return http.get('/admin/stats/ops');
 }
 export const getDashboard = () => {
   console.log('%c[ADMIN API] getDashboard', 'color: #409eff', '')
-  return http.get('/api/v1/admin/stats/dashboard');
+  return http.get('/admin/stats/dashboard');
 }
 
 export const listAdminUsers = (page = 1, size = 20) =>
-  http.get(`/api/v1/admin/users?page=${page}&size=${size}`)
+  http.get('/admin/users?page=${page}&size=${size}`)
 
-export const getAdminUser = (id) => http.get(`/api/v1/admin/users/${id}`)
+export const getAdminUser = (id) => http.get('/admin/users/${id}`)
 
 export const createAdminUser = (actorId, body) =>
-  http.post(`/api/v1/admin/users?actorId=${actorId}`, body)
+  http.post('/admin/users?actorId=${actorId}`, body)
 
 export const resetAdminUserPassword = (id, actorId, newPassword) =>
-  http.post(`/api/v1/admin/users/${id}/reset-password?actorId=${actorId}`, { newPassword })
+  http.post('/admin/users/${id}/reset-password?actorId=${actorId}`, { newPassword })
 
 export const toggleAdminUser = (id, actorId, enabled) =>
-  http.put(`/api/v1/admin/users/${id}/status?actorId=${actorId}&enabled=${enabled}`)
+  http.put('/admin/users/${id}/status?actorId=${actorId}&enabled=${enabled}`)
 
 export const listModelProviders = () => {
   console.log('%c[ADMIN API] listModelProviders', 'color: #409eff', '')
-  return http.get('/api/v1/admin/models/providers');
+  return http.get('/admin/models/providers');
 }
 export const listModelConfigs = () => {
   console.log('%c[ADMIN API] listModelConfigs', 'color: #409eff', '')
-  return http.get('/api/v1/admin/models');
+  return http.get('/admin/models');
 }
 export const updateRateLimit = (code, actorId, body) =>
-  http.put(`/api/v1/admin/models/${code}/rate-limit?actorId=${actorId}`, body)
+  http.put('/admin/models/${code}/rate-limit?actorId=${actorId}`, body)
 
 export const getRecentAudit = (limit = 50) =>
-  http.get(`/api/v1/admin/audit-ops/recent?limit=${limit}`)
+  http.get('/admin/audit-ops/recent?limit=${limit}`)
 
 export const getApiKeyStats = () => {
   console.log('%c[ADMIN API] getApiKeyStats', 'color: #409eff', '')
-  return http.get('/api/v1/admin/apikey/stats');
+  return http.get('/admin/apikey/stats');
 }
 
 export const getAuditByActor = (actorId, limit = 20) =>
-  http.get(`/api/v1/admin/audit-ops/by-actor/${actorId}?limit=${limit}`)
+  http.get('/admin/audit-ops/by-actor/${actorId}?limit=${limit}`)
 
 // V5.9: 按天审计统计 (Dashboard 折线图)
 export const getAuditByDay = (days = 7, action) =>
-  http.get(`/api/v1/admin/audit-ops/by-day?days=${days}${action ? `&action=${action}` : ''}`)
+  http.get('/admin/audit-ops/by-day?days=${days}${action ? `&action=${action}` : ''}`)
 
 // V2.9.0: 治理后台 API
 export const governance = {
@@ -80,25 +80,25 @@ export const governance = {
    * overview - 查询 /api/v1/admin/governance/overview
    * @returns GET /api/v1/admin/governance/overview 的响应 Promise
    */
-  overview: (params) => http.get('/api/v1/admin/governance/overview', { params }),
+  overview: (params) => http.get('/admin/governance/overview', { params }),
   /**
    * timeline - 查询 /api/v1/admin/governance/timeline
    * @returns GET /api/v1/admin/governance/timeline 的响应 Promise
    */
-  timeline: (params) => http.get('/api/v1/admin/governance/timeline', { params }),
+  timeline: (params) => http.get('/admin/governance/timeline', { params }),
   /**
    * anomalies - 查询 /api/v1/admin/governance/anomalies
    * @returns GET /api/v1/admin/governance/anomalies 的响应 Promise
    */
-  anomalies: (params) => http.get('/api/v1/admin/governance/anomalies', { params }),
+  anomalies: (params) => http.get('/admin/governance/anomalies', { params }),
   /**
    * compliance - 查询 /api/v1/admin/governance/compliance
    * @returns GET /api/v1/admin/governance/compliance 的响应 Promise
    */
-  compliance: () => http.get('/api/v1/admin/governance/compliance'),
+  compliance: () => http.get('/admin/governance/compliance'),
   /**
    * retention - 查询 /api/v1/admin/governance/retention
    * @returns GET /api/v1/admin/governance/retention 的响应 Promise
    */
-  retention: () => http.get('/api/v1/admin/governance/retention')
+  retention: () => http.get('/admin/governance/retention')
 }
