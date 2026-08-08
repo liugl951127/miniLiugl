@@ -92,3 +92,32 @@ export const generateReport = (data) => {
   return http.post('/analytics/reports/generate', data);
 }
 export const getReport = (reportId) => http.get(`/analytics/reports/${reportId}`)
+
+// ===== Day 37: 投票一致率统计 =====
+/**
+ * 投票统计摘要
+ * GET /api/v1/ai/voting/stats
+ * 后端可提供: { totalVotes, avgAgreement, avgModelCount, avgLatencyMs }
+ */
+export const getVoteStatsSummary = () => {
+  console.log('%c[ANALYTICS API] getVoteStatsSummary', 'color: #409eff', '')
+  return http.get('/ai/voting/stats')
+}
+
+/**
+ * 一致率趋势数据
+ * GET /api/v1/ai/voting/stats/trend?strategy=all&bucket=day
+ */
+export const getVoteTrend = (params) => {
+  console.log('%c[ANALYTICS API] getVoteTrend', 'color: #409eff', params)
+  return http.get('/ai/voting/stats/trend', { params })
+}
+
+/**
+ * 投票记录分页列表
+ * GET /api/v1/ai/voting/records?page=1&size=10
+ */
+export const getVoteRecords = (params) => {
+  console.log('%c[ANALYTICS API] getVoteRecords', 'color: #409eff', params)
+  return http.get('/ai/voting/records', { params })
+}

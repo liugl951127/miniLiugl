@@ -481,6 +481,13 @@ const routes = [
         component: () => import('@/views/analytics/Reports.vue'),
         meta: { title: '报告中心', icon: 'DataAnalysis' }
       },
+      // Day 37: 投票一致率分析图表
+      {
+        path: 'analytics/vote-stats',
+        name: 'AnalyticsVoteStats',
+        component: () => import('@/views/analytics/VoteStats.vue'),
+        meta: { title: '投票分析', icon: 'PieChart' }
+      },
       // V1.8: V5.32 画布工作流 (pipeline)
       {
         path: 'pipeline',

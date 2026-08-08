@@ -649,6 +649,24 @@
 - [ ] ErrorBoundary 与静默通知联动
 - [ ] V4.3 release notes
 
+## Day 37 - 2026-08-08 ✅ 批量上传 + 投票图表 + ErrorBoundary 静默 + V4.3 Release
+
+**今日完成：**
+- [x] **知识库批量上传**：`el-upload` multiple + 上传队列面板（逐文件进度/单个取消/全量取消/单个重试）
+- [x] **VoteStats.vue**：4 个 ECharts 图表（折线/饼/柱图）+ KPI 卡片 + 分页表格 + 详情弹窗；新路由 `/analytics/vote-stats`
+- [x] **analytics.js**：新增 3 个投票统计 API（`getVoteStatsSummary` / `getVoteTrend` / `getVoteRecords`）
+- [x] **ErrorBoundary.vue V7.0**：`onErrorCaptured` + `ElNotification` 静默通知（duration=0 / 3秒去重 / 堆叠偏移）
+- [x] **docs/RELEASE-V4.3.md**：完整 Release Notes（5 核心亮点 + 前后端改动清单）
+- [x] **自检**：14/14 ✅ | 静态检查 5/5 ✅ | npm build ✅（yarn install 解决 npm 10.x peer dep 冲突）
+
+**关键数据：** +1 新 Vue 文件（VoteStats.vue 17KB）+ 1 新 MD + 多文件改动
+
+**明日计划 Day 38：**
+- [ ] 投票统计后端 API 实现（GET /ai/voting/stats）
+- [ ] 投票统计页接入真实 API
+- [ ] 批量上传 KB 级压力测试
+- [ ] 静默状态实时监控面板
+
 ## Day 21 - 2026-06-26 ✅ API 文档体系 + 压测模板
 
 **今日完成：**

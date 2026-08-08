@@ -201,22 +201,51 @@
 
         <div class="doc-toolbar">
           <h4>📄 文档 ({{ docs.length }})</h4>
-          <!-- V5.22: 上传进度条 + 取消按钮 -->
-          <div v-if="uploadProgress > 0 && uploadProgress < 100" class="upload-progress-bar">
-            <span class="upload-name">{{ uploadingFileName }}</span>
-            <el-progress :percentage="uploadProgress" :stroke-width="8" style="flex:1;margin:0 12px" />
-            <el-button size="small" type="danger" @click="cancelUpload">取消</el-button>
+          <!-- Day 37: 批量上传队列 (多个文件同时上传) -->
+          <div v-if="uploadQueue.length > 0" class="upload-queue-panel">
+            <div class="upload-queue-header">
+              <span class="upload-queue-title">📤 上传队列 ({{ uploadQueue.length }} 个文件)</span>
+              <el-button size="small" type="danger" @click="cancelAllUploads">全部取消</el-button>
+            </div>
+            <div v-for="item in uploadQueue" :key="item.id" class="upload-queue-item">
+              <span class="upload-queue-name" :title="item.file.name">{{ item.file.name }}</span>
+              <el-progress
+                v-if="item.status === 'uploading'"
+                :percentage="item.progress"
+                :stroke-width="6"
+                :show-text="false"
+                style="flex:1;margin:0 10px"
+              />
+              <span v-else-if="item.status === 'success'" class="upload-status-text success">✅ 完成</span>
+              <span v-else-if="item.status === 'error'" class="upload-status-text error">❌ {{ item.errorMsg || '失败' }}</span>
+              <span v-else-if="item.status === 'cancelled'" class="upload-status-text cancelled">⏹ 已取消</span>
+              <el-button
+                v-if="item.status === 'uploading'"
+                size="small"
+                type="danger"
+                @click="cancelOneUpload(item)"
+              >取消</el-button>
+              <el-button
+                v-if="item.status === 'error' || item.status === 'cancelled'"
+                size="small"
+                type="primary"
+                @click="retryUpload(item)"
+              >重试</el-button>
+            </div>
           </div>
           <el-upload
-            v-else
             :show-file-list="false"
-            :before-upload="beforeUpload"
-            :http-request="customUpload"
+            :before-upload="beforeUploadBatch"
+            :http-request="noopUpload"
+            :multiple="true"
             accept=".txt,.md,.pdf,.docx,.doc,.html"
           >
             <el-button type="primary" :loading="loading.upload">
-              <el-icon><Upload /></el-icon> 上传文档
+              <el-icon><Upload /></el-icon> 批量上传文档
             </el-button>
+            <template #tip>
+              <span class="el-upload__tip">支持同时上传多个文件，txt/md/pdf/docx/html</span>
+            </template>
           </el-upload>
         </div>
 
@@ -433,10 +462,9 @@ const loading = reactive({
   retrieve: false, ask: false, create: false, editKb: false, renameDoc: false
 })
 
-// V5.22: 上传进度状态
-const uploadProgress = ref(0)
-const uploadingFileName = ref('')
-let uploadCancel = null
+// Day 37: 批量上传队列状态
+const uploadQueue = ref([])
+let uploadQueueCounter = 0
 
 const filteredKbs = computed(() => {
   if (!kbSearch.value) return kbs.value
@@ -584,63 +612,78 @@ async function handleDeleteDoc(row) {
   }
 }
 
-function beforeUpload(file) {
+function beforeUploadBatch(file) {
   const max = 50 * 1024 * 1024
   if (file.size > max) {
-    toast.error('文件大小不能超过 50MB')
+    toast.error(`"${file.name}" 超过 50MB，已跳过`)
     return false
   }
-  return true
+  // 加入队列，等待 noopUpload 触发实际上传
+  enqueueUpload(file)
+  return false // 阻止 el-upload 自动上传，手动控制
 }
 
-async function customUpload({ file }) {
-  uploadProgress.value = 0
-  uploadingFileName.value = file.name
-  loading.upload = true
+// noop: el-upload 需要 http-request，否则无法触发 before-upload
+function noopUpload() {}
+
+function enqueueUpload(file) {
+  const id = ++uploadQueueCounter
+  const item = reactive({ id, file, progress: 0, status: 'uploading', errorMsg: '', cancelFn: null })
+  uploadQueue.value.push(item)
+  doUpload(item)
+}
+
+async function doUpload(item) {
   let cancelled = false
+  item.cancelFn = () => {
+    cancelled = true
+    item.status = 'cancelled'
+  }
   try {
     const { promise, cancel } = ragApi.uploadDocWithCancel(
       ownerId.value,
       currentKb.value.id,
-      file,
+      item.file,
       {
-        title: file.name,
+        title: item.file.name,
         sourceType: 'upload',
         onProgress: (pct) => {
-          if (!cancelled) uploadProgress.value = pct
+          if (!cancelled) item.progress = pct
         }
       }
     )
-    uploadCancel = () => {
-      cancelled = true
-      cancel()
-    }
+    item.cancelFn = () => { cancelled = true; cancel() }
     await promise
     if (!cancelled) {
-      toast.success('上传成功')
-      uploadProgress.value = 0
-      uploadingFileName.value = ''
+      item.status = 'success'
+      item.progress = 100
       await loadDocs()
     }
   } catch (e) {
-    if (e?.__cancelled || e?.message?.includes('cancel') || e?.name === 'CanceledError') {
-      toast.info('上传已取消')
+    if (e?.__cancelled || e?.name === 'CanceledError' || cancelled) {
+      item.status = 'cancelled'
     } else {
-      toast.error('上传失败: ' + (e.response?.data?.message || e.message))
+      item.status = 'error'
+      item.errorMsg = e.response?.data?.message || e.message
     }
-    uploadProgress.value = 0
-    uploadingFileName.value = ''
-  } finally {
-    loading.upload = false
-    uploadCancel = null
   }
 }
 
-function cancelUpload() {
-  if (uploadCancel) {
-    uploadCancel()
-    uploadCancel = null
-  }
+function cancelOneUpload(item) {
+  if (item.cancelFn) item.cancelFn()
+}
+
+function cancelAllUploads() {
+  uploadQueue.value
+    .filter(i => i.status === 'uploading')
+    .forEach(i => { if (i.cancelFn) i.cancelFn() })
+}
+
+function retryUpload(item) {
+  item.status = 'uploading'
+  item.progress = 0
+  item.errorMsg = ''
+  doUpload(item)
 }
 
 async function viewChunks(row) {
@@ -723,4 +766,44 @@ onMounted(async () => {
 .chunk-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .chunk-meta { color: #909399; font-size: 12px; }
 .chunk-text { line-height: 1.6; white-space: pre-wrap; color: #303133; }
+
+/* Day 37: 批量上传队列 */
+.upload-queue-panel {
+  flex: 1;
+  margin-right: 12px;
+  background: #f5f7fa;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  padding: 10px 12px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.upload-queue-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.upload-queue-title { font-size: 13px; font-weight: 600; color: #303133; }
+.upload-queue-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid #ebeef5;
+}
+.upload-queue-item:last-child { border-bottom: none; }
+.upload-queue-name {
+  font-size: 12px;
+  color: #606266;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.upload-status-text { font-size: 12px; min-width: 60px; text-align: right; }
+.upload-status-text.success { color: #67c23a; }
+.upload-status-text.error { color: #f56c6c; }
+.upload-status-text.cancelled { color: #909399; }
+.doc-toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
 </style>
