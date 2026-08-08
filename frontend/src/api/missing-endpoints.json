@@ -1,36 +1,4 @@
 {
-  "/api/v1/admin/health": {
-    "methods": [
-      "GET"
-    ],
-    "files": [
-      "frontend/src/api/admin.js"
-    ]
-  },
-  "/api/v1/admin/ping": {
-    "methods": [
-      "GET"
-    ],
-    "files": [
-      "frontend/src/api/admin.js"
-    ]
-  },
-  "/api/v1/admin/stats/ops": {
-    "methods": [
-      "GET"
-    ],
-    "files": [
-      "frontend/src/api/admin.js"
-    ]
-  },
-  "/api/v1/admin/stats/dashboard": {
-    "methods": [
-      "GET"
-    ],
-    "files": [
-      "frontend/src/api/admin.js"
-    ]
-  },
   "/api/v1/admin/users": {
     "methods": [
       "GET",
@@ -39,15 +7,6 @@
     ],
     "files": [
       "frontend/src/api/admin.js"
-    ]
-  },
-  "/api/v1/admin/models/providers": {
-    "methods": [
-      "GET"
-    ],
-    "files": [
-      "frontend/src/api/admin.js",
-      "frontend/src/api/model.js"
     ]
   },
   "/api/v1/admin/models": {
@@ -68,14 +27,6 @@
       "frontend/src/api/admin.js"
     ]
   },
-  "/api/v1/admin/apikey/stats": {
-    "methods": [
-      "GET"
-    ],
-    "files": [
-      "frontend/src/api/admin.js"
-    ]
-  },
   "/api/v1/admin/audit-ops/by-actor": {
     "methods": [
       "GET"
@@ -85,46 +36,6 @@
     ]
   },
   "/api/v1/admin/audit-ops/by-day": {
-    "methods": [
-      "GET"
-    ],
-    "files": [
-      "frontend/src/api/admin.js"
-    ]
-  },
-  "/api/v1/admin/governance/overview": {
-    "methods": [
-      "GET"
-    ],
-    "files": [
-      "frontend/src/api/admin.js"
-    ]
-  },
-  "/api/v1/admin/governance/timeline": {
-    "methods": [
-      "GET"
-    ],
-    "files": [
-      "frontend/src/api/admin.js"
-    ]
-  },
-  "/api/v1/admin/governance/anomalies": {
-    "methods": [
-      "GET"
-    ],
-    "files": [
-      "frontend/src/api/admin.js"
-    ]
-  },
-  "/api/v1/admin/governance/compliance": {
-    "methods": [
-      "GET"
-    ],
-    "files": [
-      "frontend/src/api/admin.js"
-    ]
-  },
-  "/api/v1/admin/governance/retention": {
     "methods": [
       "GET"
     ],
@@ -1806,6 +1717,14 @@
     ],
     "files": [
       "frontend/src/api/memory.js"
+    ]
+  },
+  "/api/v1/admin/models/providers": {
+    "methods": [
+      "GET"
+    ],
+    "files": [
+      "frontend/src/api/model.js"
     ]
   },
   "/api/v1/models/chat": {

@@ -94,7 +94,7 @@ export const sessionApi = {
    */
   sendMessage: (id, data) => http.post('/sessions/${id}/messages`, data),
   /** 流式发送 (SSE) - minimax-chat */
-  streamUrl: (id) => `/sessions/${id}/messages/stream`,
+  streamUrl: (id) => `/api/v1/sessions/${id}/messages/stream`,
   /** 流式状态查询 */
   /**
    * streamStatus - 查询 
@@ -118,7 +118,7 @@ export const chatApi = {
    */
   send: (id, data) => http.post('/sessions/${id}/messages`, data),
   /** 已废弃: 用 sessionApi.streamUrl(id) */
-  streamUrl: (id) => `/sessions/${id}/messages/stream`
+  streamUrl: (id) => `/api/v1/sessions/${id}/messages/stream`
 }
 
 /** 知识库 (前端用 knowledge-bases 别名, 指向 minimax-rag /api/v1/rag/kb) */
