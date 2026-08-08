@@ -1,98 +1,109 @@
 #!/bin/bash
-# V6.3+ 路由一致性检查 (V3 完整版)
-# 检查: 后端 Controller / Gateway 路由 / Nginx location / 前端 API 调用
+# V6.3+ 路由一致性检查 (V4 - 用 python 跑)
+# 后端 Controller / Gateway / Nginx / 前端 API
 
 set -e
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ROOT="$(dirname "$SCRIPT_DIR")"
 cd "$ROOT"
 
-echo "========================================="
-echo "MiniMax 路由一致性检查 (V6.3+ V3)"
-echo "========================================="
-echo
+# 1. 用 python 跑全部提取
+python3 << 'PYEOF'
+import re, os, sys
+from pathlib import Path
 
-# 1. 后端 Controller 路由
-echo "📦 [1/4] 后端 Controller 路由..."
-BACKEND_ROUTES=$(mktemp)
-find backend -name "*Controller.java" -path "*/main/*" 2>/dev/null | while read f; do
-    cls=$(grep -oE '@RequestMapping\(["\x27]([^"\x27]+)["\x27]' "$f" | head -1 | sed -E 's/@RequestMapping\(["\x27]([^"\x27]+)["\x27]/\1/')
-    grep -oE '@(Get|Post|Put|Delete|Patch)Mapping' "$f" | while read m; do
-        if [ -n "$cls" ]; then
-            echo "$cls" >> "$BACKEND_ROUTES"
-        fi
-    done
-done
-echo "  ✓ 后端 Controller 数: $(find backend -name '*Controller.java' -path '*/main/*' 2>/dev/null | wc -l)"
-echo "  ✓ 后端路由数 (粗略): $(wc -l < "$BACKEND_ROUTES")"
+ROOT = Path('.').resolve()
 
-# 2. Gateway 路由
-echo "🌐 [2/4] Gateway 路由..."
-GATEWAY_ROUTES=$(mktemp)
-if [ -f backend/minimax-gateway/src/main/resources/application.yml ]; then
-    grep -oE 'Path=[^,\n]+' backend/minimax-gateway/src/main/resources/application.yml | \
-        sed -E 's/Path=//; s/^"//; s/"$//' | tr ',' '\n' | sed 's/^[[:space:]]*//' | sort -u > "$GATEWAY_ROUTES"
-fi
-echo "  ✓ Gateway 路由数: $(wc -l < "$GATEWAY_ROUTES")"
+# 后端 Controller 路由 (提取类级 + 方法级)
+backend_routes = set()
+for f in (ROOT / 'backend').rglob('*Controller.java'):
+    if 'target' in str(f): continue
+    text = f.read_text(encoding='utf-8', errors='ignore')
+    cls = re.search(r'@RequestMapping\(["\']([^"\']+)["\']', text)
+    cls_path = cls.group(1) if cls else ''
+    # 找方法
+    for m in re.finditer(r'@(Get|Post|Put|Delete|Patch)Mapping(?:\(([^)]*)\))?', text):
+        sub = ''
+        if m.group(1):
+            vm = re.search(r'(?:value|path)\s*=\s*["\']([^"\']*)["\']', m.group(1))
+            if vm: sub = vm.group(1)
+        full = (cls_path + sub).replace('//', '/').rstrip('/')
+        if full: backend_routes.add(full)
 
-# 3. Nginx location
-echo "📡 [3/4] Nginx location 路由..."
-NGINX_ROUTES=$(mktemp)
-NGINX_CONF=$(find . -name "nginx*.conf" -not -path "*/node_modules/*" -not -path "*/target/*" 2>/dev/null | head -1)
-if [ -n "$NGINX_CONF" ]; then
-    # 提取 location 路径
-    grep -oE 'location\s+[~^]*\s*[\^~]?/?[^ ]+\s*\{' "$NGINX_CONF" | \
-        sed -E 's/location[[:space:]]+[~^]*[[:space:]]*[\^~]?//;s/[[:space:]]*\{$//' | \
-        grep -v "^/healthz\|^/$\|^~$" | sort -u > "$NGINX_ROUTES"
-fi
-echo "  ✓ Nginx 路径数: $(wc -l < "$NGINX_ROUTES")"
-echo "  ✓ Nginx 配置: $NGINX_CONF"
+# Gateway 路由
+gw_routes = set()
+gwf = ROOT / 'backend/minimax-gateway/src/main/resources/application.yml'
+if gwf.exists():
+    text = gwf.read_text(encoding='utf-8', errors='ignore')
+    for m in re.finditer(r'Path=([\w/,\*]+)', text):
+        for p in m.group(1).split(','):
+            gw_routes.add(p.strip().rstrip('/'))
 
-# 4. 前端 API 调用
-echo "🎨 [4/4] 前端 API 调用..."
-FRONTEND_URLS=$(mktemp)
-grep -rEh "http\.(get|post|put|delete|patch)\([\`'\"]/[^\\\'\"\\)]+" frontend/src/api/ 2>/dev/null | \
-    grep -oE "[\`'\"](/[^\`'\"\\)]+)" | sed -E "s/[\`'\"](.*)/\\1/" | sort -u > "$FRONTEND_URLS"
-echo "  ✓ 前端 API 调用: $(wc -l < "$FRONTEND_URLS")"
+# Nginx location
+ng_routes = set()
+for f in (ROOT).rglob('nginx*.conf'):
+    if 'node_modules' in str(f): continue
+    text = f.read_text(encoding='utf-8', errors='ignore')
+    for m in re.finditer(r'location\s+[~^]*\s*[\^~]?/?([^ \{]+)', text):
+        ng_routes.add(m.group(1).rstrip('/'))
 
-# 5. 不匹配分析
-echo
-echo "========================================="
-echo "🔍 不匹配分析"
-echo "========================================="
+# 前端 API 调用
+frontend_urls = set()
+for f in (ROOT / 'frontend/src/api').rglob('*.js'):
+    text = f.read_text(encoding='utf-8', errors='ignore')
+    for m in re.finditer(r'http\.\w+\(\s*[`\'"](/[^`\'"\\)]*)', text):
+        url = m.group(1).strip().split('?')[0].split('${')[0]
+        if url.startswith('/'): frontend_urls.add(url)
 
-# 5.1 前端调但 Nginx 没声明
-NOT_IN_NGINX=$(comm -23 "$FRONTEND_URLS" "$NGINX_ROUTES" 2>/dev/null | wc -l)
-echo "❌ [前端 → Nginx] 前端调但 Nginx 没声明: $NOT_IN_NGINX"
-if [ "$NOT_IN_NGINX" -gt 0 ] && [ "$NOT_IN_NGINX" -lt 50 ]; then
-    echo "  示例 (前 10):"
-    comm -23 "$FRONTEND_URLS" "$NGINX_ROUTES" 2>/dev/null | head -10 | sed 's/^/    - /'
-fi
+# 输出
+print(f'📦 后端 Controller: {len(backend_routes)} 个路由')
+print(f'🌐 Gateway: {len(gw_routes)} 个路由')
+print(f'📡 Nginx: {len(ng_routes)} 个 location')
+print(f'🎨 前端 API: {len(frontend_urls)} 个调用')
+print()
 
-# 5.2 前端调但 Gateway 没声明
-NOT_IN_GATEWAY=$(comm -23 "$FRONTEND_URLS" "$GATEWAY_ROUTES" 2>/dev/null | wc -l)
-echo "❌ [前端 → Gateway] 前端调但 Gateway 没声明: $NOT_IN_GATEWAY"
+# 不匹配分析
+# 前端加 /api/v1 前缀
+fe_with_prefix = {('/api/v1' + u).replace('//', '/').rstrip('/') for u in frontend_urls if not u.startswith('/api/v1')}
 
-# 5.3 Nginx 有但 Gateway 没声明 (Nginx → 后端 绕过 Gateway)
-NGINX_NOT_GATEWAY=$(comm -23 "$NGINX_ROUTES" "$GATEWAY_ROUTES" 2>/dev/null | wc -l)
-echo "ℹ️  [Nginx → Gateway] Nginx 有但 Gateway 没声明: $NGINX_NOT_GATEWAY"
-if [ "$NGINX_NOT_GATEWAY" -gt 0 ] && [ "$NGINX_NOT_GATEWAY" -lt 20 ]; then
-    echo "  示例:"
-    comm -23 "$NGINX_ROUTES" "$GATEWAY_ROUTES" 2>/dev/null | head -5 | sed 's/^/    - /'
-fi
+def matches(url, patterns):
+    """检查 url 是否匹配任一 pattern (支持 /** 通配)"""
+    for p in patterns:
+        if p.endswith('/**') or p.endswith('/*'):
+            base = p.rstrip('/*').rstrip('/')
+            if url.startswith(base + '/') or url == base:
+                return True
+        elif url == p or url.startswith(p + '/'):
+            return True
+    return False
 
-# 5.4 Gateway 有但 Nginx 没声明 (Nginx 没暴露)
-GATEWAY_NOT_NGINX=$(comm -13 "$NGINX_ROUTES" "$GATEWAY_ROUTES" 2>/dev/null | wc -l)
-echo "ℹ️  [Gateway → Nginx] Gateway 有但 Nginx 没暴露: $GATEWAY_NOT_NGINX"
+# 前端调但 gateway + nginx 都没的
+all_paths = ng_routes | gw_routes
+not_matched = []
+for url in sorted(fe_with_prefix):
+    if not matches(url, all_paths):
+        not_matched.append(url)
 
-# 5.5 Nginx 有但前端没调
-NGINX_NOT_USED=$(comm -13 "$FRONTEND_URLS" "$NGINX_ROUTES" 2>/dev/null | wc -l)
-echo "ℹ️  [Nginx → 前端] Nginx 有但前端没调: $NGINX_NOT_USED"
+print(f'❌ [前端 → 后端] 前端调但 nginx+gateway 都没: {len(not_matched)}')
+print()
+print('分类 (按 /api/v1/xxx/ 第一段):')
+cats = {}
+for url in not_matched:
+    parts = url.split('/')
+    cat = f'/{parts[3]}/' if len(parts) >= 5 else url
+    cats.setdefault(cat, []).append(url)
+for cat, urls in sorted(cats.items(), key=lambda x: -len(x[1])):
+    print(f'  {cat}: {len(urls)} 个')
+    for u in urls[:3]:
+        print(f'    - {u}')
+    if len(urls) > 3:
+        print(f'    ... ({len(urls) - 3} more)')
 
-# 6. 清理
-rm -f "$BACKEND_ROUTES" "$GATEWAY_ROUTES" "$NGINX_ROUTES" "$FRONTEND_URLS"
-
-echo
-echo "========================================="
-echo "✅ 检查完成"
-echo "========================================="
+print()
+# 输出到文件给后续分析
+with open('/tmp/route-audit.txt', 'w') as f:
+    f.write(f'# 前端调但 nginx+gateway 都没 ({len(not_matched)} 个)\n')
+    for url in not_matched:
+        f.write(f'{url}\n')
+print('📝 完整列表写到 /tmp/route-audit.txt')
+PYEOF
