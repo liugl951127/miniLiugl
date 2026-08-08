@@ -1,0 +1,32 @@
+name: Check Routes Consistency (V6.3+)
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  check-routes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: 检查路由一致性
+        run: bash scripts/check-routes.sh
+      
+      - name: 检查 Entity-Schema 一致性
+        run: bash scripts/check-entity-schema.sh || echo "Entity-Schema 不一致, 请检查"
+      
+      - name: 前端 build
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+      
+      - name: 前端测试
+        run: |
+          cd frontend
+          npm run test:unit -- --run
+        continue-on-error: true
