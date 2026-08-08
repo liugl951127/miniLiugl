@@ -79,7 +79,7 @@ export const createAlertRule = (rule) => {
 export const updateAlertRule = (id, rule) => http.put('/monitor/alerts/rules/${id}`, rule)
 
 /** 删除告警规则 */
-export const deleteAlertRule = (id) => http.delete('/monitor/alerts/rules/${id}`)
+export const deleteAlertRule = (id) => http.delete(`/monitor/alerts/rules/${id}`)
 
 /** 启用/禁用告警规则 */
 export const toggleAlertRule = (id, enabled) =>

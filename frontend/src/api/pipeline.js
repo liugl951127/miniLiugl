@@ -18,7 +18,7 @@ import http from './http'
 
 // ===== 工作流 CRUD =====
 export const listWorkflows = (params) => http.get('/pipeline/workflows', { params })
-export const getWorkflow = (id) => http.get('/pipeline/workflows/${id}`)
+export const getWorkflow = (id) => http.get(`/pipeline/workflows/${id}`)
 export const createWorkflow = (data) => {
   console.log('%c[PIPELINE API] createWorkflow', 'color: #409eff', data)
   return http.post('/pipeline/workflows', data);

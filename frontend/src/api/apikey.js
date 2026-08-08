@@ -56,5 +56,5 @@ export const apiKeyApi = {
    * adminTrend - 查询 
    * @returns GET  的响应 Promise
    */
-  adminTrend: (days = 7) => http.get('/admin/stats/apikey/trend?days=${days}`)
+  adminTrend: (days = 7) => http.get(`/admin/stats/apikey/trend?days=${days}`)
 }
