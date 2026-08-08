@@ -33,9 +33,9 @@
   },
   "/api/v1/api/v1/admin/users": {
     "methods": [
-      "PUT",
+      "GET",
       "POST",
-      "GET"
+      "PUT"
     ],
     "files": [
       "frontend/src/api/admin.js"
@@ -46,18 +46,18 @@
       "GET"
     ],
     "files": [
-      "frontend/src/api/model.js",
-      "frontend/src/api/admin.js"
+      "frontend/src/api/admin.js",
+      "frontend/src/api/model.js"
     ]
   },
   "/api/v1/api/v1/admin/models": {
     "methods": [
-      "PUT",
-      "GET"
+      "GET",
+      "PUT"
     ],
     "files": [
-      "frontend/src/api/model.js",
-      "frontend/src/api/admin.js"
+      "frontend/src/api/admin.js",
+      "frontend/src/api/model.js"
     ]
   },
   "/api/v1/api/v1/admin/audit-ops/recent": {
@@ -271,9 +271,9 @@
   "/api/v1/ai/admin/tools": {
     "methods": [
       "DELETE",
-      "PUT",
+      "GET",
       "POST",
-      "GET"
+      "PUT"
     ],
     "files": [
       "frontend/src/api/ai.js"
@@ -282,9 +282,9 @@
   "/api/v1/ai/admin/datasources": {
     "methods": [
       "DELETE",
-      "PUT",
+      "GET",
       "POST",
-      "GET"
+      "PUT"
     ],
     "files": [
       "frontend/src/api/ai.js"
@@ -405,8 +405,8 @@
   },
   "/api/v1/ai/image/types": {
     "methods": [
-      "POST",
-      "GET"
+      "GET",
+      "POST"
     ],
     "files": [
       "frontend/src/api/ai.js"
@@ -414,8 +414,8 @@
   },
   "/api/v1/ai/image/infer": {
     "methods": [
-      "POST",
-      "GET"
+      "GET",
+      "POST"
     ],
     "files": [
       "frontend/src/api/ai.js"
@@ -568,8 +568,8 @@
   "/api/v1/ai/chat/sessions": {
     "methods": [
       "DELETE",
-      "POST",
-      "GET"
+      "GET",
+      "POST"
     ],
     "files": [
       "frontend/src/api/ai.js"
@@ -609,8 +609,8 @@
   },
   "/api/v1/ai/project/download": {
     "methods": [
-      "POST",
-      "GET"
+      "GET",
+      "POST"
     ],
     "files": [
       "frontend/src/api/ai.js"
@@ -698,8 +698,8 @@
   },
   "/api/v1/ai/intent/config": {
     "methods": [
-      "PUT",
-      "GET"
+      "GET",
+      "PUT"
     ],
     "files": [
       "frontend/src/api/ai.js"
@@ -1363,8 +1363,8 @@
   },
   "/api/v1/ai/tools": {
     "methods": [
-      "POST",
-      "GET"
+      "GET",
+      "POST"
     ],
     "files": [
       "frontend/src/api/ai.js"
@@ -1380,8 +1380,8 @@
   },
   "/api/v1/ai/datasources": {
     "methods": [
-      "POST",
-      "GET"
+      "GET",
+      "POST"
     ],
     "files": [
       "frontend/src/api/ai.js"
@@ -1408,8 +1408,8 @@
       "POST"
     ],
     "files": [
-      "frontend/src/api/webhook.js",
-      "frontend/src/api/ai.js"
+      "frontend/src/api/ai.js",
+      "frontend/src/api/webhook.js"
     ]
   },
   "/api/v1/ai/webhooks/events": {
@@ -1417,8 +1417,8 @@
       "GET"
     ],
     "files": [
-      "frontend/src/api/webhook.js",
-      "frontend/src/api/ai.js"
+      "frontend/src/api/ai.js",
+      "frontend/src/api/webhook.js"
     ]
   },
   "/api/v1/ai/webhooks/stats": {
@@ -1426,8 +1426,8 @@
       "GET"
     ],
     "files": [
-      "frontend/src/api/webhook.js",
-      "frontend/src/api/ai.js"
+      "frontend/src/api/ai.js",
+      "frontend/src/api/webhook.js"
     ]
   },
   "/api/v1/ai/chat/voting": {
@@ -1449,9 +1449,9 @@
   "/api/v1/analytics/datasources": {
     "methods": [
       "DELETE",
-      "PUT",
+      "GET",
       "POST",
-      "GET"
+      "PUT"
     ],
     "files": [
       "frontend/src/api/analytics.js"
@@ -1649,8 +1649,8 @@
   "/api/v1/collab/rooms": {
     "methods": [
       "DELETE",
-      "POST",
-      "GET"
+      "GET",
+      "POST"
     ],
     "files": [
       "frontend/src/api/collab.js"
@@ -1675,9 +1675,9 @@
   "/api/v1/api/v1/function/tools": {
     "methods": [
       "DELETE",
-      "PUT",
+      "GET",
       "POST",
-      "GET"
+      "PUT"
     ],
     "files": [
       "frontend/src/api/function.js"
@@ -1709,8 +1709,8 @@
   },
   "/api/v1/ai/marketplace/agents": {
     "methods": [
-      "POST",
-      "GET"
+      "GET",
+      "POST"
     ],
     "files": [
       "frontend/src/api/marketplace.js"
@@ -1735,8 +1735,8 @@
   "/api/v1/memory/short-term": {
     "methods": [
       "DELETE",
-      "POST",
-      "GET"
+      "GET",
+      "POST"
     ],
     "files": [
       "frontend/src/api/memory.js"
@@ -1801,8 +1801,8 @@
   },
   "/api/v1/memory/pref": {
     "methods": [
-      "PUT",
-      "GET"
+      "GET",
+      "PUT"
     ],
     "files": [
       "frontend/src/api/memory.js"
@@ -1874,8 +1874,8 @@
   },
   "/api/v1/ai/model-market/models": {
     "methods": [
-      "POST",
-      "GET"
+      "GET",
+      "POST"
     ],
     "files": [
       "frontend/src/api/modelMarket.js"
@@ -1981,9 +1981,9 @@
   "/api/v1/api/v1/monitor/alerts/rules": {
     "methods": [
       "DELETE",
-      "PUT",
+      "GET",
       "POST",
-      "GET"
+      "PUT"
     ],
     "files": [
       "frontend/src/api/monitor.js"
@@ -2000,9 +2000,9 @@
   "/api/v1/api/v1/monitor/alerts/channels": {
     "methods": [
       "DELETE",
-      "PUT",
+      "GET",
       "POST",
-      "GET"
+      "PUT"
     ],
     "files": [
       "frontend/src/api/monitor.js"
@@ -2147,9 +2147,9 @@
   "/api/v1/api/v1/pipeline/workflows": {
     "methods": [
       "DELETE",
-      "PUT",
+      "GET",
       "POST",
-      "GET"
+      "PUT"
     ],
     "files": [
       "frontend/src/api/pipeline.js"
@@ -2174,9 +2174,9 @@
   "/api/v1/rag/kb": {
     "methods": [
       "DELETE",
-      "PUT",
+      "GET",
       "POST",
-      "GET"
+      "PUT"
     ],
     "files": [
       "frontend/src/api/rag.js"
@@ -2193,8 +2193,8 @@
   "/api/v1/rag/doc": {
     "methods": [
       "DELETE",
-      "PUT",
-      "GET"
+      "GET",
+      "PUT"
     ],
     "files": [
       "frontend/src/api/rag.js"
@@ -2243,9 +2243,9 @@
   "/api/v1/api/v1/sessions": {
     "methods": [
       "DELETE",
-      "PUT",
+      "GET",
       "POST",
-      "GET"
+      "PUT"
     ],
     "files": [
       "frontend/src/api/system.js"
@@ -2270,9 +2270,9 @@
   "/api/v1/api/v1/rag/kb": {
     "methods": [
       "DELETE",
-      "PUT",
+      "GET",
       "POST",
-      "GET"
+      "PUT"
     ],
     "files": [
       "frontend/src/api/system.js"
@@ -2289,8 +2289,8 @@
   "/api/v1/auth/tenants": {
     "methods": [
       "DELETE",
-      "POST",
-      "GET"
+      "GET",
+      "POST"
     ],
     "files": [
       "frontend/src/api/tenant.js"
@@ -2306,8 +2306,8 @@
   },
   "/api/v1/tensorboard/runs": {
     "methods": [
-      "POST",
-      "GET"
+      "GET",
+      "POST"
     ],
     "files": [
       "frontend/src/api/tensorboard.js"
@@ -2339,8 +2339,8 @@
   },
   "/api/v1/training/tasks": {
     "methods": [
-      "POST",
-      "GET"
+      "GET",
+      "POST"
     ],
     "files": [
       "frontend/src/api/training.js"
