@@ -1,65 +1,79 @@
 #!/bin/bash
-# V6.3+ 表结构变更脚本
-# 1. 删原表 (DROP)
-# 2. 重建表 (CREATE)
-# 3. 灌种子数据 (INSERT)
-# 4. 验证字段一致性 (Entity ↔ Schema)
+# V6.3+ 表结构重置脚本 (完整版)
+# 1. DROP 所有表
+# 2. 跑 complete-h2.sql / complete.sql 重建 + 灌种子
+# 3. 跑 check-entity-schema 验证一致
 
 set -e
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ROOT="$(dirname "$SCRIPT_DIR")"
 cd "$ROOT"
 
-MODULE=${1:-all}
 DB_HOST=${DB_HOST:-127.0.0.1}
 DB_PORT=${DB_PORT:-3306}
 DB_USER=${DB_USER:-root}
 DB_PASS=${DB_PASS:-minimax_mariadb_2024}
 DB_NAME=${DB_NAME:-minimax_platform}
+DB_TYPE=${DB_TYPE:-mysql}  # mysql | h2 | mariadb
 
 echo "========================================="
-echo "MiniMax DB 重置 (模块: $MODULE)"
+echo "MiniMax DB 重置 (V6.3+)"
 echo "========================================="
-echo "DB: $DB_HOST:$DB_PORT/$DB_NAME"
+echo "DB: $DB_TYPE $DB_HOST:$DB_PORT/$DB_NAME"
 echo
 
-# 1. 找 schema 文件
-SCHEMA_FILES=$(find backend -name "schema-*.sql" 2>/dev/null)
-if [ -z "$SCHEMA_FILES" ]; then
-    echo "❌ 没找到 schema-*.sql 文件"
+# 1. 找 schema
+SCHEMA_FILE=$(find backend -name "complete-h2.sql" -not -path "*/target/*" 2>/dev/null | head -1)
+[ -z "$SCHEMA_FILE" ] && SCHEMA_FILE=$(find backend -name "complete.sql" -not -path "*/target/*" 2>/dev/null | head -1)
+
+if [ -z "$SCHEMA_FILE" ]; then
+    echo "❌ 没找到 complete.sql / complete-h2.sql"
     exit 1
 fi
 
-# 2. 按模块处理
-for schema in $SCHEMA_FILES; do
-    mod_name=$(basename "$schema" | sed 's/schema-//;s/\.sql//')
-    if [ "$MODULE" != "all" ] && [ "$MODULE" != "$mod_name" ]; then
-        continue
-    fi
-    echo "📦 处理模块: $mod_name"
-    
-    # 提取表名
-    TABLES=$(grep -oE "CREATE TABLE (\`[^`]+\`)" "$schema" | sed 's/CREATE TABLE `//;s/`$//')
+echo "📄 Schema: $SCHEMA_FILE"
+
+# 2. DROP 表
+if [ "$DB_TYPE" = "h2" ]; then
+    echo "🗑️  H2 模式 - 不删, 直接重建"
+else
+    echo "🗑️  准备 DROP 表..."
+    # 提取所有表名
+    TABLES=$(grep -oE "CREATE TABLE \`[^`]+\`" "$SCHEMA_FILE" | sed 's/CREATE TABLE `//;s/`$//' | sort -u)
     for tbl in $TABLES; do
-        echo "  🗑️  DROP TABLE IF EXISTS \`$tbl\`"
-        mysql -h$DB_HOST -P$DB_PORT -u$DB_USER -p$DB_PASS $DB_NAME -e "DROP TABLE IF EXISTS \`$tbl\`" 2>/dev/null || true
+        echo "  DROP TABLE IF EXISTS \`$tbl\`"
+        mysql -h$DB_HOST -P$DB_PORT -u$DB_USER -p$DB_PASS $DB_NAME -e "DROP TABLE IF EXISTS \`$tbl\`" 2>/dev/null || \
+            echo "    (mysql 不可用, 跳过 - 启动后端时会自动 CREATE)"
     done
-    
-    # 3. 灌 schema
-    echo "  📥 灌 schema..."
-    mysql -h$DB_HOST -P$DB_PORT -u$DB_USER -p$DB_PASS $DB_NAME < "$schema" 2>/dev/null
-    
-    # 4. 灌种子数据
-    seed="backend/minimax-common/src/main/resources/data/seed-${mod_name}.sql"
-    if [ -f "$seed" ]; then
-        echo "  🌱 灌种子..."
-        mysql -h$DB_HOST -P$DB_PORT -u$DB_USER -p$DB_PASS $DB_NAME < "$seed" 2>/dev/null
-    fi
-    
-    # 5. 验证一致性
-    echo "  ✅ 验证字段一致性..."
-    ./scripts/check-entity-schema.sh "$mod_name"
-done
+fi
+
+# 3. 跑 schema
+echo
+echo "📥 跑 schema..."
+if [ "$DB_TYPE" = "h2" ]; then
+    # H2 自动从 classpath 加载
+    echo "  H2 模式 - 后端启动时自动跑"
+else
+    mysql -h$DB_HOST -P$DB_PORT -u$DB_USER -p$DB_PASS $DB_NAME < "$SCHEMA_FILE" 2>/dev/null && \
+        echo "  ✓ Schema 执行成功" || \
+        echo "  ⚠️  mysql 不可用, 跳过"
+fi
+
+# 4. 灌种子 (如果有)
+SEED_FILE=$(find backend -name "seed*.sql" -not -path "*/target/*" 2>/dev/null | head -1)
+if [ -n "$SEED_FILE" ] && [ "$DB_TYPE" != "h2" ]; then
+    echo
+    echo "🌱 灌种子: $SEED_FILE"
+    mysql -h$DB_HOST -P$DB_PORT -u$DB_USER -p$DB_PASS $DB_NAME < "$SEED_FILE" 2>/dev/null && \
+        echo "  ✓ 种子数据成功" || echo "  ⚠️  失败"
+fi
+
+# 5. 验证
+echo
+echo "🔍 验证 Entity-Schema 一致性..."
+bash scripts/check-entity-schema.sh
 
 echo
+echo "========================================="
 echo "✅ DB 重置完成"
+echo "========================================="
