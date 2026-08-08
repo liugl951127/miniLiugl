@@ -79,7 +79,7 @@ import { ref } from 'vue'
 import { useUserStore } from '@/store/user'
 
 import { ArrowLeft, HomeFilled, User } from '@element-plus/icons-vue'
-import { t } from '@/i18n-stub'
+import { t } from '@/i18n'
 import { getMyBinding } from '@/api/wechat'
 
 const router = useRouter()

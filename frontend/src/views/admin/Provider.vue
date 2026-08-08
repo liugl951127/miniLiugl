@@ -104,7 +104,7 @@
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { useI18n } from '@/i18n-stub'
+import { useI18n } from '@/i18n'
 import { ElMessageBox } from 'element-plus'
 import { Plus, Refresh, Connection, Edit, Delete } from '@element-plus/icons-vue'
 import { listProviders, createProvider, updateProvider, deleteProvider, testProvider } from '@/api/model'

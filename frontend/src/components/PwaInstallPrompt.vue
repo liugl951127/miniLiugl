@@ -34,7 +34,7 @@
 <script setup>
 // ───── 依赖导入 ─────
 import { ref, onMounted } from 'vue'
-import { t } from '@/i18n-stub'
+import { t } from '@/i18n'
 
 const showPrompt = ref(false)
 let deferredPrompt = null

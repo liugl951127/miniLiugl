@@ -222,7 +222,7 @@ import { useToast } from '@/composables/useToast'
 import { ElMessageBox } from 'element-plus'
 import { Plus, Refresh, Switch, Delete, OfficeBuilding, CircleCheck, User, Warning } from '@element-plus/icons-vue'
 import { useTenantStore } from '@/store/tenant'
-import { t } from '@/i18n-stub'
+import { t } from '@/i18n'
 
 const tenantStore = useTenantStore()
 const toast = useToast()

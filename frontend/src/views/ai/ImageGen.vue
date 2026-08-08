@@ -114,7 +114,7 @@
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { useI18n } from '@/i18n-stub'
+import { useI18n } from '@/i18n'
 
 import { generateImage, listImageTypes, inferImageType as inferApi } from '@/api/ai'
 import EmptyState from '@/components/EmptyState.vue'

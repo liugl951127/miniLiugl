@@ -114,7 +114,7 @@
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { useI18n } from '@/i18n-stub'
+import { useI18n } from '@/i18n'
 import { ElMessageBox } from 'element-plus'
 import { listTools as apiListTools, getTool as apiGetTool, createTool as apiCreateTool, updateTool as apiUpdateTool, deleteTool as apiDeleteTool, invokeTool as apiInvokeTool, listDataSources as apiListDataSources, createDataSource as apiCreateDataSource, updateDataSource as apiUpdateDataSource, deleteDataSource as apiDeleteDataSource, testDataSource as apiTestDataSource, generateProject as apiGenerateProject } from '@/api/ai'
 

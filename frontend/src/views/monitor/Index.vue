@@ -246,7 +246,7 @@
 import { ref, reactive, onMounted, onUnmounted, watch, nextTick, computed } from 'vue'
 import * as echarts from 'echarts'
 import { useToast } from '@/composables/useToast'
-import { useI18n } from '@/i18n-stub'
+import { useI18n } from '@/i18n'
 import axios from 'axios'
 import { ElMessageBox } from 'element-plus'
 import { CircleCheck, CircleClose } from '@element-plus/icons-vue'

@@ -153,7 +153,7 @@
 // ───── 依赖导入 ─────
 import { ref, nextTick, reactive } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { useI18n } from '@/i18n-stub'
+import { useI18n } from '@/i18n'
 
 import StateBlock from '@/components/StateBlock.vue'
 import { votingChat, forceVotingChat, votingInfo, chatStream, listAiSessions, createAiSession } from '@/api/ai'

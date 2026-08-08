@@ -125,7 +125,7 @@ import { ref, computed } from 'vue'
 import { useToast } from '@/composables/useToast'
 
 import { VideoCamera, VideoPlay, WarningFilled } from '@element-plus/icons-vue'
-import { t } from '@/i18n-stub'
+import { t } from '@/i18n'
 
 const prompt = ref('一只橘猫在草地上追蝴蝶, 慢动作, 电影质感, 黄金时刻光线')
 const toast = useToast()

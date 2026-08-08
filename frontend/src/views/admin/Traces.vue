@@ -107,7 +107,7 @@
 // ───── 依赖导入 ─────
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { useI18n } from '@/i18n-stub'
+import { useI18n } from '@/i18n'
 import http from '@/api/http'
 
 import EmptyState from '@/components/EmptyState.vue'

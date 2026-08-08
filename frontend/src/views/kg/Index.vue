@@ -227,7 +227,7 @@ import { useToast } from '@/composables/useToast'
 import axios from 'axios'
 import * as echarts from 'echarts'
 
-import { t } from '@/i18n-stub'
+import { t } from '@/i18n'
 import { useUserStore } from '@/store/user'
 
 const userStore = useUserStore()

@@ -123,7 +123,7 @@
 // ───── 依赖导入 ─────
 import { ref, reactive, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { useI18n } from '@/i18n-stub'
+import { useI18n } from '@/i18n'
 
 import { marketplaceApi } from '@/api/marketplace'
 import { useUserStore } from '@/store/user'
