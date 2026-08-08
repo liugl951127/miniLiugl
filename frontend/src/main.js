@@ -22,7 +22,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import App from './App.vue'
 import router from './router'
 import './styles/global.scss'
-import { i18n } from './i18n-stub'
+import { i18n } from './i18n'
 import { initBrowserCompat } from '@/composables/useBrowserCompat'
 import { initCapacitor } from '@/composables/useCapacitor'
 
