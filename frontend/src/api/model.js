@@ -40,7 +40,7 @@ export const modelApi = {
    * cancel - 创建/更新 
    * @returns POST  的响应 Promise
    */
-  cancel: (streamId) => http.post('/models/chat/cancel?streamId=${streamId}`)
+  cancel: (streamId) => http.post(`/models/chat/cancel?streamId=${streamId}`)
 }
 
 // Provider 管理 (V5.10 + V5.24 完整 CRUD)

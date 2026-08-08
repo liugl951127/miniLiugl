@@ -76,7 +76,7 @@ export const createAlertRule = (rule) => {
 }
 
 /** 更新告警规则 */
-export const updateAlertRule = (id, rule) => http.put('/monitor/alerts/rules/${id}`, rule)
+export const updateAlertRule = (id, rule) => http.put(`/monitor/alerts/rules/${id}`, rule)
 
 /** 删除告警规则 */
 export const deleteAlertRule = (id) => http.delete(`/monitor/alerts/rules/${id}`)

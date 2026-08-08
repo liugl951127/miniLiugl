@@ -19,7 +19,7 @@ import http from './http'
 
 export const functionApi = {
   listTools: (category) => category
-    ? http.get('/function/tools/category/${category}`)
+    ? http.get(`/function/tools/category/${category}`)
     : http.get('/function/tools'),
   /**
    * getTool - 查询 
