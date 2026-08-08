@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>线上自助双录 - 架构设计 v1.0</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root{
+    --primary:#2b2d42;
+    --accent:#d90429;
+    --secondary:#8d99ae;
+    --light:#edf2f4;
+    --bg:#ffffff;
+    --ok:#06a77d;
+    --warn:#f4a261;
+    --info:#3a86ff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--primary);font-family:"Microsoft YaHei","PingFang SC",Arial,sans-serif;line-height:1.7}
+  .container{max-width:1280px;margin:0 auto;padding:32px 24px}
+  header{background:linear-gradient(135deg,var(--primary) 0%,#1a1c2e 100%);color:#fff;padding:48px 0;border-bottom:6px solid var(--accent)}
+  header .container{padding:0 24px}
+  h1{font-size:36px;letter-spacing:2px;margin-bottom:12px}
+  h1 .sub{color:var(--accent);font-size:18px;font-weight:400;margin-left:12px;letter-spacing:0}
+  h2{font-size:28px;margin:48px 0 20px;padding-left:16px;border-left:6px solid var(--accent);color:var(--primary)}
+  h2 .num{display:inline-block;width:36px;height:36px;background:var(--accent);color:#fff;border-radius:50%;text-align:center;line-height:36px;margin-right:10px;font-size:18px}
+  h3{font-size:20px;margin:28px 0 12px;color:var(--primary);font-weight:600}
+  h4{font-size:16px;margin:18px 0 8px;color:var(--secondary);font-weight:600}
+  p,li{font-size:15px;color:#333}
+  ul,ol{padding-left:24px;margin:8px 0}
+  li{margin:4px 0}
+  .meta{color:var(--secondary);font-size:13px;margin-top:8px}
+  .meta span{margin-right:18px}
+  .meta strong{color:var(--accent)}
+  .badge{display:inline-block;background:var(--accent);color:#fff;padding:2px 10px;border-radius:4px;font-size:12px;margin-right:6px}
+  .badge.ok{background:var(--ok)}
+  .badge.warn{background:var(--warn)}
+  .badge.info{background:var(--info)}
+  .badge.gray{background:var(--secondary)}
+  .card{background:#fafbfc;border:1px solid #e0e4eb;border-radius:8px;padding:20px 24px;margin:18px 0;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .card .title{font-weight:600;color:var(--primary);margin-bottom:8px;font-size:16px}
+  .grid{display:grid;gap:18px;margin:16px 0}
+  .grid-2{grid-template-columns:1fr 1fr}
+  .grid-3{grid-template-columns:repeat(3,1fr)}
+  .grid-4{grid-template-columns:repeat(4,1fr)}
+  .grid-5{grid-template-columns:repeat(5,1fr)}
+  .grid-6{grid-template-columns:repeat(6,1fr)}
+  table{width:100%;border-collapse:collapse;margin:16px 0;background:#fff;font-size:14px}
+  th,td{padding:10px 12px;border:1px solid #e0e4eb;text-align:left;vertical-align:top}
+  th{background:var(--primary);color:#fff;font-weight:500}
+  tr:nth-child(even) td{background:#fafbfc}
+  tr:hover td{background:#fff5f5}
+  td code{background:#f0f0f0;padding:1px 6px;border-radius:3px;font-size:13px;color:var(--accent)}
+  .mermaid{background:#fff;border:1px solid #e0e4eb;border-radius:8px;padding:18px;margin:18px 0;overflow-x:auto}
+  .kpi{background:linear-gradient(135deg,#fff 0%,var(--light) 100%);border-radius:8px;padding:20px;text-align:center;border-top:4px solid var(--accent)}
+  .kpi .v{font-size:32px;font-weight:700;color:var(--accent);letter-spacing:1px}
+  .kpi .l{color:var(--secondary);font-size:13px;margin-top:6px}
+  .pill{display:inline-block;background:var(--primary);color:#fff;padding:4px 10px;border-radius:12px;font-size:12px;margin:2px}
+  .pill.ok{background:var(--ok)}
+  .pill.warn{background:var(--warn)}
+  .pill.accent{background:var(--accent)}
+  .diff-old{color:#999;text-decoration:line-through}
+  .diff-new{color:var(--accent);font-weight:600}
+  .flow{display:flex;align-items:stretch;gap:0;margin:20px 0;flex-wrap:wrap}
+  .flow .step{flex:1;min-width:140px;background:#fff;border:2px solid var(--primary);border-radius:8px;padding:14px;text-align:center;position:relative}
+  .flow .step .n{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;width:26px;height:26px;border-radius:50%;line-height:26px;font-size:13px;font-weight:600}
+  .flow .step .t{font-weight:600;color:var(--primary);margin:6px 0}
+  .flow .arrow{align-self:center;font-size:24px;color:var(--accent);padding:0 6px}
+  .compare{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:start;margin:20px 0}
+  .compare .left,.compare .right{background:#fafbfc;border:2px solid var(--secondary);border-radius:8px;padding:18px}
+  .compare .right{border-color:var(--accent);background:#fff5f5}
+  .compare .vs{align-self:center;font-size:24px;font-weight:700;color:var(--accent);background:#fff;border:3px solid var(--accent);width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+  .compare h4{margin-top:0;color:var(--secondary);text-align:center}
+  .compare .right h4{color:var(--accent)}
+  .layer{display:flex;align-items:center;gap:0;margin:12px 0;border-radius:8px;overflow:hidden;border:1px solid #e0e4eb}
+  .layer .n{flex:0 0 100px;background:var(--primary);color:#fff;text-align:center;padding:18px 12px;font-weight:600;font-size:14px}
+  .layer .c{flex:1;padding:14px 18px;background:#fff}
+  .layer .c .pill{margin:2px 4px 2px 0}
+  .layer .e{flex:0 0 200px;padding:10px 14px;background:var(--light);font-size:12px;color:var(--secondary)}
+  .footer{background:var(--primary);color:#fff;padding:32px 0;margin-top:64px;text-align:center}
+  .footer p{color:#fff;font-size:13px;opacity:0.85;margin:4px 0}
+  .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;margin:0 4px 4px 0}
+  .tag.p0{background:#ffe5e5;color:#c92a2a;font-weight:600}
+  .tag.p1{background:#fff3bf;color:#b08900;font-weight:600}
+  .tag.p2{background:#d3f9d8;color:#2f9e44;font-weight:600}
+  .tag.p3{background:#dbe4ff;color:#364fc7;font-weight:600}
+  .stage{display:flex;align-items:center;gap:16px;padding:16px;border:2px solid var(--primary);border-radius:8px;margin:14px 0;background:#fafbfc}
+  .stage .when{flex:0 0 130px;background:var(--primary);color:#fff;padding:14px;border-radius:6px;text-align:center;font-weight:600}
+  .stage .when .d{font-size:11px;opacity:0.85}
+  .stage .what{flex:1}
+  .stage .what h4{margin:0 0 6px;color:var(--primary);font-size:15px}
+  .stage .what p{margin:0;color:#555;font-size:13px}
+  .stage .cost{flex:0 0 100px;text-align:center;color:var(--accent);font-weight:600;font-size:13px}
+  .toctop{position:fixed;bottom:30px;right:30px;background:var(--accent);color:#fff;width:48px;height:48px;border-radius:50%;text-align:center;line-height:48px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-size:20px}
+  .toc{position:fixed;top:80px;right:20px;width:200px;background:#fff;border:1px solid #e0e4eb;border-radius:8px;padding:14px;font-size:12px;z-index:99;max-height:80vh;overflow-y:auto;box-shadow:0 2px 6px rgba(0,0,0,0.06)}
+  .toc ul{list-style:none;padding:0}
+  .toc li{margin:4px 0}
+  .toc a{color:var(--secondary);text-decoration:none}
+  .toc a:hover{color:var(--accent)}
+  @media (max-width:1100px){.toc{display:none}}
+  @media (max-width:768px){
+    .grid-2,.grid-3,.grid-4,.grid-5,.grid-6{grid-template-columns:1fr}
+    .compare{grid-template-columns:1fr}
+    .compare .vs{margin:0 auto}
+    h1{font-size:24px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <h1>线上自助双录 · 架构设计 <span class="sub">v1.0 / 2026-08-08</span></h1>
+    <p style="opacity:0.9;font-size:16px">📋 客户独立完成 · 无客户经理介入 · AI 实时质检 · 银保监合规</p>
+    <p class="meta" style="color:rgba(255,255,255,0.7);margin-top:14px">
+      <span>📅 <strong style="color:#fff">2026-08-08</strong></span>
+      <span>👤 <strong style="color:#fff">Mavis</strong></span>
+      <span>🏷️ <strong style="color:#fff">银行 / 保险 / 财富管理</strong></span>
+      <span>📍 <strong style="color:#fff">v1.0 baseline</strong></span>
+    </p>
+  </div>
+</header>
+
+<aside class="toc" id="toc">
+  <div style="font-weight:600;color:var(--primary);margin-bottom:8px">📑 目录</div>
+  <ul>
+    <li><a href="#exec">执行摘要</a></li>
+    <li><a href="#biz">1. 业务架构</a></li>
+    <li><a href="#app">2. 应用架构</a></li>
+    <li><a href="#tech">3. 技术架构</a></li>
+    <li><a href="#data">4. 数据架构</a></li>
+    <li><a href="#sec">5. 安全架构</a></li>
+    <li><a href="#ft">6. 容错架构</a></li>
+    <li><a href="#deploy">7. 部署架构</a></li>
+    <li><a href="#reuse">8. 复用评估</a></li>
+    <li><a href="#roadmap">9. 实施路径</a></li>
+  </ul>
+</aside>
+
+<a href="#exec" class="toctop" title="回到顶部">↑</a>
+
+<div class="container">
+
+  <!-- 执行摘要 -->
+  <section id="exec">
+    <h2><span class="num">0</span>执行摘要</h2>
+    <div class="grid grid-5">
+      <div class="kpi"><div class="v">7×24h</div><div class="l">客户随时发起</div></div>
+      <div class="kpi"><div class="v">≤ 8min</div><div class="l">单笔自助时长</div></div>
+      <div class="kpi"><div class="v">95%</div><div class="l">一次性通过率</div></div>
+      <div class="kpi"><div class="v">50%↓</div><div class="l">成本下降(对比线下)</div></div>
+      <div class="kpi"><div class="v">10×↑</div><div class="l">并发处理能力</div></div>
+    </div>
+    <div class="card">
+      <div class="title">🎯 核心目标</div>
+      <p>将"客户经理 + 客户面对面"线下双录模式,升级为"客户独立完成 + AI 实时陪伴"线上自助模式,在严格满足银保监远程双录合规要求前提下,实现 <strong>降本 50%</strong>、<strong>增效 10 倍</strong>、<strong>客户体验升级</strong>。整个方案复用现有双录 P1-P5 平台 60% 模块,新增 40% 自助专属能力(H5 SDK、强 KYC、断点续传、AI 引导员)。</p>
+    </div>
+    <div class="card" style="border-left:6px solid var(--accent)">
+      <div class="title">⚠️ 与线下双录的本质差异(7 个)</div>
+      <div class="grid grid-2">
+        <div>
+          <strong>① 客户身份核验</strong>:从"面对面肉眼识别"→ "活体+声纹+人脸+设备指纹"四要素
+        </div>
+        <div>
+          <strong>② 客户引导</strong>:从"客户经理口播"→ "AI 数字员工 + TTS 自动播报"
+        </div>
+        <div>
+          <strong>③ 签字确认</strong>:从"现场纸质签字"→ "电子签名 + 手写板 + 笔迹比对"
+        </div>
+        <div>
+          <strong>④ 实时性</strong>:从"全程同步"→ "客户可暂停 / 续做 / 跨日完成"
+        </div>
+        <div>
+          <strong>⑤ 网络环境</strong>:从"网点专线"→ "客户家 WiFi / 4G / 5G,丢包容忍"
+        </div>
+        <div>
+          <strong>⑥ 风控模式</strong>:从"实时打断"→ "实时拦截 + 离线复检 + 联邦风控"
+        </div>
+        <div>
+          <strong>⑦ 录制方式</strong>:从"单流合流"→ "单流独立 + 客户端本地 + 云端混流"三副本
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1. 业务架构 -->
+  <section id="biz">
+    <h2><span class="num">1</span>业务架构</h2>
+
+    <h3>1.1 客户旅程(8 步 · 目标 8 分钟)</h3>
+    <div class="flow">
+      <div class="step"><div class="n">1</div><div class="t">预约<br/><span style="font-size:11px;color:#888">30s</span></div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">2</div><div class="t">强 KYC<br/><span style="font-size:11px;color:#888">60s</span></div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">3</div><div class="t">知情同意<br/><span style="font-size:11px;color:#888">30s</span></div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">4</div><div class="t">风险揭示<br/><span style="font-size:11px;color:#888">120s</span></div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">5</div><div class="t">产品说明<br/><span style="font-size:11px;color:#888">120s</span></div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">6</div><div class="t">合同确认<br/><span style="font-size:11px;color:#888">60s</span></div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">7</div><div class="t">电子签字<br/><span style="font-size:11px;color:#888">60s</span></div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">8</div><div class="t">结束确认<br/><span style="font-size:11px;color:#888">20s</span></div></div>
+    </div>
+    <p class="meta">总时长: ≤ 8 分钟(对比线下 25-40 分钟)· 中断恢复可跨日</p>
+
+    <h3>1.2 节点状态机(订单生命周期)</h3>
+    <div class="mermaid">
+stateDiagram-v2
+    [*] --> 待预约
+    待预约 --> 待开始: 客户预约
+    待开始 --> 身份核验中: 进入会话
+    身份核验中 --> 知情同意: 活体+人脸+声纹+设备 通过
+    身份核验中 --> 预约挂起: 任一要素失败
+    知情同意 --> 风险揭示中: 同意录制 + 同意 AI 质检
+    风险揭示中 --> 风险揭示中: TTS 自动播报 + 实时拦截违规
+    风险揭示中 --> 产品说明: 客户明确肯定答复
+    产品说明 --> 合同确认: ASR 关键节点 + 客户肯定答复
+    合同确认 --> 电子签字: 阅读完合同 + 文字确认
+    电子签字 --> 结束确认: 手写板签字 + 笔迹比对通过
+    电子签字 --> 补录重做: 笔迹 / 签字异常
+    补录重做 --> 电子签字
+    结束确认 --> 待复检: 上传完成
+    结束确认 --> 续做中: 网络中断
+    续做中 --> 电子签字: 恢复后继续
+    待复检 --> 质检通过: AI + 人工 100%
+    待复检 --> 质检不通过: 触发补录
+    质检通过 --> 上链归档: Fabric 入链
+    上链归档 --> 银保监报送: 异步生成 XML
+    银保监报送 --> [*]
+    </div>
+
+    <h3>1.3 渠道与设备</h3>
+    <table>
+      <thead><tr><th>渠道</th><th>入口</th><th>SDK</th><th>适用客群</th><th>优先级</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge">手机银行 APP</span></td><td>原生入口</td><td>iOS/Android 原生 SDK + WebRTC</td><td>已有 APP 客户</td><td><span class="pill">P0</span></td></tr>
+        <tr><td><span class="badge">微信小程序</span></td><td>扫码 / 公众号</td><td>小程序原生 API + WX 直播组件</td><td>轻度客户</td><td><span class="pill">P0</span></td></tr>
+        <tr><td><span class="badge">H5 页面</span></td><td>短信链接</td><td>WebRTC + MediaRecorder</td><td>应急 / 老年客户</td><td><span class="pill">P1</span></td></tr>
+        <tr><td><span class="badge">PAD 设备</span></td><td>网点 / VTM</td><td>复用 Script SDK</td><td>无手机客户</td><td><span class="pill">P2</span></td></tr>
+        <tr><td><span class="badge">智能柜台</span></td><td>VTM 自助</td><td>对接大堂 SDK</td><td>到店客户</td><td><span class="pill">P2</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>1.4 与线下双录差异</h3>
+    <div class="compare">
+      <div class="left">
+        <h4>🏦 线下双录(已完成)</h4>
+        <ul>
+          <li>客户经理 <span class="diff-old">+</span> 客户 双人</li>
+          <li>PAD 设备(柜面 / 上门)</li>
+          <li>现场纸质签字 + 高拍仪</li>
+          <li>客户经理口播 + 引导</li>
+          <li>实时打断违规话术</li>
+          <li>单流合流录制(本机)</li>
+          <li>网络:网点专线</li>
+          <li>通过率 ~75%</li>
+        </ul>
+      </div>
+      <div class="vs">VS</div>
+      <div class="right">
+        <h4>📱 线上自助双录(本次设计)</h4>
+        <ul>
+          <li>客户 <span class="diff-new">独立</span>(无人)</li>
+          <li>客户自有手机 / H5</li>
+          <li>电子签名 + 手写板</li>
+          <li>AI 数字员工 + TTS</li>
+          <li>实时拦截 + 离线复检</li>
+          <li>单流独立(本机+云端+混流)</li>
+          <li>网络:WiFi/4G/5G,弱网容错</li>
+          <li>通过率 95%</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 应用架构 -->
+  <section id="app">
+    <h2><span class="num">2</span>应用架构</h2>
+
+    <h3>2.1 五层架构</h3>
+    <div class="layer"><div class="n">接入层</div>
+      <div class="c">
+        <span class="pill">手机银行 APP</span>
+        <span class="pill">小程序</span>
+        <span class="pill">H5</span>
+        <span class="pill">PAD 复用</span>
+        <span class="pill">智能柜台</span>
+      </div>
+      <div class="e">客户端 SDK 统一封装:身份/录制/签字/AI</div>
+    </div>
+    <div class="layer"><div class="n">网关层</div>
+      <div class="c">
+        <span class="pill">Nginx Ingress</span>
+        <span class="pill">API Gateway</span>
+        <span class="pill">WebSocket 网关(STOMP)</span>
+        <span class="pill">SFU 媒体网关</span>
+      </div>
+      <div class="e">限流/熔断/灰度; RTC 信令转发</div>
+    </div>
+    <div class="layer"><div class="n">业务层</div>
+      <div class="c">
+        <span class="pill">会话服务</span>
+        <span class="pill">KYC 服务</span>
+        <span class="pill">流程编排</span>
+        <span class="pill">AI 引导员</span>
+        <span class="pill">eSign 服务</span>
+        <span class="pill">质检服务</span>
+      </div>
+      <div class="e">微服务,12 个核心服务,K8s 部署</div>
+    </div>
+    <div class="layer"><div class="n">能力层</div>
+      <div class="c">
+        <span class="pill">活体检测</span>
+        <span class="pill">ASR/TTS</span>
+        <span class="pill">OCR</span>
+        <span class="pill">声纹比对</span>
+        <span class="pill">笔迹识别</span>
+        <span class="pill">LLM 实时质检</span>
+      </div>
+      <div class="e">AI 中台,统一鉴权 + 限流 + 降级</div>
+    </div>
+    <div class="layer"><div class="n">基础层</div>
+      <div class="c">
+        <span class="pill">MySQL</span>
+        <span class="pill">Redis</span>
+        <span class="pill">Kafka</span>
+        <span class="pill">OSS</span>
+        <span class="pill">Fabric</span>
+        <span class="pill">MSSQL(银保监)</span>
+      </div>
+      <div class="e">数据持久化 + 区块链 + 监管报送</div>
+    </div>
+
+    <h3>2.2 12 个核心服务</h3>
+    <table>
+      <thead><tr><th>#</th><th>服务</th><th>职责</th><th>复用/新建</th><th>技术栈</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>自助 SDK 客户端</td><td>统一封装 H5/小程序/APP 能力</td><td><span class="badge warn">新建</span></td><td>TypeScript + WebRTC</td></tr>
+        <tr><td>2</td><td>会话服务</td><td>会话生命周期 + 状态机</td><td><span class="badge ok">复用 60%</span></td><td>Spring Boot + Redis</td></tr>
+        <tr><td>3</td><td>强 KYC 服务</td><td>活体+人脸+声纹+设备指纹</td><td><span class="badge warn">新建</span></td><td>Spring Boot + 国产 SDK</td></tr>
+        <tr><td>4</td><td>AI 引导员</td><td>数字员工对话 + TTS 播报</td><td><span class="badge warn">新建</span></td><td>Spring Boot + LLM</td></tr>
+        <tr><td>5</td><td>流程编排</td><td>8 步节点编排 + 暂停续做</td><td><span class="badge warn">新建</span></td><td>Camunda / 自研状态机</td></tr>
+        <tr><td>6</td><td>eSign 电子签字</td><td>CA 证书 + 手写板 + 笔迹</td><td><span class="badge warn">新建</span></td><td>SM2 + CFCA</td></tr>
+        <tr><td>7</td><td>断点续传服务</td><td>分片上传 + 校验 + 恢复</td><td><span class="badge warn">新建</span></td><td>OSS 分片 + MD5</td></tr>
+        <tr><td>8</td><td>SFU 媒体网关</td><td>WebRTC 信令 + 单流录制</td><td><span class="badge ok">复用 50%</span></td><td>mediasoup / LiveKit</td></tr>
+        <tr><td>9</td><td>实时质检</td><td>边录边审 + 违规拦截</td><td><span class="badge ok">复用 80%</span></td><td>Qwen + DeepSeek</td></tr>
+        <tr><td>10</td><td>离线复检</td><td>AI 100% + 人工抽检</td><td><span class="badge ok">复用 100%</span></td><td>批量 LLM 任务</td></tr>
+        <tr><td>11</td><td>证据上链</td><td>Merkle 聚合 + Fabric 落库</td><td><span class="badge ok">复用 100%</span></td><td>Java Chaincode</td></tr>
+        <tr><td>12</td><td>银保监报送</td><td>异步生成 XML + 加密</td><td><span class="badge ok">复用 100%</span></td><td>GB/T 25064</td></tr>
+      </tbody>
+    </table>
+
+    <h3>2.3 服务交互</h3>
+    <div class="mermaid">
+flowchart LR
+    C[📱 客户端] -->|WebRTC| SFU[媒体网关]
+    C -->|HTTP| GW[API Gateway]
+    C -->|WS| SVC[会话服务]
+    GW --> SVC
+    GW --> KYC[强 KYC]
+    SVC --> FLOW[流程编排]
+    FLOW --> GUIDE[AI 引导员]
+    FLOW --> ASR[ASR/TTS]
+    FLOW --> SIGN[eSign]
+    FLOW --> QA[实时质检]
+    QA --> BLOCK[违规拦截]
+    SVC --> RESUME[断点续传]
+    SVC --> OSS[对象存储]
+    QA --> OFFLINE[离线复检]
+    OFFLINE --> CHAIN[Fabric 上链]
+    CHAIN --> CSRC[银保监报送]
+    </div>
+  </section>
+
+  <!-- 3. 技术架构 -->
+  <section id="tech">
+    <h2><span class="num">3</span>技术架构</h2>
+
+    <h3>3.1 客户端 SDK 架构</h3>
+    <div class="mermaid">
+flowchart TB
+    subgraph App["📱 客户端容器"]
+        UI[UI 组件库 Vue3]
+        SDK[SelfRecord SDK]
+        UI --> SDK
+        SDK --> A[活体模块]
+        SDK --> B[人脸模块]
+        SDK --> C[声纹模块]
+        SDK --> D[签字模块]
+        SDK --> E[录制模块]
+        SDK --> F[断点续传]
+        SDK --> G[设备指纹]
+        SDK --> H[AI 引导]
+    end
+    A --> Auth[认证中心]
+    B --> Auth
+    C --> Auth
+    D --> SM2[SM2 签名]
+    E --> WebRTC[RTC 通信]
+    F --> OSS[OSS 存储]
+    G --> Risk[风控中心]
+    </div>
+
+    <h3>3.2 核心模块技术选型</h3>
+    <table>
+      <thead><tr><th>能力</th><th>技术选型</th><th>关键指标</th><th>备选</th></tr></thead>
+      <tbody>
+        <tr><td>实时音视频</td><td>WebRTC + mediasoup SFU</td><td>≤ 500ms 延迟,40% 丢包容错</td><td>声网 Agora / 网易云信</td></tr>
+        <tr><td>活体检测</td><td>商汤 / 旷视 SDK + 静默活体</td><td>通过率 99.5%,反欺诈 99.9%</td><td>百度 AI 开放平台</td></tr>
+        <tr><td>人脸比对</td><td>1:1 比对 + 证件照</td><td>误识率 &lt; 0.001%</td><td>自训练 ResNet</td></tr>
+        <tr><td>声纹识别</td><td>1:1 比对(客户朗读固定文本)</td><td>等错率 &lt; 0.5%</td><td>云知声 / 科大讯飞</td></tr>
+        <tr><td>ASR</td><td>阿里云一句话识别 / 讯飞流式</td><td>识别率 ≥ 96%</td><td>自训练 Whisper</td></tr>
+        <tr><td>TTS</td><td>阿里云语音合成 / 讯飞超拟人</td><td>MOS ≥ 4.5,&lt; 300ms</td><td>本地 TTS(降级)</td></tr>
+        <tr><td>OCR</td><td>身份证 / 银行卡 OCR</td><td>准确率 ≥ 99%</td><td>百度 OCR</td></tr>
+        <tr><td>电子签名</td><td>CFCA 数字证书 + 手写板</td><td>SM2 + 时间戳 + 笔迹</td><td>法大大 / e签宝</td></tr>
+        <tr><td>LLM 实时质检</td><td>Qwen-Plus + 规则引擎</td><td>P95 &lt; 800ms</td><td>DeepSeek-V3</td></tr>
+        <tr><td>对象存储</td><td>阿里云 OSS / 华为云 OBS</td><td>分片 5MB,3 副本</td><td>MinIO 自建</td></tr>
+        <tr><td>区块链</td><td>Hyperledger Fabric 2.2</td><td>TPS 1000+</td><td>FISCO BCOS</td></tr>
+      </tbody>
+    </table>
+
+    <h3>3.3 端到端流程时序(以"风险揭示"节点为例)</h3>
+    <div class="mermaid">
+sequenceDiagram
+    autonumber
+    participant App as 📱 客户 APP
+    participant SFU as 媒体网关
+    participant Flow as 流程编排
+    participant Guide as AI 引导员
+    participant TTS as TTS 服务
+    participant ASR as ASR 服务
+    participant QA as 实时质检
+    participant Block as 违规拦截
+
+    App->>Flow: 进入"风险揭示"节点
+    Flow->>Guide: 播报请求(话术模板 + 变量)
+    Guide->>TTS: TTS 合成(产品名/风险点)
+    TTS-->>SFU: 音频流
+    SFU-->>App: 推送音频
+    App->>ASR: 麦克风采集(客户回应)
+    ASR-->>Flow: 文本"是的,理解了"
+    Flow->>QA: 关键节点检查(关键话术+肯定答复)
+    QA-->>Flow: 通过 / 违规
+    alt 通过
+        Flow->>App: 进入下一节点
+    else 违规(漏读风险)
+        Block->>Guide: 触发补充播报
+        Guide-->>App: "我需要再向您说明..."
+    end
+    Note over App,QA: 全过程录音录像上链
+    </div>
+
+    <h3>3.4 关键设计决策</h3>
+    <div class="card">
+      <div class="title">🎯 决策 1:录制方案 = "单流独立 + 客户端本地 + 云端混流"三副本</div>
+      <p>三副本冗余保证数据安全:<strong>本地</strong>(断网兜底)+ <strong>云端单流</strong>(每方独立,可单独质检)+ <strong>云端混流</strong>(银保监直接播放)。任一副本损坏不影响合规性。</p>
+    </div>
+    <div class="card">
+      <div class="title">🎯 决策 2:会话状态存储 = Redis + 定时持久化</div>
+      <p>会话状态(包括暂停点)用 Redis 实时更新,每 30s 持久化到 MySQL。支持客户跨日续做、网络中断自动恢复。</p>
+    </div>
+    <div class="card">
+      <div class="title">🎯 决策 3:实时质检策略 = 端云协同</div>
+      <p>客户端轻量检测(占 CPU &lt; 5%)做"硬规则"(人脸消失、声音异常),云端 LLM 做"软规则"(话术合规、情绪异常)。违规即时拦截,无感纠偏。</p>
+    </div>
+    <div class="card">
+      <div class="title">🎯 决策 4:电子签名 = SM2 + 时间戳 + 笔迹</div>
+      <p>三层证据:<strong>数字证书</strong>(身份)+ <strong>SM2 签名</strong>(不可篡改)+ <strong>笔迹图像</strong>(防代签)。CFCA 时间戳保证事后可追溯。</p>
+    </div>
+  </section>
+
+  <!-- 4. 数据架构 -->
+  <section id="data">
+    <h2><span class="num">4</span>数据架构</h2>
+
+    <h3>4.1 数据分类与存储</h3>
+    <table>
+      <thead><tr><th>类别</th><th>数据</th><th>存储</th><th>保留</th><th>加密</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge">音视频流</span></td><td>客户视频 / 音频 / 混流</td><td>OSS 冷热分层</td><td>≥ 10 年</td><td>SSE-KMS + SM4</td></tr>
+        <tr><td><span class="badge">业务订单</span></td><td>订单 / 保单 / 客户</td><td>MySQL 主从 + TiDB 备</td><td>永久</td><td>字段级 SM4</td></tr>
+        <tr><td><span class="badge">过程数据</span></td><td>ASR 文本 / TTS 播报 / 节点状态</td><td>MySQL + ES 检索</td><td>≥ 10 年</td><td>SM4 + 脱敏</td></tr>
+        <tr><td><span class="badge">证据指纹</span></td><td>SM3 哈希 / Merkle 根</td><td>Fabric 区块链</td><td>永久</td><td>链上不可篡改</td></tr>
+        <tr><td><span class="badge">风控特征</span></td><td>设备指纹 / 行为画像</td><td>ClickHouse(OLAP)</td><td>2 年</td><td>SM4 + 假名化</td></tr>
+        <tr><td><span class="badge">监管报送</span></td><td>银保监 XML 报告</td><td>MSSQL(专用库)</td><td>永久</td><td>SM2 加密</td></tr>
+        <tr><td><span class="badge">AI 训练数据</span></td><td>质检标注 / 误识别样本</td><td>OSS 私有 + 脱敏</td><td>1 年</td><td>SM4 + 假名化</td></tr>
+      </tbody>
+    </table>
+
+    <h3>4.2 三大数据流</h3>
+    <div class="mermaid">
+flowchart LR
+    subgraph 实时流 [⚡ 实时流 - Kafka]
+        K1[WebRTC 信令]
+        K2[ASR 转写]
+        K3[质检事件]
+        K4[违规告警]
+    end
+    subgraph 离线流 [📦 离线流 - 批处理]
+        O1[音视频分片上传]
+        O2[笔迹图像入库]
+        O3[合同 PDF 入库]
+    end
+    subgraph 证据流 [⛓️ 证据流 - Fabric]
+        F1[SM3 指纹]
+        F2[SM2 签名]
+        F3[Merkle 根]
+        F4[时间戳]
+    end
+    实时流 --> 实时质检
+    离线流 --> AI 复检
+    实时流 --> 实时质检 --> 证据流
+    离线流 --> AI 复检 --> 证据流
+    证据流 --> 银保监报送
+    </div>
+
+    <h3>4.3 关键表设计(新增 8 张)</h3>
+    <table>
+      <thead><tr><th>表</th><th>用途</th><th>关键字段</th></tr></thead>
+      <tbody>
+        <tr><td>t_selfrecord_session</td><td>自助会话主表</td><td>session_id, customer_id, status, current_node, pause_point, started_at, resumed_at, ended_at</td></tr>
+        <tr><td>t_kyc_verify</td><td>强 KYC 验证记录</td><td>session_id, face_score, voice_score, liveness_score, device_id, risk_level</td></tr>
+        <tr><td>t_recording_chunk</td><td>音视频分片</td><td>chunk_id, session_id, stream_type(local/cloud/mix), size, sha256, oss_path</td></tr>
+        <tr><td>t_esign_record</td><td>电子签名记录</td><td>sign_id, session_id, cert_serial, sm2_sig, signature_img, timestamp_token</td></tr>
+        <tr><td>t_node_event</td><td>流程节点事件</td><td>session_id, node_code, status, duration, ai_score, operator</td></tr>
+        <tr><td>t_ai_quality_real</td><td>实时质检记录</td><td>session_id, ts, type, severity, ai_msg, action(allow/block/warn)</td></tr>
+        <tr><td>t_voiceprint</td><td>声纹模板</td><td>customer_id, voiceprint_id, model_version, encrypted_vec</td></tr>
+        <tr><td>t_ai_guide_log</td><td>AI 引导员对话</td><td>session_id, round, role(ai/customer), content, tts_url</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 5. 安全架构 -->
+  <section id="sec">
+    <h2><span class="num">5</span>安全架构</h2>
+
+    <h3>5.1 端到端加密</h3>
+    <div class="mermaid">
+flowchart LR
+    A[客户 APP] -->|SM2 协商| B[媒体网关]
+    B -->|DTLS-SRTP| C[录制服务]
+    C -->|SM4-CBC| D[OSS]
+    D -->|KMS 托管密钥| E[存储加密]
+    A -->|SM2 签名| F[区块链]
+    F -->|链上 SM3 指纹| G[证据固化]
+    </div>
+
+    <h3>5.2 反欺诈六道防线</h3>
+    <table>
+      <thead><tr><th>防线</th><th>手段</th><th>拦截点</th><th>拦截率目标</th></tr></thead>
+      <tbody>
+        <tr><td>① 设备指纹</td><td>设备 ID + 行为画像 + 越狱检测</td><td>会话开始前</td><td>95%</td></tr>
+        <tr><td>② 活体检测</td><td>静默活体(眨眼 / 张嘴 / 点头)</td><td>KYC 阶段</td><td>99.9%</td></tr>
+        <tr><td>③ 人脸比对</td><td>1:1 vs 身份证 / 公安库</td><td>KYC 阶段</td><td>99.99%</td></tr>
+        <tr><td>④ 声纹比对</td><td>1:1 朗读固定话术</td><td>风险揭示中</td><td>98%</td></tr>
+        <tr><td>⑤ 行为分析</td><td>语速 / 停顿 / 翻页速度</td><td>全流程</td><td>85%</td></tr>
+        <tr><td>⑥ 联邦风控</td><td>跨设备 / 跨账号关联分析</td><td>质检复检</td><td>90%</td></tr>
+      </tbody>
+    </table>
+
+    <h3>5.3 客户身份核验流程</h3>
+    <div class="mermaid">
+sequenceDiagram
+    autonumber
+    participant App
+    participant KYC
+    participant Liveness as 活体服务
+    participant Face as 人脸服务
+    participant Voice as 声纹服务
+    participant Cert as CA 认证
+    participant Police as 公安一所
+
+    App->>KYC: 进入 KYC 阶段
+    App->>KYC: 上传身份证(OCR)
+    KYC->>Police: 身份证 N → 实名核验
+    Police-->>KYC: 一致 / 不一致
+    App->>Liveness: 录制 3 秒视频
+    Liveness-->>KYC: 活体分(≥ 0.95 通过)
+    App->>Face: 现场照 vs 身份证照
+    Face-->>KYC: 相似度(≥ 0.92 通过)
+    App->>Voice: 朗读 8 位数字
+    Voice-->>KYC: 声纹分(≥ 0.85 通过)
+    KYC->>Cert: 申请数字证书
+    Cert-->>App: SM2 证书 + 时间戳
+    KYC-->>App: 4 项全通过 → 进入下一节点
+    </div>
+
+    <h3>5.4 数据合规清单</h3>
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="title">🔐 个人信息保护法(PIPL)</div>
+        <ul>
+          <li>明示告知 + 同意(可撤回)</li>
+          <li>最小必要原则</li>
+          <li>客户删除权(可申请)</li>
+          <li>数据本地化(中国境内)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="title">📜 银保监合规</div>
+        <ul>
+          <li>视听资料保留 ≥ 10 年</li>
+          <li>30% 抽检 / 100% 全检(高龄 / 投连)</li>
+          <li>银保监报送(月度)</li>
+          <li>检查权限分级</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="title">🛡️ 网络安全法</div>
+        <ul>
+          <li>等保 2.0 三级</li>
+          <li>密码法:SM2/SM3/SM4 国产算法</li>
+          <li>日志保留 ≥ 1 年</li>
+          <li>应急演练(季度)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="title">🌐 数据出境</div>
+        <ul>
+          <li>完全境内存储</li>
+          <li>无境外 CDN</li>
+          <li>无境外 LLM 调用</li>
+          <li>数据不出境承诺</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. 容错架构 -->
+  <section id="ft">
+    <h2><span class="num">6</span>容错架构</h2>
+
+    <h3>6.1 网络容错(三道防线)</h3>
+    <table>
+      <thead><tr><th>防线</th><th>手段</th><th>效果</th></tr></thead>
+      <tbody>
+        <tr><td>① WebRTC 自适应</td><td>NACK + FEC + Jitter Buffer</td><td>40% 丢包仍可通话</td></tr>
+        <tr><td>② 断点续传</td><td>音视频分片 5MB,SM3 校验</td><td>断网 30min 内可恢复</td></tr>
+        <tr><td>③ 离线补录</td><td>本地缓存 + 网络恢复后上传</td><td>完全断网 24h 可补传</td></tr>
+      </tbody>
+    </table>
+
+    <h3>6.2 断点续传机制</h3>
+    <div class="mermaid">
+flowchart TB
+    A[客户端录制] --> B[分片 5MB]
+    B --> C{网络检测}
+    C -->|优| D[实时上传 OSS]
+    C -->|良| E[本地缓存 + 异步上传]
+    C -->|差/断| F[本地 IndexedDB]
+    F --> G[网络恢复]
+    G --> H[分片校验 SM3]
+    H -->|通过| D
+    H -->|失败| I[重新录制该片]
+    D --> J[服务端合并]
+    </div>
+
+    <h3>6.3 跨日续做流程</h3>
+    <div class="mermaid">
+stateDiagram-v2
+    [*] --> 会话中
+    会话中 --> 暂停中: 客户主动退出 / 网络中断
+    暂停中 --> 会话中: 30 分钟内恢复
+    暂停中 --> 挂起中: 超过 30 分钟
+    挂起中 --> 续做中: 客户点击继续(72h 内)
+    挂起中 --> 已过期: 超过 72h
+    续做中 --> 会话中: 从暂停点继续
+    已过期 --> 重新开始
+    </div>
+
+    <h3>6.4 服务降级矩阵</h3>
+    <table>
+      <thead><tr><th>故障点</th><th>降级策略</th><th>客户感知</th></tr></thead>
+      <tbody>
+        <tr><td>TTS 服务挂</td><td>使用预录 TTS 音频库</td><td>无感(音色稍差)</td></tr>
+        <tr><td>ASR 服务挂</td><td>改为客户点击"我说完了"</td><td>多 1 步操作</td></tr>
+        <tr><td>LLM 质检挂</td><td>仅走规则引擎(100+ 规则)</td><td>无感</td></tr>
+        <tr><td>活体服务挂</td><td>改为人工视频客服兜底</td><td>转人工</td></tr>
+        <tr><td>OSS 上传慢</td><td>本地缓存 + 异步上传</td><td>无感(结束确认稍慢)</td></tr>
+        <tr><td>Fabric 上链慢</td><td>本地存证 + 异步上链</td><td>无感</td></tr>
+        <tr><td>SFU 全挂</td><td>降级为单流 P2P 模式</td><td>录制功能保留</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 7. 部署架构 -->
+  <section id="deploy">
+    <h2><span class="num">7</span>部署架构</h2>
+
+    <h3>7.1 多 AZ 部署</h3>
+    <div class="mermaid">
+flowchart TB
+    subgraph Internet [🌐 互联网]
+        CUST[📱 客户终端]
+    end
+
+    subgraph Edge [🛡️ 边缘接入]
+        CDN[CDN 加速]
+        WAF[WAF 防火墙]
+        LB[GSLB 智能调度]
+    end
+
+    subgraph AZ1 [🏢 主数据中心(北京)]
+        APIGW1[API Gateway x3]
+        SFU1[媒体网关 x5]
+        APP1[业务服务 x5]
+        AI1[AI 推理 GPU x2]
+        DB1[(MySQL 主)]
+        REDIS1[(Redis 主)]
+        KAFKA1[Kafka 3 节点]
+        OSS1[(OSS 节点)]
+    end
+
+    subgraph AZ2 [🏢 同城灾备(上海)]
+        APIGW2[API Gateway x3]
+        SFU2[媒体网关 x3]
+        APP2[业务服务 x3]
+        DB2[(MySQL 备)]
+        REDIS2[(Redis 备)]
+        KAFKA2[Kafka 3 节点]
+        OSS2[(OSS 节点)]
+    end
+
+    subgraph AZ3 [🏢 异地灾备(深圳)]
+        BACKUP[(冷备 OSS)]
+    end
+
+    CUST --> CDN --> WAF --> LB
+    LB --> APIGW1
+    LB --> APIGW2
+    APIGW1 --> APP1
+    APIGW2 --> APP2
+    APIGW1 --> SFU1
+    APIGW2 --> SFU2
+    APP1 --> DB1
+    APP1 --> REDIS1
+    APP1 --> KAFKA1
+    SFU1 --> OSS1
+    DB1 -.实时同步.-> DB2
+    OSS1 -.复制.-> OSS2
+    OSS1 -.异步.-> BACKUP
+    </div>
+
+    <h3>7.2 容量规划(峰值 10000 并发)</h3>
+    <table>
+      <thead><tr><th>组件</th><th>规格</th><th>数量</th><th>峰值负载</th></tr></thead>
+      <tbody>
+        <tr><td>API Gateway</td><td>8 核 16G</td><td>6 副本</td><td>5000 QPS</td></tr>
+        <tr><td>业务服务</td><td>8 核 16G</td><td>10 副本</td><td>3000 QPS</td></tr>
+        <tr><td>SFU 媒体网关</td><td>16 核 32G + GPU</td><td>8 副本</td><td>10000 路</td></tr>
+        <tr><td>AI 推理</td><td>GPU A100</td><td>4 卡</td><td>500 并发</td></tr>
+        <tr><td>MySQL</td><td>32 核 128G + SSD</td><td>2 主 2 备</td><td>30000 TPS</td></tr>
+        <tr><td>Redis</td><td>16 核 64G</td><td>3 主 3 备</td><td>100000 QPS</td></tr>
+        <tr><td>Kafka</td><td>16 核 64G + NVMe</td><td>5 节点</td><td>100000 TPS</td></tr>
+        <tr><td>OSS</td><td>标准存储 + 归档</td><td>PB 级</td><td>1GB/s</td></tr>
+        <tr><td>Fabric Peer</td><td>8 核 16G</td><td>8 节点</td><td>1000 TPS</td></tr>
+      </tbody>
+    </table>
+
+    <h3>7.3 灾备目标</h3>
+    <div class="grid grid-3">
+      <div class="kpi"><div class="v">RPO ≤ 5min</div><div class="l">数据恢复点</div></div>
+      <div class="kpi"><div class="v">RTO ≤ 30min</div><div class="l">恢复时间</div></div>
+      <div class="kpi"><div class="v">99.95%</div><div class="l">年可用性</div></div>
+    </div>
+  </section>
+
+  <!-- 8. 复用评估 -->
+  <section id="reuse">
+    <h2><span class="num">8</span>复用评估</h2>
+
+    <h3>8.1 现有模块复用率</h3>
+    <div class="mermaid">
+pie title 现有双录平台模块复用率
+    "完整复用" : 40
+    "改造后复用" : 25
+    "新增模块" : 30
+    "废弃不用" : 5
+    </div>
+
+    <h3>8.2 复用清单</h3>
+    <table>
+      <thead><tr><th>现有模块</th><th>复用方式</th><th>改动</th><th>复用率</th></tr></thead>
+      <tbody>
+        <tr><td>Fabric Java 链码</td><td>直接复用</td><td>无</td><td>100%</td></tr>
+        <tr><td>Script SDK 核心</td><td>改造:加入 H5/小程序适配</td><td>新增 SelfRecord 模块</td><td>60%</td></tr>
+        <tr><td>Spring Boot 后端</td><td>新增 6 个服务</td><td>扩展 12 个</td><td>50%</td></tr>
+        <tr><td>Kafka 事件</td><td>直接复用 + 新增事件类型</td><td>新增 4 主题</td><td>90%</td></tr>
+        <tr><td>AI 质检(Qwen/DeepSeek)</td><td>改造:加流式 + 端云协同</td><td>新增客户端轻量检测</td><td>80%</td></tr>
+        <tr><td>银保监报送</td><td>直接复用</td><td>无</td><td>100%</td></tr>
+        <tr><td>WebRTC SFU 适配</td><td>改造:加单流独立录制</td><td>更换 mediasoup 插件</td><td>50%</td></tr>
+        <tr><td>SQL 17 张表</td><td>扩展 + 新增 8 张</td><td>新增 8 张自助表</td><td>68%</td></tr>
+      </tbody>
+    </table>
+
+    <h3>8.3 新增模块清单</h3>
+    <ul>
+      <li>📱 <strong>SelfRecord SDK</strong>(H5/小程序/APP 统一封装,~3000 行 TS)</li>
+      <li>🔐 <strong>强 KYC 服务</strong>(活体+人脸+声纹,~2000 行 Java)</li>
+      <li>🤖 <strong>AI 引导员</strong>(数字员工 + TTS,~1500 行)</li>
+      <li>📋 <strong>流程编排</strong>(8 节点 + 暂停续做,~2500 行)</li>
+      <li>✍️ <strong>eSign 服务</strong>(CFCA + 手写板,~1500 行)</li>
+      <li>🔄 <strong>断点续传</strong>(分片 + SM3,~1000 行)</li>
+    </ul>
+  </section>
+
+  <!-- 9. 实施路径 -->
+  <section id="roadmap">
+    <h2><span class="num">9</span>实施路径</h2>
+
+    <h3>9.1 三阶段 12 个月</h3>
+
+    <div class="stage">
+      <div class="when">M1-M2<br/><span class="d">MVP 内测</span></div>
+      <div class="what">
+        <h4>第 1 阶段:核心闭环(2 个月)</h4>
+        <p>完成 H5 SDK + 强 KYC + 流程编排 + 电子签字 + 基础 AI 引导。POC 演示 1 个产品(投连险)自助双录全流程。预计 2 人月。</p>
+        <span class="tag p0">P0</span>
+        <span class="tag p0">P0</span>
+      </div>
+      <div class="cost">2 人月</div>
+    </div>
+
+    <div class="stage">
+      <div class="when">M3-M6<br/><span class="d">试运行</span></div>
+      <div class="what">
+        <h4>第 2 阶段:试运行 + 灰度(4 个月)</h4>
+        <p>扩展到 APP/小程序 + 完整 AI 引导 + 实时质检 + 断点续传 + 银保监报送。灰度 3% 客户,验证 95% 通过率,修复问题。预计 8 人月。</p>
+        <span class="tag p0">P0</span>
+        <span class="tag p1">P1</span>
+        <span class="tag p1">P1</span>
+      </div>
+      <div class="cost">8 人月</div>
+    </div>
+
+    <div class="stage">
+      <div class="when">M7-M12<br/><span class="d">全面上线</span></div>
+      <div class="what">
+        <h4>第 3 阶段:全面上线(6 个月)</h4>
+        <p>开放 100% 客户 + 多产品 + 跨日续做 + 联邦风控 + 监管报送自动化。覆盖 12 款产品,日均处理 10 万笔。预计 12 人月。</p>
+        <span class="tag p1">P1</span>
+        <span class="tag p2">P2</span>
+        <span class="tag p2">P2</span>
+        <span class="tag p3">P3</span>
+      </div>
+      <div class="cost">12 人月</div>
+    </div>
+
+    <h3>9.2 关键里程碑</h3>
+    <table>
+      <thead><tr><th>时间</th><th>里程碑</th><th>验收标准</th></tr></thead>
+      <tbody>
+        <tr><td>M2</td><td>POC 完成</td><td>1 款产品 100% 全流程跑通</td></tr>
+        <tr><td>M4</td><td>内部试运行</td><td>员工自助,200 单,95% 通过</td></tr>
+        <tr><td>M6</td><td>灰度上线</td><td>3% 客户,1000 单,系统稳定</td></tr>
+        <tr><td>M8</td><td>监管验收</td><td>银保监 30% 抽检通过</td></tr>
+        <tr><td>M10</td><td>10% 开放</td><td>日均 1 万笔,性能达标</td></tr>
+        <tr><td>M12</td><td>100% 开放</td><td>日均 10 万笔,达到 SLA</td></tr>
+      </tbody>
+    </table>
+
+    <h3>9.3 资源与预算</h3>
+    <div class="grid grid-4">
+      <div class="kpi"><div class="v">22 人月</div><div class="l">总人力</div></div>
+      <div class="kpi"><div class="v">~1500 万</div><div class="l">总投入(¥)</div></div>
+      <div class="kpi"><div class="v">3-4 人</div><div class="l">前端</div></div>
+      <div class="kpi"><div class="v">5-6 人</div><div class="l">后端</div></div>
+    </div>
+
+    <h3>9.4 风险与对策</h3>
+    <table>
+      <thead><tr><th>风险</th><th>等级</th><th>对策</th></tr></thead>
+      <tbody>
+        <tr><td>客户接受度低</td><td><span class="tag p0">P0</span></td><td>提供"线下转线上"过渡期,前 3 月客服 7×24 兜底</td></tr>
+        <tr><td>活体/声纹误识率高</td><td><span class="tag p0">P0</span></td><td>多服务厂商对比测试,选最优 2 家双跑</td></tr>
+        <tr><td>AI 引导体验差</td><td><span class="tag p1">P1</span></td><td>建立话术库(银行/保险/理财 3 大类),每类 ≥ 100 句</td></tr>
+        <tr><td>监管口径变化</td><td><span class="tag p1">P1</span></td><td>保持与监管机构月度沟通,架构留扩展性</td></tr>
+        <tr><td>网络环境差</td><td><span class="tag p1">P1</span></td><td>断点续传 + 离线补录双保险</td></tr>
+        <tr><td>客户手机性能差</td><td><span class="tag p2">P2</span></td><td>SDK 性能分级(高端/中端/低端),低端机降级为 H5</td></tr>
+        <tr><td>SFU 性能瓶颈</td><td><span class="tag p2">P2</span></td><td>云厂商 SFU(声网/即构) + 自建双路</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 总结 -->
+  <section>
+    <h2>📊 总结</h2>
+    <div class="card" style="border-left:6px solid var(--ok)">
+      <div class="title">✅ 方案亮点</div>
+      <ul>
+        <li><strong>复用率 65%</strong>:复用现有双录平台 60% 模块,大幅降低研发成本</li>
+        <li><strong>三副本冗余</strong>:本地 + 单流 + 混流,数据安全有保障</li>
+        <li><strong>端云协同质检</strong>:硬规则(端) + 软规则(云),既实时又精准</li>
+        <li><strong>四要素 KYC</strong>:活体+人脸+声纹+设备,99.99% 反欺诈</li>
+        <li><strong>断点续传</strong>:分片 + SM3 校验,弱网 24h 可恢复</li>
+        <li><strong>三阶段交付</strong>:MVP 2 月,试运行 4 月,稳态 6 月</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:6px solid var(--warn)">
+      <div class="title">⚠️ 重点关注</div>
+      <ul>
+        <li><strong>客户体验</strong>:自助场景对 UX 要求极高,需成立独立 UX 小组持续打磨</li>
+        <li><strong>活体误识</strong>:建议 ≥ 2 家厂商对比,选择误识率 &lt; 0.001% 的方案</li>
+        <li><strong>监管沟通</strong>:本方案基于 2024 银保监办法,后续政策变化需预留扩展性</li>
+        <li><strong>SFU 选型</strong>:建议云厂商 SFU + 自建双路,避免单点</li>
+        <li><strong>断点续传</strong>:本地缓存容量有限,需严格控制分片大小</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:6px solid var(--info)">
+      <div class="title">📈 预期收益</div>
+      <div class="grid grid-4">
+        <div class="kpi"><div class="v">50%</div><div class="l">成本下降</div></div>
+        <div class="kpi"><div class="v">10×</div><div class="l">并发能力</div></div>
+        <div class="kpi"><div class="v">95%</div><div class="l">通过率</div></div>
+        <div class="kpi"><div class="v">7×24h</div><div class="l">服务时间</div></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <p>📐 线上自助双录架构设计 v1.0</p>
+  <p>Mavis · 2026-08-08 · Mavis Bank</p>
+  <p style="margin-top:8px;opacity:0.7">© 2026 · 银行 V 类生产环境 · RPO ≤ 5min · RTO ≤ 30min</p>
+</footer>
+
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'default', flowchart: { curve: 'basis' } });
+</script>
+</body>
+</html>
