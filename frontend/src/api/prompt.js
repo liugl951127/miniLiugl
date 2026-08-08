@@ -13,7 +13,7 @@
  */
 import http from './http'
 
-const BASE = '/api/v1/prompts'
+const BASE = '/prompts'
 
 /** 分页列表 */
 export const promptApi = {

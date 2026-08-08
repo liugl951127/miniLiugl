@@ -35,18 +35,18 @@ export const getDashboard = () => {
 }
 
 export const listAdminUsers = (page = 1, size = 20) =>
-  http.get(`/api/v1/admin/users?page=${page}&size=${size}`)
+  http.get(`/admin/users?page=${page}&size=${size}`)
 
-export const getAdminUser = (id) => http.get(`/api/v1/admin/users/${id}`)
+export const getAdminUser = (id) => http.get(`/admin/users/${id}`)
 
 export const createAdminUser = (actorId, body) =>
-  http.post(`/api/v1/admin/users?actorId=${actorId}`, body)
+  http.post(`/admin/users?actorId=${actorId}`, body)
 
 export const resetAdminUserPassword = (id, actorId, newPassword) =>
-  http.post(`/api/v1/admin/users/${id}/reset-password?actorId=${actorId}`, { newPassword })
+  http.post(`/admin/users/${id}/reset-password?actorId=${actorId}`, { newPassword })
 
 export const toggleAdminUser = (id, actorId, enabled) =>
-  http.put(`/api/v1/admin/users/${id}/status?actorId=${actorId}&enabled=${enabled}`)
+  http.put(`/admin/users/${id}/status?actorId=${actorId}&enabled=${enabled}`)
 
 export const listModelProviders = () => {
   console.log('%c[ADMIN API] listModelProviders', 'color: #409eff', '')
@@ -57,10 +57,10 @@ export const listModelConfigs = () => {
   return http.get('admin/models');
 }
 export const updateRateLimit = (code, actorId, body) =>
-  http.put(`/api/v1/admin/models/${code}/rate-limit?actorId=${actorId}`, body)
+  http.put(`/admin/models/${code}/rate-limit?actorId=${actorId}`, body)
 
 export const getRecentAudit = (limit = 50) =>
-  http.get(`/api/v1/admin/audit-ops/recent?limit=${limit}`)
+  http.get(`/admin/audit-ops/recent?limit=${limit}`)
 
 export const getApiKeyStats = () => {
   console.log('%c[ADMIN API] getApiKeyStats', 'color: #409eff', '')
@@ -68,11 +68,11 @@ export const getApiKeyStats = () => {
 }
 
 export const getAuditByActor = (actorId, limit = 20) =>
-  http.get(`/api/v1/admin/audit-ops/by-actor/${actorId}?limit=${limit}`)
+  http.get(`/admin/audit-ops/by-actor/${actorId}?limit=${limit}`)
 
 // V5.9: 按天审计统计 (Dashboard 折线图)
 export const getAuditByDay = (days = 7, action) =>
-  http.get(`/api/v1/admin/audit-ops/by-day?days=${days}${action ? `&action=${action}` : ''}`)
+  http.get(`/admin/audit-ops/by-day?days=${days}${action ? `&action=${action}` : ''}`)
 
 // V2.9.0: 治理后台 API
 export const governance = {
