@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import com.minimax.common.web.Result;
+import com.minimax.common.web.Result;
 
 import java.util.*;
 import java.util.stream.Collectors;

@@ -97,13 +97,19 @@
     </el-card>
 
     <!-- 创建密钥弹窗 -->
-    <el-dialog v-model="createVisible" :title="t('apikey.createKey')" width="460px">
+    <el-dialog v-model="createVisible" :title="t('apikey.createKey')" width="560px">
+      <!-- V6.3+ 智能填单助手 -->
+      <SmartFormAssist form-type="apiKey" :context="createForm" @apply="applyAISuggestion" />
       <el-form label-width="90">
         <el-form-item :label="t('apikey.name')">
           <el-input v-model="createForm.name" :placeholder="t('apikey.namePlaceholder')" clearable />
         </el-form-item>
         <el-form-item :label="t('apikey.scopes')">
-          <el-input v-model="createForm.scopes" :placeholder="t('apikey.scopesPlaceholder')" clearable />
+          <el-select v-model="createForm.scopes" multiple placeholder="选择权限" style="width:100%">
+            <el-option label="只读" value="read" />
+            <el-option label="读写" value="write" />
+            <el-option label="管理员" value="admin" />
+          </el-select>
         </el-form-item>
         <el-form-item :label="t('apikey.expiresAt')">
           <el-date-picker
@@ -113,6 +119,9 @@
             clearable
             style="width:100%"
           />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="createForm.description" type="textarea" :rows="2" placeholder="用途说明" />
         </el-form-item>
       </el-form>
       <template #footer>
