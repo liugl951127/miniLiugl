@@ -21,6 +21,8 @@
     :gap="[160, 100]"
     class="page-watermark"
   />
+  <!-- V6.3+ AI 智能提示 -->
+  <AITip context="no-data" dismiss-key="dashboard-no-data" />
   <header class="page-header">
       <div>
         <h2 class="page-title">📊 指标仪表盘</h2>
