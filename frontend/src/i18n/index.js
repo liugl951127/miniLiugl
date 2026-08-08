@@ -1,28 +1,45 @@
 /**
- * @file i18n/index.js - 极简 i18n (V6.3+ 合并版)
+ * @file i18n/index.js - 极简 i18n (V6.3+ 带真实中文翻译)
  * 
- * 彻底去除 vue-i18n 9.x 依赖, 体积 0 KB
- * - t(key) 直接返回 key 本身 (无翻译状态)
- * - useI18n() 兼容 vue-i18n API
- * - i18n.install() 模拟 vue-i18n plugin install
- * - setLang() / currentLang() 持久化到 localStorage
- * 
- * 用法:
- *   import { useI18n, t, i18n, setLang } from '@/i18n'
- *   const { t } = useI18n()
- *   t('login.title')  // → 'login.title' (无翻译)
- *   
- *   app.use(i18n)  // 模拟 vue-i18n 插件
+ * 不用 vue-i18n 9.x, 自己实现
+ * 翻译查 zh.js, 找不到返回 key
  */
-export function t(key, ...args) { return key || '' }
+import zhModule from './locales/zh'
+const zh = zhModule.default || zhModule
 
-export function useI18n() { 
-  return { 
-    t, 
-    te: () => false,
+// 嵌套 key 查找
+function lookup(obj, key) {
+  if (!obj || !key) return undefined
+  if (key in obj) return obj[key]
+  const parts = key.split('.')
+  let cur = obj
+  for (const p of parts) {
+    if (cur && typeof cur === 'object' && p in cur) {
+      cur = cur[p]
+    } else {
+      return undefined
+    }
+  }
+  return cur
+}
+
+export function t(key, ...args) {
+  if (!key) return ''
+  const found = lookup(zh, key)
+  if (found !== undefined) {
+    if (typeof found === 'function') return found(...args)
+    return found
+  }
+  return key  // 兜底
+}
+
+export function useI18n() {
+  return {
+    t,
+    te: (key) => lookup(zh, key) !== undefined,
     locale: { value: 'zh' },
     locales: { value: ['zh'] }
-  } 
+  }
 }
 
 export function setLang(lang) {
@@ -39,15 +56,15 @@ export function currentLang() {
 }
 
 export const i18n = {
-  t,
-  useI18n,
-  setLang,
-  currentLang,
-  locale: 'zh',
-  mode: 'composition',
+  t, useI18n, setLang, currentLang,
+  locale: 'zh', mode: 'composition',
   install: (app) => {
-    if (app && app.config && app.config.globalProperties) {
+    if (app?.config?.globalProperties) {
       app.config.globalProperties.$t = t
     }
   }
 }
+
+export function initI18n() { return i18n }
+
+export default { t, useI18n, setLang, currentLang, i18n, initI18n }
