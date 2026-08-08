@@ -87,7 +87,7 @@ export const toggleAlertRule = (id, enabled) =>
 
 /** 确认告警 (Day 34: 支持备注) */
 export const acknowledgeAlert = (id, notes = '') =>
-  http.post('/monitor/alerts/${id}/ack`, notes ? { notes } : {})
+  http.post(`/monitor/alerts/${id}/ack`, notes ? { notes } : {})
 
 // ==================== 静默功能 (Day 35) ====================
 

@@ -50,7 +50,7 @@ export const functionApi = {
    * invoke - 创建/更新 
    * @returns POST  的响应 Promise
    */
-  invoke: (name, args) => http.post('/function/invoke/${name}`, args),
+  invoke: (name, args) => http.post(`/function/invoke/${name}`, args),
   /**
    * logs - 查询 /api/v1/function/logs
    * @returns GET /api/v1/function/logs 的响应 Promise
