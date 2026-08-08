@@ -1,5 +1,5 @@
 {
-  "/api/v1/api/v1/admin/health": {
+  "/api/v1/admin/health": {
     "methods": [
       "GET"
     ],
@@ -7,7 +7,7 @@
       "frontend/src/api/admin.js"
     ]
   },
-  "/api/v1/api/v1/admin/ping": {
+  "/api/v1/admin/ping": {
     "methods": [
       "GET"
     ],
@@ -15,7 +15,7 @@
       "frontend/src/api/admin.js"
     ]
   },
-  "/api/v1/api/v1/admin/stats/ops": {
+  "/api/v1/admin/stats/ops": {
     "methods": [
       "GET"
     ],
@@ -23,7 +23,7 @@
       "frontend/src/api/admin.js"
     ]
   },
-  "/api/v1/api/v1/admin/stats/dashboard": {
+  "/api/v1/admin/stats/dashboard": {
     "methods": [
       "GET"
     ],
@@ -31,7 +31,7 @@
       "frontend/src/api/admin.js"
     ]
   },
-  "/api/v1/api/v1/admin/users": {
+  "/api/v1/admin/users": {
     "methods": [
       "GET",
       "POST",
@@ -41,7 +41,7 @@
       "frontend/src/api/admin.js"
     ]
   },
-  "/api/v1/api/v1/admin/models/providers": {
+  "/api/v1/admin/models/providers": {
     "methods": [
       "GET"
     ],
@@ -50,7 +50,7 @@
       "frontend/src/api/model.js"
     ]
   },
-  "/api/v1/api/v1/admin/models": {
+  "/api/v1/admin/models": {
     "methods": [
       "GET",
       "PUT"
@@ -60,7 +60,7 @@
       "frontend/src/api/model.js"
     ]
   },
-  "/api/v1/api/v1/admin/audit-ops/recent": {
+  "/api/v1/admin/audit-ops/recent": {
     "methods": [
       "GET"
     ],
@@ -68,7 +68,7 @@
       "frontend/src/api/admin.js"
     ]
   },
-  "/api/v1/api/v1/admin/apikey/stats": {
+  "/api/v1/admin/apikey/stats": {
     "methods": [
       "GET"
     ],
@@ -76,7 +76,7 @@
       "frontend/src/api/admin.js"
     ]
   },
-  "/api/v1/api/v1/admin/audit-ops/by-actor": {
+  "/api/v1/admin/audit-ops/by-actor": {
     "methods": [
       "GET"
     ],
@@ -84,7 +84,7 @@
       "frontend/src/api/admin.js"
     ]
   },
-  "/api/v1/api/v1/admin/audit-ops/by-day": {
+  "/api/v1/admin/audit-ops/by-day": {
     "methods": [
       "GET"
     ],
@@ -92,7 +92,7 @@
       "frontend/src/api/admin.js"
     ]
   },
-  "/api/v1/api/v1/admin/governance/overview": {
+  "/api/v1/admin/governance/overview": {
     "methods": [
       "GET"
     ],
@@ -100,7 +100,7 @@
       "frontend/src/api/admin.js"
     ]
   },
-  "/api/v1/api/v1/admin/governance/timeline": {
+  "/api/v1/admin/governance/timeline": {
     "methods": [
       "GET"
     ],
@@ -108,7 +108,7 @@
       "frontend/src/api/admin.js"
     ]
   },
-  "/api/v1/api/v1/admin/governance/anomalies": {
+  "/api/v1/admin/governance/anomalies": {
     "methods": [
       "GET"
     ],
@@ -116,7 +116,7 @@
       "frontend/src/api/admin.js"
     ]
   },
-  "/api/v1/api/v1/admin/governance/compliance": {
+  "/api/v1/admin/governance/compliance": {
     "methods": [
       "GET"
     ],
@@ -124,7 +124,7 @@
       "frontend/src/api/admin.js"
     ]
   },
-  "/api/v1/api/v1/admin/governance/retention": {
+  "/api/v1/admin/governance/retention": {
     "methods": [
       "GET"
     ],
@@ -1569,7 +1569,7 @@
       "frontend/src/api/analytics.js"
     ]
   },
-  "/api/v1/api/v1/admin/stats/apikey": {
+  "/api/v1/admin/stats/apikey": {
     "methods": [
       "GET"
     ],
@@ -1577,7 +1577,7 @@
       "frontend/src/api/apikey.js"
     ]
   },
-  "/api/v1/api/v1/admin/stats/apikey/trend": {
+  "/api/v1/admin/stats/apikey/trend": {
     "methods": [
       "GET"
     ],
@@ -1585,7 +1585,7 @@
       "frontend/src/api/apikey.js"
     ]
   },
-  "/api/v1/api/v1/auth/login": {
+  "/api/v1/auth/login": {
     "methods": [
       "POST"
     ],
@@ -1594,7 +1594,7 @@
       "frontend/src/api/system.js"
     ]
   },
-  "/api/v1/api/v1/auth/register": {
+  "/api/v1/auth/register": {
     "methods": [
       "POST"
     ],
@@ -1603,7 +1603,7 @@
       "frontend/src/api/system.js"
     ]
   },
-  "/api/v1/api/v1/auth/me": {
+  "/api/v1/auth/me": {
     "methods": [
       "GET"
     ],
@@ -1612,7 +1612,7 @@
       "frontend/src/api/system.js"
     ]
   },
-  "/api/v1/api/v1/auth/refresh": {
+  "/api/v1/auth/refresh": {
     "methods": [
       "POST"
     ],
@@ -1621,7 +1621,7 @@
       "frontend/src/api/system.js"
     ]
   },
-  "/api/v1/api/v1/auth/logout": {
+  "/api/v1/auth/logout": {
     "methods": [
       "POST"
     ],
@@ -1664,7 +1664,7 @@
       "frontend/src/api/collab.js"
     ]
   },
-  "/api/v1/api/v1/function/tools/category": {
+  "/api/v1/function/tools/category": {
     "methods": [
       "GET"
     ],
@@ -1672,7 +1672,7 @@
       "frontend/src/api/function.js"
     ]
   },
-  "/api/v1/api/v1/function/tools": {
+  "/api/v1/function/tools": {
     "methods": [
       "DELETE",
       "GET",
@@ -1683,7 +1683,7 @@
       "frontend/src/api/function.js"
     ]
   },
-  "/api/v1/api/v1/function/tools/by-name": {
+  "/api/v1/function/tools/by-name": {
     "methods": [
       "GET"
     ],
@@ -1691,7 +1691,7 @@
       "frontend/src/api/function.js"
     ]
   },
-  "/api/v1/api/v1/function/invoke": {
+  "/api/v1/function/invoke": {
     "methods": [
       "POST"
     ],
@@ -1699,7 +1699,7 @@
       "frontend/src/api/function.js"
     ]
   },
-  "/api/v1/api/v1/function/logs": {
+  "/api/v1/function/logs": {
     "methods": [
       "GET"
     ],
@@ -1808,7 +1808,7 @@
       "frontend/src/api/memory.js"
     ]
   },
-  "/api/v1/api/v1/models/chat": {
+  "/api/v1/models/chat": {
     "methods": [
       "POST"
     ],
@@ -1816,7 +1816,7 @@
       "frontend/src/api/model.js"
     ]
   },
-  "/api/v1/api/v1/models/chat/cancel": {
+  "/api/v1/models/chat/cancel": {
     "methods": [
       "POST"
     ],
@@ -1905,7 +1905,7 @@
       "frontend/src/api/modelMarket.js"
     ]
   },
-  "/api/v1/api/v1/monitor/info": {
+  "/api/v1/monitor/info": {
     "methods": [
       "GET"
     ],
@@ -1913,7 +1913,7 @@
       "frontend/src/api/monitor.js"
     ]
   },
-  "/api/v1/api/v1/monitor/health": {
+  "/api/v1/monitor/health": {
     "methods": [
       "GET"
     ],
@@ -1922,7 +1922,7 @@
       "frontend/src/api/system.js"
     ]
   },
-  "/api/v1/api/v1/monitor/health/jvm": {
+  "/api/v1/monitor/health/jvm": {
     "methods": [
       "GET"
     ],
@@ -1930,7 +1930,7 @@
       "frontend/src/api/monitor.js"
     ]
   },
-  "/api/v1/api/v1/monitor/health/database": {
+  "/api/v1/monitor/health/database": {
     "methods": [
       "GET"
     ],
@@ -1938,7 +1938,7 @@
       "frontend/src/api/monitor.js"
     ]
   },
-  "/api/v1/api/v1/monitor/health/disk": {
+  "/api/v1/monitor/health/disk": {
     "methods": [
       "GET"
     ],
@@ -1946,7 +1946,7 @@
       "frontend/src/api/monitor.js"
     ]
   },
-  "/api/v1/api/v1/monitor/metrics": {
+  "/api/v1/monitor/metrics": {
     "methods": [
       "GET"
     ],
@@ -1954,7 +1954,7 @@
       "frontend/src/api/monitor.js"
     ]
   },
-  "/api/v1/api/v1/monitor/metrics/snapshot": {
+  "/api/v1/monitor/metrics/snapshot": {
     "methods": [
       "GET"
     ],
@@ -1962,7 +1962,7 @@
       "frontend/src/api/monitor.js"
     ]
   },
-  "/api/v1/api/v1/monitor/alerts/firing": {
+  "/api/v1/monitor/alerts/firing": {
     "methods": [
       "GET"
     ],
@@ -1970,7 +1970,7 @@
       "frontend/src/api/monitor.js"
     ]
   },
-  "/api/v1/api/v1/monitor/alerts/summary": {
+  "/api/v1/monitor/alerts/summary": {
     "methods": [
       "GET"
     ],
@@ -1978,7 +1978,7 @@
       "frontend/src/api/monitor.js"
     ]
   },
-  "/api/v1/api/v1/monitor/alerts/rules": {
+  "/api/v1/monitor/alerts/rules": {
     "methods": [
       "DELETE",
       "GET",
@@ -1989,7 +1989,7 @@
       "frontend/src/api/monitor.js"
     ]
   },
-  "/api/v1/api/v1/monitor/alerts": {
+  "/api/v1/monitor/alerts": {
     "methods": [
       "POST"
     ],
@@ -1997,7 +1997,7 @@
       "frontend/src/api/monitor.js"
     ]
   },
-  "/api/v1/api/v1/monitor/alerts/channels": {
+  "/api/v1/monitor/alerts/channels": {
     "methods": [
       "DELETE",
       "GET",
@@ -2008,7 +2008,7 @@
       "frontend/src/api/monitor.js"
     ]
   },
-  "/api/v1/api/v1/monitor/alerts/history": {
+  "/api/v1/monitor/alerts/history": {
     "methods": [
       "GET"
     ],
@@ -2016,7 +2016,7 @@
       "frontend/src/api/monitor.js"
     ]
   },
-  "/api/v1/api/v1/admin/audit/recent": {
+  "/api/v1/admin/audit/recent": {
     "methods": [
       "GET"
     ],
@@ -2024,7 +2024,7 @@
       "frontend/src/api/monitor.js"
     ]
   },
-  "/api/v1/api/v1/admin/audit/by-actor": {
+  "/api/v1/admin/audit/by-actor": {
     "methods": [
       "GET"
     ],
@@ -2032,7 +2032,7 @@
       "frontend/src/api/monitor.js"
     ]
   },
-  "/api/v1/api/v1/admin/audit/by-day": {
+  "/api/v1/admin/audit/by-day": {
     "methods": [
       "GET"
     ],
@@ -2040,7 +2040,7 @@
       "frontend/src/api/monitor.js"
     ]
   },
-  "/api/v1/api/v1/admin/audit/export": {
+  "/api/v1/admin/audit/export": {
     "methods": [
       "GET"
     ],
@@ -2048,7 +2048,7 @@
       "frontend/src/api/monitor.js"
     ]
   },
-  "/api/v1/api/v1/monitor/metrics/trend": {
+  "/api/v1/monitor/metrics/trend": {
     "methods": [
       "GET"
     ],
@@ -2080,7 +2080,7 @@
       "frontend/src/api/monitor.js"
     ]
   },
-  "/api/v1/api/v1/monitor/anomaly/detect": {
+  "/api/v1/monitor/anomaly/detect": {
     "methods": [
       "POST"
     ],
@@ -2088,7 +2088,7 @@
       "frontend/src/api/monitor.js"
     ]
   },
-  "/api/v1/api/v1/monitor/anomaly/summary": {
+  "/api/v1/monitor/anomaly/summary": {
     "methods": [
       "GET"
     ],
@@ -2096,7 +2096,7 @@
       "frontend/src/api/monitor.js"
     ]
   },
-  "/api/v1/api/v1/monitor/anomaly/active-metrics": {
+  "/api/v1/monitor/anomaly/active-metrics": {
     "methods": [
       "GET"
     ],
@@ -2144,28 +2144,9 @@
       "frontend/src/api/notification.js"
     ]
   },
-  "/api/v1/api/v1/pipeline/workflows": {
-    "methods": [
-      "DELETE",
-      "GET",
-      "POST",
-      "PUT"
-    ],
-    "files": [
-      "frontend/src/api/pipeline.js"
-    ]
-  },
-  "/api/v1/api/v1/pipeline/workflows/validate": {
+  "/api/v1/pipeline/workflows/validate": {
     "methods": [
       "POST"
-    ],
-    "files": [
-      "frontend/src/api/pipeline.js"
-    ]
-  },
-  "/api/v1/api/v1/pipeline/runs": {
-    "methods": [
-      "GET"
     ],
     "files": [
       "frontend/src/api/pipeline.js"
@@ -2179,7 +2160,8 @@
       "PUT"
     ],
     "files": [
-      "frontend/src/api/rag.js"
+      "frontend/src/api/rag.js",
+      "frontend/src/api/system.js"
     ]
   },
   "/api/v1/rag/kb/public": {
@@ -2187,7 +2169,8 @@
       "GET"
     ],
     "files": [
-      "frontend/src/api/rag.js"
+      "frontend/src/api/rag.js",
+      "frontend/src/api/system.js"
     ]
   },
   "/api/v1/rag/doc": {
@@ -2229,7 +2212,8 @@
       "POST"
     ],
     "files": [
-      "frontend/src/api/session.js"
+      "frontend/src/api/session.js",
+      "frontend/src/api/system.js"
     ]
   },
   "/api/v1/api/ai/intro": {
@@ -2240,45 +2224,7 @@
       "frontend/src/api/system.js"
     ]
   },
-  "/api/v1/api/v1/sessions": {
-    "methods": [
-      "DELETE",
-      "GET",
-      "POST",
-      "PUT"
-    ],
-    "files": [
-      "frontend/src/api/system.js"
-    ]
-  },
-  "/api/v1/api/v1/sessions/stream-status": {
-    "methods": [
-      "GET"
-    ],
-    "files": [
-      "frontend/src/api/system.js"
-    ]
-  },
-  "/api/v1/api/v1/sessions/stop-stream": {
-    "methods": [
-      "POST"
-    ],
-    "files": [
-      "frontend/src/api/system.js"
-    ]
-  },
-  "/api/v1/api/v1/rag/kb": {
-    "methods": [
-      "DELETE",
-      "GET",
-      "POST",
-      "PUT"
-    ],
-    "files": [
-      "frontend/src/api/system.js"
-    ]
-  },
-  "/api/v1/api/v1/rag/kb/public": {
+  "/api/v1/sessions/stream-status": {
     "methods": [
       "GET"
     ],
@@ -2354,7 +2300,7 @@
       "frontend/src/api/webhook.js"
     ]
   },
-  "/api/v1/api/v1/auth/wechat/qrcode": {
+  "/api/v1/auth/wechat/qrcode": {
     "methods": [
       "GET"
     ],
@@ -2362,7 +2308,7 @@
       "frontend/src/api/wechat.js"
     ]
   },
-  "/api/v1/api/v1/auth/wechat/status": {
+  "/api/v1/auth/wechat/status": {
     "methods": [
       "GET"
     ],
@@ -2370,7 +2316,7 @@
       "frontend/src/api/wechat.js"
     ]
   },
-  "/api/v1/api/v1/auth/wechat/mock-scan": {
+  "/api/v1/auth/wechat/mock-scan": {
     "methods": [
       "GET"
     ],
@@ -2378,7 +2324,7 @@
       "frontend/src/api/wechat.js"
     ]
   },
-  "/api/v1/api/v1/auth/wechat/mobile-login": {
+  "/api/v1/auth/wechat/mobile-login": {
     "methods": [
       "POST"
     ],
