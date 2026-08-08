@@ -168,6 +168,9 @@
       </div>
     </el-aside>
 
+    <!-- V6.3+ AI 智能提示 -->
+    <AITip context="admin-new" dismiss-key="admin-first" />
+
     <!-- 3. el-main: router-view + 页面切换动画 -->
     <el-main class="admin-main">
       <router-view v-slot="{ Component }">
@@ -184,6 +187,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from '@/i18n'
+import AITip from '@/components/AITip.vue'
 import { useUserStore } from '@/store/user'
 import { Fold, Setting, DataLine, TrendCharts, Connection, Monitor, Cpu, Trophy, Key, ChatDotRound, Bell, CircleCheck, CircleClose, Document, Warning, Share, Files, Lock, Notebook, Promotion, Link, ChatLineRound, User, MagicStick, DataAnalysis, ChatDotSquare, Search } from '@element-plus/icons-vue'
 

@@ -8,6 +8,8 @@
   @description 工作流
 -->
 <template>
+  <!-- V6.3+ AI 智能提示 -->
+  <AITip context="no-data" dismiss-key="workflow-empty" />
   <div class="page-workflow">
     <!-- 1. page-header -->
     <!-- V3.6.1+ 版本标识 (el-watermark) -->
@@ -79,6 +81,7 @@
 import { ref } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from '@/i18n'
+import AITip from '@/components/AITip.vue'
 
 import { executeWorkflow, validateWorkflow as apiValidate, dispatchPrompt } from '@/api/ai'
 import EmptyState from '@/components/EmptyState.vue'

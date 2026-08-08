@@ -45,6 +45,8 @@
 
     <!-- 新建/编辑弹窗 -->
     <el-dialog v-model="dialogVisible" :title="form.id ? '编辑数据源' : '新建数据源'" width="560">
+      <!-- V6.3+ 智能填单助手 -->
+      <SmartFormAssist form-type="dataSource" :context="form" :exclude-fields="['password']" @apply="applyAISuggestion" />
       <el-form :model="form" label-width="100">
         <el-form-item label="名称"><el-input v-model="form.name" /></el-form-item>
         <el-form-item label="类型">
