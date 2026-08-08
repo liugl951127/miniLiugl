@@ -3,11 +3,10 @@
  * 覆盖: 演示模式 → 登录 → 跳 /chat → Chat 组件 mount → 消息发送
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { mount, flushPromises } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { useUserStore } from '@/store/user'
-import { useDemoMode } from '@/composables/useDemoMode'
 
 // Mock CSS
 vi.mock('element-plus/dist/index.css', () => ({}))

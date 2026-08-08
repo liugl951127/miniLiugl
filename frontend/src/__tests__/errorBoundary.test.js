@@ -5,8 +5,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { createRouter, createMemoryHistory } from 'vue-router'
-import { useUserStore } from '@/store/user'
+// _unused
+// _unused
 
 vi.mock('element-plus/dist/index.css', () => ({}))
 vi.mock('element-plus/theme-chalk/base.css', () => ({}))
