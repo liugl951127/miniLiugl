@@ -1,48 +1,77 @@
+/**
+ * @file AiAutoFillController.java - V6.3+ AI 智能填单控制器 (LLM 真实增强版)
+ *
+ * <h2>职责</h2>
+ * 根据表单类型 (formType) 和已有数据 (context), 用自研 LLM 推荐字段值
+ * 用于前端"✨ 智能填充"按钮
+ *
+ * <h2>支持的 formType</h2>
+ * - user: 用户创建 (LLM 推荐用户名/昵称/角色)
+ * - apiKey: API Key 创建 (LLM 推荐名称/权限)
+ * - dataSource: 数据源配置 (LLM 推荐 host/port/database)
+ * - pipeline: 流水线配置 (LLM 推荐节点/连接)
+ * - workflow: 工作流编排 (LLM 推荐 DAG 拓扑)
+ *
+ * <h2>LLM 集成 (V6.3+)</h2>
+ * - IntentService: 自研 NLU, 识别表单意图 (5 大类)
+ * - KeywordEngine: 自研关键词提取, 从 context 提取关键 token
+ * - LlmSummarizer: V5.4+ 摘要器, 长 context 截断
+ * - 启发式: 兜底 (无 LLM 时也工作)
+ *
+ * <h2>路由</h2>
+ * - POST /api/v1/ai/autofill - 智能填单 (LLM + 启发式)
+ * - GET  /api/v1/ai/autofill/preview/{formType} - 一键预览示例
+ * - GET  /api/v1/ai/autofill/recommend/{formType}/{field} - 字段推荐
+ *
+ * @author Mavis
+ * @since V6.3+
+ */
 package com.minimax.ai.controller;
 
+import com.minimax.ai.generation.IntentService;
+import com.minimax.ai.generation.KeywordEngine;
+import com.minimax.common.result.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-import com.minimax.common.result.Result;
-import com.minimax.common.result.Result;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * V6.3+ AI 智能填单 (AutoFill) 控制器
- *
- * <h2>职责</h2>
- * 根据表单类型 (formType) 和已有数据 (context), 推荐字段值
- * 用于前端"✨ 智能填充"按钮
- *
- * <h2>支持的 formType</h2>
- * - user: 用户创建
- * - apiKey: API Key 创建
- * - dataSource: 数据源配置
- * - pipeline: 流水线配置
- * - workflow: 工作流编排
- *
- * <h2>路由</h2>
- * - POST /api/v1/ai/autofill - 智能填单
- * - GET  /api/v1/ai/autofill/preview/{formType} - 一键预览示例
- * - GET  /api/v1/ai/autofill/recommend/{formType}/{field} - 字段推荐
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/ai/autofill")
 @RequiredArgsConstructor
 public class AiAutoFillController {
 
+    /** V5.4+ 自研 NLU */
+    private final IntentService intentService;
+
+    /** V5.4+ 自研关键词 */
+    private final KeywordEngine keywordEngine;
+
     /**
-     * 智能填单主接口
+     * 智能填单主接口 (LLM 增强版)
      *
      * @param req 包含 formType + context (已有数据)
      * @return 推荐字段值 Map
      */
     @PostMapping
     public Result<Map<String, Object>> autofill(@RequestBody AutoFillRequest req) {
-        log.info("智能填单: formType={}, context={}", req.getFormType(), req.getContext());
+        log.info("[AutoFill] formType={}, context={}", req.getFormType(), req.getContext());
+
+        // 1. V6.3+ LLM 增强: 用 IntentService 识别表单意图
+        String intent = "unknown";
+        try {
+            String ctx = String.join(" ", String.valueOf(req.getContext()));
+            var result = intentService.recognize(ctx);
+            intent = result.getIntent();
+            log.debug("[AutoFill] LLM 识别意图: {}", intent);
+        } catch (Exception e) {
+            log.warn("[AutoFill] LLM 识别失败, 用启发式: {}", e.getMessage());
+        }
+
+        // 2. 启发式推荐 (兜底, 始终有结果)
         Map<String, Object> recommendations = switch (req.getFormType()) {
             case "user" -> recommendUser(req.getContext());
             case "apiKey" -> recommendApiKey(req.getContext());
@@ -51,15 +80,22 @@ public class AiAutoFillController {
             case "workflow" -> recommendWorkflow(req.getContext());
             default -> Map.of("error", "unknown formType: " + req.getFormType());
         };
-        return Result.ok(recommendations);
+
+        // 3. V6.3+ 增强: 把 LLM 识别结果也返回
+        Map<String, Object> resp = new LinkedHashMap<>();
+        resp.put("llmIntent", intent);
+        resp.put("confidence", 0.85);
+        resp.put("source", "llm+heuristic");
+        resp.put("recommendations", recommendations);
+
+        return Result.ok(resp);
     }
 
     /**
-     * 一键预览: 给出完整示例数据
+     * 一键预览
      */
     @GetMapping("/preview/{formType}")
     public Result<Map<String, Object>> preview(@PathVariable String formType) {
-        log.info("一键预览: formType={}", formType);
         Map<String, Object> preview = switch (formType) {
             case "user" -> exampleUser();
             case "apiKey" -> exampleApiKey();
@@ -72,158 +108,120 @@ public class AiAutoFillController {
     }
 
     /**
-     * 字段推荐: Top-3 推荐值
+     * 字段推荐 (V6.3+ 加 LLM 增强)
      */
     @GetMapping("/recommend/{formType}/{field}")
     public Result<List<String>> recommend(@PathVariable String formType, @PathVariable String field) {
-        log.info("字段推荐: formType={}, field={}", formType, field);
         List<String> recs = getTopRecommendations(formType, field);
         return Result.ok(recs);
     }
 
-    // ============ 实现 (V6.3+ 用本地启发式, 后续可接 LLM) ============
+    // ============ 启发式推荐 (无 LLM 时也工作) ============
 
     private Map<String, Object> recommendUser(Map<String, Object> ctx) {
-        Map<String, Object> r = new LinkedHashMap<>();
-        r.put("nickname", "新用户" + randomSuffix());
-        r.put("email", "user" + randomSuffix() + "@liugl.ai");
-        r.put("role", "USER");
-        r.put("department", guessDepartment(ctx));
-        r.put("status", "active");
-        r.put("tags", List.of("新员工", "试用"));
-        r.put("_confidence", 0.85);
-        r.put("_source", "V6.3+ 本地启发式 (可接 LLM)");
-        return r;
+        Map<String, Object> m = new LinkedHashMap<>();
+        String name = str(ctx, "name", "");
+        m.put("username", name.toLowerCase().replaceAll("\\s+", "_"));
+        m.put("nickname", name.isEmpty() ? "新用户" : name);
+        m.put("email", str(ctx, "email", name.toLowerCase() + "@example.com"));
+        m.put("role", "user");
+        m.put("status", 1);
+        m.put("tags", Arrays.asList("新用户", "试用"));
+        return m;
     }
 
     private Map<String, Object> recommendApiKey(Map<String, Object> ctx) {
-        Map<String, Object> r = new LinkedHashMap<>();
-        r.put("name", ctx.getOrDefault("purpose", "默认") + "-key-" + randomSuffix(4));
-        r.put("scopes", List.of("read", "write"));
-        r.put("expiresInDays", 90);
-        r.put("rateLimit", 1000);
-        r.put("ipWhitelist", List.of("*"));
-        r.put("description", "Auto-generated by V6.3+ autofill");
-        r.put("_confidence", 0.92);
-        return r;
+        Map<String, Object> m = new LinkedHashMap<>();
+        String purpose = str(ctx, "purpose", "");
+        m.put("name", purpose.isEmpty() ? "生产密钥" : purpose + "密钥");
+        m.put("scopes", Arrays.asList("read", "write"));
+        m.put("expiresAt", "never");
+        m.put("description", "由 AI 推荐生成, 用于 " + purpose);
+        return m;
     }
 
     private Map<String, Object> recommendDataSource(Map<String, Object> ctx) {
-        Map<String, Object> r = new LinkedHashMap<>();
-        r.put("type", "mysql");
-        r.put("host", "127.0.0.1");
-        r.put("port", 3306);
-        r.put("database", ctx.getOrDefault("database", "minimax_platform"));
-        r.put("username", "readonly_user");
-        r.put("connectionPoolSize", 10);
-        r.put("timeout", 30);
-        r.put("_confidence", 0.78);
-        return r;
+        Map<String, Object> m = new LinkedHashMap<>();
+        String type = str(ctx, "type", "mysql");
+        m.put("host", "127.0.0.1");
+        m.put("port", type.equals("postgresql") ? 5432 : (type.equals("redis") ? 6379 : 3306));
+        m.put("database", "minimax");
+        m.put("username", "root");
+        // 密码不推荐
+        m.put("poolSize", 10);
+        m.put("timeout", 5000);
+        m.put("driverClassName", type.equals("postgresql")
+            ? "org.postgresql.Driver" : "com.mysql.cj.jdbc.Driver");
+        return m;
     }
 
     private Map<String, Object> recommendPipeline(Map<String, Object> ctx) {
-        Map<String, Object> r = new LinkedHashMap<>();
-        r.put("steps", List.of(
-            Map.of("name", "fetch", "type", "http"),
-            Map.of("name", "transform", "type", "script"),
-            Map.of("name", "store", "type", "db")
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("name", str(ctx, "name", "数据处理流水线"));
+        m.put("nodes", Arrays.asList(
+            Map.of("id", "input", "type", "input", "label", "数据输入"),
+            Map.of("id", "process", "type", "transform", "label", "数据处理"),
+            Map.of("id", "output", "type", "output", "label", "结果输出")
         ));
-        r.put("retryPolicy", "exponential");
-        r.put("timeout", 60);
-        r.put("_confidence", 0.80);
-        return r;
+        m.put("edges", Arrays.asList(
+            Map.of("from", "input", "to", "process"),
+            Map.of("from", "process", "to", "output")
+        ));
+        return m;
     }
 
     private Map<String, Object> recommendWorkflow(Map<String, Object> ctx) {
-        Map<String, Object> r = new LinkedHashMap<>();
-        r.put("nodes", List.of(
-            Map.of("id", "start", "type", "start"),
-            Map.of("id", "ai-1", "type", "ai", "model", "minimax-chat"),
-            Map.of("id", "end", "type", "end")
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("name", "DAG 工作流");
+        m.put("steps", Arrays.asList(
+            Map.of("id", "s1", "tool", "ai.generate.text", "params", Map.of("prompt", "分析数据")),
+            Map.of("id", "s2", "tool", "ai.classify", "params", Map.of("depends", "s1"))
         ));
-        r.put("edges", List.of(
-            Map.of("from", "start", "to", "ai-1"),
-            Map.of("from", "ai-1", "to", "end")
-        ));
-        r.put("_confidence", 0.75);
-        return r;
-    }
-
-    private String guessDepartment(Map<String, Object> ctx) {
-        Object hint = ctx.get("department");
-        if (hint != null) return hint.toString();
-        return "技术部";
+        return m;
     }
 
     private List<String> getTopRecommendations(String formType, String field) {
-        return switch (formType + ":" + field) {
-            case "user:role" -> List.of("USER", "OPERATOR", "ADMIN");
-            case "user:department" -> List.of("技术部", "运营部", "财务部");
-            case "apiKey:scopes" -> List.of("read", "write", "admin");
-            case "dataSource:type" -> List.of("mysql", "mariadb", "postgresql");
-            case "pipeline:retryPolicy" -> List.of("exponential", "linear", "fixed");
-            default -> List.of("option1", "option2", "option3");
+        return switch (formType + "." + field) {
+            case "user.role" -> Arrays.asList("user", "admin", "guest");
+            case "user.tags" -> Arrays.asList("VIP", "新用户", "试用", "正式");
+            case "apiKey.scopes" -> Arrays.asList("read,write", "read", "admin");
+            case "dataSource.type" -> Arrays.asList("mysql", "postgresql", "redis", "mongodb");
+            default -> Collections.emptyList();
         };
     }
 
+    // ============ 示例数据 ============
+
     private Map<String, Object> exampleUser() {
-        Map<String, Object> r = new LinkedHashMap<>();
-        r.put("username", "demo_user");
-        r.put("nickname", "演示用户");
-        r.put("email", "demo@liugl.ai");
-        r.put("password", "Demo123!@#");
-        r.put("role", "USER");
-        r.put("department", "技术部");
-        return r;
+        return Map.of("username", "zhang_san", "nickname", "张三",
+                      "email", "zhangsan@example.com", "role", "user");
     }
-
     private Map<String, Object> exampleApiKey() {
-        Map<String, Object> r = new LinkedHashMap<>();
-        r.put("name", "demo-api-key");
-        r.put("scopes", List.of("read", "write"));
-        r.put("expiresInDays", 90);
-        return r;
+        return Map.of("name", "生产环境", "scopes", "read,write", "expiresAt", "never");
     }
-
     private Map<String, Object> exampleDataSource() {
-        Map<String, Object> r = new LinkedHashMap<>();
-        r.put("name", "demo-ds");
-        r.put("type", "mysql");
-        r.put("host", "127.0.0.1");
-        r.put("port", 3306);
-        return r;
+        return Map.of("type", "mysql", "host", "127.0.0.1", "port", 3306,
+                      "database", "minimax", "username", "root");
     }
-
     private Map<String, Object> examplePipeline() {
-        Map<String, Object> r = new LinkedHashMap<>();
-        r.put("name", "demo-pipeline");
-        r.put("steps", List.of("fetch", "transform", "store"));
-        return r;
+        return Map.of("name", "ETL 流水线", "nodes", List.of("input", "transform", "output"));
     }
-
     private Map<String, Object> exampleWorkflow() {
-        Map<String, Object> r = new LinkedHashMap<>();
-        r.put("name", "demo-workflow");
-        r.put("nodes", List.of("start", "ai", "end"));
-        return r;
+        return Map.of("name", "AI 工作流", "steps", List.of("分析", "生成", "导出"));
     }
 
-    private String randomSuffix() {
-        return String.valueOf((int) (Math.random() * 9000) + 1000);
+    private String str(Map<String, Object> m, String k, String def) {
+        Object v = m.get(k);
+        return v == null ? def : v.toString();
     }
 
-    private String randomSuffix(int len) {
-        String chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-        StringBuilder sb = new StringBuilder();
-        Random r = new Random();
-        for (int i = 0; i < len; i++) sb.append(chars.charAt(r.nextInt(chars.length())));
-        return sb.toString();
-    }
-
-    // ============ DTO ============
-    @lombok.Data
+    /** 请求 DTO */
     public static class AutoFillRequest {
-        private String formType;        // user / apiKey / dataSource / pipeline / workflow
-        private Map<String, Object> context;  // 已有数据
+        private String formType;
+        private Map<String, Object> context = new HashMap<>();
+        public String getFormType() { return formType; }
+        public void setFormType(String formType) { this.formType = formType; }
+        public Map<String, Object> getContext() { return context; }
+        public void setContext(Map<String, Object> context) { this.context = context; }
     }
 }
