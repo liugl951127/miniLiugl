@@ -231,7 +231,7 @@
           <el-divider content-position="left"><span style="font-size:13px">📜 历史记录</span></el-divider>
           <div v-for="h in history" :key="h.id" class="history-item" @click="loadHistoryFromItem(h)">
             <div class="hist-q">{{ h.question }}</div>
-            <pre class="hist-sql">{{ h.sql }}</pre>
+            <pre class="hist-sql">{{ h.correctedSql || h.generatedSql }}</pre>
           </div>
         </div>
       </div>
@@ -492,7 +492,7 @@ async function loadSchema() {
     schemaTree.value = await Promise.all(
       dbList.map(async db => {
         try {
-          const tables = await listTables(currentDs.value.id, db)
+          const tables = await listTables(currentDs.value.id, db, null)
           const tableList = tables.data || []
           return {
             label: db,
@@ -660,9 +660,11 @@ async function fetchHistory() {
 
 function loadHistoryFromItem(item) {
   question.value = item.question
-  result.value = { sql: item.sql, explanation: '' }
+  // 优先用用户修正后的 SQL，其次用 LLM 生成的
+  result.value = { ...item, sql: item.correctedSql || item.generatedSql }
   queryResult.value = null
   dryRunResult.value = null
+  explanation.value = ''
 }
 </script>
 

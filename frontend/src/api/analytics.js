@@ -36,7 +36,10 @@ export const testDataSource = (data) => {
 
 // ===== Schema 浏览 =====
 export const listDatabases = (dsId) => http.get(`/analytics/datasources/${dsId}/databases`)
-export const listTables = (dsId, db) => http.get(`/analytics/datasources/${dsId}/databases/${db}/tables`)
+export const listTables = (dsId, db, keyword) => {
+  const params = keyword ? { keyword } : {}
+  return http.get(`/analytics/datasources/${dsId}/databases/${db}/tables`, { params })
+}
 export const describeTable = (dsId, db, table) =>
   http.get(`/analytics/datasources/${dsId}/databases/${db}/tables/${table}`)
 export const profileTable = (dsId, db, table) =>
