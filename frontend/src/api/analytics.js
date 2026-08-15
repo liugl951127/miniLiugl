@@ -69,7 +69,8 @@ export const nl2sqlAsk = (data) => {
   console.log('%c[ANALYTICS API] nl2sqlAsk', 'color: #409eff', data)
   return http.post('/analytics/nlsql/ask', data);
 }
-export const nl2sqlExplain = (sql) => http.post('/analytics/nlsql/explain', { sql })
+export const nl2sqlExplain = (sql, dataSourceId) =>
+  http.post('/analytics/nlsql/explain', sql, { params: { dataSourceId } })
 export const nl2qlFeedback = (data) => {
   console.log('%c[ANALYTICS API] nl2qlFeedback', 'color: #409eff', data)
   return http.post('/analytics/nlsql/feedback', data);

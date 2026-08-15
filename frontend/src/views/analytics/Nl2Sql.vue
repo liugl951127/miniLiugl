@@ -592,9 +592,10 @@ async function ask() {
     const res = await nl2sqlAsk({
       question: question.value,
       dataSourceId: currentDs.value?.id,
+      database: selectedDb.value || null,
       tableHint: selectedTable.value || null
     })
-    result.value = res.data
+    result.value = { ...res.data, sql: res.data.generatedSql }
     // 自动把已选表名加到问题里传给 NL2SQL
     await fetchHistory()
   } catch (e) {
@@ -607,7 +608,7 @@ async function ask() {
 async function explain() {
   if (!result.value?.sql) return
   try {
-    const res = await nl2sqlExplain(result.value.sql)
+    const res = await nl2sqlExplain(result.value.sql, currentDs.value?.id)
     result.value = { ...result.value, explanation: res.data }
   } catch (e) {
     ElMessage.error('解释失败: ' + (e?.message || ''))
