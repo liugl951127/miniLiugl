@@ -1,0 +1,230 @@
+package com.minimax.model.controller;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import com.minimax.common.result.Result;
+import com.minimax.model.dto.ChatRequest;
+import com.minimax.model.entity.ModelBattleLog;
+import com.minimax.model.entity.ModelConfig;
+import com.minimax.model.mapper.ModelBattleLogMapper;
+import com.minimax.model.mapper.ModelConfigMapper;
+import com.minimax.model.provider.ModelProviderFactory;
+import com.minimax.model.service.ModelService;
+import com.minimax.model.vo.ChatResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.*;
+
+/**
+ * 真实 AI 对接测试端点 (V4).
+ * - /test/ping   健康检查
+ * - /test/single 单次非流式
+ * - /test/battle 多模型并发对决
+ *
+ * @since 2026-06
+ */
+@Slf4j
+@Tag(name = "AI模型测试")
+@RestController
+@RequestMapping("/api/v1/test")
+@RequiredArgsConstructor
+public class RealAiTestController {
+
+    private final ModelService modelService;
+    private final ModelProviderFactory providerFactory;
+    private final ModelBattleLogMapper battleLogMapper;
+    private final ModelConfigMapper modelConfigMapper;
+    private final ExecutorService pool = Executors.newFixedThreadPool(8);
+
+    @Operation(summary = "服务健康检查")
+    @GetMapping("/ping")
+    public Result<Map<String, Object>> ping() {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("service", "minimax-model");
+        data.put("status", "UP");
+        data.put("ts", System.currentTimeMillis());
+        data.put("mockMode", isMockMode());
+        return Result.ok(data);
+    }
+
+    private boolean isMockMode() {
+        try {
+            return providerFactory != null;
+        } catch (Exception e) { return true; }
+    }
+
+    @Operation(summary = "单模型对话测试")
+    @PostMapping("/single")
+    @SuppressWarnings("unchecked")
+    public Result<ChatResponse> testSingle(@RequestBody Map<String, Object> body) {
+        String modelCode = (String) body.getOrDefault("model", "mock");
+        String prompt = (String) body.getOrDefault("prompt", "");
+        String sysPrompt = (String) body.get("systemPrompt");
+        Double temperature = body.get("temperature") != null
+                ? ((Number) body.get("temperature")).doubleValue() : 0.7;
+        Integer maxTokens = body.get("maxTokens") != null
+                ? ((Number) body.get("maxTokens")).intValue() : 1024;
+
+        if (prompt == null || prompt.isBlank()) {
+            return Result.fail(400, "prompt 不能为空");
+        }
+
+        List<Map<String, Object>> messages = new ArrayList<>();
+        if (sysPrompt != null && !sysPrompt.isBlank()) {
+            messages.add(Map.<String, Object>of("role", "system", "content", sysPrompt));
+        }
+        messages.add(Map.<String, Object>of("role", "user", "content", prompt));
+
+        ChatRequest req = new ChatRequest();
+        req.setModel(modelCode);
+        req.setMessages(messages);
+        req.setTemperature(temperature);
+        req.setMaxTokens(maxTokens);
+        req.setStream(false);
+
+        try {
+            ChatResponse resp = modelService.chat(0L, req);
+            return Result.ok(resp);
+        } catch (Exception e) {
+            log.error("testSingle 失败 model={}: {}", modelCode, e.getMessage());
+            return Result.fail(500, "调用失败: " + e.getMessage());
+        }
+    }
+
+    @Operation(summary = "多模型对决测试")
+    @PostMapping("/battle")
+    @SuppressWarnings("unchecked")
+    public Result<Map<String, Object>> battle(@RequestBody Map<String, Object> body) {
+        String prompt = (String) body.getOrDefault("prompt", "");
+        List<String> models = (List<String>) body.getOrDefault("models", List.of(
+                "gpt-4o-mini", "MiniMax-Text-01", "qwen-max", "deepseek-chat"));
+        String judgeModel = (String) body.getOrDefault("judgeModel", "gpt-4o-mini");
+
+        if (prompt.isBlank()) {
+            return Result.fail(400, "prompt 不能为空");
+        }
+
+        String battleId = "b_" + System.currentTimeMillis();
+        List<CompletableFuture<BattleResult>> futures = new ArrayList<>();
+
+        for (String mc : models) {
+            futures.add(CompletableFuture.supplyAsync(() -> doBattleOne(battleId, mc, prompt), pool));
+        }
+
+        List<BattleResult> results = new ArrayList<>();
+        try {
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                    .get(120, TimeUnit.SECONDS);
+            for (CompletableFuture<BattleResult> f : futures) {
+                results.add(f.get());
+            }
+        } catch (TimeoutException te) {
+            log.warn("battle {} timeout, 部分未完成", battleId);
+            for (int i = 0; i < futures.size(); i++) {
+                if (futures.get(i).isDone()) {
+                    try { results.add(futures.get(i).get()); } catch (Exception ignore) {}
+                } else {
+                    futures.get(i).cancel(true);
+                    BattleResult r = new BattleResult();
+                    r.modelCode = models.get(i);
+                    r.status = "timeout";
+                    r.error = "120s 超时未返回";
+                    results.add(r);
+                }
+            }
+        } catch (Exception e) {
+            return Result.fail(500, "对决异常: " + e.getMessage());
+        }
+
+        results.sort((a, b) -> {
+            if (!a.status.equals(b.status)) return a.status.equals("ok") ? -1 : 1;
+            return Long.compare(a.latencyMs, b.latencyMs);
+        });
+
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("battleId", battleId);
+        out.put("prompt", prompt);
+        out.put("judgeModel", judgeModel);
+        out.put("results", results);
+        out.put("winnerAuto", results.stream().filter(r -> "ok".equals(r.status))
+                .findFirst().map(r -> r.modelCode).orElse(null));
+        return Result.ok(out);
+    }
+
+    private BattleResult doBattleOne(String battleId, String modelCode, String prompt) {
+        long t0 = System.currentTimeMillis();
+        BattleResult r = new BattleResult();
+        r.modelCode = modelCode;
+        r.battleId = battleId;
+        try {
+            List<Map<String, Object>> messages = List.of(
+                    Map.<String, Object>of("role", "user", "content", prompt)
+            );
+            ChatRequest req = new ChatRequest();
+            req.setModel(modelCode);
+            req.setMessages(messages);
+            req.setStream(false);
+            req.setTemperature(0.7);
+            req.setMaxTokens(512);
+
+            ChatResponse resp = modelService.chat(0L, req);
+            r.status = "ok";
+            r.content = resp.getContent();
+            r.promptTokens = resp.getPromptTokens();
+            r.completionTokens = resp.getCompletionTokens();
+            r.totalTokens = resp.getTotalTokens();
+            r.latencyMs = resp.getLatencyMs() != null ? resp.getLatencyMs() : (System.currentTimeMillis() - t0);
+            r.finishReason = resp.getFinishReason();
+        } catch (Exception e) {
+            log.warn("battle 单模型失败: {} - {}", modelCode, e.getMessage());
+            r.status = "error";
+            r.error = e.getMessage() != null && e.getMessage().length() > 200
+                    ? e.getMessage().substring(0, 200) : e.getMessage();
+            r.latencyMs = System.currentTimeMillis() - t0;
+        }
+        // 写入 battle log
+        try {
+            ModelBattleLog log = new ModelBattleLog();
+            log.setBattleId(battleId);
+            log.setUserId(0L);
+            log.setModelCode(modelCode);
+            log.setPrompt(prompt);
+            log.setResponse(r.content != null && r.content.length() > 65000
+                    ? r.content.substring(0, 65000) : r.content);
+            log.setPromptTokens(r.promptTokens);
+            log.setCompletionTokens(r.completionTokens);
+            log.setLatencyMs((int) Math.min(r.latencyMs, Integer.MAX_VALUE));
+            log.setStatus(r.status);
+            log.setErrorMsg(r.error);
+            log.setCreatedAt(LocalDateTime.now());
+            // 找 model_id
+            try {
+                ModelConfig cfg = modelConfigMapper.selectOne(
+                        new LambdaQueryWrapper<ModelConfig>().eq(ModelConfig::getModelCode, modelCode));
+                if (cfg != null) log.setModelId(cfg.getId());
+            } catch (Exception ignore) {}
+            battleLogMapper.insert(log);
+        } catch (Exception e) {
+            this.log.warn("battle log 写入失败: {}", e.getMessage());
+        }
+        return r;
+    }
+
+    public static class BattleResult {
+        public String battleId;
+        public String modelCode;
+        public String status;
+        public String content;
+        public String error;
+        public int promptTokens;
+        public int completionTokens;
+        public int totalTokens;
+        public long latencyMs;
+        public String finishReason;
+    }
+}

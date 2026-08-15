@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.minimax.rag.mapper.KnowledgeBaseMapper">
+
+    <update id="incDocCount">
+        UPDATE knowledge_base
+        SET doc_count = doc_count + #{delta}
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <update id="incChunkCount">
+        UPDATE knowledge_base
+        SET chunk_count = chunk_count + #{delta}
+        WHERE id = #{id} AND deleted = 0
+    </update>
+</mapper>

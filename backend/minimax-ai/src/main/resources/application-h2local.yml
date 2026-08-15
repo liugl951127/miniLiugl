@@ -1,0 +1,73 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  autoconfigure:
+    exclude:
+      - com.alibaba.druid.spring.boot3.autoconfigure.DruidDataSourceAutoConfigure
+      - com.alibaba.cloud.nacos.NacosServiceAutoConfiguration
+      - com.alibaba.cloud.nacos.discovery.NacosDiscoveryAutoConfiguration
+      - com.alibaba.cloud.nacos.discovery.NacosDiscoveryClientConfiguration
+      - com.alibaba.cloud.nacos.discovery.NacosDiscoveryHeartBeatConfiguration
+      - com.alibaba.cloud.nacos.discovery.reactive.NacosReactiveDiscoveryClientConfiguration
+      - com.alibaba.cloud.nacos.discovery.configclient.NacosConfigServerAutoConfiguration
+      - com.alibaba.cloud.nacos.endpoint.NacosDiscoveryEndpointAutoConfiguration
+      - com.alibaba.cloud.nacos.registry.NacosServiceRegistryAutoConfiguration
+      - com.alibaba.cloud.nacos.loadbalancer.LoadBalancerNacosAutoConfiguration
+      - com.alibaba.cloud.nacos.util.UtilIPv6AutoConfiguration
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:ai;MODE=MySQL;CASE_INSENSITIVE_IDENTIFIERS=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+    hikari:
+      maximum-pool-size: 5
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:sql/schema-1.sql, classpath:sql/schema-2.sql, classpath:sql/schema-3.sql
+      continue-on-error: true
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      timeout: 50ms
+  cloud:
+    nacos:
+      discovery:
+        enabled: false
+        register-enabled: false
+      config:
+        enabled: false
+      enabled: false
+    refresh:
+      enabled: false
+
+mybatis-plus:
+  global-config:
+    db-config:
+      id-type: auto
+      table-prefix: ""
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  mapper-locations: classpath*:/mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+logging:
+  level:
+    root: WARN
+    com.minimax: INFO
+    org.springframework: WARN
+
+# V7.0: RAG + Agent 服务地址（h2local 沙箱模式直连）
+minimax:
+  rag:
+    service-url: http://localhost:8085
+  agent:
+    service-url: http://localhost:8088
+  jwt:
+    # 沙箱默认 JWT secret（h2local 模式）
+    secret: sandbox-jwt-secret-key-for-local-dev-only-32bytes
+  common:
+    secret: sandbox-common-secret-for-local-dev-only-32bytes

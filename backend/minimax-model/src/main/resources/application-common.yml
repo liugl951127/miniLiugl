@@ -1,0 +1,23 @@
+# MiniMax Platform — 公共配置桩 (V6.8.2)
+# 各服务共享的通用配置
+# 沙箱模式下通过 application-h2local.yml 覆盖
+
+# =============================================================
+# 自研 ONNX 模型配置 (V7.2)
+# - enabled: 是否启用自研模型加载
+# - base-dir: ONNX 模型文件所在目录（扫描 .onnx 文件自动注册）
+# - provider: 自研 provider 的元信息
+# - models: 显式模型定义（会覆盖/补充扫描结果）
+# =============================================================
+minimax:
+  self-models:
+    enabled: true
+    base-dir: /opt/minimax/models
+    provider:
+      code: self-trained
+      name: 自研训练模型
+      description: 平台自主训练，通过 ONNX 文件加载
+    models:
+      # V7.3: 自动扫描模式 — 留空则自动注册 base-dir 下所有 .onnx 文件
+      # 如需精细控制模型参数，可在此手动定义（手动定义优先于自动发现）
+      # 格式: code(必填) 对应 .onnx 文件名 (不含后缀)，其他字段均有默认值

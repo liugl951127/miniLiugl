@@ -1,0 +1,76 @@
+name: API Audit
+
+on:
+  # 每次 push / PR 触发
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  # 每周一早上 9 点跑一次
+  schedule:
+    - cron: '0 9 * * 1'
+  # 手动触发
+  workflow_dispatch:
+
+jobs:
+  audit:
+    name: Frontend ↔ Backend API Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run API audit
+        run: |
+          python3 scripts/audit-api.py 2>&1 | tee audit-output.txt
+
+      - name: Check for missing endpoints
+        run: |
+          # 解析脚本输出
+          # 如果有"前端调用但后端未提供", 失败
+          if grep -q "未匹配" audit-output.txt; then
+            UNMATCHED=$(grep -c "未匹配" audit-output.txt || echo "0")
+            echo "::warning::Found $UNMATCHED unmatched frontend API calls"
+          fi
+
+          # 检查未引用视图
+          UNREF=$(grep "未引用视图" -A 20 audit-output.txt | grep "⚠" | wc -l || echo "0")
+          if [ "$UNREF" -gt "0" ]; then
+            echo "::warning::Found $UNREF unreferenced Vue views"
+            grep "未引用视图" -A 20 audit-output.txt | grep "⚠" | head -10
+          fi
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-audit-report
+          path: |
+            audit-output.txt
+            report.json
+          retention-days: 30
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            if (fs.existsSync('audit-output.txt')) {
+              const output = fs.readFileSync('audit-output.txt', 'utf8');
+              // 截取关键部分
+              const summary = output.split('\n').slice(0, 50).join('\n');
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.owner,
+                repo: context.repo,
+                body: '## 🔍 API 审计报告\n\n```\n' + summary + '\n```'
+              });
+            }

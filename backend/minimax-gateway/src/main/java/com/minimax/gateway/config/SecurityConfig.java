@@ -1,0 +1,28 @@
+package com.minimax.gateway.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
+import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.web.server.SecurityWebFilterChain;
+
+/**
+ * Spring Cloud Gateway Security 配置 (V5.5)
+ * WebFlux 安全链: 全部放行 (JWT 鉴权由 JwtAuthGlobalFilter 处理)
+ */
+@Configuration
+@EnableWebFluxSecurity
+public class SecurityConfig {
+
+    @Bean
+    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+        return http
+            .csrf(ServerHttpSecurity.CsrfSpec::disable)
+            .cors(cors -> cors.disable())
+            .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
+            .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
+            .authorizeExchange(exchange -> exchange.anyExchange().permitAll())
+            .build();
+    }
+}

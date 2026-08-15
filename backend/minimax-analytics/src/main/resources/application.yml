@@ -1,0 +1,94 @@
+# =============================================================
+# 数据智能分析模块 (V5.31) - 配置
+# 公共配置在 application-common.yml, 这里只放模块特有配置
+# =============================================================
+
+server:
+  port: 8092
+spring:
+  application:
+    name: minimax-analytics
+  config:
+    import: classpath:application-common.yml
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
+        namespace: ${NACOS_NS:minimax-dev}
+        username: ${NACOS_USER}
+        password: ${NACOS_PASS}
+        register-enabled: true
+        metadata:
+          version: 5.7.0
+          group: minimax
+
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://${MYSQL_HOST:127.0.0.1}:3306/minimax_platform?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:minimax_mariadb_2024}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASS}
+      database: 0
+      timeout: 3s
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+
+# V5.31: 分析模块业务配置
+analytics:
+  query:
+    max-rows: 1000
+    timeout-seconds: 30
+  schema:
+    cache-ttl-minutes: 60
+    profile-sample-size: 1000
+  ingest:
+    upload-dir: ${ANALYTICS_UPLOAD_DIR:/tmp/minimax-analytics/uploads}
+    max-file-size-mb: 100
+    supported-types: csv,json,log,txt,tsv
+  nlsql:
+    model: MiniMax-Text-01
+    temperature: 0.1
+    max-tokens: 2048
+  report:
+    template-dir: classpath:templates/
+    default-format: markdown
+
+# 继承 minimax-model 的 LLM 配置
+minimax:
+  model:
+    mock-mode: ${MODEL_MOCK_MODE:false}
+    providers: ${MODEL_PROVIDERS:minimax:openai-compatible:https://api.minimax.chat/v1:sk-xxx}
+
+# =============================================================
+# MyBatis-Plus (V3.5.33+ 防御性配置)
+#   - type-aliases-package 限定到 .entity 子包
+# =============================================================
+mybatis-plus:
+  type-aliases-package: com.minimax.analytics.entity
+  configuration:
+    map-underscore-to-camel-case: true
+  mapper-locations: classpath*:mapper/**/*.xml
+
+# V3.5.90+ OpenTelemetry trace (W3C traceparent, OTLP → collector → jaeger)
+# jvm-env (docker-compose) 注入 OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+otel:
+  metrics:
+    export:
+      interval: 30s
+  java:
+    global-autoconfigure:
+      enabled: true

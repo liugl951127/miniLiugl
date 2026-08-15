@@ -1,0 +1,99 @@
+name: verify-sql
+
+on:
+  push:
+    paths:
+      - 'sql/**'
+  pull_request:
+    paths:
+      - 'sql/**'
+  workflow_dispatch:
+
+jobs:
+  verify:
+    name: 验证 minimax-mysql-final.sql
+    runs-on: ubuntu-latest
+
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: minimax_mariadb_2024
+          MARIADB_DATABASE: minimax_platform
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -uroot -pminimax_mariadb_2024"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: 安装 mysql client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y default-mysql-client
+
+      - name: 等待 MariaDB 就绪
+        run: |
+          for i in {1..30}; do
+            if mysql -h127.0.0.1 -uroot -pminimax_mariadb_2024 -e "SELECT 1" >/dev/null 2>&1; then
+              echo "✓ MariaDB ready"
+              exit 0
+            fi
+            echo "等待... ($i/30)"
+            sleep 2
+          done
+          echo "✗ MariaDB 启动超时"
+          exit 1
+
+      - name: 跑 SQL 部署
+        run: |
+          mysql -h127.0.0.1 -uroot -pminimax_mariadb_2024 minimax_platform < sql/minimax-mysql-final.sql
+
+      - name: 验证 SQL (10 步)
+        run: |
+          chmod +x scripts/verify-sql.sh
+          DB_PASS=minimax_mariadb_2024 bash scripts/verify-sql.sh
+
+      - name: 检查表数 (>= 89)
+        run: |
+          TABLES=$(mysql -h127.0.0.1 -uroot -pminimax_mariadb_2024 -N -B -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='minimax_platform';")
+          echo "Tables: $TABLES"
+          if [ "$TABLES" -lt 89 ]; then
+            echo "✗ 期望 89+, 实际 $TABLES"
+            exit 1
+          fi
+
+      - name: 列出 5 测试账号
+        run: |
+          mysql -h127.0.0.1 -uroot -pminimax_mariadb_2024 -e "SELECT id, username, nickname FROM sys_user WHERE username IN ('admin','demo','test','guest','vip') ORDER BY id;"
+
+      - name: 列出触发器
+        run: |
+          mysql -h127.0.0.1 -uroot -pminimax_mariadb_2024 -e "SELECT TRIGGER_NAME FROM information_schema.triggers WHERE trigger_schema='minimax_platform';"
+
+      - name: 列出存储过程
+        run: |
+          mysql -h127.0.0.1 -uroot -pminimax_mariadb_2024 -e "SELECT ROUTINE_NAME FROM information_schema.routines WHERE routine_schema='minimax_platform' AND routine_type='PROCEDURE';"
+
+      - name: 列出函数
+        run: |
+          mysql -h127.0.0.1 -uroot -pminimax_mariadb_2024 -e "SELECT ROUTINE_NAME FROM information_schema.routines WHERE routine_schema='minimax_platform' AND routine_type='FUNCTION';"
+
+      - name: 测试 fn_mask_phone
+        run: |
+          RESULT=$(mysql -h127.0.0.1 -uroot -pminimax_mariadb_2024 -N -B -e "SELECT fn_mask_phone('13800001234');")
+          echo "fn_mask_phone('13800001234') = $RESULT"
+          if [ "$RESULT" != "138****1234" ]; then
+            echo "✗ 期望 138****1234"
+            exit 1
+          fi
+
+      - name: 测试 fn_user_activity_score
+        run: |
+          RESULT=$(mysql -h127.0.0.1 -uroot -pminimax_mariadb_2024 -N -B -e "SELECT fn_user_activity_score(1);")
+          echo "fn_user_activity_score(1) = $RESULT"

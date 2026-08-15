@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.minimax.monitor.mapper.AlertEventMapper">
+
+    <resultMap id="eventMap" type="com.minimax.monitor.entity.AlertEvent">
+        <id     property="id"          column="id"/>
+        <result property="ruleId"      column="rule_id"/>
+        <result property="ruleName"    column="rule_name"/>
+        <result property="severity"    column="severity"/>
+        <result property="metricName"  column="metric_name"/>
+        <result property="metricValue" column="metric_value"/>
+        <result property="threshold"   column="threshold"/>
+        <result property="message"     column="message"/>
+        <result property="status"      column="status"/>
+        <result property="firedAt"     column="fired_at"/>
+        <result property="resolvedAt"  column="resolved_at"/>
+    </resultMap>
+
+    <select id="selectRecent" resultMap="eventMap">
+        SELECT * FROM alert_event ORDER BY fired_at DESC LIMIT #{limit}
+    </select>
+
+    <select id="selectByStatus" resultMap="eventMap">
+        SELECT * FROM alert_event WHERE status = #{status} ORDER BY fired_at DESC LIMIT #{limit}
+    </select>
+
+    <select id="selectLatestByRule" resultMap="eventMap">
+        SELECT * FROM alert_event WHERE rule_id = #{ruleId} ORDER BY fired_at DESC LIMIT 1
+    </select>
+</mapper>

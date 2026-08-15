@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.minimax.rag.mapper.DocumentMapper">
+
+    <select id="selectByKb" resultType="com.minimax.rag.entity.Document">
+        SELECT id, kb_id, owner_id, title, source_type, source_uri, size_bytes, status,
+               chunk_count, checksum, tags, error_msg, created_at, updated_at
+        FROM document
+        WHERE kb_id = #{kbId} AND deleted = 0
+        ORDER BY created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectByChecksum" resultType="com.minimax.rag.entity.Document">
+        SELECT id, kb_id, owner_id, title, source_type, source_uri, size_bytes, status,
+               chunk_count, checksum, tags, error_msg, created_at, updated_at
+        FROM document
+        WHERE owner_id = #{ownerId} AND checksum = #{checksum} AND kb_id = #{kbId} AND deleted = 0
+        LIMIT 1
+    </select>
+
+    <update id="updateStatus">
+        UPDATE document
+        SET status = #{status}, error_msg = #{errorMsg}, updated_at = NOW()
+        WHERE id = #{id} AND deleted = 0
+    </update>
+</mapper>

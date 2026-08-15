@@ -1,0 +1,16 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/v1/&action=1",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/*/api/v1/models/chat/stream",
+    "files": [
+      "model.js"
+    ]
+  }
+]

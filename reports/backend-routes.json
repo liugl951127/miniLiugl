@@ -1,0 +1,4607 @@
+[
+  {
+    "file": "AdminController.java",
+    "method": "ANY",
+    "path": "/api/v1/admin"
+  },
+  {
+    "file": "AdminController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/users"
+  },
+  {
+    "file": "AdminController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/users/{id}"
+  },
+  {
+    "file": "AdminController.java",
+    "method": "POST",
+    "path": "/api/v1/admin/users"
+  },
+  {
+    "file": "AdminController.java",
+    "method": "POST",
+    "path": "/api/v1/admin/users/{id}/reset-password"
+  },
+  {
+    "file": "AdminController.java",
+    "method": "PUT",
+    "path": "/api/v1/admin/users/{id}/status"
+  },
+  {
+    "file": "AdminController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/models/providers"
+  },
+  {
+    "file": "AdminController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/models"
+  },
+  {
+    "file": "AdminController.java",
+    "method": "PUT",
+    "path": "/api/v1/admin/models/{code}/rate-limit"
+  },
+  {
+    "file": "AdminController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/stats/ops"
+  },
+  {
+    "file": "AdminController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/stats/dashboard"
+  },
+  {
+    "file": "AdminController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/stats/apikey"
+  },
+  {
+    "file": "AdminController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/stats/apikey/trend"
+  },
+  {
+    "file": "AdminController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/health"
+  },
+  {
+    "file": "AdminController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/ping"
+  },
+  {
+    "file": "AdminController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/audit-ops/recent"
+  },
+  {
+    "file": "AdminController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/audit-ops/by-actor/{id}"
+  },
+  {
+    "file": "AdminController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/audit-ops/by-day"
+  },
+  {
+    "file": "AdminController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/apikey/stats"
+  },
+  {
+    "file": "AdminController.java",
+    "method": "POST",
+    "path": "/api/v1/admin/models"
+  },
+  {
+    "file": "AdminController.java",
+    "method": "PUT",
+    "path": "/api/v1/admin/models/{code}"
+  },
+  {
+    "file": "AdminController.java",
+    "method": "DELETE",
+    "path": "/api/v1/admin/models/{code}"
+  },
+  {
+    "file": "AuditController.java",
+    "method": "ANY",
+    "path": "/api/v1/admin/audit"
+  },
+  {
+    "file": "AuditController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/audit/recent"
+  },
+  {
+    "file": "AuditController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/audit/by-actor/{userId}"
+  },
+  {
+    "file": "AuditController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/audit/by-day"
+  },
+  {
+    "file": "AuditController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/audit/export"
+  },
+  {
+    "file": "GovernanceController.java",
+    "method": "ANY",
+    "path": "/api/v1/admin/governance"
+  },
+  {
+    "file": "GovernanceController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/governance/overview"
+  },
+  {
+    "file": "GovernanceController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/governance/timeline"
+  },
+  {
+    "file": "GovernanceController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/governance/anomalies"
+  },
+  {
+    "file": "GovernanceController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/governance/compliance"
+  },
+  {
+    "file": "GovernanceController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/governance/retention"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "ANY",
+    "path": "/api/v1/agent"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "POST",
+    "path": "/api/v1/agent/run"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "POST",
+    "path": "/api/v1/agent/run-stream"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "POST",
+    "path": "/api/v1/agent/plan"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "POST",
+    "path": "/api/v1/agent/run-plan"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "POST",
+    "path": "/api/v1/agent/run-with-memory"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "POST",
+    "path": "/api/v1/agent/multi/run"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "POST",
+    "path": "/api/v1/agent/multi/stream"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "POST",
+    "path": "/api/v1/agent/multi/plan"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "POST",
+    "path": "/api/v1/agent/multi/critic"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "POST",
+    "path": "/api/v1/agent/kg/entities"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "GET",
+    "path": "/api/v1/agent/kg/entities/{id}"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "GET",
+    "path": "/api/v1/agent/kg/entities/search"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "DELETE",
+    "path": "/api/v1/agent/kg/entities/{id}"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "POST",
+    "path": "/api/v1/agent/kg/relations"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "GET",
+    "path": "/api/v1/agent/kg/entities/{id}/neighbors"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "GET",
+    "path": "/api/v1/agent/kg/entities/{id}/2hop"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "GET",
+    "path": "/api/v1/agent/kg/path"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "POST",
+    "path": "/api/v1/agent/collab/sessions"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "POST",
+    "path": "/api/v1/agent/collab/{id}/join"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "POST",
+    "path": "/api/v1/agent/collab/{id}/close"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "GET",
+    "path": "/api/v1/agent/plugins"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "GET",
+    "path": "/api/v1/agent/plugins/{id}"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "POST",
+    "path": "/api/v1/agent/plugins"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "POST",
+    "path": "/api/v1/agent/plugins/{id}/rate"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "POST",
+    "path": "/api/v1/agent/plugins/{id}/toggle"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "DELETE",
+    "path": "/api/v1/agent/plugins/{id}"
+  },
+  {
+    "file": "AgentController.java",
+    "method": "POST",
+    "path": "/api/v1/agent/plugins/{id}/call"
+  },
+  {
+    "file": "ClusterController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/cluster"
+  },
+  {
+    "file": "ClusterController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/cluster/nodes/list"
+  },
+  {
+    "file": "ClusterController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/cluster/nodes/active"
+  },
+  {
+    "file": "ClusterController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/cluster/nodes/{nodeId}"
+  },
+  {
+    "file": "ClusterController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/cluster/me"
+  },
+  {
+    "file": "ClusterController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/cluster/leader"
+  },
+  {
+    "file": "ClusterController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/cluster/route"
+  },
+  {
+    "file": "ClusterController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/cluster/node/{nodeId}/drain"
+  },
+  {
+    "file": "ClusterController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/cluster/stats"
+  },
+  {
+    "file": "ClusterController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/cluster/raft/start"
+  },
+  {
+    "file": "ClusterController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/cluster/raft/stop"
+  },
+  {
+    "file": "ClusterController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/cluster/raft/state"
+  },
+  {
+    "file": "ClusterController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/cluster/raft/leader"
+  },
+  {
+    "file": "ClusterController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/cluster/raft/submit"
+  },
+  {
+    "file": "ClusterController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/cluster/raft/applied"
+  },
+  {
+    "file": "ProjectCodeGenerator.java",
+    "method": "ANY",
+    "path": "/api/"
+  },
+  {
+    "file": "ProjectCodeGenerator.java",
+    "method": "GET",
+    "path": "/hello\\"
+  },
+  {
+    "file": "ProjectCodeGenerator.java",
+    "method": "GET",
+    "path": "/info\\"
+  },
+  {
+    "file": "ProjectCodeGenerator.java",
+    "method": "GET",
+    "path": "/list\\"
+  },
+  {
+    "file": "ProjectCodeGenerator.java",
+    "method": "POST",
+    "path": "/create\\"
+  },
+  {
+    "file": "SchemaCodeGenTool.java",
+    "method": "ANY",
+    "path": "/api/"
+  },
+  {
+    "file": "SchemaCodeGenTool.java",
+    "method": "GET",
+    "path": "/{id}\\"
+  },
+  {
+    "file": "SchemaCodeGenTool.java",
+    "method": "DELETE",
+    "path": "/{id}\\"
+  },
+  {
+    "file": "AiAdminRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/admin"
+  },
+  {
+    "file": "AiAdminRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/admin/tools"
+  },
+  {
+    "file": "AiAdminRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools"
+  },
+  {
+    "file": "AiAdminRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/admin/tools/{id}"
+  },
+  {
+    "file": "AiAdminRealController.java",
+    "method": "PUT",
+    "path": "/api/v1/ai/admin/tools/{id}"
+  },
+  {
+    "file": "AiAdminRealController.java",
+    "method": "DELETE",
+    "path": "/api/v1/ai/admin/tools/{id}"
+  },
+  {
+    "file": "AiAdminRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools/{id}/invoke"
+  },
+  {
+    "file": "AiAdminRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/admin/templates"
+  },
+  {
+    "file": "AiAdminRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/admin/datasources"
+  },
+  {
+    "file": "AiAdminRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/admin/codegen"
+  },
+  {
+    "file": "AiAgentGroupAutoRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/agent-group/auto"
+  },
+  {
+    "file": "AiAgentGroupAutoRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/agent-group/auto/generate"
+  },
+  {
+    "file": "AiAgentGroupAutoRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/agent-group/auto/execute"
+  },
+  {
+    "file": "AiAgentGroupRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/agent-group"
+  },
+  {
+    "file": "AiAgentGroupRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/agent-group/auto/templates"
+  },
+  {
+    "file": "AiAgentGroupRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/agent-group/auto/templates"
+  },
+  {
+    "file": "AiAgentGroupRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/agent-group/auto/execute"
+  },
+  {
+    "file": "AiAgentGroupRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/agent-group/auto/generate"
+  },
+  {
+    "file": "AiAgentGroupRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/agent-group/auto/template/{id}"
+  },
+  {
+    "file": "AiAgentGroupRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/agent-group/groups"
+  },
+  {
+    "file": "AiAnimationsRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/animation"
+  },
+  {
+    "file": "AiAnimationsRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/animation/text-fade"
+  },
+  {
+    "file": "AiAnimationsRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/animation/progress"
+  },
+  {
+    "file": "AiAnimationsRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/animation/types"
+  },
+  {
+    "file": "AiAudioRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/audio"
+  },
+  {
+    "file": "AiAudioRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/audio/tts"
+  },
+  {
+    "file": "AiAudioRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/audio/asr"
+  },
+  {
+    "file": "AiAutoFillController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/autofill"
+  },
+  {
+    "file": "AiAutoFillController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/autofill/preview/{formType}"
+  },
+  {
+    "file": "AiAutoFillController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/autofill/recommend/{formType}/{field}"
+  },
+  {
+    "file": "AiAutoFillController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/autofill/feedback"
+  },
+  {
+    "file": "AiAutoFillController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/autofill/stats"
+  },
+  {
+    "file": "AiChatRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/chat"
+  },
+  {
+    "file": "AiChatRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/chat/sessions"
+  },
+  {
+    "file": "AiChatRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/chat/sessions/{id}/messages"
+  },
+  {
+    "file": "AiChatRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/chat/sessions"
+  },
+  {
+    "file": "AiChatRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/chat/stop"
+  },
+  {
+    "file": "AiChatRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/chat/stream"
+  },
+  {
+    "file": "AiChatRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/chat/voting"
+  },
+  {
+    "file": "AiChatRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/chat/voting-info"
+  },
+  {
+    "file": "AiClusterRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/cluster"
+  },
+  {
+    "file": "AiClusterRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/cluster/status"
+  },
+  {
+    "file": "AiClusterRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/cluster/nodes"
+  },
+  {
+    "file": "AiClusterRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/cluster/raft"
+  },
+  {
+    "file": "AiClusterRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/cluster/distributed"
+  },
+  {
+    "file": "AiCodegenRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/codegen"
+  },
+  {
+    "file": "AiCodegenRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/codegen/generate"
+  },
+  {
+    "file": "AiCodegenRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/codegen/list"
+  },
+  {
+    "file": "AiCodegenRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/codegen/templates"
+  },
+  {
+    "file": "AiCodegenRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/codegen/explain"
+  },
+  {
+    "file": "AiCodegenRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/codegen/refactor"
+  },
+  {
+    "file": "AiCodegenRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/codegen/test"
+  },
+  {
+    "file": "AiCollabRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/collab"
+  },
+  {
+    "file": "AiCollabRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/collab/rooms"
+  },
+  {
+    "file": "AiCollabRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/collab/rooms"
+  },
+  {
+    "file": "AiCollabRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/collab/rooms/{id}/join"
+  },
+  {
+    "file": "AiCollabRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/collab/rooms/{id}/messages"
+  },
+  {
+    "file": "AiComplianceRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/compliance"
+  },
+  {
+    "file": "AiComplianceRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/compliance/check"
+  },
+  {
+    "file": "AiComplianceRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/compliance/sensitive"
+  },
+  {
+    "file": "AiComplianceRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/compliance/audit"
+  },
+  {
+    "file": "AiComplianceRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/compliance/report"
+  },
+  {
+    "file": "AiComplianceRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/compliance/rules"
+  },
+  {
+    "file": "AiController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai"
+  },
+  {
+    "file": "AiController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/generate"
+  },
+  {
+    "file": "AiController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/generate/stream"
+  },
+  {
+    "file": "AiController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/embed"
+  },
+  {
+    "file": "AiController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/similarity"
+  },
+  {
+    "file": "AiController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/tokenize"
+  },
+  {
+    "file": "AiController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/info"
+  },
+  {
+    "file": "AiController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/health"
+  },
+  {
+    "file": "AiController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/train"
+  },
+  {
+    "file": "AiDashboardRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/dashboard"
+  },
+  {
+    "file": "AiDashboardRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/dashboard/stats"
+  },
+  {
+    "file": "AiDashboardRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/dashboard/recent"
+  },
+  {
+    "file": "AiDashboardRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/dashboard/tokens"
+  },
+  {
+    "file": "AiDashboardRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/dashboard/health"
+  },
+  {
+    "file": "AiDistributedRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/distributed"
+  },
+  {
+    "file": "AiDistributedRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/distributed/nodes"
+  },
+  {
+    "file": "AiDistributedRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/distributed/nodes"
+  },
+  {
+    "file": "AiDistributedRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/distributed/schedule"
+  },
+  {
+    "file": "AiDistributedRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/distributed/status"
+  },
+  {
+    "file": "AiDocumentRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/document"
+  },
+  {
+    "file": "AiDocumentRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/document/list"
+  },
+  {
+    "file": "AiDocumentRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/document/upload"
+  },
+  {
+    "file": "AiDocumentRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/document/{id}"
+  },
+  {
+    "file": "AiDocumentRealController.java",
+    "method": "DELETE",
+    "path": "/api/v1/ai/document/{id}"
+  },
+  {
+    "file": "AiDocumentRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/document/{id}/reindex"
+  },
+  {
+    "file": "AiDocumentRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/document/chunk"
+  },
+  {
+    "file": "AiDocumentRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/document/search"
+  },
+  {
+    "file": "AiDocumentRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/document/stats"
+  },
+  {
+    "file": "AiFrameworkRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/framework"
+  },
+  {
+    "file": "AiFrameworkRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/framework/list"
+  },
+  {
+    "file": "AiFrameworkRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/framework/register"
+  },
+  {
+    "file": "AiFrameworkRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/framework/{id}/enable"
+  },
+  {
+    "file": "AiFrameworkRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/framework/{id}/disable"
+  },
+  {
+    "file": "AiFrameworkRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/framework/health"
+  },
+  {
+    "file": "AiFrameworkRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/framework/capabilities"
+  },
+  {
+    "file": "AiGenerationRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/generation"
+  },
+  {
+    "file": "AiGenerationRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/generation/ppt"
+  },
+  {
+    "file": "AiGenerationRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/generation/project"
+  },
+  {
+    "file": "AiGenerationRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/generation/agent-group"
+  },
+  {
+    "file": "AiGenerationRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/generation/intent"
+  },
+  {
+    "file": "AiGenerationRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/generation/animation"
+  },
+  {
+    "file": "AiGenerationRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/generation/animation/progress/{id}"
+  },
+  {
+    "file": "AiImageRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/image"
+  },
+  {
+    "file": "AiIntentRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/intent"
+  },
+  {
+    "file": "AiIntentRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/intent/recognize"
+  },
+  {
+    "file": "AiIntentRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/intent/keywords"
+  },
+  {
+    "file": "AiIntentRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/intent/keywords"
+  },
+  {
+    "file": "AiIntentRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/intent/train"
+  },
+  {
+    "file": "AiKnowledgeBaseRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/kb"
+  },
+  {
+    "file": "AiKnowledgeBaseRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/kb/list"
+  },
+  {
+    "file": "AiKnowledgeBaseRealController.java",
+    "method": "DELETE",
+    "path": "/api/v1/ai/kb/{id}"
+  },
+  {
+    "file": "AiKnowledgeBaseRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/kb/{id}/reindex"
+  },
+  {
+    "file": "AiLeaderboardRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/leaderboard"
+  },
+  {
+    "file": "AiLeaderboardRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/leaderboard/list"
+  },
+  {
+    "file": "AiLeaderboardRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/leaderboard/eval"
+  },
+  {
+    "file": "AiLeaderboardRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/leaderboard/stats"
+  },
+  {
+    "file": "AiLeaderboardRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/leaderboard/trend"
+  },
+  {
+    "file": "AiLeaderboardRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/leaderboard/tasks/{id}"
+  },
+  {
+    "file": "AiMarketV2RealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/market-v2"
+  },
+  {
+    "file": "AiMarketV2RealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/market-v2/list"
+  },
+  {
+    "file": "AiMarketV2RealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/market-v2/trending"
+  },
+  {
+    "file": "AiMarketV2RealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/market-v2/publish"
+  },
+  {
+    "file": "AiMarketplaceRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/marketplace"
+  },
+  {
+    "file": "AiMarketplaceRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/marketplace/list"
+  },
+  {
+    "file": "AiMarketplaceRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/marketplace/{id}/install"
+  },
+  {
+    "file": "AiMarketplaceRealController.java",
+    "method": "DELETE",
+    "path": "/api/v1/ai/marketplace/{id}/install"
+  },
+  {
+    "file": "AiMarketplaceRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/marketplace/{id}/rate"
+  },
+  {
+    "file": "AiMarketplaceRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/marketplace/{id}"
+  },
+  {
+    "file": "AiMarketplaceRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/marketplace/search"
+  },
+  {
+    "file": "AiMarketplaceRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/marketplace/categories"
+  },
+  {
+    "file": "AiMarketplaceRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/marketplace/license-template"
+  },
+  {
+    "file": "AiModelMarketRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/model-market"
+  },
+  {
+    "file": "AiModelMarketRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/model-market/{id}"
+  },
+  {
+    "file": "AiModelMarketRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/model-market/{id}/deploy"
+  },
+  {
+    "file": "AiMultimodalRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/multimodal"
+  },
+  {
+    "file": "AiMultimodalRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/multimodal/vision"
+  },
+  {
+    "file": "AiMultimodalRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/multimodal/image/generate"
+  },
+  {
+    "file": "AiMultimodalRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/multimodal/video/generate"
+  },
+  {
+    "file": "AiMultimodalRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/multimodal/image/style"
+  },
+  {
+    "file": "AiMultimodalRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/multimodal/ocr"
+  },
+  {
+    "file": "AiMultimodalRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/multimodal/image/enhance"
+  },
+  {
+    "file": "AiMultimodalRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/multimodal/fuse"
+  },
+  {
+    "file": "AiMultimodalRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/multimodal/models"
+  },
+  {
+    "file": "AiOverviewRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/overview"
+  },
+  {
+    "file": "AiOverviewRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/overview/health"
+  },
+  {
+    "file": "AiOverviewRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/overview/version"
+  },
+  {
+    "file": "AiOverviewRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/overview/metrics"
+  },
+  {
+    "file": "AiPipelineRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/pipeline"
+  },
+  {
+    "file": "AiPipelineRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/pipeline/list"
+  },
+  {
+    "file": "AiPipelineRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/pipeline/{id}"
+  },
+  {
+    "file": "AiPipelineRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/pipeline/{id}/run"
+  },
+  {
+    "file": "AiPipelineRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/pipeline/runs/{runId}"
+  },
+  {
+    "file": "AiPipelineRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/pipeline/runs/{runId}/stop"
+  },
+  {
+    "file": "AiPipelineRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/pipeline/{id}/deploy"
+  },
+  {
+    "file": "AiPipelineRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/pipeline/node-types"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/chart/render"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/music/generate"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/animation/text-fade"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/animation/progress"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/video/compose"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/video/from-data"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/dashboard/render"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/dashboard/from-data"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/nl2chart"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/route"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/route/recognize"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/dispatch"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/chat/sessions"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/chat/sessions/{id}"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/chat/sessions"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "DELETE",
+    "path": "/api/v1/ai/chat/sessions/{id}"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/tools"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/tools/{code}/invoke"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/datasources"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/datasources"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/datasources/{id}/test"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/datasources/{id}/schema"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/datasources/{id}/query"
+  },
+  {
+    "file": "AiPlatformController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/files"
+  },
+  {
+    "file": "AiRaftRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/raft"
+  },
+  {
+    "file": "AiRaftRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/raft/state"
+  },
+  {
+    "file": "AiRaftRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/raft/peers"
+  },
+  {
+    "file": "AiRaftRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/raft/peers"
+  },
+  {
+    "file": "AiRaftRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/raft/log"
+  },
+  {
+    "file": "AiSearchRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/search"
+  },
+  {
+    "file": "AiSearchRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/search/semantic"
+  },
+  {
+    "file": "AiSearchRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/search/keyword"
+  },
+  {
+    "file": "AiSearchRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/search/hybrid"
+  },
+  {
+    "file": "AiSearchRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/search/suggest"
+  },
+  {
+    "file": "AiSeedRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/seed"
+  },
+  {
+    "file": "AiSeedRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/seed/run"
+  },
+  {
+    "file": "AiSeedRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/seed/list"
+  },
+  {
+    "file": "AiTensorboardRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/tensorboard"
+  },
+  {
+    "file": "AiTensorboardRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/tensorboard/metrics/{taskId}"
+  },
+  {
+    "file": "AiTensorboardRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/tensorboard/scalars"
+  },
+  {
+    "file": "AiTensorboardRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/tensorboard/histograms"
+  },
+  {
+    "file": "AiTensorboardRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/tensorboard/images"
+  },
+  {
+    "file": "AiToolAdminController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/admin"
+  },
+  {
+    "file": "AiToolAdminController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/admin/tools"
+  },
+  {
+    "file": "AiToolAdminController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/admin/tools/{code}"
+  },
+  {
+    "file": "AiToolAdminController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools"
+  },
+  {
+    "file": "AiToolAdminController.java",
+    "method": "PUT",
+    "path": "/api/v1/ai/admin/tools/{id}"
+  },
+  {
+    "file": "AiToolAdminController.java",
+    "method": "DELETE",
+    "path": "/api/v1/ai/admin/tools/{id}"
+  },
+  {
+    "file": "AiToolAdminController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools/{code}/invoke"
+  },
+  {
+    "file": "AiToolAdminController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/admin/datasources"
+  },
+  {
+    "file": "AiToolAdminController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/admin/datasources"
+  },
+  {
+    "file": "AiToolAdminController.java",
+    "method": "PUT",
+    "path": "/api/v1/ai/admin/datasources/{id}"
+  },
+  {
+    "file": "AiToolAdminController.java",
+    "method": "DELETE",
+    "path": "/api/v1/ai/admin/datasources/{id}"
+  },
+  {
+    "file": "AiToolAdminController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/admin/datasources/{id}/test"
+  },
+  {
+    "file": "AiToolAdminController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/admin/codegen"
+  },
+  {
+    "file": "AiTrainingRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/training"
+  },
+  {
+    "file": "AiTrainingRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/training/tasks"
+  },
+  {
+    "file": "AiTrainingRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/training/tasks"
+  },
+  {
+    "file": "AiTrainingRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/training/tasks/{id}"
+  },
+  {
+    "file": "AiTrainingRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/training/tasks/{id}/history"
+  },
+  {
+    "file": "AiTrainingRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/training/tasks/{id}/start"
+  },
+  {
+    "file": "AiTrainingRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/training/tasks/{id}/stop"
+  },
+  {
+    "file": "AiTrainingRealController.java",
+    "method": "DELETE",
+    "path": "/api/v1/ai/training/tasks/{id}"
+  },
+  {
+    "file": "AiVotingRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/voting"
+  },
+  {
+    "file": "AiVotingRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/voting/history"
+  },
+  {
+    "file": "AiVotingRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/voting/stats"
+  },
+  {
+    "file": "AiVotingRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/voting/stats/trend"
+  },
+  {
+    "file": "AiVotingRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/voting/records"
+  },
+  {
+    "file": "AiVotingRealController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/voting/config"
+  },
+  {
+    "file": "AiWebhookRealController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/webhooks"
+  },
+  {
+    "file": "AiWebhookRealController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/webhooks/{id}/trigger"
+  },
+  {
+    "file": "AiWebhookRealController.java",
+    "method": "DELETE",
+    "path": "/api/v1/ai/webhooks/{id}"
+  },
+  {
+    "file": "DocumentController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/document"
+  },
+  {
+    "file": "DocumentController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/document/parse"
+  },
+  {
+    "file": "DocumentController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/document/keywords"
+  },
+  {
+    "file": "DocumentController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/document/formats"
+  },
+  {
+    "file": "FrameworkController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/framework"
+  },
+  {
+    "file": "FrameworkController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/framework/agents/execute"
+  },
+  {
+    "file": "FrameworkController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/framework/agents/route"
+  },
+  {
+    "file": "FrameworkController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/framework/agents"
+  },
+  {
+    "file": "FrameworkController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/framework/permission/grant"
+  },
+  {
+    "file": "FrameworkController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/framework/permission/revoke"
+  },
+  {
+    "file": "FrameworkController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/framework/permission/revoke-all"
+  },
+  {
+    "file": "FrameworkController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/framework/permission/list"
+  },
+  {
+    "file": "FrameworkController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/framework/memory/stats"
+  },
+  {
+    "file": "FrameworkController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/framework/memory/clear"
+  },
+  {
+    "file": "FrameworkController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/framework/products/search"
+  },
+  {
+    "file": "ImageGenController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/image"
+  },
+  {
+    "file": "ImageGenController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/image/generate"
+  },
+  {
+    "file": "ImageGenController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/image/types"
+  },
+  {
+    "file": "ImageGenController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/image/infer"
+  },
+  {
+    "file": "IntroController.java",
+    "method": "ANY",
+    "path": "/api/ai"
+  },
+  {
+    "file": "IntroController.java",
+    "method": "GET",
+    "path": "/api/ai/intro"
+  },
+  {
+    "file": "LlmTrainingController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/training/llm"
+  },
+  {
+    "file": "LlmTrainingController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/training/llm/start"
+  },
+  {
+    "file": "LlmTrainingController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/training/llm/status/{taskId}"
+  },
+  {
+    "file": "LlmTrainingController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/training/llm/history/{taskId}"
+  },
+  {
+    "file": "LlmTrainingController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/training/llm/list"
+  },
+  {
+    "file": "LlmTrainingController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/training/llm/feedback"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "ANY",
+    "path": "/ai/ai"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/admin/codegen"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "POST",
+    "path": "/ai/admin/codegen"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/admin/codegen/{id}"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "PUT",
+    "path": "/ai/admin/codegen/{id}"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "DELETE",
+    "path": "/ai/admin/codegen/{id}"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/admin/datasources"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "POST",
+    "path": "/ai/admin/datasources"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/admin/datasources/{id}"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "PUT",
+    "path": "/ai/admin/datasources/{id}"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "DELETE",
+    "path": "/ai/admin/datasources/{id}"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "POST",
+    "path": "/ai/admin/datasources/{id}/test"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/admin/tools"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "POST",
+    "path": "/ai/admin/tools"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/admin/tools/{id}"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "PUT",
+    "path": "/ai/admin/tools/{id}"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "DELETE",
+    "path": "/ai/admin/tools/{id}"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "POST",
+    "path": "/ai/admin/tools/{id}/invoke"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/admin/templates"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "POST",
+    "path": "/ai/admin/templates"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/agent-group/auto/templates"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "POST",
+    "path": "/ai/agent-group/auto/templates"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "POST",
+    "path": "/ai/agent-group/auto/execute"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "POST",
+    "path": "/ai/chat/stream"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "POST",
+    "path": "/ai/chat/stop"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/training/tasks"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "POST",
+    "path": "/ai/training/tasks"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/training/tasks/{id}"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "DELETE",
+    "path": "/ai/training/tasks/{id}"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "POST",
+    "path": "/ai/training/tasks/{id}/start"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "POST",
+    "path": "/ai/training/tasks/{id}/stop"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/training/models"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/webhooks"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "POST",
+    "path": "/ai/webhooks"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/webhooks/{id}"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "PUT",
+    "path": "/ai/webhooks/{id}"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "DELETE",
+    "path": "/ai/webhooks/{id}"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/dashboard/stats"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/dashboard/recent"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "POST",
+    "path": "/ai/audio/asr"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "POST",
+    "path": "/ai/audio/tts"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/leaderboard"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/leaderboard/{category}"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "POST",
+    "path": "/ai/intent/recognize"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/search"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "POST",
+    "path": "/ai/search"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/prompts"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/pipeline/templates"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "POST",
+    "path": "/ai/generation/text"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "POST",
+    "path": "/ai/generation/image"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/marketplace"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/marketplace/{id}"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/compliance/check"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "POST",
+    "path": "/ai/multimodal/upload"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/distributed/nodes"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/cluster/status"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/raft/state"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/document/list"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/datasource/list"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/framework/list"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/tensorboard/runs"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/tensorboard/runs/compare"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/collab/rooms"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "GET",
+    "path": "/ai/codegen/list"
+  },
+  {
+    "file": "MissingAiController.java",
+    "method": "POST",
+    "path": "/ai/codegen/generate"
+  },
+  {
+    "file": "MultimodalController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/multimodal"
+  },
+  {
+    "file": "MultimodalController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/multimodal/image/upload"
+  },
+  {
+    "file": "MultimodalController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/multimodal/audio/upload"
+  },
+  {
+    "file": "MultimodalController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/multimodal/video/upload"
+  },
+  {
+    "file": "MultimodalController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/multimodal/files"
+  },
+  {
+    "file": "MultimodalController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/multimodal/file/{fileId}/info"
+  },
+  {
+    "file": "MultimodalController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/multimodal/tts"
+  },
+  {
+    "file": "MultimodalController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/multimodal/image/compare"
+  },
+  {
+    "file": "MultimodalController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/multimodal/compliance/moderate-text"
+  },
+  {
+    "file": "MultimodalController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/multimodal/compliance/mask"
+  },
+  {
+    "file": "MultimodalController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/multimodal/compliance/refresh-sensitive-words"
+  },
+  {
+    "file": "MusicStreamController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/music/stream"
+  },
+  {
+    "file": "MusicStreamController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/music/stream/sse"
+  },
+  {
+    "file": "MusicStreamController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/music/stream/list"
+  },
+  {
+    "file": "MusicStreamController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/music/stream/{id}"
+  },
+  {
+    "file": "MusicStreamController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/music/stream/cancel/{id}"
+  },
+  {
+    "file": "PermissionController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/permission"
+  },
+  {
+    "file": "PermissionController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/permission/me"
+  },
+  {
+    "file": "PermissionController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/permission/roles"
+  },
+  {
+    "file": "PermissionController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/permission/check"
+  },
+  {
+    "file": "PipelineController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/pipeline"
+  },
+  {
+    "file": "PipelineController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/pipeline/execute"
+  },
+  {
+    "file": "PipelineController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/pipeline/config"
+  },
+  {
+    "file": "PipelineController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/pipeline/config"
+  },
+  {
+    "file": "PipelineController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/pipeline/config/compute-mode"
+  },
+  {
+    "file": "PipelineController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/pipeline/intent/reload"
+  },
+  {
+    "file": "PipelineController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/pipeline/intent/stats"
+  },
+  {
+    "file": "PptGenController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/ppt"
+  },
+  {
+    "file": "PptGenController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/ppt/generate"
+  },
+  {
+    "file": "PptGenController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/ppt/auto"
+  },
+  {
+    "file": "PptGenController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/ppt/themes"
+  },
+  {
+    "file": "PptGenController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/ppt/parse"
+  },
+  {
+    "file": "ProjectDownloadController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/project"
+  },
+  {
+    "file": "ProjectDownloadController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/project/download"
+  },
+  {
+    "file": "ProjectDownloadController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/project/download"
+  },
+  {
+    "file": "SeedInfoController.java",
+    "method": "ANY",
+    "path": "/api/ai/seed"
+  },
+  {
+    "file": "SeedInfoController.java",
+    "method": "GET",
+    "path": "/api/ai/seed/check"
+  },
+  {
+    "file": "TrainingController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/training"
+  },
+  {
+    "file": "TrainingController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/training/start"
+  },
+  {
+    "file": "TrainingController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/training/tasks"
+  },
+  {
+    "file": "TrainingController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/training/tasks/{id}"
+  },
+  {
+    "file": "TrainingController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/training/tasks/{id}/history"
+  },
+  {
+    "file": "TrainingController.java",
+    "method": "DELETE",
+    "path": "/api/v1/ai/training/tasks/{id}"
+  },
+  {
+    "file": "TrainingController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/training/demo"
+  },
+  {
+    "file": "VideoStreamController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/video/stream"
+  },
+  {
+    "file": "VideoStreamController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/video/stream/sse"
+  },
+  {
+    "file": "VideoStreamController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/video/stream/list"
+  },
+  {
+    "file": "VideoStreamController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/video/stream/{id}"
+  },
+  {
+    "file": "VideoStreamController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/video/stream/cancel/{id}"
+  },
+  {
+    "file": "VotingChatController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/chat"
+  },
+  {
+    "file": "VotingChatController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/chat/voting"
+  },
+  {
+    "file": "VotingChatController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/chat/voting-info"
+  },
+  {
+    "file": "WorkflowController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/workflow"
+  },
+  {
+    "file": "WorkflowController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/workflow/execute"
+  },
+  {
+    "file": "WorkflowController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/workflow/validate"
+  },
+  {
+    "file": "DashboardController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/dashboard"
+  },
+  {
+    "file": "DashboardController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/dashboard/metrics/all"
+  },
+  {
+    "file": "DashboardController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/dashboard/metrics/{name}"
+  },
+  {
+    "file": "DashboardController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/dashboard/metrics"
+  },
+  {
+    "file": "DashboardController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/dashboard/tools/track"
+  },
+  {
+    "file": "DashboardController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/dashboard/tools/top"
+  },
+  {
+    "file": "DashboardController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/dashboard/trend/{name}"
+  },
+  {
+    "file": "DashboardController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/dashboard/cache/stats"
+  },
+  {
+    "file": "DashboardController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/dashboard/cache/clear"
+  },
+  {
+    "file": "DashboardController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/dashboard/health"
+  },
+  {
+    "file": "DashboardController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/dashboard/stream"
+  },
+  {
+    "file": "DistributedController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/distributed"
+  },
+  {
+    "file": "DistributedController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/distributed/shard"
+  },
+  {
+    "file": "DistributedController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/distributed/all-reduce"
+  },
+  {
+    "file": "DistributedController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/distributed/train/step"
+  },
+  {
+    "file": "DistributedController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/distributed/shard/info"
+  },
+  {
+    "file": "AutoAgentGroupController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/agent-group/auto"
+  },
+  {
+    "file": "AutoAgentGroupController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/agent-group/auto/generate"
+  },
+  {
+    "file": "AutoAgentGroupController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/agent-group/auto/template"
+  },
+  {
+    "file": "AutoAgentGroupController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/agent-group/auto/templates"
+  },
+  {
+    "file": "IntentController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/intent"
+  },
+  {
+    "file": "IntentController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/intent/predict"
+  },
+  {
+    "file": "IntentController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/intent/predict/batch"
+  },
+  {
+    "file": "IntentController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/intent/keyword"
+  },
+  {
+    "file": "IntentController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/intent/phrase"
+  },
+  {
+    "file": "IntentController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/intent/list"
+  },
+  {
+    "file": "IntentController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/intent/context/clear"
+  },
+  {
+    "file": "IntentController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/intent/stats"
+  },
+  {
+    "file": "IntentController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/intent/benchmark"
+  },
+  {
+    "file": "IntentController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/intent/config"
+  },
+  {
+    "file": "IntentController.java",
+    "method": "PUT",
+    "path": "/api/v1/ai/intent/config"
+  },
+  {
+    "file": "IntentController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/intent/config/reset"
+  },
+  {
+    "file": "KnowledgeBaseController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/kb"
+  },
+  {
+    "file": "KnowledgeBaseController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/kb/upload"
+  },
+  {
+    "file": "KnowledgeBaseController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/kb/docs/{docId}"
+  },
+  {
+    "file": "KnowledgeBaseController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/kb/docs/list/{kbId}"
+  },
+  {
+    "file": "KnowledgeBaseController.java",
+    "method": "DELETE",
+    "path": "/api/v1/ai/kb/docs/{docId}"
+  },
+  {
+    "file": "KnowledgeBaseController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/kb/chunks/{docId}"
+  },
+  {
+    "file": "KnowledgeBaseController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/kb/search"
+  },
+  {
+    "file": "KnowledgeBaseController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/kb/search/keyword"
+  },
+  {
+    "file": "KnowledgeBaseController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/kb/stats/{kbId}"
+  },
+  {
+    "file": "KnowledgeBaseController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/kb/permission/grant"
+  },
+  {
+    "file": "KnowledgeBaseController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/kb/permission/revoke"
+  },
+  {
+    "file": "KnowledgeBaseController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/kb/public"
+  },
+  {
+    "file": "AgentGroupController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/group"
+  },
+  {
+    "file": "AgentGroupController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/group/create"
+  },
+  {
+    "file": "AgentGroupController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/group/list"
+  },
+  {
+    "file": "AgentGroupController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/group/{groupId}"
+  },
+  {
+    "file": "AgentGroupController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/group/{groupId}/run"
+  },
+  {
+    "file": "AgentGroupController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/group/strategies/list"
+  },
+  {
+    "file": "AgentGroupController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/group/agents/list"
+  },
+  {
+    "file": "AgentGroupController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/group/quick-create"
+  },
+  {
+    "file": "MarketplaceController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/marketplace"
+  },
+  {
+    "file": "MarketplaceController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/marketplace/agents"
+  },
+  {
+    "file": "MarketplaceController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/marketplace/agents/{key}"
+  },
+  {
+    "file": "MarketplaceController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/marketplace/agents"
+  },
+  {
+    "file": "MarketplaceController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/marketplace/agents/{key}/rate"
+  },
+  {
+    "file": "MarketplaceController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/marketplace/agents/{key}/ratings"
+  },
+  {
+    "file": "MarketplaceController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/marketplace/agents/{key}/use"
+  },
+  {
+    "file": "MarketplaceController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/marketplace/agents/{key}/approve"
+  },
+  {
+    "file": "MarketplaceController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/marketplace/my"
+  },
+  {
+    "file": "MarketplaceController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/marketplace/stats"
+  },
+  {
+    "file": "LicenseTemplateController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/marketplace/license-template"
+  },
+  {
+    "file": "LicenseTemplateController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/marketplace/license-template/seed"
+  },
+  {
+    "file": "LicenseTemplateController.java",
+    "method": "PUT",
+    "path": "/api/v1/ai/marketplace/license-template/{id}"
+  },
+  {
+    "file": "LicenseTemplateController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/marketplace/license-template/{id}/deactivate"
+  },
+  {
+    "file": "LicenseTemplateController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/marketplace/license-template/{id}/clone"
+  },
+  {
+    "file": "LicenseTemplateController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/marketplace/license-template/{id}"
+  },
+  {
+    "file": "LicenseTemplateController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/marketplace/license-template/by-key/{key}"
+  },
+  {
+    "file": "LicenseTemplateController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/marketplace/license-template/by-type/{type}"
+  },
+  {
+    "file": "LicenseTemplateController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/marketplace/license-template/public"
+  },
+  {
+    "file": "LicenseTemplateController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/marketplace/license-template/issue"
+  },
+  {
+    "file": "LicenseTemplateController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/marketplace/license-template/compare"
+  },
+  {
+    "file": "LicenseTemplateController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/marketplace/license-template/stats"
+  },
+  {
+    "file": "ModelMarketController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/model-market"
+  },
+  {
+    "file": "ModelMarketController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/model-market/upload"
+  },
+  {
+    "file": "ModelMarketController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/model-market/publish"
+  },
+  {
+    "file": "ModelMarketController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/model-market/models"
+  },
+  {
+    "file": "ModelMarketController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/model-market/models/{key}"
+  },
+  {
+    "file": "ModelMarketController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/model-market/models/{key}/download"
+  },
+  {
+    "file": "ModelMarketController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/model-market/models/{key}/rate"
+  },
+  {
+    "file": "ModelMarketController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/model-market/models/{key}/ratings"
+  },
+  {
+    "file": "ModelMarketController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/model-market/my"
+  },
+  {
+    "file": "ModelMarketController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/model-market/models/{key}/status"
+  },
+  {
+    "file": "ModelMarketController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/model-market/stats"
+  },
+  {
+    "file": "ModelMarketV2Controller.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/market-v2"
+  },
+  {
+    "file": "ModelMarketV2Controller.java",
+    "method": "POST",
+    "path": "/api/v1/ai/market-v2/version/publish"
+  },
+  {
+    "file": "ModelMarketV2Controller.java",
+    "method": "GET",
+    "path": "/api/v1/ai/market-v2/version/list/{entryId}"
+  },
+  {
+    "file": "ModelMarketV2Controller.java",
+    "method": "GET",
+    "path": "/api/v1/ai/market-v2/version/latest/{entryId}"
+  },
+  {
+    "file": "ModelMarketV2Controller.java",
+    "method": "POST",
+    "path": "/api/v1/ai/market-v2/version/{versionId}/deprecate"
+  },
+  {
+    "file": "ModelMarketV2Controller.java",
+    "method": "POST",
+    "path": "/api/v1/ai/market-v2/license/purchase"
+  },
+  {
+    "file": "ModelMarketV2Controller.java",
+    "method": "POST",
+    "path": "/api/v1/ai/market-v2/license/renew"
+  },
+  {
+    "file": "ModelMarketV2Controller.java",
+    "method": "POST",
+    "path": "/api/v1/ai/market-v2/license/refund"
+  },
+  {
+    "file": "ModelMarketV2Controller.java",
+    "method": "GET",
+    "path": "/api/v1/ai/market-v2/license/list"
+  },
+  {
+    "file": "ModelMarketV2Controller.java",
+    "method": "GET",
+    "path": "/api/v1/ai/market-v2/license/{key}"
+  },
+  {
+    "file": "ModelMarketV2Controller.java",
+    "method": "POST",
+    "path": "/api/v1/ai/market-v2/license/check"
+  },
+  {
+    "file": "ModelMarketV2Controller.java",
+    "method": "GET",
+    "path": "/api/v1/ai/market-v2/billing/list"
+  },
+  {
+    "file": "ModelMarketV2Controller.java",
+    "method": "GET",
+    "path": "/api/v1/ai/market-v2/billing/summary"
+  },
+  {
+    "file": "PushController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/push"
+  },
+  {
+    "file": "PushController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/push/subscribe"
+  },
+  {
+    "file": "PushController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/push/unsubscribe"
+  },
+  {
+    "file": "PushController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/push/subscriptions"
+  },
+  {
+    "file": "PushController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/push/subscriptions/all"
+  },
+  {
+    "file": "PushController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/push/send/user"
+  },
+  {
+    "file": "PushController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/push/send/platform"
+  },
+  {
+    "file": "PushController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/push/send/broadcast"
+  },
+  {
+    "file": "PushController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/push/messages"
+  },
+  {
+    "file": "PushController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/push/stats"
+  },
+  {
+    "file": "PushIntegrationController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/push/integration"
+  },
+  {
+    "file": "PushIntegrationController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/push/integration/auto"
+  },
+  {
+    "file": "PushIntegrationController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/push/integration/web"
+  },
+  {
+    "file": "PushIntegrationController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/push/integration/apns"
+  },
+  {
+    "file": "PushIntegrationController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/push/integration/fcm"
+  },
+  {
+    "file": "PushIntegrationController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/push/integration/detect"
+  },
+  {
+    "file": "PushIntegrationController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/push/integration/health"
+  },
+  {
+    "file": "PushIntegrationController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/push/integration/stats"
+  },
+  {
+    "file": "PushIntegrationController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/push/integration/vapid-public-key"
+  },
+  {
+    "file": "RaftController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/raft"
+  },
+  {
+    "file": "RaftController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/raft/status"
+  },
+  {
+    "file": "RaftController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/raft/vote"
+  },
+  {
+    "file": "RaftController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/raft/append"
+  },
+  {
+    "file": "RaftController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/raft/submit"
+  },
+  {
+    "file": "RaftController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/raft/log"
+  },
+  {
+    "file": "RaftController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/raft/trigger-election"
+  },
+  {
+    "file": "TensorBoardController.java",
+    "method": "ANY",
+    "path": "/api/v1/tensorboard"
+  },
+  {
+    "file": "TensorBoardController.java",
+    "method": "GET",
+    "path": "/api/v1/tensorboard/health"
+  },
+  {
+    "file": "TensorBoardController.java",
+    "method": "GET",
+    "path": "/api/v1/tensorboard/runs"
+  },
+  {
+    "file": "TensorBoardController.java",
+    "method": "GET",
+    "path": "/api/v1/tensorboard/runs/{runId}/tags"
+  },
+  {
+    "file": "TensorBoardController.java",
+    "method": "GET",
+    "path": "/api/v1/tensorboard/runs/{runId}/scalars"
+  },
+  {
+    "file": "TensorBoardController.java",
+    "method": "GET",
+    "path": "/api/v1/tensorboard/runs/{runId}/scalars/{tag}"
+  },
+  {
+    "file": "TensorBoardController.java",
+    "method": "POST",
+    "path": "/api/v1/tensorboard/runs/{runId}/scalars/{tag}"
+  },
+  {
+    "file": "TensorBoardController.java",
+    "method": "POST",
+    "path": "/api/v1/tensorboard/runs/{runId}/text/{tag}"
+  },
+  {
+    "file": "TensorBoardController.java",
+    "method": "GET",
+    "path": "/api/v1/tensorboard/runs/{runId}/events"
+  },
+  {
+    "file": "TensorBoardController.java",
+    "method": "GET",
+    "path": "/api/v1/tensorboard/runs/{runId}/stats/{tag}"
+  },
+  {
+    "file": "TensorBoardController.java",
+    "method": "GET",
+    "path": "/api/v1/tensorboard/runs/{runId}/histogram/{tag}"
+  },
+  {
+    "file": "TensorBoardController.java",
+    "method": "POST",
+    "path": "/api/v1/tensorboard/runs/compare"
+  },
+  {
+    "file": "TrainingVizController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/training"
+  },
+  {
+    "file": "TrainingVizController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/training/create"
+  },
+  {
+    "file": "TrainingVizController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/training/list"
+  },
+  {
+    "file": "TrainingVizController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/training/{taskId}"
+  },
+  {
+    "file": "TrainingVizController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/training/{taskId}/start"
+  },
+  {
+    "file": "TrainingVizController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/training/{taskId}/metric"
+  },
+  {
+    "file": "TrainingVizController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/training/{taskId}/complete"
+  },
+  {
+    "file": "TrainingVizController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/training/{taskId}/fail"
+  },
+  {
+    "file": "TrainingVizController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/training/{taskId}/cancel"
+  },
+  {
+    "file": "TrainingVizController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/training/{taskId}/history"
+  },
+  {
+    "file": "TrainingVizController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/training/ema"
+  },
+  {
+    "file": "TrainingVizController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/training/{taskId}/stream"
+  },
+  {
+    "file": "TrainingVizController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/training/{taskId}/checkpoint"
+  },
+  {
+    "file": "TrainingVizController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/training/{taskId}/checkpoints"
+  },
+  {
+    "file": "TrainingVizController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/training/{taskId}/best"
+  },
+  {
+    "file": "TrainingVizController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/training/checkpoint/{checkpointId}/download"
+  },
+  {
+    "file": "WebhookController.java",
+    "method": "ANY",
+    "path": "/api/v1/ai/webhooks"
+  },
+  {
+    "file": "WebhookController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/webhooks/{id}"
+  },
+  {
+    "file": "WebhookController.java",
+    "method": "PUT",
+    "path": "/api/v1/ai/webhooks/{id}"
+  },
+  {
+    "file": "WebhookController.java",
+    "method": "DELETE",
+    "path": "/api/v1/ai/webhooks/{id}"
+  },
+  {
+    "file": "WebhookController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/webhooks/{id}/test"
+  },
+  {
+    "file": "WebhookController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/webhooks/{id}/deliveries"
+  },
+  {
+    "file": "WebhookController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/webhooks/deliveries"
+  },
+  {
+    "file": "WebhookController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/webhooks/events"
+  },
+  {
+    "file": "WebhookController.java",
+    "method": "GET",
+    "path": "/api/v1/ai/webhooks/stats"
+  },
+  {
+    "file": "WebhookController.java",
+    "method": "POST",
+    "path": "/api/v1/ai/webhooks/publish"
+  },
+  {
+    "file": "AnalyticsController.java",
+    "method": "ANY",
+    "path": "/api/v1/analytics"
+  },
+  {
+    "file": "AnalyticsController.java",
+    "method": "POST",
+    "path": "/api/v1/analytics/datasources"
+  },
+  {
+    "file": "AnalyticsController.java",
+    "method": "GET",
+    "path": "/api/v1/analytics/datasources"
+  },
+  {
+    "file": "AnalyticsController.java",
+    "method": "GET",
+    "path": "/api/v1/analytics/datasources/{id}"
+  },
+  {
+    "file": "AnalyticsController.java",
+    "method": "POST",
+    "path": "/api/v1/analytics/datasources/test"
+  },
+  {
+    "file": "AnalyticsController.java",
+    "method": "GET",
+    "path": "/api/v1/analytics/datasources/{dsId}/databases"
+  },
+  {
+    "file": "AnalyticsController.java",
+    "method": "GET",
+    "path": "/api/v1/analytics/datasources/{dsId}/databases/{db}/tables"
+  },
+  {
+    "file": "AnalyticsController.java",
+    "method": "GET",
+    "path": "/api/v1/analytics/datasources/{dsId}/databases/{db}/tables/{table}"
+  },
+  {
+    "file": "AnalyticsController.java",
+    "method": "GET",
+    "path": "/api/v1/analytics/datasources/{dsId}/databases/{db}/tables/{table}/profile"
+  },
+  {
+    "file": "AnalyticsController.java",
+    "method": "POST",
+    "path": "/api/v1/analytics/ingest/upload"
+  },
+  {
+    "file": "AnalyticsController.java",
+    "method": "GET",
+    "path": "/api/v1/analytics/ingest/tasks/{taskId}"
+  },
+  {
+    "file": "AnalyticsController.java",
+    "method": "GET",
+    "path": "/api/v1/analytics/ingest/tasks/{taskId}/quality"
+  },
+  {
+    "file": "AnalyticsController.java",
+    "method": "POST",
+    "path": "/api/v1/analytics/nlsql/ask"
+  },
+  {
+    "file": "AnalyticsController.java",
+    "method": "POST",
+    "path": "/api/v1/analytics/nlsql/explain"
+  },
+  {
+    "file": "AnalyticsController.java",
+    "method": "POST",
+    "path": "/api/v1/analytics/nlsql/feedback"
+  },
+  {
+    "file": "AnalyticsController.java",
+    "method": "GET",
+    "path": "/api/v1/analytics/nlsql/history"
+  },
+  {
+    "file": "AnalyticsController.java",
+    "method": "POST",
+    "path": "/api/v1/analytics/query/execute"
+  },
+  {
+    "file": "AnalyticsController.java",
+    "method": "POST",
+    "path": "/api/v1/analytics/query/dry-run"
+  },
+  {
+    "file": "AnalyticsController.java",
+    "method": "POST",
+    "path": "/api/v1/analytics/reports/generate"
+  },
+  {
+    "file": "AnalyticsController.java",
+    "method": "GET",
+    "path": "/api/v1/analytics/reports/{reportId}"
+  },
+  {
+    "file": "ApiKeyInternalController.java",
+    "method": "ANY",
+    "path": "/internal/apikey/internal/apikey"
+  },
+  {
+    "file": "ApiKeyInternalController.java",
+    "method": "POST",
+    "path": "/internal/apikey/validate"
+  },
+  {
+    "file": "ApiKeyInternalController.java",
+    "method": "GET",
+    "path": "/internal/apikey/stats"
+  },
+  {
+    "file": "AuthController.java",
+    "method": "ANY",
+    "path": "/api/v1/auth"
+  },
+  {
+    "file": "AuthController.java",
+    "method": "POST",
+    "path": "/api/v1/auth/register"
+  },
+  {
+    "file": "AuthController.java",
+    "method": "POST",
+    "path": "/api/v1/auth/login"
+  },
+  {
+    "file": "AuthController.java",
+    "method": "POST",
+    "path": "/api/v1/auth/refresh"
+  },
+  {
+    "file": "AuthController.java",
+    "method": "POST",
+    "path": "/api/v1/auth/logout"
+  },
+  {
+    "file": "AuthController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/me"
+  },
+  {
+    "file": "NotificationController.java",
+    "method": "ANY",
+    "path": "/api/v1/auth/notifications"
+  },
+  {
+    "file": "NotificationController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/notifications/unread-count"
+  },
+  {
+    "file": "NotificationController.java",
+    "method": "PUT",
+    "path": "/api/v1/auth/notifications/{id}/read"
+  },
+  {
+    "file": "NotificationController.java",
+    "method": "PUT",
+    "path": "/api/v1/auth/notifications/read-all"
+  },
+  {
+    "file": "OAuthController.java",
+    "method": "ANY",
+    "path": "/api/v1/auth/oauth"
+  },
+  {
+    "file": "OAuthController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/oauth/{platform}/authorize-url"
+  },
+  {
+    "file": "OAuthController.java",
+    "method": "POST",
+    "path": "/api/v1/auth/oauth/{platform}/login"
+  },
+  {
+    "file": "OAuthController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/oauth/{platform}/callback"
+  },
+  {
+    "file": "OAuthController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/oauth/{platform}/config"
+  },
+  {
+    "file": "OAuthController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/oauth/configs"
+  },
+  {
+    "file": "SuperAdminController.java",
+    "method": "ANY",
+    "path": "/api/v1/auth/super"
+  },
+  {
+    "file": "SuperAdminController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/super/me"
+  },
+  {
+    "file": "SuperAdminController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/super/users"
+  },
+  {
+    "file": "SuperAdminController.java",
+    "method": "POST",
+    "path": "/api/v1/auth/super/users/{id}/disable"
+  },
+  {
+    "file": "SuperAdminController.java",
+    "method": "POST",
+    "path": "/api/v1/auth/super/users/{id}/enable"
+  },
+  {
+    "file": "SuperAdminController.java",
+    "method": "POST",
+    "path": "/api/v1/auth/super/users/{id}/reset-pwd"
+  },
+  {
+    "file": "TenantController.java",
+    "method": "ANY",
+    "path": "/api/v1/auth"
+  },
+  {
+    "file": "TenantController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/me/tenant"
+  },
+  {
+    "file": "TenantController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/tenants"
+  },
+  {
+    "file": "TenantController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/tenants/{id}"
+  },
+  {
+    "file": "TenantController.java",
+    "method": "POST",
+    "path": "/api/v1/auth/tenants"
+  },
+  {
+    "file": "TenantController.java",
+    "method": "POST",
+    "path": "/api/v1/auth/tenants/{id}/status"
+  },
+  {
+    "file": "TenantController.java",
+    "method": "POST",
+    "path": "/api/v1/auth/tenants/{id}/quota"
+  },
+  {
+    "file": "TenantController.java",
+    "method": "DELETE",
+    "path": "/api/v1/auth/tenants/{id}"
+  },
+  {
+    "file": "TenantController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/tenants/{id}/users"
+  },
+  {
+    "file": "UserApiKeyController.java",
+    "method": "ANY",
+    "path": "/api/v1/auth/apikeys"
+  },
+  {
+    "file": "UserApiKeyController.java",
+    "method": "PATCH",
+    "path": "/api/v1/auth/apikeys/{id}/toggle"
+  },
+  {
+    "file": "UserApiKeyController.java",
+    "method": "DELETE",
+    "path": "/api/v1/auth/apikeys/{id}"
+  },
+  {
+    "file": "UserApiKeyController.java",
+    "method": "POST",
+    "path": "/api/v1/auth/apikeys/{id}/rotate"
+  },
+  {
+    "file": "WechatBindingController.java",
+    "method": "ANY",
+    "path": "/api/v1/auth"
+  },
+  {
+    "file": "WechatBindingController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/wechat/binding/me"
+  },
+  {
+    "file": "WechatBindingController.java",
+    "method": "DELETE",
+    "path": "/api/v1/auth/wechat/binding/me"
+  },
+  {
+    "file": "WechatBindingController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/admin/wechat/bindings"
+  },
+  {
+    "file": "WechatBindingController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/admin/wechat/find"
+  },
+  {
+    "file": "WechatBindingController.java",
+    "method": "POST",
+    "path": "/api/v1/auth/admin/wechat/bind"
+  },
+  {
+    "file": "WechatBindingController.java",
+    "method": "DELETE",
+    "path": "/api/v1/auth/admin/wechat/bind/{userId}"
+  },
+  {
+    "file": "WechatController.java",
+    "method": "ANY",
+    "path": "/api/v1/auth/wechat"
+  },
+  {
+    "file": "WechatController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/wechat/qrcode"
+  },
+  {
+    "file": "WechatController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/wechat/status"
+  },
+  {
+    "file": "WechatController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/wechat/callback"
+  },
+  {
+    "file": "WechatController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/wechat/mock-scan"
+  },
+  {
+    "file": "WechatController.java",
+    "method": "POST",
+    "path": "/api/v1/auth/wechat/mobile-login"
+  },
+  {
+    "file": "WechatUnionidController.java",
+    "method": "ANY",
+    "path": "/api/v1/auth"
+  },
+  {
+    "file": "WechatUnionidController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/wechat/unionid/me"
+  },
+  {
+    "file": "WechatUnionidController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/admin/wechat/unionid-relations"
+  },
+  {
+    "file": "WechatUnionidController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/admin/wechat/users-by-unionid"
+  },
+  {
+    "file": "WechatUnionidController.java",
+    "method": "POST",
+    "path": "/api/v1/auth/admin/wechat/merge-accounts"
+  },
+  {
+    "file": "WechatUnionidController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/admin/wechat/cross-platform-stats"
+  },
+  {
+    "file": "MessageController.java",
+    "method": "ANY",
+    "path": "/api/v1/sessions/{sessionId}/messages"
+  },
+  {
+    "file": "MessageController.java",
+    "method": "POST",
+    "path": "/api/v1/sessions/{sessionId}/messages/stream"
+  },
+  {
+    "file": "SessionController.java",
+    "method": "ANY",
+    "path": "/api/v1/sessions"
+  },
+  {
+    "file": "SessionController.java",
+    "method": "GET",
+    "path": "/api/v1/sessions/{id}"
+  },
+  {
+    "file": "SessionController.java",
+    "method": "PUT",
+    "path": "/api/v1/sessions/{id}"
+  },
+  {
+    "file": "SessionController.java",
+    "method": "DELETE",
+    "path": "/api/v1/sessions/{id}"
+  },
+  {
+    "file": "StreamController.java",
+    "method": "ANY",
+    "path": "/api/v1/sessions"
+  },
+  {
+    "file": "StreamController.java",
+    "method": "POST",
+    "path": "/api/v1/sessions/stop-stream"
+  },
+  {
+    "file": "StreamController.java",
+    "method": "GET",
+    "path": "/api/v1/sessions/stream-status/{streamId}"
+  },
+  {
+    "file": "MemoryController.java",
+    "method": "ANY",
+    "path": "/api/v1/memory"
+  },
+  {
+    "file": "MemoryController.java",
+    "method": "GET",
+    "path": "/api/v1/memory/short-term/{sessionId}"
+  },
+  {
+    "file": "MemoryController.java",
+    "method": "POST",
+    "path": "/api/v1/memory/short-term/{sessionId}"
+  },
+  {
+    "file": "MemoryController.java",
+    "method": "DELETE",
+    "path": "/api/v1/memory/short-term/{sessionId}"
+  },
+  {
+    "file": "MemoryController.java",
+    "method": "GET",
+    "path": "/api/v1/memory/short-term/{sessionId}/size"
+  },
+  {
+    "file": "MemoryController.java",
+    "method": "POST",
+    "path": "/api/v1/memory/context/{sessionId}"
+  },
+  {
+    "file": "MemoryController.java",
+    "method": "POST",
+    "path": "/api/v1/memory/cross-context"
+  },
+  {
+    "file": "MemoryController.java",
+    "method": "POST",
+    "path": "/api/v1/memory/summarize/{sessionId}"
+  },
+  {
+    "file": "MemoryController.java",
+    "method": "GET",
+    "path": "/api/v1/memory/summary/{sessionId}"
+  },
+  {
+    "file": "MemoryController.java",
+    "method": "POST",
+    "path": "/api/v1/memory/long-term"
+  },
+  {
+    "file": "MemoryController.java",
+    "method": "POST",
+    "path": "/api/v1/memory/long-term/recall"
+  },
+  {
+    "file": "MemoryController.java",
+    "method": "GET",
+    "path": "/api/v1/memory/long-term/recent"
+  },
+  {
+    "file": "MemoryController.java",
+    "method": "DELETE",
+    "path": "/api/v1/memory/long-term/{id}"
+  },
+  {
+    "file": "MemoryController.java",
+    "method": "PUT",
+    "path": "/api/v1/memory/pref/{key}"
+  },
+  {
+    "file": "MemoryController.java",
+    "method": "GET",
+    "path": "/api/v1/memory/pref/{key}"
+  },
+  {
+    "file": "MemoryController.java",
+    "method": "GET",
+    "path": "/api/v1/memory/pref"
+  },
+  {
+    "file": "MemoryController.java",
+    "method": "DELETE",
+    "path": "/api/v1/memory/pref/{key}"
+  },
+  {
+    "file": "BaseController.java",
+    "method": "ANY",
+    "path": "/api/v1/user"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/users"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/models"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/audit-ops/recent"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/audit-ops/by-actor"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/admin/audit-ops/by-day"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/admin/wechat/bindings"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/auth/admin/wechat/find"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "POST",
+    "path": "/api/v1/auth/admin/wechat/bind"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "DELETE",
+    "path": "/api/v1/auth/admin/wechat/bind/{userId}"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "DELETE",
+    "path": "/api/v1/auth/notifications/{id}"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "DELETE",
+    "path": "/api/v1/auth/wechat/binding/me"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "POST",
+    "path": "/api/v1/auth/tenants/{id}/status"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "POST",
+    "path": "/api/v1/auth/tenants/{id}/quota"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/alerts/channels"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "POST",
+    "path": "/api/v1/monitor/alerts/channels"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/alerts/rules"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "POST",
+    "path": "/api/v1/monitor/alerts/rules"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/cluster"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "POST",
+    "path": "/api/v1/analytics/datasources/test"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/analytics/ingest/tasks"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "POST",
+    "path": "/api/v1/analytics/ingest/tasks"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/analytics/dashboards"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "POST",
+    "path": "/api/v1/analytics/dashboards"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/memory/context"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "POST",
+    "path": "/api/v1/memory/context"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/memory/cross-context"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/memory/long-term"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "POST",
+    "path": "/api/v1/memory/long-term"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "DELETE",
+    "path": "/api/v1/memory/long-term"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/memory/short-term"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "POST",
+    "path": "/api/v1/memory/short-term"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "DELETE",
+    "path": "/api/v1/memory/short-term"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "POST",
+    "path": "/api/v1/rag/ask"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/rag/doc"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "POST",
+    "path": "/api/v1/rag/doc/upload"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "DELETE",
+    "path": "/api/v1/rag/doc/{id}"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/function/tools"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "POST",
+    "path": "/api/v1/function/tools"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "POST",
+    "path": "/api/v1/function/invoke/{name}"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/leaderboard/categories"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/leaderboard/latency"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/leaderboard/overall"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/agent/kg/entities"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "POST",
+    "path": "/api/v1/agent/kg/entities"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/agent/kg/path"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/multimodal/info"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "POST",
+    "path": "/api/v1/multimodal/upload"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "POST",
+    "path": "/api/v1/multimodal/describe"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/tensorboard/runs/compare"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/tensorboard/runs"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/collab/rooms"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/collab/rooms/public"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/models/chat/stream/{streamId}"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "DELETE",
+    "path": "/api/v1/models/chat/stream/{streamId}"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "POST",
+    "path": "/api/v1/sessions/stop-stream"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/training/models"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/training/tasks"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "GET",
+    "path": "/api/v1/pipeline/workflows"
+  },
+  {
+    "file": "GlobalMissingController.java",
+    "method": "POST",
+    "path": "/api/v1/pipeline/workflows"
+  },
+  {
+    "file": "FallbackController.java",
+    "method": "ANY",
+    "path": "/fallback/fallback"
+  },
+  {
+    "file": "FallbackController.java",
+    "method": "GET",
+    "path": "/fallback/**"
+  },
+  {
+    "file": "AudioController.java",
+    "method": "ANY",
+    "path": "/api/v1/audio"
+  },
+  {
+    "file": "AudioController.java",
+    "method": "GET",
+    "path": "/api/v1/audio/asr/models"
+  },
+  {
+    "file": "AudioController.java",
+    "method": "POST",
+    "path": "/api/v1/audio/asr/transcribe"
+  },
+  {
+    "file": "AudioController.java",
+    "method": "GET",
+    "path": "/api/v1/audio/tts/voices"
+  },
+  {
+    "file": "AudioController.java",
+    "method": "POST",
+    "path": "/api/v1/audio/tts/synthesize"
+  },
+  {
+    "file": "ImageGenController.java",
+    "method": "ANY",
+    "path": "/api/v1/imagegen"
+  },
+  {
+    "file": "ImageGenController.java",
+    "method": "GET",
+    "path": "/api/v1/imagegen/models"
+  },
+  {
+    "file": "ImageGenController.java",
+    "method": "POST",
+    "path": "/api/v1/imagegen/generate"
+  },
+  {
+    "file": "LeaderboardController.java",
+    "method": "ANY",
+    "path": "/api/v1/leaderboard"
+  },
+  {
+    "file": "LeaderboardController.java",
+    "method": "GET",
+    "path": "/api/v1/leaderboard/overall"
+  },
+  {
+    "file": "LeaderboardController.java",
+    "method": "GET",
+    "path": "/api/v1/leaderboard/latency"
+  },
+  {
+    "file": "LeaderboardController.java",
+    "method": "GET",
+    "path": "/api/v1/leaderboard/recent"
+  },
+  {
+    "file": "LeaderboardController.java",
+    "method": "GET",
+    "path": "/api/v1/leaderboard/categories"
+  },
+  {
+    "file": "ModelController.java",
+    "method": "ANY",
+    "path": "/api/v1/models"
+  },
+  {
+    "file": "ModelController.java",
+    "method": "GET",
+    "path": "/api/v1/models/providers"
+  },
+  {
+    "file": "ModelController.java",
+    "method": "POST",
+    "path": "/api/v1/models/chat"
+  },
+  {
+    "file": "ModelController.java",
+    "method": "POST",
+    "path": "/api/v1/models/chat/stream"
+  },
+  {
+    "file": "ModelController.java",
+    "method": "POST",
+    "path": "/api/v1/models/chat/cancel"
+  },
+  {
+    "file": "OpenAIGatewayController.java",
+    "method": "ANY",
+    "path": "/api/v1/openai"
+  },
+  {
+    "file": "OpenAIGatewayController.java",
+    "method": "GET",
+    "path": "/api/v1/openai/models"
+  },
+  {
+    "file": "OpenAIGatewayController.java",
+    "method": "POST",
+    "path": "/api/v1/openai/chat/completions"
+  },
+  {
+    "file": "ProviderController.java",
+    "method": "ANY",
+    "path": "/api/v1/model/providers"
+  },
+  {
+    "file": "ProviderController.java",
+    "method": "GET",
+    "path": "/api/v1/model/providers/page"
+  },
+  {
+    "file": "ProviderController.java",
+    "method": "GET",
+    "path": "/api/v1/model/providers/{id}"
+  },
+  {
+    "file": "ProviderController.java",
+    "method": "PUT",
+    "path": "/api/v1/model/providers/{id}"
+  },
+  {
+    "file": "ProviderController.java",
+    "method": "DELETE",
+    "path": "/api/v1/model/providers/{id}"
+  },
+  {
+    "file": "ProviderController.java",
+    "method": "POST",
+    "path": "/api/v1/model/providers/{id}/test"
+  },
+  {
+    "file": "RealAiTestController.java",
+    "method": "ANY",
+    "path": "/api/v1/test"
+  },
+  {
+    "file": "RealAiTestController.java",
+    "method": "GET",
+    "path": "/api/v1/test/ping"
+  },
+  {
+    "file": "RealAiTestController.java",
+    "method": "POST",
+    "path": "/api/v1/test/single"
+  },
+  {
+    "file": "RealAiTestController.java",
+    "method": "POST",
+    "path": "/api/v1/test/battle"
+  },
+  {
+    "file": "TrainingController.java",
+    "method": "ANY",
+    "path": "/api/v1/training"
+  },
+  {
+    "file": "TrainingController.java",
+    "method": "GET",
+    "path": "/api/v1/training/models"
+  },
+  {
+    "file": "TrainingController.java",
+    "method": "POST",
+    "path": "/api/v1/training/tasks"
+  },
+  {
+    "file": "TrainingController.java",
+    "method": "GET",
+    "path": "/api/v1/training/tasks"
+  },
+  {
+    "file": "TrainingController.java",
+    "method": "GET",
+    "path": "/api/v1/training/tasks/{id}"
+  },
+  {
+    "file": "TrainingController.java",
+    "method": "POST",
+    "path": "/api/v1/training/tasks/{id}/cancel"
+  },
+  {
+    "file": "PromptController.java",
+    "method": "ANY",
+    "path": "/api/v1/prompts"
+  },
+  {
+    "file": "PromptController.java",
+    "method": "GET",
+    "path": "/api/v1/prompts/{id}"
+  },
+  {
+    "file": "PromptController.java",
+    "method": "GET",
+    "path": "/api/v1/prompts/categories"
+  },
+  {
+    "file": "PromptController.java",
+    "method": "PUT",
+    "path": "/api/v1/prompts/{id}"
+  },
+  {
+    "file": "PromptController.java",
+    "method": "DELETE",
+    "path": "/api/v1/prompts/{id}"
+  },
+  {
+    "file": "PromptController.java",
+    "method": "POST",
+    "path": "/api/v1/prompts/{id}/use"
+  },
+  {
+    "file": "PromptController.java",
+    "method": "POST",
+    "path": "/api/v1/prompts/resolve"
+  },
+  {
+    "file": "ApiDocsController.java",
+    "method": "GET",
+    "path": "/monitor/api-docs"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "ANY",
+    "path": "/api/v1/monitor"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/health"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/health/database"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/health/jvm"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/health/disk"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/metrics"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/metrics/snapshot"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/metrics/trend"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "POST",
+    "path": "/api/v1/monitor/metrics/inc"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/alerts"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/alerts/firing"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/alerts/rules"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/alerts/summary"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/alerts/rules/all"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "POST",
+    "path": "/api/v1/monitor/alerts/rules"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "PUT",
+    "path": "/api/v1/monitor/alerts/rules/{id}"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "DELETE",
+    "path": "/api/v1/monitor/alerts/rules/{id}"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/alerts/channels"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/alerts/channels/{id}"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "POST",
+    "path": "/api/v1/monitor/alerts/channels"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "PUT",
+    "path": "/api/v1/monitor/alerts/channels/{id}"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "DELETE",
+    "path": "/api/v1/monitor/alerts/channels/{id}"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "POST",
+    "path": "/api/v1/monitor/alerts/{id}/rca"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "POST",
+    "path": "/api/v1/monitor/anomaly/detect"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/anomaly/summary"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/anomaly/active-metrics"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/info"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "POST",
+    "path": "/api/v1/monitor/alerts/{id}/ack"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "POST",
+    "path": "/api/v1/monitor/alerts/{id}/silence"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "POST",
+    "path": "/api/v1/monitor/alerts/{id}/unsilence"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "POST",
+    "path": "/api/v1/monitor/alerts/rules/{id}/silence"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "POST",
+    "path": "/api/v1/monitor/alerts/rules/{id}/unsilence"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "POST",
+    "path": "/api/v1/monitor/alerts/channels/{id}/test"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/alerts/history"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/alerts/stream"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "POST",
+    "path": "/api/v1/monitor/alerts/rules/{id}/toggle"
+  },
+  {
+    "file": "MonitorController.java",
+    "method": "GET",
+    "path": "/api/v1/monitor/forward-prometheus"
+  },
+  {
+    "file": "MultimodalController.java",
+    "method": "ANY",
+    "path": "/api/v1/multimodal"
+  },
+  {
+    "file": "MultimodalController.java",
+    "method": "POST",
+    "path": "/api/v1/multimodal/upload"
+  },
+  {
+    "file": "MultimodalController.java",
+    "method": "POST",
+    "path": "/api/v1/multimodal/describe"
+  },
+  {
+    "file": "MultimodalController.java",
+    "method": "POST",
+    "path": "/api/v1/multimodal/describe/multi"
+  },
+  {
+    "file": "MultimodalController.java",
+    "method": "GET",
+    "path": "/api/v1/multimodal/info"
+  },
+  {
+    "file": "MultimodalController.java",
+    "method": "GET",
+    "path": "/api/v1/multimodal/providers/default"
+  },
+  {
+    "file": "RunController.java",
+    "method": "ANY",
+    "path": "/api/v1/pipeline/runs"
+  },
+  {
+    "file": "RunController.java",
+    "method": "GET",
+    "path": "/api/v1/pipeline/runs/{runId}"
+  },
+  {
+    "file": "RunController.java",
+    "method": "GET",
+    "path": "/api/v1/pipeline/runs/{runId}/result"
+  },
+  {
+    "file": "WorkflowController.java",
+    "method": "ANY",
+    "path": "/api/v1/pipeline/workflows"
+  },
+  {
+    "file": "WorkflowController.java",
+    "method": "GET",
+    "path": "/api/v1/pipeline/workflows/{id}"
+  },
+  {
+    "file": "WorkflowController.java",
+    "method": "PUT",
+    "path": "/api/v1/pipeline/workflows/{id}"
+  },
+  {
+    "file": "WorkflowController.java",
+    "method": "DELETE",
+    "path": "/api/v1/pipeline/workflows/{id}"
+  },
+  {
+    "file": "WorkflowController.java",
+    "method": "POST",
+    "path": "/api/v1/pipeline/workflows/{id}/run"
+  },
+  {
+    "file": "WorkflowController.java",
+    "method": "GET",
+    "path": "/api/v1/pipeline/workflows/{id}/runs"
+  },
+  {
+    "file": "WorkflowController.java",
+    "method": "POST",
+    "path": "/api/v1/pipeline/workflows/validate"
+  },
+  {
+    "file": "FunctionController.java",
+    "method": "ANY",
+    "path": "/api/v1/function"
+  },
+  {
+    "file": "FunctionController.java",
+    "method": "GET",
+    "path": "/api/v1/function/tools"
+  },
+  {
+    "file": "FunctionController.java",
+    "method": "GET",
+    "path": "/api/v1/function/tools/category/{category}"
+  },
+  {
+    "file": "FunctionController.java",
+    "method": "GET",
+    "path": "/api/v1/function/tools/{id}"
+  },
+  {
+    "file": "FunctionController.java",
+    "method": "GET",
+    "path": "/api/v1/function/tools/by-name/{name}"
+  },
+  {
+    "file": "FunctionController.java",
+    "method": "POST",
+    "path": "/api/v1/function/tools"
+  },
+  {
+    "file": "FunctionController.java",
+    "method": "PUT",
+    "path": "/api/v1/function/tools/{id}"
+  },
+  {
+    "file": "FunctionController.java",
+    "method": "DELETE",
+    "path": "/api/v1/function/tools/{id}"
+  },
+  {
+    "file": "FunctionController.java",
+    "method": "POST",
+    "path": "/api/v1/function/invoke/{name}"
+  },
+  {
+    "file": "FunctionController.java",
+    "method": "GET",
+    "path": "/api/v1/function/logs"
+  },
+  {
+    "file": "FunctionController.java",
+    "method": "POST",
+    "path": "/api/v1/function/chat"
+  },
+  {
+    "file": "RagController.java",
+    "method": "ANY",
+    "path": "/api/v1/rag"
+  },
+  {
+    "file": "RagController.java",
+    "method": "POST",
+    "path": "/api/v1/rag/kb"
+  },
+  {
+    "file": "RagController.java",
+    "method": "GET",
+    "path": "/api/v1/rag/kb"
+  },
+  {
+    "file": "RagController.java",
+    "method": "GET",
+    "path": "/api/v1/rag/kb/public"
+  },
+  {
+    "file": "RagController.java",
+    "method": "GET",
+    "path": "/api/v1/rag/kb/{id}"
+  },
+  {
+    "file": "RagController.java",
+    "method": "DELETE",
+    "path": "/api/v1/rag/kb/{id}"
+  },
+  {
+    "file": "RagController.java",
+    "method": "PUT",
+    "path": "/api/v1/rag/kb/{id}"
+  },
+  {
+    "file": "RagController.java",
+    "method": "POST",
+    "path": "/api/v1/rag/doc/upload"
+  },
+  {
+    "file": "RagController.java",
+    "method": "GET",
+    "path": "/api/v1/rag/doc"
+  },
+  {
+    "file": "RagController.java",
+    "method": "GET",
+    "path": "/api/v1/rag/doc/{id}/chunks"
+  },
+  {
+    "file": "RagController.java",
+    "method": "DELETE",
+    "path": "/api/v1/rag/doc/{id}"
+  },
+  {
+    "file": "RagController.java",
+    "method": "PUT",
+    "path": "/api/v1/rag/doc/{id}"
+  },
+  {
+    "file": "RagController.java",
+    "method": "POST",
+    "path": "/api/v1/rag/retrieve"
+  },
+  {
+    "file": "RagController.java",
+    "method": "POST",
+    "path": "/api/v1/rag/ask"
+  },
+  {
+    "file": "CollabController.java",
+    "method": "ANY",
+    "path": "/api/v1/collab"
+  },
+  {
+    "file": "CollabController.java",
+    "method": "POST",
+    "path": "/api/v1/collab/rooms"
+  },
+  {
+    "file": "CollabController.java",
+    "method": "GET",
+    "path": "/api/v1/collab/rooms/{roomId}"
+  },
+  {
+    "file": "CollabController.java",
+    "method": "GET",
+    "path": "/api/v1/collab/rooms/public"
+  },
+  {
+    "file": "CollabController.java",
+    "method": "DELETE",
+    "path": "/api/v1/collab/rooms/{roomId}"
+  },
+  {
+    "file": "CollabController.java",
+    "method": "GET",
+    "path": "/api/v1/collab/rooms/{roomId}/participants"
+  },
+  {
+    "file": "CollabController.java",
+    "method": "GET",
+    "path": "/api/v1/collab/rooms/{roomId}/messages"
+  },
+  {
+    "file": "CollabController.java",
+    "method": "GET",
+    "path": "/api/v1/collab/rooms/{roomId}/doc"
+  },
+  {
+    "file": "CollabController.java",
+    "method": "POST",
+    "path": "/api/v1/collab/rooms/{roomId}/doc/ops"
+  }
+]

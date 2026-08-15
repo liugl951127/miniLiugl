@@ -1,0 +1,477 @@
+# =============================================================
+# MiniMax Gateway 配置 (V5.5 + V5.7)
+# 公共配置在 application-common.yml
+# =============================================================
+
+# V1.9: gateway 端口改为 7080 (不占用 8080, 避免与其它服务冲突)
+server:
+  port: ${SERVER_PORT:7080}
+
+spring:
+  config:
+    import: optional:classpath:application-common.yml
+  application:
+    name: minimax-gateway
+  profiles:
+    active: dev
+  main:
+    web-application-type: reactive
+    allow-bean-definition-overriding: true
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASS}
+      database: 0
+      timeout: 3s
+      lettuce:
+        pool:
+          max-active: 16
+
+# =============================================================
+# Spring Cloud Gateway 路由 (V5.5)
+# V5.7: uri 从 http://127.0.0.1:{port} 改为 lb://minimax-{module} (Nacos LoadBalancer)
+# =============================================================
+spring.cloud.gateway:
+  discovery:
+    locator:
+      enabled: false              # 不自动发现, 显式声明路由
+
+  globalcors:
+    cors-configurations:
+      '[/**]':
+        allowed-origin-patterns:
+          - http://localhost*
+          - http://127.0.0.1*
+          - https://ai.liugeliang.com
+          - https://www.ai.liugeliang.com
+        allowed-methods: "*"
+        allowed-headers: "*"
+        exposed-headers:
+          - X-Trace-Id
+          - X-User-Id
+        allow-credentials: true
+        max-age: 3600
+
+  default-filters:
+    - DedupeResponseHeader=Access-Control-Allow-Origin
+    - AddRequestHeader=X-Request-Source, gateway
+    - AddResponseHeader=X-Response-Source, minimax-gateway
+    # V5.7 熔断降级: 每个路由单独配 fallbackUri
+    # 注: gateway 默认 filter 用 Spring Cloud CircuitBreaker (不是 resilience4j), 需要 spring-cloud-circuitbreaker
+    # 这里用 fallback controller (lb 失败 / 5xx 时 fallbackUri: forward:/fallback)
+
+  routes:
+    # ============== 前台业务 (按模块) — V5.7 lb:// Nacos LoadBalancer ==============
+    - id: auth
+      uri: lb://minimax-auth
+      predicates:
+        - Path=/api/v1/auth/**
+#      filters:
+#        - name: RequestRateLimiter
+#          args:
+#            redis-rate-limiter.replenishRate: 100
+#            redis-rate-limiter.burstCapacity: 200
+#            key-resolver: "#{@apiKeyRateLimitResolver}"
+
+    - id: chat
+      uri: lb://minimax-chat
+      predicates:
+        - Path=/api/v1/chat/**,/api/v1/sessions/**,/api/v1/messages/**
+#      filters:
+#        - name: RequestRateLimiter
+#          args:
+#            redis-rate-limiter.replenishRate: 50
+#            redis-rate-limiter.burstCapacity: 100
+#            key-resolver: "#{@apiKeyRateLimitResolver}"
+
+    - id: model
+      uri: lb://minimax-model
+      predicates:
+        - Path=/api/v1/model/**,/api/v1/models/**,/api/v1/test/**,/api/v1/openai/**,/api/v1/imagegen/**,/api/v1/audio/**,/api/v1/video/**,/api/v1/music/**,/api/v1/leaderboard/**
+      filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 30
+            redis-rate-limiter.burstCapacity: 60
+            key-resolver: "#{@apiKeyRateLimitResolver}"
+
+    - id: memory
+      uri: lb://minimax-chat
+      predicates:
+        - Path=/api/v1/memory/**
+      filters:
+
+    - id: rag
+      uri: lb://minimax-rag
+      predicates:
+        - Path=/api/v1/rag/**
+
+    - id: function
+      uri: lb://minimax-pipeline
+      predicates:
+        - Path=/api/v1/function/**
+
+    - id: multimodal
+      uri: lb://minimax-multimodal
+      predicates:
+        - Path=/api/v1/multimodal/**,/api/v1/multi/**
+      filters:
+
+    - id: monitor
+      uri: lb://minimax-monitor
+      predicates:
+        - Path=/api/v1/monitor/**
+
+    - id: agent
+      uri: lb://minimax-agent
+      predicates:
+        - Path=/api/v1/agent/**
+      filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 10
+            redis-rate-limiter.burstCapacity: 20
+            key-resolver: "#{@apiKeyRateLimitResolver}"
+
+    # V6.8.1: Skill 审批路由 (独立路径，不在 /agent/ 下)
+    - id: skill-approval
+      uri: lb://minimax-agent
+      predicates:
+        - Path=/api/v1/skill-approval/**
+      filters:
+        - StripPrefix=0
+
+    - id: prompt
+      uri: lb://minimax-model
+      predicates:
+        - Path=/api/v1/prompt/**,/api/v1/prompts/**
+      filters:
+
+    - id: analytics
+      uri: lb://minimax-analytics
+      predicates:
+        - Path=/api/v1/analytics/**
+
+    # V1.9.1: V5.32 画布工作流路由
+    - id: pipeline
+      uri: lb://minimax-pipeline
+      predicates:
+        - Path=/api/v1/pipeline/**
+
+    # V7.0: 训练任务路由
+    - id: training
+      uri: lb://minimax-model
+      predicates:
+        - Path=/api/v1/training/**
+
+    # V7.0: 协作房间路由
+    - id: collab
+      uri: lb://minimax-ws
+      predicates:
+        - Path=/api/v1/collab/**
+
+    # V2.5: 自研 AI 路由 (兼容 /api/ai/** 和 /api/v1/ai/**)
+    - id: ai
+      uri: lb://minimax-ai
+      predicates:
+        - Path=/api/ai/**,/api/v1/ai/**
+      filters:
+        - StripPrefix=0
+
+    - id: ws
+      uri: lb:ws://minimax-ws
+      predicates:
+        - Path=/api/v1/ws/**,/ws/**
+      filters:
+        - StripPrefix=0
+
+    # ============== 兼容路由 (前端缺少 /v1 前缀的路径) ==============
+    # AI 服务使用 /api/v1/ai (有 v1), 前端请求 /ai/**
+    # V6.8.1 fix: rewrite 到 /api/v1/ai/ 而非 /api/ai/，与 ai 路由 predicate 匹配
+    - id: compat-ai
+      uri: lb://minimax-ai
+      predicates:
+        - Path=/ai/**
+      filters:
+        - RewritePath=/ai/(?<remaining>.*), /api/v1/ai/$\{remaining}
+
+    # V6.8.1: admin/apikey/* → admin/stats/apikey/* (path 顺序修正)
+    - id: compat-admin-apikey-fix
+      uri: lb://minimax-admin
+      predicates:
+        - Path=/admin/apikey/stats
+      filters:
+        - SetPath=/api/v1/admin/stats/apikey
+
+    - id: compat-admin-apikey-trend
+      uri: lb://minimax-admin
+      predicates:
+        - Path=/admin/apikey/trend
+      filters:
+        - SetPath=/api/v1/admin/stats/apikey/trend
+
+    - id: compat-auth
+      uri: lb://minimax-auth
+      predicates:
+        - Path=/auth/**
+      filters:
+        - RewritePath=/auth/(?<remaining>.*), /api/v1/auth/$\{remaining}
+
+    - id: compat-chat
+      uri: lb://minimax-chat
+      predicates:
+        - Path=/chat/**,/sessions/**,/messages/**
+      filters:
+        - RewritePath=/(?<segment>chat|sessions|messages)/(?<remaining>.*), /api/v1/$\{segment}/$\{remaining}
+
+    - id: compat-memory
+      uri: lb://minimax-chat
+      predicates:
+        - Path=/memory/**
+      filters:
+        - RewritePath=/memory/(?<remaining>.*), /api/v1/memory/$\{remaining}
+
+    - id: compat-model
+      uri: lb://minimax-model
+      predicates:
+        - Path=/model/**,/models/**,/leaderboard/**,/test/**,/openai/**,/imagegen/**,/audio/**
+      filters:
+        - RewritePath=/(?<segment>model|models|leaderboard|test|openai|imagegen|audio)/(?<remaining>.*), /api/v1/$\{segment}/$\{remaining}
+
+    - id: compat-rag
+      uri: lb://minimax-rag
+      predicates:
+        - Path=/rag/**
+      filters:
+        - RewritePath=/rag/(?<remaining>.*), /api/v1/rag/$\{remaining}
+
+    - id: compat-function
+      uri: lb://minimax-pipeline
+      predicates:
+        - Path=/function/**
+      filters:
+        - RewritePath=/function/(?<remaining>.*), /api/v1/function/$\{remaining}
+
+    - id: compat-multimodal
+      uri: lb://minimax-multimodal
+      predicates:
+        - Path=/multimodal/**,/multi/**
+      filters:
+        - RewritePath=/(?<segment>multimodal|multi)/(?<remaining>.*), /api/v1/$\{segment}/$\{remaining}
+
+    - id: compat-monitor
+      uri: lb://minimax-monitor
+      predicates:
+        - Path=/monitor/**
+      filters:
+        - RewritePath=/monitor/(?<remaining>.*), /api/v1/monitor/$\{remaining}
+
+    - id: compat-agent
+      uri: lb://minimax-agent
+      predicates:
+        - Path=/agent/**
+      filters:
+        - RewritePath=/agent/(?<remaining>.*), /api/v1/agent/$\{remaining}
+
+    - id: compat-prompt
+      uri: lb://minimax-model
+      predicates:
+        - Path=/prompt/**,/prompts/**
+      filters:
+        - RewritePath=/(?<segment>prompt|prompts)/(?<remaining>.*), /api/v1/$\{segment}/$\{remaining}
+
+    - id: compat-analytics
+      uri: lb://minimax-analytics
+      predicates:
+        - Path=/analytics/**
+      filters:
+        - RewritePath=/analytics/(?<remaining>.*), /api/v1/analytics/$\{remaining}
+
+    - id: compat-pipeline
+      uri: lb://minimax-pipeline
+      predicates:
+        - Path=/pipeline/**
+      filters:
+        - RewritePath=/pipeline/(?<remaining>.*), /api/v1/pipeline/$\{remaining}
+
+    - id: compat-collab
+      uri: lb://minimax-ws
+      predicates:
+        - Path=/collab/**
+      filters:
+        - RewritePath=/collab/(?<remaining>.*), /api/v1/collab/$\{remaining}
+
+    - id: compat-tensorboard
+      uri: lb://minimax-ai
+      predicates:
+        - Path=/tensorboard/**
+      filters:
+        - RewritePath=/tensorboard/(?<remaining>.*), /api/v1/tensorboard/$\{remaining}
+
+    - id: compat-training
+      uri: lb://minimax-model
+      predicates:
+        - Path=/training/**
+      filters:
+        - RewritePath=/training/(?<remaining>.*), /api/v1/training/$\{remaining}
+
+    - id: compat-admin
+      uri: lb://minimax-admin
+      predicates:
+        - Path=/admin/**
+      filters:
+        - RewritePath=/admin/(?<remaining>.*), /api/v1/admin/$\{remaining}
+
+    # ============== 后台管理 ==============
+    - id: admin
+      uri: lb://minimax-admin
+      predicates:
+        - Path=/api/v1/admin/**
+      filters:
+        - StripPrefix=0
+#        - name: RequestRateLimiter
+#          args:
+#            redis-rate-limiter.replenishRate: 20
+#            redis-rate-limiter.burstCapacity: 40
+#            key-resolver: "#{@apiKeyRateLimitResolver}"
+
+    # V6.8+: 前端日志上报 (ClientLogController)
+    - id: admin-logs
+      uri: lb://minimax-admin
+      predicates:
+        - Path=/api/v1/logs/**
+      filters:
+        - StripPrefix=0
+
+# =============================================================
+# Nacos 服务发现 (V5.7)
+# =============================================================
+spring.cloud.nacos:
+  discovery:
+    server-addr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
+    namespace: ${NACOS_NS:minimax-dev}
+    username: ${NACOS_USER}
+    password: ${NACOS_PASS}
+    register-enabled: true       # gateway 也注册到 nacos
+    metadata:
+      version: 5.7.0
+      group: minimax
+
+# =============================================================
+# Resilience4j 熔断降级 (V5.7)
+# =============================================================
+resilience4j.circuitbreaker:
+  configs:
+    default:
+      slidingWindowSize: 10
+      minimumNumberOfCalls: 5
+      failureRateThreshold: 50
+      waitDurationInOpenState: 10s
+      permittedNumberOfCallsInHalfOpenState: 3
+      automaticTransitionFromOpenToHalfOpenEnabled: true
+      registerHealthIndicator: true
+  instances:
+    default:
+      baseConfig: default
+
+resilience4j.timelimiter:
+  configs:
+    default:
+      timeoutDuration: 5s
+  instances:
+    default:
+      baseConfig: default
+
+resilience4j.retry:
+  configs:
+    default:
+      maxAttempts: 3
+      waitDuration: 1s
+  instances:
+    default:
+      baseConfig: default
+
+# =============================================================
+# 网关特有配置
+# =============================================================
+minimax:
+  jwt:
+    expire-minutes: 10080
+    refresh-expire-minutes: 43200
+    issuer: minimax-platform
+    gateway-auth:
+      enabled: true
+      public-paths:
+        - /api/v1/auth/login
+        - /api/v1/auth/register
+        - /api/v1/auth/refresh
+        - /api/v1/auth/oauth
+        - /api/v1/auth/wechat
+        - /api/v1/health
+        - /api/v1/logs/save
+        - /api/ai/intro
+        - /health
+        - /v3/api-docs
+        - /swagger-ui
+        - /doc.html
+        - /actuator
+  cors:
+    allowed-origins:
+      - http://localhost
+      - http://localhost:80
+      - http://localhost:3000
+      - http://localhost:5173
+      - http://127.0.0.1
+      - http://127.0.0.1:80
+      - http://127.0.0.1:3000
+      - https://ai.liugeliang.com
+      - https://www.ai.liugeliang.com
+  upload:
+    base-dir: ${UPLOAD_DIR:./data/upload}
+    max-size-mb: 100
+  minio:
+    enabled: false
+    endpoint: http://127.0.0.1:9000
+    access-key: ${MINIO_ACCESS_KEY}
+    secret-key: ${MINIO_SECRET_KEY}
+    bucket: minimax-files
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway,refresh,routes,circuitbreakers
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+    gateway:
+      enabled: true
+  health:
+    redis:
+      enabled: false
+    db:
+      enabled: false
+  metrics:
+    tags:
+      application: minimax-gateway
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+    reactor.netty: INFO
+    com.alibaba.nacos: WARN
+    com.minimax: DEBUG
+    io.github.resilience4j: INFO
+
+# V3.5.90+ OpenTelemetry trace (W3C traceparent, OTLP → collector → jaeger)
+# jvm-env (docker-compose) 注入 OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+otel:
+  metrics:
+    export:
+      interval: 30s
+  java:
+    global-autoconfigure:
+      enabled: true

@@ -1,0 +1,66 @@
+{
+  "api/ai.js": [
+    "  L60: onComplete()",
+    "  L64: onChunk()",
+    "  L66: onError()",
+    "  L1134: onReconnecting()"
+  ],
+  "api/model.js": [
+    "  L99: onChunk()"
+  ],
+  "composables/useBackgroundSync.js": [
+    "  L37: callback()"
+  ],
+  "composables/useBrowserCompat.js": [
+    "  L206: callback()",
+    "  L401: onColorSchemeChange()"
+  ],
+  "composables/useBusinessStream.js": [
+    "  L134: onDone()",
+    "  L154: onError()",
+    "  L164: onToolCall()",
+    "  L167: onSource()"
+  ],
+  "composables/usePerformance.js": [
+    "  L10: WeakMap()",
+    "  L98: loader()"
+  ],
+  "composables/useSafeArea.js": [
+    "  L31: getComputedStyle()"
+  ],
+  "composables/useSpeechCall.js": [
+    "  L135: startTimers()",
+    "  L141: cleanup()"
+  ],
+  "composables/useToast.js": [
+    "  L61: notify()",
+    "  L84: clearLog()"
+  ],
+  "directives/permission.js": [
+    "  L27: hasAny()",
+    "  L27: hasAll()"
+  ],
+  "components/MarkdownView.vue": [
+    "  L17: highlight()"
+  ],
+  "layout/Index.vue": [
+    "  L26: setDemoMode()",
+    "  L26: switchUser()"
+  ],
+  "views/admin/Metrics.vue": [
+    "  L36: aggregateDuration()"
+  ],
+  "views/auth/Login.vue": [
+    "  L42: StorageEvent()",
+    "  L245: isFirstLogin()"
+  ],
+  "views/auth/WechatScanPage.vue": [
+    "  L37: patch()"
+  ],
+  "views/showcase/AudioShowcase.vue": [
+    "  L34: MediaRecorder()"
+  ],
+  "views/showcase/PluginShowcase.vue": [
+    "  L76: Function()"
+  ]
+}

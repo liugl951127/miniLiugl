@@ -1,0 +1,1052 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/users/1",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/users/1/reset",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/admin/users/1/status",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/admin/models/1/rate",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/training/llm/status/1",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/training/llm/history/1",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/agent/execute",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/agent/plans",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/agent/plans/1",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/agent/plans/1/deploy",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/multimodal/file/1/info",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/compliance/moderate",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/compliance/refresh",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/admin/tools/1",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools/1/invoke",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/ai/admin/datasources/1",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/admin/datasources/1/test",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/training/tasks/1",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/training/tasks/1/history",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/video/stream/1",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/video/stream/cancel/1",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/music/stream/1",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/music/stream/cancel/1",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools/invoke",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools/file",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools/data",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools/time",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools/image",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools/chart",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools/music",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools/java",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/chat/sessions/1",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/agent",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/cluster/nodes/1",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/cluster/node/1/drain",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/cluster/raft/append",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/cluster/raft/vote",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/cluster/raft/status",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/cluster/raft/log",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/raft/trigger",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/push/integration/vapid",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/rag/search",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/kb/docs/1",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/kb/docs/list/1",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/kb/chunks/1",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/kb/stats/1",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/dashboard/metrics/1",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/dashboard/trend/1",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/dashboard/from",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/distributed/all",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/animation/text",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/pipeline/config/compute",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/tools/1/invoke",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/datasources/1/schema",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/datasources/1/test",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/datasources/1/query",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/video/from",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/webhooks/1",
+    "files": [
+      "webhook.js",
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/webhooks/1/test",
+    "files": [
+      "webhook.js",
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/webhooks/1/deliveries",
+    "files": [
+      "webhook.js",
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/chat",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/analytics/datasources/1",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/analytics/datasources/1/databases",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/analytics/datasources/1/databases/1/tables",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/analytics/datasources/1/databases/1/tables/1",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/analytics/datasources/1/databases/1/tables/1/profile",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/analytics/ingest/tasks/1",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/analytics/ingest/tasks/1/quality",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/analytics/query/dry",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/analytics/reports/1",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/auth/apikeys/1/toggle",
+    "files": [
+      "apikey.js"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/auth/apikeys/1",
+    "files": [
+      "apikey.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/apikeys/1/rotate",
+    "files": [
+      "apikey.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/autofill",
+    "files": [
+      "autofill.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/autofill/preview/1",
+    "files": [
+      "autofill.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/autofill/recommend/1/1",
+    "files": [
+      "autofill.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/collab/rooms/1",
+    "files": [
+      "collab.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/collab/rooms/1/participants",
+    "files": [
+      "collab.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/collab/rooms/1/messages",
+    "files": [
+      "collab.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/function/tools/category/1",
+    "files": [
+      "function.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/function/tools/1",
+    "files": [
+      "function.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/function/tools/by",
+    "files": [
+      "function.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/function/invoke/1",
+    "files": [
+      "function.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/marketplace/agents/1",
+    "files": [
+      "marketplace.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/marketplace/agents/1/rate",
+    "files": [
+      "marketplace.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/marketplace/agents/1/ratings",
+    "files": [
+      "marketplace.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/marketplace/agents/1/use",
+    "files": [
+      "marketplace.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/marketplace/agents/1/approve",
+    "files": [
+      "marketplace.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/memory/short",
+    "files": [
+      "memory.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/memory/context/1",
+    "files": [
+      "memory.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/memory/cross",
+    "files": [
+      "memory.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/memory/summarize/1",
+    "files": [
+      "memory.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/memory/summary/1",
+    "files": [
+      "memory.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/memory/long",
+    "files": [
+      "memory.js"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/memory/pref/1",
+    "files": [
+      "memory.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/model/providers/1",
+    "files": [
+      "model.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/model/providers",
+    "files": [
+      "model.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/model/providers/1/test",
+    "files": [
+      "model.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/1/api/v1/models/chat/stream",
+    "files": [
+      "model.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/model",
+    "files": [
+      "modelMarket.js"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/monitor/alerts/rules/1",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/monitor/alerts/rules/1/toggle",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/monitor/alerts/1/ack",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/monitor/alerts/1/silence",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/monitor/alerts/1/unsilence",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/monitor/alerts/rules/1/silence",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/monitor/alerts/rules/1/unsilence",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/monitor/alerts/channels/1",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/monitor/alerts/channels/1/test",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/audit/by",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/agent/kg/entities/1",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/agent/kg/entities/1/neighbors",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/agent/kg/entities/1/2hop",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/monitor/alerts/1/rca",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/monitor/anomaly/active",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/auth/notifications/unread",
+    "files": [
+      "notification.js"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/auth/notifications/1/read",
+    "files": [
+      "notification.js"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/auth/notifications/read",
+    "files": [
+      "notification.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/pipeline/workflows/1",
+    "files": [
+      "pipeline.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/pipeline/workflows/1/run",
+    "files": [
+      "pipeline.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/pipeline/workflows/1/runs",
+    "files": [
+      "pipeline.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/pipeline/runs/1",
+    "files": [
+      "pipeline.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/pipeline/runs/1/result",
+    "files": [
+      "pipeline.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/1/1",
+    "files": [
+      "prompt.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/1/1/use",
+    "files": [
+      "prompt.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/1/categories",
+    "files": [
+      "prompt.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/1/resolve",
+    "files": [
+      "prompt.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/rag/kb/1",
+    "files": [
+      "rag.js",
+      "system.js"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/rag/doc/1",
+    "files": [
+      "rag.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/rag/doc/1/chunks",
+    "files": [
+      "rag.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/sessions/1",
+    "files": [
+      "system.js",
+      "session.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/sessions/1/messages",
+    "files": [
+      "system.js",
+      "session.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/sessions/stop",
+    "files": [
+      "system.js",
+      "session.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/api/ai/intro",
+    "files": [
+      "system.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/sessions/stream",
+    "files": [
+      "system.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/auth/tenants/1",
+    "files": [
+      "tenant.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/tenants/1/status",
+    "files": [
+      "tenant.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/tenants/1/quota",
+    "files": [
+      "tenant.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/auth/tenants/1/users",
+    "files": [
+      "tenant.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tensorboard/runs/1/tags",
+    "files": [
+      "tensorboard.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tensorboard/runs/1/scalars/1",
+    "files": [
+      "tensorboard.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tensorboard/runs/1/events",
+    "files": [
+      "tensorboard.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tensorboard/runs/1/stats/1",
+    "files": [
+      "tensorboard.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tensorboard/runs/1/histogram/1",
+    "files": [
+      "tensorboard.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/training/tasks/1",
+    "files": [
+      "training.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/training/tasks/1/cancel",
+    "files": [
+      "training.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/auth/wechat/mock",
+    "files": [
+      "wechat.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/wechat/mobile",
+    "files": [
+      "wechat.js"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/auth/admin/wechat/bind/1",
+    "files": [
+      "wechat.js"
+    ]
+  }
+]

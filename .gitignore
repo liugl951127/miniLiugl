@@ -1,33 +1,88 @@
-# 依赖
-node_modules/
-**/node_modules/
-
-# 构建产物
+# Java
 target/
+*.class
+*.jar
+*.war
+*.ear
+.mvn/
+mvnw
+mvnw.cmd
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
 build/
-dist/
-coverage/
+out/
 
-# 每日报告(每日自动生成,不入库)
-.daily-reports/
-.daily-logs/
-.cron-daemon.pid
-.cron-daemon.log
+# Node
+node_modules/
+dist/
+.DS_Store
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Data
+logs/
+*.pid
+*.seed
+*.pid.lock
 
 # IDE
 .idea/
-.vscode/
-*.iml
-*.iws
-
-# 临时
-*.tmp
-.tmp/
-.total-tmp/
-
-# OS
+*.swp
+*.swo
+*~
 .DS_Store
-Thumbs.db
 
-# 压缩包(zip 已通过单独交付,不入库)
-*.zip
+# Build
+build/
+out/
+*.tgz
+*.tar.gz
+
+# npm / cache (沙箱隐式)
+.npm/
+.cache/
+.npmrc
+
+# 沙箱临时
+logs/cron.log
+.e2e/
+coverage/
+node_modules/
+.jwt-backup-*/
+scripts/__pycache__/
+ai-run.log
+ai-run.pid
+# V3.5.75+ view 重写备份
+frontend/.view-v*.*-backup/
+frontend/e2e-report/
+
+# V3.5.97 backup files
+*.v3.5.*.bak
+*.v3.5.79.bak
+*.v3.5.73.bak
+*.v3.5.95.bak
+*.v3.5.96.bak
+*.v3.5.97.bak
+# V3.6.11+ 清理历史 bak/backup 目录
+.view-*-backup/
+.jwt-backup*/
+package.json.*.bak
+*.vue.*.bak
+
+# V3.6.22+ 临时文件
+vite.config.js.timestamp-*
+.env.development
+.eslintcache
+.docker-data/

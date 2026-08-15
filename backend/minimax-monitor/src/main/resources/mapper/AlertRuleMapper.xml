@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.minimax.monitor.mapper.AlertRuleMapper">
+
+    <resultMap id="ruleMap" type="com.minimax.monitor.entity.AlertRule">
+        <id     property="id"              column="id"/>
+        <result property="name"            column="name"/>
+        <result property="description"     column="description"/>
+        <result property="metricName"      column="metric_name"/>
+        <result property="service"         column="service"/>
+        <result property="operator"        column="operator"/>
+        <result property="threshold"       column="threshold"/>
+        <result property="severity"        column="severity"/>
+        <result property="enabled"         column="enabled"/>
+        <result property="cooldownMinutes" column="cooldown_minutes"/>
+        <result property="notifyChannel"   column="notify_channel"/>
+        <result property="createdAt"       column="created_at"/>
+        <result property="updatedAt"       column="updated_at"/>
+    </resultMap>
+
+    <select id="selectEnabled" resultMap="ruleMap">
+        SELECT * FROM alert_rule WHERE deleted = 0 AND enabled = 1 ORDER BY id ASC
+    </select>
+
+    <select id="selectByName" resultMap="ruleMap">
+        SELECT * FROM alert_rule WHERE name = #{name} AND deleted = 0 LIMIT 1
+    </select>
+</mapper>

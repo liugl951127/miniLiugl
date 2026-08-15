@@ -1,0 +1,71 @@
+server:
+  port: 8093
+spring:
+  application:
+    name: minimax-pipeline
+  config:
+    import: classpath:application-common.yml
+
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://${MYSQL_HOST:127.0.0.1}:3306/minimax_platform?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:minimax_mariadb_2024}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASS}
+      database: 0
+      timeout: 3s
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+
+# V5.32: 画布工作流配置
+pipeline:
+  max-rows-in-memory: 100000      # 节点间内存传递行数上限
+  output-preview-rows: 100        # 节点 output_preview 保留前 N 行
+  thread-pool:
+    core-size: 8
+    max-size: 32
+    queue-capacity: 200
+  storage:
+    output-dir: /tmp/minimax-pipeline/outputs
+
+# =============================================================
+# MyBatis-Plus (V3.5.33+ 防御性配置)
+#   - type-aliases-package 限定到 .entity 子包
+# =============================================================
+mybatis-plus:
+  type-aliases-package: com.minimax.pipeline.entity
+  configuration:
+    map-underscore-to-camel-case: true
+  mapper-locations: classpath*:mapper/**/*.xml
+
+# =============================================================
+# V5.7 Nacos 服务发现 (注册当前微服务, gateway 通过 lb:// 调用)
+# =============================================================
+spring.cloud.nacos:
+  discovery:
+    server-addr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
+    namespace: ${NACOS_NS:minimax-dev}
+    username: ${NACOS_USER}
+    password: ${NACOS_PASS}
+    register-enabled: true
+    metadata:
+      version: 5.7.0
+      group: minimax
+# V3.5.90+ OpenTelemetry trace (W3C traceparent, OTLP → collector → jaeger)
+# jvm-env (docker-compose) 注入 OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+otel:
+  metrics:
+    export:
+      interval: 30s
+  java:
+    global-autoconfigure:
+      enabled: true

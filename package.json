@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "pptxgenjs": "^4.0.1",
+    "rollup-plugin-external-globals": "^0.13.0",
+    "yaml": "^2.9.0"
+  }
+}

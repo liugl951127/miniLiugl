@@ -1,0 +1,75 @@
+name: V6.3+ CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  # 1. 路由一致性
+  route-check:
+    name: 路由一致性
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 路由检查
+        run: bash scripts/check-routes.sh
+
+  # 2. Entity-Schema 字段一致
+  entity-schema:
+    name: 实体-表字段一致
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Entity-Schema 校验
+        run: bash scripts/check-entity-schema.sh
+
+  # 3. 前端测试 + ESLint + build
+  frontend:
+    name: 前端测试
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: cd frontend && npm ci
+      - run: cd frontend && npm run lint
+      - run: cd frontend && npm test
+      - run: cd frontend && npm run build
+
+  # 4. 后端编译 (mvn 沙箱跑不了, 这里只编译核心模块)
+  backend-compile:
+    name: 后端编译 (核心模块)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: actions/setup-maven@v3
+        with:
+          maven-version: 3.9
+      - name: 编译 (跳过测试)
+        run: mvn -B -pl minimax-common,minimax-chat,minimax-ai,minimax-rag,minimax-admin -am compile -DskipTests
+
+  # 5. i18n 翻译完成度
+  i18n-coverage:
+    name: i18n 翻译完成度
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 检查 i18n 覆盖
+        run: bash scripts/check-i18n-coverage.sh

@@ -1,0 +1,14 @@
+[
+  {
+    "method": "get",
+    "path": "/api/v1/model/chat/stream"
+  },
+  {
+    "method": "get",
+    "path": "/api/v1/models/chat/stream?streamId=${streamId}"
+  },
+  {
+    "method": "get",
+    "path": "/api/v1/auth/wechat/callback"
+  }
+]

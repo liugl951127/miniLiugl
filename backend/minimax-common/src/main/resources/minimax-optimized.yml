@@ -1,0 +1,86 @@
+# ============================================================
+# MiniMax 优化配置模板 (生产推荐)
+# 适用: 部署时复制到 application.yml
+# ============================================================
+
+server:
+  # 端口由各模块分别配置
+  tomcat:
+    threads:
+      max: 400              # 最大工作线程
+      min-spare: 50         # 最小空闲
+    accept-count: 200       # 等待队列
+    max-connections: 10000  # 最大连接
+    connection-timeout: 20s # 连接超时
+    keep-alive-timeout: 60s # 长连接
+    compression:
+      enabled: true
+      mime-types: application/json,text/html,text/css
+  compression:
+    enabled: true
+  shutdown: graceful       # 优雅停机
+
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  jackson:
+    serialization:
+      indent-output: false
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+  datasource:
+    hikari:
+      # 连接池调优
+      maximum-pool-size: 30           # 跟 CPU 核数对齐 (一般 2-4 倍)
+      minimum-idle: 10                # 保持的空闲连接
+      connection-timeout: 30000       # 30s
+      idle-timeout: 600000            # 10min
+      max-lifetime: 1800000           # 30min
+      connection-test-query: SELECT 1
+      leak-detection-threshold: 60000 # 60s 检测连接泄漏
+      pool-name: minimax-pool
+  data:
+    redis:
+      timeout: 3s
+      lettuce:
+        pool:
+          max-active: 32
+          max-idle: 16
+          min-idle: 4
+          max-wait: 1s
+
+minimax:
+  ratelimit:
+    ip:
+      capacity: 100
+      refill: 100
+      period-seconds: 60
+    user:
+      capacity: 60
+      refill: 60
+      period-seconds: 60
+    global:
+      capacity: 1000
+      refill: 1000
+      period-seconds: 60
+  cache:
+    default:
+      max-size: 1000
+      ttl-minutes: 5
+  async:
+    core-pool-size: 4
+    max-pool-size: 16
+    queue-capacity: 100
+    max-retries: 3
+
+# JVM 参数 (启动时加, 推荐):
+#   -Xms512m -Xmx2g
+#   -XX:+UseG1GC
+#   -XX:MaxGCPauseMillis=200
+#   -XX:+UseStringDeduplication
+#   -XX:+HeapDumpOnOutOfMemoryError
+#   -XX:HeapDumpPath=/tmp/heapdump.hprof
+#   -XX:+UnlockExperimentalVMOptions
+#   -XX:+UseCGroupMemoryLimitForHeap     # K8s 容器内
+#   -Djava.security.egd=file:/dev/./urandom

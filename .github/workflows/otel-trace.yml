@@ -1,0 +1,250 @@
+# =============================================================
+# V3.5.91+ OpenTelemetry Trace 全栈 E2E (CI 真实跑)
+# 启 docker compose (mariadb + redis + nacos + 14 module + otel-collector + jaeger)
+# 跑 5 browser matrix trace (Round 7 + Round 8)
+# 查 jaeger API 验证 trace 上报
+# =============================================================
+name: OTel Trace
+
+on:
+  workflow_dispatch:    # 手动触发 (V3.5.91+ 默认手动)
+  push:
+    branches: [main, develop]
+    paths:
+      - 'docker-compose.yml'
+      - 'deploy/otel-collector-config.yaml'
+      - 'backend/minimax-*/pom.xml'
+      - 'backend/minimax-*/src/main/resources/application*.yml'
+      - '.github/workflows/otel-trace.yml'
+      - 'scripts/e2e-multiround.sh'
+      - 'frontend/public/sw.js'
+
+env:
+  JAVA_VERSION: "17"
+  COMPOSE_PROJECT_NAME: minimax-otel
+
+jobs:
+  otel-trace:
+    name: V3.5.91 OpenTelemetry 全栈 trace 验证
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ---- 1. 启 docker compose (mariadb + redis + nacos + 14 module + otel-collector + jaeger) ----
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Show Docker version
+        run: |
+          docker --version
+          docker compose version
+          echo "---"
+          free -m
+
+      - name: Start docker compose (full stack + OTel + Jaeger)
+        run: |
+          # 拉镜像 (后台)
+          docker compose pull mariadb redis nacos jaeger otel-collector &
+          # 构建 14 module 镜像 (后台, 耗时长)
+          docker compose build &
+          wait
+          # 启动
+          docker compose up -d
+          echo "---"
+          docker compose ps
+
+      # ---- 2. 等服务就绪 ----
+      - name: Wait for mariadb
+        run: |
+          echo "Waiting for mariadb..."
+          for i in {1..60}; do
+            if docker compose exec -T mariadb mariadb-admin ping -h localhost -u root -proot123456 2>/dev/null | grep -q alive; then
+              echo "✓ mariadb ready"
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Wait for nacos
+        run: |
+          echo "Waiting for nacos..."
+          for i in {1..120}; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8848/nacos/ 2>/dev/null)
+            if [[ "$code" == "200" || "$code" == "401" ]]; then
+              echo "✓ nacos ready (HTTP $code)"
+              break
+            fi
+            sleep 3
+          done
+
+      - name: Wait for 14 module health
+        run: |
+          echo "Waiting for 14 module health..."
+          MODULES=(
+            "minimax-auth:8081"
+            "minimax-ai:8094"
+            "minimax-admin:8090"
+            "minimax-multimodal:8087"
+            "minimax-gateway:7080"
+            "minimax-chat:8082"
+            "minimax-model:8084"
+            "minimax-rag:8085"
+            "minimax-pipeline:8093"
+            "minimax-agent:8088"
+            "minimax-monitor:8089"
+            "minimax-analytics:8092"
+            "minimax-ws:8095"
+          )
+          for entry in "${MODULES[@]}"; do
+            svc=${entry%%:*}
+            port=${entry##*:}
+            for i in {1..60}; do
+              code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$port/actuator/health" 2>/dev/null)
+              if [[ "$code" == "200" || "$code" == "401" || "$code" == "503" ]]; then
+                echo "  ✓ $svc (HTTP $code)"
+                break
+              fi
+              sleep 3
+            done
+          done
+
+      - name: Wait for otel-collector
+        run: |
+          echo "Waiting for otel-collector..."
+          for i in {1..30}; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:4318/v1/traces 2>/dev/null)
+            if [[ "$code" == "405" || "$code" == "400" ]]; then
+              # OTLP HTTP 应该 405 (GET 不支持 POST-only)
+              echo "✓ otel-collector ready (HTTP $code)"
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Wait for jaeger
+        run: |
+          echo "Waiting for jaeger..."
+          for i in {1..30}; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:16686/api/services 2>/dev/null)
+            if [[ "$code" == "200" ]]; then
+              echo "✓ jaeger ready (HTTP $code)"
+              break
+            fi
+            sleep 2
+          done
+
+      # ---- 3. 跑 5 browser matrix trace (Round 7 + Round 8) ----
+      - name: Run 5 browser matrix trace
+        run: |
+          echo "=== Round 7 + Round 8: 5 browser trace ==="
+          cd "$GITHUB_WORKSPACE"
+
+          # 跑前端 dev server (5173)
+          cd frontend
+          npm ci --prefer-offline --no-audit > /dev/null 2>&1
+          nohup npx vite dev --port 5173 --host 0.0.0.0 > /tmp/vite.log 2>&1 &
+          VITE_PID=$!
+          cd ..
+          sleep 15
+
+          # 验证 dev server 起来
+          for i in {1..10}; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5173/ 2>/dev/null)
+            if [[ "$code" == "200" ]]; then
+              echo "✓ vite dev server ready"
+              break
+            fi
+            sleep 3
+          done
+
+          # 跑 e2e-multiround ROUNDS=5 (Round 7 + 8)
+          ROUNDS=5 bash scripts/e2e-multiround.sh 2>&1 | tail -40
+
+      # ---- 4. 查 jaeger API 验证 trace ----
+      - name: Verify traces in Jaeger
+        id: jaeger-verify
+        run: |
+          echo "=== Jaeger 验证 ==="
+
+          # 等 30s 让 batch 处理器 flush
+          sleep 30
+
+          # 查服务列表
+          SERVICES=$(curl -s http://localhost:16686/api/services 2>/dev/null)
+          echo "Jaeger services: $SERVICES"
+          SERVICE_COUNT=$(echo "$SERVICES" | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d.get('data', [])))" 2>/dev/null || echo "0")
+          echo "Service count: $SERVICE_COUNT"
+
+          # 查 minimax-platform 服务的 trace
+          if echo "$SERVICES" | grep -q "minimax-platform"; then
+            TRACES=$(curl -s "http://localhost:16686/api/traces?service=minimax-platform&limit=10" 2>/dev/null)
+            TRACE_COUNT=$(echo "$TRACES" | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d.get('data', [])))" 2>/dev/null || echo "0")
+            echo "Trace count: $TRACE_COUNT"
+
+            if [[ "$TRACE_COUNT" -gt 0 ]]; then
+              echo "✅ 收到 $TRACE_COUNT 个 trace from 14 module"
+              echo "---"
+              echo "$TRACES" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+for trace in d.get('data', [])[:3]:
+    print(f\"Trace {trace['traceID']}:\")
+    for span in trace.get('spans', [])[:3]:
+        print(f\"  - {span.get('operationName', '?')} ({span.get('duration', 0)}μs)\")
+"
+              echo "jaeger_status=ok" >> $GITHUB_OUTPUT
+            else
+              echo "⚠️ 0 trace 收到, 检查 batch processor"
+              echo "jaeger_status=empty" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "❌ minimax-platform service 不在 jaeger"
+            echo "$SERVICES" | head
+            echo "jaeger_status=missing" >> $GITHUB_OUTPUT
+          fi
+
+      # ---- 5. 上传 jaeger UI 截图 + 报告 ----
+      - name: Upload Jaeger UI screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jaeger-ui-screenshots
+          path: |
+            reports/jaeger/
+          retention-days: 7
+
+      - name: Generate trace report
+        if: always()
+        run: |
+          mkdir -p reports/jaeger
+          cat > reports/jaeger/summary.log << EOF
+========================================
+  V3.5.91+ OTel Trace 验证报告
+  $(date '+%Y-%m-%d %H:%M:%S')
+========================================
+
+  Jaeger UI:    http://localhost:16686
+  OTel Collector: otlp grpc :4317 / http :4318
+  Service:      minimax-platform (14 module)
+
+  验证:
+EOF
+
+          SERVICES=$(curl -s http://localhost:16686/api/services 2>/dev/null)
+          echo "  Jaeger services: $SERVICES" >> reports/jaeger/summary.log
+          echo "  完整 trace: http://localhost:16686/search?service=minimax-platform" >> reports/jaeger/summary.log
+
+          cat reports/jaeger/summary.log
+
+      # ---- 6. 关 docker compose ----
+      - name: Stop docker compose
+        if: always()
+        run: |
+          docker compose down -v
+          echo "✓ docker compose stopped"

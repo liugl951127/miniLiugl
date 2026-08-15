@@ -1,0 +1,337 @@
+# =============================================================
+# MiniMax 公共精简配置 (V2.0) - 内存优化版
+# 所有微服务通过 spring.config.import 引入这个文件
+# =============================================================
+
+spring:
+  # Jackson 优化 - 关键内存节省 (避免巨大 byte[] 缓存)
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      indent-output: false
+      fail-on-empty-beans: false
+    deserialization:
+      fail-on-unknown-properties: false   # 节省反射开销
+      adjust-dates-to-context-time-zone: false
+    default-property-inclusion: NON_NULL   # 不序列化 null 字段 (省内存/带宽)
+    parser:
+      allow-unquoted-control-chars: false
+
+  # Tomcat 优化 - 减线程 + 减内存
+  tomcat:
+    threads:
+      max: 100        # 默认 200, 减半
+      min-spare: 10   # 默认 25, 减
+    accept-count: 100
+    max-connections: 8192
+    connection-timeout: 30s
+    keep-alive-timeout: 60s
+    max-http-form-post-size: 2MB
+    max-swallow-size: 2MB
+    mbeanregistry:
+      enabled: false   # 关闭 JMX, 节省 5-10MB
+
+  # HikariCP 数据库连接池 - 大幅减少内存
+  datasource:
+    hikari:
+      maximum-pool-size: 8          # 默认 10, 减
+      minimum-idle: 2
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      connection-timeout: 5000
+      validation-timeout: 3000
+      leak-detection-threshold: 60000
+      pool-name: MiniMaxHikariCP
+
+  # MyBatis-Plus 优化
+  mybatis-plus:
+    configuration:
+      map-underscore-to-camel-case: true
+      cache-enabled: false             # 关闭 L1 缓存, 减内存
+      default-executor-type: REUSE    # REUSE > SIMPLE (减少连接器创建)
+      jdbc-type-for-null: NULL
+      log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl   # 关闭 ibatis 日志
+    global-config:
+      banner: false                    # 关闭 banner
+      db-config:
+        id-type: ASSIGN_ID
+        logic-delete-field: deleted
+        logic-delete-value: 1
+        logic-not-delete-value: 0
+    mapper-locations: classpath*:/mapper/**/*.xml
+
+  # 数据源默认 (子服务可覆盖)
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+
+  # Redis (Lettuce) 优化
+  data.redis:
+    lettuce:
+      pool:
+        enabled: true
+        max-active: 16
+        max-idle: 8
+        min-idle: 2
+        max-wait: 5000ms
+      shutdown-timeout: 200ms
+    timeout: 3s
+    connect-timeout: 3s
+
+# =============================================================
+# Spring Boot Actuator 优化 - 只暴露必要端点
+# =============================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus   # 只 4 个端点
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState
+  health:
+    redis:
+      enabled: false                            # 默认不健康检查 redis (省心跳)
+    db:
+      enabled: false                            # 默认不健康检查 DB
+    defaults:
+      enabled: true
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: false              # 关闭直方图 (省内存)
+      percentiles:
+        http.server.requests: 0.5,0.95
+    tags:
+      application: ${spring.application.name}
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+# =============================================================
+# 日志优化 - 异步 + 控制大小
+# =============================================================
+logging:
+  level:
+    root: INFO
+    com.minimax: INFO
+    org.springframework: WARN
+    org.apache: WARN
+    com.alibaba.nacos: WARN
+    com.baomidou.mybatisplus: WARN
+    io.github.resilience4j: WARN
+    reactor.netty: WARN
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%X{traceId:-},%X{spanId:-}] %logger{20} - %msg%n"
+  logback:
+    rollingpolicy:
+      max-file-size: 50MB
+      max-history: 7
+      total-size-cap: 1GB
+
+# =============================================================
+# 业务配置 (应用级)
+# =============================================================
+# =============================================================
+# V2.4 JWT Secret (HS256 / 256 bit / 64 hex chars)
+# 生成: openssl rand -hex 32
+# 跨服务必须一致
+# 生产环境推荐用 MINIMAX_JWT_SECRET 环境变量覆盖
+# =============================================================
+minimax:
+  jwt:
+    # 优先用环境变量, 默认值 (开发环境)
+    secret: ${MINIMAX_JWT_SECRET}  # 必须设置环境变量，不提供默认值
+    expire-minutes: 10080           # 7 天
+    refresh-expire-minutes: 43200   # 30 天
+    issuer: minimax-platform
+    gateway-auth:
+      enabled: true
+      public-paths:
+        - /api/v1/auth/login
+        - /api/v1/auth/register
+        - /api/v1/auth/refresh
+        - /api/v1/health
+        - /api/ai/intro
+        - /health
+        - /actuator
+        - /v3/api-docs
+        - /swagger-ui
+        - /doc.html
+
+# =============================================================
+# OpenTelemetry (OTLP HTTP 推送到 collector:4318)
+# =============================================================
+otel:
+  service:
+    name: ${spring.application.name}
+  traces:
+    exporter: otlp
+  metrics:
+    exporter: otlp
+  logs:
+    exporter: otlp
+  exporter:
+    otlp:
+      protocol: http/protobuf
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://otel-collector:4318}
+  instrumentation:
+    common:
+      default-enabled: true
+
+# =============================================================
+# 国际化 (默认 zh-CN)
+# =============================================================
+spring.messages:
+  basename: classpath:i18n/messages
+  encoding: UTF-8
+
+# =============================================================
+# 服务调用超时 (WebClient / RestTemplate)
+# =============================================================
+spring.codec.max-in-memory-size: 2MB
+
+# =============================================================
+# Spring Task 执行器
+# =============================================================
+# =============================================================
+# 统一 CORS (V2.2) - gateway + 各服务全局
+# =============================================================
+minimax.cors:
+  allowed-origins:
+    - http://localhost
+    - http://localhost:80
+    - http://localhost:3000      # Vite dev
+    - http://localhost:5173      # Vite dev
+    - http://127.0.0.1
+    - http://127.0.0.1:80
+    - http://127.0.0.1:3000
+    - http://127.0.0.1:5173
+    # 生产域名 (部署时覆盖)
+    # - https://your-domain.com
+  allowed-methods: "*"
+  allowed-headers: "*"
+  exposed-headers:
+    - X-Trace-Id
+    - X-User-Id
+    - X-Request-Source
+    - X-Response-Source
+    - Content-Disposition
+  allow-credentials: true
+  max-age: 3600
+
+# =============================================================
+# 限流 (V2.2) - 整个平台统一桶
+# =============================================================
+minimax.rate-limit:
+  default:
+    replenish-rate: 50        # 每秒令牌补充
+    burst-capacity: 100       # 桶容量
+  per-user:
+    replenish-rate: 20        # 每用户每秒
+    burst-capacity: 40
+  per-ip:
+    replenish-rate: 100       # 每 IP 每秒
+    burst-capacity: 200
+  exempted-paths:
+    - /api/v1/auth/login
+    - /api/v1/auth/register
+    - /api/v1/auth/refresh
+    - /api/v1/health
+    - /health
+    - /actuator
+    - /v3/api-docs
+    - /swagger-ui
+    - /doc.html
+
+# =============================================================
+# Spring Cloud LoadBalancer 优化 (V2.1) - 减少服务发现心跳
+# =============================================================
+spring.cloud.loadbalancer:
+  cache:
+    enabled: true
+    capacity: 1000
+  health-check:
+    enabled: true
+    interval: 30s
+  ribbon:
+    enabled: false
+
+# =============================================================
+# Knife4j / OpenAPI 3 文档 (V2.1) - API 文档开箱即用
+# 访问: http://localhost:8081/doc.html
+# =============================================================
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+  packages-to-scan: com.minimax.${spring.application.name:minimax-platform}
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+    enable-version: true
+    enable-swagger-models: true
+    swagger-model-name: 实体类列表
+  basic:
+    enable: false
+  cors:
+    enable: true
+    url: /*
+  production: false
+  openapi:
+    title: ${spring.application.name} - MiniMax Platform
+    version: 2.0.0
+    description: |
+      MiniMax 大模型平台 - ${spring.application.name} 服务
+      自动生成的 API 文档, 包含所有 Controller 端点
+    concat: dev@minimax.ai
+    group:
+      default:
+        group-name: default
+        api-rule: package
+        api-rule-resources:
+          - com.minimax.${spring.application.name:minimax-platform}
+
+spring.task.execution:
+  pool:
+    core-size: 4
+    max-size: 16
+    queue-capacity: 100
+    keep-alive: 60s
+    thread-name-prefix: MiniMax-Task-
+
+spring.task.scheduling:
+  pool:
+    size: 4
+    thread-name-prefix: MiniMax-Sched-
+
+# =============================================================
+# HTTP 客户端超时 (OpenFeign / RestTemplate 默认)
+# =============================================================
+feign:
+  client:
+    config:
+      default:
+        connect-timeout: 5000
+        read-timeout: 30000
+        logger-level: BASIC
+  compression:
+    request:
+      enabled: true
+      mime-types: application/json,application/xml,text/xml
+      min-request-size: 1024
+    response:
+      enabled: true

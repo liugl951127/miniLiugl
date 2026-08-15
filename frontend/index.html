@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Day 35: SEO Meta -->
+    <meta name="description" content="Liugl-AI 大模型应用平台 - 自研 AI 引擎、RAG 知识库、智能 Agent 编排、多模型投票、告警监控。支持 Spring Boot 3 + Vue 3 全栈，零外部依赖本地运行。" />
+    <meta name="keywords" content="AI大模型, RAG知识库, Agent编排, Spring Boot, Vue3, 多模型投票, 告警监控, 自研LLM, 企业级AI平台" />
+    <meta name="robots" content="index, follow" />
+    <meta name="author" content="Liugl" />
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Liugl-AI 大模型平台" />
+    <meta property="og:description" content="自研 AI 引擎 · RAG 知识库 · Agent 智能编排 · 多模型投票 · 告警监控" />
+    <meta property="og:url" content="https://ai.liugl.com" />
+    <meta property="og:site_name" content="Liugl-AI" />
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Liugl-AI 大模型平台" />
+    <meta name="twitter:description" content="自研 AI 引擎 · RAG 知识库 · Agent 智能编排" />
+    <link rel="canonical" href="https://ai.liugl.com" />
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#6366f1" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Liugl-AI" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Liugl-AI 大模型平台</title>
+    <style>
+      html, body, #app { height: 100%; margin: 0; padding: 0; }
+      #initial-loader {
+        position: fixed; inset: 0;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background: linear-gradient(135deg, #1f2a44 0%, #0b1220 100%);
+        color: #fff; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+        z-index: 9999;
+      }
+      #initial-loader .logo { font-size: 32px; font-weight: 700; margin-bottom: 8px;
+        background: linear-gradient(90deg, #5b8def, #b66dff);
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+      }
+      #initial-loader .sub { color: #aab4cf; font-size: 14px; margin-bottom: 24px; }
+      .dot { width: 8px; height: 8px; border-radius: 50%; background: #5b8def;
+        display: inline-block; margin: 0 4px; animation: bounce 1.4s infinite ease-in-out both; }
+      .dot:nth-child(2) { animation-delay: -0.32s; }
+      .dot:nth-child(3) { animation-delay: -0.16s; }
+      @keyframes bounce {
+        0%, 80%, 100% { transform: scale(0.4); opacity: 0.4; }
+        40% { transform: scale(1); opacity: 1; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div id="initial-loader">
+        <div class="logo">Liugl-AI</div>
+        <div class="sub">大模型应用平台 · 加载中</div>
+        <div><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+    <script>
+      // 注册 Service Worker (PWA 离线支持, 仅生产环境)
+      if ('serviceWorker' in navigator) {
+        // V3.5.42: dev 跳过, 跟 usePwa.js 一致, 避免 HMR 干扰
+        if (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'http:' && location.port === '3000') {
+          console.log('[PWA] 开发模式跳过 SW 注册 (避免 HMR 冲突)');
+        } else {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js?v=__SW_BUILD_TIME__', { scope: '/' }).then(reg => {
+              console.log('SW registered:', reg.scope);
+            }).catch(err => {
+              console.warn('SW register failed:', err);
+            });
+          });
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,143 @@
+# =============================================================
+# MiniMax AI 自研服务配置 (V2.5)
+# 端口: 8094
+# =============================================================
+
+server:
+  port: ${SERVER_PORT:8094}
+
+spring:
+  config:
+    import: classpath:application-common.yml
+  application:
+    name: minimax-ai
+  profiles:
+    active: mysql   # V3.5.5+ 默认 MySQL/MariaDB 生产连接 (H2 → 沙箱 / dev → 内存开发)
+  main:
+    allow-bean-definition-overriding: true
+
+# 自研 AI 配置
+minimax:
+  ai:
+    # 模型类型
+    type: transformer-small  # 简化版 transformer
+    # 词表大小
+    vocab-size: 8192
+    # 隐藏层维度
+    hidden-dim: 128
+    # 注意力头数
+    num-heads: 4
+    # 层数
+    num-layers: 2
+    # 最大序列长度
+    max-seq-len: 128
+    # 推理温度
+    temperature: 0.8
+    # top-k 采样
+    top-k: 40
+    # top-p 采样
+    top-p: 0.9
+    # 模型文件路径
+    model-path: ${MODEL_PATH:./data/ai/model.bin}
+    # 是否启动时自动训练
+    auto-train: ${AUTO_TRAIN:true}
+    # 训练数据
+    training-data-path: ${TRAINING_DATA:./data/ai/training-data.txt}
+
+    # ── V6.8.2: 训练模型推理路由 ──────────────────────────────────
+    # 训练模型（law-gpt-v1 / med-gpt-v2 等）实际调用的真实 LLM
+    # 可选: deepseek-chat / gpt-4o-mini / gpt-4o（需配置对应 API Key）
+    training:
+      target-model: ${AI_TRAINING_TARGET_MODEL:deepseek-chat}
+
+    # ── Day 29: 智能模型路由配置 ──────────────────────────────────
+    # Provider 开关: auto / self / external
+    #   auto       — 两类模型都参与路由，按策略选最优 (默认)
+    #   self       — 仅自研模型，不依赖外部 API key
+    #   external   — 仅外部模型，需配置下面 key
+    provider-mode: ${MODEL_PROVIDER_MODE:auto}
+
+    # 外部模型 API Key (不配置则外部模型不参与路由)
+    openai-api-key: ${OPENAI_API_KEY:}
+    deepseek-api-key: ${DEEPSEEK_API_KEY:}
+
+    # 自研模型质量开关 (true=全部开启, false=仅基础对话)
+    self-model-full: ${SELF_MODEL_FULL:true}
+
+    # ── V3.5.15+: 4 模型加权投票权重 ──
+    intent:
+      weight:
+        tf: ${INTENT_W_TF:0.4}            # 关键词 TF
+        ngram: ${INTENT_W_NGRAM:0.3}      # Bigram 搭配
+        synonym: ${INTENT_W_SYNONYM:0.2}  # 同义词扩展
+        context: ${INTENT_W_CONTEXT:0.1}  # 上下文继承
+      cache-size: ${INTENT_CACHE:1000}    # LRU 缓存条数
+
+# 健康检查
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# 临时关闭 SQL 自动配置 (本服务不用 DB)
+# spring.autoconfigure.exclude:
+#   - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+#   - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+#   - com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration
+
+# 数据源说明: 默认 dev profile  使用 H2, 生产/主模式使用 MySQL
+# 详见 application-dev.yml (H2) / application-standalone.yml (MariaDB)
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 30000
+
+# MyBatis-Plus
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    db-config:
+      id-type: AUTO
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+logging:
+  level:
+    com.minimax.ai: INFO
+    org.springframework: WARN
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+# V3.5.90+ OpenTelemetry trace (W3C traceparent, OTLP → collector → jaeger)
+# jvm-env (docker-compose) 注入 OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+otel:
+  metrics:
+    export:
+      interval: 30s
+  java:
+    global-autoconfigure:
+      enabled: true
+
+# =============================================================
+# V5.7 Nacos 服务发现 (注册当前微服务, gateway 通过 lb:// 调用)
+# =============================================================
+spring.cloud.nacos:
+  discovery:
+    server-addr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
+    namespace: ${NACOS_NS:minimax-dev}
+    username: ${NACOS_USER}
+    password: ${NACOS_PASS}
+    register-enabled: true
+    metadata:
+      version: 5.7.0
+      group: minimax

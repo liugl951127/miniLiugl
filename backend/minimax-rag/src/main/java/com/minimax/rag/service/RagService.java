@@ -1,0 +1,186 @@
+package com.minimax.rag.service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.minimax.rag.retriever.Retriever;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+/**
+ * RAG 增强的问答。
+ *
+ * 流程:
+ *  1) 检索 (Retriever) → topK chunks
+ *  2) 拼 system prompt + 引用片段
+ *  3) 调 model 服务 (OpenAI 兼容) 生成答案
+ *  4) 返回 answer + sources[]
+ *
+ * 失败降级: 检索为空 → 调普通 chat; LLM 失败 → 返回检索内容 + 提示.
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class RagService {
+
+    @Value("${minimax.rag.chat.model:MiniMax-Text-01}")
+    private String model;
+    @Value("${minimax.rag.chat.base-url:http://minimax-model:8084}")
+    private String baseUrl;
+    @Value("${minimax.rag.chat.token:}")
+    private String token;
+    @Value("${minimax.rag.chat.timeout-seconds:30}")
+    private int timeout;
+
+    private final Retriever retriever;
+    private final QueryExpander queryExpander;
+    private final ObjectMapper json = new ObjectMapper();
+    private final HttpClient client = HttpClient.newHttpClient();
+
+    /** 向后兼容旧签名 */
+    public RagAnswer ask(Long kbId, String question, String history, int topK) {
+        return ask(kbId, question, history, topK, null);
+    }
+
+    /**
+     * RAG 问答 (Day 23: 支持自定义 systemPrompt 模板).
+     * @param systemPrompt 若不为空, 替换默认的上下文拼接逻辑, 直接用作 system 消息
+     */
+    public RagAnswer ask(Long kbId, String question, String history, int topK, String systemPrompt) {
+        if (question == null || question.isBlank()) {
+            return new RagAnswer("问题不能为空", List.of(), null, 0);
+        }
+        // 1) 检索（默认启用 QueryExpander 展开检索，Day 31）
+        QueryExpander.ExpansionResult expansionResult = queryExpander.expandRetrieve(kbId, question, topK);
+        List<Retriever.Hit> hits = expansionResult.getHits();
+        String expStrategy = expansionResult.getStrategy();
+
+        if (hits.isEmpty()) {
+            log.info("RAG: 检索为空 kbId={} 走普通 chat (strategy={})", kbId, expStrategy);
+            String plain = plainChat(question, history, systemPrompt);
+            return new RagAnswer(plain, List.of(), expStrategy, expansionResult.getElapsedMs());
+        }
+
+        // 3) 拼 messages
+        List<Map<String, String>> messages = new ArrayList<>();
+        String ctxContent = systemPrompt != null ? systemPrompt : "";
+        for (var h : hits) ctxContent += "\n- " + h.content;
+        messages.add(Map.of("role","system","content", ctxContent));
+        if (history != null && !history.isBlank()) {
+            messages.add(Map.of("role","user","content", history));
+        }
+        messages.add(Map.of("role","user","content", question));
+
+        // 4) 调 LLM
+        String answer;
+        long llmStart = System.currentTimeMillis();
+        try {
+            answer = callChat(messages);
+        } catch (Exception e) {
+            log.warn("RAG LLM 调用失败, 降级返回检索内容: {}", e.getMessage());
+            StringBuilder sb = new StringBuilder("（LLM 不可用，以下为检索内容）\n\n");
+            for (int i = 0; i < hits.size(); i++) {
+                sb.append("[").append(i+1).append("] ").append(hits.get(i).content).append("\n");
+            }
+            answer = sb.toString();
+        }
+        long llmElapsed = System.currentTimeMillis() - llmStart;
+
+        // 5) sources
+        List<Source> sources = new ArrayList<>();
+        for (Retriever.Hit h : hits) {
+            sources.add(new Source(h.chunkId, h.docId, h.docTitle, h.chunkIndex,
+                    truncate(h.content, 200), h.score));
+        }
+
+        // 6) 完整耗时 = 检索(含展开) + LLM
+        long totalElapsed = expansionResult.getElapsedMs() + llmElapsed;
+
+        log.info("RAG ask kbId={} strategy={} hits={} elapsed={}ms (expand={}ms + llm={}ms)",
+                kbId, expStrategy, hits.size(), totalElapsed,
+                expansionResult.getElapsedMs(), llmElapsed);
+
+        return new RagAnswer(answer, sources, expStrategy, totalElapsed);
+    }
+
+    private String plainChat(String question, String history, String systemPrompt) {
+        List<Map<String, String>> messages = new ArrayList<>();
+        String sysContent = (systemPrompt != null && !systemPrompt.isBlank())
+                ? systemPrompt.replace("{{question}}", question)
+                : "你是助手。";
+        messages.add(Map.of("role","system","content", sysContent));
+        if (history != null && !history.isBlank()) {
+            messages.add(Map.of("role","user","content", history));
+        }
+        messages.add(Map.of("role","user","content", question));
+        try { return callChat(messages); }
+        catch (Exception e) { return "(LLM 不可用) 你的问题: " + question; }
+    }
+
+    /** 构建带引用的上下文内容 */
+    private String buildContext(List<Retriever.Hit> hits) {
+        StringBuilder ctx = new StringBuilder();
+        ctx.append("你是基于知识库回答问题的助手。请根据以下参考资料回答，引用处标注 [来源 N]。\n");
+        ctx.append("若资料不足以回答，请直接说'我不知道'或'参考资料未覆盖'。\n\n参考资料:\n");
+        for (int i = 0; i < hits.size(); i++) {
+            Retriever.Hit h = hits.get(i);
+            ctx.append("[来源 ").append(i + 1).append("] ")
+               .append(h.docTitle == null ? "(未知文档)" : h.docTitle)
+               .append(" - 片段 #").append(h.chunkIndex)
+               .append(" (相似度 ").append(String.format("%.2f", h.score)).append(")\n")
+               .append(h.content).append("\n\n");
+        }
+        return ctx.toString();
+    }
+
+    private String callChat(List<Map<String, String>> messages) throws Exception {
+        Map<String, Object> body = new HashMap<>();
+        body.put("model", model);
+        body.put("messages", messages);
+        body.put("temperature", 0.3);
+        body.put("max_tokens", 800);
+
+        HttpRequest.Builder hb = HttpRequest.newBuilder()
+                .uri(URI.create(stripSlash(baseUrl) + "/api/v1/models/chat"))
+                .timeout(Duration.ofSeconds(timeout))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body)));
+        if (token != null && !token.isBlank()) hb.header("Authorization", "Bearer " + token);
+        HttpResponse<String> resp = client.send(hb.build(), HttpResponse.BodyHandlers.ofString());
+        if (resp.statusCode() >= 400) {
+            throw new RuntimeException("HTTP " + resp.statusCode() + " " + truncate(resp.body(), 200));
+        }
+        @SuppressWarnings("unchecked")
+        Map<String, Object> result = json.readValue(resp.body(), Map.class);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data = (Map<String, Object>) result.get("data");
+        return data == null ? "" : (String) data.get("content");
+    }
+
+    private String stripSlash(String s) { return s == null ? "" : (s.endsWith("/") ? s.substring(0, s.length()-1) : s); }
+    private String truncate(String s, int n) { return s == null ? null : (s.length() > n ? s.substring(0, n) : s); }
+
+    public record Source(Long chunkId, Long docId, String docTitle, Integer chunkIndex,
+                          String snippet, Double score) {}
+
+    /**
+     * RAG 问答结果 (Day 31: 新增 strategy/elapsedMs).
+     *
+     * @param answer       LLM 生成的回答
+     * @param sources      引用来源列表
+     * @param strategy     查询展开策略 (NONE / SYNTACTIC / SEMANTIC_LLM / HYBRID)
+     * @param elapsedMs    端到端耗时 ms (含检索+LLM)
+     */
+    public record RagAnswer(String answer, List<Source> sources, String strategy, long elapsedMs) {}
+}

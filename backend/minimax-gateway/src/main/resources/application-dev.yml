@@ -1,0 +1,18 @@
+minimax:
+  jwt:
+    # V1.9.1: secret 已在 application-common.yml 字面量定义, 这里无需重复
+    # (本文件覆盖默认是不必要的, 保留仅为调试可视化)
+
+logging:
+  level:
+    com.minimax: DEBUG
+
+# V3.5.90+ OpenTelemetry trace (W3C traceparent, OTLP → collector → jaeger)
+# jvm-env (docker-compose) 注入 OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+otel:
+  metrics:
+    export:
+      interval: 30s
+  java:
+    global-autoconfigure:
+      enabled: true

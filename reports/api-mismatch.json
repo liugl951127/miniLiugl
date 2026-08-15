@@ -1,0 +1,411 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/users/*/reset",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/audit",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/api/v1/ai/training/llm/start",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/api/v1/ai/training/llm/status/*",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/api/v1/ai/training/llm/history/*",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/api/v1/ai/training/llm/list",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/api/v1/ai/training/llm/feedback",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/api/v1/agent/execute",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/api/v1/agent/plans",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/api/v1/agent/plans/*",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/api/v1/agent/plans/*/deploy",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/multimodal/compliance/moderate",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/multimodal/compliance/refresh",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools/text",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools/vision",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools/audio",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools/file",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools/data",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools/time",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools/image",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools/chart",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools/music",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/admin/tools/java",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/agent",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/raft/trigger",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/push/integration/vapid",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/kb/search/keyword",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/dashboard/metrics",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/dashboard/from",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/distributed/all",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/animation/text",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/pipeline/config/compute",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/video/from",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/webhooks",
+    "files": [
+      "webhook.js",
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/chat",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/analytics/query/dry",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/auth/apikeys",
+    "files": [
+      "apikey.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/autofill",
+    "files": [
+      "autofill.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/memory/short",
+    "files": [
+      "memory.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/memory/cross",
+    "files": [
+      "memory.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/memory/long",
+    "files": [
+      "memory.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/model/providers",
+    "files": [
+      "model.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/*/api/v1/models/chat/stream",
+    "files": [
+      "model.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ai/model",
+    "files": [
+      "modelMarket.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/audit/by",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/monitor/anomaly/active",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/auth/notifications",
+    "files": [
+      "notification.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/auth/notifications/unread",
+    "files": [
+      "notification.js"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/auth/notifications/read",
+    "files": [
+      "notification.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/*/*",
+    "files": [
+      "prompt.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/*/*/use",
+    "files": [
+      "prompt.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/*/categories",
+    "files": [
+      "prompt.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/*/resolve",
+    "files": [
+      "prompt.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/sessions",
+    "files": [
+      "session.js",
+      "system.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/sessions/stop",
+    "files": [
+      "session.js",
+      "system.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/api/ai/intro",
+    "files": [
+      "system.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/auth/wechat/mock",
+    "files": [
+      "wechat.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/wechat/mobile",
+    "files": [
+      "wechat.js"
+    ]
+  }
+]

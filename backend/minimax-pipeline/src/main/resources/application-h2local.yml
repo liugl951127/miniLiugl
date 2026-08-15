@@ -1,0 +1,58 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  autoconfigure:
+    exclude:
+      - com.alibaba.druid.spring.boot3.autoconfigure.DruidDataSourceAutoConfigure
+      - com.alibaba.cloud.nacos.NacosServiceAutoConfiguration
+      - com.alibaba.cloud.nacos.discovery.NacosDiscoveryAutoConfiguration
+      - com.alibaba.cloud.nacos.discovery.NacosDiscoveryClientConfiguration
+      - com.alibaba.cloud.nacos.discovery.NacosDiscoveryHeartBeatConfiguration
+      - com.alibaba.cloud.nacos.discovery.reactive.NacosReactiveDiscoveryClientConfiguration
+      - com.alibaba.cloud.nacos.discovery.configclient.NacosConfigServerAutoConfiguration
+      - com.alibaba.cloud.nacos.endpoint.NacosDiscoveryEndpointAutoConfiguration
+      - com.alibaba.cloud.nacos.registry.NacosServiceRegistryAutoConfiguration
+      - com.alibaba.cloud.nacos.loadbalancer.LoadBalancerNacosAutoConfiguration
+      - com.alibaba.cloud.nacos.util.UtilIPv6AutoConfiguration
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:pipeline;MODE=MySQL;CASE_INSENSITIVE_IDENTIFIERS=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+    hikari:
+      maximum-pool-size: 5
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:sql/minimax-mysql-final.sql
+      encoding: UTF-8
+      continue-on-error: true
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      timeout: 50ms
+  cloud:
+    nacos:
+      discovery:
+        enabled: false
+        register-enabled: false
+      config:
+        enabled: false
+      enabled: false
+    refresh:
+      enabled: false
+
+mybatis-plus:
+  global-config:
+    db-config:
+      id-type: auto
+      table-prefix: ""
+  configuration:
+    map-underscore-to-camel-case: true
+
+logging:
+  level:
+    root: WARN
+    com.minimax: INFO
+    org.springframework: WARN

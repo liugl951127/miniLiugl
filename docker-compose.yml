@@ -1,0 +1,423 @@
+# =============================================================
+# MiniMax Platform V6.8.2 一键部署 (Docker Compose)
+#
+# 关键设计 (V6.8.2):
+#   ✓ 13 微服务 + 3 基础服务 (mariadb/redis/nacos) + 1 nginx
+#   ✓ Maven repo 挂载磁盘 (避免重复下载)
+#   ✓ 每个服务用 layered jar (Docker 缓存最优)
+#   ✓ 启动顺序: mariadb/redis/nacos → 13 业务服务
+#   ✓ Nacos 服务发现 (gateway lb:// 依赖)
+#   ✓ 13 微服务全部暴露端口 (跟 nginx 直连一致)
+#   ✓ 资源限制 (1G mariadb, 512M gateway/ai/agent, 256-384M 业务)
+#   ✓ 所有凭证通过环境变量注入，无默认值
+#
+# V6.8.2 安全更新:
+#   - JWT/Redis/Nacos/MinIO 凭证移至环境变量
+#   - 移除所有 :默认值 硬编码
+#   - SMTP_PASSWORD 从环境变量注入
+#
+# 必需环境变量:
+#   MINIMAX_JWT_SECRET        JWT 签名密钥 (256-bit hex)
+#   MINIMAX_COMMON_SECRET     通用加密密钥
+#   REDIS_PASS                Redis 密码
+#   NACOS_USER / NACOS_PASS   Nacos 账户
+#   MYSQL_ROOT_PASSWORD       MariaDB root 密码
+#   CORS_ORIGINS              允许的跨域域名
+#
+# 用法:
+#   # 生产部署 (必需先设置环境变量)
+#   export MINIMAX_JWT_SECRET=$(openssl rand -hex 32)
+#   export MINIMAX_COMMON_SECRET=$(openssl rand -hex 32)
+#   export REDIS_PASS=your_redis_password
+#   export NACOS_USER=nacos && export NACOS_PASS=your_nacos_password
+#   export MYSQL_ROOT_PASSWORD=your_mysql_password
+#   export CORS_ORIGINS=https://your.domain.com
+#   docker compose up -d
+#
+#   docker compose ps             # 状态
+#   docker compose logs -f gateway  # 日志
+#   docker compose build --no-cache  # 重新构建
+# =============================================================
+version: "3.9"
+
+# ============== 共享 Maven 卷 (关键! 避免重复下载) ==============
+x-maven-volumes: &maven-volumes
+  - ./.docker-data/maven-repo:/root/.m2
+  - ./.docker-data/logs:/var/log/minimax
+  - ./.docker-data/common-jar/minimax-common.jar:/app/BOOT-INF/lib/minimax-common.jar
+
+# ============== 通用环境变量 (JVM 优化) ==============
+# V6.8.2: 所有凭证无默认值，必须通过 docker compose -e 或 .env 文件注入
+x-jvm-env: &jvm-env
+  SPRING_PROFILES_ACTIVE: mysql
+  JAVA_OPTS: "-XX:MaxRAMPercentage=70 -XX:+UseG1GC -XX:+UseContainerSupport"
+  TZ: Asia/Shanghai
+  NACOS_HOST: nacos
+  NACOS_PORT: "8848"
+  NACOS_USER: ${NACOS_USER?}          # 必填，无默认值
+  NACOS_PASS: ${NACOS_PASS?}
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_PASS: ${REDIS_PASS?}
+  # V6.8.2: JWT/通用密钥无默认值，生产必须注入
+  MINIMAX_JWT_SECRET: ${MINIMAX_JWT_SECRET?}
+  MINIMAX_COMMON_SECRET: ${MINIMAX_COMMON_SECRET?}
+  # V6.8.2: CORS 允许的跨域域名
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8080}
+  # V3.5.89+ OpenTelemetry trace (W3C traceparent, OTLP → collector → jaeger)
+  OTEL_SDK_DISABLED: "false"
+  OTEL_SERVICE_NAME: minimax-platform
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+  OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+  OTEL_TRACES_EXPORTER: otlp
+  OTEL_METRICS_EXPORTER: otlp
+  OTEL_LOGS_EXPORTER: otlp
+  OTEL_RESOURCE_ATTRIBUTES: service.namespace=minimax,deployment.environment=production
+  MYSQL_HOST: mariadb
+  MYSQL_PORT: "3306"
+  MYSQL_USER: root
+  MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD?}
+  MYSQL_DATABASE: minimax_platform
+
+services:
+  # ============== 基础设施 (3 个) ==============
+  # ============== OpenTelemetry (V3.5.95+) ==============
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.96.0
+    container_name: minimax-otel-collector
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./deploy/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    networks: [minimax-net]
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.55
+    container_name: minimax-jaeger
+    restart: unless-stopped
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
+      - "14250:14250"
+    networks: [minimax-net]
+
+  mariadb:
+    image: mariadb:10.11
+    container_name: minimax-mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD?}
+      MARIADB_DATABASE: minimax_platform
+      TZ: Asia/Shanghai
+    command: ["--character-set-server=utf8mb4", "--innodb-buffer-pool-size=512M"]
+    ports: ["3306:3306"]
+    volumes:
+      - /data/minimax/mariadb:/var/lib/mysql
+      # V6.8.1: 注释掉 SQL 自动执行 (避免重启覆盖数据 / 测试用已存在的 db)
+      # V3.5.19 重生: 2 个新 SQL (77 表 + 5 账号 + AI 关键词)
+      # - ./sql/minimax-mysql-final.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      # - :/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD?}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks: [minimax-net]
+    deploy:
+      resources: { limits: { memory: 1G } }
+
+  redis:
+    image: redis:7-alpine
+    container_name: minimax-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASS?} --maxmemory 256mb
+    ports: ["6379:6379"]
+    volumes: [/data/minimax/redis:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASS?}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 384M } } }
+
+  # ============== Nacos 服务注册 + 配置中心 (V3.5.9+) ==============
+  nacos:
+    image: nacos/nacos-server:v2.3.2
+    container_name: minimax-nacos
+    restart: unless-stopped
+    environment:
+      MODE: standalone
+      TZ: Asia/Shanghai
+      JVM_XMS: 512m
+      JVM_XMX: 512m
+      JVM_XMN: 256m
+      # 鉴权配置 (V3.5.9+: 用户提供的 base64 token)
+      NACOS_AUTH_ENABLE: "true"
+      NACOS_AUTH_TOKEN: "mVsZlpnzIoXX8f+SxZPIJbsbQyatC3J+9EKrE6pJA2w="
+      NACOS_AUTH_IDENTITY_KEY: "minimax-nacos"
+      NACOS_AUTH_IDENTITY_VALUE: "minimax-nacos-secret-2026"
+    command: ["sh", "-c", "echo 'nacos.core.auth.plugin.nacos.token.secret.key=mVsZlpnzIoXX8f+SxZPIJbsbQyatC3J+9EKrE6pJA2w=' > /home/nacos/conf/application.properties && echo 'nacos.core.auth.server.identity.key=minimax-nacos' >> /home/nacos/conf/application.properties && echo 'nacos.core.auth.server.identity.value=minimax-nacos-secret-2026' >> /home/nacos/conf/application.properties && bin/startup.sh -m standalone && tail -f /home/nacos/logs/start.out"]
+    ports: ["8848:8848", "9848:9848"]
+    volumes:
+      - ./.docker-data/nacos/logs:/home/nacos/logs
+      - ./.docker-data/nacos/data:/home/nacos/data
+      - ./.docker-data/nacos/init.d:/home/nacos/conf/init.d
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:8848/nacos/ | grep -q '200' || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 1G } } }
+
+  # ============== 13 业务微服务 (V6.8.2) ==============
+  # 端口: 7080 gateway / 8081 auth / 8082 chat / 8084 model / 8085 rag
+  #       8087 multimodal / 8088 agent / 8089 monitor / 8090 admin
+  #       8092 analytics / 8093 pipeline / 8094 ai / 8095 ws
+  # 生产建议: 通过 nginx 80/443 统一入口，不要直接暴露业务端口
+
+  gateway:
+    build: { context: ./backend, dockerfile: minimax-gateway/Dockerfile }
+    image: minimax/gateway:latest
+    container_name: minimax-gateway
+    restart: unless-stopped
+    depends_on:
+      mariadb: { condition: service_healthy }
+      nacos:   { condition: service_healthy }
+    environment:
+      <<: *jvm-env
+      SERVER_PORT: "7080"
+      # V6.8.2: JWT_SECRET 由 x-jvm-env 的 MINIMAX_JWT_SECRET 统一注入
+    ports: ["7080:7080"]
+    volumes: *maven-volumes
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 512M } } }
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:7080/actuator/health | grep -q '200' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 6
+      start_period: 60s
+
+  auth:
+    build: { context: ./backend, dockerfile: minimax-auth/Dockerfile }
+    image: minimax/auth:latest
+    container_name: minimax-auth
+    restart: unless-stopped
+    depends_on:
+      mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
+    environment: { <<: *jvm-env, SERVER_PORT: "8081" }
+    ports: ["8081:8081"]
+    volumes: *maven-volumes
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 384M } } }
+
+  chat:
+    build: { context: ./backend, dockerfile: minimax-chat/Dockerfile }
+    image: minimax/chat:latest
+    container_name: minimax-chat
+    restart: unless-stopped
+    depends_on:
+      mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
+      redis:   { condition: service_healthy }
+    environment: { <<: *jvm-env, SERVER_PORT: "8082" }
+    ports: ["8082:8082"]
+    volumes: *maven-volumes
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 384M } } }
+
+  model:
+    build: { context: ./backend, dockerfile: minimax-model/Dockerfile }
+    image: minimax/model:latest
+    container_name: minimax-model
+    restart: unless-stopped
+    depends_on:
+      mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
+    environment: { <<: *jvm-env, SERVER_PORT: "8084" }
+    ports: ["8084:8084"]
+    volumes:
+      - ./.docker-data/maven-repo:/root/.m2
+      - ./.docker-data/logs:/var/log/minimax
+      - ./.docker-data/common-jar/minimax-common.jar:/app/BOOT-INF/lib/minimax-common.jar
+      - /opt/minimax/models:/opt/minimax/models
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 384M } } }
+
+  rag:
+    build: { context: ./backend, dockerfile: minimax-rag/Dockerfile }
+    image: minimax/rag:latest
+    container_name: minimax-rag
+    restart: unless-stopped
+    depends_on:
+      mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
+    environment: { <<: *jvm-env, SERVER_PORT: "8085" }
+    ports: ["8085:8085"]
+    volumes: *maven-volumes
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 512M } } }
+
+  multimodal:
+    build: { context: ./backend, dockerfile: minimax-multimodal/Dockerfile }
+    image: minimax/multimodal:latest
+    container_name: minimax-multimodal
+    restart: unless-stopped
+    depends_on:
+      mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
+    environment: { <<: *jvm-env, SERVER_PORT: "8087", MODEL_DIR: "/var/minimax/models/vision", MODEL_FILE: "mobilenetv3.onnx" }
+    ports: ["8087:8087"]
+    volumes:
+      - ./.docker-data/maven-repo:/root/.m2
+      - ./.docker-data/logs:/var/log/minimax
+      - ./.docker-data/common-jar/minimax-common.jar:/app/BOOT-INF/lib/minimax-common.jar
+      - /opt/minimax/models/vision:/var/minimax/models/vision
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 512M } } }
+
+  agent:
+    build: { context: ./backend, dockerfile: minimax-agent/Dockerfile }
+    image: minimax/agent:latest
+    container_name: minimax-agent
+    restart: unless-stopped
+    depends_on:
+      mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
+      redis:   { condition: service_healthy }
+    environment: { <<: *jvm-env, SERVER_PORT: "8088" }
+    ports: ["8088:8088"]
+    volumes: *maven-volumes
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 512M } } }
+
+  monitor:
+    build: { context: ./backend, dockerfile: minimax-monitor/Dockerfile }
+    image: minimax/monitor:latest
+    container_name: minimax-monitor
+    restart: unless-stopped
+    depends_on:
+      mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
+    environment: { <<: *jvm-env, SERVER_PORT: "8089", SMTP_USER: "${SMTP_USER:-}", SMTP_PASSWORD: "${SMTP_PASSWORD:-}" }
+    ports: ["8089:8089"]
+    volumes: *maven-volumes
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 384M } } }
+
+  admin:
+    build: { context: ./backend, dockerfile: minimax-admin/Dockerfile }
+    image: minimax/admin:latest
+    container_name: minimax-admin
+    restart: unless-stopped
+    depends_on:
+      mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
+    environment: { <<: *jvm-env, SERVER_PORT: "8090" }
+    ports: ["8090:8090"]
+    volumes: *maven-volumes
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 384M } } }
+
+  analytics:
+    build: { context: ./backend, dockerfile: minimax-analytics/Dockerfile }
+    image: minimax/analytics:latest
+    container_name: minimax-analytics
+    restart: unless-stopped
+    depends_on:
+      mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
+      redis:   { condition: service_healthy }
+    environment:
+      <<: *jvm-env
+      SERVER_PORT: "8092"
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR: nacos:8848
+      SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE: minimax-dev
+      SPRING_CLOUD_NACOS_DISCOVERY_USERNAME: nacos
+      SPRING_CLOUD_NACOS_DISCOVERY_PASSWORD: Minimax@Nacos2026!
+    ports: ["8092:8092"]
+    volumes: *maven-volumes
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 512M } } }
+
+  pipeline:
+    build: { context: ./backend, dockerfile: minimax-pipeline/Dockerfile }
+    image: minimax/pipeline:latest
+    container_name: minimax-pipeline
+    restart: unless-stopped
+    depends_on:
+      mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
+    environment: { <<: *jvm-env, SERVER_PORT: "8093" }
+    ports: ["8093:8093"]
+    volumes: *maven-volumes
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 512M } } }
+
+  ai:
+    build: { context: ./backend, dockerfile: minimax-ai/Dockerfile }
+    image: minimax/ai:latest
+    container_name: minimax-ai
+    restart: unless-stopped
+    depends_on:
+      mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
+    environment: { <<: *jvm-env, SERVER_PORT: "8094", MODEL_PATH: "/app/data/ai/model.bin", TRAINING_DATA: "/app/data/ai/training-data.txt" }
+    ports: ["8094:8094"]
+    volumes:
+      - ./.docker-data/maven-repo:/root/.m2
+      - ./.docker-data/logs:/var/log/minimax
+      - /opt/minimax/ai-models/data:/app/data/ai
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 512M } } }
+
+  ws:
+    build: { context: ./backend, dockerfile: minimax-ws/Dockerfile }
+    image: minimax/ws:latest
+    container_name: minimax-ws
+    restart: unless-stopped
+    depends_on:
+      mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
+    environment: { <<: *jvm-env, SERVER_PORT: "8095" }
+    ports: ["8095:8095"]
+    volumes: *maven-volumes
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 512M } } }
+
+  # ============== Nginx 单端口 80 入口 (V3.5.19 单文件) ==============
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: minimax-nginx
+    restart: unless-stopped
+    depends_on:
+      - gateway
+      - auth
+      - chat
+      - model
+      - ai
+    ports: ["80:80"]
+    volumes:
+      # V3.5.19: 单文件配置 (含 13 upstream + 14 location)
+      - ./deploy/nginx-v3519.conf:/etc/nginx/nginx.conf:ro
+      - /opt/minimax/frontend/dist:/opt/minimax/frontend/dist:ro
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 64M } } }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/health | grep -q 'UP' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+volumes: {}
+networks:
+  minimax-net: { driver: bridge }

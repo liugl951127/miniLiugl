@@ -1,0 +1,203 @@
+# =============================================================
+# MiniMax 公共配置 (V5.4 + V5.5 gateway 适配)
+# 各微服务通过 spring.config.import 引入此文件
+#
+# 注意: 不包含 minimax: 顶层 / 不包含 datasource (gateway 不需要)
+# =============================================================
+
+server:
+  shutdown: graceful
+  compression:
+    enabled: true
+    mime-types: application/json,text/html,text/css,application/javascript
+  tomcat:
+    threads:
+      max: 400
+      min-spare: 50
+    accept-count: 200
+    max-connections: 10000
+    connection-timeout: 20s
+    keep-alive-timeout: 60s
+
+spring:
+  # ===== V3.5.9 Nacos 服务注册 + 配置中心 (17 个微服务统一) =====
+  # 沙箱模式 (h2local profile) 会主动关闭 nacos, 这里是默认配置
+  cloud:
+    nacos:
+      discovery:
+        enabled: ${NACOS_ENABLED:true}
+        server-addr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
+        namespace: ${NACOS_NS:minimax-dev}
+        username: ${NACOS_USER}
+        password: ${NACOS_PASS}
+        register-enabled: true
+        metadata:
+          version: 5.7.0
+          group: minimax
+      config:
+        enabled: ${NACOS_ENABLED:true}
+        server-addr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
+        namespace: ${NACOS_NS:minimax-dev}
+        username: ${NACOS_USER}
+        password: ${NACOS_PASS}
+        file-extension: yaml
+        refresh-enabled: true
+        extension-configs:
+          - data-id: minimax-common.yaml
+            group: DEFAULT_GROUP
+            refresh: true
+
+  # ===== 公共 Jackson 配置 =====
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+      fail-on-empty-beans: false
+    deserialization:
+      fail-on-unknown-properties: false
+
+  # ===== 公共文件上传 =====
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 200MB
+
+  # ===== 公共生命周期 =====
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+# ===== 公共日志 =====
+logging:
+  level:
+    root: INFO
+    com.minimax: DEBUG
+    org.springframework.web: INFO
+  pattern:
+    # V5.8 加 traceId (由 gateway TraceFilter 注入 MDC)
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [traceId=%X{traceId:-}] %logger{36} - %msg%n"
+
+# ===== V5.10 Actuator / Prometheus / Micrometer (各微服务统一) =====
+# 启用 health / metrics / prometheus 端点 (供 Prometheus 抓取 + Grafana 展示)
+management:
+  endpoints:
+    web:
+      exposure:
+        # V5.10: 默认暴露 health/info/metrics/prometheus
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized  # 只对已登录用户暴露详情
+      probes:
+        enabled: true
+    prometheus:
+      enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+    db:
+      enabled: true
+    redis:
+      enabled: true
+    diskspace:
+      enabled: true
+  metrics:
+    tags:
+      # V5.10: 每个微服务的 metrics 自动带 application 标签 (便于 Grafana 按服务分组)
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        minimax.llm.latency: true
+      percentiles:
+        http.server.requests: 0.5, 0.75, 0.95, 0.99
+        minimax.llm.latency: 0.5, 0.75, 0.95, 0.99
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+        step: 10s  # Prometheus 抓取间隔 (10s)
+        descriptions: true
+# ===== V5.11 Swagger / Knife4j 统一配置 (下沉到 common) =====
+# 13 个微服务统一启用, 文档中心通过 /monitor/api-docs 聚合
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+  packages-to-scan: com.minimax
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+    enable-version: true
+    enable-swagger-models: true
+    swagger-model-name: 实体类列表
+
+# ===== V5.14 OpenTelemetry 分布式追踪 =====
+# Spring Boot OTel Starter 自动配置: HTTP client/server, JDBC, Kafka, RabbitMQ 等
+# 通过 OTLP 协议导出到 Jaeger / Tempo / SigNoz 等后端
+otel:
+  service:
+    name: ${spring.application.name}
+  # 启用常见 instrumentation
+  instrumentation:
+    common:
+      default-enabled: true
+  # 导出器
+  exporter:
+    otlp:
+      protocol: http/protobuf
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}
+  # 资源属性
+  resource:
+    attributes:
+      service.namespace: minimax-platform
+      deployment.environment: ${SPRING_PROFILES_ACTIVE:dev}
+  # 采样率 (生产可降为 0.1)
+  traces:
+    sampler: parentbased_traceidratio
+    sampler.arg: 1.0
+  # 传播器
+  propagation:
+    - tracecontext
+    - baggage
+
+# =============================================================
+# V1.9.1: MiniMax 平台全局配置 (16 个微服务 + gateway 共用)
+# secret 直接写入 application.yml, mvn 打包后无需环境变量即可启动
+# =============================================================
+# =============================================================
+# V2.4 JWT Secret 安全规范
+# =============================================================
+# 1. 算法: HS256 (HMAC SHA-256), 要求 secret >= 256 bit (32 字节)
+# 2. 编码: 64 字符十六进制 (256 bit / 32 字节)
+# 3. 来源: openssl rand -hex 32 (加密随机源)
+# 4. 跨服务: 所有 16 个微服务必须用同一个 secret (HS256 跨服务验证)
+# 5. 验证: ls -la deploy-simple/generate-jwt-secret.sh 一键生成 + 替换
+# 6. 环境变量: 支持 MINIMAX_JWT_SECRET 覆盖 (生产环境推荐)
+# 7. 轮转: 重新生成后, 所有已签发 token 失效, 用户需重新登录
+# 8. 存储: 永远不要提交到 git (生成后用 .env 覆盖)
+# =============================================================
+minimax:
+  jwt:
+    # 统一 HMAC SHA-256 签名密钥 (64 字符 hex / 256 bit)
+    # 默认值: openssl rand -hex 32 生成
+    # 生产环境覆盖: MINIMAX_JWT_SECRET 环境变量
+    secret: ${MINIMAX_JWT_SECRET}  # 必须设置环境变量，不提供默认值
+    issuer: minimax-platform
+    header: Authorization
+    prefix: "Bearer "
+    # Token 过期时间
+    expire-minutes: 10080        # 7 天
+    refresh-expire-minutes: 43200  # 30 天
+  # 通用加密 key (AES / SM4 / 签名 / IV 派生)
+  # 默认值: openssl rand -hex 32 生成
+  # 生产环境覆盖: MINIMAX_COMMON_SECRET 环境变量
+  common:
+    secret: ${MINIMAX_COMMON_SECRET}  # 必须设置环境变量，不提供默认值

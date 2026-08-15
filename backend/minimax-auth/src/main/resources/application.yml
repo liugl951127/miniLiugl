@@ -1,0 +1,116 @@
+# =============================================================
+# auth 模块配置 (V5.4 重构后)
+# 公共配置在 application-common.yml, 这里只放模块特有配置
+# =============================================================
+
+server:
+  port: 8081
+  servlet:
+    context-path: /
+
+spring:
+  config:
+    import: classpath:application-common.yml
+
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://${MYSQL_HOST:127.0.0.1}:3306/minimax_platform?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:minimax_mariadb_2024}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASS}
+      database: 0
+      timeout: 3s
+      lettuce:
+        pool:
+          max-active: 16
+  mybatis-plus:
+    configuration:
+      map-underscore-to-camel-case: true
+    global-config:
+      db-config:
+        id-type: ASSIGN_ID
+        logic-delete-field: deleted
+    type-aliases-package: com.minimax.auth.entity  # V3.5.33+ 防御性限定
+    mapper-locations: classpath*:mapper/**/*.xml
+  application:
+    name: minimax-auth
+
+# 模块特殊配置 (保留原 minimax.* 块)
+minimax:
+  # (无特殊配置)
+
+# =============================================================
+# V5.7 Nacos 服务发现 (注册当前微服务, gateway 通过 lb:// 调用)
+# =============================================================
+spring.cloud.nacos:
+  discovery:
+    server-addr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
+    namespace: ${NACOS_NS:minimax-dev}
+    username: ${NACOS_USER}
+    password: ${NACOS_PASS}
+    register-enabled: true
+    metadata:
+      version: 5.7.0
+      group: minimax
+
+# =============================================================
+# V5.7 Resilience4j 熔断降级 (下游微服务挂掉时自动 fallback)
+# =============================================================
+resilience4j.circuitbreaker:
+  configs:
+    default:
+      slidingWindowSize: 10
+      minimumNumberOfCalls: 5
+      failureRateThreshold: 50
+      waitDurationInOpenState: 10s
+      permittedNumberOfCallsInHalfOpenState: 3
+      automaticTransitionFromOpenToHalfOpenEnabled: true
+      registerHealthIndicator: true
+  instances:
+    default:
+      baseConfig: default
+
+resilience4j.timelimiter:
+  configs:
+    default:
+      timeoutDuration: 5s
+  instances:
+    default:
+      baseConfig: default
+
+resilience4j.retry:
+  configs:
+    default:
+      maxAttempts: 3
+      waitDuration: 1s
+  instances:
+    default:
+      baseConfig: default
+
+# =============================================================
+# Swagger / Knife4j 配置
+# =============================================================
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+knife4j:
+  enable: true
+
+# V3.5.90+ OpenTelemetry trace (W3C traceparent, OTLP → collector → jaeger)
+# jvm-env (docker-compose) 注入 OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+otel:
+  metrics:
+    export:
+      interval: 30s
+  java:
+    global-autoconfigure:
+      enabled: true

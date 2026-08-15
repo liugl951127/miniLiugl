@@ -1,0 +1,17 @@
+{
+  "summary": {
+    "api_paths": {
+      "backend": 601,
+      "frontend": 22,
+      "matched": 22,
+      "unmatched": 0
+    },
+    "imports": {
+      "total": 606,
+      "broken": 0
+    }
+  },
+  "errors": [],
+  "warnings": [],
+  "unmatched_paths": []
+}

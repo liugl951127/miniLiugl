@@ -1,0 +1,2727 @@
+[
+  {
+    "method": "get",
+    "path": "admin/health",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "admin/ping",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "admin/stats/ops",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "admin/stats/dashboard",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/admin/users",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/admin/users/*",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/admin/users/*/reset-password",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "put",
+    "path": "/admin/users/*/status",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "admin/models/providers",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "admin/models",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "put",
+    "path": "/admin/models/*/rate-limit",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/admin/audit-ops/recent",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "admin/apikey/stats",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/admin/audit-ops/by-actor/*",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "&action=*",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "admin/governance/overview",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "admin/governance/timeline",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "admin/governance/anomalies",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "admin/governance/compliance",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "admin/governance/retention",
+    "files": [
+      "admin.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/training/llm/start",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/training/llm/status/*",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/training/llm/history/*",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/training/llm/list",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/training/llm/feedback",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/agent/run",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/agent/plan",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/agent/run-plan",
+    "files": [
+      "agent.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/generate",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/generate/stream",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/embed",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/similarity",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/tokenize",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/info",
+    "files": [
+      "ai.js",
+      "system.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/health",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/multimodal/image/upload",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/multimodal/audio/upload",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/multimodal/video/upload",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/multimodal/files",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/multimodal/file/*/info",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/multimodal/tts",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/multimodal/image/compare",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/multimodal/compliance/moderate-text",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/multimodal/compliance/refresh-sensitive-words",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/admin/tools",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/admin/tools/*",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/admin/tools/*/invoke",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/admin/datasources",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "put",
+    "path": "/ai/admin/datasources/*",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/admin/datasources/*/test",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/admin/codegen",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/chart/render",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/music/generate",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/dashboard/render",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/video/compose",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/route",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/dispatch",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/nl2chart",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/workflow/execute",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/workflow/validate",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/training/start",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/training/demo",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/training/tasks",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/training/tasks/*",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/training/tasks/*/history",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/image/generate",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/image/types",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/image/infer",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/video/stream/list",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/video/stream/*",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/video/stream/cancel/*",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/permission/me",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/permission/roles",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/permission/check",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/music/stream/list",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/music/stream/*",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/music/stream/cancel/*",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/admin/tools/invoke",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/admin/tools/file.convert/invoke",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/admin/tools/data.analyze.correlation/invoke",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/admin/tools/data.predict.linear/invoke",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/admin/tools/time.convert/invoke",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/admin/tools/image.generate/invoke",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/admin/tools/chart.generate/invoke",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/admin/tools/music.generate/invoke",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/admin/tools/java.project.gen/invoke",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/chat/sessions",
+    "files": [
+      "ai.js",
+      "session.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/chat/sessions/*",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/ppt/generate",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/ppt/auto",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/ppt/themes",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/ppt/parse",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/project/download",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/agent-group/auto/generate",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/agent-group/auto/template",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/agent-group/auto/templates",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/intent/predict",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/intent/predict/batch",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/intent/keyword",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/intent/phrase",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/intent/list",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/intent/stats",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/intent/benchmark",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/intent/config",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/intent/config/reset",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/intent/context/clear",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/cluster/nodes/list",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/cluster/nodes/active",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/cluster/nodes/*",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/cluster/me",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/cluster/leader",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/cluster/route",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/cluster/node/*/drain",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/cluster/stats",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/cluster/raft/start",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/cluster/raft/stop",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/cluster/raft/state",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/cluster/raft/leader",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/cluster/raft/submit",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/cluster/raft/applied",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/raft/append",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/raft/vote",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/raft/status",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/raft/log",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/raft/trigger-election",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/push/subscribe",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/push/unsubscribe",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/push/subscriptions",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/push/subscriptions/all",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/push/send/user",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/push/send/platform",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/push/send/broadcast",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/push/messages",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/push/stats",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/push/integration/auto",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/push/integration/apns",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/push/integration/fcm",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/push/integration/web",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/push/integration/health",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/push/integration/stats",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/push/integration/detect",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/push/integration/vapid-public-key",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/document/parse",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/document/keywords",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/document/formats",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/framework/agents/execute",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/framework/agents/route",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/framework/agents",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/framework/permission/list",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/framework/permission/grant",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/framework/permission/revoke",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/framework/permission/revoke-all",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/framework/memory/stats",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/framework/memory/clear",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/framework/products/search",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/rag/retrieve",
+    "files": [
+      "rag.js",
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/kb/public",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/rag/doc/upload",
+    "files": [
+      "rag.js",
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/kb/docs/*",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/kb/docs/list/*",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/kb/chunks/*",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/kb/stats/*",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/kb/permission/grant",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/kb/permission/revoke",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/dashboard/health",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/dashboard/stats",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/dashboard/recent",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/dashboard/metrics/*",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/dashboard/trend/*",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/dashboard/cache/clear",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/dashboard/cache/stats",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/dashboard/tools/top",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/dashboard/tools/track",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/dashboard/from-data",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/distributed/all-reduce",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/distributed/shard",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/distributed/shard/info",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/distributed/schedule",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/animation/text-fade",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/animation/progress",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/pipeline/config",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/pipeline/config/compute-mode",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/pipeline/execute",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/pipeline/intent/reload",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/pipeline/intent/stats",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/route/recognize",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/tools",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/tools/*/invoke",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/files",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/datasources",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/datasources/*/schema",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/datasources/*/test",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/datasources/*/query",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/video/from-data",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/train",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/webhooks",
+    "files": [
+      "ai.js",
+      "webhook.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/webhooks/*",
+    "files": [
+      "ai.js",
+      "webhook.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/webhooks/*/test",
+    "files": [
+      "ai.js",
+      "webhook.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/webhooks/*/deliveries",
+    "files": [
+      "ai.js",
+      "webhook.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/webhooks/publish",
+    "files": [
+      "ai.js",
+      "webhook.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/webhooks/events",
+    "files": [
+      "ai.js",
+      "webhook.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/webhooks/stats",
+    "files": [
+      "ai.js",
+      "webhook.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/chat",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/chat/voting",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/chat/voting-info",
+    "files": [
+      "ai.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/analytics/datasources",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/analytics/datasources/*",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/analytics/datasources/test",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/analytics/datasources/*/databases",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/analytics/datasources/*/databases/*/tables",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/analytics/datasources/*/databases/*/tables/*",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/analytics/datasources/*/databases/*/tables/*/profile",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/analytics/ingest/upload",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/analytics/ingest/tasks/*",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/analytics/ingest/tasks/*/quality",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/analytics/nlsql/ask",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/analytics/nlsql/explain",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/analytics/nlsql/feedback",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/analytics/nlsql/history",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/analytics/query/execute",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/analytics/query/dry-run",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/analytics/reports/generate",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/analytics/reports/*",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/voting/stats",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/voting/stats/trend",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/voting/records",
+    "files": [
+      "analytics.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/auth/apikeys",
+    "files": [
+      "apikey.js"
+    ]
+  },
+  {
+    "method": "patch",
+    "path": "/auth/apikeys/*/toggle",
+    "files": [
+      "apikey.js"
+    ]
+  },
+  {
+    "method": "delete",
+    "path": "/auth/apikeys/*",
+    "files": [
+      "apikey.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/auth/apikeys/*/rotate",
+    "files": [
+      "apikey.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/admin/stats/apikey",
+    "files": [
+      "apikey.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/admin/stats/apikey/trend",
+    "files": [
+      "apikey.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/auth/login",
+    "files": [
+      "auth.js",
+      "system.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/auth/register",
+    "files": [
+      "auth.js",
+      "system.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/auth/me",
+    "files": [
+      "auth.js",
+      "system.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/auth/refresh",
+    "files": [
+      "auth.js",
+      "system.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/auth/logout",
+    "files": [
+      "auth.js",
+      "system.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/autofill",
+    "files": [
+      "autofill.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/autofill/preview/*",
+    "files": [
+      "autofill.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/autofill/recommend/*/*",
+    "files": [
+      "autofill.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/autofill/feedback",
+    "files": [
+      "autofill.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/autofill/stats",
+    "files": [
+      "autofill.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/collab/rooms",
+    "files": [
+      "collab.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/collab/rooms/*",
+    "files": [
+      "collab.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/collab/rooms/public",
+    "files": [
+      "collab.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/collab/rooms/*/participants",
+    "files": [
+      "collab.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/collab/rooms/*/messages",
+    "files": [
+      "collab.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/function/tools/category/*",
+    "files": [
+      "function.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/function/tools",
+    "files": [
+      "function.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/function/tools/*",
+    "files": [
+      "function.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/function/tools/by-name/*",
+    "files": [
+      "function.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/function/invoke/*",
+    "files": [
+      "function.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/function/logs",
+    "files": [
+      "function.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/marketplace/agents",
+    "files": [
+      "marketplace.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/marketplace/agents/*",
+    "files": [
+      "marketplace.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/marketplace/agents/*/rate",
+    "files": [
+      "marketplace.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/marketplace/agents/*/ratings",
+    "files": [
+      "marketplace.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/marketplace/agents/*/use",
+    "files": [
+      "marketplace.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/marketplace/agents/*/approve",
+    "files": [
+      "marketplace.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/marketplace/my",
+    "files": [
+      "marketplace.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/marketplace/stats",
+    "files": [
+      "marketplace.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/memory/short-term/*",
+    "files": [
+      "memory.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/memory/short-term/*/size",
+    "files": [
+      "memory.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/memory/context/*",
+    "files": [
+      "memory.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/memory/cross-context",
+    "files": [
+      "memory.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/memory/summarize/*",
+    "files": [
+      "memory.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/memory/summary/*",
+    "files": [
+      "memory.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/memory/long-term",
+    "files": [
+      "memory.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/memory/long-term/recall",
+    "files": [
+      "memory.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/memory/long-term/recent",
+    "files": [
+      "memory.js"
+    ]
+  },
+  {
+    "method": "delete",
+    "path": "/memory/long-term/*",
+    "files": [
+      "memory.js"
+    ]
+  },
+  {
+    "method": "put",
+    "path": "/memory/pref/*",
+    "files": [
+      "memory.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/memory/pref",
+    "files": [
+      "memory.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/admin/models",
+    "files": [
+      "model.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/admin/models/providers",
+    "files": [
+      "model.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/models/chat",
+    "files": [
+      "model.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/models/chat/cancel",
+    "files": [
+      "model.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/model/providers/page",
+    "files": [
+      "model.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/model/providers/*",
+    "files": [
+      "model.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/model/providers",
+    "files": [
+      "model.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/model/providers/*/test",
+    "files": [
+      "model.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/leaderboard/overall",
+    "files": [
+      "model.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/leaderboard/latency",
+    "files": [
+      "model.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/leaderboard/recent",
+    "files": [
+      "model.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/leaderboard/categories",
+    "files": [
+      "model.js"
+    ]
+  },
+  {
+    "method": "fetch",
+    "path": "*/api/v1/models/chat/stream",
+    "files": [
+      "model.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/model-market/stats",
+    "files": [
+      "modelMarket.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/model-market/models",
+    "files": [
+      "modelMarket.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/model-market/models/*",
+    "files": [
+      "modelMarket.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/model-market/upload",
+    "files": [
+      "modelMarket.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/model-market/publish",
+    "files": [
+      "modelMarket.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/model-market/models/*/rate",
+    "files": [
+      "modelMarket.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/model-market/models/*/ratings",
+    "files": [
+      "modelMarket.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/model-market/my",
+    "files": [
+      "modelMarket.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/ai/model-market/models/*/status",
+    "files": [
+      "modelMarket.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/monitor/info",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/monitor/health",
+    "files": [
+      "monitor.js",
+      "system.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/monitor/health/jvm",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/monitor/health/database",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/monitor/health/disk",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/monitor/metrics",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/monitor/metrics/snapshot",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/monitor/alerts/firing",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/monitor/alerts/summary",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/monitor/alerts/rules",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "put",
+    "path": "/monitor/alerts/rules/*",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/monitor/alerts/rules/*/toggle",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/monitor/alerts/*/ack",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/monitor/alerts/*/silence",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/monitor/alerts/*/unsilence",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/monitor/alerts/rules/*/silence",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/monitor/alerts/rules/*/unsilence",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/monitor/alerts/channels",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/monitor/alerts/channels/*",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/monitor/alerts/channels/*/test",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/monitor/alerts/history",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/admin/audit/recent",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/admin/audit/by-actor/*",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/admin/audit/by-day",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/admin/audit/export",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/monitor/metrics/trend",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/agent/kg/entities/search",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/agent/kg/entities/*",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/agent/kg/entities/*/neighbors",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/agent/kg/entities/*/2hop",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/agent/kg/path",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/monitor/alerts/*/rca",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/monitor/anomaly/detect",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/monitor/anomaly/summary",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/monitor/anomaly/active-metrics",
+    "files": [
+      "monitor.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/multimodal/upload",
+    "files": [
+      "multimodal.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/multimodal/describe",
+    "files": [
+      "multimodal.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/multimodal/info",
+    "files": [
+      "multimodal.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/auth/notifications",
+    "files": [
+      "notification.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/auth/notifications/unread-count",
+    "files": [
+      "notification.js"
+    ]
+  },
+  {
+    "method": "put",
+    "path": "/auth/notifications/*/read",
+    "files": [
+      "notification.js"
+    ]
+  },
+  {
+    "method": "put",
+    "path": "/auth/notifications/read-all",
+    "files": [
+      "notification.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/pipeline/workflows",
+    "files": [
+      "pipeline.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/pipeline/workflows/*",
+    "files": [
+      "pipeline.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/pipeline/workflows/validate",
+    "files": [
+      "pipeline.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/pipeline/workflows/*/run",
+    "files": [
+      "pipeline.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/pipeline/workflows/*/runs",
+    "files": [
+      "pipeline.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/pipeline/runs/*",
+    "files": [
+      "pipeline.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/pipeline/runs/*/result",
+    "files": [
+      "pipeline.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/prompts/*",
+    "files": [
+      "prompt.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/prompts/*/use",
+    "files": [
+      "prompt.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/prompts/categories",
+    "files": [
+      "prompt.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/prompts/resolve",
+    "files": [
+      "prompt.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/rag/kb",
+    "files": [
+      "rag.js",
+      "system.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/rag/kb/public",
+    "files": [
+      "rag.js",
+      "system.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/rag/kb/*",
+    "files": [
+      "rag.js",
+      "system.js"
+    ]
+  },
+  {
+    "method": "put",
+    "path": "/rag/doc/*",
+    "files": [
+      "rag.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/rag/doc",
+    "files": [
+      "rag.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/rag/doc/*/chunks",
+    "files": [
+      "rag.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/rag/ask",
+    "files": [
+      "rag.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/sessions/*",
+    "files": [
+      "session.js",
+      "system.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/sessions/*/messages",
+    "files": [
+      "session.js",
+      "system.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/sessions/stop-stream",
+    "files": [
+      "session.js",
+      "system.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/sessions",
+    "files": [
+      "system.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/sessions/stream-status/*",
+    "files": [
+      "system.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/auth/tenants",
+    "files": [
+      "tenant.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/auth/tenants/*",
+    "files": [
+      "tenant.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/auth/tenants/*/status",
+    "files": [
+      "tenant.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/auth/tenants/*/quota",
+    "files": [
+      "tenant.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/auth/tenants/*/users",
+    "files": [
+      "tenant.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/auth/me/tenant",
+    "files": [
+      "tenant.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/tensorboard/runs",
+    "files": [
+      "tensorboard.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/tensorboard/runs/*/tags",
+    "files": [
+      "tensorboard.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/tensorboard/runs/*/scalars/*",
+    "files": [
+      "tensorboard.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/tensorboard/runs/*/events",
+    "files": [
+      "tensorboard.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/tensorboard/runs/*/stats/*",
+    "files": [
+      "tensorboard.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/tensorboard/runs/*/histogram/*",
+    "files": [
+      "tensorboard.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/tensorboard/runs/compare",
+    "files": [
+      "tensorboard.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/tensorboard/health",
+    "files": [
+      "tensorboard.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/training/models",
+    "files": [
+      "training.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/training/tasks",
+    "files": [
+      "training.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/training/tasks/*",
+    "files": [
+      "training.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/training/tasks/*/cancel",
+    "files": [
+      "training.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/ai/webhooks/deliveries",
+    "files": [
+      "webhook.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/auth/wechat/qrcode",
+    "files": [
+      "wechat.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/auth/wechat/status",
+    "files": [
+      "wechat.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/auth/wechat/mock-scan",
+    "files": [
+      "wechat.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/auth/wechat/mobile-login",
+    "files": [
+      "wechat.js"
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/auth/wechat/binding/me",
+    "files": [
+      "wechat.js"
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/auth/admin/wechat/bind",
+    "files": [
+      "wechat.js"
+    ]
+  },
+  {
+    "method": "delete",
+    "path": "/auth/admin/wechat/bind/*",
+    "files": [
+      "wechat.js"
+    ]
+  }
+]

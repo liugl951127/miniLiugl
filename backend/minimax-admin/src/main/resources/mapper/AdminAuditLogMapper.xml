@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.minimax.admin.mapper.AdminAuditLogMapper">
+
+    <resultMap id="logMap" type="com.minimax.admin.entity.AdminAuditLog">
+        <id     property="id"            column="id"/>
+        <result property="actorId"       column="actor_id"/>
+        <result property="actorName"     column="actor_name"/>
+        <result property="action"        column="action"/>
+        <result property="resourceType"  column="resource_type"/>
+        <result property="resourceId"    column="resource_id"/>
+        <result property="detail"        column="detail"/>
+        <result property="result"        column="result"/>
+        <result property="errorMsg"      column="error_msg"/>
+        <result property="ip"            column="ip"/>
+        <result property="userAgent"     column="user_agent"/>
+        <result property="createdAt"     column="created_at"/>
+    </resultMap>
+
+    <select id="selectByActor" resultMap="logMap">
+        SELECT * FROM admin_audit_log
+        WHERE actor_id = #{actorId}
+        ORDER BY created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectRecent" resultMap="logMap">
+        SELECT * FROM admin_audit_log
+        ORDER BY created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="countByAction" resultType="java.util.LinkedHashMap">
+        SELECT action, COUNT(*) AS cnt
+        FROM admin_audit_log
+        <if test="since != null and since != ''">
+        WHERE created_at &gt;= #{since}
+        </if>
+        GROUP BY action
+        ORDER BY cnt DESC
+    </select>
+
+    <select id="countByResourceType" resultType="java.util.LinkedHashMap">
+        SELECT resource_type, COUNT(*) AS cnt
+        FROM admin_audit_log
+        <if test="since != null and since != ''">
+        WHERE created_at &gt;= #{since}
+        </if>
+        GROUP BY resource_type
+        ORDER BY cnt DESC
+    </select>
+
+    <!-- V5.9: 按天统计, 返回 [{day:'2026-06-15', cnt:12}, ...] -->
+    <select id="countByDay" resultType="java.util.LinkedHashMap">
+        SELECT DATE(created_at) AS stat_day, COUNT(*) AS cnt
+        FROM admin_audit_log
+        <where>
+            <if test="since != null and since != ''">created_at &gt;= #{since}</if>
+            <if test="action != null and action != ''">AND action = #{action}</if>
+        </where>
+        GROUP BY DATE(created_at)
+        ORDER BY stat_day ASC
+    </select>
+
+    <!-- V6.8: 按小时统计, 返回 [{hour:'2026-08-12 14:00', cnt:45}, ...] -->
+    <select id="countByHour" resultType="java.util.LinkedHashMap">
+        SELECT DATE_FORMAT(created_at, '%Y-%m-%d %H:00') AS stat_hour, COUNT(*) AS cnt
+        FROM admin_audit_log
+        <where>
+            <if test="since != null and since != ''">created_at &gt;= #{since}</if>
+        </where>
+        GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d %H:00')
+        ORDER BY stat_hour ASC
+    </select>
+</mapper>

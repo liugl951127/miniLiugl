@@ -1,0 +1,257 @@
+{
+  "minimax-admin/src/main/java/com/minimax/admin/client/ServiceClient.java": [
+    "圆括号不匹配: ( 111 个, ) 114 个, 差 -3"
+  ],
+  "minimax-admin/src/main/java/com/minimax/admin/config/SecurityConfig.java": [
+    "块注释不闭合: /* 3 个, */ 0 个"
+  ],
+  "minimax-admin/src/main/java/com/minimax/admin/service/UserMgmtService.java": [
+    "圆括号不匹配: ( 69 个, ) 71 个, 差 -2"
+  ],
+  "minimax-agent/src/main/java/com/minimax/agent/config/SecurityConfig.java": [
+    "块注释不闭合: /* 3 个, */ 0 个"
+  ],
+  "minimax-agent/src/main/java/com/minimax/agent/config/WebSocketConfig.java": [
+    "块注释不闭合: /* 4 个, */ 1 个"
+  ],
+  "minimax-agent/src/main/java/com/minimax/agent/service/AgentService.java": [
+    "圆括号不匹配: ( 478 个, ) 487 个, 差 -9"
+  ],
+  "minimax-agent/src/main/java/com/minimax/agent/service/MultiAgentService.java": [
+    "圆括号不匹配: ( 261 个, ) 264 个, 差 -3",
+    "双引号不成对: 279 个"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/codegen/ProjectCodeGenerator.java": [
+    "块注释不闭合: /* 14 个, */ 16 个"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/codegen/ProjectPackager.java": [
+    "圆括号不匹配: ( 344 个, ) 348 个, 差 -4",
+    "块注释不闭合: /* 11 个, */ 8 个"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/codegen/SchemaCodeGenTool.java": [
+    "块注释不闭合: /* 4 个, */ 2 个"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/compliance/DataMasker.java": [
+    "大括号不匹配: { 32 个, } 33 个, 差 -1"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/config/AiSecurityConfig.java": [
+    "块注释不闭合: /* 4 个, */ 3 个"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/controller/AiAdminRealController.java": [
+    "块注释不闭合: /* 11 个, */ 10 个"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/controller/AiAutoFillController.java": [
+    "缺少 package 声明"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/controller/AiChatRealController.java": [
+    "块注释不闭合: /* 9 个, */ 8 个"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/controller/AiIntentRealController.java": [
+    "块注释不闭合: /* 6 个, */ 5 个"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/controller/AiTrainingRealController.java": [
+    "块注释不闭合: /* 9 个, */ 8 个"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/controller/MissingAiController.java": [
+    "块注释不闭合: /* 5 个, */ 1 个",
+    "缺少 package 声明"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/datasource/DynamicDataSource.java": [
+    "块注释不闭合: /* 21 个, */ 20 个"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/distributed/DataSharder.java": [
+    "圆括号不匹配: ( 104 个, ) 111 个, 差 -7",
+    "方括号不匹配: [ 43 个, ] 36 个, 差 7"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/generation/model/NgramModel.java": [
+    "双引号不成对: 333 个"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/intent/MultiModelVotingService.java": [
+    "双引号不成对: 113 个"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/intent/NegationHandler.java": [
+    "圆括号不匹配: ( 60 个, ) 63 个, 差 -3",
+    "方括号不匹配: [ 5 个, ] 2 个, 差 3"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/intent/NgramExtractor.java": [
+    "圆括号不匹配: ( 58 个, ) 59 个, 差 -1",
+    "方括号不匹配: [ 2 个, ] 1 个, 差 1"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/model/MiniTransformer.java": [
+    "圆括号不匹配: ( 191 个, ) 192 个, 差 -1",
+    "方括号不匹配: [ 165 个, ] 164 个, 差 1"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/nlp/SentimentAnalyzer.java": [
+    "双引号不成对: 319 个"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/push/integration/ApnsProvider.java": [
+    "大括号不匹配: { 42 个, } 43 个, 差 -1"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/push/integration/FcmProvider.java": [
+    "圆括号不匹配: ( 191 个, ) 194 个, 差 -3"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/raft/RaftRpcClient.java": [
+    "块注释不闭合: /* 4 个, */ 3 个"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/tokenizer/ChineseTokenizer.java": [
+    "双引号不成对: 99 个"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/tool/builtin/FileConverterTool.java": [
+    "方括号不匹配: [ 6 个, ] 4 个, 差 2",
+    "双引号不成对: 195 个"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/tool/builtin/PptGenTool.java": [
+    "双引号不成对: 59 个"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/tool/builtin/TextSummaryTool.java": [
+    "双引号不成对: 231 个"
+  ],
+  "minimax-ai/src/main/java/com/minimax/ai/tool/builtin/ppt/OutlineParser.java": [
+    "大括号不匹配: { 39 个, } 40 个, 差 -1",
+    "方括号不匹配: [ 19 个, ] 20 个, 差 -1"
+  ],
+  "minimax-analytics/src/main/java/com/minimax/analytics/service/ingest/parser/JsonParser.java": [
+    "方括号不匹配: [ 2 个, ] 1 个, 差 1"
+  ],
+  "minimax-analytics/src/main/java/com/minimax/analytics/service/ingest/parser/LogParser.java": [
+    "方括号不匹配: [ 8 个, ] 9 个, 差 -1",
+    "双引号不成对: 83 个"
+  ],
+  "minimax-analytics/src/main/java/com/minimax/analytics/service/nlsql/SqlSafetyChecker.java": [
+    "圆括号不匹配: ( 85 个, ) 84 个, 差 1",
+    "双引号不成对: 91 个"
+  ],
+  "minimax-auth/src/main/java/com/minimax/auth/package-info.java": [
+    "缺少 package 声明"
+  ],
+  "minimax-auth/src/main/java/com/minimax/auth/config/SecurityConfig.java": [
+    "块注释不闭合: /* 9 个, */ 0 个"
+  ],
+  "minimax-auth/src/main/java/com/minimax/auth/config/WebMvcConfig.java": [
+    "块注释不闭合: /* 2 个, */ 0 个"
+  ],
+  "minimax-auth/src/main/java/com/minimax/auth/wechat/WechatUnionidService.java": [
+    "圆括号不匹配: ( 209 个, ) 211 个, 差 -2"
+  ],
+  "minimax-chat/src/main/java/com/minimax/chat/package-info.java": [
+    "缺少 package 声明"
+  ],
+  "minimax-chat/src/main/java/com/minimax/chat/config/SecurityConfig.java": [
+    "块注释不闭合: /* 3 个, */ 0 个"
+  ],
+  "minimax-chat/src/main/java/com/minimax/chat/controller/MessageController.java": [
+    "双引号不成对: 113 个"
+  ],
+  "minimax-chat/src/main/java/com/minimax/chat/memory/SessionContextCache.java": [
+    "圆括号不匹配: ( 50 个, ) 52 个, 差 -2"
+  ],
+  "minimax-chat/src/main/java/com/minimax/chat/memory_ext/config/MemorySecurityConfig.java": [
+    "块注释不闭合: /* 3 个, */ 0 个"
+  ],
+  "minimax-chat/src/main/java/com/minimax/chat/memory_ext/context/ContextBuilder.java": [
+    "圆括号不匹配: ( 39 个, ) 44 个, 差 -5"
+  ],
+  "minimax-chat/src/main/java/com/minimax/chat/memory_ext/context/CrossSessionContextBuilder.java": [
+    "圆括号不匹配: ( 75 个, ) 85 个, 差 -10"
+  ],
+  "minimax-chat/src/main/java/com/minimax/chat/memory_ext/embedding/MockEmbeddingClient.java": [
+    "圆括号不匹配: ( 36 个, ) 40 个, 差 -4"
+  ],
+  "minimax-chat/src/main/java/com/minimax/chat/memory_ext/summary/LlmSummarizer.java": [
+    "圆括号不匹配: ( 89 个, ) 91 个, 差 -2"
+  ],
+  "minimax-chat/src/main/java/com/minimax/chat/memory_ext/summary/Summarizer.java": [
+    "圆括号不匹配: ( 35 个, ) 39 个, 差 -4"
+  ],
+  "minimax-common/src/main/java/com/minimax/common/result/Result.java": [
+    "缺少 package 声明"
+  ],
+  "minimax-common/src/main/java/com/minimax/common/security/JwtAuthenticationFilter.java": [
+    "缺少 package 声明"
+  ],
+  "minimax-common/src/main/java/com/minimax/common/web/GlobalMissingController.java": [
+    "块注释不闭合: /* 17 个, */ 1 个",
+    "缺少 package 声明"
+  ],
+  "minimax-gateway/src/main/java/com/minimax/gateway/GatewayApplication.java": [
+    "块注释不闭合: /* 4 个, */ 2 个",
+    "缺少 package 声明"
+  ],
+  "minimax-gateway/src/main/java/com/minimax/gateway/fallback/FallbackController.java": [
+    "块注释不闭合: /* 2 个, */ 1 个"
+  ],
+  "minimax-gateway/src/main/java/com/minimax/gateway/filter/ApiKeyRateLimitResolver.java": [
+    "圆括号不匹配: ( 53 个, ) 56 个, 差 -3"
+  ],
+  "minimax-gateway/src/main/java/com/minimax/gateway/filter/JwtAuthGlobalFilter.java": [
+    "块注释不闭合: /* 20 个, */ 17 个",
+    "缺少 package 声明"
+  ],
+  "minimax-gateway/src/main/java/com/minimax/gateway/filter/TraceFilter.java": [
+    "缺少 package 声明"
+  ],
+  "minimax-model/src/main/java/com/minimax/model/package-info.java": [
+    "缺少 package 声明"
+  ],
+  "minimax-model/src/main/java/com/minimax/model/config/SecurityConfig.java": [
+    "块注释不闭合: /* 13 个, */ 0 个"
+  ],
+  "minimax-model/src/main/java/com/minimax/model/prompt/config/PromptSecurityConfig.java": [
+    "块注释不闭合: /* 3 个, */ 0 个"
+  ],
+  "minimax-model/src/main/java/com/minimax/model/prompt/service/PromptTemplateService.java": [
+    "大括号不匹配: { 66 个, } 67 个, 差 -1"
+  ],
+  "minimax-model/src/main/java/com/minimax/model/service/ApiKeyProviderService.java": [
+    "圆括号不匹配: ( 84 个, ) 87 个, 差 -3"
+  ],
+  "minimax-monitor/src/main/java/com/minimax/monitor/alert/AlertEngine.java": [
+    "圆括号不匹配: ( 308 个, ) 312 个, 差 -4"
+  ],
+  "minimax-monitor/src/main/java/com/minimax/monitor/config/SecurityConfig.java": [
+    "块注释不闭合: /* 3 个, */ 0 个"
+  ],
+  "minimax-multimodal/src/main/java/com/minimax/multimodal/config/SecurityConfig.java": [
+    "块注释不闭合: /* 3 个, */ 0 个"
+  ],
+  "minimax-pipeline/src/main/java/com/minimax/pipeline/function_ext/builtin/CalculatorTool.java": [
+    "圆括号不匹配: ( 186 个, ) 188 个, 差 -2",
+    "块注释不闭合: /* 1 个, */ 2 个",
+    "双引号不成对: 141 个"
+  ],
+  "minimax-pipeline/src/main/java/com/minimax/pipeline/function_ext/builtin/HttpGetTool.java": [
+    "双引号不成对: 99 个"
+  ],
+  "minimax-pipeline/src/main/java/com/minimax/pipeline/function_ext/config/FunctionSecurityConfig.java": [
+    "块注释不闭合: /* 3 个, */ 0 个"
+  ],
+  "minimax-pipeline/src/main/java/com/minimax/pipeline/function_ext/executor/ToolExecutor.java": [
+    "圆括号不匹配: ( 100 个, ) 105 个, 差 -5",
+    "双引号不成对: 53 个"
+  ],
+  "minimax-pipeline/src/main/java/com/minimax/pipeline/function_ext/service/FunctionCallService.java": [
+    "圆括号不匹配: ( 217 个, ) 225 个, 差 -8",
+    "双引号不成对: 181 个"
+  ],
+  "minimax-rag/src/main/java/com/minimax/rag/package-info.java": [
+    "缺少 package 声明"
+  ],
+  "minimax-rag/src/main/java/com/minimax/rag/chunker/TextChunker.java": [
+    "圆括号不匹配: ( 76 个, ) 79 个, 差 -3"
+  ],
+  "minimax-rag/src/main/java/com/minimax/rag/config/SecurityConfig.java": [
+    "块注释不闭合: /* 3 个, */ 0 个"
+  ],
+  "minimax-rag/src/main/java/com/minimax/rag/retriever/Retriever.java": [
+    "圆括号不匹配: ( 51 个, ) 56 个, 差 -5"
+  ],
+  "minimax-rag/src/main/java/com/minimax/rag/service/DocumentService.java": [
+    "圆括号不匹配: ( 130 个, ) 143 个, 差 -13"
+  ],
+  "minimax-rag/src/main/java/com/minimax/rag/service/RagService.java": [
+    "圆括号不匹配: ( 153 个, ) 162 个, 差 -9"
+  ],
+  "minimax-ws/src/main/java/com/minimax/ws/handler/BidirectionalStreamHandler.java": [
+    "圆括号不匹配: ( 210 个, ) 212 个, 差 -2"
+  ]
+}

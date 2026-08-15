@@ -1,0 +1,3 @@
+# MiniMax Platform — 公共配置桩 (V6.8.2)
+# 各服务共享的通用配置
+# 沙箱模式下通过 application-h2local.yml 覆盖

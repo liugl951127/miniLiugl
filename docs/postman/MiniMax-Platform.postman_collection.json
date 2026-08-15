@@ -1,0 +1,568 @@
+{
+  "info": {
+    "name": "MiniMax AI Platform",
+    "description": "MiniMax 大模型平台 API 完整测试集（V5.9）。\n\n## 快速开始\n1. 先调用 `Auth > Login` 获取 Token\n2. 自动填充全局变量 `{{accessToken}}`\n3. 所有需鉴权的请求会自动携带 `Authorization: Bearer {{accessToken}}`\n\n## 环境变量\n| Variable | Value | 说明 |\n|----------|-------|------|\n| baseUrl | http://localhost:7080 | Gateway 地址 |\n| accessToken | | 登录后自动填充 |\n| refreshToken | | 登录后自动填充 |\n| userId | 1 | 当前用户 ID |\n| sessionId | | 会话 ID（创建后自动填充）|\n| kbId | | 知识库 ID |\n| toolId | | 工具 ID |\n\n## 限流提示\n- 默认公开端点无需 Token\n- 管理端点需 ADMIN 角色 Token\n- 聊天端点默认 60 req/min",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:7080"},
+    {"key": "accessToken", "value": ""},
+    {"key": "refreshToken", "value": ""},
+    {"key": "userId", "value": "1"},
+    {"key": "sessionId", "value": ""},
+    {"key": "kbId", "value": ""},
+    {"key": "toolId", "value": ""},
+    {"key": "apiKey", "value": ""}
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{"key": "token", "value": "{{accessToken}}", "type": "string"}]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "登录",
+          "event": [
+            {"listen": "test", "script": {"exec": [
+              "if (pm.response.code === 200) {",
+              "  var jsonData = pm.response.json();",
+              "  if (jsonData.data && jsonData.data.accessToken) {",
+              "    pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
+              "    pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);",
+              "    if (jsonData.data.userInfo) {",
+              "      pm.collectionVariables.set('userId', jsonData.data.userInfo.id);",
+              "    }",
+              "  }",
+              "}",
+              "pm.test('登录成功 code=0', function() {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData.code).to.eql(0);",
+              "});",
+              "pm.test('返回 accessToken', function() {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData.data.accessToken).to.be.a('string');",
+              "});"
+            ]}}
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {"mode": "raw", "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin@123\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{baseUrl}}/api/v1/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "login"]}
+          },
+          "response": []
+        },
+        {
+          "name": "注册",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {"mode": "raw", "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"Test@123456\",\n  \"nickname\": \"TestUser\",\n  \"email\": \"test@example.com\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{baseUrl}}/api/v1/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "register"]}
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token 续期",
+          "event": [
+            {"listen": "test", "script": {"exec": [
+              "if (pm.response.code === 200) {",
+              "  var jsonData = pm.response.json();",
+              "  if (jsonData.data && jsonData.data.accessToken) {",
+              "    pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
+              "  }",
+              "}"
+            ]}}
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {"mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{baseUrl}}/api/v1/auth/refresh", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "refresh"]}
+          },
+          "response": []
+        },
+        {
+          "name": "当前用户信息",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "me"]}
+          },
+          "response": []
+        },
+        {
+          "name": "用户列表（admin）",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/auth/users?page=1&size=20", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "users"], "query": [{"key": "page", "value": "1"}, {"key": "size", "value": "20"}]},
+          },
+          "response": []
+        },
+        {
+          "name": "登出",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "logout"]}
+          },
+          "response": []
+        },
+        {
+          "name": "健康检查（公开）",
+          "request": {
+            "auth": {"type": "noauth"},
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/auth/health", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "health"]}
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Chat",
+      "item": [
+        {
+          "name": "创建会话",
+          "event": [
+            {"listen": "test", "script": {"exec": [
+              "if (pm.response.code === 200) {",
+              "  var jsonData = pm.response.json();",
+              "  if (jsonData.data && jsonData.data.id) {",
+              "    pm.collectionVariables.set('sessionId', jsonData.data.id);",
+              "  }",
+              "}",
+              "pm.test('创建会话成功', function() {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData.code).to.eql(0);",
+              "  pm.expect(jsonData.data).to.have.property('id');",
+              "});"
+            ]}}
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {"mode": "raw", "raw": "{\n  \"title\": \"测试对话\",\n  \"modelCode\": \"gpt-4o\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{baseUrl}}/api/v1/sessions", "host": ["{{baseUrl}}"], "path": ["api", "v1", "sessions"]}
+          },
+          "response": []
+        },
+        {
+          "name": "会话列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/sessions?page=1&size=20", "host": ["{{baseUrl}}"], "path": ["api", "v1", "sessions"], "query": [{"key": "page", "value": "1"}, {"key": "size", "value": "20"}]}
+          },
+          "response": []
+        },
+        {
+          "name": "获取会话详情",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/sessions/{{sessionId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "sessions", "{{sessionId}}"]}
+          },
+          "response": []
+        },
+        {
+          "name": "发消息（非流式）",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {"mode": "raw", "raw": "{\n  \"role\": \"user\",\n  \"content\": \"你好，介绍一下你自己\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{baseUrl}}/api/v1/sessions/{{sessionId}}/messages", "host": ["{{baseUrl}}"], "path": ["api", "v1", "sessions", "{{sessionId}}", "messages"]}
+          },
+          "response": []
+        },
+        {
+          "name": "会话消息列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/sessions/{{sessionId}}/messages", "host": ["{{baseUrl}}"], "path": ["api", "v1", "sessions", "{{sessionId}}", "messages"]}
+          },
+          "response": []
+        },
+        {
+          "name": "删除会话",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/sessions/{{sessionId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "sessions", "{{sessionId}}"]}
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Model",
+      "item": [
+        {
+          "name": "模型列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/models", "host": ["{{baseUrl}}"], "path": ["api", "v1", "models"]}
+          },
+          "response": []
+        },
+        {
+          "name": "Provider 列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/models/providers", "host": ["{{baseUrl}}"], "path": ["api", "v1", "models", "providers"]}
+          },
+          "response": []
+        },
+        {
+          "name": "Chat（非流式）",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {"mode": "raw", "raw": "{\n  \"model\": \"gpt-4o\",\n  \"messages\": [\n    {\"role\": \"user\", \"content\": \"你好\"}\n  ],\n  \"temperature\": 0.7,\n  \"maxTokens\": 512\n}", "options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{baseUrl}}/api/v1/models/chat", "host": ["{{baseUrl}}"], "path": ["api", "v1", "models", "chat"]}
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Memory",
+      "item": [
+        {
+          "name": "追加短期记忆",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {"mode": "raw", "raw": "{\n  \"content\": \"用户喜欢川菜\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{baseUrl}}/api/v1/memory/short-term/{{sessionId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "memory", "short-term", "{{sessionId}}"]}
+          },
+          "response": []
+        },
+        {
+          "name": "拉取短期记忆",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/memory/short-term/{{sessionId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "memory", "short-term", "{{sessionId}}"]}
+          },
+          "response": []
+        },
+        {
+          "name": "存储长期记忆",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {"mode": "raw", "raw": "{\n  \"userId\": 1,\n  \"sessionId\": {{sessionId}},\n  \"role\": \"user\",\n  \"content\": \"我喜欢川菜\",\n  \"tags\": \"food\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{baseUrl}}/api/v1/memory/long-term", "host": ["{{baseUrl}}"], "path": ["api", "v1", "memory", "long-term"]}
+          },
+          "response": []
+        },
+        {
+          "name": "召回长期记忆",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {"mode": "raw", "raw": "{\n  \"userId\": 1,\n  \"query\": \"宠物\",\n  \"topK\": 5\n}", "options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{baseUrl}}/api/v1/memory/long-term/recall", "host": ["{{baseUrl}}"], "path": ["api", "v1", "memory", "long-term", "recall"]}
+          },
+          "response": []
+        },
+        {
+          "name": "设置用户偏好",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {"mode": "raw", "raw": "{\n  \"value\": \"dark\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{baseUrl}}/api/v1/memory/pref/theme?userId=1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "memory", "pref", "theme"], "query": [{"key": "userId", "value": "1"}]}
+          },
+          "response": []
+        },
+        {
+          "name": "读取用户偏好",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/memory/pref/theme?userId=1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "memory", "pref", "theme"], "query": [{"key": "userId", "value": "1"}]}
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "RAG",
+      "item": [
+        {
+          "name": "创建知识库",
+          "event": [
+            {"listen": "test", "script": {"exec": [
+              "if (pm.response.code === 200) {",
+              "  var jsonData = pm.response.json();",
+              "  if (jsonData.data && jsonData.data.id) {",
+              "    pm.collectionVariables.set('kbId', jsonData.data.id);",
+              "  }",
+              "}"
+            ]}}
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"产品手册\",\n  \"description\": \"公司产品介绍文档\",\n  \"isPublic\": false\n}", "options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{baseUrl}}/api/v1/rag/kb", "host": ["{{baseUrl}}"], "path": ["api", "v1", "rag", "kb"]}
+          },
+          "response": []
+        },
+        {
+          "name": "知识库列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/rag/kb?ownerId=1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "rag", "kb"], "query": [{"key": "ownerId", "value": "1"}]}
+          },
+          "response": []
+        },
+        {
+          "name": "RAG 问答",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {"mode": "raw", "raw": "{\n  \"kbId\": {{kbId}},\n  \"question\": \"支付方式有哪些?\",\n  \"topK\": 5\n}", "options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{baseUrl}}/api/v1/rag/ask", "host": ["{{baseUrl}}"], "path": ["api", "v1", "rag", "ask"]}
+          },
+          "response": []
+        },
+        {
+          "name": "纯检索",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {"mode": "raw", "raw": "{\n  \"kbId\": {{kbId}},\n  \"query\": \"退款政策\",\n  \"topK\": 3\n}", "options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{baseUrl}}/api/v1/rag/retrieve", "host": ["{{baseUrl}}"], "path": ["api", "v1", "rag", "retrieve"]}
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Function",
+      "item": [
+        {
+          "name": "工具列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/function/tools", "host": ["{{baseUrl}}"], "path": ["api", "v1", "function", "tools"]}
+          },
+          "response": []
+        },
+        {
+          "name": "注册工具",
+          "event": [
+            {"listen": "test", "script": {"exec": [
+              "if (pm.response.code === 200) {",
+              "  var jsonData = pm.response.json();",
+              "  if (jsonData.data && jsonData.data.id) {",
+              "    pm.collectionVariables.set('toolId', jsonData.data.id);",
+              "  }",
+              "}"
+            ]}}
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"get_current_time\",\n  \"displayName\": \"获取当前时间\",\n  \"description\": \"返回当前时间\",\n  \"parameters\": \"{\\\"type\\\":\\\"object\\\",\\\"properties\\\":{\\\"timezone\\\":{\\\"type\\\":\\\"string\\\"}},\\\"required\\\":[]}\",\n  \"endpoint\": \"http://localhost:8086/tool/time\",\n  \"httpMethod\": \"GET\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{baseUrl}}/api/v1/function/tools?ownerId=1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "function", "tools"], "query": [{"key": "ownerId", "value": "1"}]}
+          },
+          "response": []
+        },
+        {
+          "name": "Chat + 工具调用",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {"mode": "raw", "raw": "{\n  \"userId\": 1,\n  \"message\": \"上海现在几点?\",\n  \"enableTools\": true,\n  \"toolNames\": [\"get_current_time\"]\n}", "options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{baseUrl}}/api/v1/function/chat", "host": ["{{baseUrl}}"], "path": ["api", "v1", "function", "chat"]}
+          },
+          "response": []
+        },
+        {
+          "name": "调用历史",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/function/logs?userId=1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "function", "logs"], "query": [{"key": "userId", "value": "1"}]}
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "跨服务健康检查",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/admin/health", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "health"]}
+          },
+          "response": []
+        },
+        {
+          "name": "Ping",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/admin/ping", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "ping"]}
+          },
+          "response": []
+        },
+        {
+          "name": "运营统计",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/admin/stats/ops", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "stats", "ops"]}
+          },
+          "response": []
+        },
+        {
+          "name": "Dashboard 数据",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/admin/stats/dashboard", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "stats", "dashboard"]}
+          },
+          "response": []
+        },
+        {
+          "name": "API Key 配额统计",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/admin/apikey/stats", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "apikey", "stats"]}
+          },
+          "response": []
+        },
+        {
+          "name": "审计日志（最近）",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/admin/audit/recent?limit=50", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "audit", "recent"], "query": [{"key": "limit", "value": "50"}]}
+          },
+          "response": []
+        },
+        {
+          "name": "用户管理列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/admin/users?page=1&size=20", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "users"], "query": [{"key": "page", "value": "1"}, {"key": "size", "value": "20"}]}
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Monitor",
+      "item": [
+        {
+          "name": "深度健康检查",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/monitor/health", "host": ["{{baseUrl}}"], "path": ["api", "v1", "monitor", "health"]}
+          },
+          "response": []
+        },
+        {
+          "name": "JVM 健康",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/monitor/health/jvm", "host": ["{{baseUrl}}"], "path": ["api", "v1", "monitor", "health", "jvm"]}
+          },
+          "response": []
+        },
+        {
+          "name": "数据库健康",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/monitor/health/database", "host": ["{{baseUrl}}"], "path": ["api", "v1", "monitor", "health", "database"]}
+          },
+          "response": []
+        },
+        {
+          "name": "业务指标",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/monitor/metrics", "host": ["{{baseUrl}}"], "path": ["api", "v1", "monitor", "metrics"]}
+          },
+          "response": []
+        },
+        {
+          "name": "告警摘要",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/monitor/alerts/summary", "host": ["{{baseUrl}}"], "path": ["api", "v1", "monitor", "alerts", "summary"]}
+          },
+          "response": []
+        },
+        {
+          "name": "Actuator 健康（公开）",
+          "request": {
+            "auth": {"type": "noauth"},
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/actuator/health", "host": ["{{baseUrl}}"], "path": ["actuator", "health"]}
+          },
+          "response": []
+        },
+        {
+          "name": "Actuator Prometheus 指标（公开）",
+          "request": {
+            "auth": {"type": "noauth"},
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/actuator/prometheus", "host": ["{{baseUrl}}"], "path": ["actuator", "prometheus"]}
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Multimodal",
+      "item": [
+        {
+          "name": "图片理解",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {"mode": "raw", "raw": "{\n  \"imageBase64\": \"BASE64_ENCODED_IMAGE\",\n  \"mimeType\": \"image/png\",\n  \"prompt\": \"描述这张图\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{baseUrl}}/api/v1/multimodal/describe", "host": ["{{baseUrl}}"], "path": ["api", "v1", "multimodal", "describe"]}
+          },
+          "response": []
+        },
+        {
+          "name": "多模态模型信息",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/multimodal/info", "host": ["{{baseUrl}}"], "path": ["api", "v1", "multimodal", "info"]}
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
