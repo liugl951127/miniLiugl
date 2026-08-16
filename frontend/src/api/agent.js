@@ -2,6 +2,7 @@
  * Agent API (V6.4 画布运行, V7.0 Flow②)
  */
 import http from './http'
+import { useUserStore } from '@/store/user'
 
 // V6.9: 统一 API 基础路径 → vite proxy → backend:8090
 const AGENT_BASE = '/api/v1/agent'
@@ -42,7 +43,9 @@ export const multiAgentApi = {
    *          critic-result / critic-retry / final / done / error
    */
   xhrStream(params, onEvent) {
-    const token = localStorage.getItem('token') || ''
+    // V6.9: 用 Pinia userStore（和 axios 拦截器一致），不用 localStorage.getItem('token')
+    const userStore = useUserStore()
+    const token = userStore.accessToken || ''
     return fetch(`${AGENT_BASE}/multi/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },

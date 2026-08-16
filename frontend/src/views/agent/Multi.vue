@@ -369,8 +369,16 @@ async function startMulti() {
       handleSSEEvent
     )
   } catch (e) {
-    if (e.name !== 'AbortError') {
-      pushLog('error', { message: e.message || 'SSE 连接失败' })
+    if (e.name === 'AbortError') return
+    const msg = e.message || 'SSE 连接失败'
+    pushLog('error', { message: msg })
+    // 401: 未登录提示
+    if (msg.includes('401') || msg.includes('Unauthorized') || msg.includes('需要登录')) {
+      ElMessage.error('请先登录后再使用多智能体协作')
+    } else if (msg.includes('fetch') || msg.includes('Failed') || msg.includes('Network')) {
+      ElMessage.error('无法连接后端服务，请确认 MiniMax 平台已启动')
+    } else {
+      ElMessage.error(msg)
     }
   } finally {
     running.value = false
