@@ -63,3 +63,6 @@ minimax:
     secret: sandbox-jwt-secret-key-for-local-dev-only-32bytes
   common:
     secret: sandbox-common-secret-for-local-dev-only-32bytes
+  # V7.0: minimax-model → minimax-ai 的 ONNX 推理调用地址
+  model:
+    ai-service-url: http://localhost:8094

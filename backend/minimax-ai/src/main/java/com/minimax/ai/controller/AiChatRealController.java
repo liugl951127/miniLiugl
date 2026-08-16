@@ -10,6 +10,7 @@ import com.minimax.common.result.Result;
 import com.minimax.model.dto.ChatRequest;
 import com.minimax.ai.service.ModelClient;
 import com.minimax.model.vo.ChatResponse;
+import com.minimax.ai.service.OnnxLLMService;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -21,6 +22,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.LinkedHashMap;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -43,6 +45,7 @@ public class AiChatRealController {
     private final ModelClient modelClient;
     private final RestTemplate ragRestTemplate;
     private final AgentClient agentClient;
+    private final OnnxLLMService onnxLLMService;
 
     @Value("${minimax.rag.service-url:http://localhost:8085}")
     private String ragServiceUrl;
@@ -53,11 +56,14 @@ public class AiChatRealController {
             AiChatMessageMapper messageMapper,
             ModelClient modelClient,
             @Qualifier("ragRestTemplate") RestTemplate ragRestTemplate,
-            AgentClient agentClient) {
+            AgentClient agentClient,
+            OnnxLLMService onnxLLMService) {
         this.sessionMapper = sessionMapper;
         this.messageMapper = messageMapper;
         this.modelClient = modelClient;
         this.ragRestTemplate = ragRestTemplate;
+        this.agentClient = agentClient;
+        this.onnxLLMService = onnxLLMService;
         this.agentClient = agentClient;
     }
 
@@ -424,6 +430,78 @@ public class AiChatRealController {
             "threshold", 0.5,
             "models", Arrays.asList("gpt-4o-mini", "deepseek-chat"),
             "strategy", "majority"
+        ));
+    }
+
+    // ==================== ONNX 自研模型推理 (V7.0) ====================
+
+    /**
+     * ONNX 模型文本生成 (V7.0)
+     *
+     * minimax-model 服务的 OnnxLLMAdapter 通过此端点调用真实 ONNX 推理。
+     *
+     * POST /api/v1/ai/chat/onnx/generate
+     * Body: {
+     *   "prompt": "用户输入",
+     *   "modelPath": "/workspace/onnx-models/mini-transformer.onnx",  (可选)
+     *   "temperature": 0.7,
+     *   "maxTokens": 512,
+     *   "topP": 0.9
+     * }
+     */
+    @PostMapping("/onnx/generate")
+    public Result<Map<String, Object>> onnxGenerate(@RequestBody Map<String, Object> body) {
+        long start = System.currentTimeMillis();
+        String prompt = (String) body.getOrDefault("prompt", "");
+        String modelPath = (String) body.getOrDefault("modelPath", null);
+        Double temperature = body.get("temperature") instanceof Number t ? t.doubleValue() : 0.7;
+        Integer maxTokens = body.get("maxTokens") instanceof Number m ? m.intValue() : 512;
+        Double topP = body.get("topP") instanceof Number p ? p.doubleValue() : 0.9;
+
+        if (prompt.isBlank()) {
+            return Result.error(400, "prompt 不能为空");
+        }
+
+        // 动态加载模型（如果指定了新路径）
+        if (modelPath != null && !modelPath.isBlank()) {
+            boolean loaded = onnxLLMService.loadModelPath(modelPath);
+            log.info("[Onnx/generate] 动态加载模型: path={}, success={}", modelPath, loaded);
+        }
+
+        if (!onnxLLMService.isEnabled()) {
+            return Result.error(503, "ONNX 推理未启用 (minimax.onnx.enabled=false)，请配置 minimax.onnx.model-dir");
+        }
+
+        OnnxLLMService.GeneratedResult result = onnxLLMService.generate(prompt, temperature, maxTokens, topP);
+
+        Map<String, Object> resp = new LinkedHashMap<>();
+        resp.put("text", result.text);
+        resp.put("eos", result.eos);
+        resp.put("promptTokens", result.promptTokens);
+        resp.put("completionTokens", result.completionTokens);
+        resp.put("totalTokens", result.promptTokens + result.completionTokens);
+        resp.put("latencyMs", System.currentTimeMillis() - start);
+        resp.put("modelPath", onnxLLMService.getActiveModelPath());
+
+        log.info("[Onnx/generate] prompt={}, tokens={}, latency={}ms",
+                prompt.substring(0, Math.min(30, prompt.length())),
+                result.completionTokens,
+                System.currentTimeMillis() - start);
+
+        return Result.ok(resp);
+    }
+
+    /**
+     * ONNX 模型状态查询
+     */
+    @GetMapping("/onnx/status")
+    public Result<Map<String, Object>> onnxStatus() {
+        return Result.ok(Map.of(
+            "enabled", onnxLLMService.isEnabled(),
+            "modelPath", onnxLLMService.getActiveModelPath() != null
+                    ? onnxLLMService.getActiveModelPath() : "未加载",
+            "message", onnxLLMService.isEnabled()
+                    ? "ONNX 推理服务就绪" : "ONNX 未启用，请设置 minimax.onnx.enabled=true 和 minimax.onnx.model-dir"
         ));
     }
 }

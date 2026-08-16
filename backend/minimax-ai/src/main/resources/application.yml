@@ -64,6 +64,17 @@ minimax:
     # 自研模型质量开关 (true=全部开启, false=仅基础对话)
     self-model-full: ${SELF_MODEL_FULL:true}
 
+    # ── V7.0: ONNX 自研模型推理 ─────────────────────────────────
+    onnx:
+      enabled: ${ONNX_ENABLED:false}              # 设为 true 启用 ONNX 推理
+      model-dir: ${ONNX_MODEL_DIR:/workspace/onnx-models}  # ONNX 模型文件目录
+      model-name: ${ONNX_MODEL_NAME:mini-transformer}      # 模型文件名（不含 .onnx 后缀）
+      vocab-size: ${ONNX_VOCAB_SIZE:8192}          # 必须与导出模型一致
+      hidden-dim: ${ONNX_HIDDEN_DIM:256}           # 必须与导出模型一致
+      heads: ${ONNX_HEADS:8}                        # 注意力头数
+      layers: ${ONNX_LAYERS:4}                      # Transformer 层数
+      max-seq-len: ${ONNX_MAX_SEQ_LEN:512}         # 最大序列长度
+
     # ── V3.5.15+: 4 模型加权投票权重 ──
     intent:
       weight:

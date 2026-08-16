@@ -3,66 +3,56 @@ package com.minimax.model.provider;
 import com.minimax.model.dto.ChatRequest;
 import com.minimax.model.vo.ChatResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 
-import java.io.File;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import reactor.core.publisher.Flux;
 
 /**
- * 自研 ONNX 推理适配器 (V6.8.2)
+ * 自研 ONNX 模型适配器 (V7.0 — 真实推理)
  *
  * <h3>职责</h3>
- * 直接加载本地 ONNX 格式的自研模型文件，通过 MiniTransformer 执行推理，
- * 不依赖 Ollama/vLLM 等外部服务器。适用于已导出为 ONNX 的自研模型。
+ * 通过 HTTP 调用 minimax-ai 服务的 /api/v1/ai/chat/onnx/generate 端点，
+ * 触发真实的 ONNX Runtime 推理。不再依赖 reflection 或 mock。
  *
- * <h3>使用方式</h3>
+ * <h3>配置</h3>
  * <pre>
- * 1. 在 model_provider 表插入:
- *    code = 'onnx', protocol = 'onnx', base_url = '/path/to/models',
- *    enabled = 1
- * 2. 在 model_config 表插入模型:
- *    model_code = 'my-chatgpt', provider_id = <上一步的id>
- *    max_context = 4096, max_output = 2048
- * 3. endpoint = base_url (模型目录)，apiKey = 固定 token 或 null
+ * minimax.model.ai-service-url: http://localhost:8094   (minimax-ai 服务地址)
+ * minimax.onnx.enabled: true
+ * minimax.onnx.model-dir: /workspace/onnx-models
+ * minimax.onnx.model-name: mini-transformer
  * </pre>
  *
- * <h3>endpoint 格式</h3>
- * 约定 endpoint = 模型文件所在目录路径，apiKey = 模型名称（不含 .onnx 后缀）。
- * 实际模型文件路径 = endpoint + "/" + apiKey + ".onnx"
- * 若 apiKey 为空，则 endpoint 直接是 .onnx 文件路径。
- *
- * <h3>Generation</h3>
- * 自回归采样:
- * <pre>
- *   while (generated < maxTokens && !eos):
- *     logits = model.forward(tokens)       // 前向
- *     logits[-1] /= temperature            // 温度
- *     probs = top_p_sample(logits[-1], p)  // nucleus
- *     next_id = multinomial(probs)         // 采样
- *     tokens.append(next_id)
- *     yield decode(tokens)
- * </pre>
- *
- * <h3>V6.8.3 反射调用说明</h3>
- * 由于 minimax-model 与 minimax-ai 存在循环依赖，本类通过反射调用
- * MiniTransformer 和 ChineseTokenizer，避免编译时依赖。
+ * <h3>约定</h3>
+ * endpoint = 模型文件所在目录路径，apiKey = 模型名称（不含 .onnx 后缀）。
+ * 实际模型路径 = endpoint + "/" + apiKey + ".onnx"
  */
 @Slf4j
 @Component
 public class OnnxLLMAdapter implements ModelProviderAdapter {
 
-    /** 单例 token 缓存 (通过反射加载 ChineseTokenizer) */
-    private static Object tokenizer;
+    /** minimax-ai 服务地址 */
+    @Value("${minimax.model.ai-service-url:http://localhost:8094}")
+    private String aiServiceUrl;
 
-    /** endpoint(目录) → 缓存的 MiniTransformer 实例 (通过反射加载) */
-    private final Map<String, Object> modelCache = new ConcurrentHashMap<>();
+    /** HTTP client (长连接) */
+    private final RestTemplate restTemplate;
+
+    /** 已加载的模型路径缓存 */
+    private final Set<String> loadedModels = ConcurrentHashMap.newKeySet();
+
+    public OnnxLLMAdapter() {
+        this.restTemplate = new org.springframework.boot.web.client.RestTemplateBuilder()
+                .setConnectTimeout(Duration.ofSeconds(10))
+                .setReadTimeout(Duration.ofMinutes(3))
+                .build();
+    }
 
     @Override
     public String code() { return "onnx"; }
@@ -71,41 +61,52 @@ public class OnnxLLMAdapter implements ModelProviderAdapter {
     public ChatResponse chat(String endpoint, String apiKey, ChatRequest req) {
         long start = System.currentTimeMillis();
         String modelPath = resolveModelPath(endpoint, apiKey);
-        Object model = loadModel(modelPath);
-        if (model == null) {
-            return ChatResponse.builder()
-                    .content("模型加载失败: " + modelPath)
-                    .finishReason("error")
-                    .latencyMs(System.currentTimeMillis() - start)
-                    .build();
-        }
-        String prompt = buildPrompt(req.getMessages());
-        double temperature = getTemperature(req);
-        int maxTokens = getMaxTokens(req, getModelMaxSeqLen(model));
-        StringBuilder reply = new StringBuilder();
+
         try {
-            Object result = invokeGenerate(model, prompt, temperature, maxTokens, 0.9);
-            String text = getResultText(result);
-            int promptTokens = getResultPromptTokens(result);
-            int completionTokens = getResultCompletionTokens(result);
-            boolean eos = getResultEos(result);
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("prompt", buildPrompt(req.getMessages()));
+            body.put("modelPath", modelPath);
+            body.put("temperature", getTemperature(req));
+            body.put("maxTokens", getMaxTokens(req));
+            body.put("topP", 0.9);
+
+            String url = aiServiceUrl + "/api/v1/ai/chat/onnx/generate";
+            log.debug("[OnnxAdapter] POST {} modelPath={}", url, modelPath);
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> resp = restTemplate.postForObject(url, body, Map.class);
+
+            if (resp == null) {
+                return buildError("ONNX 服务返回空响应", start);
+            }
+
+            // 检查业务错误
+            if (resp.containsKey("code") && !resp.get("code").equals(200)) {
+                return buildError("ONNX 推理失败: " + resp.get("message"), start);
+            }
+
+            String text = (String) resp.getOrDefault("text", "");
+            Number promptTokens = toNumber(resp.get("promptTokens"));
+            Number completionTokens = toNumber(resp.get("completionTokens"));
+            Number totalTokens = toNumber(resp.get("totalTokens"));
+
+            log.info("[OnnxAdapter] 生成完成: path={}, tokens={}, latency={}ms",
+                    modelPath, completionTokens, System.currentTimeMillis() - start);
+
             return ChatResponse.builder()
                     .model(req.getModel())
                     .content(text)
-                    .promptTokens(promptTokens)
-                    .completionTokens(completionTokens)
-                    .totalTokens(promptTokens + completionTokens)
-                    .finishReason(eos ? "stop" : "length")
+                    .promptTokens(promptTokens.intValue())
+                    .completionTokens(completionTokens.intValue())
+                    .totalTokens(totalTokens.intValue())
+                    .finishReason("stop")
                     .latencyMs(System.currentTimeMillis() - start)
                     .providerCode(code())
                     .build();
+
         } catch (Exception e) {
-            log.error("[OnnxAdapter] 生成失败: {}", e.getMessage(), e);
-            return ChatResponse.builder()
-                    .content("ONNX 推理异常: " + e.getMessage())
-                    .finishReason("error")
-                    .latencyMs(System.currentTimeMillis() - start)
-                    .build();
+            log.error("[OnnxAdapter] HTTP 调用失败: {} → {}", modelPath, e.getMessage());
+            return buildError("ONNX 推理异常: " + e.getMessage(), start);
         }
     }
 
@@ -115,97 +116,80 @@ public class OnnxLLMAdapter implements ModelProviderAdapter {
                                    AtomicBoolean stopFlag) {
         long start = System.currentTimeMillis();
         String modelPath = resolveModelPath(endpoint, apiKey);
-        Object model = loadModel(modelPath);
-        if (model == null) {
-            chunkJsonConsumer.accept("{\"error\":\"模型加载失败: " + modelPath + "\"}");
-            return new OpenAiCompatibleAdapter.StreamResult(null, null, null, 0, 0, 0, "error", System.currentTimeMillis() - start);
-        }
         String prompt = buildPrompt(req.getMessages());
         double temperature = getTemperature(req);
-        int maxTokens = getMaxTokens(req, getModelMaxSeqLen(model));
-        StringBuilder full = new StringBuilder();
-        int completionTokens = 0;
+        int maxTokens = getMaxTokens(req);
+
+        // 流式: 调用同步接口，每次吐出一个字符
         try {
-            Object result = invokeGenerate(model, prompt, temperature, maxTokens, 0.9);
-            String text = getResultText(result);
-            int promptTokens = getResultPromptTokens(result);
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("prompt", prompt);
+            body.put("modelPath", modelPath);
+            body.put("temperature", temperature);
+            body.put("maxTokens", maxTokens);
+            body.put("topP", 0.9);
+
+            String url = aiServiceUrl + "/api/v1/ai/chat/onnx/generate";
+            @SuppressWarnings("unchecked")
+            Map<String, Object> resp = restTemplate.postForObject(url, body, Map.class);
+
+            if (resp == null || resp.containsKey("code") && !resp.get("code").equals(200)) {
+                String err = resp != null ? String.valueOf(resp.get("message")) : "空响应";
+                chunkJsonConsumer.accept("{\"error\":\"" + escapeJson(err) + "\"}");
+                return new OpenAiCompatibleAdapter.StreamResult(null, null, "", 0, 0, 0, "error", System.currentTimeMillis() - start);
+            }
+
+            String text = (String) resp.getOrDefault("text", "");
+            int promptTokens = toNumber(resp.get("promptTokens")).intValue();
+            int completionTokens = 0;
+
             for (int i = 0; i < text.length(); i++) {
                 if (stopFlag.get()) break;
                 char c = text.charAt(i);
-                full.append(c);
                 completionTokens++;
                 String chunk = "{\"choices\":[{\"delta\":{\"content\":\"" + escapeJson(String.valueOf(c)) + "\"},\"index\":0}]}";
                 chunkJsonConsumer.accept(chunk);
             }
-            return new OpenAiCompatibleAdapter.StreamResult(null, null, full.toString(),
-                    promptTokens,
-                    completionTokens,
-                    promptTokens + completionTokens,
-                    "stop",
-                    System.currentTimeMillis() - start
-            );
+
+            return new OpenAiCompatibleAdapter.StreamResult(null, null, text,
+                    promptTokens, completionTokens, promptTokens + completionTokens,
+                    "stop", System.currentTimeMillis() - start);
+
         } catch (Exception e) {
-            log.error("[OnnxAdapter] 流式推理失败: {}", e.getMessage());
-            chunkJsonConsumer.accept("{\"error\":\"ONNX 推理异常: " + escapeJson(e.getMessage()) + "\"}");
-            return new OpenAiCompatibleAdapter.StreamResult(null, null, full.toString(), 0, completionTokens, completionTokens, "error", System.currentTimeMillis() - start);
+            log.error("[OnnxAdapter/stream] 失败: {}", e.getMessage());
+            chunkJsonConsumer.accept("{\"error\":\"" + escapeJson(e.getMessage()) + "\"}");
+            return new OpenAiCompatibleAdapter.StreamResult(null, null, "", 0, 0, 0, "error", System.currentTimeMillis() - start);
         }
     }
 
-    // ========== 反射调用 MiniTransformer ==========
+    // ========== Prompt 构建 ==========
 
-    private Object loadModel(String modelPath) {
-        return modelCache.computeIfAbsent(modelPath, path -> {
-            File f = new File(path);
-            if (!f.exists()) {
-                log.error("[OnnxAdapter] 模型文件不存在: {}", path);
-                return null;
-            }
-            try {
-                log.info("[OnnxAdapter] 加载模型: {}", path);
-                Class<?> clazz = Class.forName("com.minimax.ai.model.MiniTransformer");
-                Constructor<?> ctor = clazz.getConstructor(String.class);
-                Object m = ctor.newInstance(path);
-                Method getVocabSize = clazz.getMethod("getVocabSize");
-                Method getLayers = clazz.getMethod("getLayers");
-                log.info("[OnnxAdapter] 模型加载成功: {} (vocab={}, layers={})",
-                        path, getVocabSize.invoke(m), getLayers.invoke(m));
-                return m;
-            } catch (Exception e) {
-                log.error("[OnnxAdapter] 模型加载失败: {}: {}", path, e.getMessage());
-                return null;
-            }
-        });
+    private String buildPrompt(List<Map<String, Object>> messages) {
+        if (messages == null || messages.isEmpty()) return "";
+        return messages.stream()
+                .filter(m -> m.get("role") != null)
+                .map(m -> {
+                    String role = (String) m.get("role");
+                    Object c = m.get("content");
+                    String content = c != null ? c.toString() : "";
+                    if ("system".equals(role)) return "系统: " + content;
+                    if ("user".equals(role)) return "用户: " + content;
+                    if ("assistant".equals(role)) return "助手: " + content;
+                    return content;
+                })
+                .collect(java.util.stream.Collectors.joining("\n"))
+                + "\n助手: ";
     }
 
-    private int getModelMaxSeqLen(Object model) {
-        try {
-            Method m = model.getClass().getMethod("getMaxSeqLen");
-            return (int) m.invoke(model);
-        } catch (Exception e) {
-            log.warn("[OnnxAdapter] 获取 maxSeqLen 失败，使用默认值 2048");
-            return 2048;
+    private double getTemperature(ChatRequest req) {
+        return req.getTemperature() != null ? req.getTemperature() : 0.7;
+    }
+
+    private int getMaxTokens(ChatRequest req) {
+        if (req.getMaxTokens() != null && req.getMaxTokens() > 0) {
+            return Math.min(req.getMaxTokens(), 2048);
         }
-    }
-
-    private Object invokeGenerate(Object model, String prompt, double temperature, int maxTokens, double topP) throws Exception {
-        Method generate = model.getClass().getMethod("generate", String.class, double.class, int.class, double.class);
-        return generate.invoke(model, prompt, temperature, maxTokens, topP);
-    }
-
-    private String getResultText(Object result) throws Exception {
-        return (String) result.getClass().getField("text").get(result);
-    }
-
-    private int getResultPromptTokens(Object result) throws Exception {
-        return (int) result.getClass().getField("promptTokens").get(result);
-    }
-
-    private int getResultCompletionTokens(Object result) throws Exception {
-        return (int) result.getClass().getField("completionTokens").get(result);
-    }
-
-    private boolean getResultEos(Object result) throws Exception {
-        return (boolean) result.getClass().getField("eos").get(result);
+        return 512;
     }
 
     // ========== 模型路径解析 ==========
@@ -222,35 +206,21 @@ public class OnnxLLMAdapter implements ModelProviderAdapter {
         return endpoint;
     }
 
-    // ========== Prompt 构建 ==========
+    // ========== 工具 ==========
 
-    private String buildPrompt(List<Map<String, Object>> messages) {
-        if (messages == null || messages.isEmpty()) return "";
-        String roleMap = messages.stream()
-                .filter(m -> m.get("role") != null)
-                .map(m -> {
-                    String role = (String) m.get("role");
-                    Object c = m.get("content");
-                    String content = c != null ? c.toString() : "";
-                    if ("system".equals(role)) return "系统: " + content;
-                    if ("user".equals(role)) return "用户: " + content;
-                    if ("assistant".equals(role)) return "助手: " + content;
-                    return content;
-                })
-                .collect(Collectors.joining("\n"));
-        return roleMap + "\n助手: ";
+    private Number toNumber(Object v) {
+        if (v instanceof Number) return (Number) v;
+        if (v instanceof String && ((String) v).matches("\\d+")) return Integer.parseInt((String) v);
+        return 0;
     }
 
-    private double getTemperature(ChatRequest req) {
-        if (req.getTemperature() != null) return req.getTemperature();
-        return 0.7;
-    }
-
-    private int getMaxTokens(ChatRequest req, int modelMax) {
-        if (req.getMaxTokens() != null && req.getMaxTokens() > 0) {
-            return Math.min(req.getMaxTokens(), modelMax);
-        }
-        return Math.min(2048, modelMax);
+    private ChatResponse buildError(String msg, long start) {
+        return ChatResponse.builder()
+                .content(msg)
+                .finishReason("error")
+                .latencyMs(System.currentTimeMillis() - start)
+                .providerCode(code())
+                .build();
     }
 
     private String escapeJson(String s) {
@@ -264,20 +234,18 @@ public class OnnxLLMAdapter implements ModelProviderAdapter {
 
     @Override
     public Flux<String> stream(String endpoint, String apiKey, ChatRequest req) {
-        return Flux.error(new UnsupportedOperationException("ONNX stream 通过 streamChat() 调用"));
+        return Flux.error(new UnsupportedOperationException(
+                "ONNX stream 通过 streamChat() 调用"));
     }
 
     @Override
     public boolean ping(String endpoint, String apiKey) {
-        String path = resolveModelPath(endpoint, apiKey);
-        File f = new File(path);
-        if (!f.exists()) return false;
         try {
-            Class<?> clazz = Class.forName("com.minimax.ai.model.MiniTransformer");
-            Constructor<?> ctor = clazz.getConstructor(String.class);
-            ctor.newInstance(path);
-            return true;
+            String url = aiServiceUrl + "/api/v1/ai/chat/onnx/status";
+            var resp = restTemplate.getForObject(url, Map.class);
+            return resp != null && Boolean.TRUE.equals(resp.get("enabled"));
         } catch (Exception e) {
+            log.warn("[OnnxAdapter/ping] 失败: {}", e.getMessage());
             return false;
         }
     }

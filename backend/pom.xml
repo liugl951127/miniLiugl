@@ -55,6 +55,7 @@
         <lombok.version>1.18.30</lombok.version>
         <fastjson2.version>2.0.43</fastjson2.version>
         <minio.version>8.5.10</minio.version>
+        <onnxruntime.version>1.19.2</onnxruntime.version>
 
         <!-- V5.14: OpenTelemetry 分布式追踪 -->
         <opentelemetry.version>1.36.0</opentelemetry.version>
@@ -164,6 +165,13 @@
                 <groupId>com.alibaba.fastjson2</groupId>
                 <artifactId>fastjson2</artifactId>
                 <version>${fastjson2.version}</version>
+            </dependency>
+
+            <!-- V7.0: ONNX Runtime (自研模型推理) -->
+            <dependency>
+                <groupId>com.microsoft.onnxruntime</groupId>
+                <artifactId>onnxruntime</artifactId>
+                <version>${onnxruntime.version}</version>
             </dependency>
 
             <!-- MinIO -->
