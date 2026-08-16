@@ -268,21 +268,21 @@ CREATE TABLE IF NOT EXISTS model_config (
 -- [minimax-model] model_battle_log
 CREATE TABLE IF NOT EXISTS model_battle_log (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    battleId VARCHAR(64),
-    userId BIGINT,
-    modelId BIGINT,
-    modelCode VARCHAR(64),
+    battle_id VARCHAR(64),
+    user_id BIGINT,
+    model_id BIGINT,
+    model_code VARCHAR(64),
     prompt TEXT,
     response TEXT,
-    promptTokens INT,
-    completionTokens INT,
-    latencyMs INT,
+    prompt_tokens INT,
+    completion_tokens INT,
+    latency_ms INT,
     status VARCHAR(32),
-    errorMsg VARCHAR(1024),
+    error_msg VARCHAR(1024),
     score INT,
-    judgeModel VARCHAR(64),
-    judgeReason TEXT,
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    judge_model VARCHAR(64),
+    judge_reason TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- [minimax-model] model_quota
@@ -961,7 +961,7 @@ CREATE TABLE IF NOT EXISTS model_rating (
 -- [minimax-ai] agent_marketplace
 CREATE TABLE IF NOT EXISTS agent_marketplace (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    agentKey VARCHAR(64),
+    agent_key VARCHAR(64),
     name VARCHAR(128),
     description TEXT,
     category VARCHAR(64),
@@ -985,7 +985,7 @@ CREATE TABLE IF NOT EXISTS agent_marketplace (
 -- [minimax-ai] agent_rating
 CREATE TABLE IF NOT EXISTS agent_rating (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    agentKey VARCHAR(64),
+    agent_key VARCHAR(64),
     userId BIGINT,
     username VARCHAR(64),
     rating INT,
@@ -1192,52 +1192,52 @@ CREATE TABLE IF NOT EXISTS chat_message (
 -- [minimax-ws] collab_room
 CREATE TABLE IF NOT EXISTS collab_room (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    roomId VARCHAR(64),
+    room_id VARCHAR(64),
     name VARCHAR(128),
     type VARCHAR(32),
-    ownerId BIGINT,
-    ownerName VARCHAR(128),
+    owner_id BIGINT,
+    owner_name VARCHAR(128),
     description TEXT,
-    isPublic INT,
-    maxParticipants INT,
+    is_public INT,
+    max_participants INT,
     status VARCHAR(32),
-    currentParticipants INT,
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    lastActivityAt TIMESTAMP,
-    closedAt TIMESTAMP
+    current_participants INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_activity_at TIMESTAMP,
+    closed_at TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- [minimax-ws] collab_participant
 CREATE TABLE IF NOT EXISTS collab_participant (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    roomId VARCHAR(64),
-    userId BIGINT,
+    room_id VARCHAR(64),
+    user_id BIGINT,
     username VARCHAR(64),
     nickname VARCHAR(128),
     avatar VARCHAR(512),
     role VARCHAR(32),
-    cursorX INT,
-    cursorY INT,
-    selectionId VARCHAR(64),
+    cursor_x INT,
+    cursor_y INT,
+    selection_id VARCHAR(64),
     status VARCHAR(32),
-    joinedAt TIMESTAMP,
-    leftAt TIMESTAMP,
-    lastHeartbeat TIMESTAMP
+    joined_at TIMESTAMP,
+    left_at TIMESTAMP,
+    last_heartbeat TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- [minimax-ws] collab_message
 CREATE TABLE IF NOT EXISTS collab_message (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    roomId VARCHAR(64),
-    userId BIGINT,
+    room_id VARCHAR(64),
+    user_id BIGINT,
     username VARCHAR(64),
     nickname VARCHAR(128),
     type VARCHAR(32),
     content TEXT,
     metadata TEXT,
-    clientMsgId VARCHAR(64),
+    client_msg_id VARCHAR(64),
     broadcast INT,
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- [minimax-rag] document
@@ -1491,15 +1491,15 @@ CREATE TABLE IF NOT EXISTS request_log (
 CREATE TABLE IF NOT EXISTS rate_limit_rule (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     scope VARCHAR(32),
-    key VARCHAR(128),
+    rule_key VARCHAR(128),
     description VARCHAR(256),
     capacity INT,
-    refillTokens INT,
-    periodSeconds INT,
+    refill_tokens INT,
+    period_seconds INT,
     enabled INT,
     priority INT,
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted INT DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

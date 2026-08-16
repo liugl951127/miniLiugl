@@ -92,7 +92,7 @@ INSERT INTO alert_rule (id, name, description, metricName, service, operator, th
 INSERT INTO knowledge_base (id, ownerId, tenantId, name, description, visibility, docCount, chunkCount, tags, createdAt, updatedAt, deleted) VALUES (1, 1, 1, '产品知识库', 'MiniMax产品文档知识库', 'PRIVATE', 0, 0, 'product,docs', DEFAULT, DEFAULT, 0);
 
 -- [minimax-common] rate_limit_rule
-INSERT INTO rate_limit_rule (id, scope, key, description, capacity, refillTokens, periodSeconds, enabled, priority, createdAt, updatedAt, deleted) VALUES
+INSERT INTO rate_limit_rule (id, scope, rule_key, description, capacity, refill_tokens, period_seconds, enabled, priority, created_at, updated_at, deleted) VALUES
     (1, 'USER', '', '用户级限流', 100, 10, 60, 1, 1, DEFAULT, DEFAULT, 0),
     (2, 'API_KEY', '', 'API Key限流', 1000, 100, 60, 1, 2, DEFAULT, DEFAULT, 0),
     (3, 'IP', '', 'IP级限流', 200, 20, 60, 1, 3, DEFAULT, DEFAULT, 0);

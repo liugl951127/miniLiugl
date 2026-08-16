@@ -22,7 +22,7 @@ public class RateLimitRule {
     private String scope;
 
     /** 规则名 (唯一) */
-    @TableField("`key`")
+    @TableField("rule_key")
     private String key;
 
     /** 描述 */
@@ -32,9 +32,11 @@ public class RateLimitRule {
     private Integer capacity;
 
     /** 长期速率 (refillGreedy tokens) */
+    @TableField("refill_tokens")
     private Integer refillTokens;
 
     /** 周期 (秒) */
+    @TableField("period_seconds")
     private Integer periodSeconds;
 
     /** 0=禁用 1=启用 */
@@ -43,10 +45,10 @@ public class RateLimitRule {
     /** 优先级 (高先匹配) */
     private Integer priority;
 
-    @TableField(fill = FieldFill.INSERT)
+    @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 
-    @TableField(fill = FieldFill.INSERT_UPDATE)
+    @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
 
     @TableLogic
