@@ -21,7 +21,7 @@ import java.util.List;
  *
  * h2local 模式下:
  *  1. 创建 demo H2 内存数据库 (jdbc:h2:mem:demo)
- *  2. 运行 demo-business.sql 建表+种子数据
+ *  2. 运行 demo-init.sql 建表+种子数据
  *  3. 向 analytics_datasource 插入一条 demo 数据源记录
  *
  * 如此用户进入 NL2SQL 页面即可直接体验, 无需手动配置数据源.
@@ -51,9 +51,9 @@ public class DemoDataInitializer implements ApplicationRunner {
                 "sa", "");
 
             var res = DemoDataInitializer.class.getClassLoader()
-                .getResourceAsStream("sql/demo-business.sql");
+                .getResourceAsStream("sql/demo-init.sql");
             if (res == null) {
-                log.warn("[DemoInit] sql/demo-business.sql not found, skipping demo DB init");
+                log.warn("[DemoInit] sql/demo-init.sql not found, skipping demo DB init");
                 conn.close();
                 return;
             }

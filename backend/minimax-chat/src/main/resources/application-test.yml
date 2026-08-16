@@ -22,7 +22,8 @@ spring:
   sql:
     init:
       mode: always
-      schema-locations: classpath:sql/minimax-mysql-final.sql
+      schema-locations: classpath:sql/minimax-schema.sql
+      data-locations: classpath:sql/minimax-seed.sql
   data:
     redis:
       host: localhost

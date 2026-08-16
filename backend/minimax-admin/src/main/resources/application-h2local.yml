@@ -23,7 +23,8 @@ spring:
   sql:
     init:
       mode: always
-      schema-locations: classpath:sql/minimax-mysql-final.sql
+      schema-locations: classpath:sql/minimax-schema.sql
+      data-locations: classpath:sql/minimax-seed.sql
       encoding: UTF-8
       continue-on-error: true
   data:
