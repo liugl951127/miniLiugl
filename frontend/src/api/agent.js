@@ -3,8 +3,12 @@
  */
 import http from './http'
 
+// V6.9: 统一 API 基础路径 → vite proxy → backend:8090
+const AGENT_BASE = '/api/v1/agent'
+const SKILL_BASE = '/api/v1/skill-approval'
+
 // V7.0: 列出可用的 Agent (沙箱模式)
-export const listAgents = () => http.get('/agent/external/agents')
+export const listAgents = () => http.get(`${AGENT_BASE}/external/agents`)
 
 export const trainingApi = {
   // LLM 训练 (V6.5+)
@@ -28,35 +32,28 @@ export const trainingApi = {
 // ==================== 多智能体协作 API (V6.9) ====================
 export const multiAgentApi = {
   /** 同步执行：Planner → Executor → Critic 三角色协作 */
-  run(params) {  // { goal, tools?, maxRounds? }
-    return http.post('/agent/multi/run', params)
+  run(params) {
+    return http.post(`${AGENT_BASE}/multi/run`, params)
   },
   /**
-   * 流式执行（SSE），返回 EventSource 实例。
+   * XHR 流式（POST + text/event-stream）
    * 事件类型: multi-agent-start / planner-start / planner-plan /
    *          executor-step / executor-result / critic-eval /
    *          critic-result / critic-retry / final / done / error
    */
-  stream(params) {
-    const token = localStorage.getItem('token') || ''
-    const url = `${import.meta.env.VITE_API_BASE_URL || ''}/agent/multi/stream`
-    const es = new EventSource(`${url}?token=${encodeURIComponent(token)}`, {
-      withCredentials: true
-    })
-    // POST body 需用 fetch，EventSource GET 不支持 body，改用 XHR 流
-    return null  // 改用下方 xhrStream
-  },
-  /** XHR 流式（POST + text/event-stream），返回 ReadableStream 消费函数 */
   xhrStream(params, onEvent) {
     const token = localStorage.getItem('token') || ''
-    return fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/agent/multi/stream`, {
+    return fetch(`${AGENT_BASE}/multi/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(params)
     }).then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status} ${r.statusText}`)
       const reader = r.body.getReader()
       const decoder = new TextDecoder()
       let buffer = ''
+      // 当前累积的 event name（来自 "event: xxx" 行）
+      let currentEvent = ''
       function pump() {
         return reader.read().then(({ done, value }) => {
           if (done) return
@@ -64,15 +61,25 @@ export const multiAgentApi = {
           const lines = buffer.split('\n')
           buffer = lines.pop() || ''
           for (const line of lines) {
-            if (!line.startsWith('data:')) continue
-            const data = line.slice(5).trim()
-            if (!data || data === '[DONE]') continue
-            try {
-              const json = JSON.parse(data)
-              const eventName = json.event || 'message'
-              const eventData = json.data || json
-              onEvent(eventName, eventData, json)
-            } catch {}
+            const trimmed = line.trim()
+            if (trimmed.startsWith('event:')) {
+              // SSE event: 行，事件名
+              currentEvent = trimmed.slice(6).trim()
+            } else if (trimmed.startsWith('data:')) {
+              const data = trimmed.slice(5).trim()
+              if (!data || data === '[DONE]') continue
+              try {
+                const json = JSON.parse(data)
+                // Spring @SendTo produces {event="xxx", data={...}} in the JSON
+                const eventName = json.event || currentEvent || 'message'
+                const eventData = json.data !== undefined ? json.data : json
+                onEvent(eventName, eventData, json)
+              } catch {
+                // 非 JSON 原始数据，直接当 message 事件
+                onEvent(currentEvent || 'message', data, {})
+              }
+              currentEvent = ''
+            }
           }
           return pump()
         })
@@ -81,43 +88,43 @@ export const multiAgentApi = {
     })
   },
   /** 单独 Planner：生成执行计划 */
-  plan(params) {  // { goal, feedback? }
-    return http.post('/agent/multi/plan', params)
+  plan(params) {
+    return http.post(`${AGENT_BASE}/multi/plan`, params)
   },
   /** 单独 Critic：评估执行结果 */
-  critic(params) {  // { goal, plan[], results }
-    return http.post('/agent/multi/critic', params)
+  critic(params) {
+    return http.post(`${AGENT_BASE}/multi/critic`, params)
   }
 }
 
 export const agentApi = {
   // 执行 Agent 任务 (LLM plan 生成 + 执行)
   execute(plan) {
-    return http.post('/agent/run', plan)
+    return http.post(`${AGENT_BASE}/run`, plan)
   },
   // V6.8.1 fix: 工作流存储 — 列出我的工作流 (原 GET /agent/plan → 错误)
   list(params) {
-    return http.get('/agent/workflows', { params })
+    return http.get(`${AGENT_BASE}/workflows`, { params })
   },
   // V6.8.1 fix: 保存工作流 (Canvas 节点+连线) — 原来误用 LLM plan 接口
   save(workflow) {
-    return http.post('/agent/workflows', workflow)
+    return http.post(`${AGENT_BASE}/workflows`, workflow)
   },
   // V6.8.1 fix: 获取单个工作流
   get(id) {
-    return http.get(`/agent/workflows/${id}`)
+    return http.get(`${AGENT_BASE}/workflows/${id}`)
   },
   // V6.8.1 fix: 删除工作流
   remove(id) {
-    return http.delete(`/agent/workflows/${id}`)
+    return http.delete(`${AGENT_BASE}/workflows/${id}`)
   },
   // 部署 Plan (LLM plan → run-plan)
   deploy(id) {
-    return http.post('/agent/run-plan', { id })
+    return http.post(`${AGENT_BASE}/run-plan`, { id })
   },
   // 停止运行中的任务
   stop(id) {
-    return http.post('/agent/stop', { id })
+    return http.post(`${AGENT_BASE}/stop`, { id })
   }
 }
 
@@ -125,81 +132,62 @@ export const agentApi = {
 export const skillApprovalApi = {
   /** 我的待审批 */
   getMyPending(userId) {
-    return http.get('/skill-approval/pending', { params: { userId } })
+    return http.get(`${SKILL_BASE}/pending`, { params: { userId } })
   },
   /** 所有待审批 (管理员) */
   getAllPending() {
-    return http.get('/skill-approval/pending/all')
+    return http.get(`${SKILL_BASE}/pending/all`)
   },
   /** 查任务审批状态 */
   getByTask(taskId) {
-    return http.get(`/skill-approval/task/${taskId}`)
+    return http.get(`${SKILL_BASE}/task/${taskId}`)
   },
   /** 提交审批请求 */
   submit(data) {
-    return http.post('/skill-approval/submit', data)
+    return http.post(`${SKILL_BASE}/submit`, data)
   },
   /** 审批通过 */
   approve(id, data = {}) {
-    return http.post(`/skill-approval/${id}/approve`, data)
+    return http.post(`${SKILL_BASE}/${id}/approve`, data)
   },
   /** 审批拒绝 */
   reject(id, data = {}) {
-    return http.post(`/skill-approval/${id}/reject`, data)
+    return http.post(`${SKILL_BASE}/${id}/reject`, data)
   },
   /** 我的审批历史 */
   getHistory(params = {}) {
-    return http.get('/skill-approval/history', { params })
+    return http.get(`${SKILL_BASE}/history`, { params })
   },
 }
 
 // ==================== 外部系统 API（通过 API Key 鉴权） ====================
-/**
- * 外部系统调用 Agent 编排的 API。
- * 鉴权方式: Header: Authorization: Bearer <api_key>
- *
- * _skipAuth: true 保证拦截器不覆盖外部 API Key。
- *
- * 示例:
- *   const headers = { Authorization: 'Bearer ' + apiKey }
- *   await fetch('/api/v1/agent/external/run', { method: 'POST', headers, body: JSON.stringify({...}) })
- */
 export const externalAgentApi = {
-  /** 同步运行 Agent（立即返回结果） */
   run(apiKey, req) {
-    return http.post('/agent/external/run', req, { _skipAuth: true, headers: { Authorization: `Bearer ${apiKey}` } })
+    return http.post(`${AGENT_BASE}/external/run`, req, { _skipAuth: true, headers: { Authorization: `Bearer ${apiKey}` } })
   },
-  /** 异步运行（立即返回 taskId，结果通过 Webhook 回调） */
   runAsync(apiKey, req) {
-    return http.post('/agent/external/run-async', req, { _skipAuth: true, headers: { Authorization: `Bearer ${apiKey}` } })
+    return http.post(`${AGENT_BASE}/external/run-async`, req, { _skipAuth: true, headers: { Authorization: `Bearer ${apiKey}` } })
   },
-  /** 查询任务状态 */
   getTask(apiKey, taskId) {
-    return http.get(`/agent/external/tasks/${taskId}`, { _skipAuth: true, headers: { Authorization: `Bearer ${apiKey}` } })
+    return http.get(`${AGENT_BASE}/external/tasks/${taskId}`, { _skipAuth: true, headers: { Authorization: `Bearer ${apiKey}` } })
   },
-  /** SSE 流式运行 */
   runStream(apiKey, req) {
-    return http.post('/agent/external/run-stream', req, { _skipAuth: true, headers: { Authorization: `Bearer ${apiKey}` } })
+    return http.post(`${AGENT_BASE}/external/run-stream`, req, { _skipAuth: true, headers: { Authorization: `Bearer ${apiKey}` } })
   },
-  /** 列出可调用的 Agent */
   listAgents(apiKey) {
-    return http.get('/agent/external/agents', { _skipAuth: true, headers: { Authorization: `Bearer ${apiKey}` } })
+    return http.get(`${AGENT_BASE}/external/agents`, { _skipAuth: true, headers: { Authorization: `Bearer ${apiKey}` } })
   },
-  /** 注册 Webhook */
   registerWebhook(apiKey, req) {
-    return http.post('/agent/external/webhook', req, { _skipAuth: true, headers: { Authorization: `Bearer ${apiKey}` } })
+    return http.post(`${AGENT_BASE}/external/webhook`, req, { _skipAuth: true, headers: { Authorization: `Bearer ${apiKey}` } })
   },
-  /** 列出 Webhook */
   listWebhooks(apiKey) {
-    return http.get('/agent/external/webhooks', { _skipAuth: true, headers: { Authorization: `Bearer ${apiKey}` } })
+    return http.get(`${AGENT_BASE}/external/webhooks`, { _skipAuth: true, headers: { Authorization: `Bearer ${apiKey}` } })
   },
-  /** 删除 Webhook */
   deleteWebhook(apiKey, id) {
-    return http.delete(`/agent/external/webhook/${id}`, { _skipAuth: true, headers: { Authorization: `Bearer ${apiKey}` } })
+    return http.delete(`${AGENT_BASE}/external/webhook/${id}`, { _skipAuth: true, headers: { Authorization: `Bearer ${apiKey}` } })
   },
-  /** 测试 Webhook 连通性 */
   pingWebhook(apiKey, url) {
-    return http.get('/agent/external/webhook/ping', { _skipAuth: true, params: { url }, headers: { Authorization: `Bearer ${apiKey}` } })
+    return http.get(`${AGENT_BASE}/external/webhook/ping`, { _skipAuth: true, params: { url }, headers: { Authorization: `Bearer ${apiKey}` } })
   },
 }
 

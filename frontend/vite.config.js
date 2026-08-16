@@ -117,6 +117,10 @@ export default defineConfig(({ mode }) => {
         '/api/v1/prompts': { target: 'http://localhost:8091', changeOrigin: true },
         '/api/v1/prompt': { target: 'http://localhost:8091', changeOrigin: true },
         '/api/v1/agent': { target: 'http://localhost:8090', changeOrigin: true },
+        // V6.9: /agent 直连 agent 服务（SSE 长连接）
+        '/agent': { target: 'http://localhost:8090', changeOrigin: true, proxyTimeout: 120000, timeout: 120000 },
+        // V6.9: skill-approval 同在 agent 服务 (8090)
+        '/api/v1/skill-approval': { target: 'http://localhost:8090', changeOrigin: true, proxyTimeout: 30000 },
         '/api/v1/collab': { target: 'http://localhost:8095', changeOrigin: true },
         '/api/v1/ws': { target: 'ws://localhost:8095', ws: true, changeOrigin: true },
         '/ws': { target: 'ws://localhost:8095', ws: true, changeOrigin: true },
