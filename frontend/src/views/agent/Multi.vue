@@ -366,13 +366,22 @@ async function startMulti() {
   try {
     await multiAgentApi.xhrStream(
       { goal: form.goal, tools: form.tools, maxRounds: form.maxRounds, model: form.model },
-      handleSSEEvent
+      (eventName, data, raw) => {
+        try {
+          handleSSEEvent(eventName, data, raw)
+        } catch (e) {
+          console.error('[Multi] SSE 事件处理异常:', eventName, e)
+          pushLog('error', { message: `事件 ${eventName} 处理异常: ${e.message}` })
+        }
+      }
     )
   } catch (e) {
-    if (e.name === 'AbortError') return
+    if (e.name === 'AbortError') {
+      // stopMulti 里已设 running = false
+      return
+    }
     const msg = e.message || 'SSE 连接失败'
     pushLog('error', { message: msg })
-    // 401: 未登录提示
     if (msg.includes('401') || msg.includes('Unauthorized') || msg.includes('需要登录')) {
       ElMessage.error('请先登录后再使用多智能体协作')
     } else if (msg.includes('fetch') || msg.includes('Failed') || msg.includes('Network')) {
@@ -381,12 +390,16 @@ async function startMulti() {
       ElMessage.error(msg)
     }
   } finally {
+    // finally 总是最后执行（无论 catch 有无 return）
     running.value = false
   }
 }
 
 function stopMulti() {
-  abortController.value?.abort()
+  if (abortController.value) {
+    abortController.value.abort()
+    abortController.value = null
+  }
   running.value = false
   pushLog('error', { message: '用户主动停止' })
 }
@@ -450,11 +463,10 @@ function handleSSEEvent(eventName, data, raw) {
       break
 
     case 'done':
-      running.value = false
+      // running.value = false 由 finally 处理
       execStats.value = { totalMs: data.totalDurationMs, totalSteps: stepHistory.value.length,
         maxRounds: data.rounds, criticPassed: data.criticPassed }
       pushLog('done', { ...data, ts, type: 'done' })
-      // 写入历史
       history.value.unshift({
         goal: form.goal,
         rounds: data.rounds,
@@ -468,7 +480,7 @@ function handleSSEEvent(eventName, data, raw) {
       break
 
     case 'error':
-      running.value = false
+      // running.value = false 由 finally 处理（但 stopMulti 里已立即设过）
       pushLog('error', { ...data, ts, type: 'error' })
       ElMessage.error(data.message || '执行异常')
       break

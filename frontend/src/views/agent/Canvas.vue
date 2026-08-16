@@ -9,6 +9,9 @@
         <el-button size="small" @click="newCanvas"><el-icon><Plus /></el-icon>新建</el-button>
         <el-button type="primary" size="small" @click="saveCanvas"><el-icon><FolderChecked /></el-icon>保存</el-button>
         <el-button type="success" size="small" @click="runCanvas" :loading="running"><el-icon><VideoPlay /></el-icon>执行</el-button>
+        <el-button v-if="running && multiRunMode" type="danger" size="small" @click="stopCanvasMulti">
+          ⏹ 停止
+        </el-button>
         <el-button size="small" :type="multiRunMode?'warning':''" @click="multiRunMode = !multiRunMode" :disabled="running">
           {{ multiRunMode ? '⚡ 多Agent ON' : '🤖 多Agent' }}
         </el-button>
@@ -526,7 +529,14 @@ async function runCanvas() {
 
       await multiAgentApi.xhrStream(
         { goal: canvasGoal, tools, maxRounds: 3 },
-        handleCanvasMultiEvent
+        (eventName, data) => {
+          try {
+            handleCanvasMultiEvent(eventName, data)
+          } catch (e) {
+            console.error('[Canvas] SSE 事件处理异常:', eventName, e)
+            runLog.value.push({ tool: '错误', result: `事件 ${eventName} 处理异常: ${e.message}` })
+          }
+        }
       )
     } catch (e) {
       if (e.name !== 'AbortError') {
@@ -556,6 +566,18 @@ async function runCanvas() {
       running.value = false
     }
   }
+}
+
+// V6.9: 停止 Canvas 模式的多Agent SSE
+function stopCanvasMulti() {
+  if (multiAbortCtrl.value) {
+    multiAbortCtrl.value.abort()
+    multiAbortCtrl.value = null
+  }
+  running.value = false
+  nodeExecStatus.value = {}
+  nodeExecResult.value = {}
+  ElMessage.info('已停止多Agent执行')
 }
 
 // V6.9: 处理画布上的多Agent SSE事件
@@ -606,13 +628,13 @@ function handleCanvasMultiEvent(eventName, data) {
     })
     ElMessage.success('多Agent协作完成')
   } else if (eventName === 'done') {
-    running.value = false
+    // running.value = false 由 finally 处理
     highlightExecution()
   } else if (eventName === 'error') {
     runLog.value.push({ tool: '⚠️ 错误', result: data.message })
     nodes.value.filter(n => n.type === 'LLM').forEach(n => { nodeExecStatus.value[n.id] = 'error' })
     ElMessage.error(data.message)
-    running.value = false
+    // running.value = false 由 finally 处理
   }
 }
 
