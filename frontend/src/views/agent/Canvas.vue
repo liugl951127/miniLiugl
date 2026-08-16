@@ -9,6 +9,9 @@
         <el-button size="small" @click="newCanvas"><el-icon><Plus /></el-icon>新建</el-button>
         <el-button type="primary" size="small" @click="saveCanvas"><el-icon><FolderChecked /></el-icon>保存</el-button>
         <el-button type="success" size="small" @click="runCanvas" :loading="running"><el-icon><VideoPlay /></el-icon>执行</el-button>
+        <el-button size="small" :type="multiRunMode?'warning':''" @click="multiRunMode = !multiRunMode" :disabled="running">
+          {{ multiRunMode ? '⚡ 多Agent ON' : '🤖 多Agent' }}
+        </el-button>
         <el-button size="small" @click="autoLayout"><el-icon><Grid /></el-icon>自动布局</el-button>
         <el-button size="small" @click="exportFlow"><el-icon><Download /></el-icon>导出</el-button>
         <el-button size="small" @click="importFlow"><el-icon><Upload /></el-icon>导入</el-button>
@@ -82,6 +85,13 @@
           <div class="node-body">
             <div class="node-type-tag" :style="{ background: n.color + '22', color: n.color }">{{ n.type }}</div>
             <div v-if="n.config?.prompt" class="node-desc">{{ n.config.prompt.slice(0,40) }}…</div>
+          </div>
+          <!-- V6.9: 多Agent执行状态浮层 -->
+          <div v-if="nodeExecStatus[n.id]" class="node-exec-badge" :class="`exec-${nodeExecStatus[n.id]}`">
+            <span>{{ {planner:'🧠',executor:'⚡',critic:'🔍',done:'✅',error:'❌'}[nodeExecStatus[n.id]] || nodeExecStatus[n.id] }}</span>
+          </div>
+          <div v-if="nodeExecResult[n.id]" class="node-exec-popup">
+            {{ nodeExecResult[n.id]?.slice(0,80) }}{{ (nodeExecResult[n.id]?.length||0) > 80 ? '…' : '' }}
           </div>
           <!-- Step badge when execution order is set -->
           <div
@@ -193,7 +203,7 @@
 <script setup>
 import { ref, computed, reactive, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { agentApi } from '@/api/agent'
+import { agentApi, multiAgentApi } from '@/api/agent'
 import { listEnabledModels } from '@/api/model'
 import { listTrainedModels } from '@/api/ai'
 import {
@@ -244,6 +254,10 @@ const running = ref(false)
 const logVisible = ref(false)
 const runLog = ref([])
 const loading = ref(false)
+const multiRunMode = ref(false)        // V6.9: 多Agent模式开关
+const nodeExecStatus = ref({})         // V6.9: nodeId → 'planner'|'executor'|'critic'|'done'|'error'
+const nodeExecResult = ref({})          // V6.9: nodeId → result text
+const multiAbortCtrl = ref(null)
 
 // New: zoom & execution tracking
 const zoom = ref(1.0)
@@ -492,24 +506,112 @@ async function runCanvas() {
   if (!nodes.value.length) { ElMessage.warning('画布为空'); return }
   running.value = true
   runLog.value = []
+  nodeExecStatus.value = {}
+  nodeExecResult.value = {}
   logVisible.value = true
-  try {
-    const startNode = nodes.value.find(n => n.type === 'START')
-    const goal = startNode?.config?.prompt || '请执行工作流'
-    const r = await agentApi.execute({ goal, nodes: nodes.value, edges: edges.value })
-    // V6.8.1 fix: AgentResult.steps → List<Step>，Step字段是 action/observation，不是 tool/result
-    const log = r.data?.steps || []
-    runLog.value = log.map((s, i) => ({
-      tool: s.action || `步骤${i+1}`,
-      result: s.observation || s.thinking || s.answer || '',
-    }))
+
+  const startNode = nodes.value.find(n => n.type === 'START')
+  const goal = startNode?.config?.prompt || '请执行工作流'
+
+  if (multiRunMode.value) {
+    // ── V6.9: 多Agent流式执行 ──
+    const tools = nodes.value.flatMap(n => n.config?.tools || []).filter(Boolean)
+    try {
+      multiAbortCtrl.value = new AbortController()
+      // 收集所有LLM节点的prompt作为子任务描述
+      const llmNodes = nodes.value.filter(n => n.type === 'LLM' && n.config?.prompt)
+      const canvasGoal = llmNodes.length
+        ? `请按以下要求协作完成：\n${llmNodes.map((n,i) => `${i+1}. ${n.label}: ${n.config.prompt}`).join('\n')}`
+        : goal
+
+      await multiAgentApi.xhrStream(
+        { goal: canvasGoal, tools, maxRounds: 3 },
+        handleCanvasMultiEvent
+      )
+    } catch (e) {
+      if (e.name !== 'AbortError') {
+        runLog.value.push({ tool: '错误', result: e.message || '多Agent执行失败' })
+        ElMessage.error('多Agent执行失败')
+      }
+    } finally {
+      running.value = false
+      multiAbortCtrl.value = null
+    }
+  } else {
+    // ── 单Agent执行（原有逻辑） ──
+    try {
+      const r = await agentApi.execute({ goal, nodes: nodes.value, edges: edges.value })
+      const log = r.data?.steps || []
+      runLog.value = log.map((s, i) => ({
+        tool: s.action || `步骤${i+1}`,
+        result: s.observation || s.thinking || s.answer || '',
+      }))
+      highlightExecution()
+      ElMessage.success('执行完成')
+    } catch (e) {
+      runLog.value = [{ tool: '错误', result: e.message || '执行失败' }]
+      ElMessage.error('执行失败')
+      highlightExecution()
+    } finally {
+      running.value = false
+    }
+  }
+}
+
+// V6.9: 处理画布上的多Agent SSE事件
+function handleCanvasMultiEvent(eventName, data) {
+  const ts = new Date().toLocaleTimeString('zh-CN', { hour12: false })
+
+  // 映射事件到节点状态
+  if (eventName === 'planner-start') {
+    const agentNode = nodes.value.find(n => n.type === 'LLM')
+    if (agentNode) nodeExecStatus.value[agentNode.id] = 'planner'
+    runLog.value.push({ tool: '🧠 Planner', result: `第 ${data.round} 轮规划开始` })
+  } else if (eventName === 'planner-plan') {
+    const plan = (data.steps || []).join('\n')
+    runLog.value.push({ tool: '📋 计划', result: plan })
+  } else if (eventName === 'executor-step') {
+    // 找到对应的 LLM 节点高亮
+    const llmNodes = nodes.value.filter(n => n.type === 'LLM')
+    const target = llmNodes[data.step - 1] || llmNodes[0]
+    if (target) {
+      nodeExecStatus.value[target.id] = 'executor'
+      nodeExecResult.value[target.id] = `执行中: ${data.goal}`
+    }
+    runLog.value.push({ tool: `⚡ 步骤${data.step}`, result: data.goal })
+  } else if (eventName === 'executor-result') {
+    const llmNodes = nodes.value.filter(n => n.type === 'LLM')
+    const target = llmNodes[data.step - 1] || llmNodes[0]
+    if (target) {
+      nodeExecStatus.value[target.id] = 'done'
+      nodeExecResult.value[target.id] = data.observation
+    }
+    runLog.value.push({ tool: `📥 步骤${data.step}结果`, result: data.observation })
+  } else if (eventName === 'critic-result') {
+    runLog.value.push({ tool: '🔍 Critic评估', result: `评分 ${data.score}/10 · ${data.passed ? '通过' : '未通过'} · ${data.feedback}` })
+    if (!data.passed) {
+      // 标记所有 LLM 节点为 critic 失败状态
+      nodes.value.filter(n => n.type === 'LLM').forEach(n => {
+        nodeExecStatus.value[n.id] = 'critic'
+      })
+    } else {
+      nodes.value.filter(n => n.type === 'LLM').forEach(n => {
+        if (nodeExecStatus.value[n.id] !== 'done') nodeExecStatus.value[n.id] = 'done'
+      })
+    }
+  } else if (eventName === 'final') {
+    runLog.value.push({ tool: '🎉 最终答案', result: data.answer })
+    nodes.value.filter(n => n.type === 'LLM').forEach(n => {
+      if (nodeExecStatus.value[n.id] !== 'done') nodeExecStatus.value[n.id] = 'done'
+    })
+    ElMessage.success('多Agent协作完成')
+  } else if (eventName === 'done') {
+    running.value = false
     highlightExecution()
-    ElMessage.success('执行完成')
-  } catch (e) {
-    runLog.value = [{ tool: '错误', result: e.message || '执行失败' }]
-    ElMessage.error('执行失败')
-    highlightExecution()
-  } finally {
+  } else if (eventName === 'error') {
+    runLog.value.push({ tool: '⚠️ 错误', result: data.message })
+    nodes.value.filter(n => n.type === 'LLM').forEach(n => { nodeExecStatus.value[n.id] = 'error' })
+    ElMessage.error(data.message)
     running.value = false
   }
 }
@@ -637,4 +739,29 @@ onUnmounted(() => {
 .step-badge.step-error { background: #f56c6c; animation: none; }
 @keyframes badge-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
 .edge-executed { filter: drop-shadow(0 0 3px #67c23a); }
+
+/* V6.9: 多Agent执行状态 */
+.node-exec-badge {
+  position: absolute; top: -10px; right: -10px;
+  width: 22px; height: 22px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; z-index: 10; border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
+  animation: badge-pulse 1.5s infinite;
+}
+.exec-planner { background: #3b82f6; color: #fff; }
+.exec-executor { background: #f59e0b; color: #fff; }
+.exec-critic { background: #ec4899; color: #fff; }
+.exec-done { background: #10b981; color: #fff; animation: none; }
+.exec-error { background: #ef4444; color: #fff; animation: none; }
+.node-exec-popup {
+  position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%);
+  background: #1f2937; color: #f9fafb; font-size: 11px;
+  padding: 6px 8px; border-radius: 6px; white-space: nowrap;
+  max-width: 200px; overflow: hidden; text-overflow: ellipsis;
+  z-index: 20; pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,.2);
+  &::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%);
+    border:5px solid transparent; border-top-color:#1f2937; }
+}
 </style>

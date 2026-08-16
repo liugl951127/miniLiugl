@@ -25,6 +25,71 @@ export const trainingApi = {
   }
 }
 
+// ==================== 多智能体协作 API (V6.9) ====================
+export const multiAgentApi = {
+  /** 同步执行：Planner → Executor → Critic 三角色协作 */
+  run(params) {  // { goal, tools?, maxRounds? }
+    return http.post('/agent/multi/run', params)
+  },
+  /**
+   * 流式执行（SSE），返回 EventSource 实例。
+   * 事件类型: multi-agent-start / planner-start / planner-plan /
+   *          executor-step / executor-result / critic-eval /
+   *          critic-result / critic-retry / final / done / error
+   */
+  stream(params) {
+    const token = localStorage.getItem('token') || ''
+    const url = `${import.meta.env.VITE_API_BASE_URL || ''}/agent/multi/stream`
+    const es = new EventSource(`${url}?token=${encodeURIComponent(token)}`, {
+      withCredentials: true
+    })
+    // POST body 需用 fetch，EventSource GET 不支持 body，改用 XHR 流
+    return null  // 改用下方 xhrStream
+  },
+  /** XHR 流式（POST + text/event-stream），返回 ReadableStream 消费函数 */
+  xhrStream(params, onEvent) {
+    const token = localStorage.getItem('token') || ''
+    return fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/agent/multi/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(params)
+    }).then(r => {
+      const reader = r.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      function pump() {
+        return reader.read().then(({ done, value }) => {
+          if (done) return
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() || ''
+          for (const line of lines) {
+            if (!line.startsWith('data:')) continue
+            const data = line.slice(5).trim()
+            if (!data || data === '[DONE]') continue
+            try {
+              const json = JSON.parse(data)
+              const eventName = json.event || 'message'
+              const eventData = json.data || json
+              onEvent(eventName, eventData, json)
+            } catch {}
+          }
+          return pump()
+        })
+      }
+      return pump()
+    })
+  },
+  /** 单独 Planner：生成执行计划 */
+  plan(params) {  // { goal, feedback? }
+    return http.post('/agent/multi/plan', params)
+  },
+  /** 单独 Critic：评估执行结果 */
+  critic(params) {  // { goal, plan[], results }
+    return http.post('/agent/multi/critic', params)
+  }
+}
+
 export const agentApi = {
   // 执行 Agent 任务 (LLM plan 生成 + 执行)
   execute(plan) {
