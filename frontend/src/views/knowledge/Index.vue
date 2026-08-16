@@ -87,8 +87,13 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="110" align="center">
+            <el-table-column label="操作" width="160" align="center">
               <template #default="{ row }">
+                <el-tooltip content="编辑内容（修改后重新切片+索引）" placement="top">
+                  <el-button size="small" type="primary" @click="openEditDoc(row)">
+                    <el-icon><EditPen /></el-icon>
+                  </el-button>
+                </el-tooltip>
                 <el-tooltip content="重命名" placement="top">
                   <el-button size="small" type="default" @click="openRenameDoc(row)">
                     <el-icon><Edit /></el-icon>
@@ -361,6 +366,54 @@
         <el-button @click="fullContentVisible = false">关闭</el-button>
       </template>
     </el-dialog>
+
+    <!-- 文档在线编辑弹窗 (Day 45) -->
+    <el-dialog v-model="editDocVisible" title="在线编辑文档内容" width="860px" destroy-on-close>
+      <div v-if="editDocLoading" style="text-align:center;padding:40px">
+        <el-icon class="is-loading" style="font-size:32px;color:#409eff"><Loading /></el-icon>
+      </div>
+      <div v-else-if="editDoc">
+        <el-alert type="warning" :closable="false" style="margin-bottom:12px">
+          <template #title>
+            修改文档内容后将自动 <strong>重新切片</strong> 并 <strong>重新向量化索引</strong>，
+            预计耗时与文档长度成正比，请耐心等待完成。
+          </template>
+        </el-alert>
+        <el-descriptions :column="3" border size="small" style="margin-bottom:14px">
+          <el-descriptions-item label="文档名">{{ editDoc.title }}</el-descriptions-item>
+          <el-descriptions-item label="当前切片数">{{ editDoc.chunkCount || 0 }} 个</el-descriptions-item>
+          <el-descriptions-item label="原大小">{{ editDoc.sizeBytes ? (editDoc.sizeBytes / 1024).toFixed(1) + ' KB' : '-' }}</el-descriptions-item>
+        </el-descriptions>
+        <el-form label-width="0" size="default">
+          <el-form-item label="正文内容">
+            <el-input
+              v-model="editDocContent"
+              type="textarea"
+              :rows="18"
+              placeholder="在此输入文档正文..."
+              style="font-family:monospace;font-size:13px"
+            />
+          </el-form-item>
+          <el-form-item style="margin-bottom:0">
+            <span style="font-size:12px;color:#909399">
+              字数：{{ editDocContent.length }} |
+              预计切片：{{ Math.ceil(editDocContent.length / 300) }} 个（以 300 字/片估算）
+            </span>
+          </el-form-item>
+        </el-form>
+        <!-- 处理进度 -->
+        <div v-if="editDocSaving" style="margin-top:12px">
+          <el-progress :percentage="editDocProgress" :status="editDocProgress >= 100 ? 'success' : undefined" :indeterminate="editDocProgress < 20" />
+          <div style="text-align:center;font-size:13px;color:#606266;margin-top:4px">{{ editDocProgressMsg }}</div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="editDocVisible = false" :disabled="editDocSaving">取消</el-button>
+        <el-button type="primary" :loading="editDocSaving" @click="doSaveEditDoc">
+          保存并重新索引
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -370,12 +423,12 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   listMyKbs, createKb, updateKb, deleteKb,
   listDocs, uploadDoc, uploadDocStream, deleteDoc, renameDoc,
-  retrieve, getDocContent
+  retrieve, getDocContent, updateDocContent
 } from '@/api/rag'
 import http from '@/api/http'
 import { useUserStore } from '@/store/user'
 import {
-  Plus, Upload, UploadFilled, Refresh, Edit, Delete,
+  Plus, Upload, UploadFilled, Refresh, Edit, EditPen, Delete,
   Search, ArrowDown, Document, CircleCheck, InfoFilled, Loading
 } from '@element-plus/icons-vue'
 
@@ -449,6 +502,70 @@ const renameDialogVisible = ref(false)
 const renameTargetDoc = ref(null)
 const renameDocName = ref('')
 const renamingDoc = ref(false)
+
+// ========== 在线编辑文档 (Day 45) ==========
+const editDocVisible = ref(false)
+const editDocLoading = ref(false)
+const editDocSaving = ref(false)
+const editDoc = ref(null)       // 文档元信息
+const editDocContent = ref('')  // 可编辑的正文
+const editDocProgress = ref(0)
+const editDocProgressMsg = ref('准备中...')
+
+async function openEditDoc(doc) {
+  editDocVisible.value = true
+  editDocLoading.value = true
+  editDocSaving.value = false
+  editDoc.value = null
+  editDocContent.value = ''
+  editDocProgress.value = 0
+  editDocProgressMsg.value = '加载中...'
+  try {
+    const r = await getDocContent(doc.id)
+    editDoc.value = r.data
+    editDocContent.value = r.data.content || ''
+    editDocProgressMsg.value = '就绪，可以编辑内容后点击「保存并重新索引」'
+  } catch (e) {
+    ElMessage.error('加载文档内容失败: ' + (e.message || ''))
+    editDocVisible.value = false
+  } finally {
+    editDocLoading.value = false
+  }
+}
+
+async function doSaveEditDoc() {
+  if (!editDocContent.value.trim()) {
+    ElMessage.warning('内容不能为空')
+    return
+  }
+  editDocSaving.value = true
+  editDocProgress.value = 10
+  editDocProgressMsg.value = '正在重新切片和向量化索引...'
+  // 模拟进度（实际由后端 SSE 提供，这里先乐观 UI）
+  const timer = setInterval(() => {
+    if (editDocProgress.value < 90) {
+      editDocProgress.value += Math.floor(Math.random() * 8) + 3
+      if (editDocProgress.value > 90) editDocProgress.value = 90
+      editDocProgressMsg.value = '向量化中 ' + editDocProgress.value + '%...'
+    }
+  }, 600)
+
+  try {
+    await updateDocContent(editDoc.value.id, userId.value, editDocContent.value)
+    clearInterval(timer)
+    editDocProgress.value = 100
+    editDocProgressMsg.value = '处理完成！'
+    ElMessage.success('文档内容更新成功，已重新切片索引')
+    editDocVisible.value = false
+    refreshDocs()
+  } catch (e) {
+    clearInterval(timer)
+    editDocProgress.value = 0
+    ElMessage.error('更新失败: ' + (e.message || ''))
+  } finally {
+    editDocSaving.value = false
+  }
+}
 
 // ========== 加载知识库列表 ==========
 async function loadKbs() {

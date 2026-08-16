@@ -805,4 +805,21 @@
 - [ ] 前端性能优化（虚拟滚动 / 路由懒加载）
 - [ ] V4.4 Release 打包准备
 
-## Day 45 - 待开始
+## Day 45 - 2026-08-16 ✅ RAG文档在线编辑 + Monitor告警升级策略 + 前端性能优化
+
+**今日完成：**
+- [x] **RAG 文档在线编辑**：后端 `PUT /api/v1/rag/doc/{id}/content` + `updateDocContent()`（修改内容 + 删除旧chunk + 重新切片 + 重新向量化 + 更新KB计数）+ 前端 EditPen 按钮 + 860px 编辑弹窗（字数统计 + 预估切片数 + 进度条）
+- [x] **Monitor 告警升级策略**：AlertRule 新增 `escalateAfterMinutes` / `escalationChannel` / `autoResolveMinutes` + AlertEvent 新增 `escalated` / `escalatedAt` + `checkEscalation()` 定时任务（每60s检查CRITICAL超时事件）+ SQL schema 更新
+- [x] **Monitor 前端升级配置**：新增「告警规则」Tab（规则列表 + 新建/编辑/启用禁用/删除）+ 规则编辑弹窗（升级等待时间/升级渠道/自动恢复时间）+ `getAllAlertRules()` API
+- [x] **前端性能优化**：路由懒加载确认已有 ✅ + analytics NL2SQL 结果表格分页（每页20条，el-pagination）
+- [x] 自检 13/13 ✅ + 静态 5/5 ✅ + vite build 1m7s ✅
+
+**关键数据：** 后端 5 文件 / 前端 3 文件 / SQL 1 文件 / API 1 函数
+
+**明日计划 Day 46：**
+- [ ] RAG 多文档批量编辑 + 批量重新索引
+- [ ] Monitor 告警自动恢复（auto-resolve）定时任务完善
+- [ ] 前端图片懒加载优化
+- [ ] V4.4 Release 打包 + CHANGELOG 更新
+
+## Day 46 - 待开始

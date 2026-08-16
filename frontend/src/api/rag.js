@@ -109,6 +109,12 @@ export const deleteDoc = (id, ownerId) =>
 export const getDocContent = (docId) =>
   http.get(`/rag/doc/${docId}/content`)
 
+/** 在线编辑文档内容：修改正文 + 重新切片 + 重新索引 (Day 45) */
+export const updateDocContent = (docId, ownerId, newContent) =>
+  ownerId
+    ? http.put(`/rag/doc/${docId}/content?ownerId=${ownerId}`, { content: newContent })
+    : http.put(`/rag/doc/${docId}/content`, { content: newContent })
+
 // 检索 + 问答
 export const retrieve = (body) => {
   console.log('%c[RAG API] retrieve', 'color: #409eff', body)

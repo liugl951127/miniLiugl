@@ -120,6 +120,59 @@
         </div>
       </el-tab-pane>
 
+      <!-- ========== 告警规则 (Day 45) ========== -->
+      <el-tab-pane label="告警规则" name="rules">
+        <div class="channel-toolbar">
+          <el-button type="primary" size="small" @click="openRuleForm(null)">
+            <el-icon><Plus /></el-icon>新建规则
+          </el-button>
+          <el-button size="small" @click="loadRules">
+            <el-icon><Refresh /></el-icon>刷新
+          </el-button>
+        </div>
+
+        <el-table :data="rules" stripe size="small" v-loading="rulesLoading" style="margin-top:12px">
+          <el-table-column prop="id" label="ID" width="70" />
+          <el-table-column prop="name" label="规则名称" width="160" />
+          <el-table-column prop="metricName" label="指标" width="130" />
+          <el-table-column prop="operator" label="条件" width="70" align="center">
+            <template #default="{ row }"><code>{{ row.operator }}</code></template>
+          </el-table-column>
+          <el-table-column prop="threshold" label="阈值" width="80" align="center" />
+          <el-table-column prop="severity" label="级别" width="90">
+            <template #default="{ row }">
+              <el-tag size="small" :type="severityType(row.severity)">{{ row.severity }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="升级策略" width="200">
+            <template #default="{ row }">
+              <span v-if="row.escalateAfterMinutes" style="font-size:12px;color:#e6a23c">
+                ⏱ 超时 {{ row.escalateAfterMinutes }}min 升级
+              </span>
+              <span v-else style="font-size:12px;color:#909399">无</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="enabled" label="状态" width="80" align="center">
+            <template #default="{ row }">
+              <el-tag size="small" :type="row.enabled ? 'success' : 'info'">{{ row.enabled ? '启用' : '禁用' }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="180" fixed="right">
+            <template #default="{ row }">
+              <el-button size="small" type="primary" @click="openRuleForm(row)">
+                <el-icon><Edit /></el-icon>编辑
+              </el-button>
+              <el-button size="small" :type="row.enabled ? 'warning' : 'success'" @click="toggleRule(row)">
+                {{ row.enabled ? '禁用' : '启用' }}
+              </el-button>
+              <el-button size="small" type="danger" @click="deleteRule(row)">
+                <el-icon><Delete /></el-icon>
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-tab-pane>
+
       <!-- ========== SLA 统计 (Day 43) ========== -->
       <el-tab-pane label="SLA 统计" name="sla">
         <div class="sla-toolbar">
@@ -343,17 +396,86 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 告警规则编辑弹窗 (Day 45) -->
+    <el-dialog v-model="ruleFormVisible" :title="ruleFormMode === 'edit' ? '编辑告警规则' : '新建告警规则'" width="580px" destroy-on-close>
+      <el-form :model="ruleForm" label-width="120px" size="default">
+        <el-form-item label="规则名称" required>
+          <el-input v-model="ruleForm.name" placeholder="如：CPU 过高告警" maxlength="100" />
+        </el-form-item>
+        <el-form-item label="指标名">
+          <el-select v-model="ruleForm.metricName" placeholder="选择指标" style="width:100%">
+            <el-option label="cpu_usage (CPU使用率)" value="cpu_usage" />
+            <el-option label="memory_usage (内存使用率)" value="memory_usage" />
+            <el-option label="disk_usage (磁盘使用率)" value="disk_usage" />
+            <el-option label="jvm_heap_usage (JVM堆内存)" value="jvm_heap_usage" />
+            <el-option label="http_5xx_rate (5xx错误率)" value="http_5xx_rate" />
+            <el-option label="error_rate (错误率)" value="error_rate" />
+            <el-option label="chat_messages_total (对话消息数)" value="chat_messages_total" />
+            <el-option label="tool_calls_total (工具调用数)" value="tool_calls_total" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="条件">
+          <el-select v-model="ruleForm.operator" style="width:100px">
+            <el-option label=">" value=">" />
+            <el-option label=">=" value=">=" />
+            <el-option label="<" value="<" />
+            <el-option label="<=" value="<=" />
+            <el-option label="=" value="=" />
+            <el-option label="!=" value="!=" />
+          </el-select>
+          <el-input-number v-model="ruleForm.threshold" :min="0" :max="100" style="margin-left:8px;width:120px" />
+        </el-form-item>
+        <el-form-item label="严重级别">
+          <el-select v-model="ruleForm.severity" style="width:100%">
+            <el-option label="INFO" value="info" />
+            <el-option label="WARNING" value="warning" />
+            <el-option label="CRITICAL" value="critical" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="通知渠道">
+          <el-select v-model="ruleForm.notifyChannel" placeholder="选择渠道（可选）" clearable style="width:100%">
+            <el-option v-for="ch in channels" :key="ch.id" :label="ch.name + ' (' + ch.channelType + ')'" :value="String(ch.id)" />
+          </el-select>
+        </el-form-item>
+
+        <!-- 升级策略 (Day 45) -->
+        <el-divider content-position="left" style="font-size:13px">⚠️ 升级策略（仅 CRITICAL 生效）</el-divider>
+        <el-form-item label="升级等待时间">
+          <el-input-number v-model="ruleForm.escalateAfterMinutes" :min="0" :max="1440" :step="5" style="width:140px" />
+          <span style="margin-left:8px;color:#909399;font-size:13px">分钟（0=不升级）</span>
+        </el-form-item>
+        <el-form-item label="升级通知渠道">
+          <el-select v-model="ruleForm.escalationChannel" placeholder="留空则使用原渠道" clearable multiple style="width:100%">
+            <el-option v-for="ch in channels" :key="ch.id" :label="ch.name + ' (' + ch.channelType + ')'" :value="ch.channelType" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="自动恢复时间">
+          <el-input-number v-model="ruleForm.autoResolveMinutes" :min="0" :max="10080" :step="10" style="width:140px" />
+          <span style="margin-left:8px;color:#909399;font-size:13px">分钟（0=不自动恢复）</span>
+        </el-form-item>
+
+        <el-form-item label="启用">
+          <el-switch v-model="ruleForm.enabled" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="ruleFormVisible = false" :disabled="savingRule">取消</el-button>
+        <el-button type="primary" :loading="savingRule" @click="saveRule">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Refresh, View, Loading, Plus } from '@element-plus/icons-vue'
+import { Refresh, View, Loading, Plus, Edit, Delete } from '@element-plus/icons-vue'
 import {
   getMonitorHealth, getJvmHealth, getFiringAlerts, rcaAnalysis, acknowledgeAlert,
   listAlertChannels, createAlertChannel, updateAlertChannel, deleteAlertChannel, testAlertChannel,
-  getAlertSla, getAlertTrend
+  getAlertSla, getAlertTrend,
+  getAllAlertRules, createAlertRule, updateAlertRule, deleteAlertRule, toggleAlertRule
 } from '@/api/monitor'
 import http from '@/api/http'
 
@@ -505,6 +627,9 @@ watch(activeTab, (tab) => {
   if (tab === 'trend') {
     loadAlertTrend()
   }
+  if (tab === 'rules' && rules.value.length === 0) {
+    loadRules()
+  }
 })
 
 async function loadData() {
@@ -655,6 +780,106 @@ async function deleteChannel(row) {
     await deleteAlertChannel(row.id)
     ElMessage.success('渠道已删除')
     await loadChannels()
+  } catch (e) {
+    if (e !== 'cancel') ElMessage.error('删除失败：' + (e.message || ''))
+  }
+}
+
+// ========== 告警规则 (Day 45) ==========
+const rules = ref([])
+const rulesLoading = ref(false)
+const ruleFormVisible = ref(false)
+const ruleFormMode = ref('create') // 'create' | 'edit'
+const savingRule = ref(false)
+const ruleForm = ref({
+  id: null, name: '', metricName: 'cpu_usage', operator: '>', threshold: 80,
+  severity: 'warning', notifyChannel: '', enabled: true,
+  escalateAfterMinutes: 0, escalationChannel: '', autoResolveMinutes: 0,
+  cooldownMinutes: 15
+})
+
+async function loadRules() {
+  rulesLoading.value = true
+  try {
+    const r = await getAllAlertRules()
+    rules.value = r.data || []
+  } catch {
+    rules.value = []
+  } finally {
+    rulesLoading.value = false
+  }
+}
+
+function openRuleForm(row) {
+  if (row) {
+    ruleFormMode.value = 'edit'
+    ruleForm.value = {
+      id: row.id, name: row.name, metricName: row.metricName || 'cpu_usage',
+      operator: row.operator || '>', threshold: row.threshold || 80,
+      severity: row.severity || 'warning', notifyChannel: row.notifyChannel || '',
+      enabled: !!row.enabled,
+      escalateAfterMinutes: row.escalateAfterMinutes || 0,
+      escalationChannel: row.escalationChannel || '',
+      autoResolveMinutes: row.autoResolveMinutes || 0,
+      cooldownMinutes: row.cooldownMinutes || 15
+    }
+  } else {
+    ruleFormMode.value = 'create'
+    ruleForm.value = {
+      id: null, name: '', metricName: 'cpu_usage', operator: '>', threshold: 80,
+      severity: 'warning', notifyChannel: '', enabled: true,
+      escalateAfterMinutes: 0, escalationChannel: '', autoResolveMinutes: 0,
+      cooldownMinutes: 15
+    }
+  }
+  ruleFormVisible.value = true
+}
+
+async function saveRule() {
+  if (!ruleForm.value.name.trim()) {
+    ElMessage.warning('请输入规则名称')
+    return
+  }
+  savingRule.value = true
+  try {
+    const payload = { ...ruleForm.value }
+    // 去掉 id 字段（创建时不需要 id）
+    delete payload.id
+    if (ruleFormMode.value === 'edit') {
+      await updateAlertRule(ruleForm.value.id, payload)
+      ElMessage.success('规则更新成功')
+    } else {
+      await createAlertRule(payload)
+      ElMessage.success('规则创建成功')
+    }
+    ruleFormVisible.value = false
+    await loadRules()
+  } catch (e) {
+    ElMessage.error('保存失败：' + (e.message || ''))
+  } finally {
+    savingRule.value = false
+  }
+}
+
+async function toggleRule(row) {
+  try {
+    await toggleAlertRule(row.id, !row.enabled)
+    ElMessage.success(row.enabled ? '规则已禁用' : '规则已启用')
+    await loadRules()
+  } catch (e) {
+    ElMessage.error('操作失败：' + (e.message || ''))
+  }
+}
+
+async function deleteRule(row) {
+  try {
+    await ElMessageBox.confirm(
+      `确定删除规则「${row.name}」吗？该操作不可恢复。`,
+      '删除规则', { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
+    )
+    await deleteAlertRule(row.id)
+    ElMessage.success('规则已删除')
+    await loadRules()
   } catch (e) {
     if (e !== 'cancel') ElMessage.error('删除失败：' + (e.message || ''))
   }

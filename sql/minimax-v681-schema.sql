@@ -1334,6 +1334,8 @@ CREATE TABLE `alert_event` (
   `notes` VARCHAR(255) NULL,
   `duration` BIGINT NULL,
   `silenced_until` TIMESTAMP NULL,
+  `escalated` TINYINT(1) NULL DEFAULT 0 COMMENT 'Day45: 是否已升级',
+  `escalated_at` TIMESTAMP NULL COMMENT 'Day45: 升级时间',
     PRIMARY KEY (`id`),
   KEY `idx_id` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1000;
@@ -1356,6 +1358,9 @@ CREATE TABLE `alert_rule` (
   `tags` VARCHAR(255) NULL,
   `notify_channel` VARCHAR(255) NULL,
   `silenced_until` TIMESTAMP NULL,
+  `escalate_after_minutes` INT NULL COMMENT 'Day45: CRITICAL 告警升级等待分钟数',
+  `escalation_channel` VARCHAR(255) NULL COMMENT 'Day45: 升级通知渠道，逗号分隔',
+  `auto_resolve_minutes` INT NULL COMMENT 'Day45: 自动恢复分钟数',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),

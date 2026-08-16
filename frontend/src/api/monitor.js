@@ -81,6 +81,9 @@ export const updateAlertRule = (id, rule) => http.put(`/monitor/alerts/rules/${i
 /** 删除告警规则 */
 export const deleteAlertRule = (id) => http.delete(`/monitor/alerts/rules/${id}`)
 
+/** 全部告警规则 (含禁用, Day 45) */
+export const getAllAlertRules = () => http.get('/monitor/alerts/rules/all')
+
 /** 启用/禁用告警规则 */
 export const toggleAlertRule = (id, enabled) =>
   http.post(`/monitor/alerts/rules/${id}/toggle`, { enabled })

@@ -159,10 +159,19 @@
                     {{ nlResult.rows.length }} 条 · {{ nlResult.duration || 0 }}ms
                   </span>
                 </template>
-                <el-table :data="nlResult.rows" stripe size="small" max-height="320" show-summary
+                <el-table :data="nlPaginatedRows" stripe size="small" max-height="320" show-summary
                   :summary-method="nlTableSummary">
                   <el-table-column v-for="col in nlResult.columns" :key="col" :prop="col" :label="col" min-width="100" show-overflow-tooltip />
                 </el-table>
+                <el-pagination
+                  v-if="nlResult.rows.length > 10"
+                  v-model:current-page="nlPage"
+                  :page-size="nlPageSize"
+                  :total="nlResult.rows.length"
+                  layout="prev, pager, next, total"
+                  style="margin-top:8px;justify-content:center"
+                  @current-change="nlPage = $event"
+                />
               </el-card>
 
               <!-- 安全警告 -->
@@ -353,7 +362,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   nl2sqlAsk, nl2sqlHistory, nl2sqlExplain, executeQuery,
@@ -380,6 +389,14 @@ const nlQuery = ref('')
 const nlLoading = ref(false)
 const nlResult = ref(null)
 const nlHistory = ref([])
+// NL 结果表格分页 (Day 45)
+const nlPage = ref(1)
+const nlPageSize = 20
+const nlPaginatedRows = computed(() => {
+  const rows = nlResult.value?.rows || []
+  const start = (nlPage.value - 1) * nlPageSize
+  return rows.slice(start, start + nlPageSize)
+})
 const nlHistoryLoading = ref(false)
 const showDsForm = ref(false)
 const nlDsId = ref(null)        // 选中的数据源 ID

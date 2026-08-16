@@ -58,6 +58,55 @@ public class AlertEngine {
         }
     }
 
+    /**
+     * Day 45: 告警升级检查 — 每 60s 执行一次
+     * - 查找所有 firing 且未升级的 CRITICAL 事件
+     * - 如果触发时间超过规则配置的 escalateAfterMinutes，则升级
+     */
+    @Scheduled(fixedDelay = 60_000, initialDelay = 30_000)
+    public void checkEscalation() {
+        try {
+            List<AlertEvent> firing = eventMapper.selectByStatus("firing", 500);
+            for (AlertEvent e : firing) {
+                if (Boolean.TRUE.equals(e.getEscalated())) continue;
+                AlertRule r = ruleMapper.selectById(e.getRuleId());
+                if (r == null) continue;
+                Integer wait = r.getEscalateAfterMinutes();
+                if (wait == null || wait <= 0) continue;
+                if (!"critical".equalsIgnoreCase(e.getSeverity())) continue;
+
+                long elapsedMinutes = java.time.Duration.between(e.getFiredAt(), LocalDateTime.now()).toMinutes();
+                if (elapsedMinutes >= wait) {
+                    log.warn("[ESCALATE] alertId={} CRITICAL 告警持续 {} 分钟，触发升级！", e.getId(), elapsedMinutes);
+                    e.setEscalated(true);
+                    e.setEscalatedAt(LocalDateTime.now());
+                    // 更新事件消息
+                    String escalatedMsg = e.getMessage() + " ⚠️【已升级】持续超过 " + wait + " 分钟未恢复";
+                    e.setMessage(escalatedMsg);
+                    eventMapper.updateById(e);
+
+                    // 触发升级通知
+                    try {
+                        if (r.getEscalationChannel() != null && !r.getEscalationChannel().isBlank()) {
+                            String[] channels = r.getEscalationChannel().split(",");
+                            for (String ch : channels) {
+                                notifierManager.notify(e, ch.trim());
+                            }
+                        } else {
+                            notifierManager.notifyAll(e); // 默认通知全部
+                        }
+                    } catch (Exception ex) {
+                        log.warn("[ESCALATE] notification error: {}", ex.getMessage());
+                    }
+                    // SSE 广播升级事件
+                    try { streamRegistry.broadcast(e); } catch (Exception ex) { /* ignore */ }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("escalation check fail: {}", e.getMessage());
+        }
+    }
+
     public void evaluateRule(AlertRule r) {
         // Day 35: 规则级静默检查
         if (r.getSilencedUntil() != null && r.getSilencedUntil().isAfter(LocalDateTime.now())) {
@@ -262,6 +311,10 @@ public class AlertEngine {
         if (patch.getEnabled() != null) existing.setEnabled(patch.getEnabled());
         if (patch.getCooldownMinutes() != null) existing.setCooldownMinutes(patch.getCooldownMinutes());
         if (patch.getNotifyChannel() != null) existing.setNotifyChannel(patch.getNotifyChannel());
+        // Day 45: 升级配置
+        if (patch.getEscalateAfterMinutes() != null) existing.setEscalateAfterMinutes(patch.getEscalateAfterMinutes());
+        if (patch.getEscalationChannel() != null) existing.setEscalationChannel(patch.getEscalationChannel());
+        if (patch.getAutoResolveMinutes() != null) existing.setAutoResolveMinutes(patch.getAutoResolveMinutes());
         ruleMapper.updateById(existing);
         return existing;
     }

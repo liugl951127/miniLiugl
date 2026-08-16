@@ -28,4 +28,8 @@ public class AlertEvent {
     private LocalDateTime silencedUntil; // 静默截止时间 (Day 35)
     /** V7.0 Flow⑤: 关联的会话ID (跳转到对话) */
     private String sessionId;
+    /** Day 45: 是否已升级 (true=已触发升级通知) */
+    private Boolean escalated;
+    /** Day 45: 升级时间 */
+    private LocalDateTime escalatedAt;
 }

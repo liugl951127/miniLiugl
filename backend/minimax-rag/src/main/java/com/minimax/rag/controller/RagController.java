@@ -38,6 +38,7 @@ import java.util.Map;
  *   GET    /rag/doc?kbId=1                  列出
  *   GET    /rag/doc/{id}/chunks             切片列表
  *   PUT    /rag/doc/{id}                    重命名文档
+ *   PUT    /rag/doc/{id}/content            在线编辑（修改内容+重新切片+重新索引）Day 45
  *   DELETE /rag/doc/{id}                    删除
  *   GET    /rag/doc/{id}/content            文档全文内容
  *
@@ -256,6 +257,26 @@ public class RagController {
             return Result.fail("title 不能为空");
         }
         return Result.ok(docService.renameDoc(id, resolvedOwner, newTitle));
+    }
+
+    /**
+     * Day 45: 在线编辑文档内容（修改正文 + 重新切片 + 重新索引）
+     * PUT /api/v1/rag/doc/{id}/content
+     * body: { "content": "新的文档内容..." }
+     */
+    @Operation(summary = "在线编辑文档内容（重新切片+重新索引）")
+    @PutMapping("/doc/{id}/content")
+    public Result<Document> updateDocContent(@AuthenticationPrincipal AuthenticatedUser user,
+                                              @PathVariable Long id,
+                                              @RequestParam(required = false) Long ownerId,
+                                              @RequestBody Map<String, Object> body) {
+        Long resolvedOwner = resolveOwnerId(user, ownerId);
+        String newContent = (String) body.get("content");
+        if (newContent == null || newContent.isBlank()) {
+            return Result.fail("content 不能为空");
+        }
+        Document doc = docService.updateDocContent(id, resolvedOwner, newContent);
+        return Result.ok(doc);
     }
 
     // ---------- 检索 + 问答 ----------

@@ -293,6 +293,70 @@ public class DocumentService {
         return d;
     }
 
+    /**
+     * Day 45: 在线编辑文档内容
+     * - 校验归属
+     * - 更新 document.content
+     * - 删除旧切片，重新分块 + 向量化 + 写库
+     * - 更新 document 状态和 chunkCount
+     * - 更新所属 KB 的 chunk 计数
+     *
+     * @param docId     文档 ID
+     * @param ownerId   所有者（归属校验）
+     * @param newContent 新内容
+     * @return 更新后的 Document
+     */
+    @Transactional
+    public Document updateDocContent(Long docId, Long ownerId, String newContent) {
+        Document d = docMapper.selectById(docId);
+        if (d == null) throw new IllegalArgumentException("文档不存在: " + docId);
+        if (!d.getOwnerId().equals(ownerId)) throw new SecurityException("无权修改此文档");
+        if (newContent == null) throw new IllegalArgumentException("内容不能为空");
+
+        Long kbId = d.getKbId();
+        int oldChunkCount = d.getChunkCount();
+
+        // 1) 更新 content
+        d.setContent(newContent);
+        d.setSizeBytes((long) newContent.getBytes().length);
+        d.setStatus("chunked");
+
+        // 2) 删除旧切片
+        chunkMapper.deleteByDoc(docId);
+
+        // 3) 重新切片
+        List<TextChunker.Chunk> chunks = chunker.chunk(newContent);
+        log.info("文档重新切片: docId={} oldChunks={} newChunks={}", docId, oldChunkCount, chunks.size());
+
+        // 4) 重新向量化 + 写库
+        for (int i = 0; i < chunks.size(); i++) {
+            TextChunker.Chunk ck = chunks.get(i);
+            float[] vec = embedding.embed(ck.content());
+            DocumentChunk c = new DocumentChunk();
+            c.setDocId(docId);
+            c.setKbId(kbId);
+            c.setOwnerId(ownerId);
+            c.setChunkIndex(i);
+            c.setContent(ck.content());
+            c.setEmbedding(VectorUtils.toBytes(vec));
+            c.setDim(vec.length);
+            c.setCharCount(ck.charCount());
+            c.setStartPos(ck.startPos());
+            c.setEndPos(ck.endPos());
+            chunkMapper.insert(c);
+        }
+
+        // 5) 更新 document
+        d.setChunkCount(chunks.size());
+        docMapper.updateById(d);
+
+        // 6) 调整 KB chunk 计数
+        kbService.incChunkCount(kbId, chunks.size() - oldChunkCount);
+
+        log.info("文档内容更新完成: docId={} newChunks={}", docId, chunks.size());
+        return d;
+    }
+
     private String detect(String filename) {
         if (filename == null) return "txt";
         String lower = filename.toLowerCase(Locale.ROOT);
