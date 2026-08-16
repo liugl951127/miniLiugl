@@ -119,7 +119,7 @@ public class MultiAgentService {
             // 1) Planner: 生成 / 重规划
             if (emitter != null) sendEvent(emitter, "planner-start",
                 Map.of("round", criticRound, "feedback", criticFeedback != null ? criticFeedback : ""));
-            List<String> planSteps = planSteps(goal, criticFeedback);
+            List<String> planSteps = planSteps(goal, criticFeedback, emitter);
             if (emitter != null) sendEvent(emitter, "planner-plan",
                 Map.of("round", criticRound, "steps", planSteps));
 
@@ -150,7 +150,7 @@ public class MultiAgentService {
             // 3) Critic: 评估
             if (emitter != null) sendEvent(emitter, "critic-eval",
                 Map.of("round", criticRound, "plan", planSteps, "results", results.toString()));
-            CriticEval eval = evaluate(goal, planSteps, results.toString());
+            CriticEval eval = evaluate(goal, planSteps, results.toString(), emitter);
             allCriticEvals.add(new CriticRecord(criticRound, eval.passed, eval.feedback));
             if (emitter != null) sendEvent(emitter, "critic-result",
                 Map.of("round", criticRound,
@@ -190,6 +190,10 @@ public class MultiAgentService {
     // ---- Planner: 内部直接调 LLM (不走 AgentService.run, 因为要快速) ----
 
     public List<String> planSteps(String goal, String feedback) {
+        return planSteps(goal, feedback, null);
+    }
+
+    public List<String> planSteps(String goal, String feedback, SseEmitter emitter) {
         try {
             String sysPrompt = "你是一个任务规划专家。给定一个目标, 拆成 3-7 个有序步骤。\n" +
                 "每个步骤要明确: 做什么 + 预期输出。\n" +
@@ -199,8 +203,9 @@ public class MultiAgentService {
             String userMsg = "目标: " + goal
                 + (feedback != null ? "\n\n上轮未通过, 改进建议:\n" + feedback : "");
 
-            String content = callLlm(sysPrompt, userMsg, 0.3);
-            return parseSteps(content);
+            LlmResponse resp = callLlm(sysPrompt, userMsg, 0.3);
+            sendTokenUpdate(emitter, resp);
+            return parseSteps(resp.content());
         } catch (Exception e) {
             log.warn("plan 失败: {}", e.getMessage());
             return List.of();
@@ -210,6 +215,10 @@ public class MultiAgentService {
     // ---- Critic: 评估执行结果 ----
 
     public CriticEval evaluate(String goal, List<String> plan, String results) {
+        return evaluate(goal, plan, results, null);
+    }
+
+    public CriticEval evaluate(String goal, List<String> plan, String results, SseEmitter emitter) {
         try {
             String sysPrompt = "你是一个结果评估专家。给定用户目标和执行结果, 评估:\n" +
                 "1. 是否达成目标 (passed: true/false)\n" +
@@ -221,17 +230,22 @@ public class MultiAgentService {
             String userMsg = "目标: " + goal + "\n\n"
                 + "计划步骤: " + String.join(" | ", plan) + "\n\n"
                 + "执行结果:\n" + results;
-            String content = callLlm(sysPrompt, userMsg, 0.2);
-            return parseCritic(content);
+            LlmResponse resp = callLlm(sysPrompt, userMsg, 0.2);
+            sendTokenUpdate(emitter, resp);
+            return parseCritic(resp.content());
         } catch (Exception e) {
             log.warn("critic 失败 (默认通过): {}", e.getMessage());
             return new CriticEval(true, 7, "评估异常, 默认通过", results.trim());
         }
     }
 
-    // ---- 通用 LLM 调用 ----
+    // ---- 通用 LLM 调用 (V7.0: 返回 content + usage) ----
 
     private String callLlm(String sysPrompt, String userMsg, double temperature) throws Exception {
+        return callLlm(sysPrompt, userMsg, temperature, null).content();
+    }
+
+    private LlmResponse callLlm(String sysPrompt, String userMsg, double temperature, SseEmitter emitter) throws Exception {
         Map<String, Object> body = new HashMap<>();
         body.put("model", model);
         body.put("messages", List.of(
@@ -256,8 +270,42 @@ public class MultiAgentService {
         Map<String, Object> root = json.readValue(resp.body(), Map.class);
         @SuppressWarnings("unchecked")
         Map<String, Object> data = (Map<String, Object>) root.get("data");
-        if (data == null) return "";
-        return (String) data.get("content");
+        if (data == null) return new LlmResponse("", 0, 0);
+
+        // 解析 usage (V7.0: 支持多种格式)
+        @SuppressWarnings("unchecked")
+        Map<String, Object> usage = (Map<String, Object>) data.get("usage");
+        int inputTokens = 0, outputTokens = 0;
+        if (usage != null) {
+            Object in = usage.getOrDefault("inputTokens", usage.getOrDefault("prompt_tokens", 0));
+            Object out = usage.getOrDefault("outputTokens", usage.getOrDefault("completion_tokens", 0));
+            inputTokens = in instanceof Number ? ((Number) in).intValue() : 0;
+            outputTokens = out instanceof Number ? ((Number) out).intValue() : 0;
+        }
+
+        sendTokenUpdate(emitter, inputTokens, outputTokens);
+
+        String content = (String) data.get("content");
+        return new LlmResponse(content != null ? content : "", inputTokens, outputTokens);
+    }
+
+    private void sendTokenUpdate(SseEmitter emitter, LlmResponse resp) {
+        sendTokenUpdate(emitter, resp.inputTokens(), resp.outputTokens());
+    }
+
+    private void sendTokenUpdate(SseEmitter emitter, int inputTokens, int outputTokens) {
+        if (emitter == null || (inputTokens == 0 && outputTokens == 0)) return;
+        try {
+            emitter.send(SseEmitter.event()
+                .name("token-update")
+                .data(Map.of(
+                    "inputTokens", inputTokens,
+                    "outputTokens", outputTokens,
+                    "totalTokens", inputTokens + outputTokens
+                ), MediaType.APPLICATION_JSON));
+        } catch (IOException e) {
+            log.debug("token-update 发送失败: {}", e.getMessage());
+        }
     }
 
     private List<String> parseSteps(String content) {
@@ -347,4 +395,9 @@ public class MultiAgentService {
     public record CriticRecord(int round, boolean passed, String feedback) {}
 
     public record CriticEval(boolean passed, int score, String feedback, String improvedAnswer) {}
+
+    /** V7.0: LLM 调用结果含 token 消耗 */
+    public record LlmResponse(String content, int inputTokens, int outputTokens) {
+        public int totalTokens() { return inputTokens + outputTokens; }
+    }
 }
