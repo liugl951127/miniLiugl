@@ -1670,4 +1670,95 @@ CREATE TABLE IF NOT EXISTS demo_payment (
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- [V7.1] multi-agent collaboration session (Planner → Executor → Critic loop)
+CREATE TABLE IF NOT EXISTS agent_execution (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    executionId VARCHAR(64) NOT NULL,
+    userId BIGINT,
+    goal TEXT NOT NULL COMMENT 'user goal/prompt',
+    status VARCHAR(32) NOT NULL DEFAULT 'RUNNING' COMMENT 'RUNNING / COMPLETED / FAILED',
+    maxRounds INT DEFAULT 10,
+    completedRounds INT DEFAULT 0,
+    criticPassed INT DEFAULT 0 COMMENT '1=passed, 0=failed',
+    finalScore INT COMMENT 'critic final score 0-10',
+    totalPromptTokens BIGINT DEFAULT 0,
+    totalCompletionTokens BIGINT DEFAULT 0,
+    totalTokens BIGINT DEFAULT 0,
+    plannerTokens BIGINT DEFAULT 0 COMMENT 'planner LLM tokens',
+    criticTokens BIGINT DEFAULT 0 COMMENT 'critic LLM tokens',
+    totalLatencyMs BIGINT DEFAULT 0,
+    result TEXT COMMENT 'final execution result',
+    errorMsg TEXT,
+    startedAt TIMESTAMP,
+    finishedAt TIMESTAMP,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted INT DEFAULT 0,
+    UNIQUE KEY uk_execution_id (executionId),
+    KEY idx_user_id (userId),
+    KEY idx_status (status),
+    KEY idx_created_at (createdAt)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- [V7.1] execution steps (Planner / Executor / Critic)
+CREATE TABLE IF NOT EXISTS agent_execution_step (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    executionId VARCHAR(64) NOT NULL,
+    stepId VARCHAR(64) NOT NULL COMMENT 'unique within execution, e.g. step-1',
+    phase VARCHAR(16) NOT NULL COMMENT 'PLANNER / EXECUTOR / CRITIC',
+    roundNum INT DEFAULT 1 COMMENT 'which round this step belongs to',
+    stepIndex INT COMMENT 'step order within phase',
+    status VARCHAR(16) DEFAULT 'RUNNING' COMMENT 'RUNNING / PASSED / FAILED',
+    score INT COMMENT 'critic score 0-10 (only for CRITIC phase)',
+    feedback TEXT COMMENT 'critic feedback / improvement suggestion',
+    output TEXT COMMENT 'step output (plan JSON / execution result)',
+    durationMs BIGINT,
+    promptTokens BIGINT DEFAULT 0,
+    completionTokens BIGINT DEFAULT 0,
+    totalTokens BIGINT DEFAULT 0,
+    errorMsg TEXT,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted INT DEFAULT 0,
+    UNIQUE KEY uk_step (executionId, stepId),
+    KEY idx_execution_id (executionId),
+    KEY idx_phase (phase)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- [V7.1] token usage per LLM call (supports token-update SSE events)
+CREATE TABLE IF NOT EXISTS agent_token_usage (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    executionId VARCHAR(64) NOT NULL,
+    stepId VARCHAR(64),
+    caller VARCHAR(32) NOT NULL COMMENT 'PLANNER / CRITIC / EXECUTOR',
+    modelCode VARCHAR(64),
+    promptTokens BIGINT DEFAULT 0,
+    completionTokens BIGINT DEFAULT 0,
+    totalTokens BIGINT DEFAULT 0,
+    latencyMs BIGINT DEFAULT 0,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted INT DEFAULT 0,
+    KEY idx_execution_id (executionId),
+    KEY idx_caller (caller)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- [V7.1] critic evaluation history (radar chart multi-dimension scoring)
+CREATE TABLE IF NOT EXISTS agent_evaluation (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    executionId VARCHAR(64) NOT NULL,
+    stepId VARCHAR(64),
+    roundNum INT DEFAULT 1,
+    phase VARCHAR(16) DEFAULT 'CRITIC',
+    dimension VARCHAR(32) NOT NULL COMMENT 'ACCURACY / RELEVANCE / SAFETY / EFFICIENCY / COMPLETION',
+    score DECIMAL(5,2) DEFAULT 0 COMMENT 'dimension score 0-10',
+    overallScore INT DEFAULT 0 COMMENT 'overall score 0-10',
+    passed INT DEFAULT 0 COMMENT '1=passed, 0=failed',
+    reasoning TEXT COMMENT 'critic reasoning',
+    suggestion TEXT COMMENT 'improvement suggestion for next round',
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted INT DEFAULT 0,
+    KEY idx_execution_id (executionId),
+    KEY idx_dimension (dimension)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
