@@ -83,10 +83,17 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                    <configuration>
-                        <mainClass>com.minimax.admin.AdminApplication</mainClass>
-                    </configuration>
-                </plugin>
+                <configuration>
+                    <mainClass>com.minimax.admin.AdminApplication</mainClass>
+                    <skip>true</skip>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>repackage</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
     <!-- 本地沙箱模式 (h2local) 不包含 Nacos -->

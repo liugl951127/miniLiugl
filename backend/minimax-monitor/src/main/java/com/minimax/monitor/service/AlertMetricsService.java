@@ -93,18 +93,18 @@ public class AlertMetricsService {
         long warning = events.stream().filter(e -> "WARNING".equals(e.getSeverity())).count();
         long info = events.stream().filter(e -> "INFO".equals(e.getSeverity())).count();
 
-        return Map.of(
-                "windowDays", days,
-                "since", since.toString(),
-                "totalAlerts", total,
-                "activeAlerts", active,
-                "resolvedAlerts", resolved,
-                "mtbfHours", Math.round(mtbfHours * 100.0) / 100.0,
-                "mttrMinutes", Math.round(mttrMinutes * 100.0) / 100.0,
-                "availabilityPct", Math.round(availabilityPct * 10000.0) / 10000.0,
-                "slaGrade", slaGrade(availabilityPct),
-                "bySeverity", Map.of("CRITICAL", critical, "WARNING", warning, "INFO", info),
-                "generatedAt", now.toString()
+        return Map.ofEntries(
+                Map.entry("windowDays", days),
+                Map.entry("since", since.toString()),
+                Map.entry("totalAlerts", total),
+                Map.entry("activeAlerts", active),
+                Map.entry("resolvedAlerts", resolved),
+                Map.entry("mtbfHours", Math.round(mtbfHours * 100.0) / 100.0),
+                Map.entry("mttrMinutes", Math.round(mttrMinutes * 100.0) / 100.0),
+                Map.entry("availabilityPct", Math.round(availabilityPct * 10000.0) / 10000.0),
+                Map.entry("slaGrade", slaGrade(availabilityPct)),
+                Map.entry("bySeverity", Map.of("CRITICAL", critical, "WARNING", warning, "INFO", info)),
+                Map.entry("generatedAt", now.toString())
         );
     }
 

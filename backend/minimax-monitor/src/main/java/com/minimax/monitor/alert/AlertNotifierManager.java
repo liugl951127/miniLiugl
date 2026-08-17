@@ -48,6 +48,31 @@ public class AlertNotifierManager {
     }
 
     /**
+     * 通知单个指定渠道。
+     * 失败不阻断。
+     */
+    public void notify(AlertEvent event, String channelType) {
+        AlertChannel target = cachedChannels.stream()
+                .filter(ch -> channelType.equalsIgnoreCase(ch.getChannelType()))
+                .findFirst().orElse(null);
+        if (target == null || target.getEnabled() == null || target.getEnabled() == 0) {
+            log.debug("channel {} not found or disabled", channelType);
+            return;
+        }
+        AlertNotifier n = notifierMap.get(target.getChannelType());
+        if (n == null) {
+            log.debug("no notifier for channel type: {}", target.getChannelType());
+            return;
+        }
+        try {
+            n.send(event, target.getConfig());
+        } catch (Exception e) {
+            log.warn("notifier {} failed for channel {}: {}",
+                    target.getChannelType(), target.getName(), e.getMessage());
+        }
+    }
+
+    /**
      * 通知所有已启用渠道。
      * 失败不阻断其他渠道。
      */

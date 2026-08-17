@@ -93,6 +93,15 @@
                     <configuration>
                         <mainClass>com.minimax.agent.config.AgentApp</mainClass>
                     </configuration>
+                    <executions>
+                        <execution>
+                            <id>repackage</id>
+                            <goals>
+                                <goal>repackage</goal>
+                            </goals>
+                            <phase>none</phase>
+                        </execution>
+                    </executions>
                 
             </plugin>
         </plugins>

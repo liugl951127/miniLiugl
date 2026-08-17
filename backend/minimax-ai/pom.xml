@@ -179,6 +179,15 @@
                     <classifier>spring-boot</classifier>
                     <mainClass>com.minimax.ai.AiApplication</mainClass>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>repackage</id>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

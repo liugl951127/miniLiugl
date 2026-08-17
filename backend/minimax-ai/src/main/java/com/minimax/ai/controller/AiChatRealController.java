@@ -64,7 +64,6 @@ public class AiChatRealController {
         this.ragRestTemplate = ragRestTemplate;
         this.agentClient = agentClient;
         this.onnxLLMService = onnxLLMService;
-        this.agentClient = agentClient;
     }
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -294,9 +293,9 @@ public class AiChatRealController {
                 req.setModel(model);
                 req.setTemperature(0.7);
                 req.setMaxTokens(1024);
-                req.setMessages(Arrays.asList(
-                    new HashMap<String, String>() {{ put("role", "system"); put("content", fullSystem.toString()); }},
-                    new HashMap<String, String>() {{ put("role", "user"); put("content", message); }}
+                req.setMessages(List.of(
+                    Map.of("role", "system", "content", fullSystem.toString()),
+                    Map.of("role", "user", "content", message)
                 ));
 
                 ChatResponse resp = modelClient.chat(0L, req);
@@ -382,10 +381,10 @@ public class AiChatRealController {
                 req.setModel(model);
                 req.setTemperature(0.1);
                 req.setMaxTokens(50);
-                req.setMessages(Arrays.asList(
-                    new HashMap<String, String>() {{ put("role", "system"); put("content", systemPrompt); }},
-                    new HashMap<String, String>() {{ put("role", "user"); put("content", text); }}
-                ));
+                List<Map<String, Object>> msgs = new ArrayList<>();
+                msgs.add(Map.of("role", "system", "content", systemPrompt));
+                msgs.add(Map.of("role", "user", "content", text));
+                req.setMessages(msgs);
 
                 ChatResponse resp = modelClient.chat(0L, req);
                 String answer = resp.getContent();

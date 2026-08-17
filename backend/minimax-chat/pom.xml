@@ -109,6 +109,8 @@
                 </configuration>
                 <executions>
                     <execution>
+                        <id>repackage</id>
+                        <phase>none</phase>
                         <goals><goal>repackage</goal></goals>
                     </execution>
                 </executions>

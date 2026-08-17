@@ -185,7 +185,7 @@ public class OnnxInferenceService {
             String ch = String.valueOf(c);
             vocab.putIfAbsent(ch, id++);
         }
-        idToToken.putAll(vocab);
+        vocab.forEach((token, tid) -> idToToken.put(tid, token));
         log.info("[OnnxInference] 字符级 Vocab 构建: {} tokens", vocab.size());
     }
 
@@ -249,9 +249,9 @@ public class OnnxInferenceService {
             String outputName = session.getOutputNames().iterator().next();
 
             try (OnnxTensor idsTensor = OnnxTensor.createTensor(env,
-                    new long[][]{inputIds}, new long[]{1, inputIds.length});
+                    java.nio.LongBuffer.wrap(inputIds), new long[]{1, inputIds.length});
                  OnnxTensor maskTensor = OnnxTensor.createTensor(env,
-                    new long[][]{attentionMask}, new long[]{1, attentionMask.length})) {
+                    java.nio.LongBuffer.wrap(attentionMask), new long[]{1, attentionMask.length})) {
 
                 // 尝试两种输入命名约定
                 Map<String, OnnxTensor> inputs;
@@ -264,7 +264,7 @@ public class OnnxInferenceService {
                 }
 
                 try (OrtSession.Result result = session.run(inputs)) {
-                    float[][] output = (float[][]) result.get(outputName).getValue();
+                    float[][] output = (float[][]) result.get(outputName).orElseThrow().getValue();
                     return applyPooling(output[0], inputIds.length);
                 }
             }

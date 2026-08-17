@@ -268,44 +268,6 @@
                 </configuration>
             </plugin>
             <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <!-- V2.0: 内存优化 - 共享 JVM 参数, 减少每个服务内存占用 -50% -->
-                    <jvmArguments>
-                        -XX:MaxRAMPercentage=70.0
-                        -XX:MinRAMPercentage=40.0
-                        -XX:+UseG1GC
-                        -XX:MaxGCPauseMillis=200
-                        -XX:G1HeapRegionSize=16m
-                        -XX:+UseStringDeduplication
-                        -XX:+UseCompressedOops
-                        -XX:+UseCompressedClassPointers
-                        -XX:+ExitOnOutOfMemoryError
-                        -XX:+HeapDumpOnOutOfMemoryError
-                        -XX:HeapDumpPath=/var/log/minimax/oom/
-                        -Dio.netty.allocator.type=pooled
-                        -Dio.netty.leakDetection.level=disabled
-                        -Dlog4j2.contextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector
-                        -Duser.timezone=Asia/Shanghai
-                        -Dfile.encoding=UTF-8
-                    </jvmArguments>
-                    <!-- V2.0: 镜像瘦身 - 排除 spring-boot-loader, 减小 5MB -->
-                    <excludeDevtools>true</excludeDevtools>
-                    <layers>
-                        <enabled>true</enabled>
-                    </layers>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
-                    <!-- V5.7: install 时输出原始 jar (top-level classpath) 供其他模块依赖, package 阶段才生成 boot jar -->
-                    <classifier>spring-boot</classifier>
-                </configuration>
-            </plugin>
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>

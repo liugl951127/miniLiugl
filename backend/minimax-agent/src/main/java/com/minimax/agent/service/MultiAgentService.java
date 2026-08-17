@@ -203,7 +203,7 @@ public class MultiAgentService {
             String userMsg = "目标: " + goal
                 + (feedback != null ? "\n\n上轮未通过, 改进建议:\n" + feedback : "");
 
-            LlmResponse resp = callLlm(sysPrompt, userMsg, 0.3);
+            LlmResponse resp = callLlm(sysPrompt, userMsg, 0.3, emitter);
             sendTokenUpdate(emitter, resp);
             return parseSteps(resp.content());
         } catch (Exception e) {
@@ -230,7 +230,7 @@ public class MultiAgentService {
             String userMsg = "目标: " + goal + "\n\n"
                 + "计划步骤: " + String.join(" | ", plan) + "\n\n"
                 + "执行结果:\n" + results;
-            LlmResponse resp = callLlm(sysPrompt, userMsg, 0.2);
+            LlmResponse resp = callLlm(sysPrompt, userMsg, 0.2, emitter);
             sendTokenUpdate(emitter, resp);
             return parseCritic(resp.content());
         } catch (Exception e) {
