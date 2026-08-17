@@ -684,6 +684,17 @@ function exportGenerated() {
   ElMessage.success('模型文件已导出！')
 }
 
+// P1-3: 复制配置到剪贴板
+function copyConfig() {
+  if (!generatedGroup.value) return
+  const json = JSON.stringify(generatedGroup.value, null, 2)
+  navigator.clipboard.writeText(json).then(() => {
+    ElMessage.success('配置已复制')
+  }).catch(() => {
+    ElMessage.error('复制失败')
+  })
+}
+
 // 运行智能体群（调用真实 Agent 编排接口）
 async function runGenerated() {
   if (!generatedGroup.value) return

@@ -58,9 +58,11 @@
             @node-click="onTreeNodeClick"
           >
             <template #default="{ node, data }">
-              <span class="tree-node">
+              <!-- P1-4: Schema节点点击复制 -->
+              <span class="tree-node" @click.stop="copyNodeLabel(node.label)">
                 <span>{{ node.label }}</span>
                 <el-tag v-if="data.count" size="small" type="info" style="margin-left:4px">{{ data.count }}</el-tag>
+                <el-icon class="copy-icon" @click.stop="copyNodeLabel(node.label)"><CopyDocument /></el-icon>
               </span>
             </template>
           </el-tree>
@@ -316,6 +318,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { CopyDocument } from '@element-plus/icons-vue'
 import {
   listDataSources, createDataSource, updateDataSource, deleteDataSource, testDataSource,
   listDatabases, listTables, describeTable,
@@ -580,6 +583,15 @@ function formatSize(bytes) {
   return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB'
 }
 
+// P1-4: Schema节点点击复制
+function copyNodeLabel(label) {
+  navigator.clipboard.writeText(label).then(() => {
+    ElMessage.success({ message: `已复制: ${label}`, duration: 1.5 })
+  }).catch(() => {
+    ElMessage.error('复制失败')
+  })
+}
+
 // ── NL2SQL ────────────────────────────────────────────
 async function ask() {
   if (!question.value.trim()) return
@@ -691,7 +703,19 @@ function loadHistoryFromItem(item) {
   font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;
 }
 .no-ds-hint { color: #aaa; font-size: 13px; text-align: center; margin-top: 40px; }
-.tree-node { font-size: 13px; display: flex; align-items: center; }
+.tree-node { font-size: 13px; display: flex; align-items: center; gap: 4px; }
+/* P1-4: Schema节点复制图标 */
+.tree-node .copy-icon {
+  opacity: 0;
+  margin-left: 4px;
+  font-size: 12px;
+  color: #409eff;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.tree-node:hover .copy-icon {
+  opacity: 1;
+}
 .table-detail { margin-top: 12px; border-top: 1px solid #eee; padding-top: 8px; }
 .detail-header {
   display: flex; justify-content: space-between; align-items: center;

@@ -32,6 +32,8 @@
           <el-descriptions-item label="Uptime">{{ jvm.uptime }}</el-descriptions-item>
           <el-descriptions-item label="CPU">{{ jvm.cpuUsage }}</el-descriptions-item>
         </el-descriptions>
+        <!-- P1-5: JVM堆内存趋势图 -->
+        <div ref="jvmChartRef" style="height:240px;margin-top:16px"></div>
       </el-tab-pane>
 
       <el-tab-pane label="告警历史" name="alerts">
@@ -534,6 +536,13 @@ const trendMax = ref(0)
 const trendMaxDate = ref('')
 let trendChart = null
 
+// ========== P1-5: JVM堆内存趋势图 ==========
+const jvmChartRef = ref(null)
+const jvmHistory = ref([]) // { time, used, free } 单位 MB
+const MAX_JVM_POINTS = 30
+let jvmChart = null
+let jvmTimer = null
+
 const slaGradeColor = computed(() => {
   const g = sla.value.grade
   if (g === 'A+' || g === 'A') return '#67c23a'
@@ -613,10 +622,13 @@ onMounted(() => {
 onUnmounted(() => {
   if (refreshTimer) clearInterval(refreshTimer)
   if (trendChart) { trendChart.dispose(); trendChart = null }
+  if (jvmChart) { jvmChart.dispose(); jvmChart = null }
+  if (jvmTimer) clearInterval(jvmTimer)
 })
 
 // Day 42: tab 切换时加载渠道数据
 // Day 43: SLA tab 也懒加载
+// P1-5: JVM tab 懒加载图表
 watch(activeTab, (tab) => {
   if (tab === 'channels' && channels.value.length === 0) {
     loadChannels()
@@ -630,6 +642,10 @@ watch(activeTab, (tab) => {
   if (tab === 'rules' && rules.value.length === 0) {
     loadRules()
   }
+  if (tab === 'jvm') {
+    initJvmChart()
+    startJvmTimer()
+  }
 })
 
 async function loadData() {
@@ -640,6 +656,21 @@ async function loadData() {
     }))
     jvm.value = j.data || jvm.value
     alerts.value = a.data || []
+    // P1-5: JVM堆内存数据记录到历史
+    if (jvm.value.heapUsed) {
+      const usedMB = parseFloat(jvm.value.heapUsed) || 0
+      const maxMB = parseFloat(jvm.value.heapMax) || 0
+      const freeMB = Math.max(0, maxMB - usedMB)
+      jvmHistory.value.push({
+        time: new Date().toLocaleTimeString('zh-CN', { hour12: false }),
+        used: usedMB,
+        free: freeMB
+      })
+      if (jvmHistory.value.length > MAX_JVM_POINTS) {
+        jvmHistory.value.shift()
+      }
+      updateJvmChart()
+    }
   } catch {}
 }
 
@@ -657,6 +688,63 @@ function formatTime(ts) {
   if (!ts) return '-'
   if (typeof ts === 'string') return ts.replace('T', ' ').substring(0, 19)
   return String(ts)
+}
+
+// P1-5: JVM堆内存趋势图
+async function initJvmChart() {
+  if (!jvmChartRef.value) return
+  const echarts = await import('echarts')
+  if (jvmChart) jvmChart.dispose()
+  jvmChart = echarts.init(jvmChartRef.value)
+  updateJvmChart()
+}
+
+function updateJvmChart() {
+  if (!jvmChart || !jvmHistory.value.length) return
+  const times = jvmHistory.value.map(d => d.time)
+  const usedData = jvmHistory.value.map(d => d.used)
+  const freeData = jvmHistory.value.map(d => d.free)
+  jvmChart.setOption({
+    tooltip: { trigger: 'axis' },
+    legend: { data: ['已用', '空闲'], top: 0 },
+    grid: { top: 36, left: 48, right: 16, bottom: 32 },
+    xAxis: { type: 'category', data: times, name: '时间', axisLabel: { fontSize: 10 } },
+    yAxis: { type: 'value', name: 'MB', minInterval: 1 },
+    series: [
+      { name: '已用', type: 'line', data: usedData, smooth: true, itemStyle: { color: '#f56c6c' } },
+      { name: '空闲', type: 'line', data: freeData, smooth: true, itemStyle: { color: '#67c23a' } }
+    ]
+  })
+}
+
+function startJvmTimer() {
+  if (jvmTimer) clearInterval(jvmTimer)
+  jvmTimer = setInterval(() => {
+    if (activeTab.value === 'jvm') {
+      loadJvmData()
+    }
+  }, 10000)
+}
+
+async function loadJvmData() {
+  try {
+    const j = await getJvmHealth()
+    jvm.value = j.data || jvm.value
+    if (jvm.value.heapUsed) {
+      const usedMB = parseFloat(jvm.value.heapUsed) || 0
+      const maxMB = parseFloat(jvm.value.heapMax) || 0
+      const freeMB = Math.max(0, maxMB - usedMB)
+      jvmHistory.value.push({
+        time: new Date().toLocaleTimeString('zh-CN', { hour12: false }),
+        used: usedMB,
+        free: freeMB
+      })
+      if (jvmHistory.value.length > MAX_JVM_POINTS) {
+        jvmHistory.value.shift()
+      }
+      updateJvmChart()
+    }
+  } catch {}
 }
 
 // Day 41: 打开告警详情
