@@ -74,37 +74,27 @@
       <el-table :data="activityTable.data.value" v-loading="activityTable.loading.value" stripe size="small">
         <el-table-column prop="createdAt" label="时间" width="140">
           <template #default="{ row }">
-            <el-tooltip :content="row.createdAt + '（北京时间）'" placement="top">
-              <span>{{ row.createdAt }}</span>
-            </el-tooltip>
+            <span>{{ row.createdAt }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="username" label="用户" width="100">
           <template #default="{ row }">
-            <el-tooltip :content="row.username + '（执行该操作的用户账号）'" placement="top">
-              <span>{{ row.username }}</span>
-            </el-tooltip>
+            <span>{{ row.username }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="action" label="操作" width="100">
           <template #default="{ row }">
-            <el-tooltip :content="row.action + '（操作类型）'" placement="top">
-              <el-tag size="small" type="primary">{{ row.action }}</el-tag>
-            </el-tooltip>
+            <el-tag size="small" type="primary">{{ row.action }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="resource" label="资源" min-width="200">
           <template #default="{ row }">
-            <el-tooltip :content="row.resource + '（被操作的目标对象）'" placement="top">
-              <span class="resource-cell">{{ row.resource }}</span>
-            </el-tooltip>
+            <span class="resource-cell">{{ row.resource }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="ip" label="IP" width="120">
           <template #default="{ row }">
-            <el-tooltip :content="row.ip + '（请求来源 IP）'" placement="top">
-              <code style="font-size:11px">{{ row.ip }}</code>
-            </el-tooltip>
+            <code style="font-size:11px">{{ row.ip }}</code>
           </template>
         </el-table-column>
       </el-table>

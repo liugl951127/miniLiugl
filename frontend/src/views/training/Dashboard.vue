@@ -443,7 +443,8 @@ async function confirmEnable() {
   try {
     const r = await trainingApi.enableModel(selectedTask.value.taskId)
     const modelCode = r.data?.modelCode
-    ElMessage.success('模型已注册: ' + modelCode)
+    // P2-3: 启用按钮反馈
+    ElMessage.success('已在聊天页启用 ' + (selectedTask.value.name || modelCode || '模型'))
     showEnableDialog.value = false
     router.push('/chat?model=' + encodeURIComponent(modelCode || ''))
   } catch (e) {

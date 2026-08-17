@@ -58,7 +58,7 @@
     </el-card>
 
     <!-- 训练曲线 -->
-    <el-card title="意图识别准确率曲线" body-style="padding:16px">
+    <el-card title="训练样本数趋势" body-style="padding:16px">
       <div ref="chartRef" style="height:280px"></div>
     </el-card>
   </div>
@@ -123,7 +123,7 @@ function renderChart(completedTasks) {
   // V6.8.1: 数据来自 LlmTrainingService 总准确率趋势
   chart.setOption({
     tooltip: { trigger: 'axis' },
-    legend: { data: ['准确率趋势'] },
+    legend: { data: ['训练样本数'] },
     xAxis: { type: 'category', data: completedTasks.map((_, i) => '任务' + (i + 1)), name: '训练任务' },
     yAxis: { type: 'value', name: '样本量', min: 0 },
     series: [{

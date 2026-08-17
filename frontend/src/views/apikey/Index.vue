@@ -258,6 +258,19 @@ Body:
       </el-tab-pane>
     </el-tabs>
 
+    <!-- P1-8: Webhook测试结果弹窗 -->
+    <el-dialog v-model="testResultVisible" title="🧪 Webhook 测试结果" width="500px" destroy-on-close>
+      <div style="margin-bottom:12px">
+        <el-tag :type="testResultStatus.includes('成功') ? 'success' : testResultStatus.includes('失败') ? 'danger' : 'warning'" size="large">
+          {{ testResultStatus }}
+        </el-tag>
+      </div>
+      <pre style="background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:6px;font-size:12px;max-height:300px;overflow:auto">{{ testResultContent }}</pre>
+      <template #footer>
+        <el-button @click="testResultVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 生成 Key 弹窗 -->
     <el-dialog v-model="showCreate" title="生成 API Key" width="480px">
       <el-form label-width="90px">
@@ -312,6 +325,11 @@ const creating = ref(false)
 const showCreate = ref(false)
 const newKey = reactive({ name: '', description: '', quota: 0, expireDays: 0, scopes: ['chat'] })
 
+// P1-8: Webhook测试结果
+const testResultVisible = ref(false)
+const testResultStatus = ref('')
+const testResultContent = ref('')
+
 // 外部 API 文档
 const extTab = ref('')
 const apiEndpoints = [
@@ -327,7 +345,40 @@ const apiEndpoints = [
 ]
 
 async function testWebhook() {
-  ElMessage.info('请在外部调用文档中注册 Webhook 后，使用 cURL 测试连通性')
+  // P1-8: 实际发送测试请求到配置的 webhook URL
+  const webhookUrl = await ElMessageBox.prompt(
+    '请输入要测试的 Webhook URL：',
+    '测试 Webhook 连通性',
+    { confirmButtonText: '发送测试', cancelButtonText: '取消', inputValue: 'https://' }
+  ).catch(() => null)
+  if (!webhookUrl) return
+
+  testResultVisible.value = true
+  testResultStatus.value = ''
+  testResultContent.value = '正在发送测试请求…'
+
+  try {
+    const start = Date.now()
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event: 'webhook.test',
+        message: '这是一条来自 Liugl-AI 平台的 Webhook 测试消息',
+        timestamp: new Date().toISOString()
+      }),
+      mode: 'no-cors' // 跨域模式
+    })
+    const elapsed = Date.now() - start
+    // no-cors 模式下 response.ok 不可靠，使用时间判断
+    testResultStatus.value = elapsed < 5000 ? '✅ 连接成功' : '⚠️ 连接成功但响应慢'
+    testResultContent.value = `请求耗时: ${elapsed}ms\n\n说明: 由于跨域限制，无法获取完整响应内容。\n若 URL 有效，通常会返回 2xx 状态码。\n\n测试数据已发送，请检查目标服务器是否收到回调。`
+    ElMessage.success('Webhook 测试完成')
+  } catch (e) {
+    testResultStatus.value = '❌ 连接失败'
+    testResultContent.value = '错误: ' + (e.message || '无法连接到目标 URL\n请确认 URL 是否正确且服务器可访问')
+    ElMessage.error('Webhook 测试失败')
+  }
 }
 
 const activeCount = computed(() => keys.value.filter(k => k.enabled).length)

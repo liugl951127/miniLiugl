@@ -132,12 +132,20 @@
         <el-card class="events-card">
           <template #header>
             <span>实时事件</span>
-            <el-tag v-if="currentTask" size="small" type="info">
-              {{ currentTask.status }}
-            </el-tag>
+            <div style="display:flex;align-items:center;gap:8px">
+              <el-tag v-if="currentTask" size="small" type="info">
+                {{ currentTask.status }}
+              </el-tag>
+              <!-- P1-7: 自动滚动开关 + 滚到最新按钮 -->
+              <span style="font-size:11px;color:#9ca3af">自动滚动</span>
+              <el-switch v-model="autoScroll" size="small" @change="onAutoScrollChange" />
+              <el-button size="small" link @click="scrollToBottom" title="滚到最新">
+                <el-icon><Bottom /></el-icon>
+              </el-button>
+            </div>
           </template>
 
-          <div class="events-log" ref="eventsEl">
+          <div class="events-log" ref="eventsEl" @scroll="onEventsScroll">
             <div v-if="events.length === 0" class="no-events">
               等待训练开始...
             </div>
@@ -155,6 +163,7 @@
 <script setup>
 import { ref, reactive, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Bottom } from '@element-plus/icons-vue'
 import { Refresh } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { trainingApi } from '@/api/training'
@@ -167,6 +176,7 @@ const tasks = ref([])
 const currentTask = ref(null)
 const chartEl = ref(null)
 const eventsEl = ref(null)
+const autoScroll = ref(true) // P1-7: 日志自动滚动开关，默认开启
 let chart = null
 let pollTimer = null
 let lossHistory = []  // 必须在 selectTask 之前声明
@@ -338,12 +348,39 @@ function updateChart() {
 }
 
 // ---- 事件日志 ----
-function pushEvent(type, msg) {
-  const now = new Date()
-  events.value.push({ type, msg, time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}` })
+// P1-7: 滚到最新
+function scrollToBottom() {
   nextTick(() => {
     if (eventsEl.value) eventsEl.value.scrollTop = eventsEl.value.scrollHeight
   })
+}
+
+// P1-7: 监听手动滚动
+function onEventsScroll() {
+  if (!eventsEl.value) return
+  const { scrollTop, scrollHeight, clientHeight } = eventsEl.value
+  const isAtBottom = scrollHeight - scrollTop - clientHeight < 50
+  if (!isAtBottom && autoScroll.value) {
+    autoScroll.value = false
+  } else if (isAtBottom && !autoScroll.value) {
+    autoScroll.value = true
+  }
+}
+
+// P1-7: 开启自动滚动时跳到底部
+function onAutoScrollChange(val) {
+  if (val) scrollToBottom()
+}
+
+function pushEvent(type, msg) {
+  const now = new Date()
+  events.value.push({ type, msg, time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}` })
+  // P1-7: 仅在开启自动滚动时自动跳到底部
+  if (autoScroll.value) {
+    nextTick(() => {
+      if (eventsEl.value) eventsEl.value.scrollTop = eventsEl.value.scrollHeight
+    })
+  }
 }
 
 // ---- 工具 ----

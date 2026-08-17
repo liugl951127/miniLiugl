@@ -49,7 +49,10 @@
           <el-table-column label="操作" width="160" align="center">
             <template #default="{ row }">
               <el-button size="small" link type="primary" @click="preview(row)">预览</el-button>
-              <el-button size="small" link @click="usePrompt(row)">使用</el-button>
+              <!-- P2-2: 复制按钮统一 -->
+              <el-button size="small" link type="success" @click="usePrompt(row)">
+                <el-icon><CopyDocument /></el-icon>复制
+              </el-button>
               <el-button size="small" link @click="openEdit(row)">编辑</el-button>
             </template>
           </el-table-column>
@@ -96,7 +99,10 @@
             </div>
 
             <div style="display:flex;gap:8px">
-              <el-button type="primary" size="small" @click="usePrompt(selectedPrompt)">复制到剪贴板</el-button>
+              <!-- P2-2: 复制按钮统一 -->
+              <el-button type="primary" size="small" @click="usePrompt(selectedPrompt)">
+                <el-icon><CopyDocument /></el-icon>复制到剪贴板
+              </el-button>
               <el-button size="small" @click="openEdit(selectedPrompt)">编辑模板</el-button>
             </div>
           </div>
@@ -155,7 +161,7 @@
 import { ref, computed, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { promptApi } from '@/api/prompt'
-import { Plus, Refresh, Search } from '@element-plus/icons-vue'
+import { Plus, Refresh, Search, CopyDocument } from '@element-plus/icons-vue'
 
 const prompts = ref([])
 const loading = ref(false)
@@ -235,7 +241,7 @@ async function savePrompt() {
 function usePrompt(p) {
   const content = p.template || ''
   navigator.clipboard.writeText(content)
-  ElMessage.success('模板已复制到剪贴板')
+  ElMessage.success('已复制')
 }
 
 onMounted(loadPrompts)

@@ -168,19 +168,26 @@
         <div v-else-if="!roomMessages.length" style="text-align:center;padding:40px 0;color:#c0c4cc;font-size:13px">
           暂无消息<br/>发送消息或问 AI 开始协作
         </div>
-        <div v-for="msg in roomMessages" :key="msg.id" class="room-msg" :class="msg.role">
-          <el-avatar :size="24" class="msg-avatar">
-            {{ msg.role === 'ai' ? '🤖' : (msg.user || 'U').charAt(0) }}
-          </el-avatar>
-          <div class="msg-body">
-            <div class="msg-meta">
-              {{ msg.role === 'ai' ? '🤖 AI 助手' : (msg.user || '未知') }}
-              · {{ formatTime(msg.createdAt) }}
-              <el-tag v-if="msg.role === 'ai'" size="small" type="success" style="margin-left:4px">AI</el-tag>
+        <template v-for="(msg, i) in roomMessages" :key="msg.id">
+          <!-- P1-6: 不同用户消息之间的分隔线 -->
+          <div v-if="i > 0 && !isSameGroup(msg, roomMessages[i-1])" class="msg-divider"></div>
+          <div class="room-msg" :class="msg.role">
+            <el-avatar :size="24" class="msg-avatar">
+              {{ msg.role === 'ai' ? '🤖' : (msg.user || 'U').charAt(0) }}
+            </el-avatar>
+            <div class="msg-body">
+              <div class="msg-meta">
+                {{ msg.role === 'ai' ? '🤖 AI 助手' : (msg.user || '未知') }}
+                <!-- P1-6: 仅显示第一条消息的时间戳 -->
+                <template v-if="!i || isSameGroup(roomMessages[i-1], msg)">
+                  · {{ formatTime(msg.createdAt) }}
+                </template>
+                <el-tag v-if="msg.role === 'ai'" size="small" type="success" style="margin-left:4px">AI</el-tag>
+              </div>
+              <div class="msg-content">{{ msg.content }}</div>
             </div>
-            <div class="msg-content">{{ msg.content }}</div>
           </div>
-        </div>
+        </template>
       </el-scrollbar>
 
       <!-- 消息输入 -->
@@ -499,6 +506,15 @@ function formatTime(ts) {
   return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`
 }
 
+// P1-6: 判断两条消息是否属于同一组（同用户、同分钟内）
+function isSameGroup(prev, curr) {
+  if (!prev || !curr) return false
+  const sameUser = prev.user === curr.user && prev.role === curr.role
+  if (!sameUser) return false
+  const timeDiff = Math.abs(new Date(prev.createdAt) - new Date(curr.createdAt))
+  return timeDiff < 60000 // 同一分钟内
+}
+
 async function inviteMember(r) {
   try {
     await ElMessageBox.prompt('请输入要邀请的用户邮箱', '邀请成员', {
@@ -532,7 +548,13 @@ onUnmounted(() => { if (ws) ws.close() })
   height: calc(100vh - 380px);
   min-height: 200px;
   padding: 4px 0;
-  .room-msg {
+}
+.msg-divider {
+  height: 1px;
+  background: #e8e8e8;
+  margin: 8px 0;
+}
+.room-msg {
     display: flex;
     gap: 8px;
     margin-bottom: 10px;
@@ -549,7 +571,7 @@ onUnmounted(() => { if (ws) ws.close() })
       .msg-content { background: linear-gradient(135deg, #f0fdf4, #dcfce7); color: #15803d; border: 1px solid #bbf7d0; }
     }
   }
-}
+
 .room-input {
   display: flex;
   align-items: center;
