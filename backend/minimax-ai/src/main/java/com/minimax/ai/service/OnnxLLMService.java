@@ -171,7 +171,8 @@ public class OnnxLLMService {
             System.arraycopy(tokens, 0, inputData[0], 0, pos);
             long[] inputShape = new long[]{1, pos};
 
-            try (OnnxTensor inputTensor = OnnxTensor.createTensor(env, (Object) inputData)) {
+            try (OnnxTensor inputTensor = OnnxTensor.createTensor(
+                    env, java.nio.LongBuffer.wrap(inputData[0]), inputShape)) {
                 // 运行推理
                 try (OnnxValue resultVal = activeSession.run(
                         Collections.singletonMap(inputName, inputTensor)).get(0)) {
