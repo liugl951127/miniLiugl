@@ -309,7 +309,7 @@ async function onSubmit() {
 
     // ✓ 成功 - 立刻跳, 不等 fetchProfile (layout 异步 hydrate)
     toast.success(`${mode.value === 'login' ? '登录' : '注册'}成功`)
-    const redirect = route.query.redirect && route.query.redirect !== '/login' ? route.query.redirect : '/admin/dashboard'
+    const redirect = route.query.redirect && route.query.redirect !== '/login' ? route.query.redirect : '/chat'
     router.replace(redirect)  // replace 不留 history
 
     // 异步 fetchProfile (不阻塞跳转)
@@ -355,7 +355,7 @@ function onTabChange(name) {
 // === 10. 微信扫码成功 ===
 function onWechatSuccess() {
   toast.success('微信登录成功')
-  router.replace(route.query.redirect || '/admin/dashboard')
+  router.replace(route.query.redirect || '/chat')
 }
 
 // === 11. 访客试用 (无登录直入) ===
@@ -386,7 +386,7 @@ onMounted(() => {
   if (saved) form.username = saved
   // 自动登录 (有 token 的话)
   if (userStore.isLogin) {
-    router.replace('/admin/dashboard')
+    router.replace('/chat')
   }
 })
 
