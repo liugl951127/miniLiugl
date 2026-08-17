@@ -237,50 +237,16 @@
         </div>
       </div>
 
-      <!-- 右侧属性面板 -->
+      <!-- 右侧属性面板 (PropertyPanel 4-Tab) -->
       <div class="prop-panel">
-        <div class="palette-title">属性配置</div>
-        <div v-if="!selectedNode" class="prop-empty">点击节点查看属性</div>
-        <div v-else class="prop-form">
-          <el-form label-width="80px" size="small">
-            <el-form-item label="名称">
-              <el-input v-model="selectedNode.label" @change="recordHistory('prop')" />
-            </el-form-item>
-            <el-form-item label="类型">
-              <el-select v-model="selectedNode.type" style="width:100%" @change="recordHistory('prop')">
-                <el-option v-for="nt in nodeTypes" :key="nt.type" :label="nt.label" :value="nt.type" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="Prompt">
-              <el-input v-model="selectedNode.config.prompt" type="textarea" :rows="4"
-                placeholder="输入节点指令…" @change="recordHistory('prop')" />
-            </el-form-item>
-            <el-form-item label="工具">
-              <el-select v-model="selectedNode.config.tools" multiple style="width:100%" placeholder="选择工具" @change="recordHistory('prop')">
-                <el-option v-for="t in toolOptions" :key="t" :label="t" :value="t" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="模型">
-              <el-select v-model="selectedNode.config.model" style="width:100%" placeholder="默认模型" filterable @change="recordHistory('prop')">
-                <el-option label="默认" value="" />
-                <el-option-group v-if="trainedModels.length" label="🏷️ 自研模型">
-                  <el-option v-for="m in trainedModels" :key="m.code" :label="m.name" :value="m.code">
-                    {{ m.name }}
-                    <span v-if="m.accuracy" style="float:right;font-size:11px;color:#67c23a">{{ m.accuracy }}%</span>
-                  </el-option>
-                </el-option-group>
-                <el-option-group label="🤖 云端模型">
-                  <el-option v-for="m in allModels.filter(a => !trainedModels.find(t => t.code === a.code))" :key="a.code" :label="a.name" :value="a.code">
-                    {{ a.name }}
-                  </el-option>
-                </el-option-group>
-              </el-select>
-            </el-form-item>
-            <el-form-item label="Max 步数">
-              <el-input-number v-model="selectedNode.config.maxSteps" :min="1" :max="20" @change="recordHistory('prop')" />
-            </el-form-item>
-          </el-form>
-        </div>
+        <PropertyPanel
+          :selected-node="panelNode"
+          :selected-edge="null"
+          :edges="edges"
+          @update="onPanelUpdate"
+          @delete-node="onPanelDeleteNode"
+          @select-node="onPanelSelectNode"
+        />
       </div>
     </div>
 
@@ -346,6 +312,7 @@ import {
   ChatDotRound, Connection, Operation, Files, Tools, DataLine, Folder, Grid, Upload, Download,
   RefreshLeft, RefreshRight, CopyDocument, DocumentCopy, Search
 } from '@element-plus/icons-vue'
+import PropertyPanel from './PropertyPanel.vue'
 
 const canvasRef = ref(null)
 const canvasW = ref(900)
@@ -446,6 +413,36 @@ const selectedNode = computed(() => {
   if (selectedId.value) return nodes.value.find(n => n.id === selectedId.value) || null
   return null
 })
+
+// PropertyPanel 适配层: selectedNode 使用 .name/.status, Canvas 使用 .label/.config
+// 透传到实际 canvas 节点，PropertyPanel 直接修改传入对象的属性即可生效
+const panelNode = computed(() => {
+  if (!selectedNode.value) return null
+  // 映射: PropertyPanel 写 .name → 同步到 .label
+  return new Proxy(selectedNode.value, {
+    set(target, key, val) {
+      if (key === 'name') {
+        target.label = val; return true
+      }
+      target[key] = val; return true
+    },
+    get(target, key) {
+      if (key === 'name') return target.label
+      if (key === 'status') return target.config?.status || 'pending'
+      return target[key]
+    }
+  })
+})
+
+function onPanelUpdate(/* node */) {
+  recordHistory('prop')
+}
+function onPanelDeleteNode(node) {
+  removeNode(node.id)
+}
+function onPanelSelectNode(nodeId) {
+  selectedId.value = nodeId
+}
 
 function handleNodeClick(e, n) {
   if (e.shiftKey) {

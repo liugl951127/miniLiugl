@@ -325,6 +325,10 @@ import {
   nl2sqlAsk, nl2sqlExplain, nl2sqlHistory,
   executeQuery, dryRunQuery
 } from '@/api/analytics'
+import { useClipboard } from '@/composables/useClipboard'
+
+// clipboard composable (textarea 降级支持)
+const { copy: doCopy } = useClipboard({ successMsg: (text) => `已复制: ${text}`, failMsg: '复制失败' })
 
 // ── 状态 ──────────────────────────────────────────────
 const currentDs = ref(null)
@@ -585,11 +589,7 @@ function formatSize(bytes) {
 
 // P1-4: Schema节点点击复制
 function copyNodeLabel(label) {
-  navigator.clipboard.writeText(label).then(() => {
-    ElMessage.success({ message: `已复制: ${label}`, duration: 1.5 })
-  }).catch(() => {
-    ElMessage.error('复制失败')
-  })
+  doCopy(label)
 }
 
 // ── NL2SQL ────────────────────────────────────────────

@@ -423,10 +423,14 @@ import { ElMessage } from 'element-plus'
 import { ElMessageBox } from 'element-plus'
 import { agentApi } from '@/api/agent'
 import { autoAgentGroupGenerate } from '@/api/ai'
+import { useClipboard } from '@/composables/useClipboard'
 import {
   Plus, Refresh, VideoPlay, MagicStick, Download, CaretRight,
   ChatDotSquare, Loading, UserFilled, QuestionFilled, CopyDocument,
 } from '@element-plus/icons-vue'
+
+// clipboard composable (textarea 降级支持)
+const { copy: copyToClipboard } = useClipboard({ successMsg: '配置已复制', failMsg: '复制失败' })
 
 const templates = [
   { type: 'code', name: '代码审查', icon: '🔍', desc: '分析代码质量，查找 Bug 和优化点', agentType: 'code', difficulty: 'medium', prompt: '请帮我审查以下代码的质量，查找潜在的 Bug、安全问题和性能优化点。' },
@@ -687,12 +691,7 @@ function exportGenerated() {
 // P1-3: 复制配置到剪贴板
 function copyConfig() {
   if (!generatedGroup.value) return
-  const json = JSON.stringify(generatedGroup.value, null, 2)
-  navigator.clipboard.writeText(json).then(() => {
-    ElMessage.success('配置已复制')
-  }).catch(() => {
-    ElMessage.error('复制失败')
-  })
+  copyToClipboard(JSON.stringify(generatedGroup.value, null, 2))
 }
 
 // 运行智能体群（调用真实 Agent 编排接口）
