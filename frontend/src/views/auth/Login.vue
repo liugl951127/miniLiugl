@@ -127,9 +127,7 @@
             >
               <template #default>
                 <div class="error-actions">
-                  <el-button text size="small" type="primary" :icon="Refresh" @click="retryLogin">重试</el-button>
-                  <span v-if="retryCountdown > 0" class="retry-countdown">{{ retryCountdown }}s 后自动重试</span>
-
+                  <el-button text size="small" type="primary" :icon="Refresh" @click="retryLogin">重新登录</el-button>
                 </div>
               </template>
             </el-alert>
@@ -192,7 +190,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   User, UserFilled, Lock, Message, ChatLineRound, ChatDotRound, Plus,
-  Cpu, Connection, ChatLineSquare, Promotion
+  Cpu, Connection, ChatLineSquare, Promotion, Refresh
 } from '@element-plus/icons-vue'
 import { useI18n } from '@/i18n'
 import { useUserStore } from '@/store/user'
@@ -280,25 +278,7 @@ function enableDemo() {
   toast.info('演示模式已禁用，请使用真实账号登录')
 }
 
-// V3.7.7+ 错误条倒计时重试 (网络错误时 5s 自动重试)
-const retryCountdown = ref(0)
-let retryTimer = null
 
-function startRetryCountdown(seconds = 5) {
-  retryCountdown.value = seconds
-  if (retryTimer) clearInterval(retryTimer)
-  retryTimer = setInterval(() => {
-    retryCountdown.value--
-    if (retryCountdown.value <= 0) { clearInterval(retryTimer); retryTimer = null; onSubmit() }
-  }, 1000)
-}
-
-function stopRetryCountdown() {
-  retryCountdown.value = 0
-  if (retryTimer) { clearInterval(retryTimer); retryTimer = null }
-}
-
-onUnmounted(() => { if (retryTimer) clearInterval(retryTimer) })
 
 async function onSubmit() {
   if (!formRef.value) return
@@ -328,22 +308,26 @@ async function onSubmit() {
     }
 
     // ✓ 成功 - 立刻跳, 不等 fetchProfile (layout 异步 hydrate)
-    toast.success(`${mode.value === 'login' ? '登录' : '注册'}成功`); stopRetryCountdown()  // V3.7.7+
+    toast.success(`${mode.value === 'login' ? '登录' : '注册'}成功`)
     const redirect = route.query.redirect && route.query.redirect !== '/login' ? route.query.redirect : '/admin/dashboard'
     router.replace(redirect)  // replace 不留 history
 
     // 异步 fetchProfile (不阻塞跳转)
     userStore.fetchProfile().catch(() => { /* 失败也允许, layout 自己处理 */ })
   } catch (e) {
-    // 错误处理 - 区分网络错 / 401 / 500
+    // 错误处理 - 区分错误类型，等待用户手动重新点击登录
     const msg = e?.response?.data?.message || e?.message || '操作失败'
-    if (e?.response?.status === 401) {
-      errorMsg.value = '用户名或密码错误'
-    } else if (e?.response?.status >= 500) {
-      errorMsg.value = '服务异常, 请稍后重试'
-    } else if (msg.includes('Network') || msg.includes('timeout')) {
-      errorMsg.value = '网络不可用, 请检查连接'
-      startRetryCountdown(5)  // V3.7.7+ 5s 倒计时
+    const status = e?.response?.status
+    if (status === 403 || msg.includes('锁定') || msg.includes('封禁') || msg.includes('禁用')) {
+      errorMsg.value = '账号已被锁定，请联系管理员'
+    } else if (status === 404 || msg.includes('不存在') || msg.includes('未找到')) {
+      errorMsg.value = '账号不存在，请检查用户名'
+    } else if (status === 401) {
+      errorMsg.value = '密码错误，请重新输入'
+    } else if (status >= 500) {
+      errorMsg.value = '服务异常，请稍后重试'
+    } else if (msg.includes('Network') || msg.includes('timeout') || msg.includes('网络')) {
+      errorMsg.value = '网络不可用，请检查网络连接'
     } else {
       errorMsg.value = msg
     }
@@ -730,6 +714,5 @@ onUnmounted(() => {
   }
 }
 
-.retry-countdown { font-size: 12px; color: var(--el-color-warning); font-weight: 600; margin-left: 8px; }
 .error-actions { display: flex; gap: 8px; margin-top: 8px; padding-left: 24px; }
 </style>

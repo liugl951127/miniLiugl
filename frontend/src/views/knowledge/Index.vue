@@ -168,10 +168,16 @@
                   </el-button>
                 </div>
                 <div class="retrieve-item-excerpt" @click="toggleExcerpt(idx)">
-                  <!-- Day 43: 优先显示高亮摘要，含 <mark> 标签高亮关键词 -->
-                  <span v-if="item.highlight" v-html="item.highlight" />
-                  <span v-else>{{ item.excerpt || item.content || item.text || '（无内容）' }}</span>
-                  <el-icon v-if="(item.highlight || item.excerpt || item.content) && (item.highlight || item.excerpt || item.content).length > 120"><ArrowDown /></el-icon>
+                  <!-- 展开状态：显示完整内容并高亮关键词 -->
+                  <div v-if="expandedIdx === idx" class="excerpt-expanded" v-html="item.highlight
+                    ? item.highlight
+                    : highlightKeyword(item.excerpt || item.content || item.text || '', retrieveQuery)" />
+                  <!-- 收起状态：显示摘要 -->
+                  <div v-else>
+                    <span v-if="item.highlight" v-html="item.highlight" />
+                    <span v-else>{{ item.excerpt || item.content || item.text || '（无内容）' }}</span>
+                    <el-icon v-if="(item.highlight || item.excerpt || item.content) && (item.highlight || item.excerpt || item.content).length > 120"><ArrowDown /></el-icon>
+                  </div>
                 </div>
               </div>
             </div>
@@ -541,6 +547,20 @@ const retrievePromptTemplate = ref('default')
 const retrieveLoading = ref(false)
 const retrieveResults = ref([])
 const retrieveDone = ref(false)
+const expandedIdx = ref(-1)  // 当前展开的行索引，同一时间只展开一行
+
+// 高亮关键词（用于展开后的完整内容区域）
+function highlightKeyword(text, keyword) {
+  if (!text || !keyword?.trim()) return escapeHtml(text || '')
+  const escaped = keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const re = new RegExp(`(${escaped})`, 'gi')
+  return escapeHtml(text).replace(re, '<mark>$1</mark>')
+}
+
+function escapeHtml(str) {
+  if (!str) return ''
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
 
 // ========== 重命名文档 ==========
 const renameDialogVisible = ref(false)
@@ -982,7 +1002,8 @@ async function doRetrieve() {
 }
 
 function toggleExcerpt(idx) {
-  // 简单的展开折叠，可以在这里实现更复杂的展开逻辑
+  // 同一时间只展开一行，再次点击已展开行则收起
+  expandedIdx.value = expandedIdx.value === idx ? -1 : idx
 }
 
 // SSE 阶段标签 (Day 41)
@@ -1052,6 +1073,15 @@ onMounted(loadKbs)
   display: flex; align-items: flex-end; gap: 4px;
   span { flex: 1; }
   // Day 43: 高亮标签样式
+  :deep(mark) {
+    background: #fff3bf; color: #d48806; border-radius: 2px;
+    padding: 0 2px; font-weight: 600;
+  }
+}
+.excerpt-expanded {
+  font-size: 13px; color: #606266; line-height: 1.8;
+  max-height: none; overflow: visible;
+  word-break: break-all;
   :deep(mark) {
     background: #fff3bf; color: #d48806; border-radius: 2px;
     padding: 0 2px; font-weight: 600;

@@ -220,7 +220,12 @@
             </el-form-item>
             <el-form-item label="下游节点">
               <div class="downstream-list">
-                <el-tag v-for="eid in getDownstream(selectedNode.id)" :key="eid" class="downstream-tag">
+                <el-tag
+                  v-for="eid in getDownstream(selectedNode.id)"
+                  :key="eid"
+                  class="downstream-tag clickable"
+                  @click="onDownstreamClick(eid)"
+                >
                   {{ getNodeName(eid) }}
                 </el-tag>
                 <span v-if="!getDownstream(selectedNode.id).length" class="no-downstream">无下游</span>
@@ -275,9 +280,10 @@ import BackToTop from '@/components/BackToTop.vue'
 
 const props = defineProps({
   selectedNode: { type: Object, default: null },
-  selectedEdge: { type: Object, default: null }
+  selectedEdge: { type: Object, default: null },
+  edges: { type: Array, default: () => [] }  // { from, to, label }[]
 })
-const emit = defineEmits(['update', 'delete-node', 'delete-edge'])
+const emit = defineEmits(['update', 'delete-node', 'delete-edge', 'select-node'])
 
 const activeTab = ref('basic')
 
@@ -305,12 +311,19 @@ function getName(type) {
 }
 
 function getDownstream(nodeId) {
-  // 这里需要外部传入 edges, 简化用 window 或 props
-  // 实际通过 prop 传递, 这里 mock
-  return []
+  // 通过 edges prop 找出所有 to === nodeId 的边，返回下游节点 ID 列表
+  return (props.edges || [])
+    .filter(e => e.from === nodeId)
+    .map(e => e.to)
 }
 function getNodeName(id) {
-  return id
+  // 优先从 edges 的 label 字段读取节点名称兜底
+  const edge = (props.edges || []).find(e => e.to === id)
+  return edge?.label || edge?.name || id
+}
+
+function onDownstreamClick(nodeId) {
+  emit('select-node', nodeId)
 }
 function getOutputSchema(node) {
   return JSON.stringify({ output: { type: 'string' } }, null, 2)
@@ -401,6 +414,13 @@ function handleDelete() {
   background: rgba(168, 85, 247, 0.2);
   border-color: #a855f7;
   color: white;
+}
+.downstream-tag.clickable {
+  cursor: pointer;
+  &:hover {
+    background: rgba(168, 85, 247, 0.4);
+    text-decoration: underline;
+  }
 }
 .no-downstream {
   font-size: 11px;
