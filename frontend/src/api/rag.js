@@ -115,6 +115,14 @@ export const updateDocContent = (docId, ownerId, newContent) =>
     ? http.put(`/rag/doc/${docId}/content?ownerId=${ownerId}`, { content: newContent })
     : http.put(`/rag/doc/${docId}/content`, { content: newContent })
 
+/** 批量重新索引：批量重新切片 + 批量重新向量化 (Day 46) */
+export const batchReindexDocs = (ownerId, docIds) => {
+  const body = { docIds }
+  return ownerId
+    ? http.post(`/rag/doc/batch/reindex?ownerId=${ownerId}`, body)
+    : http.post('/rag/doc/batch/reindex', body)
+}
+
 // 检索 + 问答
 export const retrieve = (body) => {
   console.log('%c[RAG API] retrieve', 'color: #409eff', body)

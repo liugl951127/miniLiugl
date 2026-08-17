@@ -32,4 +32,6 @@ public class AlertEvent {
     private Boolean escalated;
     /** Day 45: 升级时间 */
     private LocalDateTime escalatedAt;
+    /** Day 46: 自动恢复操作人 (SYSTEM = 自动恢复, 其他 = 用户ID) */
+    private String resolvedBy;
 }

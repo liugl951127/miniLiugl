@@ -1150,6 +1150,9 @@ CREATE TABLE IF NOT EXISTS alert_event (
   notes VARCHAR(500),
   duration BIGINT,
   silenced_until TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  escalated TINYINT(1) DEFAULT 0,
+  escalated_at TIMESTAMP,
+  resolved_by VARCHAR(100),
   PRIMARY KEY (id)
 );
 

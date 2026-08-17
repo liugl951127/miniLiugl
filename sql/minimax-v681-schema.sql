@@ -1336,6 +1336,7 @@ CREATE TABLE `alert_event` (
   `silenced_until` TIMESTAMP NULL,
   `escalated` TINYINT(1) NULL DEFAULT 0 COMMENT 'Day45: 是否已升级',
   `escalated_at` TIMESTAMP NULL COMMENT 'Day45: 升级时间',
+  `resolved_by` VARCHAR(100) NULL COMMENT 'Day46: SYSTEM=自动恢复 其他=用户ID',
     PRIMARY KEY (`id`),
   KEY `idx_id` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1000;

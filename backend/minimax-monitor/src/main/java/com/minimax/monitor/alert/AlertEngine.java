@@ -107,6 +107,42 @@ public class AlertEngine {
         }
     }
 
+    /**
+     * Day 46: 告警自动恢复检查 — 每 60s 执行一次
+     * - 查找所有 firing 且规则配置了 autoResolveMinutes > 0 的事件
+     * - 如果触发时间超过 autoResolveMinutes，自动标记为 resolved
+     * - 由 resolvedBy=SYSTEM 标识
+     */
+    @Scheduled(fixedDelay = 60_000, initialDelay = 45_000)
+    public void checkAutoResolve() {
+        try {
+            List<AlertEvent> firing = eventMapper.selectByStatus("firing", 500);
+            for (AlertEvent e : firing) {
+                AlertRule r = ruleMapper.selectById(e.getRuleId());
+                if (r == null) continue;
+                Integer autoMinutes = r.getAutoResolveMinutes();
+                if (autoMinutes == null || autoMinutes <= 0) continue;
+
+                long elapsedMinutes = java.time.Duration.between(e.getFiredAt(), LocalDateTime.now()).toMinutes();
+                if (elapsedMinutes >= autoMinutes) {
+                    log.info("[AUTO-RESOLVE] alertId={} 触发自动恢复（持续 {} 分钟超过阈值 {} 分钟）",
+                            e.getId(), elapsedMinutes, autoMinutes);
+                    e.setStatus("resolved");
+                    e.setResolvedAt(LocalDateTime.now());
+                    e.setResolvedBy("SYSTEM");
+                    String autoMsg = e.getMessage() + " 🤖【自动恢复】持续 " + elapsedMinutes + " 分钟无人工处理";
+                    e.setMessage(autoMsg);
+                    eventMapper.updateById(e);
+
+                    // 广播自动恢复事件
+                    try { streamRegistry.broadcast(e); } catch (Exception ex) { /* ignore */ }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("auto-resolve check fail: {}", e.getMessage());
+        }
+    }
+
     public void evaluateRule(AlertRule r) {
         // Day 35: 规则级静默检查
         if (r.getSilencedUntil() != null && r.getSilencedUntil().isAfter(LocalDateTime.now())) {

@@ -4,6 +4,23 @@
 
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
+## [6.8.3] - 2026-08-17
+
+### Added
+- **RAG 批量重新索引**: 新增 `POST /api/v1/rag/doc/batch/reindex` 端点，支持一次选中多个文档批量重新切片 + 批量重新向量化
+  - `DocumentService.batchReindexDocs(List<Long>, Long)` — 批量重新索引核心方法
+  - 前端 knowledge/Index.vue 文档列表新增勾选 + 批量重索引按钮 + 结果弹窗（含失败详情）
+- **Monitor 告警自动恢复**: `AlertEngine.checkAutoResolve()` 每 60s 遍历 firing 告警
+  - 规则配置 `autoResolveMinutes > 0` 时，自动将告警标记为 resolved
+  - resolvedBy=SYSTEM 标识自动恢复，消息追加 `🤖【自动恢复】`
+  - `AlertEvent` 新增 `resolvedBy` 字段，SQL schema 同步更新
+
+### Frontend
+- **图片懒加载**: multimodal/Index.vue 三个结果图片（参考图/分析图/人脸图）全部加 `loading="lazy"`
+
+### Fixed
+- SQL schema: alert_event 新增 `escalated` / `escalated_at` / `resolved_by` 列（mysql-final + v681-schema 同步）
+
 ## [6.8.2] - 2026-08-12
 
 ### Added

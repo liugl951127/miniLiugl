@@ -39,6 +39,7 @@ import java.util.Map;
  *   GET    /rag/doc/{id}/chunks             切片列表
  *   PUT    /rag/doc/{id}                    重命名文档
  *   PUT    /rag/doc/{id}/content            在线编辑（修改内容+重新切片+重新索引）Day 45
+ *   POST   /rag/doc/batch/reindex          批量重新索引（批量切片+批量向量化）Day 46
  *   DELETE /rag/doc/{id}                    删除
  *   GET    /rag/doc/{id}/content            文档全文内容
  *
@@ -277,6 +278,35 @@ public class RagController {
         }
         Document doc = docService.updateDocContent(id, resolvedOwner, newContent);
         return Result.ok(doc);
+    }
+
+    /**
+     * Day 46: 批量重新索引（批量重新切片 + 批量重新向量化）
+     * POST /api/v1/rag/doc/batch/reindex
+     * body: { "docIds": [1, 2, 3] }
+     * 返回: { succeeded, failed: [{ docId, error }] }
+     */
+    @Operation(summary = "批量重新索引（重新切片+重新向量化）")
+    @PostMapping("/doc/batch/reindex")
+    public Result<DocumentService.BatchResult> batchReindexDocs(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @RequestParam(required = false) Long ownerId,
+            @RequestBody Map<String, Object> body) {
+        Long resolvedOwner = resolveOwnerId(user, ownerId);
+        Object idsObj = body.get("docIds");
+        if (idsObj == null) {
+            return Result.fail("docIds 不能为空");
+        }
+        List<Long> docIds;
+        if (idsObj instanceof List) {
+            docIds = ((List<?>) idsObj).stream()
+                    .map(o -> ((Number) o).longValue())
+                    .toList();
+        } else {
+            return Result.fail("docIds 格式错误，应为数组");
+        }
+        DocumentService.BatchResult result = docService.batchReindexDocs(docIds, resolvedOwner);
+        return Result.ok(result);
     }
 
     // ---------- 检索 + 问答 ----------

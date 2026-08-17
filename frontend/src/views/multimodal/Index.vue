@@ -102,7 +102,7 @@
           <el-upload :before-upload="uploadRefImage" :show-file-list="false" accept="image/*">
             <el-button size="small">上传参考图</el-button>
           </el-upload>
-          <img v-if="imgForm.refImage" :src="imgForm.refImage" style="width:80px;height:80px;border-radius:8px;margin-left:8px;object-fit:cover" />
+          <img v-if="imgForm.refImage" :src="imgForm.refImage" loading="lazy" style="width:80px;height:80px;border-radius:8px;margin-left:8px;object-fit:cover" />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" :loading="imgLoading" @click="generateImage">
@@ -164,7 +164,7 @@
               <div style="margin-top:8px">拖拽图片或点击上传</div>
             </div>
           </el-upload>
-          <img v-if="analyzeImgUrl" :src="analyzeImgUrl" style="width:100%;margin-top:12px;border-radius:8px" />
+          <img v-if="analyzeImgUrl" :src="analyzeImgUrl" loading="lazy" style="width:100%;margin-top:12px;border-radius:8px" />
         </el-col>
         <el-col :span="12">
           <el-input v-model="analyzePrompt" type="textarea" :rows="2"
@@ -357,7 +357,7 @@
           <pre style="white-space:pre-wrap;font-size:13px;line-height:1.6">{{ faceResult.content || faceResult.description || JSON.stringify(faceResult, null, 2) }}</pre>
         </el-card>
         <div v-if="faceResult.base64" style="margin-top:12px">
-          <img :src="'data:image/jpeg;base64,' + faceResult.base64" style="max-width:300px;border-radius:8px" />
+          <img :src="'data:image/jpeg;base64,' + faceResult.base64" loading="lazy" style="max-width:300px;border-radius:8px" />
         </div>
         <div style="margin-top:8px;display:flex;gap:8px">
           <el-button size="small" @click="copyUrl(JSON.stringify(faceResult, null, 2))">复制结果</el-button>

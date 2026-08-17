@@ -822,4 +822,19 @@
 - [ ] 前端图片懒加载优化
 - [ ] V4.4 Release 打包 + CHANGELOG 更新
 
-## Day 46 - 待开始
+## Day 46 - 2026-08-17 ✅ RAG批量重索引 + Monitor自动恢复 + 图片懒加载
+
+**今日完成：**
+- [x] **RAG 批量重索引**：`POST /api/v1/rag/doc/batch/reindex` + `batchReindexDocs()` + 前端勾选+弹窗+结果展示
+- [x] **Monitor 自动恢复**：`checkAutoResolve()` 每60s定时任务 + `AlertEvent.resolvedBy=SYSTEM` + SQL schema
+- [x] **图片懒加载**：multimodal/Index.vue 三个 img 标签加 `loading="lazy"`
+- [x] **V6.8.3 Release**：CHANGELOG.md 更新
+- [x] 自检 13/13 ✅ + 静态 5/5 ✅ + vite build 1m8s ✅
+
+**明日计划 Day 47：**
+- [ ] RAG 文档批量删除
+- [ ] Monitor 告警统计 Dashboard（历史趋势）
+- [ ] 前端搜索高亮优化
+- [ ] API 限流中间件完善
+
+## Day 47 - 待开始

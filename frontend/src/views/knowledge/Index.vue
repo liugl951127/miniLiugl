@@ -65,13 +65,16 @@
             <el-button type="primary" size="small" @click="openUploadWizard">
               <el-icon><Upload /></el-icon>上传文档
             </el-button>
+            <el-button size="small" :disabled="!selectedDocIds.length" @click="openBatchReindex">
+              <el-icon><Refresh /></el-icon>批量重新索引{{ selectedDocIds.length ? ` (${selectedDocIds.length})` : '' }}
+            </el-button>
             <el-button size="small" @click="refreshDocs">
               <el-icon><Refresh /></el-icon>刷新
             </el-button>
           </div>
 
-          <el-table :data="docs" size="small" v-loading="docsLoading" stripe style="margin-top:10px">
-            <el-table-column prop="name" label="文件名" min-width="140" show-overflow-tooltip />
+          <el-table :data="docs" size="small" v-loading="docsLoading" stripe style="margin-top:10px" @selection-change="onDocSelectionChange">
+            <el-table-column type="selection" width="40" />
             <el-table-column prop="size" label="大小" width="80" align="center">
               <template #default="{ row }">{{ formatSize(row.size) }}</template>
             </el-table-column>
@@ -414,6 +417,48 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 批量重新索引弹窗 (Day 46) -->
+    <el-dialog v-model="batchReindexVisible" title="批量重新索引" width="560px" destroy-on-close>
+      <div v-if="!batchReindexResult">
+        <el-alert type="info" :closable="false" style="margin-bottom:14px">
+          确认对 <strong>{{ selectedDocIds.length }}</strong> 个文档执行重新切片 + 重新向量化索引。
+          此操作将删除旧切片并重建索引，预计耗时与文档数量和长度成正比。
+        </el-alert>
+        <div style="margin-bottom:12px;font-size:13px;color:#606266">
+          已选择文档 IDs：<code>{{ selectedDocIds.join(', ') }}</code>
+        </div>
+        <div v-if="batchReindexLoading" style="margin-top:12px">
+          <el-progress :percentage="batchReindexProgress" :status="batchReindexProgress >= 100 ? 'success' : undefined" :indeterminate="batchReindexProgress < 20" />
+          <div style="text-align:center;font-size:13px;color:#606266;margin-top:4px">{{ batchReindexMsg }}</div>
+        </div>
+        <div v-else style="text-align:center;font-size:14px;color:#409eff;padding:10px">{{ batchReindexMsg }}</div>
+      </div>
+      <!-- 结果展示 -->
+      <div v-else>
+        <el-result icon="success" title="批量重索引完成">
+          <template #sub-title>
+            <p>成功 <strong style="color:#67c23a">{{ batchReindexResult.succeeded }}</strong> 个文档</p>
+            <p v-if="batchReindexResult.failed?.length">失败 <strong style="color:#f56c6c">{{ batchReindexResult.failed.length }}</strong> 个文档</p>
+          </template>
+        </el-result>
+        <div v-if="batchReindexResult.failed?.length" style="max-height:160px;overflow-y:auto;border:1px solid #f5f5f5;border-radius:4px;padding:10px">
+          <div style="font-size:13px;font-weight:600;color:#f56c6c;margin-bottom:8px">失败详情</div>
+          <div v-for="(f, i) in batchReindexResult.failed" :key="i" style="font-size:12px;color:#606266;margin-bottom:4px">
+            <code>docId={{ f.docId }}</code>: {{ f.error }}
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <template v-if="!batchReindexResult">
+          <el-button @click="batchReindexVisible = false" :disabled="batchReindexLoading">取消</el-button>
+          <el-button type="warning" :loading="batchReindexLoading" @click="doBatchReindex">
+            确认重新索引
+          </el-button>
+        </template>
+        <el-button v-else type="primary" @click="batchReindexVisible = false; selectedDocIds = []">完成</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -423,7 +468,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   listMyKbs, createKb, updateKb, deleteKb,
   listDocs, uploadDoc, uploadDocStream, deleteDoc, renameDoc,
-  retrieve, getDocContent, updateDocContent
+  retrieve, getDocContent, updateDocContent, batchReindexDocs
 } from '@/api/rag'
 import http from '@/api/http'
 import { useUserStore } from '@/store/user'
@@ -511,6 +556,63 @@ const editDoc = ref(null)       // 文档元信息
 const editDocContent = ref('')  // 可编辑的正文
 const editDocProgress = ref(0)
 const editDocProgressMsg = ref('准备中...')
+
+// ========== 批量重新索引 (Day 46) ==========
+const batchReindexVisible = ref(false)
+const batchReindexLoading = ref(false)
+const batchReindexProgress = ref(0)
+const batchReindexMsg = ref('')
+const batchReindexResult = ref(null)   // { succeeded, failed }
+const selectedDocIds = ref([])
+
+// ========== 批量重新索引 (Day 46) ==========
+function onDocSelectionChange(rows) {
+  selectedDocIds.value = rows.map(r => r.id)
+}
+
+function openBatchReindex() {
+  if (!selectedDocIds.value.length) {
+    ElMessage.warning('请先勾选要重新索引的文档')
+    return
+  }
+  batchReindexVisible.value = true
+  batchReindexLoading.value = false
+  batchReindexProgress.value = 0
+  batchReindexMsg.value = '就绪，已选择 ' + selectedDocIds.value.length + ' 个文档'
+  batchReindexResult.value = null
+}
+
+async function doBatchReindex() {
+  if (!selectedDocIds.value.length) return
+  batchReindexLoading.value = true
+  batchReindexProgress.value = 5
+  batchReindexMsg.value = '正在重新索引...'
+
+  const timer = setInterval(() => {
+    if (batchReindexProgress.value < 90) {
+      batchReindexProgress.value += Math.floor(Math.random() * 10) + 5
+      if (batchReindexProgress.value > 90) batchReindexProgress.value = 90
+    }
+  }, 800)
+
+  try {
+    const r = await batchReindexDocs(userId.value, selectedDocIds.value)
+    clearInterval(timer)
+    batchReindexProgress.value = 100
+    batchReindexResult.value = r.data || r.result
+    batchReindexMsg.value = '批量重索引完成！'
+    ElMessage.success('批量重索引完成：成功 ' + (r.data?.succeeded || 0) + ' 个，失败 ' + (r.data?.failed?.length || 0) + ' 个')
+    refreshDocs()
+    loadKbs()
+  } catch (e) {
+    clearInterval(timer)
+    batchReindexProgress.value = 0
+    batchReindexMsg.value = ''
+    ElMessage.error('批量重索引失败: ' + (e.message || ''))
+  } finally {
+    batchReindexLoading.value = false
+  }
+}
 
 async function openEditDoc(doc) {
   editDocVisible.value = true

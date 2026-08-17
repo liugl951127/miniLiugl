@@ -386,4 +386,85 @@ public class DocumentService {
         Document d = docMapper.selectById(docId);
         return d != null ? d.getKbId() : null;
     }
+
+    /**
+     * Day 46: 批量重新索引多个文档
+     * - 校验归属（所有 doc 必须属于同一 owner）
+     * - 对每个文档重新切片 + 向量化 + 写库
+     * - 返回成功数量和失败列表
+     *
+     * @param docIds  文档 ID 列表
+     * @param ownerId 所有者（归属校验）
+     * @return 批量结果：{ succeeded: 成功数, failed: [ { docId, error } ] }
+     */
+    @Transactional
+    public BatchResult batchReindexDocs(List<Long> docIds, Long ownerId) {
+        if (docIds == null || docIds.isEmpty()) {
+            throw new IllegalArgumentException("docIds 不能为空");
+        }
+        int succeeded = 0;
+        List<FailedDoc> failed = new java.util.ArrayList<>();
+
+        for (Long docId : docIds) {
+            try {
+                Document d = docMapper.selectById(docId);
+                if (d == null) {
+                    failed.add(new FailedDoc(docId, "文档不存在"));
+                    continue;
+                }
+                if (!d.getOwnerId().equals(ownerId)) {
+                    failed.add(new FailedDoc(docId, "无权操作此文档"));
+                    continue;
+                }
+                String content = d.getContent();
+                if (content == null || content.isBlank()) {
+                    failed.add(new FailedDoc(docId, "文档内容为空，无法重新索引"));
+                    continue;
+                }
+                Long kbId = d.getKbId();
+                int oldChunkCount = d.getChunkCount();
+
+                // 1) 删除旧切片
+                chunkMapper.deleteByDoc(docId);
+
+                // 2) 重新切片
+                List<TextChunker.Chunk> chunks = chunker.chunk(content);
+                log.info("批量重索引-重新切片: docId={} oldChunks={} newChunks={}", docId, oldChunkCount, chunks.size());
+
+                // 3) 重新向量化 + 写库
+                for (int i = 0; i < chunks.size(); i++) {
+                    TextChunker.Chunk ck = chunks.get(i);
+                    float[] vec = embedding.embed(ck.content());
+                    DocumentChunk c = new DocumentChunk();
+                    c.setDocId(docId);
+                    c.setKbId(kbId);
+                    c.setOwnerId(ownerId);
+                    c.setChunkIndex(i);
+                    c.setContent(ck.content());
+                    c.setEmbedding(VectorUtils.toBytes(vec));
+                    c.setDim(vec.length);
+                    c.setCharCount(ck.charCount());
+                    c.setStartPos(ck.startPos());
+                    c.setEndPos(ck.endPos());
+                    chunkMapper.insert(c);
+                }
+
+                // 4) 更新 document
+                d.setChunkCount(chunks.size());
+                docMapper.updateById(d);
+
+                // 5) 调整 KB chunk 计数
+                kbService.incChunkCount(kbId, chunks.size() - oldChunkCount);
+                succeeded++;
+            } catch (Exception e) {
+                log.error("批量重索引失败: docId={} err={}", docId, e.getMessage());
+                failed.add(new FailedDoc(docId, e.getMessage()));
+            }
+        }
+        return new BatchResult(succeeded, failed);
+    }
+
+    /** 批量结果记录 */
+    public record BatchResult(int succeeded, List<FailedDoc> failed) {}
+    public record FailedDoc(Long docId, String error) {}
 }
