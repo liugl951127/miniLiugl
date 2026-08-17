@@ -98,7 +98,7 @@
                 <executions>
                     <execution>
                         <id>repackage</id>
-                        <phase>none</phase>
+                        <phase>package</phase>
                     </execution>
                 </executions>
             </plugin>

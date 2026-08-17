@@ -24,7 +24,7 @@ RUN mvn -B -pl minimax-auth -am clean package \
     ls -la /workspace/*/target/ 2>/dev/null | head -20  # V3.5.14: 验证 jar 产物
 
 RUN java -Djarmode=layertools -jar \
-    minimax-auth/target/minimax-auth-spring-boot.jar extract --destination extracted
+    minimax-auth/target/minimax-auth.jar extract --destination extracted
 
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app

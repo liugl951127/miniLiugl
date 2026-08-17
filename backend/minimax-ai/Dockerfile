@@ -28,7 +28,7 @@ RUN mvn -B -pl minimax-ai -am clean package \
 
 # 拆 layered jar
 RUN java -Djarmode=layertools -jar \
-    minimax-ai/target/minimax-ai-spring-boot.jar extract --destination extracted
+    minimax-ai/target/minimax-ai.jar extract --destination extracted
 
 # ─── Stage 3: 运行层 ───
 FROM eclipse-temurin:17-jre-alpine

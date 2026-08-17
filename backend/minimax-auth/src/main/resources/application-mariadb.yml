@@ -31,7 +31,7 @@ spring:
     # - allowPublicKeyRetrieval=true (允许公钥检索, MariaDB 10.4+ 需要)
     url: jdbc:mariadb://${MARIADB_HOST:127.0.0.1}:${MARIADB_PORT:3306}/${MARIADB_DB:minimax_platform}?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: ${MARIADB_USER:root}
-    password: ${MARIADB_PASSWORD:root123456}
+    password: ${MYSQL_PASSWORD:root123456}
     hikari:
       # MariaDB 推荐: 连接池略小, 因为 mariadb 自身连接开销低
       maximum-pool-size: 16

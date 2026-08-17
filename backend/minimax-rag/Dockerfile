@@ -32,7 +32,7 @@ RUN mvn -B -pl minimax-rag -am clean package \
 
 # 拆 Spring Boot layered jar (4 层)
 RUN java -Djarmode=layertools -jar \
-    minimax-rag/target/minimax-rag-spring-boot.jar extract --destination extracted
+    minimax-rag/target/minimax-rag.jar extract --destination extracted
 
 # ─── Stage 3: 运行层 ───
 FROM eclipse-temurin:17-jre-alpine

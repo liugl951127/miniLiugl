@@ -29,7 +29,7 @@ RUN mvn -B -pl minimax-ws -am clean package \
 
 # 拆 Spring Boot layered jar (4 层)
 RUN java -Djarmode=layertools -jar \
-    minimax-ws/target/minimax-ws-spring-boot.jar extract --destination extracted && \
+    minimax-ws/target/minimax-ws.jar extract --destination extracted && \
     ls -la extracted/  # V3.5.14: 验证 4 层 extraction 成功
 
 # ─── Stage 3: 运行层 ───

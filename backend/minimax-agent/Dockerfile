@@ -34,7 +34,7 @@ RUN mvn -B -pl minimax-agent -am clean package \
 
 # 拆 Spring Boot layered jar (4 层)
 RUN java -Djarmode=layertools -jar \
-    minimax-agent/target/minimax-agent-spring-boot.jar extract --destination extracted
+    minimax-agent/target/minimax-agent.jar extract --destination extracted
 
 # ─── Stage 3: 运行层 ───
 FROM eclipse-temurin:17-jre-alpine

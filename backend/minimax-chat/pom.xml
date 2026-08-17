@@ -110,7 +110,7 @@
                 <executions>
                     <execution>
                         <id>repackage</id>
-                        <phase>none</phase>
+                        <phase>package</phase>
                         <goals><goal>repackage</goal></goals>
                     </execution>
                 </executions>

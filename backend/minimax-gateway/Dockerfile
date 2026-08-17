@@ -45,7 +45,7 @@ RUN mvn -B -pl minimax-gateway -am clean package \
 
 # 拆 layered jar (4 层)
 RUN java -Djarmode=layertools -jar \
-    minimax-gateway/target/minimax-gateway-spring-boot.jar extract --destination extracted
+    minimax-gateway/target/minimax-gateway.jar extract --destination extracted
 
 # ─── Stage 3: 运行层 (最终镜像) ───
 FROM eclipse-temurin:17-jre-alpine

@@ -176,7 +176,6 @@
                             <artifactId>druid-spring-boot-3-starter</artifactId>
                         </exclude>
                     </excludes>
-                    <classifier>spring-boot</classifier>
                     <mainClass>com.minimax.ai.AiApplication</mainClass>
                 </configuration>
                 <executions>
@@ -185,7 +184,7 @@
                         <goals>
                             <goal>repackage</goal>
                         </goals>
-                        <phase>none</phase>
+                        <phase>package</phase>
                     </execution>
                 </executions>
             </plugin>

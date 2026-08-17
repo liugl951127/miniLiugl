@@ -123,7 +123,7 @@
                         <goals>
                             <goal>repackage</goal>
                         </goals>
-                        <phase>none</phase>
+                        <phase>package</phase>
                     </execution>
                 </executions>
             </plugin>
