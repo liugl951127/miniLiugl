@@ -66,6 +66,22 @@ export const stopMessageStream = (streamId) =>
   // V6.8.1 fix: 路径对齐 AiChatRealController /api/v1/ai/chat/stop
   http.post(`/ai/chat/stop`, { streamId })
 
+// ============ ONNX 推理 API (V7.1) ============
+/**
+ * POST /ai/chat/onnx/generate
+ * 同步推理（阻塞直到生成完毕），返回完整文本
+ */
+export const onnxGenerate = (params) => {
+  const { prompt, model, temperature = 0.7, maxTokens = 512, topP = 0.9 } = params
+  return http.post('/ai/chat/onnx/generate', { prompt, model, temperature, maxTokens, topP })
+}
+
+/**
+ * GET /ai/chat/onnx/status
+ * 查询 ONNX 模型加载状态
+ */
+export const onnxStatus = () => http.get('/ai/chat/onnx/status')
+
 /**
  * V6.8+ 聚合 API (兼容旧 store)
  */
@@ -78,7 +94,9 @@ export const sessionApi = {
   listMessages,
   appendMessage,
   sendMessageStream,
-  stopMessageStream
+  stopMessageStream,
+  onnxGenerate,
+  onnxStatus
 }
 
 export const messageApi = {

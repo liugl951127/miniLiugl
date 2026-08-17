@@ -491,6 +491,42 @@ public class AiChatRealController {
     }
 
     /**
+     * V7.1: 列出所有本地/自研模型（含 ONNX），供前端模型选择器使用。
+     * 调用 minimax-model /models/local/providers，适配前端 trainedModels 数据结构。
+     */
+    @GetMapping("/training/models")
+    public Result<List<Map<String, Object>>> listTrainedModels() {
+        List<Map<String, Object>> providers = modelClient.listLocalProviders();
+        List<Map<String, Object>> models = new java.util.ArrayList<>();
+        for (Map<String, Object> p : providers) {
+            String providerCode = String.valueOf(p.getOrDefault("code", ""));
+            String providerName = String.valueOf(p.getOrDefault("name", "训练模型"));
+            Object modelsObj = p.get("models");
+            if (modelsObj instanceof List<?> list) {
+                for (Object m : list) {
+                    if (m instanceof Map<?, ?> modelMap) {
+                        Map<String, Object> model = new java.util.LinkedHashMap<>();
+                        model.put("code", modelMap.getOrDefault("modelCode", modelMap.getOrDefault("model_code", "")));
+                        model.put("name", modelMap.getOrDefault("displayName", modelMap.getOrDefault("modelCode", "")));
+                        model.put("provider", providerName);
+                        model.put("providerCode", providerCode);
+                        model.put("accuracy", modelMap.getOrDefault("accuracy", 0));
+                        // 自动判断类型
+                        String code = String.valueOf(model.get("code")).toLowerCase();
+                        model.put("vision", code.contains("vision") || code.contains("vl") || code.contains("图像"));
+                        model.put("audio", code.contains("audio") || code.contains("tts") || code.contains("asr"));
+                        model.put("trained", true);
+                        model.put("category", "self");
+                        models.add(model);
+                    }
+                }
+            }
+        }
+        log.info("[Training/Models] 返回本地模型 {} 个", models.size());
+        return Result.ok(models);
+    }
+
+    /**
      * ONNX 模型状态查询
      */
     @GetMapping("/onnx/status")

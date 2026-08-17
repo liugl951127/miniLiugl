@@ -107,4 +107,29 @@ public class ModelClient {
         }
         return List.of();
     }
+
+    /**
+     * 获取本地/自研模型列表（含 ONNX）。
+     * 调用 minimax-model 的 /api/v1/models/local/providers
+     */
+    public List<Map<String, Object>> listLocalProviders() {
+        try {
+            String url = modelServiceUrl + "/api/v1/models/local/providers";
+            String resp = modelRestTemplate.getForObject(url, String.class);
+            if (resp == null) return List.of();
+            JSONObject result = JSON.parseObject(resp);
+            if (result.getIntValue("code") != 0) return List.of();
+            Object data = result.get("data");
+            if (data instanceof List<?> list) {
+                List<Map<String, Object>> out = new ArrayList<>();
+                for (Object item : list) {
+                    if (item instanceof Map<?, ?>) out.add((Map<String, Object>) item);
+                }
+                return out;
+            }
+        } catch (Exception e) {
+            log.warn("[ModelClient] 获取本地模型列表失败: {}", e.getMessage());
+        }
+        return List.of();
+    }
 }

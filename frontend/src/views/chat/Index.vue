@@ -110,6 +110,17 @@
                 </span>
               </el-option>
             </el-option-group>
+            <!-- V7.1: ONNX 本地推理模型 -->
+            <el-option-group label="  ⚡ ONNX 本地推理" v-if="onnxTextModels.length">
+              <el-option v-for="m in onnxTextModels" :key="m.code" :label="m.name" :value="m.code">
+                <span>{{ m.name }}</span>
+                <span style="float:right;display:flex;align-items:center;gap:4px">
+                  <span style="font-size:10px;background:#fff7ed;color:#c2410c;padding:1px 5px;border-radius:3px;font-weight:600">⚡ ONNX</span>
+                  <span v-if="m.accuracy" style="font-size:10px;color:#67c23a">{{ m.accuracy }}%</span>
+                  <span style="font-size:10px;color:#9ca3af">{{ m.providerCode || '' }}</span>
+                </span>
+              </el-option>
+            </el-option-group>
             <el-option-group label="  🖼️ 视觉" v-if="selfVisionModels.length">
               <el-option v-for="m in selfVisionModels" :key="m.code" :label="m.name" :value="m.code">
                 <span>{{ m.name }}</span>
@@ -359,7 +370,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { listProviders, listEnabledModels } from '@/api/model'
 import { uploadImage, uploadAudio, uploadVideo, videoUnderstand } from '@/api/ai'
 import { visionAnalyze, audioTts } from '@/api/multimodal'
-import { listSessions, createSession as createSess, listMessages, sendMessageStream, deleteSession, updateSession } from '@/api/session'
+import { listSessions, createSession as createSess, listMessages, sendMessageStream, deleteSession, updateSession, onnxGenerate } from '@/api/session'
 import { trainingChat, listTrainedModels } from '@/api/ai'
 import { listMyKbs, listPublicKbs } from '@/api/rag'
 import { listAgents } from '@/api/agent'
@@ -559,6 +570,7 @@ async function loadTrainedModels() {
       code: m.code,
       name: m.name,
       provider: m.provider || '训练模型',
+      providerCode: m.providerCode || m.provider || '',   // V7.1: ONNX 模型检测用
       // 从代码或 backend 标记自动判断视觉
       vision: !!(m.vision || (m.code || '').toLowerCase().includes('vision') || (m.code || '').toLowerCase().includes('vl')),
       audio: !!(m.audio || (m.code || '').toLowerCase().includes('audio')),
@@ -586,6 +598,20 @@ const audioModels = computed(() => allModels.value.filter(m => m.audio))
 // V7.1: 自研模型（来自 trainedModels API + 本地部署）
 const selfTextModels = computed(() => trainedModels.value.filter(m => !m.vision && !m.audio))
 const selfVisionModels = computed(() => trainedModels.value.filter(m => m.vision && !m.audio))
+
+// V7.1: ONNX 模型（providerCode 包含 onnx 的文本模型）
+const onnxTextModels = computed(() =>
+  trainedModels.value.filter(m =>
+    !m.vision && !m.audio &&
+    ((m.providerCode || '').toLowerCase().includes('onnx') ||
+     (m.code || '').toLowerCase().includes('onnx'))
+  )
+)
+
+// V7.1: 当前是否为 ONNX 模型
+const isOnnxModel = computed(() =>
+  onnxTextModels.value.some(m => m.code === currentModel.value)
+)
 
 // V7.1: 商业模型（来自 /models 接口的 commercial category）
 const commercialTextModels = computed(() =>
@@ -866,6 +892,18 @@ async function sendMessage() {
       const r = await trainingChat({ model, message: text })
       assistantMsg.content = r.data?.content || r.data?.answer || '...'
       assistantMsg.model = r.data?.model || model
+      isTrainedStreaming.value = false
+    } else if (isOnnxModel.value) {
+      // ⚡ ONNX 本地推理：同步请求（等生成完毕再显示）
+      isTrainedStreaming.value = true
+      try {
+        const r = await onnxGenerate({ prompt: text, model })
+        assistantMsg.content = r.data?.text || '（ONNX 推理完成，无输出）'
+        assistantMsg.model = model
+      } catch (e) {
+        assistantMsg.content = `⚠️ ONNX 推理失败：${e?.message || e || '未知错误'}`
+        ElMessage.error('ONNX 推理失败，请检查模型是否加载')
+      }
       isTrainedStreaming.value = false
     } else {
       // 🤖 普通模型：SSE 流式
