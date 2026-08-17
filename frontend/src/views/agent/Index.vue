@@ -164,12 +164,25 @@
                 <el-button size="small" @click="exportGenerated">
                   <el-icon><Download /></el-icon>导出
                 </el-button>
+                <!-- P1-3: 复制配置按钮 -->
+                <el-button size="small" @click="copyConfig">
+                  <el-icon><CopyDocument /></el-icon>复制配置
+                </el-button>
                 <el-button size="small" type="success" @click="runGenerated">
                   <el-icon><CaretRight /></el-icon>运行
+                </el-button>
+                <!-- P1-3: 查看详情按钮 -->
+                <el-button size="small" link @click="showDetail = !showDetail">
+                  {{ showDetail ? '收起详情' : '查看详情' }}
                 </el-button>
                 <el-button size="small" link type="warning" @click="regenerate">
                   重新生成
                 </el-button>
+              </div>
+              <!-- P1-3: 详情展开区 -->
+              <div v-if="showDetail" style="margin-top:10px;background:#f5f7fa;border-radius:6px;padding:8px">
+                <div style="font-size:11px;color:#909399;margin-bottom:4px">完整配置 JSON：</div>
+                <pre style="font-size:11px;margin:0;max-height:200px;overflow:auto">{{ JSON.stringify(generatedGroup, null, 2) }}</pre>
               </div>
             </div>
 
@@ -412,7 +425,7 @@ import { agentApi } from '@/api/agent'
 import { autoAgentGroupGenerate } from '@/api/ai'
 import {
   Plus, Refresh, VideoPlay, MagicStick, Download, CaretRight,
-  ChatDotSquare, Loading, UserFilled, QuestionFilled,
+  ChatDotSquare, Loading, UserFilled, QuestionFilled, CopyDocument,
 } from '@element-plus/icons-vue'
 
 const templates = [
@@ -446,6 +459,7 @@ const testInput = ref('')
 const testing = ref(false)
 const testResult = ref('')
 const testSteps = ref([])
+const showDetail = ref(false) // P1-3: 查看详情开关
 
 const examples = [
   { label: '📊 数据分析+报告', desc: '创建一个数据分析Agent群，包含数据采集、数据清洗、报告生成三个子Agent，支持Excel和CSV导入' },

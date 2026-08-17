@@ -1,10 +1,55 @@
-<!-- @file agent/Canvas.vue - Agent 画布 V6.8 -->
+<!-- @file agent/Canvas.vue - Agent 画布 V7.0 -->
 <template>
   <div class="page-card" style="padding:0;overflow:hidden">
     <!-- 顶部工具栏 -->
     <div class="canvas-toolbar">
       <span style="font-size:14px;font-weight:600;color:#303133">Agent 画布</span>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;align-items:center">
+        <!-- Undo / Redo -->
+        <el-tooltip content="撤销 (Ctrl+Z)" placement="bottom">
+          <el-button size="small" @click="undo" :disabled="undoStack.length === 0">
+            <el-icon><RefreshLeft /></el-icon>
+          </el-button>
+        </el-tooltip>
+        <el-tooltip content="重做 (Ctrl+Y)" placement="bottom">
+          <el-button size="small" @click="redo" :disabled="redoStack.length === 0">
+            <el-icon><RefreshRight /></el-icon>
+          </el-button>
+        </el-tooltip>
+
+        <el-divider direction="vertical" />
+
+        <!-- Copy / Paste -->
+        <el-tooltip content="复制 (Ctrl+C)" placement="bottom">
+          <el-button size="small" @click="copySelected" :disabled="selectedIds.size === 0">
+            <el-icon><CopyDocument /></el-icon>
+          </el-button>
+        </el-tooltip>
+        <el-tooltip content="粘贴 (Ctrl+V)" placement="bottom">
+          <el-button size="small" @click="pasteNodes" :disabled="clipboard.length === 0">
+            <el-icon><DocumentCopy /></el-icon>
+          </el-button>
+        </el-tooltip>
+
+        <el-divider direction="vertical" />
+
+        <!-- Search -->
+        <el-tooltip content="搜索节点 (Ctrl+F)" placement="bottom">
+          <el-button size="small" @click="openSearch">
+            <el-icon><Search /></el-icon>
+          </el-button>
+        </el-tooltip>
+
+        <!-- Selection badge -->
+        <span v-if="selectedIds.size > 0" class="sel-badge">
+          已选中 {{ selectedIds.size }} 个
+          <el-button size="small" type="danger" circle style="margin-left:4px;width:18px;height:18px;padding:0;font-size:11px" @click="deleteSelected">
+            <el-icon style="font-size:11px"><Close /></el-icon>
+          </el-button>
+        </span>
+
+        <el-divider direction="vertical" />
+
         <el-button size="small" @click="loadWorkflows"><el-icon><Refresh /></el-icon>加载</el-button>
         <el-button size="small" @click="newCanvas"><el-icon><Plus /></el-icon>新建</el-button>
         <el-button type="primary" size="small" @click="saveCanvas"><el-icon><FolderChecked /></el-icon>保存</el-button>
@@ -44,6 +89,9 @@
         @drop="onDrop"
         @click="deselectAll"
         @wheel.prevent="onWheel"
+        @mousedown="onCanvasMouseDown"
+        @mousemove="onCanvasMouseMove"
+        @mouseup="onCanvasMouseUp"
       >
         <!-- SVG 连线层 -->
         <svg class="edge-svg" :width="canvasW" :height="canvasH">
@@ -62,22 +110,69 @@
             marker-end="url(#arr)"
             style="cursor:pointer"
             @click.stop="removeEdge(i)"
+            @dblclick.stop="editEdgeLabel(i)"
           />
+          <!-- Edge labels -->
+          <g v-for="(e, i) in edges" :key="'label-'+i">
+            <foreignObject
+              v-if="e.label"
+              :x="edgeMidX(e) - 40"
+              :y="edgeMidY(e) - 10"
+              width="80"
+              height="20"
+              style="pointer-events:all;cursor:pointer"
+              @click.stop="editEdgeLabel(i)"
+            >
+              <div xmlns="http://www.w3.org/1999/xhtml" class="edge-label">{{ e.label }}</div>
+            </foreignObject>
+          </g>
           <!-- 拖拽中的连线预览 -->
           <path
             v-if="dragLine"
             :d="`M${dragLine.x1},${dragLine.y1} L${dragLine.x2},${dragLine.y2}`"
             stroke="#409eff" stroke-width="1.5" stroke-dasharray="5,3" fill="none"
           />
+          <!-- 对齐辅助线 -->
+          <g v-if="snapGuides.horizontal">
+            <line
+              :x1="0" :y1="snapGuides.horizontal"
+              :x2="canvasW" :y2="snapGuides.horizontal"
+              stroke="#409eff" stroke-width="1" stroke-dasharray="4,3"
+            />
+          </g>
+          <g v-if="snapGuides.vertical">
+            <line
+              :x1="snapGuides.vertical" :y1="0"
+              :x2="snapGuides.vertical" :y2="canvasH"
+              stroke="#409eff" stroke-width="1" stroke-dasharray="4,3"
+            />
+          </g>
         </svg>
+
+        <!-- 框选矩形 -->
+        <div
+          v-if="selectionBox"
+          class="selection-box"
+          :style="{
+            left: Math.min(selectionBox.x1, selectionBox.x2) + 'px',
+            top: Math.min(selectionBox.y1, selectionBox.y2) + 'px',
+            width: Math.abs(selectionBox.x2 - selectionBox.x1) + 'px',
+            height: Math.abs(selectionBox.y2 - selectionBox.y1) + 'px'
+          }"
+        />
 
         <!-- 节点 -->
         <div
           v-for="n in nodes" :key="n.id"
           class="canvas-node"
           :style="{ left: n.x+'px', top: n.y+'px', borderTopColor: n.color }"
-          :class="{ selected: n.id === selectedId, running: n.id === runningNode }"
-          @click.stop="selectNode(n)"
+          :class="{
+            selected: selectedIds.has(n.id),
+            'multi-selected': selectedIds.has(n.id) && selectedIds.size > 1,
+            running: n.id === runningNode,
+            'search-highlight': searchHighlightId === n.id,
+          }"
+          @click.stop="handleNodeClick($event, n)"
           @mousedown="startMove($event, n)"
         >
           <div class="node-header">
@@ -149,24 +244,24 @@
         <div v-else class="prop-form">
           <el-form label-width="80px" size="small">
             <el-form-item label="名称">
-              <el-input v-model="selectedNode.label" />
+              <el-input v-model="selectedNode.label" @change="recordHistory('prop')" />
             </el-form-item>
             <el-form-item label="类型">
-              <el-select v-model="selectedNode.type" style="width:100%">
+              <el-select v-model="selectedNode.type" style="width:100%" @change="recordHistory('prop')">
                 <el-option v-for="nt in nodeTypes" :key="nt.type" :label="nt.label" :value="nt.type" />
               </el-select>
             </el-form-item>
             <el-form-item label="Prompt">
               <el-input v-model="selectedNode.config.prompt" type="textarea" :rows="4"
-                placeholder="输入节点指令…" />
+                placeholder="输入节点指令…" @change="recordHistory('prop')" />
             </el-form-item>
             <el-form-item label="工具">
-              <el-select v-model="selectedNode.config.tools" multiple style="width:100%" placeholder="选择工具">
+              <el-select v-model="selectedNode.config.tools" multiple style="width:100%" placeholder="选择工具" @change="recordHistory('prop')">
                 <el-option v-for="t in toolOptions" :key="t" :label="t" :value="t" />
               </el-select>
             </el-form-item>
             <el-form-item label="模型">
-              <el-select v-model="selectedNode.config.model" style="width:100%" placeholder="默认模型" filterable>
+              <el-select v-model="selectedNode.config.model" style="width:100%" placeholder="默认模型" filterable @change="recordHistory('prop')">
                 <el-option label="默认" value="" />
                 <el-option-group v-if="trainedModels.length" label="🏷️ 自研模型">
                   <el-option v-for="m in trainedModels" :key="m.code" :label="m.name" :value="m.code">
@@ -182,7 +277,7 @@
               </el-select>
             </el-form-item>
             <el-form-item label="Max 步数">
-              <el-input-number v-model="selectedNode.config.maxSteps" :min="1" :max="20" />
+              <el-input-number v-model="selectedNode.config.maxSteps" :min="1" :max="20" @change="recordHistory('prop')" />
             </el-form-item>
           </el-form>
         </div>
@@ -200,6 +295,43 @@
         <div v-if="!runLog.length" style="color:#909399;text-align:center;padding:40px">暂无执行记录</div>
       </div>
     </el-drawer>
+
+    <!-- 搜索弹窗 -->
+    <el-dialog v-model="searchVisible" title="搜索节点" width="380px" :append-to-body="true">
+      <el-input
+        ref="searchInputRef"
+        v-model="searchQuery"
+        placeholder="输入节点名称…"
+        clearable
+        @input="onSearchInput"
+      />
+      <div v-if="searchResults.length > 0" style="margin-top:8px;max-height:300px;overflow-y:auto">
+        <div
+          v-for="n in searchResults" :key="n.id"
+          class="search-result-item"
+          @click="focusNode(n)"
+        >
+          <span class="search-result-dot" :style="{ background: n.color }" />
+          <span>{{ n.label }}</span>
+          <span style="color:#909399;font-size:12px;margin-left:6px">{{ n.type }}</span>
+        </div>
+      </div>
+      <div v-else-if="searchQuery && searchResults.length === 0" style="color:#909399;text-align:center;padding:20px">
+        未找到匹配节点
+      </div>
+      <template #footer>
+        <span style="font-size:12px;color:#c0c4cc">按 Enter 定位到第一个结果 · Esc 关闭</span>
+      </template>
+    </el-dialog>
+
+    <!-- 连线标签编辑 -->
+    <el-dialog v-model="edgeLabelVisible" title="编辑连线标签" width="320px" :append-to-body="true">
+      <el-input v-model="edgeLabelText" placeholder="输入关系描述…" clearable />
+      <template #footer>
+        <el-button @click="edgeLabelVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveEdgeLabel">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -211,7 +343,8 @@ import { listEnabledModels } from '@/api/model'
 import { listTrainedModels } from '@/api/ai'
 import {
   EditPen, FolderChecked, Delete, Plus, Refresh, VideoPlay, Close,
-  ChatDotRound, Connection, Operation, Files, Tools, DataLine, Folder, Grid, Upload, Download
+  ChatDotRound, Connection, Operation, Files, Tools, DataLine, Folder, Grid, Upload, Download,
+  RefreshLeft, RefreshRight, CopyDocument, DocumentCopy, Search
 } from '@element-plus/icons-vue'
 
 const canvasRef = ref(null)
@@ -252,14 +385,15 @@ const agentModels = computed(() => {
 const nodes = ref([])
 const edges = ref([])
 const selectedId = ref(null)
+const selectedIds = ref(new Set())
 const runningNode = ref(null)
 const running = ref(false)
 const logVisible = ref(false)
 const runLog = ref([])
 const loading = ref(false)
-const multiRunMode = ref(false)        // V6.9: 多Agent模式开关
-const nodeExecStatus = ref({})         // V6.9: nodeId → 'planner'|'executor'|'critic'|'done'|'error'
-const nodeExecResult = ref({})          // V6.9: nodeId → result text
+const multiRunMode = ref(false)
+const nodeExecStatus = ref({})
+const nodeExecResult = ref({})
 const multiAbortCtrl = ref(null)
 
 // New: zoom & execution tracking
@@ -269,12 +403,340 @@ const executedEdges = ref(new Set())
 const minimapW = 120
 const minimapH = 80
 
-const transformStyle = computed(() => ({
-  transform: `scale(${zoom.value})`,
-  transformOrigin: 'top left',
-}))
+// ── V7.0: History (Undo/Redo) ────────────────────────────────────────
+const undoStack = ref([])
+const redoStack = ref([])
 
-const selectedNode = computed(() => nodes.value.find(n => n.id === selectedId.value) || null)
+function snapshot() {
+  return JSON.stringify({ nodes: nodes.value, edges: edges.value })
+}
+
+function restoreSnapshot(data) {
+  const d = JSON.parse(data)
+  nodes.value = d.nodes
+  edges.value = d.edges
+}
+
+function pushHistory() {
+  undoStack.value.push(snapshot())
+  if (undoStack.value.length > 50) undoStack.value.shift()
+  redoStack.value = []
+}
+
+function recordHistory() {
+  pushHistory()
+}
+
+function undo() {
+  if (!undoStack.value.length) return
+  redoStack.value.push(snapshot())
+  restoreSnapshot(undoStack.value.pop())
+  selectedIds.value = new Set()
+}
+
+function redo() {
+  if (!redoStack.value.length) return
+  undoStack.value.push(snapshot())
+  restoreSnapshot(redoStack.value.pop())
+  selectedIds.value = new Set()
+}
+
+// ── V7.0: Node selection ───────────────────────────────────────────────
+const selectedNode = computed(() => {
+  if (selectedId.value) return nodes.value.find(n => n.id === selectedId.value) || null
+  return null
+})
+
+function handleNodeClick(e, n) {
+  if (e.shiftKey) {
+    if (selectedIds.value.has(n.id)) {
+      selectedIds.value.delete(n.id)
+    } else {
+      selectedIds.value.add(n.id)
+    }
+    selectedIds.value = new Set(selectedIds.value)
+  } else {
+    selectedIds.value = new Set([n.id])
+    selectedId.value = n.id
+  }
+}
+
+function deselectAll() {
+  selectedIds.value = new Set()
+  selectedId.value = null
+  // Close search if open
+  if (searchVisible.value) {
+    searchVisible.value = false
+    searchHighlightId.value = null
+  }
+}
+
+function deleteSelected() {
+  if (!selectedIds.value.size) return
+  pushHistory()
+  selectedIds.value.forEach(id => {
+    edges.value = edges.value.filter(e => e.from !== id && e.to !== id)
+  })
+  nodes.value = nodes.value.filter(n => !selectedIds.value.has(n.id))
+  selectedIds.value = new Set()
+  selectedId.value = null
+}
+
+function removeNode(id) {
+  pushHistory()
+  nodes.value = nodes.value.filter(n => n.id !== id)
+  edges.value = edges.value.filter(e => e.from !== id && e.to !== id)
+  if (selectedIds.value.has(id)) {
+    selectedIds.value.delete(id)
+    selectedIds.value = new Set(selectedIds.value)
+  }
+  if (selectedId.value === id) selectedId.value = null
+}
+
+// ── V7.0: Box Selection ────────────────────────────────────────────────
+const selectionBox = ref(null)
+let boxStartX = 0, boxStartY = 0
+let isBoxSelecting = false
+
+function onCanvasMouseDown(e) {
+  // Only start box selection on left button and when clicking on the canvas background
+  if (e.button !== 0) return
+  const target = e.target
+  if (target !== canvasRef.value && !target.classList.contains('selection-box')) {
+    // Clicked on a node will be handled by node's own mousedown
+    if (target.closest('.canvas-node')) return
+  }
+  boxStartX = e.offsetX
+  boxStartY = e.offsetY
+  isBoxSelecting = true
+  selectionBox.value = { x1: boxStartX, y1: boxStartY, x2: boxStartX, y2: boxStartY }
+}
+
+function onCanvasMouseMove(e) {
+  if (!isBoxSelecting) return
+  selectionBox.value = { x1: boxStartX, y1: boxStartY, x2: e.offsetX, y2: e.offsetY }
+}
+
+function onCanvasMouseUp(e) {
+  if (!isBoxSelecting) return
+  isBoxSelecting = false
+  const box = selectionBox.value
+  if (box) {
+    const minX = Math.min(box.x1, box.x2)
+    const maxX = Math.max(box.x1, box.x2)
+    const minY = Math.min(box.y1, box.y2)
+    const maxY = Math.max(box.y1, box.y2)
+    const boxW = maxX - minX
+    const boxH = maxY - minY
+    if (boxW > 5 || boxH > 5) {
+      // Only start box selection if dragged a meaningful distance
+      const newSelected = new Set(selectedIds.value)
+      nodes.value.forEach(n => {
+        const nx = n.x, ny = n.y, nw = 120, nh = 60
+        // Check if node center or any corner is inside box
+        const cx = nx + nw / 2, cy = ny + nh / 2
+        if (cx >= minX && cx <= maxX && cy >= minY && cy <= maxY) {
+          newSelected.add(n.id)
+        }
+      })
+      selectedIds.value = newSelected
+      if (newSelected.size === 1) {
+        selectedId.value = [...newSelected][0]
+      } else {
+        selectedId.value = null
+      }
+    }
+  }
+  selectionBox.value = null
+}
+
+// ── V7.0: Snap Guides ──────────────────────────────────────────────────
+const snapGuides = reactive({ horizontal: null, vertical: null })
+const SNAP_THRESHOLD = 10
+
+function clearSnapGuides() {
+  snapGuides.horizontal = null
+  snapGuides.vertical = null
+}
+
+function checkSnapGuides(movingNode, deltaX, deltaY) {
+  const moving = movingNode
+  const movingRight = moving.x + deltaX + 120
+  const movingBottom = moving.y + deltaY + 60
+  const movingCenterX = moving.x + deltaX + 60
+  const movingCenterY = moving.y + deltaY + 30
+
+  let snapX = null, snapY = null
+  let bestDistX = SNAP_THRESHOLD, bestDistY = SNAP_THRESHOLD
+
+  nodes.value.forEach(n => {
+    if (n.id === moving.id) return
+    const nRight = n.x + 120, nBottom = n.y + 60
+    const nCenterX = n.x + 60, nCenterY = n.y + 30
+
+    // Left edge of moving node to left edge of other
+    const dLx = Math.abs((moving.x + deltaX) - n.x)
+    if (dLx < bestDistX) { bestDistX = dLx; snapX = n.x }
+    // Right edge of moving node to right edge of other
+    const dRx = Math.abs(movingRight - nRight)
+    if (dRx < bestDistX) { bestDistX = dRx; snapX = nRight - 120 }
+    // Center X
+    const dCx = Math.abs(movingCenterX - nCenterX)
+    if (dCx < bestDistX) { bestDistX = dCx; snapX = nCenterX - 60 }
+    // Left edge of moving node to right edge of other
+    const dLRx = Math.abs((moving.x + deltaX) - nRight)
+    if (dLRx < bestDistX) { bestDistX = dLRx; snapX = nRight }
+    // Right edge of moving node to left edge of other
+    const dRxL = Math.abs(movingRight - n.x)
+    if (dRxL < bestDistX) { bestDistX = dRxL; snapX = n.x - 120 }
+
+    // Top edge to top edge
+    const dTy = Math.abs((moving.y + deltaY) - n.y)
+    if (dTy < bestDistY) { bestDistY = dTy; snapY = n.y }
+    // Bottom edge to bottom edge
+    const dBy = Math.abs(movingBottom - nBottom)
+    if (dBy < bestDistY) { bestDistY = dBy; snapY = nBottom - 60 }
+    // Center Y
+    const dCy = Math.abs(movingCenterY - nCenterY)
+    if (dCy < bestDistY) { bestDistY = dCy; snapY = nCenterY - 30 }
+    // Top to bottom
+    const dTyB = Math.abs((moving.y + deltaY) - nBottom)
+    if (dTyB < bestDistY) { bestDistY = dTyB; snapY = nBottom }
+    // Bottom to top
+    const dByT = Math.abs(movingBottom - n.y)
+    if (dByT < bestDistY) { bestDistY = dByT; snapY = n.y - 60 }
+  })
+
+  if (snapX !== null) {
+    snapGuides.vertical = snapX + (snapX === n.x ? 0 : 0) + 60
+  } else {
+    snapGuides.vertical = null
+  }
+  if (snapY !== null) {
+    snapGuides.horizontal = snapY + (snapY === n?.y ? 0 : 0) + 30
+  } else {
+    snapGuides.horizontal = null
+  }
+
+  return { snapX, snapY }
+}
+
+// ── V7.0: Copy / Paste ────────────────────────────────────────────────
+const clipboard = ref([])
+
+function copySelected() {
+  if (!selectedIds.value.size) return
+  clipboard.value = []
+  selectedIds.value.forEach(id => {
+    const n = nodes.value.find(nd => nd.id === id)
+    if (n) {
+      clipboard.value.push({
+        label: n.label,
+        type: n.type,
+        icon: n.icon,
+        color: n.color,
+        config: JSON.parse(JSON.stringify(n.config || {})),
+      })
+    }
+  })
+  ElMessage.success(`已复制 ${clipboard.value.length} 个节点`)
+}
+
+function pasteNodes(e) {
+  if (!clipboard.value.length) return
+  pushHistory()
+  const rect = canvasRef.value.getBoundingClientRect()
+  const mouseX = e ? e.clientX - rect.left : canvasW.value / 2
+  const mouseY = e ? e.clientY - rect.top : canvasH.value / 2
+
+  clipboard.value.forEach((item, i) => {
+    const nt = nodeTypes.find(n => n.type === item.type) || nodeTypes[1]
+    nodes.value.push({
+      id: newId(),
+      type: item.type,
+      label: item.label,
+      icon: nt.icon,
+      color: nt.color,
+      x: mouseX - 60 + i * 20,
+      y: mouseY - 30 + i * 20,
+      config: JSON.parse(JSON.stringify(item.config)),
+    })
+  })
+  ElMessage.success(`已粘贴 ${clipboard.value.length} 个节点`)
+}
+
+// ── V7.0: Search ─────────────────────────────────────────────────────
+const searchVisible = ref(false)
+const searchQuery = ref('')
+const searchInputRef = ref(null)
+const searchResults = computed(() => {
+  if (!searchQuery.value) return []
+  const q = searchQuery.value.toLowerCase()
+  return nodes.value.filter(n => n.label.toLowerCase().includes(q) || n.type.toLowerCase().includes(q))
+})
+const searchHighlightId = ref(null)
+
+function openSearch() {
+  searchVisible.value = true
+  searchQuery.value = ''
+  nextTick(() => searchInputRef.value?.focus())
+}
+
+function onSearchInput() {
+  if (searchResults.value.length > 0) {
+    focusNode(searchResults.value[0])
+  }
+}
+
+function focusNode(n) {
+  searchHighlightId.value = n.id
+  selectedIds.value = new Set([n.id])
+  selectedId.value = n.id
+  // Scroll canvas to center node
+  const el = canvasRef.value
+  if (el) {
+    const scrollX = Math.max(0, n.x - canvasW.value / 2 + 60)
+    const scrollY = Math.max(0, n.y - canvasH.value / 2 + 30)
+    el.scrollLeft = scrollX
+    el.scrollTop = scrollY
+  }
+  searchVisible.value = false
+}
+
+// ── V7.0: Edge Labels ─────────────────────────────────────────────────
+const edgeLabelVisible = ref(false)
+const edgeLabelText = ref('')
+const edgeLabelIndex = ref(-1)
+
+function editEdgeLabel(i) {
+  edgeLabelIndex.value = i
+  edgeLabelText.value = edges.value[i]?.label || ''
+  edgeLabelVisible.value = true
+}
+
+function saveEdgeLabel() {
+  pushHistory()
+  edges.value[edgeLabelIndex.value].label = edgeLabelText.value.trim()
+  edgeLabelVisible.value = false
+}
+
+function edgeMidX(e) {
+  const from = nodes.value.find(n => n.id === e.from)
+  const to = nodes.value.find(n => n.id === e.to)
+  if (!from || !to) return 0
+  return (from.x + 60 + to.x + 60) / 2
+}
+
+function edgeMidY(e) {
+  const from = nodes.value.find(n => n.id === e.from)
+  const to = nodes.value.find(n => n.id === e.to)
+  if (!from || !to) return 0
+  const sx = from.x + 60, sy = from.y + 20
+  const ex = to.x + 60, ey = to.y + 20
+  // Bezier midpoint (approx)
+  const cx = (sx + ex) / 2
+  return sy + (ey - sy) / 4
+}
 
 const dragLine = ref(null)
 let draggingNode = null, dragOffset = { x: 0, y: 0 }
@@ -296,22 +758,24 @@ function newId() { return 'node_' + (idCounter++) }
 
 function newCanvas() {
   ElMessageBox.confirm('新建画布将清空当前内容，确定？').then(() => {
+    pushHistory()
     nodes.value = []
     edges.value = []
+    selectedIds.value = new Set()
     selectedId.value = null
+    undoStack.value = []
+    redoStack.value = []
     idCounter = 1
   }).catch(() => {})
 }
 
 function clearCanvas() {
+  pushHistory()
   nodes.value = []
   edges.value = []
+  selectedIds.value = new Set()
   selectedId.value = null
 }
-
-function selectNode(n) { selectedId.value = n.id }
-function deselectAll() { selectedId.value = null }
-function removeNode(id) { nodes.value = nodes.value.filter(n => n.id !== id); edges.value = edges.value.filter(e => e.from !== id && e.to !== id); if (selectedId.value === id) selectedId.value = null }
 
 function onDragStart(ev, nt) {
   ev.dataTransfer.setData('nodeType', nt.type)
@@ -326,6 +790,7 @@ async function onDrop(ev) {
   const x = ev.clientX - rect.left - 60
   const y = ev.clientY - rect.top - 30
   if (type) {
+    pushHistory()
     const nt = nodeTypes.find(n => n.type === type) || nodeTypes[1]
     nodes.value.push({
       id: newId(), type: nt.type, label: nt.label,
@@ -336,6 +801,7 @@ async function onDrop(ev) {
     const fromNode = nodes.value.find(n => n.id === fromEdge)
     const toNode = nodes.value.find(n => Math.abs(n.x - x) < 120 && Math.abs(n.y - y) < 60)
     if (fromNode && toNode && fromNode.id !== toNode.id) {
+      pushHistory()
       edges.value.push({ from: fromNode.id, to: toNode.id })
       ElMessage.success('连线已添加')
     }
@@ -345,12 +811,60 @@ async function onDrop(ev) {
 function startMove(ev, n) {
   draggingNode = n
   dragOffset = { x: ev.clientX - n.x, y: ev.clientY - n.y }
+  let moved = false
   const onMove = (e) => {
     if (!draggingNode) return
-    draggingNode.x = Math.max(0, Math.min(canvasW.value - 120, e.clientX - dragOffset.x))
-    draggingNode.y = Math.max(0, Math.min(canvasH.value - 60, e.clientY - dragOffset.y))
+    moved = true
+    const deltaX = e.clientX - dragOffset.x - draggingNode.x
+    const deltaY = e.clientY - dragOffset.y - draggingNode.y
+
+    // Move all selected nodes together
+    if (selectedIds.value.has(draggingNode.id) && selectedIds.value.size > 1) {
+      selectedIds.value.forEach(id => {
+        const node = nodes.value.find(nd => nd.id === id)
+        if (node) {
+          node.x = Math.max(0, Math.min(canvasW.value - 120, node.x + deltaX))
+          node.y = Math.max(0, Math.min(canvasH.value - 60, node.y + deltaY))
+        }
+      })
+      dragOffset.x = e.clientX - draggingNode.x
+      dragOffset.y = e.clientY - draggingNode.y
+    } else {
+      draggingNode.x = Math.max(0, Math.min(canvasW.value - 120, e.clientX - dragOffset.x))
+      draggingNode.y = Math.max(0, Math.min(canvasH.value - 60, e.clientY - dragOffset.y))
+    }
+
+    // Check snap guides
+    checkSnapGuides(draggingNode, 0, 0)
   }
   const onUp = () => {
+    if (moved) {
+      pushHistory()
+      // Apply snap corrections
+      if (snapGuides.vertical !== null) {
+        const v = snapGuides.vertical
+        if (selectedIds.value.has(draggingNode.id) && selectedIds.value.size > 1) {
+          selectedIds.value.forEach(id => {
+            const node = nodes.value.find(nd => nd.id === id)
+            if (node) node.x = v - 60 + (node.x - draggingNode.x)
+          })
+        } else {
+          draggingNode.x = v - 60
+        }
+      }
+      if (snapGuides.horizontal !== null) {
+        const h = snapGuides.horizontal
+        if (selectedIds.value.has(draggingNode.id) && selectedIds.value.size > 1) {
+          selectedIds.value.forEach(id => {
+            const node = nodes.value.find(nd => nd.id === id)
+            if (node) node.y = h - 30 + (node.y - draggingNode.y)
+          })
+        } else {
+          draggingNode.y = h - 30
+        }
+      }
+    }
+    clearSnapGuides()
     draggingNode = null
     window.removeEventListener('mousemove', onMove)
     window.removeEventListener('mouseup', onUp)
@@ -375,6 +889,7 @@ function startEdge(ev, n, dir) {
         Math.abs(nd.y + 20 - dragLine.value.y2) < 40
       )
       if (target) {
+        pushHistory()
         edges.value.push({ from: dragLine.value.from, to: target.id })
         ElMessage.success('连线已创建')
       }
@@ -388,7 +903,10 @@ function startEdge(ev, n, dir) {
 }
 
 function removeEdge(i) {
-  ElMessageBox.confirm('删除此连线？').then(() => { edges.value.splice(i, 1) }).catch(() => {})
+  ElMessageBox.confirm('删除此连线？').then(() => {
+    pushHistory()
+    edges.value.splice(i, 1)
+  }).catch(() => {})
 }
 
 // ── New feature functions ──────────────────────────────────────────
@@ -400,20 +918,18 @@ function onWheel(e) {
 
 function autoLayout() {
   if (!nodes.value.length) return
+  pushHistory()
   const starts = nodes.value.filter(n => n.type === 'START')
   const ends   = nodes.value.filter(n => n.type === 'END')
   const middles = nodes.value.filter(n => n.type !== 'START' && n.type !== 'END')
   const rowH = Math.max(80, Math.floor((canvasH.value - 40) / (Math.max(middles.length, 1) + 2)))
   const colW = 180
   const cols = Math.ceil(Math.sqrt(nodes.value.length))
-  // place START nodes at top
   starts.forEach((n, i) => { n.x = (i % cols) * colW + 20; n.y = 20 })
-  // place middles in rows
   middles.forEach((n, i) => {
     n.x = (i % cols) * colW + 20
     n.y = 80 + Math.floor(i / cols) * rowH
   })
-  // place END nodes at bottom
   ends.forEach((n, i) => { n.x = (i % cols) * colW + 20; n.y = canvasH.value - 80 })
   ElMessage.success('布局完成')
 }
@@ -436,6 +952,7 @@ function importFlow() {
     const reader = new FileReader()
     reader.onload = e => {
       try {
+        pushHistory()
         const d = JSON.parse(e.target.result)
         nodes.value = (d.nodes || []).map(n => ({ ...n, id: n.id || newId() }))
         edges.value = d.edges || []
@@ -449,17 +966,14 @@ function importFlow() {
 }
 
 function highlightExecution() {
-  // Parse runLog to build execution order (step per node label/type)
   const order = new Map()
   const edgeSet = new Set()
   runLog.value.forEach((step, i) => {
-    // Find node by label match
     const node = nodes.value.find(n =>
       step.tool?.includes(n.label) || step.tool?.includes(n.type)
     )
     if (node) order.set(node.id, i + 1)
   })
-  // Mark edges that connect ordered nodes in sequence
   const sorted = [...order.entries()].sort((a, b) => a[1] - b[1])
   for (let i = 0; i < sorted.length - 1; i++) {
     const idx = edges.value.findIndex(e => e.from === sorted[i][0] && e.to === sorted[i + 1][0])
@@ -484,8 +998,8 @@ async function loadWorkflows() {
     const r = await agentApi.list({ limit: 5 })
     const list = r.data?.list || r.data || []
     if (!list.length) { ElMessage.warning('暂无已保存的工作流'); return }
-    // 取最新一个加载（作为示例）
     const wf = list[0]
+    pushHistory()
     canvasName.value = wf.name || ''
     nodes.value = (wf.nodes || []).map(n => ({ ...n, id: n.id || newId() }))
     edges.value = wf.edges || []
@@ -497,7 +1011,6 @@ async function loadWorkflows() {
 async function saveCanvas() {
   if (!nodes.value.length) { ElMessage.warning('画布为空'); return }
   try {
-    // V6.8.1 fix: 添加 name 字段，否则后端默认为"未命名工作流"
     const name = canvasName.value || '工作流-' + new Date().toLocaleString('zh-CN')
     const payload = { name, nodes: nodes.value, edges: edges.value }
     await agentApi.save(payload)
@@ -517,11 +1030,9 @@ async function runCanvas() {
   const goal = startNode?.config?.prompt || '请执行工作流'
 
   if (multiRunMode.value) {
-    // ── V6.9: 多Agent流式执行 ──
     const tools = nodes.value.flatMap(n => n.config?.tools || []).filter(Boolean)
     try {
       multiAbortCtrl.value = new AbortController()
-      // 收集所有LLM节点的prompt作为子任务描述
       const llmNodes = nodes.value.filter(n => n.type === 'LLM' && n.config?.prompt)
       const canvasGoal = llmNodes.length
         ? `请按以下要求协作完成：\n${llmNodes.map((n,i) => `${i+1}. ${n.label}: ${n.config.prompt}`).join('\n')}`
@@ -548,7 +1059,6 @@ async function runCanvas() {
       multiAbortCtrl.value = null
     }
   } else {
-    // ── 单Agent执行（原有逻辑） ──
     try {
       const r = await agentApi.execute({ goal, nodes: nodes.value, edges: edges.value })
       const log = r.data?.steps || []
@@ -568,7 +1078,6 @@ async function runCanvas() {
   }
 }
 
-// V6.9: 停止 Canvas 模式的多Agent SSE
 function stopCanvasMulti() {
   if (multiAbortCtrl.value) {
     multiAbortCtrl.value.abort()
@@ -580,11 +1089,7 @@ function stopCanvasMulti() {
   ElMessage.info('已停止多Agent执行')
 }
 
-// V6.9: 处理画布上的多Agent SSE事件
 function handleCanvasMultiEvent(eventName, data) {
-  const ts = new Date().toLocaleTimeString('zh-CN', { hour12: false })
-
-  // 映射事件到节点状态
   if (eventName === 'planner-start') {
     const agentNode = nodes.value.find(n => n.type === 'LLM')
     if (agentNode) nodeExecStatus.value[agentNode.id] = 'planner'
@@ -593,7 +1098,6 @@ function handleCanvasMultiEvent(eventName, data) {
     const plan = (data.steps || []).join('\n')
     runLog.value.push({ tool: '📋 计划', result: plan })
   } else if (eventName === 'executor-step') {
-    // 找到对应的 LLM 节点高亮
     const llmNodes = nodes.value.filter(n => n.type === 'LLM')
     const target = llmNodes[data.step - 1] || llmNodes[0]
     if (target) {
@@ -612,7 +1116,6 @@ function handleCanvasMultiEvent(eventName, data) {
   } else if (eventName === 'critic-result') {
     runLog.value.push({ tool: '🔍 Critic评估', result: `评分 ${data.score}/10 · ${data.passed ? '通过' : '未通过'} · ${data.feedback}` })
     if (!data.passed) {
-      // 标记所有 LLM 节点为 critic 失败状态
       nodes.value.filter(n => n.type === 'LLM').forEach(n => {
         nodeExecStatus.value[n.id] = 'critic'
       })
@@ -628,30 +1131,48 @@ function handleCanvasMultiEvent(eventName, data) {
     })
     ElMessage.success('多Agent协作完成')
   } else if (eventName === 'done') {
-    // running.value = false 由 finally 处理
     highlightExecution()
   } else if (eventName === 'error') {
     runLog.value.push({ tool: '⚠️ 错误', result: data.message })
     nodes.value.filter(n => n.type === 'LLM').forEach(n => { nodeExecStatus.value[n.id] = 'error' })
     ElMessage.error(data.message)
-    // running.value = false 由 finally 处理
   }
 }
 
 // ── Keyboard shortcuts ─────────────────────────────────────────────
 function onKeyDown(e) {
   const tag = document.activeElement?.tagName
-  if (tag === 'INPUT' || tag === 'TEXTAREA') return
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+    // Allow Ctrl+F in input fields to still work (will be handled separately)
+    if (e.key !== 'f') return
+  }
   if (e.key === 'Delete' || e.key === 'Backspace') {
-    if (selectedId.value) {
-      removeNode(selectedId.value)
+    if (selectedIds.value.size) {
+      deleteSelected()
       e.preventDefault()
     }
   } else if (e.key === 's' && (e.ctrlKey || e.metaKey)) {
     saveCanvas()
     e.preventDefault()
+  } else if (e.key === 'z' && (e.ctrlKey || e.metaKey) && !e.shiftKey) {
+    undo()
+    e.preventDefault()
+  } else if ((e.key === 'y' && (e.ctrlKey || e.metaKey)) || (e.key === 'z' && (e.ctrlKey || e.metaKey) && e.shiftKey)) {
+    redo()
+    e.preventDefault()
+  } else if (e.key === 'c' && (e.ctrlKey || e.metaKey)) {
+    copySelected()
+    e.preventDefault()
+  } else if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
+    pasteNodes(e)
+    e.preventDefault()
+  } else if (e.key === 'f' && (e.ctrlKey || e.metaKey)) {
+    openSearch()
+    e.preventDefault()
   } else if (e.key === 'Escape') {
     deselectAll()
+    if (searchVisible.value) searchVisible.value = false
+    if (edgeLabelVisible.value) edgeLabelVisible.value = false
   }
 }
 
@@ -694,7 +1215,7 @@ onUnmounted(() => {
   &:hover { background: #ecf5ff; }
 }
 .canvas-area {
-  flex: 1; position: relative; overflow: hidden; background: #f8fafc;
+  flex: 1; position: relative; overflow: auto; background: #f8fafc;
   background-image: radial-gradient(circle, #dcdfe6 1px, transparent 1px);
   background-size: 20px 20px;
 }
@@ -706,7 +1227,16 @@ onUnmounted(() => {
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   transition: box-shadow 0.15s;
   &.selected { box-shadow: 0 0 0 2px #409eff; border-color: #409eff; }
+  &.multi-selected { box-shadow: 0 0 0 2px #409eff, 0 2px 8px rgba(0,0,0,0.12); }
   &.running { animation: pulse 1s infinite; }
+  &.search-highlight {
+    box-shadow: 0 0 0 3px #e6a23c, 0 0 0 6px rgba(230,162,60,0.2) !important;
+    animation: search-pulse 0.8s ease-out;
+  }
+}
+@keyframes search-pulse {
+  0% { box-shadow: 0 0 0 6px #e6a23c, 0 0 0 12px rgba(230,162,60,0.3) !important; }
+  100% { box-shadow: 0 0 0 3px #e6a23c, 0 0 0 6px rgba(230,162,60,0.2) !important; }
 }
 @keyframes pulse { 0%,100%{box-shadow:0 0 0 2px #67c23a} 50%{box-shadow:0 0 0 6px #67c23a55} }
 .node-header {
@@ -734,7 +1264,7 @@ onUnmounted(() => {
 .log-tool { font-weight: 600; color: #409eff; min-width: 80px; }
 .log-result { color: #303133; flex: 1; overflow: hidden; text-overflow: ellipsis; }
 
-// ── New feature styles ───────────────────────────────────────────
+// ── V7.0 New feature styles ────────────────────────────────────────
 .zoom-controls {
   position: absolute; bottom: 12px; left: 12px;
   display: flex; align-items: center; gap: 4px;
@@ -762,7 +1292,6 @@ onUnmounted(() => {
 @keyframes badge-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
 .edge-executed { filter: drop-shadow(0 0 3px #67c23a); }
 
-/* V6.9: 多Agent执行状态 */
 .node-exec-badge {
   position: absolute; top: -10px; right: -10px;
   width: 22px; height: 22px; border-radius: 50%;
@@ -785,5 +1314,53 @@ onUnmounted(() => {
   box-shadow: 0 4px 12px rgba(0,0,0,.2);
   &::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%);
     border:5px solid transparent; border-top-color:#1f2937; }
+}
+
+// Selection box
+.selection-box {
+  position: absolute;
+  border: 1px dashed #409eff;
+  background: rgba(64, 158, 255, 0.08);
+  z-index: 100;
+  pointer-events: none;
+}
+
+// Edge label
+.edge-label {
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  color: #606266;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  &:hover { border-color: #409eff; color: #409eff; }
+}
+
+// Selection badge
+.sel-badge {
+  display: flex; align-items: center;
+  background: #ecf5ff;
+  border: 1px solid #409eff;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: #409eff;
+  font-weight: 500;
+}
+
+// Search results
+.search-result-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; cursor: pointer; border-radius: 4px;
+  font-size: 13px; color: #303133;
+  &:hover { background: #f5f7fa; }
+}
+.search-result-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
 }
 </style>

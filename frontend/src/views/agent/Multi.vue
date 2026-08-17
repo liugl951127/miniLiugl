@@ -134,8 +134,15 @@
         <div class="panel-title">
           📊 执行日志
           <span class="log-count">{{ logEntries.length }} 条</span>
+          <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+            <span style="font-size:11px;color:#9ca3af">自动滚动</span>
+            <el-switch v-model="autoScroll" size="small" />
+            <el-button size="small" link @click="scrollToLatest" title="滚到最新">
+              <el-icon><Bottom /></el-icon>
+            </el-button>
+          </div>
         </div>
-        <div class="log-container" ref="logContainer">
+        <div class="log-container" ref="logContainer" @scroll="onLogScroll">
           <div v-for="(entry, i) in logEntries" :key="i"
             class="log-entry" :class="`log-${entry.type}`">
             <div class="log-header">
@@ -421,6 +428,7 @@
 <script setup>
 import { ref, reactive, computed, nextTick, onUnmounted, watch, shallowRef } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Bottom } from '@element-plus/icons-vue'
 import { multiAgentApi } from '@/api/agent'
 import { use } from 'echarts/core'
 import { RadarChart } from 'echarts/charts'
@@ -438,6 +446,7 @@ const phase = ref('')
 const round = ref(0)
 const logEntries = ref([])
 const logContainer = ref(null)
+const autoScroll = ref(true) // P1-1: 日志锁定滚动开关，默认开启
 const evalHistory = ref([])
 const stepHistory = ref([])
 const currentEval = ref(null)
@@ -709,8 +718,9 @@ function handleSSEEvent(eventName, data, raw) {
       pushLog('message', { ...data, ts, type: eventName, raw })
   }
 
+  // P1-1: 仅在开启自动滚动时自动跳到底部
   nextTick(() => {
-    if (logContainer.value) {
+    if (autoScroll.value && logContainer.value) {
       logContainer.value.scrollTop = logContainer.value.scrollHeight
     }
   })
@@ -746,6 +756,27 @@ function clearLog() {
   elapsedMs.value = 0; phase.value = ''; round.value = 0
 }
 function switchTab(t) { tab.value = t }
+
+// P1-1: 日志锁定滚动功能
+function scrollToLatest() {
+  nextTick(() => {
+    if (logContainer.value) {
+      logContainer.value.scrollTop = logContainer.value.scrollHeight
+    }
+  })
+}
+
+function onLogScroll() {
+  // 用户手动滚动时检测是否已到底部，若不在底部则关闭自动滚动
+  if (!logContainer.value) return
+  const { scrollTop, scrollHeight, clientHeight } = logContainer.value
+  const isAtBottom = scrollHeight - scrollTop - clientHeight < 50
+  if (!isAtBottom && autoScroll.value) {
+    autoScroll.value = false
+  } else if (isAtBottom && !autoScroll.value) {
+    autoScroll.value = true
+  }
+}
 
 // ========== 树尺寸响应 ==========
 watch(tab, t => {

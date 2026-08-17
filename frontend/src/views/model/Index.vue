@@ -229,6 +229,8 @@
                 <el-button size="small" type="success" @click="syncLocalModels(p)" :loading="syncingId === p.id">
                   ↻ 同步全部
                 </el-button>
+                <!-- P1-2: 同步进度条 -->
+                <el-progress v-if="syncingId === p.id" :indeterminate="true" :percentage="100" style="margin-top:6px" />
                 <el-button size="small" :type="p.enabled ? 'warning' : 'success'" @click="toggleLocalProvider(p)">
                   {{ p.enabled ? '停用' : '启用' }}
                 </el-button>
@@ -555,13 +557,22 @@ async function discoverLocalModels(p) {
 
 async function syncLocalModels(p) {
   syncingId.value = p.id
+  // P1-2: 同步中提示
+  ElMessage.info({ message: '同步中，正在发现模型…', duration: 0 })
   try {
     const r = await localModelApi.syncModels(p.id)
     const d = r.data || {}
-    ElMessage.success(`同步完成: 新增 ${d.added} 个, 跳过 ${d.skipped} 个, 共发现 ${d.discovered} 个`)
+    // P1-2: 大量模型时显示进度信息
+    const msg = d.discovered > 10
+      ? `同步完成: 已发现 ${d.discovered} 个模型，新增 ${d.added} 个，跳过 ${d.skipped} 个`
+      : `同步完成: 新增 ${d.added} 个, 跳过 ${d.skipped} 个, 共发现 ${d.discovered} 个`
+    ElMessage.success(msg)
     await loadLocalProviders()
-  } catch (e) { ElMessage.error('同步失败: ' + (e.message || '')) }
-  finally { syncingId.value = null }
+  } catch (e) {
+    ElMessage.error('同步失败: ' + (e.message || ''))
+  } finally {
+    syncingId.value = null
+  }
 }
 
 async function addSelectedModels() {
