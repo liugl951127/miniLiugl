@@ -56,15 +56,15 @@
               placeholder="🤖 RAG 模型"
               style="width:100%"
             >
-              <el-option-group v-if="trainedModels.length" label="🏷️ 自研模型（推荐）">
-                <el-option v-for="m in trainedModels.filter(t => !t.vision)" :key="m.code" :label="m.name" :value="m.code">
+              <el-option-group label="🧬 自研模型（推荐）" v-if="selfTextModels.length">
+                <el-option v-for="m in selfTextModels" :key="m.code" :label="m.name" :value="m.code">
                   {{ m.name }}
                   <span v-if="m.accuracy" style="float:right;font-size:11px;color:#67c23a">{{ m.accuracy }}%</span>
                 </el-option>
               </el-option-group>
-              <el-option-group label="🤖 云端模型">
-                <el-option v-for="m in cloudTextModels" :key="m.code" :label="m.name" :value="m.code">
-                  {{ m.name }}
+              <el-option-group label="🤖 商业模型">
+                <el-option v-for="m in cloudTextModels" :key="m.code" :label="m.displayName || m.name" :value="m.code">
+                  {{ m.displayName || m.name }}
                 </el-option>
               </el-option-group>
             </el-select>
@@ -98,50 +98,54 @@
       <div class="model-bar">
         <el-tooltip content="切换对话使用的 AI 模型，不同模型擅长不同任务" placement="bottom">
           <el-select v-model="currentModel" size="small" filterable placeholder="选择模型" style="width:240px" @change="onModelChange">
-          <el-option-group label="🏷️ 自研模型（管理员）" v-if="isSuperAdmin && trainedTextModels.length">
-            <el-option v-for="m in trainedTextModels" :key="m.code" :label="m.name" :value="m.code">
-              <span>{{ m.name }}</span>
-              <span style="float:right;display:flex;align-items:center;gap:4px">
-                <span style="font-size:10px;background:#ecf5ff;color:#409eff;padding:1px 4px;border-radius:3px">自研</span>
-                <span v-if="m.accuracy" style="font-size:10px;color:#67c23a">{{ m.accuracy }}%</span>
-                <span style="font-size:11px;color:#909399">{{ m.provider }}</span>
-              </span>
-            </el-option>
+          <!-- ====== V7.1: 自研模型 ====== -->
+          <el-option-group label="🧬 自研模型（管理员）" v-if="isSuperAdmin">
+            <el-option-group label="  📝 文本" v-if="selfTextModels.length">
+              <el-option v-for="m in selfTextModels" :key="m.code" :label="m.name" :value="m.code">
+                <span>{{ m.name }}</span>
+                <span style="float:right;display:flex;align-items:center;gap:4px">
+                  <span style="font-size:10px;background:#f0f9ff;color:#0284c7;padding:1px 5px;border-radius:3px;font-weight:600">自研</span>
+                  <span v-if="m.accuracy" style="font-size:10px;color:#67c23a">{{ m.accuracy }}%</span>
+                  <span style="font-size:10px;color:#9ca3af">{{ m.provider || '' }}</span>
+                </span>
+              </el-option>
+            </el-option-group>
+            <el-option-group label="  🖼️ 视觉" v-if="selfVisionModels.length">
+              <el-option v-for="m in selfVisionModels" :key="m.code" :label="m.name" :value="m.code">
+                <span>{{ m.name }}</span>
+                <span style="float:right;display:flex;align-items:center;gap:4px">
+                  <span style="font-size:10px;background:#f0f9ff;color:#0284c7;padding:1px 5px;border-radius:3px;font-weight:600">自研</span>
+                  <span v-if="m.accuracy" style="font-size:10px;color:#67c23a">{{ m.accuracy }}%</span>
+                </span>
+              </el-option>
+            </el-option-group>
+            <el-option-group label="  💻 本地部署" v-if="localTextModels.length">
+              <el-option v-for="m in localTextModels" :key="m.code" :label="m.displayName || m.name" :value="m.code">
+                <span>{{ m.displayName || m.name }}</span>
+                <span style="float:right;font-size:10px;background:#fff7ed;color:#c2410c;padding:1px 5px;border-radius:3px">本地</span>
+              </el-option>
+            </el-option-group>
           </el-option-group>
-          <el-option-group label="🏷️🖼️ 自研视觉（管理员）" v-if="isSuperAdmin && trainedVisionModels.length">
-            <el-option v-for="m in trainedVisionModels" :key="m.code" :label="m.name" :value="m.code">
-              <span>{{ m.name }}</span>
-              <span style="float:right;display:flex;align-items:center;gap:4px">
-                <span style="font-size:10px;background:#ecf5ff;color:#409eff;padding:1px 4px;border-radius:3px">自研</span>
-                <span v-if="m.accuracy" style="font-size:10px;color:#67c23a">{{ m.accuracy }}%</span>
-                <span style="font-size:11px;color:#909399">{{ m.provider }}</span>
-              </span>
-            </el-option>
-          </el-option-group>
-          <!-- V6.8.2: 本地模型独立分组 -->
-          <el-option-group label="💻 本地模型" v-if="localTextModels.length">
-            <el-option v-for="m in localTextModels" :key="m.code" :label="m.displayName || m.name" :value="m.code">
-              <span>{{ m.displayName || m.name }}</span>
-              <span style="float:right;font-size:11px;color:#f56c6c">💻 本地</span>
-            </el-option>
-          </el-option-group>
-          <el-option-group label="🤖 通用模型">
-            <el-option v-for="m in cloudTextModels" :key="m.code" :label="m.displayName || m.name" :value="m.code">
-              <span>{{ m.displayName || m.name }}</span>
-              <span style="float:right;font-size:11px;color:#909399">{{ m.provider || '' }}</span>
-            </el-option>
-          </el-option-group>
-          <el-option-group label="🖼️ 视觉模型" v-if="visionModels.length">
-            <el-option v-for="m in visionModels" :key="m.code" :label="m.displayName || m.name" :value="m.code">
-              <span>{{ m.displayName || m.name }}</span>
-              <span style="float:right;font-size:11px;color:#67c23a">👁️ 视觉</span>
-            </el-option>
-          </el-option-group>
-          <el-option-group label="🎵 音频模型" v-if="audioModels.length">
-            <el-option v-for="m in audioModels" :key="m.code" :label="m.displayName || m.name" :value="m.code">
-              <span>{{ m.displayName || m.name }}</span>
-              <span style="float:right;font-size:11px;color:#e6a23c">🎵 音频</span>
-            </el-option>
+          <!-- ====== V7.1: 商业模型 ====== -->
+          <el-option-group label="🤖 商业模型">
+            <el-option-group label="  📝 文本">
+              <el-option v-for="m in commercialTextModels" :key="m.code" :label="m.displayName || m.name" :value="m.code">
+                <span>{{ m.displayName || m.name }}</span>
+                <span style="float:right;font-size:10px;color:#6b7280">{{ m.providerName || m.provider || '' }}</span>
+              </el-option>
+            </el-option-group>
+            <el-option-group label="  🖼️ 视觉" v-if="commercialVisionModels.length">
+              <el-option v-for="m in commercialVisionModels" :key="m.code" :label="m.displayName || m.name" :value="m.code">
+                <span>{{ m.displayName || m.name }}</span>
+                <span style="float:right;font-size:10px;color:#6b7280">{{ m.providerName || m.provider || '' }}</span>
+              </el-option>
+            </el-option-group>
+            <el-option-group label="  🎵 音频" v-if="audioModels.length">
+              <el-option v-for="m in audioModels" :key="m.code" :label="m.displayName || m.name" :value="m.code">
+                <span>{{ m.displayName || m.name }}</span>
+                <span style="float:right;font-size:10px;color:#92400e">{{ m.providerName || m.provider || '' }}</span>
+              </el-option>
+            </el-option-group>
           </el-option-group>
         </el-select>
         </el-tooltip>
@@ -187,7 +191,7 @@
           <div v-if="!messages.length" class="welcome-msg">
             <div style="font-size:40px;margin-bottom:12px">🤖</div>
             <div style="font-size:16px;font-weight:600;color:#303133">你好，我是 MiniMax AI</div>
-            <div style="font-size:13px;color:#909399;margin-top:6px">当前模型: <b>{{ currentModel }}</b>{{ currentModelAccuracy ? ' 🏷️自研(' + currentModelAccuracy + '%)' : '' }} · {{ routeTag.label }}</div>
+            <div style="font-size:13px;color:#909399;margin-top:6px">当前模型: <b>{{ currentModel }}</b>{{ currentModelAccuracy ? ' 🧬自研(' + currentModelAccuracy + '%)' : '' }} · {{ routeTag.label }}</div>
             <div style="font-size:12px;color:#c0c4cc;margin-top:4px">支持上传图片/视频/文件，我会根据内容智能回复</div>
           </div>
 
@@ -560,6 +564,7 @@ async function loadTrainedModels() {
       audio: !!(m.audio || (m.code || '').toLowerCase().includes('audio')),
       trained: true,
       accuracy: m.accuracy || 0,
+      category: 'self',  // V7.1: 明确标记为自研
     }))
   } catch (e) {
     console.warn('[Chat] 加载训练模型失败:', e)
@@ -577,6 +582,18 @@ const trainedTextModels = computed(() => trainedModels.value.filter(m => !m.visi
 const visionModels = computed(() => allModels.value.filter(m => m.vision))
 const trainedVisionModels = computed(() => trainedModels.value.filter(m => m.vision))
 const audioModels = computed(() => allModels.value.filter(m => m.audio))
+
+// V7.1: 自研模型（来自 trainedModels API + 本地部署）
+const selfTextModels = computed(() => trainedModels.value.filter(m => !m.vision && !m.audio))
+const selfVisionModels = computed(() => trainedModels.value.filter(m => m.vision && !m.audio))
+
+// V7.1: 商业模型（来自 /models 接口的 commercial category）
+const commercialTextModels = computed(() =>
+  allModels.value.filter(m => !m.vision && !m.audio && m.category === 'commercial')
+)
+const commercialVisionModels = computed(() =>
+  allModels.value.filter(m => m.vision && !m.audio && m.category === 'commercial')
+)
 const canVision = computed(() =>
   visionModels.value.length > 0 || trainedVisionModels.value.some(m => m.code === currentModel.value) ||
   currentModel.value.includes('4o') || currentModel.value.includes('vision')
@@ -996,11 +1013,14 @@ async function loadModels() {
       name: m.displayName || m.name || m.code,
       displayName: m.displayName || m.name || m.code,
       provider: m.providerName || m.provider || '',
-      providerCode: m.providerCode || m.providerCode || '',
+      providerName: m.providerName || m.provider || '',
+      providerCode: m.providerCode || m.provider_code || '',
       // 本地模型标记
       local: (m.protocol === 'local' || (m.providerCode || '').startsWith('local-')),
       vision: !!(m.supportsVision || m.vision),
       audio: !!(m.supportsAudio || m.audio),
+      // V7.1: 分类（self=自研, commercial=商业）
+      category: m.category || 'commercial',
     }))
     // 默认选第一个
     if (allModels.value.length && !allModels.value.find(m => m.code === currentModel.value)) {

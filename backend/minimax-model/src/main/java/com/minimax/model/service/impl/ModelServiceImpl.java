@@ -38,6 +38,7 @@ public class ModelServiceImpl implements ModelService {
         List<Map<String, Object>> rows = modelConfigMapper.selectEnabledWithProvider();
         List<ModelVO> out = new ArrayList<>(rows.size());
         for (Map<String, Object> r : rows) {
+            String providerCode = (String) r.get("provider_code");
             out.add(ModelVO.builder()
                     .id(toLong(r.get("model_id")))
                     .code((String) r.get("model_code"))
@@ -50,12 +51,27 @@ public class ModelServiceImpl implements ModelService {
                     .supportsTools(toInt(r.get("supports_tools")) == 1)
                     .supportsStream(toInt(r.get("supports_stream")) == 1)
                     .providerId(toLong(r.get("provider_id")))
-                    .providerCode((String) r.get("provider_code"))
+                    .providerCode(providerCode)
                     .providerName((String) r.get("provider_name"))
                     .protocol((String) r.get("protocol"))
+                    .category(classifyCategory(providerCode))
                     .build());
         }
         return out;
+    }
+
+    /**
+     * V7.1: 根据 provider code 分类
+     * self      — 自研模型
+     * commercial — 商业模型
+     */
+    private String classifyCategory(String providerCode) {
+        if (providerCode == null) return "commercial";
+        String p = providerCode.toLowerCase();
+        if ("self-trained".equals(p) || "onnx".equals(p) || "ollama".equals(p)) {
+            return "self";
+        }
+        return "commercial";
     }
 
     @Override

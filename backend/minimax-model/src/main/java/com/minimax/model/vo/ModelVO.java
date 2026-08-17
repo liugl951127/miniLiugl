@@ -23,4 +23,11 @@ public class ModelVO {
     private String providerCode;
     private String providerName;
     private String protocol;
+
+    /**
+     * V7.1: 模型分类
+     * - self:      自研模型（self-trained / onnx / ollama 本地）
+     * - commercial: 商业模型（openai / deepseek / minimax / zhipu 等）
+     */
+    private String category;
 }
