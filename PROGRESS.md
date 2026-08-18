@@ -837,4 +837,20 @@
 - [ ] 前端搜索高亮优化
 - [ ] API 限流中间件完善
 
-## Day 47 - 待开始
+## Day 47 - 2026-08-18 ✅ RAG批量删除 + Monitor统计概览 + 限流配置
+
+**今日完成：**
+- [x] **RAG 批量删除**：`DELETE /api/v1/rag/doc/batch` + `batchDeleteDocs()` + 前端红色危险按钮 + 二次确认弹窗 + 成功/失败结果展示
+- [x] **Monitor 统计概览**：`GET /api/v1/monitor/alerts/statistics` + `getStatistics()` + 新增「统计概览」Tab（6个数字卡片 + 严重程度分布 + Top 5 触发规则）
+- [x] **限流配置完善**：`RateLimitService` 新增 `strict` 档位（10次/60秒）+ `application-common.yml` 完整配置
+- [x] 自检 13/13 ✅ + 静态 5/5 ✅ + vite build 57.46s ✅
+
+**关键数据：** 后端 4 文件 / 前端 2 文件 / 配置 1 文件
+
+**明日计划 Day 48：**
+- [ ] RAG 文档批量导出（支持 PDF/TXT）
+- [ ] Monitor 告警统计 ECharts 可视化（饼图 + 柱状图）
+- [ ] 前端深色模式切换（Element Plus dark 主题）
+- [ ] API 认证中间件完善（JWT 续期 + 强制刷新）
+
+## Day 48 - 待开始

@@ -68,6 +68,9 @@
             <el-button size="small" :disabled="!selectedDocIds.length" @click="openBatchReindex">
               <el-icon><Refresh /></el-icon>批量重新索引{{ selectedDocIds.length ? ` (${selectedDocIds.length})` : '' }}
             </el-button>
+            <el-button size="small" type="danger" :disabled="!selectedDocIds.length" @click="openBatchDelete">
+              <el-icon><Delete /></el-icon>批量删除{{ selectedDocIds.length ? ` (${selectedDocIds.length})` : '' }}
+            </el-button>
             <el-button size="small" @click="refreshDocs">
               <el-icon><Refresh /></el-icon>刷新
             </el-button>
@@ -465,6 +468,45 @@
         <el-button v-else type="primary" @click="batchReindexVisible = false; selectedDocIds = []">完成</el-button>
       </template>
     </el-dialog>
+
+    <!-- 批量删除弹窗 (Day 47) -->
+    <el-dialog v-model="batchDeleteVisible" title="批量删除文档" width="560px" destroy-on-close>
+      <div v-if="!batchDeleteResult">
+        <el-alert type="error" :closable="false" style="margin-bottom:14px">
+          确认删除 <strong>{{ selectedDocIds.length }}</strong> 个文档？
+          此操作不可恢复，文档内容和所有切片将一并被删除！
+        </el-alert>
+        <div style="margin-bottom:12px;font-size:13px;color:#606266">
+          已选择文档 IDs：<code>{{ selectedDocIds.join(', ') }}</code>
+        </div>
+        <div v-if="batchDeleteLoading" style="margin-top:12px">
+          <el-progress :percentage="batchDeleteProgress" :status="batchDeleteProgress >= 100 ? 'success' : undefined" :indeterminate="batchDeleteProgress < 20" />
+          <div style="text-align:center;font-size:13px;color:#606266;margin-top:4px">正在删除文档...</div>
+        </div>
+      </div>
+      <!-- 结果展示 -->
+      <div v-else>
+        <el-result :icon="batchDeleteResult.succeeded > 0 ? 'success' : 'warning'" :title="batchDeleteResult.succeeded > 0 ? '删除完成' : '删除结果'">
+          <template #sub-title>
+            <p>成功 <strong style="color:#67c23a">{{ batchDeleteResult.succeeded }}</strong> 个文档</p>
+            <p v-if="batchDeleteResult.failed?.length">失败 <strong style="color:#f56c6c">{{ batchDeleteResult.failed.length }}</strong> 个文档</p>
+          </template>
+        </el-result>
+        <div v-if="batchDeleteResult.failed?.length" style="max-height:160px;overflow-y:auto;border:1px solid #f5f5f5;border-radius:4px;padding:10px">
+          <div style="font-size:13px;font-weight:600;color:#f56c6c;margin-bottom:8px">失败详情</div>
+          <div v-for="(f, i) in batchDeleteResult.failed" :key="i" style="font-size:12px;color:#606266;margin-bottom:4px">
+            <code>docId={{ f.docId }}</code>: {{ f.error }}
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <template v-if="!batchDeleteResult">
+          <el-button @click="batchDeleteVisible = false" :disabled="batchDeleteLoading">取消</el-button>
+          <el-button type="danger" :loading="batchDeleteLoading" @click="doBatchDelete">确认删除</el-button>
+        </template>
+        <el-button v-else type="primary" @click="batchDeleteVisible = false; selectedDocIds = []; batchDeleteResult = null">完成</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -474,7 +516,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   listMyKbs, createKb, updateKb, deleteKb,
   listDocs, uploadDoc, uploadDocStream, deleteDoc, renameDoc,
-  retrieve, getDocContent, updateDocContent, batchReindexDocs
+  retrieve, getDocContent, updateDocContent, batchReindexDocs, batchDeleteDocs
 } from '@/api/rag'
 import http from '@/api/http'
 import { useUserStore } from '@/store/user'
@@ -584,6 +626,52 @@ const batchReindexProgress = ref(0)
 const batchReindexMsg = ref('')
 const batchReindexResult = ref(null)   // { succeeded, failed }
 const selectedDocIds = ref([])
+
+// ========== 批量删除 (Day 47) ==========
+const batchDeleteVisible = ref(false)
+const batchDeleteLoading = ref(false)
+const batchDeleteProgress = ref(0)
+const batchDeleteResult = ref(null)   // { succeeded, failed }
+
+function openBatchDelete() {
+  if (!selectedDocIds.value.length) {
+    ElMessage.warning('请先勾选要删除的文档')
+    return
+  }
+  batchDeleteVisible.value = true
+  batchDeleteLoading.value = false
+  batchDeleteProgress.value = 0
+  batchDeleteResult.value = null
+}
+
+async function doBatchDelete() {
+  if (!selectedDocIds.value.length) return
+  batchDeleteLoading.value = true
+  batchDeleteProgress.value = 10
+
+  const timer = setInterval(() => {
+    if (batchDeleteProgress.value < 90) {
+      batchDeleteProgress.value += Math.floor(Math.random() * 15) + 5
+      if (batchDeleteProgress.value > 90) batchDeleteProgress.value = 90
+    }
+  }, 400)
+
+  try {
+    const r = await batchDeleteDocs(userId.value, selectedDocIds.value)
+    clearInterval(timer)
+    batchDeleteProgress.value = 100
+    batchDeleteResult.value = r.data || r.result
+    ElMessage.success('批量删除完成：成功 ' + (r.data?.succeeded || 0) + ' 个，失败 ' + (r.data?.failed?.length || 0) + ' 个')
+    refreshDocs()
+    loadKbs()
+  } catch (e) {
+    clearInterval(timer)
+    batchDeleteProgress.value = 0
+    ElMessage.error('批量删除失败: ' + (e.message || ''))
+  } finally {
+    batchDeleteLoading.value = false
+  }
+}
 
 // ========== 批量重新索引 (Day 46) ==========
 function onDocSelectionChange(rows) {

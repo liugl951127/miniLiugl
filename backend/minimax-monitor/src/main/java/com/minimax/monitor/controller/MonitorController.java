@@ -270,6 +270,14 @@ public class MonitorController {
         return Result.ok(alertMetricsService.getSlaMetrics(windowDays));
     }
 
+    // ---------- Day 47: 告警统计概览 ----------
+    @Operation(summary = "告警统计概览（总数/级别/活跃/Top规则）")
+    @GetMapping("/alerts/statistics")
+    public Result<Map<String, Object>> alertStatistics(
+            @RequestParam(required = false, defaultValue = "30") Integer days) {
+        return Result.ok(alertMetricsService.getStatistics(days));
+    }
+
     // ---------- V5.9 告警规则 CRUD ----------
 
     @Operation(summary = "全部告警规则 (含禁用, V5.9)")

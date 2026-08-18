@@ -175,6 +175,98 @@
         </el-table>
       </el-tab-pane>
 
+      <!-- ========== 告警统计概览 (Day 47) ========== -->
+      <el-tab-pane label="统计概览" name="stats">
+        <div class="sla-toolbar">
+          <el-select v-model="statsWindow" size="small" style="width:120px" @change="loadStats">
+            <el-option label="近 7 天" :value="7" />
+            <el-option label="近 30 天" :value="30" />
+            <el-option label="近 90 天" :value="90" />
+          </el-select>
+          <el-button size="small" @click="loadStats">
+            <el-icon><Refresh /></el-icon>刷新
+          </el-button>
+        </div>
+
+        <!-- 核心指标卡片 -->
+        <el-row :gutter="12" style="margin-top:12px" v-loading="statsLoading">
+          <el-col :span="4">
+            <el-card shadow="hover" body-style="text-align:center;padding:16px">
+              <div style="font-size:12px;color:#909399;margin-bottom:8px">总告警数</div>
+              <div style="font-size:32px;font-weight:700">{{ stats.total || 0 }}</div>
+            </el-card>
+          </el-col>
+          <el-col :span="4">
+            <el-card shadow="hover" body-style="text-align:center;padding:16px">
+              <div style="font-size:12px;color:#909399;margin-bottom:8px">活跃</div>
+              <div style="font-size:32px;font-weight:700;color:#f56c6c">{{ stats.active || 0 }}</div>
+            </el-card>
+          </el-col>
+          <el-col :span="4">
+            <el-card shadow="hover" body-style="text-align:center;padding:16px">
+              <div style="font-size:12px;color:#909399;margin-bottom:8px">已恢复</div>
+              <div style="font-size:32px;font-weight:700;color:#67c23a">{{ stats.resolved || 0 }}</div>
+            </el-card>
+          </el-col>
+          <el-col :span="4">
+            <el-card shadow="hover" body-style="text-align:center;padding:16px">
+              <div style="font-size:12px;color:#909399;margin-bottom:8px">平均持续</div>
+              <div style="font-size:24px;font-weight:700;color:#409eff">{{ stats.avgDurationMinutes != null ? stats.avgDurationMinutes.toFixed(1) + 'min' : '-' }}</div>
+            </el-card>
+          </el-col>
+          <el-col :span="4">
+            <el-card shadow="hover" body-style="text-align:center;padding:16px">
+              <div style="font-size:12px;color:#909399;margin-bottom:8px">已确认</div>
+              <div style="font-size:32px;font-weight:700;color:#e6a23c">{{ stats.acked || 0 }}</div>
+            </el-card>
+          </el-col>
+          <el-col :span="4">
+            <el-card shadow="hover" body-style="text-align:center;padding:16px">
+              <div style="font-size:12px;color:#909399;margin-bottom:8px">进行中</div>
+              <div style="font-size:32px;font-weight:700;color:#f56c6c">{{ stats.firing || 0 }}</div>
+            </el-card>
+          </el-col>
+        </el-row>
+
+        <!-- 按严重程度 + Top 规则 -->
+        <el-row :gutter="12" style="margin-top:12px" v-loading="statsLoading">
+          <el-col :span="12">
+            <el-card shadow="hover" body-style="padding:16px">
+              <template #header><span>按严重程度分布</span></template>
+              <el-descriptions :column="3" border>
+                <el-descriptions-item label="CRITICAL">
+                  <el-tag type="danger" size="small">{{ stats.critical || 0 }}</el-tag>
+                </el-descriptions-item>
+                <el-descriptions-item label="WARNING">
+                  <el-tag type="warning" size="small">{{ stats.warning || 0 }}</el-tag>
+                </el-descriptions-item>
+                <el-descriptions-item label="INFO">
+                  <el-tag type="info" size="small">{{ stats.info || 0 }}</el-tag>
+                </el-descriptions-item>
+              </el-descriptions>
+            </el-card>
+          </el-col>
+          <el-col :span="12">
+            <el-card shadow="hover" body-style="padding:16px">
+              <template #header><span>Top 5 触发规则</span></template>
+              <el-table :data="stats.topRules || []" size="small" stripe>
+                <el-table-column prop="ruleName" label="规则名称" />
+                <el-table-column prop="count" label="触发次数" width="100" align="center">
+                  <template #default="{ row }">
+                    <el-tag size="small" type="info">{{ row.count }}</el-tag>
+                  </template>
+                </el-table-column>
+              </el-table>
+              <el-empty v-if="!statsLoading && (!stats.topRules || stats.topRules.length === 0)" description="暂无数据" :image-size="60" style="margin-top:8px" />
+            </el-card>
+          </el-col>
+        </el-row>
+
+        <div v-if="!statsLoading && stats.total === 0" style="text-align:center;padding:40px;color:#909399">
+          暂无告警数据
+        </div>
+      </el-tab-pane>
+
       <!-- ========== SLA 统计 (Day 43) ========== -->
       <el-tab-pane label="SLA 统计" name="sla">
         <div class="sla-toolbar">
@@ -476,7 +568,7 @@ import { Refresh, View, Loading, Plus, Edit, Delete } from '@element-plus/icons-
 import {
   getMonitorHealth, getJvmHealth, getFiringAlerts, rcaAnalysis, acknowledgeAlert,
   listAlertChannels, createAlertChannel, updateAlertChannel, deleteAlertChannel, testAlertChannel,
-  getAlertSla, getAlertTrend,
+  getAlertSla, getAlertTrend, getAlertStatistics,
   getAllAlertRules, createAlertRule, updateAlertRule, deleteAlertRule, toggleAlertRule
 } from '@/api/monitor'
 import http from '@/api/http'
@@ -525,6 +617,23 @@ function channelTypeTag(type) {
 const slaWindow = ref(30)
 const sla = ref({})
 const slaLoading = ref(false)
+
+// ========== 告警统计概览 (Day 47) ==========
+const statsWindow = ref(30)
+const statsLoading = ref(false)
+const stats = ref({})
+
+async function loadStats() {
+  statsLoading.value = true
+  try {
+    const r = await getAlertStatistics(statsWindow.value)
+    stats.value = r.data || r.result || {}
+  } catch {
+    stats.value = {}
+  } finally {
+    statsLoading.value = false
+  }
+}
 
 // ========== 告警趋势 (Day 44) ==========
 const trendChartRef = ref(null)
@@ -635,6 +744,9 @@ watch(activeTab, (tab) => {
   }
   if (tab === 'sla' && !sla.value.windowDays) {
     loadSla()
+  }
+  if (tab === 'stats' && !stats.value.windowDays) {
+    loadStats()
   }
   if (tab === 'trend') {
     loadAlertTrend()

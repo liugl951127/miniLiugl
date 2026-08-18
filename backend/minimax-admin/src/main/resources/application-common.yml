@@ -1,3 +1,31 @@
 # MiniMax Platform — 公共配置桩 (V6.8.2)
 # 各服务共享的通用配置
 # 沙箱模式下通过 application-h2local.yml 覆盖
+
+# =============================================================
+# V6.8.4+ API 限流配置 (Token Bucket 漏桶算法)
+# =============================================================
+minimax:
+  ratelimit:
+    enabled: true
+    # IP 限流：每 IP 每分钟允许 100 次请求
+    ip:
+      capacity: 100
+      refill: 100
+      period-seconds: 60
+    # 用户限流：每用户每分钟允许 60 次请求
+    user:
+      capacity: 60
+      refill: 60
+      period-seconds: 60
+    # 全局限流：整体每分钟 1000 次
+    global:
+      capacity: 1000
+      refill: 1000
+      period-seconds: 60
+    # 高危端点（上传/敏感操作）：更严格的限制
+    strict:
+      capacity: 10
+      refill: 10
+      period-seconds: 60
+

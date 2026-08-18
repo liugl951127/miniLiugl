@@ -123,6 +123,14 @@ export const batchReindexDocs = (ownerId, docIds) => {
     : http.post('/rag/doc/batch/reindex', body)
 }
 
+/** 批量删除文档：批量删除切片 + 批量删除文档记录 (Day 47) */
+export const batchDeleteDocs = (ownerId, docIds) => {
+  const body = { docIds }
+  return ownerId
+    ? http.delete(`/rag/doc/batch?ownerId=${ownerId}`, { data: body })
+    : http.delete('/rag/doc/batch', { data: body })
+}
+
 // 检索 + 问答
 export const retrieve = (body) => {
   console.log('%c[RAG API] retrieve', 'color: #409eff', body)

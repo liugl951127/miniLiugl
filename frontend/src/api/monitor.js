@@ -248,3 +248,9 @@ export const getAlertTrend = (params) => {
   console.log('%c[MONITOR API] getAlertTrend', 'color: #409eff', params)
   return http.get('/monitor/alerts/trend', { params })
 }
+
+/** 告警统计概览（总数/级别/活跃/Top规则）Day 47 */
+export const getAlertStatistics = (days = 30) => {
+  console.log('%c[MONITOR API] getAlertStatistics', 'color: #409eff', { days })
+  return http.get('/monitor/alerts/statistics', { params: { days } })
+}

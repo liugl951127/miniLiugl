@@ -464,6 +464,59 @@ public class DocumentService {
         return new BatchResult(succeeded, failed);
     }
 
+    /**
+     * Day 47: 批量删除多个文档
+     * - 校验归属（所有 doc 必须属于同一 owner）
+     * - 删除 chunks（先删切片再删文档）
+     * - 调整所属 KB 的 docCount 和 chunkCount
+     * - 返回成功数量和失败列表
+     *
+     * @param docIds  文档 ID 列表
+     * @param ownerId 所有者（归属校验）
+     * @return 批量结果：{ succeeded: 成功数, failed: [ { docId, error }] }
+     */
+    @Transactional
+    public BatchResult batchDeleteDocs(List<Long> docIds, Long ownerId) {
+        if (docIds == null || docIds.isEmpty()) {
+            throw new IllegalArgumentException("docIds 不能为空");
+        }
+        int succeeded = 0;
+        List<FailedDoc> failed = new java.util.ArrayList<>();
+
+        for (Long docId : docIds) {
+            try {
+                Document d = docMapper.selectById(docId);
+                if (d == null) {
+                    failed.add(new FailedDoc(docId, "文档不存在"));
+                    continue;
+                }
+                if (!d.getOwnerId().equals(ownerId)) {
+                    failed.add(new FailedDoc(docId, "无权操作此文档"));
+                    continue;
+                }
+                Long kbId = d.getKbId();
+                int chunkCount = d.getChunkCount();
+
+                // 1) 删除切片
+                chunkMapper.deleteByDoc(docId);
+
+                // 2) 删除文档
+                docMapper.deleteById(docId);
+
+                // 3) 调整 KB 计数
+                kbService.incDocCount(kbId, -1);
+                kbService.incChunkCount(kbId, -chunkCount);
+
+                log.info("批量删除文档: docId={} kbId={} chunks={}", docId, kbId, chunkCount);
+                succeeded++;
+            } catch (Exception e) {
+                log.error("批量删除失败: docId={} err={}", docId, e.getMessage());
+                failed.add(new FailedDoc(docId, e.getMessage()));
+            }
+        }
+        return new BatchResult(succeeded, failed);
+    }
+
     /** 批量结果记录 */
     public record BatchResult(int succeeded, List<FailedDoc> failed) {}
     public record FailedDoc(Long docId, String error) {}

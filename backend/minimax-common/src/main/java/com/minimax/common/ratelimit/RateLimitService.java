@@ -40,6 +40,13 @@ public class RateLimitService {
     @Value("${minimax.ratelimit.global.period-seconds:60}")
     private int globalPeriod = 60;
 
+    @Value("${minimax.ratelimit.strict.capacity:10}")
+    private int strictCapacity = 10;
+    @Value("${minimax.ratelimit.strict.refill:10}")
+    private int strictRefill = 10;
+    @Value("${minimax.ratelimit.strict.period-seconds:60}")
+    private int strictPeriod = 60;
+
     private final ConcurrentMap<String, RateLimiter> scopedLimiters = new ConcurrentHashMap<>();
 
     public boolean tryAcquire(String scope, String key) {
@@ -49,6 +56,7 @@ public class RateLimitService {
                 case "ip":     return new RateLimiter(ipCapacity, ipRefill, ipPeriod);
                 case "user":   return new RateLimiter(userCapacity, userRefill, userPeriod);
                 case "global": return new RateLimiter(globalCapacity, globalRefill, globalPeriod);
+                case "strict": return new RateLimiter(strictCapacity, strictRefill, strictPeriod);
                 default:       return new RateLimiter();
             }
         });

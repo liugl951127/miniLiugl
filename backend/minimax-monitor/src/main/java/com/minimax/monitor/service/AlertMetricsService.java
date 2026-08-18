@@ -132,4 +132,65 @@ public class AlertMetricsService {
         if (availabilityPct >= 90.0) return "D";
         return "F";
     }
+
+    /**
+     * Day 47: 告警统计概览
+     * 返回总数 / 各严重级别 / 活跃/已恢复 / 平均持续时长 / top 规则
+     *
+     * @param days 统计窗口，默认 30 天
+     * @return 统计指标 Map
+     */
+    public Map<String, Object> getStatistics(Integer days) {
+        int d = days != null && days > 0 ? days : 30;
+        LocalDateTime since = LocalDateTime.now().minusDays(d);
+        LocalDateTime now = LocalDateTime.now();
+
+        LambdaQueryWrapper<AlertEvent> q = new LambdaQueryWrapper<>();
+        q.ge(AlertEvent::getFiredAt, since).orderByDesc(AlertEvent::getFiredAt);
+        List<AlertEvent> events = alertEventMapper.selectList(q);
+
+        long total = events.size();
+        long critical = events.stream().filter(e -> "CRITICAL".equals(e.getSeverity())).count();
+        long warning = events.stream().filter(e -> "WARNING".equals(e.getSeverity())).count();
+        long info = events.stream().filter(e -> "INFO".equals(e.getSeverity())).count();
+        long firing = events.stream().filter(e -> "firing".equals(e.getStatus())).count();
+        long acked = events.stream().filter(e -> "acked".equals(e.getStatus())).count();
+        long resolved = events.stream().filter(e -> "resolved".equals(e.getStatus())).count();
+        long active = firing + acked;
+
+        // 平均持续时长（分钟）
+        double avgDurationMin = events.stream()
+                .filter(e -> e.getDuration() != null && e.getDuration() > 0)
+                .mapToLong(AlertEvent::getDuration)
+                .average()
+                .orElse(0.0) / 60.0; // duration 存的是秒，转分钟
+
+        // Top 5 触发最多的规则
+        Map<String, Long> ruleCounts = events.stream()
+                .filter(e -> e.getRuleName() != null)
+                .collect(java.util.stream.Collectors.groupingBy(
+                        AlertEvent::getRuleName,
+                        java.util.stream.Collectors.counting()));
+        List<Map<String, Object>> topRules = ruleCounts.entrySet().stream()
+                .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                .limit(5)
+                .map(e -> Map.<String, Object>of("ruleName", e.getKey(), "count", e.getValue()))
+                .toList();
+
+        return Map.ofEntries(
+                Map.entry("windowDays", d),
+                Map.entry("since", since.toString()),
+                Map.entry("total", total),
+                Map.entry("critical", critical),
+                Map.entry("warning", warning),
+                Map.entry("info", info),
+                Map.entry("firing", firing),
+                Map.entry("acked", acked),
+                Map.entry("resolved", resolved),
+                Map.entry("active", active),
+                Map.entry("avgDurationMinutes", Math.round(avgDurationMin * 100.0) / 100.0),
+                Map.entry("topRules", topRules),
+                Map.entry("generatedAt", now.toString())
+        );
+    }
 }

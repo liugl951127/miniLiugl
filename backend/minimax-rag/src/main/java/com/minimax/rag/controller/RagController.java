@@ -40,6 +40,7 @@ import java.util.Map;
  *   PUT    /rag/doc/{id}                    重命名文档
  *   PUT    /rag/doc/{id}/content            在线编辑（修改内容+重新切片+重新索引）Day 45
  *   POST   /rag/doc/batch/reindex          批量重新索引（批量切片+批量向量化）Day 46
+ *   DELETE /rag/doc/batch                  批量删除（批量删除切片+文档）Day 47
  *   DELETE /rag/doc/{id}                    删除
  *   GET    /rag/doc/{id}/content            文档全文内容
  *
@@ -306,6 +307,35 @@ public class RagController {
             return Result.fail("docIds 格式错误，应为数组");
         }
         DocumentService.BatchResult result = docService.batchReindexDocs(docIds, resolvedOwner);
+        return Result.ok(result);
+    }
+
+    /**
+     * Day 47: 批量删除文档（批量删除切片 + 批量删除文档记录）
+     * DELETE /api/v1/rag/doc/batch
+     * body: { "docIds": [1, 2, 3] }
+     * 返回: { succeeded, failed: [{ docId, error }] }
+     */
+    @Operation(summary = "批量删除文档（删除切片+文档记录）")
+    @DeleteMapping("/doc/batch")
+    public Result<DocumentService.BatchResult> batchDeleteDocs(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @RequestParam(required = false) Long ownerId,
+            @RequestBody Map<String, Object> body) {
+        Long resolvedOwner = resolveOwnerId(user, ownerId);
+        Object idsObj = body.get("docIds");
+        if (idsObj == null) {
+            return Result.fail("docIds 不能为空");
+        }
+        List<Long> docIds;
+        if (idsObj instanceof List) {
+            docIds = ((List<?>) idsObj).stream()
+                    .map(o -> ((Number) o).longValue())
+                    .toList();
+        } else {
+            return Result.fail("docIds 格式错误，应为数组");
+        }
+        DocumentService.BatchResult result = docService.batchDeleteDocs(docIds, resolvedOwner);
         return Result.ok(result);
     }
 
