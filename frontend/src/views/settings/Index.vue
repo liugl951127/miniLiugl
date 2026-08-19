@@ -114,7 +114,9 @@
           <el-table-column prop="email" label="邮箱" />
           <el-table-column label="角色" width="120" align="center">
             <template #default="{ row }">
-              <el-tag size="small" :type="row.role === 'ADMIN' ? 'danger' : 'success'">{{ row.role }}</el-tag>
+              <el-tag size="small" :type="row.role === 'ADMIN' ? 'danger' : row.role === 'SUPER_ADMIN' ? 'warning' : 'success'">
+                {{ row.role === 'SUPER_ADMIN' ? 'SUPER' : row.role === 'ADMIN' ? 'ADMIN' : 'USER' }}
+              </el-tag>
             </template>
           </el-table-column>
           <el-table-column label="状态" width="100" align="center">
@@ -125,12 +127,23 @@
           <el-table-column prop="createdAt" label="注册时间" width="160" />
           <el-table-column label="操作" width="120" align="center">
             <template #default="{ row }">
-              <el-button size="small" @click="toggleAdminUser(row)">
+              <el-button size="small" @click="toggleAdminUserAction(row)" :disabled="row.role === 'SUPER_ADMIN'">
                 {{ row.enabled ? '禁用' : '启用' }}
               </el-button>
             </template>
           </el-table-column>
         </el-table>
+      </el-tab-pane>
+
+      <!-- ═══ 运维统计 ═══ -->
+      <el-tab-pane label="📈 运维统计" name="stats">
+        <div class="sub-header"><span class="sub-title">运维统计数据</span></div>
+        <div class="stats-grid">
+          <el-card v-for="item in opsStats" :key="item.label">
+            <template #header>{{ item.label }}</template>
+            <div class="big-num">{{ item.value }}</div>
+          </el-card>
+        </div>
       </el-tab-pane>
 
       <!-- ═══ 审计日志 ═══ -->
@@ -264,6 +277,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   View, Hide, Plus, Refresh, QuestionFilled, ChatLineRound, Setting, TrendCharts, Bell
 } from '@element-plus/icons-vue'
+import { listAdminUsers, toggleAdminUser, getDashboard, getOpsStats, getRecentAudit } from '@/api/admin'
+import { listTenants, createTenant, setTenantStatus } from '@/api/tenant'
 
 // ─── Stores ───
 const route = useRoute()
@@ -356,46 +371,56 @@ function copyKey(key) {
 const adminUsers = ref([])
 const adminStats = ref([])
 const adminLoading = ref(false)
+const opsStats = ref([])
 const auditLogs = ref([])
 const auditLoading = ref(false)
 
 async function loadAdminUsers() {
   adminLoading.value = true
   try {
-    const [usersR, statsR] = await Promise.all([
-      fetch('/api/v1/admin/users', { headers: { Authorization: 'Bearer ' + userStore.accessToken } }).then(r => r.json()).catch(() => null),
-      fetch('/api/v1/admin/stats', { headers: { Authorization: 'Bearer ' + userStore.accessToken } }).then(r => r.json()).catch(() => null)
+    const [usersR, dashR] = await Promise.all([
+      listAdminUsers().catch(() => ({ data: [] })),
+      getDashboard().catch(() => ({ data: {} }))
     ])
-    adminUsers.value = usersR?.data || []
-    const s = statsR?.data || {}
+    const users = usersR?.data?.list || usersR?.data || []
+    adminUsers.value = users
+    const d = dashR?.data || {}
     adminStats.value = [
-      { label: '总用户', value: s.totalUsers || 0 },
-      { label: '活跃用户', value: s.activeUsers || 0 },
-      { label: 'API 调用', value: s.totalCalls?.toLocaleString() || '0' },
-      { label: '今日新增', value: s.todayNew || 0 },
+      { label: '总用户', value: d.totalUsers || 0 },
+      { label: '今日登录', value: d.todayLogins || 0 },
+      { label: '活跃会话', value: d.activeSessions || 0 },
+      { label: 'API 调用', value: (d.apiCalls || 0).toLocaleString() },
     ]
   } catch { adminUsers.value = []; adminStats.value = [] }
   finally { adminLoading.value = false }
 }
 
+async function loadOpsStats() {
+  try {
+    const r = await getOpsStats().catch(() => ({ data: [] }))
+    opsStats.value = r?.data || []
+  } catch { opsStats.value = [] }
+}
+
 async function loadAuditLogs() {
   auditLoading.value = true
   try {
-    const r = await fetch('/api/v1/admin/audit/recent', {
-      headers: { Authorization: 'Bearer ' + userStore.accessToken }
-    }).then(r => r.json()).catch(() => null)
+    const r = await getRecentAudit().catch(() => ({ data: [] }))
     auditLogs.value = r?.data || []
   } catch { auditLogs.value = [] }
   finally { auditLoading.value = false }
 }
 
-async function toggleAdminUser(row) {
-  await fetch(`/api/v1/admin/users/${row.id}/toggle`, {
-    method: 'POST',
-    headers: { Authorization: 'Bearer ' + userStore.accessToken }
-  }).catch(() => null)
-  row.enabled = !row.enabled
+async function toggleAdminUserAction(row) {
+  try {
+    await toggleAdminUser(row.id, userStore.profile?.id || 0, !row.enabled)
+    row.enabled = !row.enabled
+    ElMessage.success(row.enabled ? '已启用' : '已禁用')
+  } catch { ElMessage.error('操作失败') }
 }
+
+// ════════════════════════════════════
+// 租户管理 Tab
 
 // ════════════════════════════════════
 // 租户管理 Tab
@@ -408,9 +433,7 @@ const tenantForm = ref({ name: '', owner: '', userLimit: 100, apiLimit: 10000 })
 async function loadTenants() {
   tenantLoading.value = true
   try {
-    const r = await fetch('/api/v1/admin/tenants', {
-      headers: { Authorization: 'Bearer ' + userStore.accessToken }
-    }).then(r => r.json()).catch(() => null)
+    const r = await listTenants().catch(() => ({ data: [] }))
     tenants.value = r?.data || []
   } catch { tenants.value = [] }
   finally { tenantLoading.value = false }
@@ -422,26 +445,24 @@ function openTenantForm(row) {
 }
 
 async function saveTenant() {
-  await fetch('/api/v1/admin/tenants' + (tenantForm.value.id ? '/' + tenantForm.value.id : ''), {
-    method: tenantForm.value.id ? 'PUT' : 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: 'Bearer ' + userStore.accessToken
-    },
-    body: JSON.stringify(tenantForm.value)
-  }).catch(() => null)
-  tenantFormVisible.value = false
-  loadTenants()
-  ElMessage.success('保存成功')
+  try {
+    if (tenantForm.value.id) {
+      await createTenant(tenantForm.value).catch(() => null)
+    } else {
+      await createTenant(tenantForm.value).catch(() => null)
+    }
+    tenantFormVisible.value = false
+    loadTenants()
+    ElMessage.success('保存成功')
+  } catch { ElMessage.error('保存失败') }
 }
 
 async function toggleTenant(row) {
-  await fetch(`/api/v1/admin/tenants/${row.id}/toggle`, {
-    method: 'POST',
-    headers: { Authorization: 'Bearer ' + userStore.accessToken }
-  }).catch(() => null)
-  row.active = !row.active
-  ElMessage.success(row.active ? '已启用' : '已停用')
+  try {
+    await setTenantStatus(row.id, !row.active).catch(() => null)
+    row.active = !row.active
+    ElMessage.success(row.active ? '已启用' : '已停用')
+  } catch { ElMessage.error('操作失败') }
 }
 
 // ════════════════════════════════════
@@ -504,6 +525,7 @@ onMounted(() => {
   loadApiKeys()
   loadAdminUsers()
   loadAuditLogs()
+  loadOpsStats()
   if (isSuperAdmin.value) {
     loadTenants()
     loadMonitor()
@@ -525,5 +547,16 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 600;
   color: var(--el-text-color-primary);
+}
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.big-num {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1e40af;
+  text-align: center;
 }
 </style>
