@@ -106,6 +106,19 @@
           </span>
         </div>
         <div class="header-right">
+          <!-- 租户隔离状态指示器 (SUPER_ADMIN) -->
+          <div v-if="userStore.isSuperAdmin && currentTenant" class="tenant-indicator">
+            <el-tooltip :content="'数据隔离: ' + (currentTenant.dataIsolation !== false ? '已开启' : '未开启')">
+              <span class="tenant-name">
+                <el-icon><OfficeBuilding /></el-icon>
+                {{ currentTenant.name }}
+                <el-icon class="isolation-icon" :class="currentTenant.dataIsolation !== false ? 'locked' : 'unlocked'">
+                  <Lock v-if="currentTenant.dataIsolation !== false" />
+                  <Unlock v-else />
+                </el-icon>
+              </span>
+            </el-tooltip>
+          </div>
           <el-tooltip :content="prefsStore.theme === 'dark' ? '切换亮色模式' : '切换深色模式'">
             <el-button text @click="prefsStore.toggleTheme()">
               <el-icon><Sunny v-if="prefsStore.theme === 'dark'" /><Moon v-else /></el-icon>
@@ -148,7 +161,8 @@ import { useUserStore } from '@/store/user'
 import { usePreferencesStore } from '@/store/preferences'
 import {
   ChatDotRound, Files, MagicStick, Cpu, DataAnalysis, Grid, Setting,
-  Document, Fold, Expand, Refresh, Sunny, Moon
+  Document, Fold, Expand, Refresh, Sunny, Moon,
+  OfficeBuilding, Lock, Unlock
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -161,6 +175,7 @@ const isMobile = ref(false)
 const drawerVisible = ref(false)
 const sidebarWidth = '220px'
 const healthSummary = ref(null)
+const currentTenant = ref(null)
 
 // ========== 响应式检测 ==========
 function checkResponsive() {
@@ -305,10 +320,20 @@ async function reload() {
   }
 }
 
+async function loadTenantInfo() {
+  if (!userStore.isSuperAdmin) return
+  try {
+    const { myTenant } = await import('@/api/tenant')
+    const r = await myTenant().catch(() => null)
+    if (r?.data) currentTenant.value = r.data
+  } catch {}
+}
+
 onMounted(async () => {
   if (!userStore.profile && userStore.isLogin) {
     try { await userStore.fetchProfile() } catch {}
   }
+  loadTenantInfo()
 })
 </script>
 
@@ -388,9 +413,27 @@ onMounted(async () => {
 .dot.up { background: #10b981; }
 .dot.amber { background: #f59e0b; }
 
+.tenant-indicator {
+  margin-right: 12px;
+  padding-right: 12px;
+  border-right: 1px solid var(--el-border-color);
+}
+.tenant-name {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 600;
+  color: var(--el-text-color-secondary);
+  background: var(--el-fill-color-light);
+  padding: 3px 10px; border-radius: 14px;
+  cursor: default;
+}
+.isolation-icon { font-size: 11px; }
+.isolation-icon.locked { color: #10b981; }
+.isolation-icon.unlocked { color: #f59e0b; }
+
 @media (max-width: 768px) {
   .layout-main { padding: 8px; }
   .header-right .user-name { display: none; }
+  .tenant-indicator { display: none; }
 }
 
 /* V6.8.9+ 深色模式布局覆盖 */

@@ -3,6 +3,8 @@ package com.minimax.rag.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.minimax.rag.entity.KnowledgeBase;
 import com.minimax.rag.mapper.KnowledgeBaseMapper;
+import com.minimax.common.tenant.TenantContext;
+import com.minimax.common.tenant.TenantQueryHelper;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,17 +20,19 @@ public class KnowledgeBaseService {
     public Long create(Long ownerId, String name, String description, String visibility, String tags) {
         if (name == null || name.isBlank()) throw new IllegalArgumentException("name 必填");
         if (visibility == null) visibility = "private";
-        // 校验唯一
-        KnowledgeBase exist = mapper.selectOne(
-                new LambdaQueryWrapper<KnowledgeBase>()
-                        .eq(KnowledgeBase::getOwnerId, ownerId)
-                        .eq(KnowledgeBase::getName, name)
-                        .last("LIMIT 1"));
+        // 校验唯一（带租户过滤）
+        LambdaQueryWrapper<KnowledgeBase> checkWrapper = new LambdaQueryWrapper<>();
+        checkWrapper.eq(KnowledgeBase::getOwnerId, ownerId);
+        checkWrapper.eq(KnowledgeBase::getName, name);
+        TenantQueryHelper.applyTenantFilter(checkWrapper, KnowledgeBase::getTenantId);
+        checkWrapper.last("LIMIT 1");
+        KnowledgeBase exist = mapper.selectOne(checkWrapper);
         if (exist != null) {
             throw new IllegalArgumentException("已存在同名知识库: " + name);
         }
         KnowledgeBase kb = new KnowledgeBase();
         kb.setOwnerId(ownerId);
+        kb.setTenantId(TenantContext.currentTenantId());
         kb.setName(name);
         kb.setDescription(description);
         kb.setVisibility(visibility);
@@ -40,7 +44,11 @@ public class KnowledgeBaseService {
     }
 
     public KnowledgeBase get(Long id, Long ownerId) {
-        KnowledgeBase kb = mapper.selectById(id);
+        LambdaQueryWrapper<KnowledgeBase> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(KnowledgeBase::getId, id);
+        TenantQueryHelper.applyTenantFilter(wrapper, KnowledgeBase::getTenantId);
+        wrapper.last("LIMIT 1");
+        KnowledgeBase kb = mapper.selectOne(wrapper);
         if (kb == null || kb.getDeleted() != null && kb.getDeleted() == 1) return null;
         // 私有: 必须 owner 是自己; 公开: 所有人可看
         if ("private".equals(kb.getVisibility()) && !kb.getOwnerId().equals(ownerId)) {
@@ -50,10 +58,11 @@ public class KnowledgeBaseService {
     }
 
     public List<KnowledgeBase> listByOwner(Long ownerId) {
-        return mapper.selectList(
-                new LambdaQueryWrapper<KnowledgeBase>()
-                        .eq(KnowledgeBase::getOwnerId, ownerId)
-                        .orderByDesc(KnowledgeBase::getCreatedAt));
+        LambdaQueryWrapper<KnowledgeBase> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(KnowledgeBase::getOwnerId, ownerId);
+        TenantQueryHelper.applyTenantFilter(wrapper, KnowledgeBase::getTenantId);
+        wrapper.orderByDesc(KnowledgeBase::getCreatedAt);
+        return mapper.selectList(wrapper);
     }
 
     public List<KnowledgeBase> listPublic() {
@@ -64,7 +73,11 @@ public class KnowledgeBaseService {
     }
 
     public boolean delete(Long id, Long ownerId) {
-        KnowledgeBase kb = mapper.selectById(id);
+        LambdaQueryWrapper<KnowledgeBase> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(KnowledgeBase::getId, id);
+        TenantQueryHelper.applyTenantFilter(wrapper, KnowledgeBase::getTenantId);
+        wrapper.last("LIMIT 1");
+        KnowledgeBase kb = mapper.selectOne(wrapper);
         if (kb == null) return false;
         if (!kb.getOwnerId().equals(ownerId)) return false;
         mapper.deleteById(id);
@@ -73,7 +86,11 @@ public class KnowledgeBaseService {
 
     /** V5.33 Day 23: 更新知识库（元数据编辑） */
     public KnowledgeBase updateKb(Long id, Long ownerId, Map<String, String> patch) {
-        KnowledgeBase kb = mapper.selectById(id);
+        LambdaQueryWrapper<KnowledgeBase> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(KnowledgeBase::getId, id);
+        TenantQueryHelper.applyTenantFilter(wrapper, KnowledgeBase::getTenantId);
+        wrapper.last("LIMIT 1");
+        KnowledgeBase kb = mapper.selectOne(wrapper);
         if (kb == null) throw new IllegalArgumentException("知识库不存在: " + id);
         if (!kb.getOwnerId().equals(ownerId)) throw new SecurityException("无权修改此知识库");
         if (patch.containsKey("name") && !patch.get("name").isBlank()) {
@@ -107,7 +124,11 @@ public class KnowledgeBaseService {
      */
     public void verifyAccess(Long kbId, Long userId) {
         if (kbId == null) return;  // null kbId = 跨库检索，跳过校验
-        KnowledgeBase kb = mapper.selectById(kbId);
+        LambdaQueryWrapper<KnowledgeBase> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(KnowledgeBase::getId, kbId);
+        TenantQueryHelper.applyTenantFilter(wrapper, KnowledgeBase::getTenantId);
+        wrapper.last("LIMIT 1");
+        KnowledgeBase kb = mapper.selectOne(wrapper);
         if (kb == null) throw new SecurityException("知识库不存在: " + kbId);
         if ("private".equals(kb.getVisibility()) && !kb.getOwnerId().equals(userId)) {
             throw new SecurityException("无权访问此知识库: " + kbId);

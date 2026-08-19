@@ -9,6 +9,8 @@ import com.minimax.chat.service.ChatSessionService;
 import com.minimax.chat.vo.SessionVO;
 import com.minimax.common.exception.BizException;
 import com.minimax.common.result.ResultCode;
+import com.minimax.common.tenant.TenantContext;
+import com.minimax.common.tenant.TenantQueryHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,14 +34,21 @@ public class ChatSessionServiceImpl implements ChatSessionService {
         s.setTemperature(req.getTemperature() != null ? req.getTemperature() : new java.math.BigDecimal("0.70"));
         s.setStatus(1);
         s.setMessageCount(0);
-        s.setTenantId(0L);
+        s.setTenantId(TenantContext.currentTenantId());
         sessionMapper.insert(s);
         return SessionVO.from(s);
     }
 
     @Override
     public List<SessionVO> listByUser(Long userId, Integer status) {
-        List<ChatSession> list = sessionMapper.selectByUserId(userId, status);
+        LambdaQueryWrapper<ChatSession> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ChatSession::getUserId, userId);
+        if (status != null) {
+            wrapper.eq(ChatSession::getStatus, status);
+        }
+        TenantQueryHelper.applyTenantFilter(wrapper, ChatSession::getTenantId);
+        wrapper.orderByDesc(ChatSession::getLastMessageAt, ChatSession::getUpdatedAt);
+        List<ChatSession> list = sessionMapper.selectList(wrapper);
         return list.stream().map(SessionVO::from).toList();
     }
 
@@ -70,11 +79,12 @@ public class ChatSessionServiceImpl implements ChatSessionService {
 
     @Override
     public ChatSession requireOwned(Long id, Long userId) {
-        ChatSession s = sessionMapper.selectOne(
-                new LambdaQueryWrapper<ChatSession>()
-                        .eq(ChatSession::getId, id)
-                        .eq(ChatSession::getUserId, userId)
-                        .last("LIMIT 1"));
+        LambdaQueryWrapper<ChatSession> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ChatSession::getId, id);
+        wrapper.eq(ChatSession::getUserId, userId);
+        TenantQueryHelper.applyTenantFilter(wrapper, ChatSession::getTenantId);
+        wrapper.last("LIMIT 1");
+        ChatSession s = sessionMapper.selectOne(wrapper);
         if (s == null) throw new BizException(ResultCode.NOT_FOUND, "会话不存在或无权限");
         return s;
     }
