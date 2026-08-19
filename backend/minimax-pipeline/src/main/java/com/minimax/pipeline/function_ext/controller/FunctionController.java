@@ -1,7 +1,10 @@
 package com.minimax.pipeline.function_ext.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.minimax.common.feign.pipeline.FunctionToolDTO;
+import com.minimax.common.feign.pipeline.ToolResultDTO;
 import com.minimax.common.result.Result;
+import com.minimax.pipeline.feign.PipelineFeignMapper;
 import com.minimax.pipeline.function_ext.entity.FunctionCallLog;
 import com.minimax.pipeline.function_ext.entity.FunctionTool;
 import com.minimax.pipeline.function_ext.executor.ToolExecutor;
@@ -53,26 +56,28 @@ public class FunctionController {
 
     @Operation(summary = "列出工具列表")
     @GetMapping("/tools")
-    public Result<List<FunctionTool>> listTools(@RequestParam(required = false) String category) {
-        return Result.ok(toolService.listByCategory(category));
+    public Result<List<FunctionToolDTO>> listTools(@RequestParam(required = false) String category) {
+        return Result.ok(toolService.listByCategory(category).stream()
+                .map(PipelineFeignMapper::toDTO).toList());
     }
 
     @Operation(summary = "按分类列出工具")
     @GetMapping("/tools/category/{category}")
-    public Result<List<FunctionTool>> listByCategory(@PathVariable String category) {
-        return Result.ok(toolService.listByCategory(category));
+    public Result<List<FunctionToolDTO>> listByCategory(@PathVariable String category) {
+        return Result.ok(toolService.listByCategory(category).stream()
+                .map(PipelineFeignMapper::toDTO).toList());
     }
 
     @Operation(summary = "获取工具详情")
     @GetMapping("/tools/{id}")
-    public Result<FunctionTool> getTool(@PathVariable Long id) {
-        return Result.ok(toolService.get(id));
+    public Result<FunctionToolDTO> getTool(@PathVariable Long id) {
+        return Result.ok(PipelineFeignMapper.toDTO(toolService.get(id)));
     }
 
     @Operation(summary = "按名称获取工具")
     @GetMapping("/tools/by-name/{name}")
-    public Result<FunctionTool> getByName(@PathVariable String name) {
-        return Result.ok(toolService.getByName(name));
+    public Result<FunctionToolDTO> getByName(@PathVariable String name) {
+        return Result.ok(PipelineFeignMapper.toDTO(toolService.getByName(name)));
     }
 
     @Operation(summary = "注册自定义工具")
@@ -113,11 +118,11 @@ public class FunctionController {
 
     @Operation(summary = "直接调用工具")
     @PostMapping("/invoke/{name}")
-    public Result<ToolExecutor.ToolResult> invoke(@PathVariable String name,
-                                                   @RequestParam Long userId,
-                                                   @RequestParam(required = false) Long sessionId,
-                                                   @RequestBody(required = false) Map<String, Object> body,
-                                                   HttpServletRequest req) {
+    public Result<ToolResultDTO> invoke(@PathVariable String name,
+                                         @RequestParam Long userId,
+                                         @RequestParam(required = false) Long sessionId,
+                                         @RequestBody(required = false) Map<String, Object> body,
+                                         HttpServletRequest req) {
         String argsJson;
         try {
             argsJson = body == null ? "{}" : new com.fasterxml.jackson.databind.ObjectMapper()
@@ -125,7 +130,7 @@ public class FunctionController {
         } catch (Exception e) { argsJson = "{}"; }
         String ip = req == null ? null : req.getRemoteAddr();
         String ua = req == null ? null : req.getHeader("User-Agent");
-        return Result.ok(executor.invoke(userId, sessionId, name, argsJson, ip, ua));
+        return Result.ok(PipelineFeignMapper.toDTO(executor.invoke(userId, sessionId, name, argsJson, ip, ua)));
     }
 
     @Operation(summary = "获取调用历史")

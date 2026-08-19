@@ -6,10 +6,10 @@ import com.minimax.ai.entity.AiChatMessage;
 import com.minimax.ai.mapper.AiChatSessionMapper;
 import com.minimax.ai.mapper.AiChatMessageMapper;
 import com.minimax.ai.service.AgentClient;
+import com.minimax.common.feign.model.ChatRequestDTO;
+import com.minimax.common.feign.model.ChatResponseDTO;
 import com.minimax.common.result.Result;
-import com.minimax.model.dto.ChatRequest;
 import com.minimax.ai.service.ModelClient;
-import com.minimax.model.vo.ChatResponse;
 import com.minimax.ai.service.OnnxLLMService;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.extern.slf4j.Slf4j;
@@ -289,7 +289,7 @@ public class AiChatRealController {
                     }
                 }
 
-                ChatRequest req = new ChatRequest();
+                ChatRequestDTO req = new ChatRequestDTO();
                 req.setModel(model);
                 req.setTemperature(0.7);
                 req.setMaxTokens(1024);
@@ -298,7 +298,7 @@ public class AiChatRealController {
                     Map.of("role", "user", "content", message)
                 ));
 
-                ChatResponse resp = modelClient.chat(0L, req);
+                ChatResponseDTO resp = modelClient.chat(0L, req);
                 String content = resp.getContent() != null ? resp.getContent() : "";
 
                 // 分块推送（每 20 字符一个 SSE chunk）
@@ -377,7 +377,7 @@ public class AiChatRealController {
         List<Map<String, Object>> votes = new ArrayList<>();
         for (String model : models) {
             try {
-                ChatRequest req = new ChatRequest();
+                ChatRequestDTO req = new ChatRequestDTO();
                 req.setModel(model);
                 req.setTemperature(0.1);
                 req.setMaxTokens(50);
@@ -386,7 +386,7 @@ public class AiChatRealController {
                 msgs.add(Map.of("role", "user", "content", text));
                 req.setMessages(msgs);
 
-                ChatResponse resp = modelClient.chat(0L, req);
+                ChatResponseDTO resp = modelClient.chat(0L, req);
                 String answer = resp.getContent();
                 votes.add(Map.of(
                     "model", model,

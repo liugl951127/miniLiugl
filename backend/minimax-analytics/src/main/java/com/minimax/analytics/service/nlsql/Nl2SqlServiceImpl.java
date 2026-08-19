@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.minimax.analytics.dto.Nl2SqlRequest;
 import com.minimax.analytics.dto.QueryRequest;
 import com.minimax.analytics.entity.Nl2SqlHistory;
+import com.minimax.analytics.feign.ModelChatClient;
 import com.minimax.analytics.mapper.Nl2SqlHistoryMapper;
 import com.minimax.analytics.service.query.QueryService;
 import com.minimax.analytics.service.schema.SchemaService;
@@ -12,11 +13,10 @@ import com.minimax.analytics.vo.Nl2SqlResult;
 import com.minimax.analytics.vo.QueryResult;
 import com.minimax.analytics.vo.TableInfo;
 import com.minimax.common.exception.BizException;
+import com.minimax.common.feign.model.ChatRequestDTO;
+import com.minimax.common.feign.model.ChatResponseDTO;
+import com.minimax.common.result.Result;
 import com.minimax.common.result.ResultCode;
-import com.minimax.model.dto.ChatRequest;
-import com.minimax.model.vo.ChatResponse;
-import com.minimax.model.provider.ModelProviderAdapter;
-import com.minimax.model.provider.ModelProviderFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,14 +31,14 @@ import java.util.regex.Pattern;
  * NL2SQL 服务实现 (V5.31)
  *
  * 流程: 拿 schema → 拼 prompt → 调 LLM → 解析 SQL → 安全校验 → (可选) 执行
- * 复用 minimax-model 模块的 LLM 适配器
+ * V6.8.1: 通过 Feign 调用 minimax-model 的内部 chat API（解耦 Maven 依赖）
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class Nl2SqlServiceImpl implements Nl2SqlService {
 
-    private final ModelProviderFactory modelFactory;
+    private final ModelChatClient modelChatClient;
     private final SchemaService schemaService;
     private final SqlSafetyChecker safetyChecker;
     private final QueryService queryService;
@@ -99,8 +99,8 @@ public class Nl2SqlServiceImpl implements Nl2SqlService {
             String sysPrompt = PromptTemplates.system() + "\n\n" + PromptTemplates.fewShot();
             String userPrompt = PromptTemplates.user(request.getQuestion(), schemas);
 
-            // 3. 调 LLM
-            ChatRequest chatReq = new ChatRequest();
+            // 3. 调 LLM（通过 Feign → minimax-model/internal/chat）
+            ChatRequestDTO chatReq = new ChatRequestDTO();
             chatReq.setModel(history.getModel());
             chatReq.setMessages(List.of(
                     Map.of("role", "system", "content", sysPrompt),
@@ -109,10 +109,12 @@ public class Nl2SqlServiceImpl implements Nl2SqlService {
             chatReq.setTemperature(temperature);
             chatReq.setMaxTokens(maxTokens);
 
-            String model = history.getModel();
-            ModelProviderAdapter adapter = modelFactory.get(model);
-            if (adapter == null) throw new BizException(ResultCode.BAD_REQUEST, "不支持的模型: " + model);
-            ChatResponse resp = adapter.chat(null, null, chatReq);
+            Result<ChatResponseDTO> respResult = modelChatClient.chat(userId, chatReq);
+            if (respResult == null || !respResult.ok() || respResult.getData() == null) {
+                throw new BizException(ResultCode.SYSTEM_ERROR, "LLM 调用失败: " +
+                        (respResult != null ? respResult.getMsg() : "null response"));
+            }
+            ChatResponseDTO resp = respResult.getData();
             String llmOutput = resp.getContent();
 
             // 4. 解析 SQL

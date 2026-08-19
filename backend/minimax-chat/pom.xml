@@ -31,13 +31,6 @@
             <artifactId>opentelemetry-exporter-otlp</artifactId>
         </dependency>
 
-
-        <dependency>
-            <groupId>com.minimax</groupId>
-            <artifactId>minimax-auth</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>

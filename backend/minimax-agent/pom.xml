@@ -31,20 +31,17 @@
             <artifactId>opentelemetry-exporter-otlp</artifactId>
         </dependency>
 
-
-
+        <!-- V6.8.1+ OpenFeign: agent → pipeline 服务调用（替代 Maven 编译依赖） -->
         <dependency>
-            <groupId>com.minimax</groupId>
-            <artifactId>minimax-pipeline</artifactId>
-            <version>${project.parent.version}</version>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
         </dependency>
 
-        <!-- V6.8+: External Agent API 鉴权需要 -->
-        <dependency>
-            <groupId>com.minimax</groupId>
-            <artifactId>minimax-auth</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
+        <!-- V6.8+: External Agent API 鉴权通过 Feign 调用 auth 服务（V6.8.1 解耦） -->
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

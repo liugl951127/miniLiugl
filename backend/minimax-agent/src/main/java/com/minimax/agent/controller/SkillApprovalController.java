@@ -1,8 +1,7 @@
 package com.minimax.agent.controller;
 
-import com.minimax.agent.service.AgentService;
-import com.minimax.pipeline.function_ext.entity.SkillApproval;
-import com.minimax.pipeline.function_ext.service.SkillApprovalService;
+import com.minimax.agent.feign.SkillApprovalClient;
+import com.minimax.common.feign.pipeline.SkillApprovalDTO;
 import com.minimax.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -14,14 +13,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Skill/工具 审批 API (V6.8.1+)
+ * Skill/工具 审批 API — V6.8.1+ 重构版
  *
- * 流程:
- *   1. Agent 调用 HIGH/CRITICAL 工具 → 自动创建 PENDING 审批记录
- *   2. 用户/管理员 调用 POST /approve 或 POST /reject
- *   3. AgentService 查询审批状态决定是否放行
+ * 底层通过 Feign 代理到 minimax-pipeline 服务。
+ * 业务逻辑和数据存储在 pipeline 模块，agent 只做 HTTP 转发。
  *
- * @since 2026-08-12
+ * 路由: /api/v1/skill-approval/** (gateway → minimax-agent → minimax-pipeline)
+ *
+ * @since 2026-08-20 重构
  */
 @Slf4j
 @Tag(name = "Skill审批", description = "HIGH/CRITICAL 工具执行审批流")
@@ -30,27 +29,14 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SkillApprovalController {
 
-    private final SkillApprovalService approvalService;
-    private final AgentService agentService;
+    private final SkillApprovalClient approvalClient;
 
     // ==================== 提交审批 ====================
 
     @PostMapping("/submit")
     @Operation(summary = "提交审批 (Agent 自动调用，或用户手动发起)")
-    public Result<SkillApproval> submit(@RequestBody Map<String, Object> body) {
-        Long userId = parseUserId(body.get("userId"));
-        String username = (String) body.getOrDefault("username", "user-" + userId);
-        String taskId = (String) body.getOrDefault("taskId", "task-" + System.currentTimeMillis());
-        String toolName = (String) body.get("toolName");
-        String riskLevel = (String) body.getOrDefault("riskLevel", SkillApproval.RISK_HIGH);
-        String goal = (String) body.get("goal");
-        String toolParams = body.get("toolParams") != null ? body.get("toolParams").toString() : null;
-
-        if (toolName == null || toolName.isBlank()) {
-            return Result.fail("toolName 不能为空");
-        }
-        SkillApproval record = approvalService.submit(taskId, userId, username, toolName, riskLevel, goal, toolParams);
-        return Result.ok(record);
+    public Result<SkillApprovalDTO> submit(@RequestBody Map<String, Object> body) {
+        return approvalClient.submit(body);
     }
 
     // ==================== 审批 ====================
@@ -58,59 +44,41 @@ public class SkillApprovalController {
     @PostMapping("/{id}/approve")
     @Operation(summary = "审批通过")
     public Result<Void> approve(@PathVariable Long id, @RequestBody Map<String, Object> body) {
-        Long approverId = parseUserId(body.get("approverId"));
-        String approverName = (String) body.getOrDefault("approverName", "approver-" + approverId);
-        String reason = (String) body.getOrDefault("reason", "");
-        boolean ok = approvalService.approve(id, approverId, approverName, reason);
-        return ok ? Result.ok() : Result.fail("审批不存在或已处理");
+        return approvalClient.approve(id, body);
     }
 
     @PostMapping("/{id}/reject")
     @Operation(summary = "审批拒绝")
     public Result<Void> reject(@PathVariable Long id, @RequestBody Map<String, Object> body) {
-        Long approverId = parseUserId(body.get("approverId"));
-        String approverName = (String) body.getOrDefault("approverName", "approver-" + approverId);
-        String reason = (String) body.getOrDefault("reason", "拒绝执行");
-        boolean ok = approvalService.reject(id, approverId, approverName, reason);
-        return ok ? Result.ok() : Result.fail("审批不存在或已处理");
+        return approvalClient.reject(id, body);
     }
 
     // ==================== 查询 ====================
 
     @GetMapping("/pending")
     @Operation(summary = "我的待审批列表 (申请人视角)")
-    public Result<List<SkillApproval>> getMyPending(@RequestParam(required = false) Long userId) {
-        return Result.ok(approvalService.getPendingByUser(userId));
+    public Result<List<SkillApprovalDTO>> getMyPending(@RequestParam(required = false) Long userId) {
+        return approvalClient.getMyPending(userId);
     }
 
     @GetMapping("/pending/all")
     @Operation(summary = "所有待审批 (管理员视角)")
-    public Result<List<SkillApproval>> getAllPending() {
-        return Result.ok(approvalService.getPendingAll());
+    public Result<List<SkillApprovalDTO>> getAllPending() {
+        return approvalClient.getAllPending();
     }
 
     @GetMapping("/task/{taskId}")
     @Operation(summary = "查任务最新审批状态")
-    public Result<SkillApproval> getByTask(@PathVariable String taskId) {
-        SkillApproval record = approvalService.findLatestByTask(taskId);
-        return record != null ? Result.ok(record) : Result.fail("无审批记录: " + taskId);
+    public Result<SkillApprovalDTO> getByTask(@PathVariable String taskId) {
+        return approvalClient.getByTask(taskId);
     }
 
     @GetMapping("/history")
     @Operation(summary = "我的审批历史")
-    public Result<List<SkillApproval>> getHistory(
+    public Result<List<SkillApprovalDTO>> getHistory(
             @RequestParam(required = false) Long userId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return Result.ok(approvalService.getHistoryByUser(userId, page, size));
-    }
-
-    // ==================== Utils ====================
-
-    private Long parseUserId(Object obj) {
-        if (obj == null) return null;
-        if (obj instanceof Number) return ((Number) obj).longValue();
-        try { return Long.parseLong(obj.toString()); }
-        catch (Exception e) { return null; }
+        return approvalClient.getHistory(userId, page, size);
     }
 }

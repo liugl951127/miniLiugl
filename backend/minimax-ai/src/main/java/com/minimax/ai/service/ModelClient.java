@@ -2,8 +2,8 @@ package com.minimax.ai.service;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
-import com.minimax.model.dto.ChatRequest;
-import com.minimax.model.vo.ChatResponse;
+import com.minimax.common.feign.model.ChatRequestDTO;
+import com.minimax.common.feign.model.ChatResponseDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -15,10 +15,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * AI 模块 → Model 模块 HTTP 客户端 (V7.0)
+ * AI 模块 → Model 模块 HTTP 客户端 (V6.8.1 重构)
  *
- * 通过 RestTemplate 远程调用 minimax-model 服务的 /api/v1/models/chat 接口，
- * 替代直接注入 ModelService Bean（跨容器不可用）。
+ * V7.0: 通过 RestTemplate 远程调用 minimax-model 服务的 /api/v1/models/chat 接口。
+ * V6.8.1: 改用 common.feign.model 中的共享 DTO，彻底解耦 Maven 依赖。
  */
 @Slf4j
 @Service
@@ -41,9 +41,9 @@ public class ModelClient {
      *
      * @param userId 用户ID
      * @param req    对话请求
-     * @return ChatResponse，失败返回 null
+     * @return ChatResponseDTO，失败返回 null
      */
-    public ChatResponse chat(Long userId, ChatRequest req) {
+    public ChatResponseDTO chat(Long userId, ChatRequestDTO req) {
         try {
             String url = modelServiceUrl + "/api/v1/models/chat";
             log.debug("[ModelClient] 调用 Model 服务: url={}, model={}", url, req.getModel());
@@ -58,7 +58,7 @@ public class ModelClient {
                 return null;
             }
 
-            // 解析 Result<ChatResponse> 响应
+            // 解析 Result<ChatResponseDTO> 响应
             JSONObject result = JSON.parseObject(resp);
             if (result.getIntValue("code") != 0) {
                 log.warn("[ModelClient] Model 服务调用失败: code={}, msg={}",
@@ -72,7 +72,7 @@ public class ModelClient {
                 return null;
             }
 
-            ChatResponse response = data.toJavaObject(ChatResponse.class);
+            ChatResponseDTO response = data.toJavaObject(ChatResponseDTO.class);
             log.debug("[ModelClient] Model 服务调用成功, content长度={}",
                     response.getContent() != null ? response.getContent().length() : 0);
             return response;

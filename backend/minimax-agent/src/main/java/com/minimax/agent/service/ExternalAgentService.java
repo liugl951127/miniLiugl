@@ -1,8 +1,9 @@
 package com.minimax.agent.service;
 
-import com.minimax.auth.service.UserApiKeyService;
-import com.minimax.pipeline.function_ext.executor.ToolExecutor;
-import com.minimax.pipeline.function_ext.mapper.FunctionToolMapper;
+import com.minimax.agent.feign.AuthApiKeyClient;
+import com.minimax.agent.feign.PipelineFunctionClient;
+import com.minimax.common.feign.pipeline.FunctionToolDTO;
+import com.minimax.common.result.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -43,11 +44,10 @@ public class ExternalAgentService {
     // required=false: 沙箱/Dev 环境可能没有 auth bean，避免启动失败
     // required=false: 沙箱/Dev 环境可能没有 auth bean，避免启动失败
     @Setter(onMethod_ = @Autowired(required = false))
-    private UserApiKeyService apiKeyService;
+    private AuthApiKeyClient authApiKeyClient;
 
     private final AgentService agentService;
-    private final FunctionToolMapper toolMapper;
-    private final ToolExecutor toolExecutor;
+    private final PipelineFunctionClient functionClient;
 
     // ==================== 配置 ====================
     @Value("${minimax.agent.external.async-timeout-seconds:300}")
@@ -75,17 +75,20 @@ public class ExternalAgentService {
      * @return userId（验证通过）或 null（失败）
      */
     public Long validateKey(String rawKey, String requiredScope) {
-        // h2local 沙箱模式：无论有无 token 都 bypass，返回 userId=1
-        if (apiKeyService == null) {
-            log.info("[ExternalAgent/H2local] apiKeyService 不可用，bypass 返回 userId=1");
+        // h2local 沙箱模式：auth 服务不可用时 bypass，返回 userId=1
+        if (authApiKeyClient == null) {
+            log.info("[ExternalAgent/H2local] authApiKeyClient 不可用，bypass 返回 userId=1");
             return 1L;
         }
         // rawKey 为空时返回 null（需要认证）
         if (rawKey == null || rawKey.isBlank()) return null;
-        // apiKeyService 不为空，校验 token
+        // 通过 Feign 调用 auth 服务验证 token
         try {
-            Long userId = apiKeyService.validateKey(rawKey);
-            if (userId != null) return userId;
+            Map<String, Object> resp = authApiKeyClient.validate(Map.of("rawKey", rawKey));
+            if (resp != null && resp.containsKey("userId")) {
+                Object uid = resp.get("userId");
+                if (uid instanceof Number) return ((Number) uid).longValue();
+            }
         } catch (Exception e) {
             log.warn("[ExternalAgent] API Key 校验异常: {}", e.getMessage());
         }
@@ -333,12 +336,13 @@ public class ExternalAgentService {
     // ==================== Agent 列表 ====================
 
     /**
-     * 列出可调用的 Agent（从 FunctionTool 注册表）
+     * 列出可调用的 Agent（通过 Feign 从 pipeline 获取 FunctionTool 列表）
      */
     public List<Map<String, Object>> listAgents(Long userId) {
         try {
-            var tools = toolMapper.selectEnabled();
-            return tools.stream().map(tool -> {
+            Result<List<FunctionToolDTO>> r = functionClient.listTools();
+            if (r == null || !r.ok() || r.getData() == null) return List.of();
+            return r.getData().stream().map(tool -> {
                 Map<String, Object> m = new LinkedHashMap<>();
                 m.put("agentId", tool.getName());
                 m.put("displayName", tool.getDisplayName());

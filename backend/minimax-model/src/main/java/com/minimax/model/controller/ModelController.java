@@ -68,6 +68,36 @@ public class ModelController {
         return Result.ok(modelService.chat(principal.id(), req));
     }
 
+    /**
+     * V6.8.1+: 内部服务间 chat 端点（无用户鉴权，供 minimax-analytics 等内部服务调用）。
+     * 内部服务通过 Feign client 调用，gateway 透传。
+     */
+    @Operation(summary = "内部 chat（服务间调用，无需用户认证）")
+    @PostMapping("/internal/chat")
+    public Result<com.minimax.common.feign.model.ChatResponseDTO> internalChat(
+            @RequestParam(required = false) Long userId,
+            @RequestBody com.minimax.common.feign.model.ChatRequestDTO req) {
+        ChatRequest modelReq = new ChatRequest();
+        modelReq.setModel(req.getModel());
+        modelReq.setMessages(req.getMessages());
+        modelReq.setTemperature(req.getTemperature());
+        modelReq.setMaxTokens(req.getMaxTokens());
+        modelReq.setStream(req.getStream() != null ? req.getStream() : false);
+        ChatResponse modelResp = modelService.chat(userId, modelReq);
+        return Result.ok(com.minimax.common.feign.model.ChatResponseDTO.builder()
+                .id(modelResp.getId())
+                .model(modelResp.getModel())
+                .content(modelResp.getContent())
+                .promptTokens(modelResp.getPromptTokens())
+                .completionTokens(modelResp.getCompletionTokens())
+                .totalTokens(modelResp.getTotalTokens())
+                .finishReason(modelResp.getFinishReason())
+                .latencyMs(modelResp.getLatencyMs())
+                .providerCode(modelResp.getProviderCode())
+                .raw(modelResp.getRaw())
+                .build());
+    }
+
     @Operation(summary = "流式对话请求（SSE）")
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public StreamingResponseBody streamChat(@AuthenticationPrincipal AuthenticatedUser principal,

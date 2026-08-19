@@ -3,10 +3,8 @@ package com.minimax.ai.controller;
 import com.minimax.ai.intent.MultiModelVotingService;
 import com.minimax.ai.intent.MultiModelVotingService.VotingResult;
 import com.minimax.ai.intent.MultiModelVotingService.VotingStrategy;
+import com.minimax.common.feign.model.ChatResponseDTO;
 import com.minimax.common.result.Result;
-import com.minimax.model.dto.ChatRequest;
-import com.minimax.model.service.ModelService;
-import com.minimax.model.vo.ChatResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -103,14 +101,14 @@ public class VotingChatController {
         // 预判：是否需要投票
         boolean needVote = votingService.shouldVote(text, sessionId);
 
-        ChatResponse singleResp;
+        ChatResponseDTO singleResp;
         VotingResult votingResult = null;
 
         if (needVote) {
             // 低置信：触发多模型投票
             log.info("[VotingChat] 低置信触发投票 text='{}'", text.length() > 40 ? text.substring(0, 40) : text);
             votingResult = votingService.vote(text, sessionId);
-            singleResp = ChatResponse.builder()
+            singleResp = ChatResponseDTO.builder()
                     .content(votingResult.getConsensus())
                     .model("multi-model-voting")
                     .latencyMs(votingResult.getElapsedMs() > 0 ? votingResult.getElapsedMs() : null)
@@ -170,7 +168,7 @@ public class VotingChatController {
 
         VotingResult result = votingService.vote(text, sessionId);
 
-        ChatResponse resp = ChatResponse.builder()
+        ChatResponseDTO resp = ChatResponseDTO.builder()
                 .content(result.getConsensus())
                 .model("forced-voting:" + result.getStrategy().name())
                 .latencyMs(result.getElapsedMs())
@@ -213,7 +211,7 @@ public class VotingChatController {
     // ============== 内部方法 ==============
 
     /** 调用单模型（非投票路径） */
-    private ChatResponse callSingleModel(String text, String model) {
+    private ChatResponseDTO callSingleModel(String text, String model) {
         try {
             Map<String, Object> reqBody = Map.of(
                     "model", model,
@@ -231,7 +229,7 @@ public class VotingChatController {
             Object data = resp.get("data");
             if (data instanceof Map) {
                 Map<String, Object> d = (Map<String, Object>) data;
-                return ChatResponse.builder()
+                return ChatResponseDTO.builder()
                         .content((String) d.get("content"))
                         .promptTokens(toInt(d.get("prompt_tokens")))
                         .completionTokens(toInt(d.get("completion_tokens")))
@@ -247,8 +245,8 @@ public class VotingChatController {
         }
     }
 
-    private ChatResponse fallback(String text) {
-        return ChatResponse.builder()
+    private ChatResponseDTO fallback(String text) {
+        return ChatResponseDTO.builder()
                 .content("(模型服务不可用) 你说的是：" + text)
                 .model("fallback")
                 .build();

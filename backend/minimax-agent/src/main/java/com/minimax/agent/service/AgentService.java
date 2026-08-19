@@ -1,11 +1,11 @@
 package com.minimax.agent.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.minimax.pipeline.function_ext.entity.FunctionTool;
-import com.minimax.pipeline.function_ext.entity.SkillApproval;
-import com.minimax.pipeline.function_ext.executor.ToolExecutor;
-import com.minimax.pipeline.function_ext.mapper.FunctionToolMapper;
-import com.minimax.pipeline.function_ext.service.SkillApprovalService;
+import com.minimax.agent.feign.PipelineFunctionClient;
+import com.minimax.agent.feign.SkillApprovalClient;
+import com.minimax.common.feign.pipeline.FunctionToolDTO;
+import com.minimax.common.feign.pipeline.SkillApprovalDTO;
+import com.minimax.common.result.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,11 +53,10 @@ public class AgentService {
     @Value("${minimax.agent.token:}")
     private String token;
 
-    private final FunctionToolMapper toolMapper;
-    private final ToolExecutor toolExecutor;
-    /** V6.8.1: 工具审批服务 (pipeline 模块可能不在 classpath) */
+    private final PipelineFunctionClient functionClient;
+    /** V6.8.1+: 工具审批 Feign 客户端（替代 Maven 依赖） */
     @Autowired(required = false)
-    private SkillApprovalService approvalService;
+    private SkillApprovalClient approvalClient;
     private final ObjectMapper json = new ObjectMapper();
     private final HttpClient client = HttpClient.newHttpClient();
     // V5.16: SSE 异步执行 (避免阻塞 Tomcat 线程)
@@ -167,7 +166,7 @@ public class AgentService {
                         );
                     }
 
-                    String result = toolExecutor.executeForChat(tc.function.name, argsMap);
+                    String result = invokeToolViaFeign(tc.function.name, userId, argsMap);
                     step.observation = truncate(result, 500);
                     step.durationMs = System.currentTimeMillis() - ts;
                 } catch (Exception e) {
@@ -189,51 +188,65 @@ public class AgentService {
                 steps, maxRounds, toolsUsed);
     }
 
-    private List<com.minimax.pipeline.function_ext.entity.FunctionTool> pickTools(List<String> names) {
+    private List<FunctionToolDTO> pickTools(List<String> names) {
         if (names == null || names.isEmpty()) {
-            return toolMapper.selectEnabled();
+            Result<List<FunctionToolDTO>> r = functionClient.listTools();
+            return r != null && r.ok() ? r.getData() : List.of();
         }
-        return names.stream()
-                .map(toolMapper::selectByName)
-                .filter(Objects::nonNull)
-                .filter(t -> t.getEnabled() != null && t.getEnabled() == 1)
-                .toList();
+        List<FunctionToolDTO> result = new ArrayList<>();
+        for (String name : names) {
+            Result<FunctionToolDTO> r = functionClient.getByName(name);
+            if (r != null && r.ok() && r.getData() != null
+                    && r.getData().getEnabled() != null && r.getData().getEnabled() == 1) {
+                result.add(r.getData());
+            }
+        }
+        return result;
     }
 
     /**
-     * V6.8.1: 检查工具是否需要审批。
+     * V6.8.1: 检查工具是否需要审批（通过 Feign 调用 pipeline 审批服务）。
      * @return null 表示放行，非 null 返回审批提示信息
      */
     private String checkApproval(String toolName, Long userId, String taskId, String goal, Map<String, Object> argsMap) {
-        if (approvalService == null) {
+        if (approvalClient == null) {
             // 没有审批服务，全部放行
             return null;
         }
-        FunctionTool tool = toolMapper.selectByName(toolName);
+        // 查询工具详情（获取风险等级）
+        Result<FunctionToolDTO> toolR = functionClient.getByName(toolName);
+        FunctionToolDTO tool = toolR != null && toolR.ok() ? toolR.getData() : null;
         if (tool == null) return null;
 
         String riskLevel = tool.getRiskLevel();
-        if (!SkillApproval.needsApproval(riskLevel)) {
+        if (!SkillApprovalDTO.needsApproval(riskLevel)) {
             return null; // SAFE/LOW/MEDIUM，直接放行
         }
 
         // 检查是否已有 APPROVED 记录
-        SkillApproval latest = approvalService.findLatestByTask(taskId);
-        if (latest != null && SkillApproval.STATUS_APPROVED.equals(latest.getStatus())) {
+        Result<SkillApprovalDTO> latestR = approvalClient.getByTask(taskId);
+        SkillApprovalDTO latest = latestR != null && latestR.ok() ? latestR.getData() : null;
+        if (latest != null && SkillApprovalDTO.STATUS_APPROVED.equals(latest.getStatus())) {
             return null; // 已审批通过
         }
 
         // 自动创建或返回 PENDING 提示
-        if (latest == null || !SkillApproval.STATUS_PENDING.equals(latest.getStatus())) {
+        if (latest == null || !SkillApprovalDTO.STATUS_PENDING.equals(latest.getStatus())) {
             String toolParams;
             try { toolParams = json.writeValueAsString(argsMap); } catch (Exception e) { toolParams = "{}"; }
-            SkillApproval pending = approvalService.submit(
-                    taskId, userId, "user-" + userId,
-                    toolName, riskLevel, goal, toolParams
-            );
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("taskId", taskId);
+            body.put("userId", userId);
+            body.put("username", "user-" + userId);
+            body.put("toolName", toolName);
+            body.put("riskLevel", riskLevel);
+            body.put("goal", goal);
+            body.put("toolParams", toolParams);
+            Result<SkillApprovalDTO> pendingR = approvalClient.submit(body);
+            SkillApprovalDTO pending = pendingR != null && pendingR.ok() ? pendingR.getData() : null;
             return String.format(
                     "TOOL[%s] RISK[%s] 需审批。请调用 POST /api/v1/skill-approval/%d/approve 审批后重试。",
-                    toolName, riskLevel, pending.getId()
+                    toolName, riskLevel, pending != null ? pending.getId() : -1
             );
         }
 
@@ -243,7 +256,23 @@ public class AgentService {
         );
     }
 
-    private List<Map<String, Object>> toOpenAiTools(List<com.minimax.pipeline.function_ext.entity.FunctionTool> tools) {
+    /**
+     * V6.8.1+: 通过 Feign HTTP 调用 pipeline 执行工具（替代直接注入 ToolExecutor）
+     */
+    private String invokeToolViaFeign(String toolName, Long userId, Map<String, Object> args) {
+        try {
+            Result<com.minimax.common.feign.pipeline.ToolResultDTO> r =
+                    functionClient.invoke(toolName, userId, null, args);
+            if (r != null && r.ok() && r.getData() != null) {
+                return r.getData().isOk() ? r.getData().getResult() : "ERROR: " + r.getData().getResult();
+            }
+            return "ERROR: tool invoke failed (null response)";
+        } catch (Exception e) {
+            return "ERROR: " + e.getMessage();
+        }
+    }
+
+    private List<Map<String, Object>> toOpenAiTools(List<FunctionToolDTO> tools) {
         List<Map<String, Object>> out = new ArrayList<>();
         for (var t : tools) {
             Map<String, Object> fn = new HashMap<>();
@@ -427,7 +456,7 @@ public class AgentService {
                     "arguments", args
                 ));
 
-                String observation = toolExecutor.executeForChat(toolName, parseToolArgs(args));
+                String observation = invokeToolViaFeign(toolName, userId, parseToolArgs(args));
                 step.observation = observation;
                 sendEvent(emitter, "observation", Map.of(
                     "round", round,
