@@ -1,8 +1,8 @@
-<!-- @file agent/Index.vue - Agent 编排页面 V6.8.13 -->
+<!-- @file agent/Index.vue - Agent 编排页面 V6.9 -->
 <template>
   <div class="page-card">
     <div class="page-header">
-      <h2>🤖 Agent 自主任务</h2>
+      <h2>🤖 Agent 编排</h2>
       <div style="display:flex;gap:8px">
         <el-button size="small" @click="loadHistory">
           <el-icon><Refresh /></el-icon>刷新
@@ -12,6 +12,68 @@
         </el-button>
       </div>
     </div>
+
+    <!-- Tab 导航 (V6.9) -->
+    <el-tabs v-model="activeTab" class="agent-tabs" style="margin-bottom:0">
+      <el-tab-pane label="🗂 任务编排" name="tasks">
+        <span slot="label"><el-icon><List /></el-icon> 任务编排</span>
+      </el-tab-pane>
+      <el-tab-pane label="🎨 Agent 画布" name="canvas">
+        <span slot="label"><el-icon><Brush /></el-icon> 画布</span>
+        <div class="tab-placeholder">
+          <el-card>
+            <div style="text-align:center;padding:40px">
+              <el-icon :size="48" style="color:#409eff"><Brush /></el-icon>
+              <h3 style="margin:16px 0 8px">Agent 画布</h3>
+              <p style="color:#909399;margin-bottom:16px">可视化编排 Agent 工作流，拖拽节点构建智能体图谱</p>
+              <el-button type="primary" @click="openCanvas">打开画布编辑器</el-button>
+            </div>
+          </el-card>
+        </div>
+      </el-tab-pane>
+      <el-tab-pane label="🔀 多智能体" name="multi">
+        <span slot="label"><el-icon><Connection /></el-icon> 多智能体</span>
+        <div class="tab-placeholder">
+          <el-card>
+            <div style="text-align:center;padding:40px">
+              <el-icon :size="48" style="color:#67c23a"><Connection /></el-icon>
+              <h3 style="margin:16px 0 8px">多智能体编排</h3>
+              <p style="color:#909399;margin-bottom:16px">管理多 Agent 协作任务，支持并行推理与结果聚合</p>
+              <el-button type="primary" @click="openMulti">打开多智能体</el-button>
+            </div>
+          </el-card>
+        </div>
+      </el-tab-pane>
+      <el-tab-pane label="📈 训练可视化" name="training">
+        <span slot="label"><el-icon><TrendCharts /></el-icon> 训练</span>
+        <div class="tab-placeholder">
+          <el-card>
+            <div style="text-align:center;padding:40px">
+              <el-icon :size="48" style="color:#e6a23c"><TrendCharts /></el-icon>
+              <h3 style="margin:16px 0 8px">训练可视化</h3>
+              <p style="color:#909399;margin-bottom:16px">查看 Agent 模型训练指标、损失曲线与评估结果</p>
+              <el-button type="primary" @click="openTraining">打开训练面板</el-button>
+            </div>
+          </el-card>
+        </div>
+      </el-tab-pane>
+      <el-tab-pane label="✅ Skill 审批" name="approval">
+        <span slot="label"><el-icon><CircleCheck /></el-icon> 审批</span>
+        <div class="tab-placeholder">
+          <el-card>
+            <div style="text-align:center;padding:40px">
+              <el-icon :size="48" style="color:#f56c6c"><CircleCheck /></el-icon>
+              <h3 style="margin:16px 0 8px">Skill 审批</h3>
+              <p style="color:#909399;margin-bottom:16px">高风险 Skill 执行需管理员审批，保障系统安全</p>
+              <el-button type="primary" @click="openApproval">打开审批面板</el-button>
+            </div>
+          </el-card>
+        </div>
+      </el-tab-pane>
+    </el-tabs>
+
+    <!-- 主内容：任务编排 -->
+    <div v-if="activeTab === 'tasks'">
 
     <!-- 统计卡片 -->
     <el-row :gutter="12" style="margin-bottom:16px">
@@ -414,11 +476,13 @@
         </div>
       </template>
     </el-drawer>
+    </div><!-- end activeTab === 'tasks' -->
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ElMessageBox } from 'element-plus'
 import { agentApi } from '@/api/agent'
@@ -427,10 +491,22 @@ import { useClipboard } from '@/composables/useClipboard'
 import {
   Plus, Refresh, VideoPlay, MagicStick, Download, CaretRight,
   ChatDotSquare, Loading, UserFilled, QuestionFilled, CopyDocument,
+  List, Brush, Connection, TrendCharts, CircleCheck,
 } from '@element-plus/icons-vue'
+
+const route = useRoute()
+const router = useRouter()
 
 // clipboard composable (textarea 降级支持)
 const { copy: copyToClipboard } = useClipboard({ successMsg: '配置已复制', failMsg: '复制失败' })
+
+// V6.9 Tab 导航 (支持旧路由 redirect)
+const activeTab = ref(route.query.tab || 'tasks')
+
+function openCanvas() { router.push('/agent/canvas') }
+function openMulti() { router.push('/agent/multi') }
+function openTraining() { router.push('/agent/training') }
+function openApproval() { router.push('/agent/approval') }
 
 const templates = [
   { type: 'code', name: '代码审查', icon: '🔍', desc: '分析代码质量，查找 Bug 和优化点', agentType: 'code', difficulty: 'medium', prompt: '请帮我审查以下代码的质量，查找潜在的 Bug、安全问题和性能优化点。' },
@@ -867,6 +943,9 @@ onMounted(loadHistory)
 <style lang="scss" scoped>
 .page-card { background: #fff; border-radius: 8px; padding: 20px; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; h2 { margin: 0; font-size: 16px; } }
+.agent-tabs { margin-bottom: 0; }
+.tab-placeholder { padding-top: 8px; }
+.tab-placeholder .el-card { max-width: 480px; margin: 0 auto; }
 
 .ai-generate-card {
   border: 2px solid #dbeafe;

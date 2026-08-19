@@ -1,6 +1,6 @@
 <!--
-  @file layout/Index.vue (V6.8 重构版)
-  @description 布局容器：模块化二级菜单 + 动态路由
+  @file layout/Index.vue (V6.9 重构版)
+  @description 布局容器：精简菜单 (7 分组) + 统一系统管理 + 动态路由
 -->
 <template>
   <el-container class="layout-container">
@@ -121,9 +121,7 @@
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="profile">个人中心</el-dropdown-item>
-                <el-dropdown-item v-if="userStore.isSuperAdmin" command="super" divided>超级管理</el-dropdown-item>
-                <el-dropdown-item v-if="userStore.isSuperAdmin" command="tenant">租户管理</el-dropdown-item>
-                <el-dropdown-item command="apikey">API Key</el-dropdown-item>
+                <el-dropdown-item command="settings" divided>⚙️ 系统管理</el-dropdown-item>
                 <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -181,10 +179,11 @@ function toggleSidebar() {
   else collapsed.value = !collapsed.value
 }
 
-// ========== 菜单数据模型 ==========
-// menuGroups: { label, icon, path?, children?: { label, path, icon? }[] }[]
+// ========== 菜单数据模型 (V6.9 重构) ==========
+// V6.9: 合并系统管理为 /settings，知识中心/Agent/数据中心/工作流 各自单页 tab 化
 const menuGroups = computed(() => {
   const groups = [
+    // ── AI 对话 ──
     {
       label: 'AI 对话', icon: 'ChatDotRound',
       children: [
@@ -193,62 +192,54 @@ const menuGroups = computed(() => {
         { label: '协作空间', path: '/collab', icon: 'UserFilled' },
       ]
     },
+    // ── 知识中心 ──
     {
       label: '知识中心', icon: 'Files',
       children: [
-        { label: '知识库管理', path: '/knowledge', icon: 'Files' },
-        { label: '知识图谱', path: '/kg', icon: 'Share' },
-        { label: '记忆中心', path: '/memory', icon: 'Memory' },
+        { label: '知识库', path: '/knowledge', icon: 'Files' },
       ]
     },
+    // ── Agent 编排 ──
     {
-      label: 'Agent 智能体', icon: 'MagicStick',
+      label: 'Agent 编排', icon: 'MagicStick',
       children: [
-        { label: 'Agent 编排', path: '/agent', icon: 'MagicStick' },
-        { label: 'Agent 流式', path: '/agent/stream', icon: 'VideoPlay' },
-        { label: 'Agent 画布', path: '/agent/canvas', icon: 'Brush' },
-        { label: '多智能体', path: '/agent/multi', icon: 'Connection' },
-        { label: '训练可视化', path: '/agent/training', icon: 'TrendCharts' },
-      ]
-    },
-    {
-      label: '模型与服务', icon: 'Cpu',
-      children: [
+        { label: '任务编排', path: '/agent', icon: 'MagicStick' },
+        { label: '智能体群', path: '/agent-auto', icon: 'Grid' },
         { label: '模型管理', path: '/model', icon: 'Cpu' },
-        { label: 'Function 工具', path: '/function', icon: 'Tools' },
-        { label: '多模态', path: '/multimodal', icon: 'PictureFilled' },
-        { label: '训练总览', path: '/training/dashboard', icon: 'DataAnalysis' },
-        { label: '训练控制台', path: '/training', icon: 'Cpu' },
       ]
     },
+    // ── 数据中心 ──
     {
-      label: '数据与工作流', icon: 'DataAnalysis',
+      label: '数据中心', icon: 'DataAnalysis',
       children: [
         { label: '数据分析', path: '/analytics', icon: 'DataAnalysis' },
-        { label: 'NL2SQL', path: '/analytics/nlsql', icon: 'ChatLineRound' },
         { label: 'NL 规则助手', path: '/rule', icon: 'MagicStick' },
-        { label: '工作流', path: '/pipeline', icon: 'Connection' },
-        { label: '画布设计器', path: '/pipeline/designer', icon: 'EditPen' },
-        { label: '运行监控', path: '/pipeline/runs', icon: 'Monitor' },
       ]
     },
+    // ── 工作流 ──
+    {
+      label: '工作流', icon: 'Connection',
+      children: [
+        { label: '工作流', path: '/pipeline', icon: 'Connection' },
+      ]
+    },
+    // ── 应用中心 ──
     {
       label: '应用中心', icon: 'Grid',
       children: [
+        { label: 'Function 工具', path: '/function', icon: 'Tools' },
+        { label: '多模态', path: '/multimodal', icon: 'PictureFilled' },
+        { label: '训练', path: '/training', icon: 'TrendCharts' },
         { label: 'Prompt 模板', path: '/prompts', icon: 'DocumentCopy' },
         { label: '插件市场', path: '/plugins', icon: 'Grid' },
         { label: '通知中心', path: '/notification', icon: 'Bell' },
       ]
     },
+    // ── 系统管理 ──
     {
       label: '系统管理', icon: 'Setting',
       children: [
-        { label: 'API Key', path: '/apikey', icon: 'Key' },
-        { label: '管理后台', path: '/admin', icon: 'Setting' },
-        ...(userStore.isSuperAdmin ? [
-          { label: '超级管理', path: '/super', icon: 'Key' },
-          { label: '租户管理', path: '/tenant', icon: 'Office' },
-        ] : []),
+        { label: '系统管理', path: '/settings', icon: 'Setting' },
       ]
     },
     { label: '关于', icon: 'InfoFilled', path: '/about' },
@@ -287,6 +278,8 @@ async function onCommand(cmd) {
     router.push('/login')
   } else if (cmd === 'profile') {
     ElMessage.info('个人中心开发中')
+  } else if (cmd === 'settings') {
+    router.push('/settings')
   } else {
     router.push('/' + cmd)
   }
