@@ -504,7 +504,9 @@ public class AiChatRealController {
             Object modelsObj = p.get("models");
             if (modelsObj instanceof List<?> list) {
                 for (Object m : list) {
-                    if (m instanceof Map<?, ?> modelMap) {
+                    if (m instanceof Map) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> modelMap = (Map<String, Object>) m;
                         Map<String, Object> model = new java.util.LinkedHashMap<>();
                         model.put("code", modelMap.getOrDefault("modelCode", modelMap.getOrDefault("model_code", "")));
                         model.put("name", modelMap.getOrDefault("displayName", modelMap.getOrDefault("modelCode", "")));

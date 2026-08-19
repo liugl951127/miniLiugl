@@ -110,9 +110,9 @@ public class Nl2SqlServiceImpl implements Nl2SqlService {
             chatReq.setMaxTokens(maxTokens);
 
             Result<ChatResponseDTO> respResult = modelChatClient.chat(userId, chatReq);
-            if (respResult == null || !respResult.ok() || respResult.getData() == null) {
+            if (respResult == null || respResult.getCode() == null || respResult.getCode() != 0 || respResult.getData() == null) {
                 throw new BizException(ResultCode.SYSTEM_ERROR, "LLM 调用失败: " +
-                        (respResult != null ? respResult.getMsg() : "null response"));
+                        (respResult != null ? respResult.getMessage() : "null response"));
             }
             ChatResponseDTO resp = respResult.getData();
             String llmOutput = resp.getContent();
@@ -175,9 +175,9 @@ public class Nl2SqlServiceImpl implements Nl2SqlService {
 
     @Override
     public String explain(Long userId, Long dataSourceId, String sql) {
-        // V5.31 简化: 调 LLM 直接解释
+        // V6.8.1: 通过 HTTP Feign 调用 model 服务，不再依赖 minimax-model 直接 import
         try {
-            ChatRequest chatReq = new ChatRequest();
+            ChatRequestDTO chatReq = new ChatRequestDTO();
             chatReq.setModel(defaultModel);
             chatReq.setMessages(List.of(
                     Map.of("role", "system", "content", "你是 SQL 教学助手, 用中文简洁解释用户给的 SQL. 1-3 句话."),
@@ -185,9 +185,11 @@ public class Nl2SqlServiceImpl implements Nl2SqlService {
             ));
             chatReq.setTemperature(0.1);
             chatReq.setMaxTokens(512);
-            ModelProviderAdapter adapter = modelFactory.get(defaultModel);
-            if (adapter == null) return "(不支持的模型: " + defaultModel + ")";
-            return adapter.chat(null, null, chatReq).getContent();
+            Result<ChatResponseDTO> result = modelChatClient.chat(userId, chatReq);
+            if (result == null || result.getCode() == null || result.getCode() != 0 || result.getData() == null) {
+                return "(模型调用失败: " + (result != null ? result.getMessage() : "null") + ")";
+            }
+            return result.getData().getContent() != null ? result.getData().getContent() : "(空响应)";
         } catch (Exception e) {
             log.error("SQL 解释失败: {}", e.getMessage());
             return "(解释失败: " + e.getMessage() + ")";

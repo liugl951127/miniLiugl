@@ -191,12 +191,12 @@ public class AgentService {
     private List<FunctionToolDTO> pickTools(List<String> names) {
         if (names == null || names.isEmpty()) {
             Result<List<FunctionToolDTO>> r = functionClient.listTools();
-            return r != null && r.ok() ? r.getData() : List.of();
+            return r != null && r.getCode() != null && r.getCode() == 0 ? r.getData() : List.of();
         }
         List<FunctionToolDTO> result = new ArrayList<>();
         for (String name : names) {
             Result<FunctionToolDTO> r = functionClient.getByName(name);
-            if (r != null && r.ok() && r.getData() != null
+            if (r != null && r.getCode() != null && r.getCode() == 0 && r.getData() != null
                     && r.getData().getEnabled() != null && r.getData().getEnabled() == 1) {
                 result.add(r.getData());
             }
@@ -215,7 +215,7 @@ public class AgentService {
         }
         // 查询工具详情（获取风险等级）
         Result<FunctionToolDTO> toolR = functionClient.getByName(toolName);
-        FunctionToolDTO tool = toolR != null && toolR.ok() ? toolR.getData() : null;
+        FunctionToolDTO tool = toolR != null && toolR.getCode() != null && toolR.getCode() == 0 ? toolR.getData() : null;
         if (tool == null) return null;
 
         String riskLevel = tool.getRiskLevel();
@@ -225,7 +225,7 @@ public class AgentService {
 
         // 检查是否已有 APPROVED 记录
         Result<SkillApprovalDTO> latestR = approvalClient.getByTask(taskId);
-        SkillApprovalDTO latest = latestR != null && latestR.ok() ? latestR.getData() : null;
+        SkillApprovalDTO latest = latestR != null && latestR.getCode() != null && latestR.getCode() == 0 ? latestR.getData() : null;
         if (latest != null && SkillApprovalDTO.STATUS_APPROVED.equals(latest.getStatus())) {
             return null; // 已审批通过
         }
@@ -243,7 +243,7 @@ public class AgentService {
             body.put("goal", goal);
             body.put("toolParams", toolParams);
             Result<SkillApprovalDTO> pendingR = approvalClient.submit(body);
-            SkillApprovalDTO pending = pendingR != null && pendingR.ok() ? pendingR.getData() : null;
+            SkillApprovalDTO pending = pendingR != null && pendingR.getCode() != null && pendingR.getCode() == 0 ? pendingR.getData() : null;
             return String.format(
                     "TOOL[%s] RISK[%s] 需审批。请调用 POST /api/v1/skill-approval/%d/approve 审批后重试。",
                     toolName, riskLevel, pending != null ? pending.getId() : -1
@@ -263,7 +263,7 @@ public class AgentService {
         try {
             Result<com.minimax.common.feign.pipeline.ToolResultDTO> r =
                     functionClient.invoke(toolName, userId, null, args);
-            if (r != null && r.ok() && r.getData() != null) {
+            if (r != null && r.getCode() != null && r.getCode() == 0 && r.getData() != null) {
                 return r.getData().isOk() ? r.getData().getResult() : "ERROR: " + r.getData().getResult();
             }
             return "ERROR: tool invoke failed (null response)";

@@ -341,7 +341,7 @@ public class ExternalAgentService {
     public List<Map<String, Object>> listAgents(Long userId) {
         try {
             Result<List<FunctionToolDTO>> r = functionClient.listTools();
-            if (r == null || !r.ok() || r.getData() == null) return List.of();
+            if (r == null || r.getCode() == null || r.getCode() != 0 || r.getData() == null) return List.of();
             return r.getData().stream().map(tool -> {
                 Map<String, Object> m = new LinkedHashMap<>();
                 m.put("agentId", tool.getName());

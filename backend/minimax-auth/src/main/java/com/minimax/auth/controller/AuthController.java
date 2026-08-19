@@ -15,6 +15,7 @@ import com.minimax.auth.mapper.SysUserMapper;
 import com.minimax.auth.entity.SysUser;
 import com.minimax.auth.entity.AuthLoginLog;
 import com.minimax.common.result.Result;
+import com.minimax.common.result.ResultCode;
 import com.minimax.common.exception.BizException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
