@@ -105,6 +105,11 @@ router.beforeEach((to, from, next) => {
 
   // 公开路由跳过校验
   if (to.meta.public) {
+    // 已登录用户访问公开路由 → 重定向到首页
+    const userStore = useUserStore()
+    if (userStore.isLogin) {
+      return next('/chat')
+    }
     return next()
   }
 
