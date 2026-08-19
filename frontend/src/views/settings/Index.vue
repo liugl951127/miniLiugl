@@ -166,38 +166,153 @@
           </el-button>
         </div>
         <el-table :data="tenants" v-loading="tenantLoading" stripe>
-          <el-table-column prop="id" label="ID" width="80" />
-          <el-table-column prop="name" label="租户名" />
-          <el-table-column prop="owner" label="管理员" />
-          <el-table-column label="配额" width="180">
+          <el-table-column prop="id" label="ID" width="70" />
+          <el-table-column prop="name" label="租户名">
             <template #default="{ row }">
-              <span>用户: {{ row.userLimit }} | API: {{ row.apiLimit }}</span>
+              <span style="font-weight:600">{{ row.name }}</span>
+              <el-tag v-if="row.isDefault" size="small" type="warning" style="margin-left:4px">默认</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="状态" width="100" align="center">
+          <el-table-column prop="owner" label="管理员" />
+          <el-table-column label="配额" width="200">
+            <template #default="{ row }">
+              <span style="font-size:12px">
+                👤 {{ row.userLimit ?? '-' }} 人 &nbsp;
+                📊 {{ row.apiLimit ? row.apiLimit.toLocaleString() + '/天' : '无限制' }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="数据隔离" width="100" align="center">
+            <template #default="{ row }">
+              <el-tooltip content="开启后该租户数据与其他租户完全隔离">
+                <el-switch
+                  :model-value="row.dataIsolation !== false"
+                  size="small"
+                  @change="v => updateTenantIsolation(row, v)"
+                />
+              </el-tooltip>
+            </template>
+          </el-table-column>
+          <el-table-column label="IP 白名单" width="110" align="center">
+            <template #default="{ row }">
+              <el-tag size="small" :type="row.ipWhitelist ? 'success' : 'info'">
+                {{ row.ipWhitelist ? '已配置' : '未配置' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" width="90" align="center">
             <template #default="{ row }">
               <el-tag :type="row.active ? 'success' : 'info'" size="small">{{ row.active ? '活跃' : '停用' }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="160" align="center">
+          <el-table-column label="操作" width="220" align="center" fixed="right">
             <template #default="{ row }">
+              <el-button size="small" @click="openTenantDetail(row)">详情</el-button>
               <el-button size="small" @click="openTenantForm(row)">编辑</el-button>
-              <el-button size="small" type="danger" @click="toggleTenant(row)">{{ row.active ? '停用' : '启用' }}</el-button>
+              <el-button size="small" type="danger" @click="deleteTenant(row)" :disabled="row.isDefault">
+                删除
+              </el-button>
             </template>
           </el-table-column>
         </el-table>
-        <el-dialog v-model="tenantFormVisible" :title="tenantForm.id ? '编辑租户' : '新建租户'" width="500px">
-          <el-form :model="tenantForm" label-width="100px">
-            <el-form-item label="租户名"><el-input v-model="tenantForm.name" /></el-form-item>
-            <el-form-item label="管理员邮箱"><el-input v-model="tenantForm.owner" /></el-form-item>
-            <el-form-item label="用户配额"><el-input-number v-model="tenantForm.userLimit" :min="1" /></el-form-item>
-            <el-form-item label="API 配额/天"><el-input-number v-model="tenantForm.apiLimit" :min="0" /></el-form-item>
+
+        <!-- 新建/编辑租户 Dialog -->
+        <el-dialog v-model="tenantFormVisible" :title="tenantForm.id ? '编辑租户' : '新建租户'" width="540px">
+          <el-form :model="tenantForm" label-width="110px">
+            <el-form-item label="租户名">
+              <el-input v-model="tenantForm.name" placeholder="例如：XX 公司" />
+            </el-form-item>
+            <el-form-item label="管理员邮箱">
+              <el-input v-model="tenantForm.owner" placeholder="租户管理员邮箱" />
+            </el-form-item>
+            <el-form-item label="用户配额">
+              <el-input-number v-model="tenantForm.userLimit" :min="1" style="width:100%" />
+            </el-form-item>
+            <el-form-item label="API 配额/天">
+              <el-input-number v-model="tenantForm.apiLimit" :min="0" style="width:100%" placeholder="0=不限制" />
+            </el-form-item>
+            <el-form-item label="数据隔离">
+              <el-switch v-model="tenantForm.dataIsolation" />
+              <span style="margin-left:8px;color:#909399;font-size:12px">开启后租户数据完全隔离</span>
+            </el-form-item>
+            <el-form-item label="IP 白名单">
+              <el-input
+                v-model="tenantForm.ipWhitelist"
+                type="textarea"
+                :rows="2"
+                placeholder="多个 IP 用逗号分隔，留空表示不限制"
+              />
+            </el-form-item>
           </el-form>
           <template #footer>
             <el-button @click="tenantFormVisible = false">取消</el-button>
-            <el-button type="primary" @click="saveTenant">保存</el-button>
+            <el-button type="primary" :loading="tenantSaving" @click="saveTenant">保存</el-button>
           </template>
         </el-dialog>
+
+        <!-- 租户详情 Drawer -->
+        <el-drawer v-model="tenantDetailVisible" :title="'🏢 ' + (tenantDetail.name || '')" size="560px">
+          <template #title>
+            <span>🏢 {{ tenantDetail.name }}</span>
+            <el-tag
+              :type="tenantDetail.active ? 'success' : 'info'"
+              size="small"
+              style="margin-left:8px"
+            >{{ tenantDetail.active ? '活跃' : '停用' }}</el-tag>
+          </template>
+
+          <el-descriptions :column="2" border size="small">
+            <el-descriptions-item label="租户 ID">{{ tenantDetail.id }}</el-descriptions-item>
+            <el-descriptions-item label="管理员">{{ tenantDetail.owner || '—' }}</el-descriptions-item>
+            <el-descriptions-item label="用户配额">{{ tenantDetail.userLimit ?? '无限制' }}</el-descriptions-item>
+            <el-descriptions-item label="API 配额">{{ tenantDetail.apiLimit ? tenantDetail.apiLimit.toLocaleString() + '/天' : '无限制' }}</el-descriptions-item>
+            <el-descriptions-item label="数据隔离">
+              <el-tag :type="tenantDetail.dataIsolation !== false ? 'success' : 'warning'" size="small">
+                {{ tenantDetail.dataIsolation !== false ? '已开启' : '未开启' }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="创建时间">{{ tenantDetail.createdAt || '—' }}</el-descriptions-item>
+          </el-descriptions>
+
+          <el-divider content-position="left">数据隔离配置</el-divider>
+          <el-form label-width="120px" size="small">
+            <el-form-item label="数据隔离">
+              <el-switch
+                :model-value="tenantDetail.dataIsolation !== false"
+                @change="v => updateTenantIsolation(tenantDetail, v)"
+              />
+              <span style="margin-left:8px;color:#909399">开启后，该租户用户的对话、知识库、API Key 等数据完全隔离</span>
+            </el-form-item>
+            <el-form-item label="IP 白名单">
+              <el-input
+                v-model="tenantDetail.ipWhitelist"
+                placeholder="多个 IP 用逗号分隔，留空=不限制"
+                @blur="saveTenantIpWhitelist"
+              >
+                <template #append>
+                  <el-button @click="saveTenantIpWhitelist">保存</el-button>
+                </template>
+              </el-input>
+            </el-form-item>
+          </el-form>
+
+          <el-divider content-position="left">租户用户 ({{ tenantUsers.length }})</el-divider>
+          <el-table :data="tenantUsers" size="small" max-height="240" v-loading="tenantUsersLoading">
+            <el-table-column prop="id" label="ID" width="70" />
+            <el-table-column prop="nickname" label="昵称" />
+            <el-table-column prop="email" label="邮箱" />
+            <el-table-column label="角色" width="90">
+              <template #default="{ row }">
+                <el-tag size="small" :type="row.role === 'ADMIN' ? 'danger' : 'info'">{{ row.role }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="状态" width="80">
+              <template #default="{ row }">
+                <el-tag size="small" :type="row.enabled ? 'success' : 'info'">{{ row.enabled ? '启用' : '禁用' }}</el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-drawer>
       </el-tab-pane>
 
       <!-- ═══ 系统设置 (SUPER_ADMIN) ═══ -->
@@ -428,7 +543,12 @@ async function toggleAdminUserAction(row) {
 const tenants = ref([])
 const tenantLoading = ref(false)
 const tenantFormVisible = ref(false)
-const tenantForm = ref({ name: '', owner: '', userLimit: 100, apiLimit: 10000 })
+const tenantSaving = ref(false)
+const tenantForm = ref({ name: '', owner: '', userLimit: 100, apiLimit: 10000, dataIsolation: true, ipWhitelist: '' })
+const tenantDetail = ref({})
+const tenantDetailVisible = ref(false)
+const tenantUsers = ref([])
+const tenantUsersLoading = ref(false)
 
 async function loadTenants() {
   tenantLoading.value = true
@@ -440,21 +560,75 @@ async function loadTenants() {
 }
 
 function openTenantForm(row) {
-  tenantForm.value = row ? { ...row } : { name: '', owner: '', userLimit: 100, apiLimit: 10000 }
+  tenantForm.value = row ? { ...row } : {
+    name: '', owner: '', userLimit: 100, apiLimit: 10000, dataIsolation: true, ipWhitelist: ''
+  }
   tenantFormVisible.value = true
 }
 
 async function saveTenant() {
+  if (!tenantForm.value.name) { ElMessage.warning('请输入租户名'); return }
+  tenantSaving.value = true
   try {
-    if (tenantForm.value.id) {
-      await createTenant(tenantForm.value).catch(() => null)
-    } else {
-      await createTenant(tenantForm.value).catch(() => null)
+    const data = {
+      name: tenantForm.value.name,
+      owner: tenantForm.value.owner,
+      userLimit: tenantForm.value.userLimit,
+      apiLimit: tenantForm.value.apiLimit,
+      dataIsolation: tenantForm.value.dataIsolation,
+      ipWhitelist: tenantForm.value.ipWhitelist,
     }
+    if (tenantForm.value.id) {
+      data.id = tenantForm.value.id
+    }
+    await createTenant(data).catch(() => null)
     tenantFormVisible.value = false
     loadTenants()
     ElMessage.success('保存成功')
   } catch { ElMessage.error('保存失败') }
+  finally { tenantSaving.value = false }
+}
+
+async function deleteTenant(row) {
+  if (row.isDefault) { ElMessage.warning('默认租户不可删除'); return }
+  await ElMessageBox.confirm(`确认删除租户「${row.name}」？删除后不可恢复。`, '删除确认', {
+    confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning'
+  }).catch(() => null)
+  try {
+    await import('@/api/tenant').then(m => m.deleteTenant(row.id).catch(() => null))
+    ElMessage.success('已删除')
+    loadTenants()
+  } catch { ElMessage.error('删除失败') }
+}
+
+async function updateTenantIsolation(row, enabled) {
+  const idx = tenants.value.findIndex(t => t.id === row.id)
+  if (idx !== -1) tenants.value[idx].dataIsolation = enabled
+  try {
+    await createTenant({ ...row, dataIsolation: enabled }).catch(() => null)
+    if (tenantDetail.value?.id === row.id) tenantDetail.value.dataIsolation = enabled
+    ElMessage.success('数据隔离已' + (enabled ? '开启' : '关闭'))
+  } catch { ElMessage.error('更新失败') }
+}
+
+async function saveTenantIpWhitelist() {
+  if (!tenantDetail.value?.id) return
+  try {
+    await createTenant(tenantDetail.value).catch(() => null)
+    ElMessage.success('IP 白名单已保存')
+  } catch { ElMessage.error('保存失败') }
+}
+
+async function openTenantDetail(row) {
+  tenantDetail.value = { ...row }
+  tenantDetailVisible.value = true
+  tenantUsersLoading.value = true
+  try {
+    const { listTenantUsers } = await import('@/api/tenant')
+    const r = await listTenantUsers(row.id).catch(() => ({ data: [] }))
+    tenantUsers.value = r?.data || []
+  } catch { tenantUsers.value = [] }
+  finally { tenantUsersLoading.value = false }
 }
 
 async function toggleTenant(row) {
