@@ -118,7 +118,7 @@
                     <!-- 沙箱跳过 repackage（boot jar 导致其他模块无法依赖），生产请取消注释 -->
                     <execution>
                         <id>repackage</id>
-                        <phase>none</phase>
+                        <phase>package</phase>
                     </execution>
                 </executions>
             </plugin>
