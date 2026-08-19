@@ -131,6 +131,42 @@ export const batchDeleteDocs = (ownerId, docIds) => {
     : http.delete('/rag/doc/batch', { data: body })
 }
 
+/**
+ * 批量导出文档 (PDF/TXT) (Day 48)
+ * 使用原生 fetch 避免 http 拦截器干扰 blob 响应
+ * @param {string} ownerId
+ * @param {number[]} docIds
+ * @param {'pdf'|'txt'} format
+ * @returns {Promise<Blob>}
+ */
+export const exportDocs = (ownerId, docIds, format = 'txt') => {
+  const body = { docIds, format }
+  const url = ownerId ? `/rag/doc/export?ownerId=${ownerId}` : '/rag/doc/export'
+  // 从 localStorage 读取 access token
+  let token = ''
+  try {
+    const stored = localStorage.getItem('minimax-user')
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      token = parsed.state?.accessToken || ''
+    }
+  } catch {}
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept': format === 'pdf' ? 'application/pdf' : 'text/plain; charset=UTF-8'
+  }
+  if (token) headers['Authorization'] = `Bearer ${token}`
+
+  return fetch('/api/v1' + url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body)
+  }).then(resp => {
+    if (!resp.ok) throw new Error('HTTP ' + resp.status)
+    return resp.blob()
+  })
+}
+
 // 检索 + 问答
 export const retrieve = (body) => {
   console.log('%c[RAG API] retrieve', 'color: #409eff', body)

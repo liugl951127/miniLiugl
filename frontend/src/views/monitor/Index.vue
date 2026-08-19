@@ -232,8 +232,14 @@
         <el-row :gutter="12" style="margin-top:12px" v-loading="statsLoading">
           <el-col :span="12">
             <el-card shadow="hover" body-style="padding:16px">
-              <template #header><span>按严重程度分布</span></template>
-              <el-descriptions :column="3" border>
+              <template #header>
+                <span>按严重程度分布</span>
+                <el-button size="small" link type="primary" style="float:right" @click="exportStatsImg('pieChart')">导出图片</el-button>
+              </template>
+              <!-- ECharts 饼图 (Day 48) -->
+              <div ref="pieChartRef" style="height:220px"></div>
+              <!-- 备用描述 -->
+              <el-descriptions :column="3" border style="margin-top:8px" v-if="stats.total > 0">
                 <el-descriptions-item label="CRITICAL">
                   <el-tag type="danger" size="small">{{ stats.critical || 0 }}</el-tag>
                 </el-descriptions-item>
@@ -248,16 +254,12 @@
           </el-col>
           <el-col :span="12">
             <el-card shadow="hover" body-style="padding:16px">
-              <template #header><span>Top 5 触发规则</span></template>
-              <el-table :data="stats.topRules || []" size="small" stripe>
-                <el-table-column prop="ruleName" label="规则名称" />
-                <el-table-column prop="count" label="触发次数" width="100" align="center">
-                  <template #default="{ row }">
-                    <el-tag size="small" type="info">{{ row.count }}</el-tag>
-                  </template>
-                </el-table-column>
-              </el-table>
-              <el-empty v-if="!statsLoading && (!stats.topRules || stats.topRules.length === 0)" description="暂无数据" :image-size="60" style="margin-top:8px" />
+              <template #header>
+                <span>告警趋势（每日）</span>
+                <el-button size="small" link type="primary" style="float:right" @click="exportStatsImg('barChart')">导出图片</el-button>
+              </template>
+              <!-- ECharts 柱状图 (Day 48) -->
+              <div ref="barChartRef" style="height:220px"></div>
             </el-card>
           </el-col>
         </el-row>
@@ -568,10 +570,11 @@ import { Refresh, View, Loading, Plus, Edit, Delete } from '@element-plus/icons-
 import {
   getMonitorHealth, getJvmHealth, getFiringAlerts, rcaAnalysis, acknowledgeAlert,
   listAlertChannels, createAlertChannel, updateAlertChannel, deleteAlertChannel, testAlertChannel,
-  getAlertSla, getAlertTrend, getAlertStatistics,
+  getAlertSla, getAlertTrend, getAlertStatistics, getAlertTimeSeries,
   getAllAlertRules, createAlertRule, updateAlertRule, deleteAlertRule, toggleAlertRule
 } from '@/api/monitor'
 import http from '@/api/http'
+import * as echarts from 'echarts'
 
 const activeTab = ref('jvm')
 const services = ref([])
@@ -623,16 +626,89 @@ const statsWindow = ref(30)
 const statsLoading = ref(false)
 const stats = ref({})
 
+// ========== ECharts 可视化 (Day 48) ==========
+const pieChartRef = ref(null)
+const barChartRef = ref(null)
+let pieChart = null
+let barChart = null
+
+function initPieChart(data) {
+  if (!pieChartRef.value) return
+  if (!pieChart) pieChart = echarts.init(pieChartRef.value)
+  const critical = data.critical || 0
+  const warning = data.warning || 0
+  const info = data.info || 0
+  pieChart.setOption({
+    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    legend: { bottom: 0 },
+    series: [{
+      type: 'pie',
+      radius: ['40%', '70%'],
+      avoidLabelOverlap: true,
+      itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+      label: { formatter: '{b}\n{c}', fontSize: 11 },
+      data: [
+        { value: critical, name: 'CRITICAL', itemStyle: { color: '#f56c6c' } },
+        { value: warning, name: 'WARNING', itemStyle: { color: '#e6a23c' } },
+        { value: info, name: 'INFO', itemStyle: { color: '#909399' } }
+      ].filter(d => d.value > 0)
+    }]
+  })
+}
+
+function initBarChart(seriesData) {
+  if (!barChartRef.value) return
+  if (!barChart) barChart = echarts.init(barChartRef.value)
+  const dates = seriesData.map(d => d.date)
+  const totalData = seriesData.map(d => d.total)
+  const criticalData = seriesData.map(d => d.critical)
+  const warningData = seriesData.map(d => d.warning)
+
+  barChart.setOption({
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    legend: { data: ['总计', 'CRITICAL', 'WARNING'], bottom: 0 },
+    grid: { top: 8, right: 16, bottom: 40, left: 40 },
+    xAxis: { type: 'category', data: dates, axisLabel: { fontSize: 10, rotate: 30 } },
+    yAxis: { type: 'value', name: '告警数', axisLabel: { fontSize: 10 } },
+    series: [
+      { name: '总计', type: 'bar', data: totalData, itemStyle: { color: '#409eff' } },
+      { name: 'CRITICAL', type: 'bar', stack: 'severity', data: criticalData, itemStyle: { color: '#f56c6c' } },
+      { name: 'WARNING', type: 'bar', stack: 'severity', data: warningData, itemStyle: { color: '#e6a23c' } }
+    ]
+  })
+}
+
 async function loadStats() {
   statsLoading.value = true
   try {
-    const r = await getAlertStatistics(statsWindow.value)
-    stats.value = r.data || r.result || {}
-  } catch {
+    const [rStats, rSeries] = await Promise.all([
+      getAlertStatistics(statsWindow.value),
+      getAlertTimeSeries(statsWindow.value)
+    ])
+    stats.value = rStats.data || rStats.result || {}
+    const seriesData = (rSeries.data || rSeries.result || [])
+
+    // 更新饼图
+    initPieChart(stats.value)
+    initBarChart(seriesData)
+  } catch (e) {
+    console.error('[Monitor] loadStats failed:', e)
     stats.value = {}
   } finally {
     statsLoading.value = false
   }
+}
+
+function exportStatsImg(chartName) {
+  const chart = chartName === 'pieChart' ? pieChart : barChart
+  if (!chart) return
+  const url = chart.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#fff' })
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `monitor-${chartName}-${Date.now()}.png`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
 }
 
 // ========== 告警趋势 (Day 44) ==========
@@ -733,7 +809,17 @@ onUnmounted(() => {
   if (trendChart) { trendChart.dispose(); trendChart = null }
   if (jvmChart) { jvmChart.dispose(); jvmChart = null }
   if (jvmTimer) clearInterval(jvmTimer)
+  if (pieChart) { pieChart.dispose(); pieChart = null }
+  if (barChart) { barChart.dispose(); barChart = null }
+  window.removeEventListener('resize', handleChartResize)
 })
+
+// ECharts 窗口 resize 自动适配
+function handleChartResize() {
+  if (pieChart) pieChart.resize()
+  if (barChart) barChart.resize()
+}
+window.addEventListener('resize', handleChartResize)
 
 // Day 42: tab 切换时加载渠道数据
 // Day 43: SLA tab 也懒加载
@@ -747,6 +833,13 @@ watch(activeTab, (tab) => {
   }
   if (tab === 'stats' && !stats.value.windowDays) {
     loadStats()
+  }
+  // Day 48: stats tab 切换回来时刷新图表
+  if (tab === 'stats') {
+    setTimeout(() => {
+      if (pieChart) pieChart.resize()
+      if (barChart) barChart.resize()
+    }, 50)
   }
   if (tab === 'trend') {
     loadAlertTrend()

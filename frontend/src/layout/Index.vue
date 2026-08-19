@@ -106,6 +106,11 @@
           </span>
         </div>
         <div class="header-right">
+          <el-tooltip :content="prefsStore.theme === 'dark' ? '切换亮色模式' : '切换深色模式'">
+            <el-button text @click="prefsStore.toggleTheme()">
+              <el-icon><Sunny v-if="prefsStore.theme === 'dark'" /><Moon v-else /></el-icon>
+            </el-button>
+          </el-tooltip>
           <el-tooltip content="刷新"><el-button text @click="reload"><el-icon><Refresh /></el-icon></el-button></el-tooltip>
           <el-dropdown @command="onCommand">
             <span class="user-info">
@@ -142,14 +147,16 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'
+import { usePreferencesStore } from '@/store/preferences'
 import {
   ChatDotRound, Files, MagicStick, Cpu, DataAnalysis, Grid, Setting,
-  Document, Fold, Expand, Refresh
+  Document, Fold, Expand, Refresh, Sunny, Moon
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const prefsStore = usePreferencesStore()
 
 const collapsed = ref(false)
 const isMobile = ref(false)
@@ -392,4 +399,15 @@ onMounted(async () => {
   .layout-main { padding: 8px; }
   .header-right .user-name { display: none; }
 }
+
+/* V6.8.9+ 深色模式布局覆盖 */
+.el-theme-dark .layout-header {
+  background: #16213e !important;
+  border-bottom-color: #3a3f5c !important;
+}
+.el-theme-dark .header-title { color: #e4e7ed !important; }
+.el-theme-dark .user-name { color: #e4e7ed !important; }
+.el-theme-dark .user-info:hover { background: rgba(255,255,255,0.08) !important; }
+.el-theme-dark .layout-main { background: #1a1a2e !important; }
+.el-theme-dark .app-fallback { background: #1a1a2e !important; }
 </style>

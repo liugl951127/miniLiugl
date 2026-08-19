@@ -254,3 +254,9 @@ export const getAlertStatistics = (days = 30) => {
   console.log('%c[MONITOR API] getAlertStatistics', 'color: #409eff', { days })
   return http.get('/monitor/alerts/statistics', { params: { days } })
 }
+
+/** 告警时间序列（按日聚合，ECharts 趋势图用）Day 48 */
+export const getAlertTimeSeries = (days = 30) => {
+  console.log('%c[MONITOR API] getAlertTimeSeries', 'color: #409eff', { days })
+  return http.get('/monitor/alerts/timeseries', { params: { days } })
+}

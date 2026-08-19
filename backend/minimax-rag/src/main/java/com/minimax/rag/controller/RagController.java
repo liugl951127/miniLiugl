@@ -13,12 +13,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
 
@@ -337,6 +339,43 @@ public class RagController {
         }
         DocumentService.BatchResult result = docService.batchDeleteDocs(docIds, resolvedOwner);
         return Result.ok(result);
+    }
+
+    /**
+     * Day 48: 批量导出文档 (PDF / TXT)
+     * POST /api/v1/rag/doc/export
+     * body: { "docIds": [1, 2], "format": "pdf" | "txt" }
+     * 返回文件流
+     */
+    @Operation(summary = "批量导出文档 (PDF/TXT)")
+    @PostMapping("/doc/export")
+    public void exportDocs(@AuthenticationPrincipal AuthenticatedUser user,
+                           @RequestParam(required = false) Long ownerId,
+                           @RequestBody Map<String, Object> body,
+                           HttpServletResponse response) throws Exception {
+        Long resolvedOwner = resolveOwnerId(user, ownerId);
+        Object idsObj = body.get("docIds");
+        if (idsObj == null) {
+            throw new IllegalArgumentException("docIds 不能为空");
+        }
+        List<Long> docIds;
+        if (idsObj instanceof List) {
+            docIds = ((List<?>) idsObj).stream()
+                    .map(o -> ((Number) o).longValue())
+                    .toList();
+        } else {
+            throw new IllegalArgumentException("docIds 格式错误，应为数组");
+        }
+        String format = (String) body.getOrDefault("format", "txt");
+
+        var result = docService.exportDocs(docIds, resolvedOwner, format);
+
+        response.setContentType(result.contentType());
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"" + java.net.URLEncoder.encode(result.filename(), "UTF-8") + "\"");
+        response.setContentLength(result.bytes().length);
+        response.getOutputStream().write(result.bytes());
+        response.getOutputStream().flush();
     }
 
     // ---------- 检索 + 问答 ----------

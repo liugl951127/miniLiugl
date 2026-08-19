@@ -1959,6 +1959,21 @@ CREATE TABLE `collab_room` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1000;
 
 -- ============================================================
+-- user_preferences (UserPreference) V6.8.9 深色模式
+-- ============================================================
+DROP TABLE IF EXISTS `user_preferences`;
+CREATE TABLE `user_preferences` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `user_id` BIGINT NOT NULL,
+  `theme` VARCHAR(20) DEFAULT 'light',
+  `language` VARCHAR(20) DEFAULT 'zh-CN',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1;
+
+-- ============================================================
 -- 外键约束开启（按依赖顺序）
 SET FOREIGN_KEY_CHECKS = 1;
 -- ============================================================

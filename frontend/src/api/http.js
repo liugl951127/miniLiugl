@@ -83,6 +83,10 @@ http.interceptors.request.use(
       config.url = '/api/v1' + url
     }
     const userStore = useUserStore()
+    // V6.8.9+: 主动续期：token 剩余 < 5 分钟时静默刷新
+    if (userStore.accessToken) {
+      userStore.silentRefreshIfNeeded(false).catch(() => {})
+    }
     // V6.8+: _skipAuth=true 时跳过 JWT 注入（外部 API Key 调用专用）
     if (!config._skipAuth && userStore.accessToken) {
       config.headers.Authorization = `Bearer ${userStore.accessToken}`
@@ -114,7 +118,13 @@ http.interceptors.request.use(
 
 // 响应拦截器: 业务码处理 + 401 自动 refresh
 http.interceptors.response.use(
-  (resp) => {
+  async (resp) => {
+    // V6.8.9+: 检测服务端 X-Token-Refresh 提示，静默刷新 token
+    if (resp.headers['x-token-refresh'] === 'true') {
+      const userStore = useUserStore()
+      userStore.silentRefreshIfNeeded(true).catch(() => {})
+    }
+
     let data = resp.data
     // V5.8: 把 traceId 暴露到全局
     const respTraceId = resp.headers['x-trace-id']

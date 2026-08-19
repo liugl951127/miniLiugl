@@ -60,6 +60,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 // Java 标准 - 摘要算法异常
 import java.security.NoSuchAlgorithmException;
+// Java 标准 - 时间戳
+import java.time.Instant;
 // Java 标准 - List 集合
 import java.util.List;
 
@@ -169,6 +171,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {          // 
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
                 // 10. 放入 SecurityContext (本线程后续代码可用 @AuthenticationPrincipal 取 userId)
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+
+                // 11. V6.8.9+: token 剩余有效期 < 5 分钟时注入续期提示 header
+                //    前端 http.js 检测到此 header 会在响应完成后静默刷新 token
+                try {
+                    Instant expInstant = claims.getExpiration().toInstant();
+                    long remainingSeconds = expInstant.getEpochSecond() - Instant.now().getEpochSecond();
+                    if (remainingSeconds > 0 && remainingSeconds < 300) { // 5 min = 300s
+                        resp.setHeader("X-Token-Refresh", "true");
+                    }
+                } catch (Exception ex) {
+                    // 解析时间失败不影响正常流程
+                }
             } catch (Exception e) {
                 // token 解析失败: 不抛异常, 清空上下文让 SecurityConfig 返 401
                 log.debug("JWT 解析失败: {}", e.getMessage());
@@ -177,7 +191,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {          // 
                 // (SSE 流场景下也会走到同一处, 避免断流)
             }
         }
-        // 11. 放行到下一个过滤器 (不管 token 是否有效, 都不拦截)
+        // 12. 放行到下一个过滤器 (不管 token 是否有效, 都不拦截)
         chain.doFilter(req, resp);
     }
 

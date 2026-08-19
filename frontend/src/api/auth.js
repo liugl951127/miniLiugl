@@ -41,5 +41,20 @@ export const authApi = {
    * logout - 创建/更新 /api/v1/auth/logout
    * @returns POST /api/v1/auth/logout 的响应 Promise
    */
-  logout: (refreshToken) => http.post('/auth/logout', { refreshToken })
+  logout: (refreshToken) => http.post('/auth/logout', { refreshToken }),
+  /**
+   * validate - 校验 access token 是否有效 (V6.8.9)
+   * @returns GET /api/v1/auth/validate 的响应 Promise
+   */
+  validate: () => http.get('/auth/validate'),
+  /**
+   * getPreferences - 获取用户偏好 (V6.8.9)
+   * @returns GET /api/v1/auth/preferences 的响应 Promise
+   */
+  getPreferences: () => http.get('/auth/preferences'),
+  /**
+   * setTheme - 更新主题偏好 (V6.8.9)
+   * @returns PATCH /api/v1/auth/preferences/theme 的响应 Promise
+   */
+  setTheme: (theme) => http.patch('/auth/preferences/theme', { theme })
 }

@@ -8,12 +8,14 @@ import com.minimax.auth.dto.RegisterRequest;
 import com.minimax.common.audit.Audited;
 import com.minimax.common.security.JwtAuthenticationFilter.AuthenticatedUser;
 import com.minimax.auth.service.AuthService;
+import com.minimax.auth.service.UserPreferenceService;
 import com.minimax.auth.vo.LoginResponse;
 import com.minimax.auth.mapper.AuthLoginLogMapper;
 import com.minimax.auth.mapper.SysUserMapper;
 import com.minimax.auth.entity.SysUser;
 import com.minimax.auth.entity.AuthLoginLog;
 import com.minimax.common.result.Result;
+import com.minimax.common.exception.BizException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,7 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final UserPreferenceService preferenceService;
     private final SysUserMapper userMapper;
     private final AuthLoginLogMapper loginLogMapper;
 
@@ -95,5 +98,46 @@ public class AuthController {
             "totalUsers", totalUsers,
             "todayLogins", todayLogins
         ));
+    }
+
+    /**
+     * 校验 access token 是否有效 (V6.8.9)。
+     * 返回 valid + userId + expiresAt，失败抛 401。
+     */
+    @Operation(summary = "校验 access token 是否有效")
+    @GetMapping("/validate")
+    public Result<Map<String, Object>> validate(@AuthenticationPrincipal AuthenticatedUser principal) {
+        if (principal == null) {
+            throw new BizException(ResultCode.UNAUTHORIZED, "令牌无效或已过期");
+        }
+        return Result.ok(Map.of(
+            "valid", true,
+            "userId", principal.id(),
+            "username", principal.username()
+        ));
+    }
+
+    // ============== 用户偏好 (V6.8.9) ==============
+
+    @Operation(summary = "获取当前用户偏好")
+    @GetMapping("/preferences")
+    public Result<Map<String, String>> getPreferences(@AuthenticationPrincipal AuthenticatedUser principal) {
+        if (principal == null) throw new BizException(ResultCode.UNAUTHORIZED);
+        var pref = preferenceService.getOrCreate(principal.id());
+        return Result.ok(Map.of(
+            "theme", pref.getTheme() != null ? pref.getTheme() : "light",
+            "language", pref.getLanguage() != null ? pref.getLanguage() : "zh-CN"
+        ));
+    }
+
+    @Operation(summary = "更新主题偏好")
+    @PatchMapping("/preferences/theme")
+    public Result<Map<String, String>> updateTheme(
+            @AuthenticationPrincipal AuthenticatedUser principal,
+            @RequestBody Map<String, String> body) {
+        if (principal == null) throw new BizException(ResultCode.UNAUTHORIZED);
+        String theme = body.getOrDefault("theme", "light");
+        var pref = preferenceService.updateTheme(principal.id(), theme);
+        return Result.ok(Map.of("theme", pref.getTheme()));
     }
 }

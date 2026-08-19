@@ -71,6 +71,9 @@
             <el-button size="small" type="danger" :disabled="!selectedDocIds.length" @click="openBatchDelete">
               <el-icon><Delete /></el-icon>批量删除{{ selectedDocIds.length ? ` (${selectedDocIds.length})` : '' }}
             </el-button>
+            <el-button size="small" type="success" :disabled="!selectedDocIds.length" @click="openBatchExport">
+              <el-icon><Download /></el-icon>导出{{ selectedDocIds.length ? ` (${selectedDocIds.length})` : '' }}
+            </el-button>
             <el-button size="small" @click="refreshDocs">
               <el-icon><Refresh /></el-icon>刷新
             </el-button>
@@ -507,6 +510,46 @@
         <el-button v-else type="primary" @click="batchDeleteVisible = false; selectedDocIds = []; batchDeleteResult = null">完成</el-button>
       </template>
     </el-dialog>
+
+    <!-- 批量导出弹窗 (Day 48) -->
+    <el-dialog v-model="batchExportVisible" title="批量导出文档" width="500px" destroy-on-close>
+      <div v-if="!batchExportDone">
+        <el-form label-width="80px" size="default">
+          <el-form-item label="导出格式">
+            <el-radio-group v-model="exportFormat">
+              <el-radio label="txt">TXT（纯文本，UTF-8）</el-radio>
+              <el-radio label="pdf">PDF（多页排版）</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item label="已选文档">
+            <el-tag type="info">{{ selectedDocIds.length }} 个文档</el-tag>
+            <span style="margin-left:8px;font-size:12px;color:#909399">IDs: {{ selectedDocIds.slice(0, 5).join(', ') }}{{ selectedDocIds.length > 5 ? '...' : '' }}</span>
+          </el-form-item>
+          <el-form-item label="导出说明">
+            <span style="font-size:12px;color:#909399">
+              导出将合并所有文档内容，{{ exportFormat === 'pdf' ? '生成 PDF 文件' : '生成 TXT 文件' }}下载。
+            </span>
+          </el-form-item>
+        </el-form>
+        <div v-if="batchExportLoading" style="margin-top:12px">
+          <el-progress :percentage="batchExportProgress" :status="batchExportProgress >= 100 ? 'success' : undefined" />
+          <div style="text-align:center;font-size:13px;color:#606266;margin-top:4px">正在生成文件...</div>
+        </div>
+      </div>
+      <div v-else>
+        <el-result icon="success" title="导出完成" sub-title="文件已开始下载，如未下载请重试">
+          <template #extra>
+            <el-button type="primary" @click="batchExportVisible = false; batchExportDone = false; selectedDocIds = []">完成</el-button>
+          </template>
+        </el-result>
+      </div>
+      <template #footer>
+        <el-button v-if="!batchExportDone" @click="batchExportVisible = false" :disabled="batchExportLoading">取消</el-button>
+        <el-button v-if="!batchExportDone" type="success" :loading="batchExportLoading" @click="doBatchExport">
+          <el-icon><Download /></el-icon>开始导出
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -516,13 +559,13 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   listMyKbs, createKb, updateKb, deleteKb,
   listDocs, uploadDoc, uploadDocStream, deleteDoc, renameDoc,
-  retrieve, getDocContent, updateDocContent, batchReindexDocs, batchDeleteDocs
+  retrieve, getDocContent, updateDocContent, batchReindexDocs, batchDeleteDocs, exportDocs
 } from '@/api/rag'
 import http from '@/api/http'
 import { useUserStore } from '@/store/user'
 import {
   Plus, Upload, UploadFilled, Refresh, Edit, EditPen, Delete,
-  Search, ArrowDown, Document, CircleCheck, InfoFilled, Loading
+  Search, ArrowDown, Document, CircleCheck, InfoFilled, Loading, Download
 } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
@@ -632,6 +675,64 @@ const batchDeleteVisible = ref(false)
 const batchDeleteLoading = ref(false)
 const batchDeleteProgress = ref(0)
 const batchDeleteResult = ref(null)   // { succeeded, failed }
+
+// ========== 批量导出 (Day 48) ==========
+const batchExportVisible = ref(false)
+const exportFormat = ref('txt')
+const batchExportProgress = ref(0)
+const batchExportDone = ref(false)
+const batchExportLoading = ref(false)
+
+function openBatchExport() {
+  if (!selectedDocIds.value.length) {
+    ElMessage.warning('请先勾选要导出的文档')
+    return
+  }
+  batchExportVisible.value = true
+  batchExportDone.value = false
+  batchExportProgress.value = 0
+  batchExportLoading.value = false
+  exportFormat.value = 'txt'
+}
+
+async function doBatchExport() {
+  if (!selectedDocIds.value.length) return
+  batchExportLoading.value = true
+  batchExportProgress.value = 10
+
+  const timer = setInterval(() => {
+    if (batchExportProgress.value < 90) {
+      batchExportProgress.value += Math.floor(Math.random() * 12) + 5
+      if (batchExportProgress.value > 90) batchExportProgress.value = 90
+    }
+  }, 600)
+
+  try {
+    const r = await exportDocs(userId.value, selectedDocIds.value, exportFormat.value)
+    clearInterval(timer)
+    batchExportProgress.value = 100
+    batchExportDone.value = true
+    // r is already the Blob (from responseType: 'blob')
+    const blob = r?.bytes || r
+    if (blob) {
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `documents-export.${exportFormat.value}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      ElMessage.success(`文档已导出为 ${exportFormat.value.toUpperCase()} 文件`)
+    }
+  } catch (e) {
+    clearInterval(timer)
+    batchExportProgress.value = 0
+    ElMessage.error('导出失败: ' + (e.message || ''))
+  } finally {
+    batchExportLoading.value = false
+  }
+}
 
 function openBatchDelete() {
   if (!selectedDocIds.value.length) {

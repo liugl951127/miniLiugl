@@ -278,6 +278,14 @@ public class MonitorController {
         return Result.ok(alertMetricsService.getStatistics(days));
     }
 
+    // ---------- Day 48: 告警时间序列（ECharts 趋势图） ----------
+    @Operation(summary = "告警时间序列（按日聚合，适合 ECharts 趋势图）")
+    @GetMapping("/alerts/timeseries")
+    public Result<List<Map<String, Object>>> alertTimeSeries(
+            @RequestParam(required = false, defaultValue = "30") Integer days) {
+        return Result.ok(alertMetricsService.getTimeSeries(days));
+    }
+
     // ---------- V5.9 告警规则 CRUD ----------
 
     @Operation(summary = "全部告警规则 (含禁用, V5.9)")

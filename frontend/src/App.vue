@@ -34,19 +34,37 @@ import ErrorBoundary from '@/components/ErrorBoundary.vue'
 // V2.8.9: 加载 usePwa 以触发 SW 注册
 import { usePwa } from '@/composables/usePwa'
 import { useDemoMode } from '@/composables/useDemoMode'
+import { usePreferencesStore } from '@/store/preferences'
+import { useUserStore } from '@/store/user'
 usePwa()  // 触发 SW 注册 (swVersion 在 PwaStatusBar 组件用)
 
 const isLoading = ref(false)
 provide('appLoading', isLoading)
 
 // 路由切换时显示 loading - 配合 router/index.js
-onMounted(() => {
+onMounted(async () => {
   useDemoMode().initFromStorage()
-  console.log('[App] 已挂载 V3.6.21+')
+  // V6.8.9+: 初始化主题偏好
+  const prefsStore = usePreferencesStore()
+  prefsStore.init()
+  if (useUserStore().isLogin) {
+    await prefsStore.fetchFromBackend().catch(() => {})
+  }
+  console.log('[App] 已挂载 V3.6.21+ / 主题:', prefsStore.theme)
 })
 </script>
 
 <style>
+/* V6.8.9+ 深色模式变量覆盖 */
+[data-theme="dark"] {
+  --el-bg-color: #1a1a2e;
+  --el-bg-color-overlay: #16213e;
+  --el-text-color-primary: #e4e7ed;
+  --el-border-color: #3a3f5c;
+  --el-fill-color-light: #2a2d4a;
+}
+.el-theme-dark { background: #1a1a2e; }
+
 .app-loading {
   padding: 40px 20px;
   max-width: 1200px;

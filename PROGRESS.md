@@ -847,10 +847,21 @@
 
 **关键数据：** 后端 4 文件 / 前端 2 文件 / 配置 1 文件
 
-**明日计划 Day 48：**
-- [ ] RAG 文档批量导出（支持 PDF/TXT）
-- [ ] Monitor 告警统计 ECharts 可视化（饼图 + 柱状图）
-- [ ] 前端深色模式切换（Element Plus dark 主题）
-- [ ] API 认证中间件完善（JWT 续期 + 强制刷新）
+## Day 48 - 2026-08-19 ✅ RAG批量导出 + Monitor ECharts可视化 + 深色模式 + JWT续期
 
-## Day 48 - 待开始
+**今日完成：**
+- [x] **RAG 批量导出 PDF/TXT**：`POST /api/v1/rag/doc/export` + PDFBox 3.0.2 生成 PDF + 绿色导出按钮 + 弹窗选格式 + fetch blob 下载
+- [x] **Monitor ECharts 可视化**：`GET /api/v1/monitor/alerts/timeseries` + 统计概览 Tab 新增饼图（严重程度分布）+ 柱状图（每日趋势）+ 导出图片按钮 + resize 自适应
+- [x] **深色模式切换**：user_preferences 表 + UserPreference 实体/Mapper/Service + AuthController PATCH /preferences/theme + preferences store + layout 主题按钮 + CSS 变量覆盖
+- [x] **JWT 续期增强**：JwtAuthenticationFilter 注入 X-Token-Refresh header + AuthController /validate 端点 + user store silentRefreshIfNeeded + http.js 主动续期检测
+- [x] 自检 13/13 ✅ + 静态 5/5 ✅ + vite build 59.77s ✅
+
+**关键数据：** 后端 8 文件 / 前端 5 文件 / SQL 1 表
+
+**明日计划 Day 49：**
+- [ ] RAG 文档在线预览（Word/PDF，支持移动端）
+- [ ] Monitor 告警实时推送（WebSocket SSE）
+- [ ] 前端通知中心增加深色模式适配
+- [ ] RAG 检索结果可高亮标注 + 复制片段
+
+## Day 49 - 待开始

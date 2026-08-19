@@ -10,10 +10,21 @@ import com.minimax.rag.mapper.DocumentMapper;
 import com.minimax.rag.parser.ParserRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
@@ -520,4 +531,155 @@ public class DocumentService {
     /** 批量结果记录 */
     public record BatchResult(int succeeded, List<FailedDoc> failed) {}
     public record FailedDoc(Long docId, String error) {}
+
+    /**
+     * Day 48: 批量导出文档 (PDF / TXT)
+     * - 校验归属（所有 doc 必须属于同一 owner）
+     * - TXT: 拼接所有 chunk 内容，UTF-8 编码
+     * - PDF: 使用 PDFBox 生成多页 PDF
+     *
+     * @param docIds   文档 ID 列表
+     * @param ownerId  所有者
+     * @param format   "pdf" | "txt"
+     * @return { bytes: byte[], filename: String }
+     */
+    public ExportResult exportDocs(List<Long> docIds, Long ownerId, String format) {
+        if (docIds == null || docIds.isEmpty()) {
+            throw new IllegalArgumentException("docIds 不能为空");
+        }
+        String f = (format == null ? "txt" : format.toLowerCase(Locale.ROOT));
+        if (!"pdf".equals(f) && !"txt".equals(f)) {
+            f = "txt";
+        }
+
+        // 1) 收集所有文档内容
+        StringBuilder sb = new StringBuilder();
+        sb.append("# 文档导出\n");
+        sb.append("# 导出时间: ").append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\n");
+        sb.append("# 文档数量: ").append(docIds.size()).append("\n");
+        sb.append("\n");
+
+        for (Long docId : docIds) {
+            Document d = docMapper.selectById(docId);
+            if (d == null) continue;
+            if (!d.getOwnerId().equals(ownerId)) continue;
+
+            sb.append("## ").append(d.getTitle()).append("\n");
+            sb.append("来源: ").append(d.getSourceUri() != null ? d.getSourceUri() : "未知").append("\n");
+            sb.append("类型: ").append(d.getSourceType() != null ? d.getSourceType() : "txt").append("\n");
+            sb.append("字数: ").append(d.getContent() != null ? d.getContent().length() : 0).append(" 字\n");
+            sb.append("\n---\n\n");
+
+            if (d.getContent() != null && !d.getContent().isBlank()) {
+                sb.append(d.getContent());
+            } else {
+                // 从 chunks 拼接
+                List<DocumentChunk> chunks = chunkMapper.selectByDoc(docId);
+                for (int i = 0; i < chunks.size(); i++) {
+                    DocumentChunk ck = chunks.get(i);
+                    sb.append("【片段 ").append(i + 1).append("】\n");
+                    sb.append(ck.getContent());
+                    sb.append("\n\n");
+                }
+            }
+            sb.append("\n\n");
+        }
+
+        String text = sb.toString();
+
+        // 2) 生成文件
+        if ("pdf".equals(f)) {
+            byte[] pdfBytes = generatePdf(text);
+            return new ExportResult(pdfBytes, "documents-export.pdf", "application/pdf");
+        } else {
+            byte[] txtBytes = text.getBytes(StandardCharsets.UTF_8);
+            return new ExportResult(txtBytes, "documents-export.txt", "text/plain; charset=UTF-8");
+        }
+    }
+
+    private byte[] generatePdf(String text) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             PDDocument doc = new PDDocument()) {
+
+            PDType1Font font = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+            PDType1Font boldFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+
+            float margin = 50;
+            float pageWidth = PDRectangle.A4.getWidth() - 2 * margin;
+            float pageHeight = PDRectangle.A4.getHeight() - 2 * margin;
+            float leading = 14.5f;
+            float titleSize = 16f;
+            float bodySize = 11f;
+
+            String[] lines = text.split("\n", -1);
+            PDPage page = new PDPage(PDRectangle.A4);
+            doc.addPage(page);
+
+            PDPageContentStream cos = new PDPageContentStream(doc, page);
+            float y = pageHeight + margin;
+            boolean inTitle = false;
+
+            for (String line : lines) {
+                float fontSize = line.startsWith("# ") ? titleSize : bodySize;
+                PDType1Font currentFont = line.startsWith("# ") ? boldFont : font;
+
+                // 去掉 markdown 标记
+                String cleanLine = line.replaceAll("^#+\\s*", "").replace("---", "");
+                if (cleanLine.trim().isEmpty()) {
+                    cleanLine = " ";
+                }
+
+                // 计算该行需要的字数（估算，每字符约 6pt 宽）
+                int charsPerLine = (int) (pageWidth / (fontSize * 0.5f));
+                if (charsPerLine < 10) charsPerLine = 10;
+
+                // 换行
+                if (cleanLine.length() <= charsPerLine) {
+                    y -= fontSize + 4;
+                    if (y < margin) {
+                        cos.close();
+                        page = new PDPage(PDRectangle.A4);
+                        doc.addPage(page);
+                        cos = new PDPageContentStream(doc, page);
+                        y = pageHeight + margin;
+                    }
+                    cos.beginText();
+                    cos.setFont(currentFont, fontSize);
+                    cos.newLineAtOffset(margin, y);
+                    cos.showText(cleanLine);
+                    cos.endText();
+                } else {
+                    // 长行拆多行
+                    int start = 0;
+                    while (start < cleanLine.length()) {
+                        int end = Math.min(start + charsPerLine, cleanLine.length());
+                        y -= fontSize + 2;
+                        if (y < margin) {
+                            cos.close();
+                            page = new PDPage(PDRectangle.A4);
+                            doc.addPage(page);
+                            cos = new PDPageContentStream(doc, page);
+                            y = pageHeight + margin;
+                        }
+                        cos.beginText();
+                        cos.setFont(currentFont, fontSize);
+                        cos.newLineAtOffset(margin, y);
+                        cos.showText(cleanLine.substring(start, end));
+                        cos.endText();
+                        start = end;
+                    }
+                }
+            }
+
+            cos.close();
+            doc.save(baos);
+            return baos.toByteArray();
+        } catch (Exception e) {
+            log.error("PDF 生成失败: {}", e.getMessage());
+            throw new RuntimeException("PDF 生成失败: " + e.getMessage(), e);
+        }
+    }
+
+    /** 导出结果 */
+    public record ExportResult(byte[] bytes, String filename, String contentType) {}
 }

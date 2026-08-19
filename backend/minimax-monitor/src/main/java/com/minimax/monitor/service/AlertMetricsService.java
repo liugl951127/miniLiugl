@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -192,5 +193,60 @@ public class AlertMetricsService {
                 Map.entry("topRules", topRules),
                 Map.entry("generatedAt", now.toString())
         );
+    }
+
+    /**
+     * Day 48: 告警时间序列（按日聚合，支持 ECharts 趋势图）
+     *
+     * @param days 窗口天数，默认 30
+     * @return List of { date, total, critical, warning, info }
+     */
+    public List<Map<String, Object>> getTimeSeries(Integer days) {
+        int d = days != null && days > 0 ? days : 30;
+        LocalDateTime since = LocalDateTime.now().minusDays(d);
+        LocalDateTime now = LocalDateTime.now();
+
+        LambdaQueryWrapper<AlertEvent> q = new LambdaQueryWrapper<>();
+        q.ge(AlertEvent::getFiredAt, since).orderByAsc(AlertEvent::getFiredAt);
+        List<AlertEvent> events = alertEventMapper.selectList(q);
+
+        // 按日期分组统计
+        Map<LocalDate, Map<String, Long>> byDate = events.stream()
+                .filter(e -> e.getFiredAt() != null)
+                .collect(java.util.stream.Collectors.groupingBy(
+                        e -> e.getFiredAt().toLocalDate(),
+                        java.util.stream.Collectors.collectingAndThen(
+                                java.util.stream.Collectors.toList(),
+                                list -> {
+                                    long total = list.size();
+                                    long critical = list.stream().filter(e -> "CRITICAL".equals(e.getSeverity())).count();
+                                    long warning = list.stream().filter(e -> "WARNING".equals(e.getSeverity())).count();
+                                    long info = list.stream().filter(e -> "INFO".equals(e.getSeverity())).count();
+                                    return Map.of(
+                                            "total", total,
+                                            "critical", critical,
+                                            "warning", warning,
+                                            "info", info
+                                    );
+                                }
+                        )
+                ));
+
+        // 补齐缺失的日期（无告警的日期填 0）
+        List<Map<String, Object>> series = new java.util.ArrayList<>();
+        LocalDate cursor = since.toLocalDate();
+        LocalDate end = now.toLocalDate();
+        while (!cursor.isAfter(end)) {
+            Map<String, Long> dayData = byDate.getOrDefault(cursor, Map.of("total", 0L, "critical", 0L, "warning", 0L, "info", 0L));
+            series.add(Map.<String, Object>of(
+                    "date", cursor.toString(),
+                    "total", dayData.getOrDefault("total", 0L),
+                    "critical", dayData.getOrDefault("critical", 0L),
+                    "warning", dayData.getOrDefault("warning", 0L),
+                    "info", dayData.getOrDefault("info", 0L)
+            ));
+            cursor = cursor.plusDays(1);
+        }
+        return series;
     }
 }

@@ -29,6 +29,12 @@ export const useUserStore = defineStore(
     const accessToken = ref('')
     const refreshToken = ref('')
     const profile = ref(null)
+    // V6.8.9+: token 过期时间戳 (毫秒)，用于提前续期
+    const tokenExpiry = ref(0)
+    // V6.8.9+: 上次静默刷新时间戳，防止频繁刷新
+    let lastSilentRefresh = 0
+    // V6.8.9+: 刷新锁，防止并发重复刷新
+    let isRefreshing = false
 
     const isLogin = computed(() => !!accessToken.value)
     const isAdmin = computed(() => {
@@ -54,10 +60,12 @@ export const useUserStore = defineStore(
           data = data.data
         }
       }
-      const { accessToken: at, refreshToken: rt, user } = data || {}
+      const { accessToken: at, refreshToken: rt, user, expiresIn } = data || {}
       accessToken.value = at || ''
       refreshToken.value = rt || ''
       profile.value = user || null
+      // V6.8.9+: 记录 token 过期时间 (服务端返回 expiresIn 秒数)
+      tokenExpiry.value = expiresIn ? (Date.now() + expiresIn * 1000) : 0
       return res
     }
 
@@ -108,19 +116,50 @@ export const useUserStore = defineStore(
       accessToken.value = ''
       refreshToken.value = ''
       profile.value = null
+      tokenExpiry.value = 0
+    }
+
+    /**
+     * V6.8.9+: 静默刷新（如果 token 快过期或收到服务端 X-Token-Refresh 提示）
+     * @param {boolean} forceServerHint - 收到 X-Token-Refresh header 时为 true
+     */
+    async function silentRefreshIfNeeded(forceServerHint = false) {
+      if (!refreshToken.value || isRefreshing) return
+      const now = Date.now()
+      // 防止并发：60 秒内最多刷新一次
+      if (!forceServerHint && now - lastSilentRefresh < 60_000) return
+      // 条件：forceServerHint（服务端提示）或 token 剩余 < 5 分钟
+      const needsRefresh = forceServerHint ||
+        (tokenExpiry.value > 0 && now > tokenExpiry.value - 5 * 60 * 1000)
+      if (!needsRefresh) return
+      isRefreshing = true
+      try {
+        lastSilentRefresh = now
+        const res = await authApi.refresh(refreshToken.value)
+        const d = res.data || res || {}
+        accessToken.value = d.accessToken || ''
+        refreshToken.value = d.refreshToken || ''
+        tokenExpiry.value = d.expiresIn ? (Date.now() + d.expiresIn * 1000) : 0
+      } catch (_) {
+        // 静默失败不影响业务，下次请求再试
+      } finally {
+        isRefreshing = false
+      }
     }
 
     return {
       accessToken,
       refreshToken,
       profile,
+      tokenExpiry,
       isLogin,
       isAdmin,
       isSuperAdmin,
       login,
       logout,
       fetchProfile,
-      refreshAccessToken
+      refreshAccessToken,
+      silentRefreshIfNeeded
     }
   },
   {
