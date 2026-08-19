@@ -55,12 +55,13 @@ const routes = [
       // ── 数据中心 (单页 tab) ──
       { path: 'analytics', name: 'Analytics', component: () => import('@/views/analytics/Index.vue'), meta: { title: '数据分析' } },
       { path: 'analytics/nlsql', name: 'Nl2Sql', redirect: to => ({ path: '/analytics', query: { tab: 'nlsql' } }) },
-      { path: 'rule', name: 'RuleAssistant', redirect: to => ({ path: '/analytics', query: { tab: 'rule' } }) },
+      { path: 'rule', name: 'RuleAssistant', component: () => import('@/views/rule/Index.vue'), meta: { title: 'NL 规则助手' } },
 
       // ── 工作流 (单页 tab) ──
       { path: 'pipeline', name: 'Pipeline', component: () => import('@/views/pipeline/Index.vue'), meta: { title: '工作流' } },
       { path: 'pipeline/designer', name: 'PipelineDesigner', redirect: to => ({ path: '/pipeline', query: { tab: 'designer' } }) },
-      { path: 'pipeline/designer/:id', name: 'PipelineDesignerEdit', redirect: to => ({ path: '/pipeline', query: { tab: 'designer', id: to.params.id } }) },
+      // /pipeline/designer/:id 也统一走 tab（id 由列表页带过去，不做 URL 持久化）
+      { path: 'pipeline/designer/:id', redirect: '/pipeline' },
       { path: 'pipeline/runs', name: 'PipelineRuns', redirect: to => ({ path: '/pipeline', query: { tab: 'runs' } }) },
 
       // ── 应用中心 ──

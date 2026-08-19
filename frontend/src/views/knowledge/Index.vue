@@ -1,60 +1,89 @@
-<!-- @file knowledge/Index.vue - 知识库管理 V7.0 (完全重写) -->
+<!-- @file knowledge/Index.vue - 知识中心 V6.9 (tab 化) -->
 <template>
   <div class="page-card">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <h2>知识库管理</h2>
-      <el-tooltip content="新建知识库，支持上传文档并自动向量化检索" placement="bottom">
-        <el-button type="primary" @click="openCreateKb">
-          <el-icon><Plus /></el-icon>新建知识库
-        </el-button>
-      </el-tooltip>
-    </div>
+    <el-tabs v-model="activeTab" class="knowledge-tabs">
+      <!-- ═══ 知识库 ═══ -->
+      <el-tab-pane name="kb">
+        <template #label><span>📚 知识库</span></template>
 
-    <!-- 搜索栏 -->
-    <el-form inline class="search-bar">
-      <el-form-item><el-input v-model="keyword" placeholder="搜索知识库名称" clearable @change="loadKbs" /></el-form-item>
-      <el-form-item><el-button @click="loadKbs">搜索</el-button></el-form-item>
-    </el-form>
+        <!-- 页面头部 -->
+        <div class="page-header">
+          <h2>知识库管理</h2>
+          <el-tooltip content="新建知识库，支持上传文档并自动向量化检索" placement="bottom">
+            <el-button type="primary" @click="openCreateKb">
+              <el-icon><Plus /></el-icon>新建知识库
+            </el-button>
+          </el-tooltip>
+        </div>
 
-    <!-- 知识库列表 -->
-    <el-table :data="kbs" v-loading="loading" stripe>
-      <el-table-column prop="id" label="ID" width="80" />
-      <el-table-column prop="name" label="名称" />
-      <el-table-column prop="description" label="描述" show-overflow-tooltip />
-      <el-table-column prop="docCount" label="文档数" width="100" align="center">
-        <template #default="{ row }"><span>{{ row.docCount || 0 }}</span></template>
-      </el-table-column>
-      <el-table-column prop="status" label="状态" width="100" align="center">
-        <template #default="{ row }">
-          <el-tag :type="row.status === 'ACTIVE' ? 'success' : 'info'" size="small">
-            {{ row.status === 'ACTIVE' ? '运行中' : '停用' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="220" align="center">
-        <template #default="{ row }">
-          <el-tooltip content="查看该知识库下的所有文档，可上传新文档" placement="top">
-            <el-button size="small" @click="viewDocs(row)">文档</el-button>
-          </el-tooltip>
-          <el-tooltip content="修改知识库名称、描述或向量模型配置" placement="top">
-            <el-button size="small" type="primary" @click="editKb(row)">编辑</el-button>
-          </el-tooltip>
-          <el-tooltip content="删除知识库将同时删除所有文档，此操作不可恢复" placement="top">
-            <el-button size="small" type="danger" @click="confirmDeleteKb(row)">删除</el-button>
-          </el-tooltip>
-        </template>
-      </el-table-column>
-    </el-table>
+        <!-- 搜索栏 -->
+        <el-form inline class="search-bar">
+          <el-form-item><el-input v-model="keyword" placeholder="搜索知识库名称" clearable @change="loadKbs" /></el-form-item>
+          <el-form-item><el-button @click="loadKbs">搜索</el-button></el-form-item>
+        </el-form>
 
-    <el-pagination
-      v-model:current-page="page"
-      :page-size="20"
-      :total="total"
-      layout="total, prev, pager, next"
-      @current-change="loadKbs"
-      style="margin-top:12px;justify-content:center"
-    />
+        <!-- 知识库列表 -->
+        <el-table :data="kbs" v-loading="loading" stripe>
+          <el-table-column prop="id" label="ID" width="80" />
+          <el-table-column prop="name" label="名称" />
+          <el-table-column prop="description" label="描述" show-overflow-tooltip />
+          <el-table-column prop="docCount" label="文档数" width="100" align="center">
+            <template #default="{ row }"><span>{{ row.docCount || 0 }}</span></template>
+          </el-table-column>
+          <el-table-column prop="status" label="状态" width="100" align="center">
+            <template #default="{ row }">
+              <el-tag :type="row.status === 'ACTIVE' ? 'success' : 'info'" size="small">
+                {{ row.status === 'ACTIVE' ? '运行中' : '停用' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="220" align="center">
+            <template #default="{ row }">
+              <el-tooltip content="查看该知识库下的所有文档，可上传新文档" placement="top">
+                <el-button size="small" @click="viewDocs(row)">文档</el-button>
+              </el-tooltip>
+              <el-tooltip content="修改知识库名称、描述或向量模型配置" placement="top">
+                <el-button size="small" type="primary" @click="editKb(row)">编辑</el-button>
+              </el-tooltip>
+              <el-tooltip content="删除知识库将同时删除所有文档，此操作不可恢复" placement="top">
+                <el-button size="small" type="danger" @click="confirmDeleteKb(row)">删除</el-button>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <el-pagination
+          v-model:current-page="page"
+          :page-size="20"
+          :total="total"
+          layout="total, prev, pager, next"
+          @current-change="loadKbs"
+          style="margin-top:12px;justify-content:center"
+        />
+      </el-tab-pane>
+
+      <!-- ═══ 知识图谱 ═══ -->
+      <el-tab-pane name="kg">
+        <template #label><span>🕸️ 知识图谱</span></template>
+        <div style="padding:40px;text-align:center;color:#909399">
+          <div style="font-size:48px;margin-bottom:16px">🕸️</div>
+          <div style="font-size:18px;font-weight:600;margin-bottom:8px">知识图谱</div>
+          <div style="font-size:13px">基于知识库实体构建可视化图谱，支持关系推理</div>
+          <el-button type="primary" size="large" style="margin-top:24px" disabled>即将上线</el-button>
+        </div>
+      </el-tab-pane>
+
+      <!-- ═══ 记忆中心 ═══ -->
+      <el-tab-pane name="memory">
+        <template #label><span>🧠 记忆中心</span></template>
+        <div style="padding:40px;text-align:center;color:#909399">
+          <div style="font-size:48px;margin-bottom:16px">🧠</div>
+          <div style="font-size:18px;font-weight:600;margin-bottom:8px">Agent 记忆中心</div>
+          <div style="font-size:13px">存储 Agent 长期记忆，支持跨会话上下文恢复</div>
+          <el-button type="primary" size="large" style="margin-top:24px" disabled>即将上线</el-button>
+        </div>
+      </el-tab-pane>
+    </el-tabs>
 
     <!-- ==================== 文档管理抽屉 ==================== -->
     <el-drawer v-model="docsDrawer" :title="currentKb ? currentKb.name + ' - 文档管理' : '文档管理'" size="560px" direction="rtl">
@@ -555,6 +584,7 @@
 
 <script setup>
 import { ref, computed, onMounted, shallowRef } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   listMyKbs, createKb, updateKb, deleteKb,
@@ -570,6 +600,8 @@ import {
 
 const userStore = useUserStore()
 const userId = computed(() => userStore.profile?.id || userStore.userInfo?.id || null)
+const route = useRoute()
+const activeTab = ref(route.query.tab || 'kb')
 
 // ========== 文档全文阅读 (Day 44) ==========
 const fullContentVisible = ref(false)

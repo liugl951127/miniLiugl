@@ -363,6 +363,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, onUnmounted, nextTick, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   nl2sqlAsk, nl2sqlHistory, nl2sqlExplain, executeQuery,
@@ -375,7 +376,8 @@ import http from '@/api/http'
 import { Refresh, RefreshRight, Search, Plus, Download, InfoFilled, DocumentCopy, Collection, FolderOpened, Grid } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 
-const activeTab = ref('overview')
+const route = useRoute()
+const activeTab = ref(route.query.tab || 'overview')
 const metricsLoading = ref(false)
 const metrics = ref([
   { label: '总调用量', value: '-', color: '#409eff', tip: '平台累计所有 API 调用总次数' },
