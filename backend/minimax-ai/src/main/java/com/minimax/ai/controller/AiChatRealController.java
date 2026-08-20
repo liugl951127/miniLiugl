@@ -135,6 +135,14 @@ public class AiChatRealController {
         return Result.ok(sessionMapper.selectList(qw));
     }
 
+    /** 获取单个会话 */
+    @GetMapping("/sessions/{id}")
+    public Result<AiChatSession> getSession(@PathVariable Long id) {
+        AiChatSession s = sessionMapper.selectById(id);
+        if (s == null) return Result.error(404, "会话不存在");
+        return Result.ok(s);
+    }
+
     /** 获取会话消息 (V7.0: 用 sessionId 字符串查) */
     @GetMapping("/sessions/{id}/messages")
     public Result<List<AiChatMessage>> getMessages(@PathVariable Long id) {
@@ -156,6 +164,24 @@ public class AiChatRealController {
         if (session.getStatus() == null) session.setStatus(1);
         sessionMapper.insert(session);
         return Result.ok(session);
+    }
+
+    /** 更新会话 (改名) */
+    @PutMapping("/sessions/{id}")
+    public Result<Void> updateSession(@PathVariable Long id, @RequestBody AiChatSession session) {
+        AiChatSession existing = sessionMapper.selectById(id);
+        if (existing == null) return Result.error(404, "会话不存在");
+        if (session.getTitle() != null) existing.setTitle(session.getTitle());
+        existing.setUpdatedAt(LocalDateTime.now());
+        sessionMapper.updateById(existing);
+        return Result.ok();
+    }
+
+    /** 删除会话 */
+    @DeleteMapping("/sessions/{id}")
+    public Result<Void> deleteSession(@PathVariable Long id) {
+        sessionMapper.deleteById(id);
+        return Result.ok();
     }
 
     /** 停止聊天 */

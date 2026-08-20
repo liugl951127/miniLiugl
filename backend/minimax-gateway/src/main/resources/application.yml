@@ -165,6 +165,14 @@ spring.cloud.gateway:
       predicates:
         - Path=/api/v1/training/**
 
+    # V7.1: training-impl 路由 → minimax-ai (dashboard/overview, tasks/{id}/enable)
+    - id: training-impl
+      uri: lb://minimax-ai
+      predicates:
+        - Path=/api/v1/training-impl/**
+      filters:
+        - RewritePath=/api/v1/training-impl/(?<remaining>.*), /api/v1/ai/training-impl/$\{remaining}
+
     # V7.0: 协作房间路由
     - id: collab
       uri: lb://minimax-ws

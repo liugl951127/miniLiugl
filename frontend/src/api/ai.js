@@ -1183,7 +1183,7 @@ export const chatStream = (data, onChunk, onError, onComplete, onReconnecting) =
 // 不再硬编码模型代码，避免与后端 DB 不同步
 
 /** 列出可用训练模型 */
-export const listTrainedModels = () => http.get('/ai/training/models')
+export const listTrainedModels = () => http.get('/ai/chat/training/models')
 
 /**
  * 训练模型对话（非流式）
