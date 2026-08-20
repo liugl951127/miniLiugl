@@ -36,7 +36,27 @@
         <div ref="jvmChartRef" style="height:240px;margin-top:16px"></div>
       </el-tab-pane>
 
-      <el-tab-pane label="告警历史" name="alerts">
+      <el-tab-pane name="alerts">
+        <template #label>
+          <span>告警历史</span>
+          <!-- Day 49: 实时推送状态指示 -->
+          <el-badge v-if="realtimeAlertCount > 0" :value="realtimeAlertCount" type="danger" style="margin-left:6px" />
+          <span v-if="streamConnected" title="实时推送已连接" style="margin-left:4px;font-size:11px;color:#67c23a">●</span>
+          <span v-else title="实时推送未连接" style="margin-left:4px;font-size:11px;color:#f56c6c">○</span>
+        </template>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="font-size:13px">
+            共 {{ alerts.length }} 条
+            <span v-if="streamConnected" style="color:#67c23a">● 实时推送已连接</span>
+            <span v-else style="color:#f56c6c">○ 实时推送未连接</span>
+          </span>
+          <el-button size="small" @click="loadFiringAlerts">
+            <el-icon><Refresh /></el-icon>刷新
+          </el-button>
+          <el-button v-if="realtimeAlertCount > 0" size="small" type="primary" @click="realtimeAlertCount = 0">
+            清除 ({{ realtimeAlertCount }}) 条新告警
+          </el-button>
+        </div>
         <el-table :data="alerts" stripe size="small" @row-click="openAlertDetail" style="cursor:pointer">
           <el-table-column prop="firedAt" label="触发时间" width="170">
             <template #default="{ row }">{{ formatTime(row.firedAt) }}</template>
@@ -580,6 +600,12 @@ const activeTab = ref('jvm')
 const services = ref([])
 const jvm = ref({ heapUsed: '-', heapMax: '-', nonHeapUsed: '-', gcCount: '-', threads: '-', uptime: '-', cpuUsage: '-' })
 const alerts = ref([])
+
+// Day 49: 告警实时推送 (SSE)
+const streamConnected = ref(false)
+let eventSource = null
+const realtimeAlertCount = ref(0)
+
 const detailVisible = ref(false)
 const detailLoading = ref(false)
 const acking = ref(false)
@@ -800,11 +826,68 @@ async function loadAlertTrend() {
 
 // Day 40: 自动刷新
 let refreshTimer = null
+
+/** Day 49: 连接告警实时推送 SSE */
+function connectAlertStream() {
+  if (eventSource) {
+    eventSource.close()
+  }
+  const token = localStorage.getItem('access_token')
+  const url = `${import.meta.env.VITE_API_BASE_URL || '/api'}/v1/monitor/alerts/stream`
+  eventSource = new EventSource(url)
+
+  eventSource.onopen = () => {
+    streamConnected.value = true
+    console.info('[Monitor] SSE stream connected')
+  }
+
+  eventSource.onerror = (e) => {
+    streamConnected.value = false
+    console.warn('[Monitor] SSE stream error, reconnecting...', e)
+    setTimeout(connectAlertStream, 5000) // 5秒后重连
+  }
+
+  // 监听 'alert' 事件
+  eventSource.addEventListener('alert', (e) => {
+    try {
+      const payload = JSON.parse(e.data)
+      if (payload.type === 'alert_fired' && payload.alert) {
+        const alert = payload.alert
+        // 插入到列表最前面
+        alerts.value.unshift({
+          ...alert,
+          status: 'firing',
+          firedAt: alert.firedAt || new Date().toISOString()
+        })
+        // 计数 +1
+        realtimeAlertCount.value++
+        // 告警tab下主动提示
+        ElMessage.warning({
+          message: `🚨 新告警: ${alert.ruleName} (${alert.severity}) — ${alert.message}`,
+          duration: 6000
+        })
+      }
+    } catch (err) {
+      console.warn('[Monitor] SSE parse error:', err)
+    }
+  })
+
+  // 监听 ping 心跳
+  eventSource.addEventListener('ping', () => {
+    streamConnected.value = true
+  })
+}
+
 onMounted(() => {
   loadData()
   refreshTimer = setInterval(loadData, 30_000)
+  connectAlertStream()
 })
 onUnmounted(() => {
+  if (eventSource) {
+    eventSource.close()
+    eventSource = null
+  }
   if (refreshTimer) clearInterval(refreshTimer)
   if (trendChart) { trendChart.dispose(); trendChart = null }
   if (jvmChart) { jvmChart.dispose(); jvmChart = null }
@@ -887,6 +970,17 @@ function statusType(s) {
 }
 function statusLabel(s) {
   return { firing: '触发中', acked: '已确认', resolved: '已解决' }[s] || s || '未知'
+}
+
+/** Day 49: 手动刷新告警列表 */
+async function loadFiringAlerts() {
+  try {
+    const a = await getFiringAlerts()
+    alerts.value = a.data || []
+    ElMessage.success('已刷新告警列表')
+  } catch (e) {
+    ElMessage.error('刷新失败: ' + (e.message || ''))
+  }
 }
 
 function formatTime(ts) {

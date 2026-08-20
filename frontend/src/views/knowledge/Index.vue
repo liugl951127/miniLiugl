@@ -125,8 +125,14 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="160" align="center">
+            <el-table-column label="操作" width="220" align="center">
               <template #default="{ row }">
+                <!-- Day 49: 预览按钮（在线阅读文档全文，支持移动端） -->
+                <el-tooltip content="预览文档内容（在线阅读）" placement="top">
+                  <el-button size="small" type="info" @click="openFullContent(row.id)">
+                    <el-icon><View /></el-icon>
+                  </el-button>
+                </el-tooltip>
                 <el-tooltip content="编辑内容（修改后重新切片+索引）" placement="top">
                   <el-button size="small" type="primary" @click="openEditDoc(row)">
                     <el-icon><EditPen /></el-icon>
@@ -204,9 +210,17 @@
                 </div>
                 <div class="retrieve-item-excerpt" @click="toggleExcerpt(idx)">
                   <!-- 展开状态：显示完整内容并高亮关键词 -->
-                  <div v-if="expandedIdx === idx" class="excerpt-expanded" v-html="item.highlight
-                    ? item.highlight
-                    : highlightKeyword(item.excerpt || item.content || item.text || '', retrieveQuery)" />
+                  <div v-if="expandedIdx === idx" class="excerpt-expanded">
+                    <!-- Day 49: 复制完整片段按钮 -->
+                    <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+                      <el-button size="small" @click.stop="copyChunk(item, idx)">
+                        <el-icon><DocumentCopy /></el-icon>复制片段
+                      </el-button>
+                    </div>
+                    <div v-html="item.highlight
+                      ? item.highlight
+                      : highlightKeyword(item.excerpt || item.content || item.text || '', retrieveQuery)" />
+                  </div>
                   <!-- 收起状态：显示摘要 -->
                   <div v-else>
                     <span v-if="item.highlight" v-html="item.highlight" />
@@ -383,12 +397,20 @@
       </template>
     </el-dialog>
 
-    <!-- 文档全文阅读弹窗 (Day 44) -->
-    <el-dialog v-model="fullContentVisible" :title="fullContentDoc?.title || '文档全文'" width="800px" destroy-on-close>
+    <!-- 文档全文阅读弹窗 (Day 44 → Day 49: 移动端适配 + 复制按钮 + 改进排版) -->
+    <el-dialog
+      v-model="fullContentVisible"
+      :title="'📖 ' + (fullContentDoc?.title || '文档预览')"
+      width="90vw"
+      max-width="860px"
+      destroy-on-close
+    >
       <div v-if="fullContentLoading" style="text-align:center;padding:40px">
         <el-icon class="is-loading" style="font-size:32px;color:#409eff"><Loading /></el-icon>
+        <div style="margin-top:8px;color:#909399">加载中...</div>
       </div>
-      <div v-else-if="fullContentDoc" style="max-height:60vh;overflow-y:auto">
+      <div v-else-if="fullContentDoc">
+        <!-- 文档基本信息 -->
         <el-descriptions :column="2" border size="small" style="margin-bottom:16px">
           <el-descriptions-item label="文档名">{{ fullContentDoc.title }}</el-descriptions-item>
           <el-descriptions-item label="类型">{{ fullContentDoc.sourceType || '-' }}</el-descriptions-item>
@@ -401,8 +423,19 @@
             </el-tag>
           </el-descriptions-item>
         </el-descriptions>
-        <div style="font-size:14px;font-weight:600;margin-bottom:10px">正文内容</div>
-        <div style="line-height:1.8;white-space:pre-wrap;word-break:break-all;font-size:13px;color:#303133;border:1px solid #ebeef5;padding:16px;border-radius:4px;background:#fafafa">
+        <!-- 正文内容区域 -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:14px;font-weight:600">正文内容
+            <span style="font-size:11px;font-weight:400;color:#909399;margin-left:8px">
+              {{ (fullContentDoc.content || '').length }} 字符
+            </span>
+          </div>
+          <el-button size="small" @click="copyDocContent">
+            <el-icon><DocumentCopy /></el-icon>复制全文
+          </el-button>
+        </div>
+        <!-- 预览容器：支持移动端滚动 -->
+        <div class="doc-preview-body">
           {{ fullContentDoc.content || '（无内容）' }}
         </div>
       </div>
@@ -594,8 +627,8 @@ import {
 import http from '@/api/http'
 import { useUserStore } from '@/store/user'
 import {
-  Plus, Upload, UploadFilled, Refresh, Edit, EditPen, Delete,
-  Search, ArrowDown, Document, CircleCheck, InfoFilled, Loading, Download
+  Plus, Upload, UploadFilled, Refresh, Edit, EditPen, Delete, DocumentCopy,
+  Search, ArrowDown, Document, CircleCheck, InfoFilled, Loading, Download, View
 } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
@@ -619,6 +652,29 @@ async function openFullContent(docId) {
     ElMessage.error('加载文档内容失败: ' + (e.message || ''))
   } finally {
     fullContentLoading.value = false
+  }
+}
+
+/** Day 49: 复制文档全文内容 */
+async function copyDocContent() {
+  const text = fullContentDoc.value?.content
+  if (!text) {
+    ElMessage.warning('文档内容为空，无法复制')
+    return
+  }
+  try {
+    await navigator.clipboard.writeText(text)
+    ElMessage.success('已复制 ' + text.length + ' 字符到剪贴板')
+  } catch {
+    // 降级：创建临时 textarea
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.cssText = 'position:fixed;top:-999px;left:-999px'
+    document.body.appendChild(ta)
+    ta.select()
+    document.execCommand('copy')
+    document.body.removeChild(ta)
+    ElMessage.success('已复制 ' + text.length + ' 字符到剪贴板')
   }
 }
 
@@ -1227,6 +1283,28 @@ function toggleExcerpt(idx) {
   expandedIdx.value = expandedIdx.value === idx ? -1 : idx
 }
 
+/** Day 49: 复制检索片段内容 */
+async function copyChunk(item, idx) {
+  const text = item.excerpt || item.content || item.text || ''
+  if (!text) {
+    ElMessage.warning('片段内容为空，无法复制')
+    return
+  }
+  try {
+    await navigator.clipboard.writeText(text)
+    ElMessage.success('片段已复制到剪贴板')
+  } catch {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.cssText = 'position:fixed;top:-999px;left:-999px'
+    document.body.appendChild(ta)
+    ta.select()
+    document.execCommand('copy')
+    document.body.removeChild(ta)
+    ElMessage.success('片段已复制到剪贴板')
+  }
+}
+
 // SSE 阶段标签 (Day 41)
 function stageLabel(stage) {
   const map = {
@@ -1263,31 +1341,31 @@ onMounted(loadKbs)
 .retrieve-results { display: flex; flex-direction: column; gap: 12px; }
 .retrieve-results-header {
   display: flex; justify-content: space-between; align-items: center;
-  font-size: 14px; font-weight: 600; color: #303133;
+  font-size: 14px; font-weight: 600; color: var(--el-text-color-primary);
 }
 .retrieve-item {
-  border: 1px solid #ebeef5; border-radius: 6px; padding: 12px;
-  background: #fafbfc;
-  &:hover { border-color: #c0d0e0; }
+  border: 1px solid var(--el-border-color-lighter); border-radius: 6px; padding: 12px;
+  background: var(--el-fill-color-lightest);
+  &:hover { border-color: var(--el-border-color); }
 }
 .retrieve-item-header {
   display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
 }
-.retrieve-item-name { font-size: 13px; font-weight: 600; color: #409eff; }
+.retrieve-item-name { font-size: 13px; font-weight: 600; color: var(--el-color-primary); }
 .retrieve-score-wrap {
   display: flex; align-items: center; gap: 6px; min-width: 180px;
 }
-.retrieve-score-label { font-size: 12px; color: #909399; white-space: nowrap; }
+.retrieve-score-label { font-size: 12px; color: var(--el-text-color-secondary); white-space: nowrap; }
 .retrieve-score-bar {
-  flex: 1; height: 6px; background: #ebeef5; border-radius: 3px; overflow: hidden;
+  flex: 1; height: 6px; background: var(--el-border-color-lighter); border-radius: 3px; overflow: hidden;
 }
 .retrieve-score-fill {
-  height: 100%; background: linear-gradient(90deg, #409eff, #67c23a);
+  height: 100%; background: linear-gradient(90deg, var(--el-color-primary), #67c23a);
   border-radius: 3px; transition: width 0.3s;
 }
-.retrieve-score-value { font-size: 12px; color: #606266; min-width: 42px; text-align: right; }
+.retrieve-score-value { font-size: 12px; color: var(--el-text-color-regular); min-width: 42px; text-align: right; }
 .retrieve-item-excerpt {
-  font-size: 13px; color: #606266; line-height: 1.6;
+  font-size: 13px; color: var(--el-text-color-regular); line-height: 1.6;
   cursor: pointer; user-select: none;
   max-height: 80px; overflow: hidden;
   transition: max-height 0.3s;
@@ -1300,7 +1378,7 @@ onMounted(loadKbs)
   }
 }
 .excerpt-expanded {
-  font-size: 13px; color: #606266; line-height: 1.8;
+  font-size: 13px; color: var(--el-text-color-regular); line-height: 1.8;
   max-height: none; overflow: visible;
   word-break: break-all;
   :deep(mark) {
@@ -1360,5 +1438,27 @@ onMounted(loadKbs)
 .wizard-footer {
   display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;
   border-top: 1px solid #ebeef5; padding-top: 16px;
+}
+
+// ========== Day 49: 文档预览样式 ==========
+.doc-preview-body {
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: 13px;
+  color: var(--el-text-color-regular);
+  border: 1px solid var(--el-border-color-light);
+  padding: 16px;
+  border-radius: 6px;
+  background: var(--el-fill-color-lightest);
+  max-height: 55vh;
+  overflow-y: auto;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', monospace;
+  // 深色模式适配
+  @media (prefers-color-scheme: dark) {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    border-color: #3a3a3a;
+  }
 }
 </style>

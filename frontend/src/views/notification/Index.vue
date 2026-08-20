@@ -19,20 +19,20 @@
     <!-- 通知统计 -->
     <el-row :gutter="12" style="margin-bottom:16px">
       <el-col :span="6"><el-card body-style="padding:12px;text-align:center">
-        <div style="font-size:22px;font-weight:700;color:#409eff">{{ notifications.length }}</div>
-        <div style="font-size:12px;color:#909399">总通知</div>
+        <div class="stat-num" style="color:var(--el-color-primary)">{{ notifications.length }}</div>
+        <div class="stat-label">总通知</div>
       </el-card></el-col>
       <el-col :span="6"><el-card body-style="padding:12px;text-align:center">
-        <div style="font-size:22px;font-weight:700;color:#f56c6c">{{ unreadCount }}</div>
-        <div style="font-size:12px;color:#909399">未读</div>
+        <div class="stat-num" style="color:#f56c6c">{{ unreadCount }}</div>
+        <div class="stat-label">未读</div>
       </el-card></el-col>
       <el-col :span="6"><el-card body-style="padding:12px;text-align:center">
-        <div style="font-size:22px;font-weight:700;color:#67c23a">{{ systemCount }}</div>
-        <div style="font-size:12px;color:#909399">系统通知</div>
+        <div class="stat-num" style="color:#67c23a">{{ systemCount }}</div>
+        <div class="stat-label">系统通知</div>
       </el-card></el-col>
       <el-col :span="6"><el-card body-style="padding:12px;text-align:center">
-        <div style="font-size:22px;font-weight:700;color:#e6a23c">{{ taskCount }}</div>
-        <div style="font-size:12px;color:#909399">任务通知</div>
+        <div class="stat-num" style="color:#e6a23c">{{ taskCount }}</div>
+        <div class="stat-label">任务通知</div>
       </el-card></el-col>
     </el-row>
 
@@ -71,7 +71,7 @@
           <div class="notif-msg">{{ n.message }}</div>
           <div class="notif-meta">
             <el-tag size="small" :type="typeTag(n.type)">{{ typeName(n.type) }}</el-tag>
-            <span style="font-size:11px;color:#909399;margin-left:8px">{{ n.createdAt }}</span>
+            <span style="font-size:11px;color:var(--el-text-color-placeholder);margin-left:8px">{{ n.createdAt }}</span>
           </div>
         </div>
         <div class="notif-actions" @click.stop>
@@ -255,14 +255,29 @@ onUnmounted(() => clearInterval(refreshTimer))
   display: flex; align-items: flex-start; gap: 12px;
   padding: 12px 16px; border-radius: 8px; cursor: pointer;
   transition: background 0.15s;
-  &:hover { background: #f5f7fa; }
-  &.unread { background: #ecf5ff; border-left: 3px solid #409eff; }
+  background: transparent;
+  &:hover { background: var(--el-fill-color-light); }
+  &.unread { background: var(--el-color-primary-light-9); border-left: 3px solid var(--el-color-primary); }
+  // 深色模式适配
+  @at-root .dark & {
+    border-left-color: var(--el-color-primary);
+    &:hover { background: var(--el-fill-color-dark); }
+    &.unread { background: var(--el-fill-color-dark); }
+  }
 }
-.notif-icon { width: 36px; height: 36px; border-radius: 50%; background: #f0f2f5; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.notif-icon {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--el-fill-color);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
 .notif-body { flex: 1; min-width: 0; }
 .notif-title { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; }
-.unread-badge { width: 8px; height: 8px; border-radius: 50%; background: #409eff; flex-shrink: 0; }
-.notif-msg { font-size: 13px; color: #606266; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.unread-badge { width: 8px; height: 8px; border-radius: 50%; background: var(--el-color-primary); flex-shrink: 0; }
+.notif-msg { font-size: 13px; color: var(--el-text-color-regular); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .notif-meta { display: flex; align-items: center; margin-top: 6px; }
 .notif-actions { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+
+// Day 49: 深色模式适配 — 统计卡片数字颜色
+.stat-num { font-size: 22px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+.stat-label { font-size: 12px; color: var(--el-text-color-placeholder); }
 </style>

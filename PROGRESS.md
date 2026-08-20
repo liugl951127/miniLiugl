@@ -858,10 +858,21 @@
 
 **关键数据：** 后端 8 文件 / 前端 5 文件 / SQL 1 表
 
-**明日计划 Day 49：**
-- [ ] RAG 文档在线预览（Word/PDF，支持移动端）
-- [ ] Monitor 告警实时推送（WebSocket SSE）
-- [ ] 前端通知中心增加深色模式适配
-- [ ] RAG 检索结果可高亮标注 + 复制片段
+## Day 49 - 2026-08-20 ✅ 文档预览 + Monitor SSE实时推送 + 通知中心深色模式 + RAG高亮复制
 
-## Day 49 - 待开始
+**今日完成：**
+- [x] **RAG 文档在线预览**：文档抽屉表格新增预览按钮（👁 View）+ 预览弹窗大改版（90vw移动端适配 + 字符数统计 + 复制全文按钮 + doc-preview-body 深色模式 CSS 变量）
+- [x] **Monitor 告警实时推送 SSE**：前端 `EventSource` 连接 `/api/v1/monitor/alerts/stream` + 监听 `alert` 事件插入列表 + 5秒重连 + 告警历史标签页实时状态指示器（●绿/○红）+ 新告警计数 badge + `ElMessage.warning` 弹窗提醒
+- [x] **通知中心深色模式适配**：全部硬编码颜色替换为 CSS 变量（`--el-color-primary / --el-fill-color / --el-text-color-*`）+ `.notif-item` hover/unread 深色模式嵌套样式
+- [x] **RAG 检索高亮 + 复制片段**：检索结果展开状态新增「复制片段」按钮 + `copyChunk()` 函数 + CSS 变量化改造检索样式（背景/边框/文字）
+- [x] **echarts 版本冲突修复**：`echarts ^6.1.0` → `^5.5.1`（vue-echarts@7.x 兼容）+ yarn install 替代 npm（npm 崩溃修复）+ 自检 13/13 ✅ + 静态 5/5 ✅ + vite build 49.97s ✅
+
+**关键数据：** 前端 3 文件修改（knowledge/Index.vue + monitor/Index.vue + notification/Index.vue）
+
+**明日计划 Day 50：**
+- [ ] 知识库文档预览支持 Word/PDF 渲染（pdf.js / mammoth.js）
+- [ ] 前端全站深色模式一致性审查（重点页面扫一遍）
+- [ ] RAG 检索结果来源标注（doc name + chunk id）
+- [ ] Monitor 新增 SLA 达标率计算与展示
+
+## Day 50 - 待开始
