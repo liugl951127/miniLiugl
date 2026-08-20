@@ -392,8 +392,10 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   View, Hide, Plus, Refresh, QuestionFilled, ChatLineRound, Setting, TrendCharts, Bell
 } from '@element-plus/icons-vue'
-import { listAdminUsers, toggleAdminUser, getDashboard, getOpsStats, getRecentAudit } from '@/api/admin'
+import { listAdminUsers, toggleAdminUser, getDashboard, getOpsStats, getRecentAudit, getAdminHealth } from '@/api/admin'
 import { listTenants, createTenant, setTenantStatus } from '@/api/tenant'
+import { apiKeyApi } from '@/api/apikey'
+import { getFiringAlerts } from '@/api/monitor'
 
 // ─── Stores ───
 const route = useRoute()
@@ -427,9 +429,7 @@ function maskKey(key) {
 async function loadApiKeys() {
   keyLoading.value = true
   try {
-    const r = await fetch('/api/v1/auth/apikey/list', {
-      headers: { Authorization: 'Bearer ' + userStore.accessToken }
-    }).then(r => r.json()).catch(() => null)
+    const r = await apiKeyApi.list().catch(() => ({ data: [] }))
     apiKeys.value = (r?.data || []).map(k => ({ ...k, show: false }))
   } catch { apiKeys.value = [] }
   finally { keyLoading.value = false }
@@ -439,41 +439,32 @@ async function createKey() {
   if (!keyForm.value.name) { ElMessage.warning('请输入名称'); return }
   keyCreating.value = true
   try {
-    const r = await fetch('/api/v1/auth/apikey/create', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer ' + userStore.accessToken
-      },
-      body: JSON.stringify(keyForm.value)
-    }).then(r => r.json()).catch(() => null)
-    if (r?.data?.key) {
-      ElMessage.success('Key 已生成：' + r.data.key)
+    const r = await apiKeyApi.create(keyForm.value).catch(() => null)
+    if (r?.key) {
+      ElMessage.success('Key 已生成：' + r.key)
       showKeyCreate.value = false
       loadApiKeys()
     } else {
-      ElMessage.error(r?.message || '生成失败')
+      ElMessage.error('生成失败')
     }
   } finally { keyCreating.value = false }
 }
 
 async function toggleKey(row) {
-  await fetch(`/api/v1/auth/apikey/${row.id}/${row.enabled ? 'disable' : 'enable'}`, {
-    method: 'POST',
-    headers: { Authorization: 'Bearer ' + userStore.accessToken }
-  }).catch(() => null)
-  row.enabled = !row.enabled
-  ElMessage.success(row.enabled ? '已启用' : '已禁用')
+  try {
+    await apiKeyApi.toggle(row.id, !row.enabled).catch(() => null)
+    row.enabled = !row.enabled
+    ElMessage.success(row.enabled ? '已启用' : '已禁用')
+  } catch { ElMessage.error('操作失败') }
 }
 
 async function deleteKey(row) {
   await ElMessageBox.confirm('确认删除该 API Key？', '删除确认')
-  await fetch(`/api/v1/auth/apikey/${row.id}`, {
-    method: 'DELETE',
-    headers: { Authorization: 'Bearer ' + userStore.accessToken }
-  }).catch(() => null)
-  apiKeys.value = apiKeys.value.filter(k => k.id !== row.id)
-  ElMessage.success('已删除')
+  try {
+    await apiKeyApi.remove(row.id).catch(() => null)
+    apiKeys.value = apiKeys.value.filter(k => k.id !== row.id)
+    ElMessage.success('已删除')
+  } catch { ElMessage.error('删除失败') }
 }
 
 function copyKey(key) {
@@ -645,15 +636,8 @@ async function toggleTenant(row) {
 const sysSettings = ref({ siteName: 'Liugl-AI', maintenance: false, allowRegister: true, defaultModel: 'minimax-01' })
 
 async function saveSysSettings() {
-  await fetch('/api/v1/system/settings', {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: 'Bearer ' + userStore.accessToken
-    },
-    body: JSON.stringify(sysSettings.value)
-  }).catch(() => null)
-  ElMessage.success('设置已保存')
+  // TODO: 后端尚无 /system/settings 接口，暂存本地
+  ElMessage.success('设置已保存（本地暂存）')
 }
 
 // ════════════════════════════════════
@@ -667,11 +651,12 @@ const upServices = computed(() => services.value.filter(s => s.status === 'UP').
 async function loadMonitor() {
   try {
     const [healthR, alertsR] = await Promise.all([
-      fetch('/api/v1/admin/health').then(r => r.json()).catch(() => null),
-      fetch('/api/v1/admin/alerts', { headers: { Authorization: 'Bearer ' + userStore.accessToken } }).then(r => r.json()).catch(() => null)
+      getAdminHealth().catch(() => ({ data: {} })),
+      getFiringAlerts().catch(() => ({ data: [] }))
     ])
-    if (healthR?.data) {
-      services.value = Object.entries(healthR.data).map(([name, info]) => ({
+    const healthData = healthR?.data || {}
+    if (Object.keys(healthData).length > 0) {
+      services.value = Object.entries(healthData).map(([name, info]) => ({
         name,
         status: info?.status || 'DOWN',
         latency: info?.latency || 0
