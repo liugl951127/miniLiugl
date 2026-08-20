@@ -123,6 +123,11 @@ CREATE TABLE `sys_role` (
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `deleted` INT DEFAULT 0,
+  `agent_id` BIGINT NULL,
+  `agent_name` VARCHAR(255) NULL,
+  `kb_id` BIGINT NULL,
+  `kb_name` VARCHAR(255) NULL,
+  `status` INT DEFAULT 1,
     PRIMARY KEY (`id`),
   KEY `idx_id` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1000;
@@ -541,6 +546,7 @@ CREATE TABLE `ai_tool` (
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `deleted` INT DEFAULT 0,
+  `status` INT DEFAULT 1,
     PRIMARY KEY (`id`),
   KEY `idx_id` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1000;
@@ -1283,6 +1289,10 @@ CREATE TABLE `training_task` (
   `batch_size` INT NULL,
   `learning_rate` DOUBLE NULL,
   `status` VARCHAR(255) NULL,
+  `status_pending` VARCHAR(255) NOT NULL DEFAULT '',
+  `status_training` VARCHAR(255) NOT NULL DEFAULT '',
+  `status_completed` VARCHAR(255) NOT NULL DEFAULT '',
+  `status_failed` VARCHAR(255) NOT NULL DEFAULT '',
   `progress` INT NULL,
   `current_loss` DOUBLE NULL,
   `current_iter` INT NULL,
@@ -1345,6 +1355,12 @@ CREATE TABLE `alert_event` (
   `escalated` TINYINT(1) NULL DEFAULT 0 COMMENT 'Day45: 是否已升级',
   `escalated_at` TIMESTAMP NULL COMMENT 'Day45: 升级时间',
   `resolved_by` VARCHAR(100) NULL COMMENT 'Day46: SYSTEM=自动恢复 其他=用户ID',
+  `channel_id` BIGINT NULL,
+  `session_id` VARCHAR(64) NULL,
+  `triggered_at` DATETIME NULL,
+  `acknowledged` INT DEFAULT 0,
+  `acknowledged_by` VARCHAR(64) NULL,
+  `acknowledged_at` DATETIME NULL,
     PRIMARY KEY (`id`),
   KEY `idx_id` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1000;
@@ -1370,6 +1386,7 @@ CREATE TABLE `alert_rule` (
   `escalate_after_minutes` INT NULL COMMENT 'Day45: CRITICAL 告警升级等待分钟数',
   `escalation_channel` VARCHAR(255) NULL COMMENT 'Day45: 升级通知渠道，逗号分隔',
   `auto_resolve_minutes` INT NULL COMMENT 'Day45: 自动恢复分钟数',
+  `session_id` VARCHAR(64) NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
@@ -1439,6 +1456,9 @@ CREATE TABLE `function_tool` (
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `deleted` INT DEFAULT 0,
+  `builtin` INT DEFAULT 0,
+  `input_schema` TEXT NULL,
+  `output_schema` TEXT NULL,
     PRIMARY KEY (`id`),
   KEY `idx_id` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1000;
@@ -1656,6 +1676,8 @@ CREATE TABLE `analytics_datasource` (
   `username` VARCHAR(255) NULL,
   `password_enc` VARCHAR(255) NULL,
   `description` VARCHAR(255) NULL,
+  `connection_config` TEXT NULL,
+  `status` INT DEFAULT 1,
   `deleted` INT DEFAULT 0,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1727,6 +1749,11 @@ CREATE TABLE `analytics_report` (
   `row_count` BIGINT NULL,
   `duration_ms` BIGINT NULL,
   `format` VARCHAR(255) NULL,
+  `name` VARCHAR(255) NULL,
+  `description` TEXT NULL,
+  `report_type` VARCHAR(64) NULL,
+  `config` TEXT NULL,
+  `created_by` BIGINT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
   KEY `idx_id` (`id`)
@@ -1915,6 +1942,7 @@ CREATE TABLE `collab_message` (
   `metadata` VARCHAR(255) NULL,
   `client_msg_id` VARCHAR(255) NULL,
   `broadcast` INT NULL,
+  `message_type` VARCHAR(32) NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
   KEY `idx_id` (`id`)

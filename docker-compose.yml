@@ -54,8 +54,9 @@ x-jvm-env: &jvm-env
   TZ: Asia/Shanghai
   NACOS_HOST: nacos
   NACOS_PORT: "8848"
-  NACOS_USER: ${NACOS_USER?}          # 必填，无默认值
-  NACOS_PASS: ${NACOS_PASS?}
+  # V6.8.2-fix: Nacos 认证关闭，设置空值避免占位符未解析
+  NACOS_USER: ""
+  NACOS_PASS: ""
   REDIS_HOST: redis
   REDIS_PORT: "6379"
   REDIS_PASS: ${REDIS_PASS?}
