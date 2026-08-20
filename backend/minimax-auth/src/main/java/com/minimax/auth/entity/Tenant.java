@@ -29,6 +29,12 @@ public class Tenant implements Serializable {
     private String contactEmail;
     private String contactPhone;
     private String remark;
+    /** 数据隔离标记：true=隔离，false/null=共享（V6.9 后端支持） */
+    private Boolean dataIsolation;
+    /** IP 白名单，多个逗号分隔（V6.9 后端支持） */
+    private String ipWhitelist;
+    /** 是否默认租户：1=默认，不可删除 */
+    private Integer isDefault;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

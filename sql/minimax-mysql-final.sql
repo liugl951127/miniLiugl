@@ -136,6 +136,9 @@ CREATE TABLE IF NOT EXISTS tenant (
   contact_email VARCHAR(128),
   contact_phone VARCHAR(32),
   remark VARCHAR(500),
+  data_isolation TINYINT(1) DEFAULT 1 COMMENT '数据隔离：1=隔离，0/null=共享',
+  ip_whitelist VARCHAR(1000) DEFAULT NULL COMMENT 'IP白名单，多个逗号分隔',
+  is_default TINYINT(1) DEFAULT 0 COMMENT '是否默认租户：1=默认，不可删除',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   deleted INT DEFAULT 0,
@@ -1411,9 +1414,12 @@ INSERT INTO `sys_role` (id, code, name, description, sort, enabled, created_at) 
 (3, 'GUEST', '访客',      '只读权限',                3, 1, '2026-01-01 00:00:00');
 
 -- 租户
-INSERT INTO `tenant` (id, code, name, plan, status, max_users, max_models, qps_limit, monthly_quota, used_quota, expire_at, contact_email, created_at) VALUES
-(1, 'default',   '默认租户',     'free',  1, 10,  3, 10, 100000, 0, '2027-12-31 23:59:59', 'admin@minimax.io',  '2026-01-01 00:00:00'),
-(2, 'enterprise','企业版租户',    'pro',   1, 100, 20, 100, 10000000, 0, '2027-12-31 23:59:59', 'corp@minimax.io',  '2026-01-15 00:00:00');
+INSERT INTO `tenant` (id, code, name, plan, status, max_users, max_models, qps_limit, monthly_quota, used_quota, expire_at, contact_email, data_isolation, ip_whitelist, is_default) VALUES
+(1, 'default',   '默认租户',     'free',  1, 10,  3, 10, 100000, 0, '2027-12-31 23:59:59', 'admin@minimax.io', 1, NULL, 1)
+ON DUPLICATE KEY UPDATE name=VALUES(name), data_isolation=VALUES(data_isolation), is_default=VALUES(is_default);
+INSERT INTO `tenant` (id, code, name, plan, status, max_users, max_models, qps_limit, monthly_quota, used_quota, expire_at, contact_email, data_isolation, ip_whitelist, is_default) VALUES
+(2, 'enterprise','企业版租户',   'pro',   1, 100, 20, 100, 10000000, 0, '2027-12-31 23:59:59', 'corp@minimax.io', 0, NULL, 0)
+ON DUPLICATE KEY UPDATE name=VALUES(name);
 
 -- 用户 (BCrypt hash = password)
 INSERT INTO `sys_user` (id, username, password, nickname, email, phone, avatar, gender, status, last_login_ip, tenant_id, created_at) VALUES

@@ -214,12 +214,20 @@ CREATE TABLE `tenant` (
   `contact_email` VARCHAR(255) NULL,
   `contact_phone` VARCHAR(255) NULL,
   `remark` VARCHAR(255) NULL,
+  `data_isolation` TINYINT(1) DEFAULT 1 COMMENT '数据隔离：1=隔离，0/null=共享',
+  `ip_whitelist` VARCHAR(1000) DEFAULT NULL COMMENT 'IP白名单，多个逗号分隔',
+  `is_default` TINYINT(1) DEFAULT 0 COMMENT '是否默认租户：1=默认，不可删除',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `deleted` INT DEFAULT 0,
     PRIMARY KEY (`id`),
   KEY `idx_id` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1000;
+
+-- 种子数据
+INSERT INTO `tenant` (id, code, name, plan, status, max_users, max_models, qps_limit, monthly_quota, used_quota, data_isolation, is_default) VALUES
+(1, 'default', '默认租户', 'free', 1, 100, 10, 100, 1000000, 0, 1, 1)
+ON DUPLICATE KEY UPDATE name=VALUES(name);
 
 -- ============================================================
 -- unionid_relations (UnionidRelations)
