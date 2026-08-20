@@ -119,10 +119,13 @@ public class FunctionController {
     @Operation(summary = "直接调用工具")
     @PostMapping("/invoke/{name}")
     public Result<ToolResultDTO> invoke(@PathVariable String name,
-                                         @RequestParam Long userId,
+                                         @RequestHeader("X-User-Id") String userIdHeader,
                                          @RequestParam(required = false) Long sessionId,
                                          @RequestBody(required = false) Map<String, Object> body,
                                          HttpServletRequest req) {
+        long userId;
+        try { userId = Long.parseLong(userIdHeader); }
+        catch (Exception e) { return Result.fail("无效用户身份"); }
         String argsJson;
         try {
             argsJson = body == null ? "{}" : new com.fasterxml.jackson.databind.ObjectMapper()
@@ -135,8 +138,11 @@ public class FunctionController {
 
     @Operation(summary = "获取调用历史")
     @GetMapping("/logs")
-    public Result<List<FunctionCallLog>> myLogs(@RequestParam Long userId,
+    public Result<List<FunctionCallLog>> myLogs(@RequestHeader("X-User-Id") String userIdHeader,
                                                   @RequestParam(defaultValue = "20") int limit) {
+        long userId;
+        try { userId = Long.parseLong(userIdHeader); }
+        catch (Exception e) { return Result.fail("无效用户身份"); }
         return Result.ok(logMapper.selectByUser(userId, Math.min(limit, 200)));
     }
 

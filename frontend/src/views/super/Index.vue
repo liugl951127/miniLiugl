@@ -49,9 +49,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getPlatformInfo } from '@/api/system'
 import { getRecentAudit, getOpsStats } from '@/api/admin'
-import http from '@/api/http'
 
 const stats = ref([
   { label: '总用户', value: '-' },
@@ -59,33 +57,25 @@ const stats = ref([
   { label: 'API 调用', value: '-' },
   { label: '系统状态', value: '正常' },
 ])
-const settings = ref({ siteName: 'Liugl-AI Platform', maintenance: false, allowRegister: true, defaultModel: 'gpt-4o-mini' })
+const settings = ref({ siteName: 'Liugl-AI Platform', maintenance: false, allowRegister: true, defaultModel: 'onnx' })
 const auditLogs = ref([])
 const loading = ref(false)
 
 async function loadData() {
   loading.value = true
   try {
-    const [info, ops, audit] = await Promise.allSettled([
-      getPlatformInfo(),
+    const [ops, audit] = await Promise.allSettled([
       getOpsStats(),
       getRecentAudit(50),
     ])
-    if (info.status === 'fulfilled') {
-      const d = info.value.data || {}
-      stats.value = [
-        { label: '总用户', value: d.userCount ?? d.totalUsers ?? '-' },
-        { label: '活跃租户', value: d.tenantCount ?? d.activeTenants ?? '-' },
-        { label: 'API 调用', value: d.apiCalls ?? d.callCount ?? '-' },
-        { label: '系统状态', value: d.status ?? '正常' },
-      ]
-      if (d.siteName) settings.value.siteName = d.siteName
-    }
     if (ops.status === 'fulfilled') {
       const o = ops.value.data || {}
-      if (stats.value[0].value === '-') stats.value[0].value = o.totalUsers ?? o.users ?? '-'
-      if (stats.value[1].value === '-') stats.value[1].value = o.activeTenants ?? o.tenants ?? '-'
-      if (stats.value[2].value === '-') stats.value[2].value = o.apiCalls ?? '-'
+      stats.value = [
+        { label: '总用户', value: o.totalUsers ?? o.users ?? '-' },
+        { label: '活跃租户', value: o.activeTenants ?? o.tenants ?? '-' },
+        { label: 'API 调用', value: o.apiCalls ?? '-' },
+        { label: '系统状态', value: '正常' },
+      ]
     }
     if (audit.status === 'fulfilled') {
       auditLogs.value = audit.value.data || []
@@ -97,13 +87,9 @@ async function loadData() {
   }
 }
 
-async function saveSettings() {
-  try {
-    await http.post('/system/settings', settings.value)
-    ElMessage.success('设置已保存')
-  } catch (e) {
-    ElMessage.error('保存失败：' + (e.message || ''))
-  }
+function saveSettings() {
+  // TODO: 后端尚无 /system/settings 接口，暂存本地
+  ElMessage.success('设置已保存（本地暂存）')
 }
 
 onMounted(loadData)

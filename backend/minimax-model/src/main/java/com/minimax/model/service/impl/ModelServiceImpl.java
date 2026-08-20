@@ -2,6 +2,7 @@ package com.minimax.model.service.impl;
 
 import com.minimax.common.exception.BizException;
 import com.minimax.common.result.ResultCode;
+import com.minimax.model.config.OnnxModelConfig;
 import com.minimax.model.dto.ChatRequest;
 import com.minimax.model.mapper.ModelConfigMapper;
 import com.minimax.model.provider.ModelProviderAdapter;
@@ -19,6 +20,7 @@ import reactor.core.publisher.Flux;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -32,11 +34,18 @@ public class ModelServiceImpl implements ModelService {
     private final RateLimiter rateLimiter;
     private final QuotaService quotaService;
     private final ApiKeyProviderService apiKeyService;
+    private final OnnxModelConfig onnxConfig;
 
     @Override
     public List<ModelVO> listEnabled() {
-        List<Map<String, Object>> rows = modelConfigMapper.selectEnabledWithProvider();
-        List<ModelVO> out = new ArrayList<>(rows.size());
+        List<Map<String, Object>> rows;
+        try {
+            rows = modelConfigMapper.selectEnabledWithProvider();
+        } catch (Exception e) {
+            log.warn("[ModelService] DB listEnabled failed: {}", e.getMessage());
+            rows = List.of();
+        }
+        List<ModelVO> out = new ArrayList<>(rows.size() + 1);
         for (Map<String, Object> r : rows) {
             String providerCode = (String) r.get("provider_code");
             out.add(ModelVO.builder()
@@ -55,6 +64,26 @@ public class ModelServiceImpl implements ModelService {
                     .providerName((String) r.get("provider_name"))
                     .protocol((String) r.get("protocol"))
                     .category(classifyCategory(providerCode))
+                    .build());
+        }
+        // V7.0: 如果本地 ONNX 启用，在列表末尾追加
+        if (onnxConfig.isEnabled()) {
+            out.add(ModelVO.builder()
+                    .id(0L)
+                    .code("onnx")
+                    .displayName(onnxConfig.getDisplayName())
+                    .maxContext(onnxConfig.getMaxContext())
+                    .maxOutput(onnxConfig.getMaxOutput())
+                    .inputPrice(BigDecimal.ZERO)
+                    .outputPrice(BigDecimal.ZERO)
+                    .supportsVision(false)
+                    .supportsTools(onnxConfig.isSupportsTools())
+                    .supportsStream(onnxConfig.isSupportsStream())
+                    .providerId(0L)
+                    .providerCode("onnx")
+                    .providerName("本地 ONNX")
+                    .protocol("local")
+                    .category("self")
                     .build());
         }
         return out;
@@ -79,8 +108,7 @@ public class ModelServiceImpl implements ModelService {
         if (!rateLimiter.tryAcquire(userId)) {
             throw new BizException(ResultCode.RATE_LIMIT);
         }
-        Map<String, Object> model = modelConfigMapper.selectByCode(req.getModel());
-        if (model == null) throw new BizException(ResultCode.MODEL_NOT_FOUND);
+        Map<String, Object> model = resolveModel(req.getModel());
 
         String providerCode = (String) model.get("provider_code");
         ModelProviderAdapter adapter = providerFactory.get(providerCode);
@@ -120,7 +148,7 @@ public class ModelServiceImpl implements ModelService {
         if (!rateLimiter.tryAcquire(userId)) {
             return Flux.error(new BizException(ResultCode.RATE_LIMIT));
         }
-        Map<String, Object> model = modelConfigMapper.selectByCode(req.getModel());
+        Map<String, Object> model = resolveModel(req.getModel());
         if (model == null) return Flux.error(new BizException(ResultCode.MODEL_NOT_FOUND));
 
         String providerCode = (String) model.get("provider_code");
@@ -129,6 +157,70 @@ public class ModelServiceImpl implements ModelService {
         String dbApiKey = (String) model.get("api_key");
         String apiKey = resolveApiKey(providerCode, dbApiKey);
         return adapter.stream(endpoint, apiKey, req);
+    }
+
+    // ---------- 本地 ONNX 模型解析 ----------
+
+    /**
+     * V7.0: 解析模型配置 — 数据库优先，回退到本地 ONNX 配置
+     */
+    private Map<String, Object> resolveModel(String modelCode) {
+        Map<String, Object> model = tryDbLookup(modelCode);
+        if (model != null) return model;
+
+        // DB 无结果，尝试本地 ONNX 配置
+        if (onnxConfig.isEnabled() && isOnnxModel(modelCode)) {
+            return buildOnnxModelMap();
+        }
+
+        throw new BizException(ResultCode.MODEL_NOT_FOUND);
+    }
+
+    private Map<String, Object> tryDbLookup(String modelCode) {
+        try {
+            return modelConfigMapper.selectByCode(modelCode);
+        } catch (Exception e) {
+            log.warn("[ModelService] DB lookup failed for {}: {}", modelCode, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 判断是否为 ONNX 模型标识
+     * 匹配: "onnx", "onnx-local", "local-onnx", 以 "onnx-" 开头
+     */
+    private boolean isOnnxModel(String modelCode) {
+        if (modelCode == null) return false;
+        String lower = modelCode.toLowerCase();
+        return lower.equals("onnx")
+                || lower.equals("onnx-local")
+                || lower.equals("local-onnx")
+                || lower.startsWith("onnx-");
+    }
+
+    /**
+     * 根据本地 ONNX 配置构建模型 Map（模拟 DB 返回格式）
+     */
+    private Map<String, Object> buildOnnxModelMap() {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("model_id", 0L);
+        m.put("model_code", "onnx");
+        m.put("display_name", onnxConfig.getDisplayName());
+        m.put("provider_code", "onnx");
+        m.put("provider_name", "本地 ONNX");
+        // endpoint: 优先用配置的推理地址，否则指向 minimax-ai 本地推理端点
+        String endpoint = onnxConfig.getInferenceUrl();
+        m.put("base_url", (endpoint == null || endpoint.isBlank())
+                ? "http://localhost:8094" : endpoint);
+        m.put("api_key", onnxConfig.getModelName());
+        m.put("protocol", "local");
+        m.put("max_context", onnxConfig.getMaxContext());
+        m.put("max_output", onnxConfig.getMaxOutput());
+        m.put("supports_vision", 0);
+        m.put("supports_tools", onnxConfig.isSupportsTools() ? 1 : 0);
+        m.put("supports_stream", onnxConfig.isSupportsStream() ? 1 : 0);
+        log.info("[ModelService] 使用本地 ONNX 模型: {}", onnxConfig.getModelName());
+        return m;
     }
 
     // ---------- helpers ----------

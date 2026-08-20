@@ -43,7 +43,18 @@ spring:
 
 # 模块特殊配置 (保留原 minimax.* 块)
 minimax:
-  # V3.5.18+ 已合并 prompt 子包, 无独立 prompt 配置
+  # V7.0: 本地 ONNX 模型配置 (替代数据库 model_config)
+  # 当数据库无 onnx 模型时，ModelServiceImpl 自动使用此配置
+  model:
+    local-onnx:
+      enabled: ${ONNX_ENABLED:false}
+      inference-url: ${ONNX_INFERENCE_URL:}
+      model-name: ${ONNX_MODEL_NAME:mini-transformer}
+      display-name: ${ONNX_DISPLAY_NAME:Mini Transformer}
+      max-context: ${ONNX_MAX_CONTEXT:512}
+      max-output: ${ONNX_MAX_OUTPUT:256}
+      supports-tools: ${ONNX_SUPPORTS_TOOLS:false}
+      supports-stream: ${ONNX_SUPPORTS_STREAM:true}
 
 # =============================================================
 # V5.7 Nacos 服务发现 (注册当前微服务, gateway 通过 lb:// 调用)

@@ -53,9 +53,10 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { functionApi } from '@/api/function'
-import http from '@/api/http'
 import { Plus } from '@element-plus/icons-vue'
+import { useUserStore } from '@/store/user'
 
+const userStore = useUserStore()
 const tools = ref([])
 const loading = ref(false)
 const testVisible = ref(false)
@@ -81,18 +82,20 @@ function testToolDialog(t) { testTool_.value = t; testParams.value = '{}'; testR
 async function runTest() {
   testing.value = true
   try {
-    const params = JSON.parse(testParams.value)
-    const r = await http.post(`/function/tools/${testTool_.value.name}/invoke`, params)
+    const args = JSON.parse(testParams.value)
+    const r = await functionApi.invoke(testTool_.value.name, args)
     testResult.value = JSON.stringify(r.data || r, null, 2)
   } catch (e) { testResult.value = '错误: ' + (e.message || '') }
   finally { testing.value = false }
 }
 
 async function doToggleTool(t) {
+  const ownerId = userStore.profile?.id || userStore.userInfo?.id
+  if (!ownerId) { ElMessage.warning('无法获取用户ID'); return }
   try {
-    await http.post(`/function/tools/${t.name}/toggle`, {})
-    ElMessage.success(t.enabled ? '已禁用' : '已启用')
-    loadTools()
+    await functionApi.updateTool(t.id, { ownerId, enabled: !t.enabled })
+    t.enabled = !t.enabled
+    ElMessage.success(t.enabled ? '已启用' : '已禁用')
   } catch {
     ElMessage.error('操作失败')
   }
