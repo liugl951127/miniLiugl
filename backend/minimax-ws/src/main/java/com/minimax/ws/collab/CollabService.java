@@ -86,7 +86,7 @@ public class CollabService {
         do {
             roomId = generateShortRoomId();
             CollabRoom exist = roomMapper.selectOne(
-                new QueryWrapper<CollabRoom>().eq("roomId", roomId));
+                new QueryWrapper<CollabRoom>().eq("room_id", roomId));
             if (exist == null) break;
         } while (++retry < 5);
 
@@ -127,7 +127,7 @@ public class CollabService {
                              String avatar, String role) {
         // 1. 检查房间状态
         CollabRoom room = roomMapper.selectOne(
-            new QueryWrapper<CollabRoom>().eq("roomId", roomId));
+            new QueryWrapper<CollabRoom>().eq("room_id", roomId));
         if (room == null || !"ACTIVE".equals(room.getStatus())) {
             return false;
         }
@@ -190,7 +190,7 @@ public class CollabService {
     @Transactional
     public boolean closeRoom(String roomId, Long userId) {
         CollabRoom room = roomMapper.selectOne(
-            new QueryWrapper<CollabRoom>().eq("roomId", roomId));
+            new QueryWrapper<CollabRoom>().eq("room_id", roomId));
         if (room == null) return false;
         if (!room.getOwnerId().equals(userId)) return false;
 
@@ -255,7 +255,7 @@ public class CollabService {
      */
     public CollabRoom getRoom(String roomId) {
         return roomMapper.selectOne(
-            new QueryWrapper<CollabRoom>().eq("roomId", roomId));
+            new QueryWrapper<CollabRoom>().eq("room_id", roomId));
     }
 
     /**
@@ -267,7 +267,7 @@ public class CollabService {
             new QueryWrapper<CollabRoom>()
                 .eq("is_public", 1)
                 .eq("status", "ACTIVE")
-                .orderByDesc("lastActivityAt")
+                .orderByDesc("last_activity_at")
                 .last("LIMIT " + limit));
     }
 
