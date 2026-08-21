@@ -392,35 +392,35 @@ onMounted(() => {
   padding: 12px;
   cursor: pointer;
   transition: all 0.2s;
-  background: #fff;
+  background: var(--el-bg-color);
 }
 .tmpl-card:hover { border-color: #6366f1; box-shadow: 0 2px 8px rgba(99,102,241,0.15); }
-.tmpl-card.selected { border-color: #6366f1; background: #eef2ff; box-shadow: 0 2px 12px rgba(99,102,241,0.25); }
+.tmpl-card.selected { border-color: #6366f1; background: var(--el-color-primary-light-9); box-shadow: 0 2px 12px rgba(99,102,241,0.25); }
 .tmpl-icon { font-size: 28px; margin-bottom: 6px; }
-.tmpl-name { font-weight: 600; font-size: 14px; color: #1f2937; margin-bottom: 4px; }
-.tmpl-desc { font-size: 12px; color: #6b7280; margin-bottom: 6px; }
+.tmpl-name { font-weight: 600; font-size: 14px; color: var(--el-text-color-primary); margin-bottom: 4px; }
+.tmpl-desc { font-size: 12px; color: var(--el-text-color-secondary); margin-bottom: 6px; }
 .member-list { display: flex; flex-direction: column; gap: 10px; }
 .member-card {
   border-radius: 8px;
   padding: 12px 14px;
   border-left: 4px solid #6366f1;
-  background: #fafafa;
+  background: var(--el-fill-color-lightest);
   transition: all 0.2s;
 }
 .member-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-.member-card.role-manager { border-left-color: #3b82f6; background: #eff6ff; }
+.member-card.role-manager { border-left-color: #3b82f6; background: var(--el-color-primary-light-9); }
 .member-card.role-worker  { border-left-color: #10b981; background: #f0fdf4; }
 .member-card.role-critic { border-left-color: #f59e0b; background: #fffbeb; }
 .member-card.role-observer { border-left-color: #6b7280; }
 .member-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .member-icon { font-size: 18px; }
-.member-name { font-weight: 600; color: #1f2937; flex: 1; }
-.member-weight { font-size: 12px; color: #9ca3af; }
-.member-duty { font-size: 13px; color: #4b5563; }
-.duty-label { color: #9ca3af; margin-right: 4px; }
+.member-name { font-weight: 600; color: var(--el-text-color-primary); flex: 1; }
+.member-weight { font-size: 12px; color: var(--el-text-color-secondary); }
+.member-duty { font-size: 13px; color: var(--el-text-color-regular); }
+.duty-label { color: var(--el-text-color-secondary); margin-right: 4px; }
 .saved-group-list { display: flex; flex-direction: column; gap: 10px; }
 .saved-group-item {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--el-border-color-lighter);
   border-radius: 8px;
   padding: 10px 12px;
   background: #fafafa;

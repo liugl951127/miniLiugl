@@ -177,10 +177,10 @@
 
         <!-- 渠道测试面板 (对话框内实时测试) -->
         <el-divider content-position="left" style="margin: 16px 0 12px">
-          <span style="font-size: 13px; color: #666">🔧 渠道连通性测试</span>
+          <span style="font-size: 13px; color: var(--el-text-color-regular)">🔧 渠道连通性测试</span>
         </el-divider>
-        <div style="background: #f8f9fa; border-radius: 6px; padding: 12px; border: 1px solid #e8e8e8">
-          <div style="margin-bottom: 10px; font-size: 13px; color: #555">
+        <div style="background: var(--el-fill-color-lightest); border-radius: 6px; padding: 12px; border: 1px solid var(--el-border-color-lighter)">
+          <div style="margin-bottom: 10px; font-size: 13px; color: var(--el-text-color-regular)">
             填写完配置后，点击"发送测试"验证渠道是否连通（无需保存即可测试）。
           </div>
           <el-button
@@ -206,14 +206,14 @@
             </el-tag>
             <!-- 发送内容预览 -->
             <div style="margin-top: 8px">
-              <div style="font-size: 12px; color: #888; margin-bottom: 4px">📨 实际发送内容：</div>
+              <div style="font-size: 12px; color: var(--el-text-color-secondary); margin-bottom: 4px">📨 实际发送内容：</div>
               <pre style="
-                background: #f0f0f0;
-                border: 1px solid #ddd;
+                background: var(--el-fill-color);
+                border: 1px solid var(--el-border-color);
                 border-radius: 4px;
                 padding: 8px 10px;
                 font-size: 12px;
-                color: #333;
+                color: var(--el-text-color-primary);
                 white-space: pre-wrap;
                 word-break: break-all;
                 margin: 0;
@@ -603,7 +603,7 @@ onUnmounted(() => {
 .alert-card {
   margin-bottom: 12px;
   padding: 12px;
-  background: #fafafa;
+  background: var(--el-fill-color-lightest);
   border-radius: 4px;
 }
 .alert-meta {

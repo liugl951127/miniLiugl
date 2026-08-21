@@ -196,7 +196,18 @@
               </div>
               <div v-for="(item, idx) in retrieveResults" :key="idx" class="retrieve-item">
                 <div class="retrieve-item-header">
-                  <span class="retrieve-item-name">{{ item.name || item.docName || ('结果 ' + (idx + 1)) }}</span>
+                  <!-- Day 50: 来源标注 (docTitle + 文档类型 + chunk 编号) -->
+                  <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">
+                    <span class="retrieve-item-name" :title="item.docTitle">{{ item.docTitle || item.name || item.docName || ('结果 ' + (idx + 1)) }}</span>
+                    <!-- Day 50: 文档类型标签 -->
+                    <el-tag v-if="item.docSource" size="small" type="info" style="font-size:10px">
+                      {{ fileTypeIcon(item.docSource) }} {{ item.docSource?.toUpperCase() }}
+                    </el-tag>
+                    <!-- Day 50: Chunk 编号 (来自第 N 个切片) -->
+                    <el-tag v-if="item.chunkIndex != null" size="small" style="font-size:10px" :style="{ background: 'var(--el-fill-color)', border: 'none' }">
+                      切片 {{ (item.chunkIndex + 1) }}
+                    </el-tag>
+                  </div>
                   <div class="retrieve-score-wrap">
                     <span class="retrieve-score-label">相关度</span>
                     <div class="retrieve-score-bar">
@@ -413,7 +424,12 @@
         <!-- 文档基本信息 -->
         <el-descriptions :column="2" border size="small" style="margin-bottom:16px">
           <el-descriptions-item label="文档名">{{ fullContentDoc.title }}</el-descriptions-item>
-          <el-descriptions-item label="类型">{{ fullContentDoc.sourceType || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="类型">
+            <!-- Day 50: 文件类型语义化图标 -->
+            <el-tag size="small" :type="fileTypeTagType(fullContentDoc.sourceType)">
+              {{ fileTypeIcon(fullContentDoc.sourceType) }} {{ fullContentDoc.sourceType || '-' }}
+            </el-tag>
+          </el-descriptions-item>
           <el-descriptions-item label="大小">{{ fullContentDoc.sizeBytes ? (fullContentDoc.sizeBytes / 1024).toFixed(1) + ' KB' : '-' }}</el-descriptions-item>
           <el-descriptions-item label="切片数">{{ fullContentDoc.chunkCount || '-' }}</el-descriptions-item>
           <el-descriptions-item label="创建时间">{{ fullContentDoc.createdAt || '-' }}</el-descriptions-item>
@@ -425,7 +441,18 @@
         </el-descriptions>
         <!-- 正文内容区域 -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="font-size:14px;font-weight:600">正文内容
+          <div style="font-size:14px;font-weight:600">
+            正文内容
+            <!-- Day 50: mammoth.js CDN 动态加载提示 (DOCX) / markdown-it 渲染提示 (MD) -->
+            <span v-if="fullContentDoc.sourceType?.toUpperCase() === 'DOCX'" style="font-size:11px;font-weight:400;color:#67c23a;margin-left:8px">
+              (Word 文档 · 格式化渲染)
+            </span>
+            <span v-else-if="fullContentDoc.sourceType?.toUpperCase() === 'MD'" style="font-size:11px;font-weight:400;color:#409eff;margin-left:8px">
+              (Markdown · 已渲染)
+            </span>
+            <span v-else-if="fullContentDoc.sourceType?.toUpperCase() === 'PDF'" style="font-size:11px;font-weight:400;color:#e6a23c;margin-left:8px">
+              (PDF 提取文本)
+            </span>
             <span style="font-size:11px;font-weight:400;color:#909399;margin-left:8px">
               {{ (fullContentDoc.content || '').length }} 字符
             </span>
@@ -434,9 +461,21 @@
             <el-icon><DocumentCopy /></el-icon>复制全文
           </el-button>
         </div>
-        <!-- 预览容器：支持移动端滚动 -->
+        <!-- Day 50: 预览容器 — 根据文件类型差异化渲染 -->
         <div class="doc-preview-body">
-          {{ fullContentDoc.content || '（无内容）' }}
+          <!-- Markdown 渲染 (使用 markdown-it) -->
+          <div v-if="fullContentDoc.sourceType?.toUpperCase() === 'MD'" v-html="renderMarkdown(fullContentDoc.content)" class="md-rendered" />
+          <!-- Word DOCX — mammoth.js CDN 渲染 -->
+          <div v-else-if="fullContentDoc.sourceType?.toUpperCase() === 'DOCX'">
+            <div v-if="docxRendering" style="text-align:center;padding:20px">
+              <el-icon class="is-loading" style="font-size:20px;color:#67c23a"><Loading /></el-icon>
+              <span style="margin-left:8px;color:#67c23a;font-size:13px">加载 Word 渲染引擎…</span>
+            </div>
+            <div v-else-if="docxHtml" v-html="docxHtml" class="docx-rendered" />
+            <div v-else class="doc-preview-plain">{{ fullContentDoc.content || '（无内容）' }}</div>
+          </div>
+          <!-- 其他类型 (PDF/TXT) 纯文本展示 -->
+          <div v-else class="doc-preview-plain">{{ fullContentDoc.content || '（无内容）' }}</div>
         </div>
       </div>
       <template #footer>
@@ -645,13 +684,92 @@ async function openFullContent(docId) {
   fullContentVisible.value = true
   fullContentLoading.value = true
   fullContentDoc.value = null
+  // Day 50: 重置 DOCX 渲染状态
+  docxHtml.value = null
+  docxRendering.value = false
   try {
     const r = await getDocContent(docId)
     fullContentDoc.value = r.data
+    // Day 50: DOCX 文件自动触发 mammoth.js CDN 渲染
+    if (r.data?.sourceType?.toUpperCase() === 'DOCX' && r.data?.content) {
+      renderDocxContent(r.data.content)
+    }
   } catch (e) {
     ElMessage.error('加载文档内容失败: ' + (e.message || ''))
   } finally {
     fullContentLoading.value = false
+  }
+}
+
+/** Day 50: DOCX 渲染 — 动态加载 mammoth.js CDN */
+const docxHtml = ref(null)
+const docxRendering = ref(false)
+
+async function renderDocxContent(content) {
+  // mammoth.js CDN 地址 (jsDelivr, 稳定可靠)
+  const MAMMOTH_CDN = 'https://cdn.jsdelivr.net/npm/mammoth@1.9.0/mammoth.browser.min.js'
+  if (!window.mammoth) {
+    docxRendering.value = true
+    try {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = MAMMOTH_CDN
+        script.onload = resolve
+        script.onerror = reject
+        document.head.appendChild(script)
+      })
+    } catch {
+      docxRendering.value = false
+      return // 加载失败，降级显示纯文本
+    }
+    docxRendering.value = false
+  }
+  // mammoth 需要 ArrayBuffer，content 是 base64 或 plain text
+  // 尝试 base64 解码；若失败则直接用纯文本
+  try {
+    const arrayBuffer = Uint8Array.from(atob(content.replace(/\s/g, '')), c => c.charCodeAt(0)).buffer
+    const result = await window.mammoth.convertToHtml({ arrayBuffer })
+    docxHtml.value = result.value
+  } catch {
+    docxHtml.value = null // 降级到纯文本
+  }
+}
+
+/** Day 50: 文件类型图标 */
+function fileTypeIcon(sourceType) {
+  const t = sourceType?.toUpperCase() || ''
+  if (t === 'PDF') return '📄'
+  if (t === 'DOCX' || t === 'DOC') return '📝'
+  if (t === 'MD') return '📋'
+  if (t === 'TXT') return '📃'
+  return '📄'
+}
+
+/** Day 50: 文件类型标签颜色 */
+function fileTypeTagType(sourceType) {
+  const t = sourceType?.toUpperCase() || ''
+  if (t === 'PDF') return 'danger'
+  if (t === 'DOCX' || t === 'DOC') return 'primary'
+  if (t === 'MD') return ''
+  if (t === 'TXT') return 'info'
+  return 'info'
+}
+
+/** Day 50: Markdown 渲染 (使用 markdown-it — CDN fallback) */
+async function renderMarkdown(content) {
+  if (!content) return ''
+  try {
+    if (!window.markdownitInstance) {
+      if (!window.markdownit) {
+        await import('markdown-it').then(m => {
+          window.markdownit = m.default || m
+        })
+      }
+      window.markdownitInstance = new window.markdownit({ html: false, linkify: true, typographer: true })
+    }
+    return window.markdownitInstance.render(content)
+  } catch {
+    return content // 降级：返回原始文本
   }
 }
 
@@ -1351,7 +1469,7 @@ onMounted(loadKbs)
 .retrieve-item-header {
   display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
 }
-.retrieve-item-name { font-size: 13px; font-weight: 600; color: var(--el-color-primary); }
+.retrieve-item-name { font-size: 13px; font-weight: 600; color: var(--el-color-primary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .retrieve-score-wrap {
   display: flex; align-items: center; gap: 6px; min-width: 180px;
 }
@@ -1460,5 +1578,45 @@ onMounted(loadKbs)
     color: #d4d4d4;
     border-color: #3a3a3a;
   }
+}
+
+// Day 50: 纯文本容器
+.doc-preview-plain {
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+// Day 50: Markdown 渲染样式
+.md-rendered {
+  font-size: 14px;
+  line-height: 1.8;
+  :deep(h1), :deep(h2), :deep(h3), :deep(h4) { color: var(--el-text-color-primary); margin: 1em 0 0.5em; font-weight: 600; }
+  :deep(h1) { font-size: 20px; border-bottom: 1px solid var(--el-border-color); padding-bottom: 6px; }
+  :deep(h2) { font-size: 17px; }
+  :deep(h3) { font-size: 15px; }
+  :deep(code) { background: var(--el-fill-color); padding: 2px 6px; border-radius: 3px; font-size: 13px; font-family: monospace; }
+  :deep(pre) { background: var(--el-fill-color); padding: 12px; border-radius: 6px; overflow-x: auto; }
+  :deep(pre code) { background: none; padding: 0; }
+  :deep(blockquote) { border-left: 3px solid var(--el-color-primary); margin: 8px 0; padding: 4px 12px; color: var(--el-text-color-secondary); background: var(--el-fill-color-lightest); }
+  :deep(table) { border-collapse: collapse; width: 100%; }
+  :deep(th), :deep(td) { border: 1px solid var(--el-border-color); padding: 6px 12px; }
+  :deep(th) { background: var(--el-fill-color-light); font-weight: 600; }
+  :deep(a) { color: var(--el-color-primary); }
+  :deep(ul), :deep(ol) { padding-left: 20px; }
+  :deep(li) { margin: 4px 0; }
+}
+
+// Day 50: DOCX mammoth.js 渲染样式
+.docx-rendered {
+  font-size: 14px;
+  line-height: 1.8;
+  :deep(table) { border-collapse: collapse; width: 100%; margin: 8px 0; }
+  :deep(th), :deep(td) { border: 1px solid var(--el-border-color); padding: 6px 12px; }
+  :deep(th) { background: var(--el-fill-color-light); font-weight: 600; }
+  :deep(h1), :deep(h2), :deep(h3) { color: var(--el-text-color-primary); margin: 0.8em 0 0.4em; font-weight: 600; }
+  :deep(p) { margin: 6px 0; }
+  :deep(ul), :deep(ol) { padding-left: 20px; }
 }
 </style>

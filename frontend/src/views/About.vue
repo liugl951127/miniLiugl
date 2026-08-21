@@ -36,7 +36,7 @@ function openDocs() { window.open('https://github.com/liugl951127/miniLiugl#read
 .about-page { display: flex; justify-content: center; padding: 40px 0; }
 .about-card { max-width: 640px; width: 100%; text-align: center; }
 .logo-large { font-size: 48px; font-weight: 800; background: linear-gradient(135deg, #1e40af, #0891b2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.version { font-size: 16px; color: #666; margin-top: 8px; }
-.desc { color: #999; font-size: 14px; margin-top: 4px; }
+.version { font-size: 16px; color: var(--el-text-color-regular); margin-top: 8px; }
+.desc { color: var(--el-text-color-secondary); font-size: 14px; margin-top: 4px; }
 .tech-stack { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
 </style>

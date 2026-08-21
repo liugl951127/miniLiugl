@@ -334,6 +334,60 @@
           </el-col>
         </el-row>
 
+        <!-- Day 50: SLA 达标率 — 实际可用率 vs 目标阈值 -->
+        <el-card shadow="hover" style="margin-top:12px" v-loading="slaLoading" body-style="padding:16px">
+          <template #header>
+            <span>SLA 达标率</span>
+            <el-tag size="small" :type="slaCompliance.compliant ? 'success' : 'danger'" style="margin-left:10px;font-size:13px">
+              {{ slaCompliance.compliant ? '✅ 达标' : '❌ 未达标' }}
+            </el-tag>
+          </template>
+          <el-descriptions :column="3" border>
+            <el-descriptions-item label="目标等级">
+              <el-tag size="small" :style="{ color: slaGradeColor }">{{ sla.grade || '-' }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="达标阈值">
+              <span style="font-weight:600">{{ slaCompliance.target.toFixed(1) }}%</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="实际可用率">
+              <span style="font-weight:600">{{ sla.availabilityPct != null ? sla.availabilityPct.toFixed(4) + '%' : '-' }}</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="偏差">
+              <span :style="{ color: slaCompliance.compliant ? '#67c23a' : '#f56c6c', fontWeight: 700 }">
+                {{ slaCompliance.compliant ? '+' : '' }}{{ slaCompliance.gap.toFixed(4) }}%
+              </span>
+            </el-descriptions-item>
+            <el-descriptions-item label="距离下个等级">
+              <span v-if="slaCompliance.grade === 'A+'">已是最高</span>
+              <span v-else-if="slaCompliance.grade === 'F'">—</span>
+              <span v-else>
+                还需 <strong :style="{ color: nextGradeTarget > (sla.availabilityPct || 0) ? '#e6a23c' : '#67c23a' }">
+                  +{{ Math.max(0, nextGradeTarget - (sla.availabilityPct || 0)).toFixed(4) }}%
+                </strong> 达到 {{ nextGradeName }}
+              </span>
+            </el-descriptions-item>
+            <el-descriptions-item label="统计窗口">
+              {{ sla.windowDays || 0 }} 天 / {{ sla.totalAlerts || 0 }} 条告警
+            </el-descriptions-item>
+          </el-descriptions>
+          <!-- 达标率进度条 -->
+          <div style="margin-top:12px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:#909399;margin-bottom:4px">
+              <span>当前 {{ sla.availabilityPct != null ? sla.availabilityPct.toFixed(4) + '%' : '-' }}</span>
+              <span>目标 {{ slaCompliance.target.toFixed(1) }}%</span>
+            </div>
+            <div style="position:relative;height:12px;background:#ebeef5;border-radius:6px;overflow:hidden">
+              <!-- 达标线 -->
+              <div style="position:absolute;top:0;bottom:0;left:100%;width:2px;background:#f56c6c;z-index:2" />
+              <div style="position:absolute;top:0;bottom:0;left:0;background:linear-gradient(90deg,#409eff,#67c23a);transition:width 0.6s;border-radius:6px"
+                :style="{ width: Math.min(100, (sla.availabilityPct || 0)) + '%' }" />
+              <!-- 目标标记线 -->
+              <div style="position:absolute;top:-4px;height:20px;width:2px;background:#909399;border-radius:1px;transform:translateX(-1px)"
+                :style="{ left: slaCompliance.target + '%' }" />
+            </div>
+          </div>
+        </el-card>
+
         <!-- 告警统计概览 -->
         <el-row :gutter="12" style="margin-top:12px" v-loading="slaLoading">
           <el-col :span="8">
@@ -767,6 +821,33 @@ const availabilityColor = computed(() => {
   if (p >= 99.0) return '#409eff'
   if (p >= 95.0) return '#e6a23c'
   return '#f56c6c'
+})
+
+// Day 50: SLA 达标率 — 各等级目标阈值
+const SLA_TARGETS = { 'A+': 99.9, 'A': 99.5, 'B': 99.0, 'C': 95.0, 'D': 90.0, 'F': 0 }
+const GRADE_ORDER = ['A+', 'A', 'B', 'C', 'D', 'F']
+
+const slaCompliance = computed(() => {
+  const actual = sla.value.availabilityPct || 0
+  const grade = sla.value.grade || 'F'
+  const target = SLA_TARGETS[grade] ?? 0
+  const compliant = actual >= target
+  const gap = actual - target
+  return { target, compliant, gap, grade }
+})
+
+const nextGradeTarget = computed(() => {
+  const grade = sla.value.grade || 'F'
+  const idx = GRADE_ORDER.indexOf(grade)
+  if (idx <= 0) return 100 // 已是最高
+  return SLA_TARGETS[GRADE_ORDER[idx - 1]] ?? 100
+})
+
+const nextGradeName = computed(() => {
+  const grade = sla.value.grade || 'F'
+  const idx = GRADE_ORDER.indexOf(grade)
+  if (idx <= 0) return '—'
+  return GRADE_ORDER[idx - 1]
 })
 
 async function loadSla() {

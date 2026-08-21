@@ -204,12 +204,12 @@ const tipContext = computed(() => `当前 ${stats.value.users} 用户 / ${stats.
 <style scoped>
 .quick-section, .activity-section {
   margin-top: 16px;
-  background: #fff;
+  background: var(--el-bg-color);
   border-radius: 8px;
   padding: 16px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.04);
 }
-.section-title { font-size: 16px; margin: 0 0 12px; color: #1e293b; }
+.section-title { font-size: 16px; margin: 0 0 12px; color: var(--el-text-color-primary); }
 .quick-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -220,15 +220,15 @@ const tipContext = computed(() => `当前 ${stats.value.users} 用户 / ${stats.
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--el-border-color-lighter);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
 }
 .quick-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
 .quick-info { flex: 1; }
-.quick-label { font-size: 14px; font-weight: 500; color: #1e293b; }
-.quick-desc { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+.quick-label { font-size: 14px; font-weight: 500; color: var(--el-text-color-primary); }
+.quick-desc { font-size: 12px; color: var(--el-text-color-secondary); margin-top: 2px; }
 .service-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
 .service-item {
   display: flex;
@@ -236,20 +236,20 @@ const tipContext = computed(() => `当前 ${stats.value.users} 用户 / ${stats.
   gap: 8px;
   padding: 8px 12px;
   border-radius: 6px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--el-fill-color-lightest);
+  border: 1px solid var(--el-border-color-lighter);
 }
 .service-item .dot {
   width: 8px; height: 8px; border-radius: 50%;
   background: #67c23a;
 }
 .service-item.DOWN .dot { background: #f56c6b; }
-.service-item .name { flex: 1; font-size: 13px; }
+.service-item .name { flex: 1; font-size: 13px; color: var(--el-text-color-regular); }
 .resource-cell {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.service-empty { text-align: center; color: #94a3b8; font-size: 13px; padding: 16px; }
+.service-empty { text-align: center; color: var(--el-text-color-secondary); font-size: 13px; padding: 16px; }
 </style>

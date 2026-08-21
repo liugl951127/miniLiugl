@@ -875,4 +875,18 @@
 - [ ] RAG 检索结果来源标注（doc name + chunk id）
 - [ ] Monitor 新增 SLA 达标率计算与展示
 
-## Day 50 - 待开始
+## Day 50 - 2026-08-21 ✅ 文档渲染增强 + 检索来源标注 + SLA 达标率 + 深色模式补全
+
+**今日完成：**
+- [x] **RAG 文档预览增强**：文件类型语义化标签（PDF/DOCX/MD/TXT）+ mammoth.js CDN 动态加载（DOCX 转 HTML）+ markdown-it 渲染（MD 文件）+ 完整 CSS 样式
+- [x] **RAG 检索结果来源标注**：检索结果卡片新增文档名 badge + 类型 tag + 切片编号 tag（docTitle/docSource/chunkIndex）
+- [x] **Monitor SLA 达标率**：新增达标率卡片（✅/❌ 达标状态 + 目标阈值 + 偏差值 + 距离下个等级 + 进度条）
+- [x] **深色模式一致性**：About / admin/Alerts / admin/Dashboard / agent/Canvas / agent/Auto 共 5 个文件，30+ 处硬编码颜色替换为 CSS 变量
+- [x] 自检 13/13 + 静态 5/5 + vite build 48.46s ✅
+
+**明日计划 Day 51：**
+- [ ] Admin 管理后台深色模式补全
+- [ ] RAG 检索结果排序优化（相关性 + 时效性加权）
+- [ ] Monitor 历史告警高级筛选
+- [ ] 前端骨架屏 + 首屏优化
+
