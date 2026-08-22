@@ -23,15 +23,15 @@
         <div class="stat-label">总通知</div>
       </el-card></el-col>
       <el-col :span="6"><el-card body-style="padding:12px;text-align:center">
-        <div class="stat-num" style="color:#f56c6c">{{ unreadCount }}</div>
+        <div class="stat-num" style="color: var(--el-color-danger)">{{ unreadCount }}</div>
         <div class="stat-label">未读</div>
       </el-card></el-col>
       <el-col :span="6"><el-card body-style="padding:12px;text-align:center">
-        <div class="stat-num" style="color:#67c23a">{{ systemCount }}</div>
+        <div class="stat-num" style="color: var(--el-color-success)">{{ systemCount }}</div>
         <div class="stat-label">系统通知</div>
       </el-card></el-col>
       <el-col :span="6"><el-card body-style="padding:12px;text-align:center">
-        <div class="stat-num" style="color:#e6a23c">{{ taskCount }}</div>
+        <div class="stat-num" style="color: var(--el-color-warning)">{{ taskCount }}</div>
         <div class="stat-label">任务通知</div>
       </el-card></el-col>
     </el-row>
@@ -112,8 +112,8 @@
         </el-descriptions>
         <div style="white-space:pre-wrap;font-size:14px;line-height:1.8">{{ detail.message }}</div>
         <div v-if="detail.data" style="margin-top:12px">
-          <div style="font-size:12px;color:#909399;margin-bottom:4px">附加数据</div>
-          <pre style="background:#f5f7fa;padding:8px;border-radius:4px;font-size:12px">{{ JSON.stringify(detail.data, null, 2) }}</pre>
+          <div style="font-size:12px;color: var(--el-text-color-secondary);margin-bottom:4px">附加数据</div>
+          <pre style="background: var(--el-fill-color-light);padding:8px;border-radius:4px;font-size:12px">{{ JSON.stringify(detail.data, null, 2) }}</pre>
         </div>
       </div>
       <template #footer>

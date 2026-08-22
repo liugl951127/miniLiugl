@@ -13,26 +13,26 @@
     <el-row :gutter="12" style="margin-bottom:16px">
       <el-col :span="6">
         <el-card body-style="padding:12px;text-align:center" shadow="never">
-          <div style="font-size:22px;font-weight:700;color:#409eff">{{ tenants.length }}</div>
-          <div style="font-size:12px;color:#909399">租户总数</div>
+          <div style="font-size:22px;font-weight:700;color: var(--el-color-primary)">{{ tenants.length }}</div>
+          <div style="font-size:12px;color: var(--el-text-color-secondary)">租户总数</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card body-style="padding:12px;text-align:center" shadow="never">
-          <div style="font-size:22px;font-weight:700;color:#67c23a">{{ activeCount }}</div>
-          <div style="font-size:12px;color:#909399">活跃租户</div>
+          <div style="font-size:22px;font-weight:700;color: var(--el-color-success)">{{ activeCount }}</div>
+          <div style="font-size:12px;color: var(--el-text-color-secondary)">活跃租户</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card body-style="padding:12px;text-align:center" shadow="never">
-          <div style="font-size:22px;font-weight:700;color:#e6a23c">{{ totalUsers }}</div>
-          <div style="font-size:12px;color:#909399">用户配额合计</div>
+          <div style="font-size:22px;font-weight:700;color: var(--el-color-warning)">{{ totalUsers }}</div>
+          <div style="font-size:12px;color: var(--el-text-color-secondary)">用户配额合计</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card body-style="padding:12px;text-align:center" shadow="never">
-          <div style="font-size:22px;font-weight:700;color:#909399">{{ totalApi.toLocaleString() }}</div>
-          <div style="font-size:12px;color:#909399">API 配额合计/天</div>
+          <div style="font-size:22px;font-weight:700;color: var(--el-text-color-secondary)">{{ totalApi.toLocaleString() }}</div>
+          <div style="font-size:12px;color: var(--el-text-color-secondary)">API 配额合计/天</div>
         </el-card>
       </el-col>
     </el-row>
@@ -47,13 +47,13 @@
       <el-table-column prop="name" label="租户名" min-width="160">
         <template #default="{ row }">
           <div style="font-weight:600">{{ row.name }}</div>
-          <div style="font-size:11px;color:#909399">{{ row.code || row.slug || '' }}</div>
+          <div style="font-size:11px;color: var(--el-text-color-secondary)">{{ row.code || row.slug || '' }}</div>
         </template>
       </el-table-column>
       <el-table-column prop="owner" label="管理员" min-width="160">
         <template #default="{ row }">
           <span v-if="row.owner">{{ row.owner }}</span>
-          <span v-else style="color:#c0c4cc">—</span>
+          <span v-else style="color: var(--el-text-color-placeholder)">—</span>
         </template>
       </el-table-column>
       <el-table-column label="配额" width="220">
@@ -73,7 +73,7 @@
       </el-table-column>
       <el-table-column prop="createdAt" label="创建时间" width="170">
         <template #default="{ row }">
-          <span style="font-size:12px;color:#606266">{{ row.createdAt || '—' }}</span>
+          <span style="font-size:12px;color: var(--el-text-color-regular)">{{ row.createdAt || '—' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="操作" width="220" align="center" fixed="right">

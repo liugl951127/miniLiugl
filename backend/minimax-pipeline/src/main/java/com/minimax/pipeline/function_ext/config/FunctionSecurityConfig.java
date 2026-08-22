@@ -39,6 +39,7 @@ public class FunctionSecurityConfig {
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     .requestMatchers("/health", "/actuator/**").permitAll()
+                    .requestMatchers("/api/v1/skill-approval/**").permitAll()
                     .anyRequest().authenticated()
             )
             .exceptionHandling(eh -> eh

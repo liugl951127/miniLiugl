@@ -241,7 +241,7 @@ services:
     depends_on:
       mariadb: { condition: service_healthy }
       otel-collector: { condition: service_started }
-    environment: { <<: *jvm-env, SERVER_PORT: "8084" }
+    environment: { <<: *jvm-env, SERVER_PORT: "8084", SILICONFLOW_API_KEY: "mock-key" }
     ports: ["8084:8084"]
     volumes:
       - ./.docker-data/maven-repo:/root/.m2
@@ -292,7 +292,7 @@ services:
       mariadb: { condition: service_healthy }
       otel-collector: { condition: service_started }
       redis:   { condition: service_healthy }
-    environment: { <<: *jvm-env, SERVER_PORT: "8088" }
+    environment: { <<: *jvm-env, SERVER_PORT: "8088", SILICONFLOW_API_KEY: "mock-key" }
     ports: ["8088:8088"]
     volumes: *maven-volumes
     networks: [minimax-net]
@@ -322,6 +322,19 @@ services:
       otel-collector: { condition: service_started }
     environment: { <<: *jvm-env, SERVER_PORT: "8090" }
     ports: ["8090:8090"]
+    volumes: *maven-volumes
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 384M } } }
+  system:
+    build: { context: ./backend, dockerfile: minimax-system/Dockerfile }
+    image: minimax/system:latest
+    container_name: minimax-system
+    restart: unless-stopped
+    depends_on:
+      mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
+    environment: { <<: *jvm-env, SERVER_PORT: "9086" }
+    ports: ["9086:9086"]
     volumes: *maven-volumes
     networks: [minimax-net]
     deploy: { resources: { limits: { memory: 384M } } }
@@ -367,7 +380,7 @@ services:
     depends_on:
       mariadb: { condition: service_healthy }
       otel-collector: { condition: service_started }
-    environment: { <<: *jvm-env, SERVER_PORT: "8094", MODEL_PATH: "/app/data/ai/model.bin", TRAINING_DATA: "/app/data/ai/training-data.txt" }
+    environment: { <<: *jvm-env, SERVER_PORT: "8094", MODEL_PATH: "/app/data/ai/model.bin", TRAINING_DATA: "/app/data/ai/training-data.txt", MINIMAX_ONNX_ENABLED: "true", SILICONFLOW_API_KEY: "mock-key" }
     ports: ["8094:8094"]
     volumes:
       - ./.docker-data/maven-repo:/root/.m2

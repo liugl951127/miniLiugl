@@ -19,26 +19,26 @@
     <el-row :gutter="12" style="margin-bottom:16px">
       <el-col :span="6">
         <el-card body-style="padding:12px;text-align:center" shadow="hover">
-          <div style="font-size:22px;font-weight:700;color:#409eff">{{ facts.length }}</div>
-          <div style="font-size:12px;color:#909399">记忆总数</div>
+          <div style="font-size:22px;font-weight:700;color: var(--el-color-primary)">{{ facts.length }}</div>
+          <div style="font-size:12px;color: var(--el-text-color-secondary)">记忆总数</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card body-style="padding:12px;text-align:center" shadow="hover">
-          <div style="font-size:22px;font-weight:700;color:#67c23a">{{ userFacts }}</div>
-          <div style="font-size:12px;color:#909399">用户记忆</div>
+          <div style="font-size:22px;font-weight:700;color: var(--el-color-success)">{{ userFacts }}</div>
+          <div style="font-size:12px;color: var(--el-text-color-secondary)">用户记忆</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card body-style="padding:12px;text-align:center" shadow="hover">
-          <div style="font-size:22px;font-weight:700;color:#e6a23c">{{ systemFacts }}</div>
-          <div style="font-size:12px;color:#909399">系统记忆</div>
+          <div style="font-size:22px;font-weight:700;color: var(--el-color-warning)">{{ systemFacts }}</div>
+          <div style="font-size:12px;color: var(--el-text-color-secondary)">系统记忆</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card body-style="padding:12px;text-align:center" shadow="hover">
-          <div style="font-size:22px;font-weight:700;color:#909399">{{ contextFacts }}</div>
-          <div style="font-size:12px;color:#909399">上下文</div>
+          <div style="font-size:22px;font-weight:700;color: var(--el-text-color-secondary)">{{ contextFacts }}</div>
+          <div style="font-size:12px;color: var(--el-text-color-secondary)">上下文</div>
         </el-card>
       </el-col>
     </el-row>
@@ -391,7 +391,7 @@ onBeforeUnmount(() => {
   display: flex; gap: 8px; margin-bottom: 12px; align-items: center;
 }
 .fact-content {
-  font-size: 13px; color: #606266;
+  font-size: 13px; color: var(--el-text-color-regular);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 400px;
 }
 .content-pre {

@@ -149,7 +149,7 @@
             <div v-for="tpl in templates" :key="tpl.type" class="tpl-card" @click="applyTemplate(tpl)">
               <div style="font-size:22px;text-align:center">{{ tpl.icon }}</div>
               <div style="font-size:12px;font-weight:600;text-align:center;margin-top:2px">{{ tpl.name }}</div>
-              <div style="font-size:10px;color:#909399;text-align:center">{{ tpl.desc }}</div>
+              <div style="font-size:10px;color: var(--el-text-color-secondary);text-align:center">{{ tpl.desc }}</div>
             </div>
           </div>
         </el-card>
@@ -247,7 +247,7 @@
                 <el-progress :percentage="sd.percent" :color="sd.color" style="flex:1" :stroke-width="6" />
                 <span class="score-val">+{{ sd.score }}</span>
               </div>
-              <div class="score-total">总分: <strong style="color:#409eff;font-size:18px">{{ execResult.score }}</strong> / 100</div>
+              <div class="score-total">总分: <strong style="color: var(--el-color-primary);font-size:18px">{{ execResult.score }}</strong> / 100</div>
             </div>
 
             <!-- AI 解读 -->
@@ -920,49 +920,49 @@ onMounted(() => { loadModels(); updateFieldHighlights() })
 }
 .header-left { display: flex; flex-direction: column; gap: 2px; }
 .header-right { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
-.subtitle { margin: 2px 0 0; font-size: 12px; color: #909399; }
+.subtitle { margin: 2px 0 0; font-size: 12px; color: var(--el-text-color-secondary); }
 .model-bar {
   display: flex; align-items: center; gap: 10px; padding: 8px 16px;
-  background: #f5f7fa; border-bottom: 1px solid #eee;
+  background: var(--el-fill-color-light); border-bottom: 1px solid #eee;
 }
-.bar-label { font-size: 13px; color: #606266; white-space: nowrap; }
+.bar-label { font-size: 13px; color: var(--el-text-color-regular); white-space: nowrap; }
 .main-layout { display: flex; flex: 1; overflow: hidden; gap: 0; }
 .left-panel { width: 48%; border-right: 1px solid #eee; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 .right-panel { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 .card-header { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
 .examples-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
-.examples-label { font-size: 12px; color: #909399; white-space: nowrap; }
+.examples-label { font-size: 12px; color: var(--el-text-color-secondary); white-space: nowrap; }
 .example-tag { cursor: pointer; }
 .gen-row { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
-.streaming-box { margin-top: 8px; background: #f0f9eb; border-radius: 6px; padding: 8px 12px; }
-.streaming-label { font-size: 11px; color: #67c23a; margin-bottom: 4px; }
-.streaming-pre { font-family: monospace; font-size: 12px; color: #67c23a; white-space: pre-wrap; margin: 0; }
+.streaming-box { margin-top: 8px; background: var(--el-color-success-light-9); border-radius: 6px; padding: 8px 12px; }
+.streaming-label { font-size: 11px; color: var(--el-color-success); margin-bottom: 4px; }
+.streaming-pre { font-family: monospace; font-size: 12px; color: var(--el-color-success); white-space: pre-wrap; margin: 0; }
 .rule-editor-wrap { position: relative; }
-.json-error { color: #f56c6c; font-size: 12px; padding: 4px 0; display: flex; align-items: center; gap: 4px; }
+.json-error { color: var(--el-color-danger); font-size: 12px; padding: 4px 0; display: flex; align-items: center; gap: 4px; }
 .rule-tree-view { margin-top: 10px; background: #f9f9f9; border-radius: 6px; padding: 10px 12px; }
-.tree-label { font-size: 12px; font-weight: 600; color: #606266; margin-bottom: 6px; }
+.tree-label { font-size: 12px; font-weight: 600; color: var(--el-text-color-regular); margin-bottom: 6px; }
 .tree-node { font-size: 12px; line-height: 1.8; font-family: monospace; }
 .tree-icon { margin-right: 4px }
 .tree-name { font-weight: 600; }
-.tree-connector { color: #909399; margin-right: 4px; }
-.tree-op { color: #409eff; margin-right: 4px; }
-.tree-field { color: #e6a23c; margin-right: 4px; }
-.tree-val { color: #67c23a; margin-right: 4px; }
-.tree-label-text { color: #909399; font-size: 11px; }
-.tree-action-params { color: #909399; font-size: 11px; margin-left: 4px; }
+.tree-connector { color: var(--el-text-color-secondary); margin-right: 4px; }
+.tree-op { color: var(--el-color-primary); margin-right: 4px; }
+.tree-field { color: var(--el-color-warning); margin-right: 4px; }
+.tree-val { color: var(--el-color-success); margin-right: 4px; }
+.tree-label-text { color: var(--el-text-color-secondary); font-size: 11px; }
+.tree-action-params { color: var(--el-text-color-secondary); font-size: 11px; margin-left: 4px; }
 .tpl-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .tpl-card {
   padding: 8px 6px; border: 1px solid #e5e7eb; border-radius: 8px;
   cursor: pointer; transition: all .15s;
-  &:hover { border-color: #409eff; background: #ecf5ff; }
+  &:hover { border-color: var(--el-color-primary); background: var(--el-color-primary-light-9); }
 }
 .field-highlights { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; align-items: center; }
-.field-highlights-label { font-size: 12px; color: #606266; white-space: nowrap; }
+.field-highlights-label { font-size: 12px; color: var(--el-text-color-regular); white-space: nowrap; }
 .result-section { margin-top: 12px; }
 .result-section-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
 .score-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .score-name { font-size: 12px; width: 90px; flex-shrink: 0; }
-.score-val { font-size: 12px; width: 40px; text-align: right; color: #67c23a; }
+.score-val { font-size: 12px; width: 40px; text-align: right; color: var(--el-color-success); }
 .score-total { font-size: 13px; text-align: right; margin-top: 6px; }
 .ai-interpret-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .explain-box {
@@ -970,16 +970,16 @@ onMounted(() => { loadModels(); updateFieldHighlights() })
   border: 1px solid #d4edda; border-radius: 8px; padding: 10px 12px;
   font-size: 13px; line-height: 1.8; white-space: pre-wrap;
 }
-.explain-placeholder { font-size: 12px; color: #c0c4cc; text-align: center; padding: 8px; }
+.explain-placeholder { font-size: 12px; color: var(--el-text-color-placeholder); text-align: center; padding: 8px; }
 .history-list { display: flex; flex-direction: column; gap: 6px; }
 .history-item {
   padding: 6px 10px; border-radius: 4px; cursor: pointer;
   border: 1px solid transparent; transition: all .15s;
-  &:hover { border-color: #409eff; background: #f0f7ff; }
+  &:hover { border-color: var(--el-color-primary); background: #f0f7ff; }
 }
 .history-top { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
-.history-time { font-size: 11px; color: #909399; }
-.history-desc { font-size: 12px; color: #606266; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-time { font-size: 11px; color: var(--el-text-color-secondary); }
+.history-desc { font-size: 12px; color: var(--el-text-color-regular); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rule-lib { padding: 12px; }
 .lib-toolbar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
 

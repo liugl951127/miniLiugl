@@ -16,20 +16,20 @@
     <!-- 统计 -->
     <el-row :gutter="12" style="margin-bottom:16px">
       <el-col :span="6"><el-card body-style="padding:12px;text-align:center">
-        <div style="font-size:22px;font-weight:700;color:#409eff">{{ rooms.length }}</div>
-        <div style="font-size:12px;color:#909399">总房间数</div>
+        <div style="font-size:22px;font-weight:700;color: var(--el-color-primary)">{{ rooms.length }}</div>
+        <div style="font-size:12px;color: var(--el-text-color-secondary)">总房间数</div>
       </el-card></el-col>
       <el-col :span="6"><el-card body-style="padding:12px;text-align:center">
-        <div style="font-size:22px;font-weight:700;color:#67c23a">{{ activeRooms }}</div>
-        <div style="font-size:12px;color:#909399">活跃房间</div>
+        <div style="font-size:22px;font-weight:700;color: var(--el-color-success)">{{ activeRooms }}</div>
+        <div style="font-size:12px;color: var(--el-text-color-secondary)">活跃房间</div>
       </el-card></el-col>
       <el-col :span="6"><el-card body-style="padding:12px;text-align:center">
-        <div style="font-size:22px;font-weight:700;color:#e6a23c">{{ totalMembers }}</div>
-        <div style="font-size:12px;color:#909399">在线成员</div>
+        <div style="font-size:22px;font-weight:700;color: var(--el-color-warning)">{{ totalMembers }}</div>
+        <div style="font-size:12px;color: var(--el-text-color-secondary)">在线成员</div>
       </el-card></el-col>
       <el-col :span="6"><el-card body-style="padding:12px;text-align:center">
-        <div style="font-size:22px;font-weight:700;color:#909399">{{ todayMsgs }}</div>
-        <div style="font-size:12px;color:#909399">今日消息</div>
+        <div style="font-size:22px;font-weight:700;color: var(--el-text-color-secondary)">{{ todayMsgs }}</div>
+        <div style="font-size:12px;color: var(--el-text-color-secondary)">今日消息</div>
       </el-card></el-col>
     </el-row>
 
@@ -61,14 +61,14 @@
                 <span style="font-weight:600">{{ row.name }}</span>
                 <el-tag v-if="row.type === 'PRIVATE'" size="small">私密</el-tag>
               </div>
-              <div style="font-size:11px;color:#909399;margin-top:2px">{{ row.topic || '暂无主题' }}</div>
+              <div style="font-size:11px;color: var(--el-text-color-secondary);margin-top:2px">{{ row.topic || '暂无主题' }}</div>
             </template>
           </el-table-column>
           <el-table-column label="成员" width="80" align="center">
             <template #default="{ row }">
               <div style="display:flex;align-items:center;gap:4px;justify-content:center">
                 <el-avatar v-for="u in (row.members || []).slice(0,3)" :key="u.id" :size="20">{{ u.name?.charAt(0) || 'U' }}</el-avatar>
-                <span v-if="(row.members?.length || 0) > 3" style="font-size:11px;color:#909399">+{{ row.members.length - 3 }}</span>
+                <span v-if="(row.members?.length || 0) > 3" style="font-size:11px;color: var(--el-text-color-secondary)">+{{ row.members.length - 3 }}</span>
               </div>
             </template>
           </el-table-column>
@@ -96,11 +96,11 @@
           <div v-for="r in hotRooms" :key="r.id" class="hot-room" @click="joinRoom(r)">
             <div style="flex:1">
               <div style="font-weight:600;font-size:13px">{{ r.name }}</div>
-              <div style="font-size:11px;color:#909399">{{ r.members?.length || 0 }} 成员 · {{ r.messages || 0 }} 条消息</div>
+              <div style="font-size:11px;color: var(--el-text-color-secondary)">{{ r.members?.length || 0 }} 成员 · {{ r.messages || 0 }} 条消息</div>
             </div>
             <el-icon color="#f56c6c"><HotWater /></el-icon>
           </div>
-          <div v-if="!hotRooms.length" style="padding:20px;text-align:center;color:#909399">暂无热门房间</div>
+          <div v-if="!hotRooms.length" style="padding:20px;text-align:center;color: var(--el-text-color-secondary)">暂无热门房间</div>
         </el-card>
 
         <el-card title="🟢 在线成员" body-style="padding:0">
@@ -109,11 +109,11 @@
             <el-avatar :size="28" style="flex-shrink:0">{{ m.name?.charAt(0) || 'U' }}</el-avatar>
             <div style="flex:1;margin-left:8px">
               <div style="font-size:13px;font-weight:600">{{ m.name }}</div>
-              <div style="font-size:11px;color:#909399">{{ m.room || '未在房间' }}</div>
+              <div style="font-size:11px;color: var(--el-text-color-secondary)">{{ m.room || '未在房间' }}</div>
             </div>
             <div class="online-dot"></div>
           </div>
-          <div v-if="!onlineMembers.length" style="padding:20px;text-align:center;color:#909399">暂无在线成员</div>
+          <div v-if="!onlineMembers.length" style="padding:20px;text-align:center;color: var(--el-text-color-secondary)">暂无在线成员</div>
         </el-card>
       </el-col>
     </el-row>
@@ -163,16 +163,16 @@
           <el-avatar v-for="u in participants.slice(0,6)" :key="u.id || u.userId" :size="28" style="margin-right:4px" :title="u.nickname || u.username">
             {{ (u.nickname || u.username || 'U')?.charAt(0) }}
           </el-avatar>
-          <span v-if="participants.length > 6" style="font-size:12px;color:#909399;margin-left:4px">+{{ participants.length - 6 }}</span>
+          <span v-if="participants.length > 6" style="font-size:12px;color: var(--el-text-color-secondary);margin-left:4px">+{{ participants.length - 6 }}</span>
         </div>
       </div>
 
       <!-- 消息列表 -->
       <el-scrollbar ref="msgScrollRef" class="room-messages" v-loading="historyLoading">
-        <div v-if="!roomMessages.length && !wsConnected && !historyLoading" style="text-align:center;padding:40px 0;color:#c0c4cc;font-size:13px">
+        <div v-if="!roomMessages.length && !wsConnected && !historyLoading" style="text-align:center;padding:40px 0;color: var(--el-text-color-placeholder);font-size:13px">
           正在连接协作房间…
         </div>
-        <div v-else-if="!roomMessages.length && !historyLoading" style="text-align:center;padding:40px 0;color:#c0c4cc;font-size:13px">
+        <div v-else-if="!roomMessages.length && !historyLoading" style="text-align:center;padding:40px 0;color: var(--el-text-color-placeholder);font-size:13px">
           暂无消息<br/>发送消息或问 AI 开始协作
         </div>
         <template v-for="(msg, i) in roomMessages" :key="msg.id">
@@ -223,7 +223,7 @@
             <el-tag v-if="wsConnected" size="small" type="success">🟢 在线</el-tag>
             <el-tag v-else-if="roomJoined" size="small" type="warning">⚡ 降级轮询</el-tag>
             <el-tag v-else-if="wsReconnectAttempt > 0" size="small" type="danger">⚠️ 连接断开 ({{ wsReconnectAttempt }}/{{ MAX_RECONNECT_ATTEMPTS }})</el-tag>
-            <span v-if="participants.length" style="font-size:12px;color:#909399">
+            <span v-if="participants.length" style="font-size:12px;color: var(--el-text-color-secondary)">
               {{ participants.length }} 人在线
             </span>
           </div>
@@ -649,7 +649,7 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 .page-card { background: #fff; border-radius: 8px; padding: 20px; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; h2 { margin: 0; font-size: 16px; } }
-.hot-room { display: flex; align-items: center; gap: 12px; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f0f0f0; &:hover { background: #f5f7fa; } }
+.hot-room { display: flex; align-items: center; gap: 12px; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f0f0f0; &:hover { background: var(--el-fill-color-light); } }
 .online-member { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid #f0f0f0; }
 .online-dot { width: 8px; height: 8px; border-radius: 50%; background: #67c23a; flex-shrink: 0; }
 
@@ -658,7 +658,7 @@ onUnmounted(() => {
   padding: 8px 0 12px;
   border-bottom: 1px solid #f0f0f0;
   margin-bottom: 8px;
-  .room-topic { font-size: 13px; color: #909399; margin-bottom: 8px; }
+  .room-topic { font-size: 13px; color: var(--el-text-color-secondary); margin-bottom: 8px; }
   .room-members { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 }
 .room-messages {
@@ -677,12 +677,12 @@ onUnmounted(() => {
     margin-bottom: 10px;
     align-items: flex-start;
     .msg-body { flex: 1; }
-    .msg-meta { font-size: 11px; color: #909399; margin-bottom: 2px; }
-    .msg-content { font-size: 13px; color: #303133; background: #f5f7fa; border-radius: 8px; padding: 6px 10px; display: inline-block; max-width: 90%; word-break: break-all; }
+    .msg-meta { font-size: 11px; color: var(--el-text-color-secondary); margin-bottom: 2px; }
+    .msg-content { font-size: 13px; color: var(--el-text-color-primary); background: var(--el-fill-color-light); border-radius: 8px; padding: 6px 10px; display: inline-block; max-width: 90%; word-break: break-all; }
     &.mine {
       flex-direction: row-reverse;
       .msg-meta { text-align: right; }
-      .msg-content { background: #ecf5ff; color: #409eff; }
+      .msg-content { background: var(--el-color-primary-light-9); color: var(--el-color-primary); }
     }
     &.ai {
       .msg-content { background: linear-gradient(135deg, #f0fdf4, #dcfce7); color: #15803d; border: 1px solid #bbf7d0; }

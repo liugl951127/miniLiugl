@@ -3,7 +3,7 @@
   <div class="page-card" style="padding:0;overflow:hidden">
     <!-- 顶部工具栏 -->
     <div class="canvas-toolbar">
-      <span style="font-size:14px;font-weight:600;color:#303133">Agent 画布</span>
+      <span style="font-size:14px;font-weight:600;color: var(--el-text-color-primary)">Agent 画布</span>
       <div style="display:flex;gap:8px;align-items:center">
         <!-- Undo / Redo -->
         <el-tooltip content="撤销 (Ctrl+Z)" placement="bottom">
@@ -205,7 +205,7 @@
         <div v-if="nodes.length === 0 && !loading" class="canvas-empty">
           <div style="font-size:40px">🕸️</div>
           <div style="margin-top:8px">从左侧拖拽节点到画布</div>
-          <div style="font-size:12px;color:#909399;margin-top:4px">或点击"加载"导入已有工作流</div>
+          <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">或点击"加载"导入已有工作流</div>
         </div>
 
         <!-- Zoom controls (bottom-left) -->
@@ -258,7 +258,7 @@
           <span class="log-tool">{{ step.tool }}</span>
           <span class="log-result">{{ step.result }}</span>
         </div>
-        <div v-if="!runLog.length" style="color:#909399;text-align:center;padding:40px">暂无执行记录</div>
+        <div v-if="!runLog.length" style="color: var(--el-text-color-secondary);text-align:center;padding:40px">暂无执行记录</div>
       </div>
     </el-drawer>
 
@@ -279,14 +279,14 @@
         >
           <span class="search-result-dot" :style="{ background: n.color }" />
           <span>{{ n.label }}</span>
-          <span style="color:#909399;font-size:12px;margin-left:6px">{{ n.type }}</span>
+          <span style="color: var(--el-text-color-secondary);font-size:12px;margin-left:6px">{{ n.type }}</span>
         </div>
       </div>
-      <div v-else-if="searchQuery && searchResults.length === 0" style="color:#909399;text-align:center;padding:20px">
+      <div v-else-if="searchQuery && searchResults.length === 0" style="color: var(--el-text-color-secondary);text-align:center;padding:20px">
         未找到匹配节点
       </div>
       <template #footer>
-        <span style="font-size:12px;color:#c0c4cc">按 Enter 定位到第一个结果 · Esc 关闭</span>
+        <span style="font-size:12px;color: var(--el-text-color-placeholder)">按 Enter 定位到第一个结果 · Esc 关闭</span>
       </template>
     </el-dialog>
 
@@ -1273,7 +1273,7 @@ onUnmounted(() => {
   background: var(--el-fill-color-lightest); border-radius: 6px 6px 0 0; font-size: 12px; font-weight: 500;
   span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
-.node-del { opacity: 0; cursor: pointer; color: #f56c6c; transition: opacity 0.15s; }
+.node-del { opacity: 0; cursor: pointer; color: var(--el-color-danger); transition: opacity 0.15s; }
 .canvas-node:hover .node-del { opacity: 1; }
 .node-body { padding: 6px 8px; }
 .node-type-tag { font-size: 10px; padding: 1px 5px; border-radius: 3px; display: inline-block; margin-bottom: 2px; }
@@ -1361,24 +1361,24 @@ onUnmounted(() => {
   border-radius: 4px;
   padding: 2px 6px;
   font-size: 11px;
-  color: #606266;
+  color: var(--el-text-color-regular);
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
-  &:hover { border-color: #409eff; color: #409eff; }
+  &:hover { border-color: var(--el-color-primary); color: var(--el-color-primary); }
 }
 
 // Selection badge
 .sel-badge {
   display: flex; align-items: center;
-  background: #ecf5ff;
+  background: var(--el-color-primary-light-9);
   border: 1px solid #409eff;
   border-radius: 12px;
   padding: 2px 8px;
   font-size: 12px;
-  color: #409eff;
+  color: var(--el-color-primary);
   font-weight: 500;
 }
 
@@ -1386,8 +1386,8 @@ onUnmounted(() => {
 .search-result-item {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px; cursor: pointer; border-radius: 4px;
-  font-size: 13px; color: #303133;
-  &:hover { background: #f5f7fa; }
+  font-size: 13px; color: var(--el-text-color-primary);
+  &:hover { background: var(--el-fill-color-light); }
 }
 .search-result-dot {
   width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;

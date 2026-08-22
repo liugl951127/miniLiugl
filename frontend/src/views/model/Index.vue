@@ -18,13 +18,13 @@
       <el-tab-pane v-if="isSuperAdmin" name="trained" label="🧬 训练模型">
 
         <!-- 自研模型专区卡片 -->
-        <el-card body-style="padding:0" style="margin-bottom:16px;border:2px solid #409eff">
+        <el-card body-style="padding:0" style="margin-bottom:16px;border:2px solid var(--el-color-primary)">
           <div style="padding:16px 20px;background:linear-gradient(135deg,#f0f7ff 0%,#e8f4fd 100%);border-radius:8px 8px 0 0">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
               <span style="font-size:24px">🏷️</span>
               <div>
-                <div style="font-size:16px;font-weight:700;color:#1e40af">自研模型专区</div>
-                <div style="font-size:12px;color:#409eff">平台自主训练 · 完全自主可控 · 行业深度定制</div>
+                <div style="font-size:16px;font-weight:700;color: var(--el-color-primary)">自研模型专区</div>
+                <div style="font-size:12px;color: var(--el-color-primary)">平台自主训练 · 完全自主可控 · 行业深度定制</div>
               </div>
               <el-tag v-if="trainedEnabled" type="success" style="margin-left:auto" size="large">🟢 {{ trainedEnabled }} 个已启用</el-tag>
               <el-tag v-else type="warning" style="margin-left:auto" size="large">⚠️ 暂无启用</el-tag>
@@ -40,23 +40,23 @@
           <div style="padding:14px 20px">
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
               <div style="text-align:center">
-                <div style="font-size:20px;font-weight:700;color:#409eff">{{ trainedModels.length }}</div>
-                <div style="font-size:11px;color:#909399">模型总数</div>
+                <div style="font-size:20px;font-weight:700;color: var(--el-color-primary)">{{ trainedModels.length }}</div>
+                <div style="font-size:11px;color: var(--el-text-color-secondary)">模型总数</div>
               </div>
               <div style="text-align:center">
-                <div style="font-size:20px;font-weight:700;color:#67c23a">{{ trainedEnabled }}</div>
-                <div style="font-size:11px;color:#909399">已启用</div>
+                <div style="font-size:20px;font-weight:700;color: var(--el-color-success)">{{ trainedEnabled }}</div>
+                <div style="font-size:11px;color: var(--el-text-color-secondary)">已启用</div>
               </div>
               <div style="text-align:center">
-                <div style="font-size:20px;font-weight:700;color:#e6a23c">{{ trainedAccuracy }}%</div>
-                <div style="font-size:11px;color:#909399">平均准确率</div>
+                <div style="font-size:20px;font-weight:700;color: var(--el-color-warning)">{{ trainedAccuracy }}%</div>
+                <div style="font-size:11px;color: var(--el-text-color-secondary)">平均准确率</div>
               </div>
               <div style="text-align:center">
-                <div style="font-size:20px;font-weight:700;color:#909399">{{ trainedCalls.toLocaleString() }}</div>
-                <div style="font-size:11px;color:#909399">累计调用</div>
+                <div style="font-size:20px;font-weight:700;color: var(--el-text-color-secondary)">{{ trainedCalls.toLocaleString() }}</div>
+                <div style="font-size:11px;color: var(--el-text-color-secondary)">累计调用</div>
               </div>
             </div>
-            <div style="margin-top:12px;padding:10px;background:#f5f7fa;border-radius:6px;font-size:12px;color:#606266">
+            <div style="margin-top:12px;padding:10px;background: var(--el-fill-color-light);border-radius:6px;font-size:12px;color: var(--el-text-color-regular)">
               <div style="font-weight:600;margin-bottom:4px">💡 使用方式</div>
               <div>① 启用模型 → ② 前往「智能对话」选择 🏷️ 自研模型 → ③ 可在 RAG 问答、知识库检索、Agent 编排中指定使用</div>
             </div>
@@ -68,40 +68,40 @@
           <el-col :span="5">
             <el-tooltip content="平台已训练并上线的模型总数，含自研与行业定制模型" placement="top">
               <el-card body-style="padding:12px;text-align:center">
-                <div style="font-size:22px;font-weight:700;color:#409eff">{{ trainedModels.length }}</div>
-                <div style="font-size:12px;color:#909399">🏷️自研模型</div>
+                <div style="font-size:22px;font-weight:700;color: var(--el-color-primary)">{{ trainedModels.length }}</div>
+                <div style="font-size:12px;color: var(--el-text-color-secondary)">🏷️自研模型</div>
               </el-card>
             </el-tooltip>
           </el-col>
           <el-col :span="5">
             <el-tooltip content="当前状态为已启用的模型数量，启用后方可在对话中使用" placement="top">
               <el-card body-style="padding:12px;text-align:center">
-                <div style="font-size:22px;font-weight:700;color:#67c23a">{{ trainedEnabled }}</div>
-                <div style="font-size:12px;color:#909399">已启用</div>
+                <div style="font-size:22px;font-weight:700;color: var(--el-color-success)">{{ trainedEnabled }}</div>
+                <div style="font-size:12px;color: var(--el-text-color-secondary)">已启用</div>
               </el-card>
             </el-tooltip>
           </el-col>
           <el-col :span="5">
             <el-tooltip content="已启用模型的平均准确率，基于验证集评估，数据完全自主可控" placement="top">
               <el-card body-style="padding:12px;text-align:center">
-                <div style="font-size:22px;font-weight:700;color:#e6a23c">{{ trainedAccuracy }}%</div>
-                <div style="font-size:12px;color:#909399">平均准确率</div>
+                <div style="font-size:22px;font-weight:700;color: var(--el-color-warning)">{{ trainedAccuracy }}%</div>
+                <div style="font-size:12px;color: var(--el-text-color-secondary)">平均准确率</div>
               </el-card>
             </el-tooltip>
           </el-col>
           <el-col :span="5">
             <el-tooltip content="平台所有训练模型的历史累计调用次数，反映模型使用频率" placement="top">
               <el-card body-style="padding:12px;text-align:center">
-                <div style="font-size:22px;font-weight:700;color:#909399">{{ trainedCalls.toLocaleString() }}</div>
-                <div style="font-size:12px;color:#909399">总调用次数</div>
+                <div style="font-size:22px;font-weight:700;color: var(--el-text-color-secondary)">{{ trainedCalls.toLocaleString() }}</div>
+                <div style="font-size:12px;color: var(--el-text-color-secondary)">总调用次数</div>
               </el-card>
             </el-tooltip>
           </el-col>
           <el-col :span="4">
             <el-tooltip :content="'自研(训练+本地)模型占全部启用模型的比例。自研' + (localModelsCount + trainedEnabled) + '个 / 总' + allEnabledModelsCount + '个'" placement="top">
               <el-card body-style="padding:12px;text-align:center">
-                <div style="font-size:22px;font-weight:700;color:#409eff">{{ allEnabledModelsCount > 0 ? ((localModelsCount + trainedEnabled) / allEnabledModelsCount * 100).toFixed(0) : 0 }}%</div>
-                <div style="font-size:12px;color:#909399">自研覆盖率</div>
+                <div style="font-size:22px;font-weight:700;color: var(--el-color-primary)">{{ allEnabledModelsCount > 0 ? ((localModelsCount + trainedEnabled) / allEnabledModelsCount * 100).toFixed(0) : 0 }}%</div>
+                <div style="font-size:12px;color: var(--el-text-color-secondary)">自研覆盖率</div>
               </el-card>
             </el-tooltip>
           </el-col>
@@ -123,7 +123,7 @@
           <el-table-column prop="name" label="模型名称" width="200">
             <template #default="{ row }">
               <div style="font-weight:600">{{ row.name }}</div>
-              <div style="font-size:11px;color:#909399">{{ row.code }}</div>
+              <div style="font-size:11px;color: var(--el-text-color-secondary)">{{ row.code }}</div>
             </template>
           </el-table-column>
           <el-table-column label="行业" width="120">
@@ -139,7 +139,7 @@
           </el-table-column>
           <el-table-column label="准确率" width="100" align="center">
             <template #default="{ row }">
-              <span :style="{ color: row.accuracy > 90 ? '#67c23a' : '#e6a23c', fontWeight: 600 }">
+              <span :style="{ color: row.accuracy > 90 ? 'var(--el-color-success)' : 'var(--el-color-warning)', fontWeight: 600 }">
                 {{ row.accuracy }}%
               </span>
             </template>
@@ -160,7 +160,7 @@
           </el-table-column>
           <el-table-column label="模型路径" width="240">
             <template #default="{ row }">
-              <code style="font-size:10px;color:#67c23a">/opt/minimax/models/vision/{{ row.code }}</code>
+              <code style="font-size:10px;color: var(--el-color-success)">/opt/minimax/models/vision/{{ row.code }}</code>
             </template>
           </el-table-column>
           <el-table-column label="操作" width="180" align="center">
@@ -219,11 +219,11 @@
                 <div style="font-size:22px">🖥️</div>
                 <div style="flex:1">
                   <div style="font-weight:600;font-size:14px">{{ p.name }}</div>
-                  <div style="font-size:11px;color:#909399;word-break:break-all">{{ p.baseUrl }}</div>
+                  <div style="font-size:11px;color: var(--el-text-color-secondary);word-break:break-all">{{ p.baseUrl }}</div>
                 </div>
                 <el-tag :type="p.enabled ? 'success' : 'danger'" size="small">{{ p.enabled ? '启用' : '禁用' }}</el-tag>
               </div>
-              <div style="font-size:12px;color:#67c23a;margin-bottom:8px">
+              <div style="font-size:12px;color: var(--el-color-success);margin-bottom:8px">
                 协议: {{ p.protocol }} | {{ p.description || '无描述' }}
               </div>
               <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -247,8 +247,8 @@
             <el-card shadow="hover" class="add-card" @click="openLocalProviderForm()" style="cursor:pointer;height:160px;display:flex;align-items:center;justify-content:center">
               <div style="text-align:center">
                 <el-icon :size="32" color="#409eff"><Plus /></el-icon>
-                <div style="margin-top:8px;font-size:14px;color:#409eff">注册推理服务器</div>
-                <div style="font-size:11px;color:#909399">Ollama / vLLM / FastAPI</div>
+                <div style="margin-top:8px;font-size:14px;color: var(--el-color-primary)">注册推理服务器</div>
+                <div style="font-size:11px;color: var(--el-text-color-secondary)">Ollama / vLLM / FastAPI</div>
               </div>
             </el-card>
           </el-col>
@@ -269,7 +269,7 @@
             <el-button type="primary" :loading="addingSelected" @click="addSelectedModels">添加到模型列表 ({{ selectedModels.length }} 个)</el-button>
           </div>
           <el-empty v-else-if="!discoveringId" description="暂未发现模型，请确保服务器在线" />
-          <div v-else style="text-align:center;padding:24px;color:#909399">
+          <div v-else style="text-align:center;padding:24px;color: var(--el-text-color-secondary)">
             <el-icon class="is-loading"><Loading /></el-icon> 正在发现模型…
           </div>
         </el-dialog>
@@ -282,7 +282,7 @@
             </el-form-item>
             <el-form-item label="Base URL" prop="baseUrl">
               <el-input v-model="localProviderForm.baseUrl" placeholder="http://192.168.1.100:11434" />
-              <div style="font-size:11px;color:#909399;margin-top:4px">
+              <div style="font-size:11px;color: var(--el-text-color-secondary);margin-top:4px">
                 Ollama 默认端口 11434，vLLM 默认 8000
               </div>
             </el-form-item>
@@ -313,7 +313,7 @@
                 <div class="provider-logo">{{ p.logo || p.name?.[0] || '?' }}</div>
                 <div style="flex:1">
                   <div style="font-weight:600;font-size:14px">{{ p.name }}</div>
-                  <div style="font-size:11px;color:#909399">{{ p.modelCount }} 个模型</div>
+                  <div style="font-size:11px;color: var(--el-text-color-secondary)">{{ p.modelCount }} 个模型</div>
                 </div>
                 <el-tag :type="p.enabled ? 'success' : 'danger'" size="small">{{ p.enabled ? '启用' : '禁用' }}</el-tag>
               </div>
@@ -330,7 +330,7 @@
             <el-card shadow="hover" class="add-card" @click="openProviderForm()">
               <div style="text-align:center;padding:16px">
                 <el-icon :size="28" color="#409eff"><Plus /></el-icon>
-                <div style="margin-top:6px;font-size:13px;color:#409eff">添加服务商</div>
+                <div style="margin-top:6px;font-size:13px;color: var(--el-color-primary)">添加服务商</div>
               </div>
             </el-card>
           </el-col>
@@ -387,14 +387,14 @@
         </el-form-item>
         <el-form-item label="速率限制">
           <el-input-number v-model="form.rateLimit" :min="0" :max="1000" style="width:100%" />
-          <span style="margin-left:8px;font-size:12px;color:#909399">req/min</span>
+          <span style="margin-left:8px;font-size:12px;color: var(--el-text-color-secondary)">req/min</span>
         </el-form-item>
         <el-form-item label="温度">
           <el-slider v-model="form.temperature" :min="0" :max="2" :step="0.1" show-stops />
         </el-form-item>
         <el-form-item label="上下文">
           <el-input-number v-model="form.contextWindow" :min="0" :step="1024" />
-          <span style="margin-left:8px;font-size:12px;color:#909399">tokens</span>
+          <span style="margin-left:8px;font-size:12px;color: var(--el-text-color-secondary)">tokens</span>
         </el-form-item>
       </el-form>
       <template #footer>

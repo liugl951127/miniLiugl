@@ -206,8 +206,8 @@ onUnmounted(() => {
   color: var(--el-text-color-placeholder);
   margin-top: 4px;
 }
-.status-pending .status-value { color: #909399; }
-.status-scanned .status-value { color: #e6a23c; }
-.status-success .status-value { color: #67c23a; }
-.status-expired .status-value { color: #f56c6c; }
+.status-pending .status-value { color: var(--el-text-color-secondary); }
+.status-scanned .status-value { color: var(--el-color-warning); }
+.status-success .status-value { color: var(--el-color-success); }
+.status-expired .status-value { color: var(--el-color-danger); }
 </style>

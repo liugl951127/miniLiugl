@@ -12,20 +12,20 @@
     <!-- 统计卡片 -->
     <el-row :gutter="12" style="margin-bottom:16px">
       <el-col :span="6"><el-card body-style="padding:12px;text-align:center" shadow="never">
-        <div style="font-size:22px;font-weight:700;color:#409eff">{{ keys.length }}</div>
-        <div style="font-size:12px;color:#909399">总 Key 数</div>
+        <div style="font-size:22px;font-weight:700;color: var(--el-color-primary)">{{ keys.length }}</div>
+        <div style="font-size:12px;color: var(--el-text-color-secondary)">总 Key 数</div>
       </el-card></el-col>
       <el-col :span="6"><el-card body-style="padding:12px;text-align:center" shadow="never">
-        <div style="font-size:22px;font-weight:700;color:#67c23a">{{ activeCount }}</div>
-        <div style="font-size:12px;color:#909399">启用中</div>
+        <div style="font-size:22px;font-weight:700;color: var(--el-color-success)">{{ activeCount }}</div>
+        <div style="font-size:12px;color: var(--el-text-color-secondary)">启用中</div>
       </el-card></el-col>
       <el-col :span="6"><el-card body-style="padding:12px;text-align:center" shadow="never">
-        <div style="font-size:22px;font-weight:700;color:#e6a23c">{{ totalUsed.toLocaleString() }}</div>
-        <div style="font-size:12px;color:#909399">总调用量</div>
+        <div style="font-size:22px;font-weight:700;color: var(--el-color-warning)">{{ totalUsed.toLocaleString() }}</div>
+        <div style="font-size:12px;color: var(--el-text-color-secondary)">总调用量</div>
       </el-card></el-col>
       <el-col :span="6"><el-card body-style="padding:12px;text-align:center" shadow="never">
-        <div style="font-size:22px;font-weight:700;color:#909399">{{ totalQuotaLabel }}</div>
-        <div style="font-size:12px;color:#909399">总限额</div>
+        <div style="font-size:22px;font-weight:700;color: var(--el-text-color-secondary)">{{ totalQuotaLabel }}</div>
+        <div style="font-size:12px;color: var(--el-text-color-secondary)">总限额</div>
       </el-card></el-col>
     </el-row>
 
@@ -53,7 +53,7 @@
       <el-table-column label="名称" min-width="180">
         <template #default="{ row }">
           <div style="font-weight:600">{{ row.name }}</div>
-          <div style="font-size:11px;color:#909399">{{ row.description || '—' }}</div>
+          <div style="font-size:11px;color: var(--el-text-color-secondary)">{{ row.description || '—' }}</div>
         </template>
       </el-table-column>
       <el-table-column label="Key" min-width="320">
@@ -80,7 +80,7 @@
               :status="quotaStatus(row)"
               style="width:90px"
             />
-            <span style="font-size:12px;color:#909399">{{ row.used || 0 }}/{{ row.quota || '∞' }}</span>
+            <span style="font-size:12px;color: var(--el-text-color-secondary)">{{ row.used || 0 }}/{{ row.quota || '∞' }}</span>
           </div>
         </template>
       </el-table-column>
@@ -93,7 +93,7 @@
       </el-table-column>
       <el-table-column label="有效期" width="120">
         <template #default="{ row }">
-          <span style="font-size:12px;color:#909399">{{ row.expireAt || '永久' }}</span>
+          <span style="font-size:12px;color: var(--el-text-color-secondary)">{{ row.expireAt || '永久' }}</span>
         </template>
       </el-table-column>
       <el-table-column prop="createdAt" label="创建时间" width="170" />
@@ -237,7 +237,7 @@ es.onmessage = e => console.log(JSON.parse(e.data))</pre>
               </el-table-column>
               <el-table-column prop="path" label="路径" min-width="320">
                 <template #default="{ row }">
-                  <code style="font-size:12px;color:#409eff">{{ row.path }}</code>
+                  <code style="font-size:12px;color: var(--el-color-primary)">{{ row.path }}</code>
                 </template>
               </el-table-column>
               <el-table-column prop="desc" label="说明" min-width="220" />
@@ -252,11 +252,11 @@ es.onmessage = e => console.log(JSON.parse(e.data))</pre>
             <template #header>
               <span style="font-size:13px;font-weight:600">🔔 Webhook 回调说明</span>
             </template>
-            <p style="font-size:13px;color:#606266;margin:0 0 8px">
+            <p style="font-size:13px;color: var(--el-text-color-regular);margin:0 0 8px">
               异步任务完成后，系统会 POST 回调你注册的 Webhook URL。
               请求头包含 <code>X-Webhook-Secret</code>（注册时填的密钥）和 <code>X-Task-Id</code>。
             </p>
-            <pre class="code-block" style="background:#f5f7fa;padding:12px;border-radius:4px;font-size:12px">
+            <pre class="code-block" style="background: var(--el-fill-color-light);padding:12px;border-radius:4px;font-size:12px">
 # Webhook 回调格式（POST）
 Headers:
   Content-Type: application/json
@@ -282,7 +282,7 @@ Body:
               <el-button size="small" :loading="testingWebhook" @click="testWebhook">
                 🧪 测试 Webhook 连通性
               </el-button>
-              <span style="font-size:12px;color:#909399;margin-left:8px">
+              <span style="font-size:12px;color: var(--el-text-color-secondary);margin-left:8px">
                 注册 Webhook URL 后可点击测试，确认外部系统可接收回调。
               </span>
             </div>
@@ -538,7 +538,7 @@ async function createKey() {
     const newK = r.data || {}
     await ElMessageBox.alert(
       `<div style="font-size:13px">Key 已生成，请妥善保存（仅显示一次）：</div>` +
-      `<div style="margin-top:8px;font-family:monospace;background:#f5f7fa;padding:8px;border-radius:4px;word-break:break-all">${newK.rawKey || newK.keyPrefix || '生成成功'}</div>`,
+      `<div style="margin-top:8px;font-family:monospace;background: var(--el-fill-color-light);padding:8px;border-radius:4px;word-break:break-all">${newK.rawKey || newK.keyPrefix || '生成成功'}</div>`,
       'API Key',
       { dangerouslyUseHTMLString: true, confirmButtonText: '我已保存' }
     )
@@ -593,7 +593,7 @@ async function refreshKey(k) {
     const newK = r.data || {}
     ElMessageBox.alert(
       `<div style="font-size:13px">新 Key 已生成，旧 Key 已失效：</div>` +
-      `<div style="margin-top:8px;font-family:monospace;background:#f5f7fa;padding:8px;border-radius:4px;word-break:break-all">${newK.rawKey || newK.keyPrefix || '轮换成功'}</div>`,
+      `<div style="margin-top:8px;font-family:monospace;background: var(--el-fill-color-light);padding:8px;border-radius:4px;word-break:break-all">${newK.rawKey || newK.keyPrefix || '轮换成功'}</div>`,
       'API Key 已刷新',
       { dangerouslyUseHTMLString: true, confirmButtonText: '我已保存' }
     )
@@ -639,7 +639,7 @@ onMounted(loadKeys)
 }
 .key-code {
   font-size: 12px;
-  background: #f5f7fa;
+  background: var(--el-fill-color-light);
   padding: 2px 6px;
   border-radius: 4px;
   flex: 1;

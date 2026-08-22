@@ -219,17 +219,17 @@ onMounted(loadPlugins)
 .plugin-name {
   font-weight: 600;
   font-size: 15px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 .plugin-author {
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-top: 4px;
 }
 .plugin-desc {
   margin-top: 10px;
   font-size: 13px;
-  color: #606266;
+  color: var(--el-text-color-regular);
   line-height: 1.5;
   min-height: 40px;
 }
@@ -242,7 +242,7 @@ onMounted(loadPlugins)
 }
 .plugin-downloads {
   font-size: 11px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-left: auto;
 }
 .plugin-footer {

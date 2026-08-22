@@ -91,5 +91,13 @@
   "engines": {
     "node": ">=16.20.0 <17 || >=18.0.0",
     "npm": ">=8.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "esbuild",
+      "tesseract.js",
+      "vue-demi"
+    ]
   }
 }

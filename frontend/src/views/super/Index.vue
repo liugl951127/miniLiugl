@@ -8,8 +8,8 @@
     <el-row :gutter="12" style="margin-bottom:20px">
       <el-col v-for="s in stats" :key="s.label" :span="6">
         <el-card shadow="hover">
-          <div style="font-size:12px;color:#999">{{ s.label }}</div>
-          <div style="font-size:28px;font-weight:700;color:#dc2626;margin-top:4px">{{ s.value }}</div>
+          <div style="font-size:12px;color: var(--el-text-color-secondary)">{{ s.label }}</div>
+          <div style="font-size:28px;font-weight:700;color: var(--el-color-danger);margin-top:4px">{{ s.value }}</div>
         </el-card>
       </el-col>
     </el-row>

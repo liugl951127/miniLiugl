@@ -270,6 +270,6 @@ onMounted(() => {
   padding: 4px 0;
 }
 .preview-title {
-  font-size: 14px; font-weight: 600; color: #303133;
+  font-size: 14px; font-weight: 600; color: var(--el-text-color-primary);
 }
 </style>

@@ -29,26 +29,26 @@
     <el-row :gutter="12" style="margin-bottom:12px">
       <el-col :span="6">
         <el-card shadow="hover" body-style="text-align:center;padding:12px">
-          <div style="font-size:24px;font-weight:700;color:#409eff">{{ stats.entities }}</div>
-          <div style="font-size:12px;color:#909399;margin-top:4px">实体数</div>
+          <div style="font-size:24px;font-weight:700;color: var(--el-color-primary)">{{ stats.entities }}</div>
+          <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">实体数</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card shadow="hover" body-style="text-align:center;padding:12px">
-          <div style="font-size:24px;font-weight:700;color:#67c23a">{{ stats.edges }}</div>
-          <div style="font-size:12px;color:#909399;margin-top:4px">关系数</div>
+          <div style="font-size:24px;font-weight:700;color: var(--el-color-success)">{{ stats.edges }}</div>
+          <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">关系数</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card shadow="hover" body-style="text-align:center;padding:12px">
-          <div style="font-size:24px;font-weight:700;color:#e6a23c">{{ stats.types }}</div>
-          <div style="font-size:12px;color:#909399;margin-top:4px">类型数</div>
+          <div style="font-size:24px;font-weight:700;color: var(--el-color-warning)">{{ stats.types }}</div>
+          <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">类型数</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card shadow="hover" body-style="text-align:center;padding:12px">
-          <div style="font-size:24px;font-weight:700;color:#909399">-</div>
-          <div style="font-size:12px;color:#909399;margin-top:4px">查询次数</div>
+          <div style="font-size:24px;font-weight:700;color: var(--el-text-color-secondary)">-</div>
+          <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">查询次数</div>
         </el-card>
       </el-col>
     </el-row>
@@ -58,7 +58,7 @@
       <template #header>
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span>图谱可视化</span>
-          <div style="display:flex;gap:8px;align-items:center;font-size:12px;color:#909399">
+          <div style="display:flex;gap:8px;align-items:center;font-size:12px;color: var(--el-text-color-secondary)">
             <span>缩放: {{ Math.round(zoomScale * 100) }}%</span>
             <el-button size="small" link @click="resetView">重置</el-button>
           </div>
@@ -159,7 +159,7 @@
         :rules="addFormRules"
         inline
         size="small"
-        style="margin-bottom:12px;padding:12px;background:#f5f7fa;border-radius:4px"
+        style="margin-bottom:12px;padding:12px;background: var(--el-fill-color-light);border-radius:4px"
         @submit.prevent
       >
         <el-form-item label="名称" prop="name">
@@ -1198,7 +1198,7 @@ onUnmounted(() => {
   cursor: pointer;
   font-size: 14px;
   &:hover {
-    background: #f5f7fa;
+    background: var(--el-fill-color-light);
   }
   &:first-child {
     border-radius: 4px 4px 0 0;
@@ -1229,7 +1229,7 @@ onUnmounted(() => {
   display: flex; 
   align-items: center; 
   justify-content: center;
-  color: #909399; 
+  color: var(--el-text-color-secondary); 
   font-size: 14px; 
   gap: 8px;
 }
@@ -1264,9 +1264,9 @@ onUnmounted(() => {
   padding: 8px 12px;
   font-size: 12px;
   font-weight: 600;
-  color: #606266;
+  color: var(--el-text-color-regular);
   border-bottom: 1px solid #f0f0f0;
-  background: #f5f7fa;
+  background: var(--el-fill-color-light);
 }
 
 .search-result-item {
@@ -1277,7 +1277,7 @@ onUnmounted(() => {
   cursor: pointer;
   font-size: 13px;
   &:hover {
-    background: #ecf5ff;
+    background: var(--el-color-primary-light-9);
   }
 }
 
@@ -1301,7 +1301,7 @@ onUnmounted(() => {
 
 .node-type-label {
   font-size: 11px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .entity-detail-panel {
@@ -1359,7 +1359,7 @@ onUnmounted(() => {
   font-size: 13px;
   font-weight: 600;
   margin: 12px 0 8px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .relation-list {
@@ -1373,18 +1373,18 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
-  background: #f5f7fa;
+  background: var(--el-fill-color-light);
   border-radius: 4px;
   font-size: 13px;
 }
 
 .relation-label {
-  color: #409eff;
+  color: var(--el-color-primary);
   font-weight: 500;
 }
 
 .relation-target {
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .neighbors-grid {
@@ -1405,14 +1405,14 @@ onUnmounted(() => {
     margin-top: 16px;
     p {
       font-size: 13px;
-      color: #606266;
+      color: var(--el-text-color-regular);
       margin-bottom: 8px;
     }
   }
 }
 
 .json-example {
-  background: #f5f7fa;
+  background: var(--el-fill-color-light);
   padding: 12px;
   border-radius: 4px;
   font-size: 12px;

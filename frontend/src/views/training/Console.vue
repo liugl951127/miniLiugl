@@ -146,7 +146,7 @@
                 {{ currentTask.status }}
               </el-tag>
               <!-- P1-7: 自动滚动开关 + 滚到最新按钮 -->
-              <span style="font-size:11px;color:#9ca3af">{{ scrollPaused ? '已暂停滚动' : '自动滚动' }}</span>
+              <span style="font-size:11px;color: var(--el-text-color-secondary)">{{ scrollPaused ? '已暂停滚动' : '自动滚动' }}</span>
               <el-switch v-model="scrollPaused" size="small" @change="onAutoScrollChange" />
               <el-button size="small" link @click="scrollToBottom" title="滚到最新">
                 <el-icon><Bottom /></el-icon>
@@ -530,7 +530,7 @@ onUnmounted(() => {
 .tc-header h1 { margin: 0; font-size: 22px; }
 .badge { background: linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff;
   padding:2px 10px; border-radius:12px; font-size:12px; margin-left:8px; }
-.conn-status { display:flex; align-items:center; gap:8px; color:#6b7280; font-size:13px; }
+.conn-status { display:flex; align-items:center; gap:8px; color: var(--el-text-color-secondary); font-size:13px; }
 .dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
 .dot-green { background:#22c55e; box-shadow:0 0 4px #22c55e; }
 .dot-gray { background:#9ca3af; }
@@ -538,19 +538,19 @@ onUnmounted(() => {
 .ctrl-card, .task-list-card { margin-bottom: 16px; }
 .metrics-card, .events-card { height: calc(50% - 8px); display: flex; flex-direction: column; }
 
-.task-badge { font-size:12px; color:#6b7280; margin-left:12px; }
+.task-badge { font-size:12px; color: var(--el-text-color-secondary); margin-left:12px; }
 
 .loss-chart { width:100%; height:300px; }
 .chart-empty { height:300px; display:flex; align-items:center; justify-content:center; }
 
 .events-log { height:260px; overflow-y:auto; font-family:'JetBrains Mono','Consolas',monospace; font-size:12px; }
-.no-events { color:#9ca3af; padding:16px; text-align:center; }
+.no-events { color: var(--el-text-color-secondary); padding:16px; text-align:center; }
 .ev { display:flex; gap:10px; padding:3px 8px; border-radius:3px; margin-bottom:2px; }
 .ev-info { color:#374151; background:#f9fafb; }
 .ev-success { color:#065f46; background:#ecfdf5; }
 .ev-error { color:#991b1b; background:#fef2f2; }
 .ev-warn { color:#92400e; background:#fffbeb; }
-.ev-time { color:#9ca3af; flex-shrink:0; }
+.ev-time { color: var(--el-text-color-secondary); flex-shrink:0; }
 .ev-msg { flex:1; word-break: break-word; }
 
 .ctrl-actions { display:flex; gap:8px; margin-top:8px; }
@@ -563,5 +563,5 @@ onUnmounted(() => {
 .task-item.status-failed { border-color:#ef4444; }
 .task-name { font-weight:600; font-size:13px; color:#1f2937; }
 .task-meta { display:flex; align-items:center; gap:8px; margin-top:4px; }
-.task-date { font-size:11px; color:#9ca3af; margin-left:auto; }
+.task-date { font-size:11px; color: var(--el-text-color-secondary); margin-left:auto; }
 </style>

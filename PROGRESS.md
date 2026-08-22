@@ -890,3 +890,17 @@
 - [ ] Monitor 历史告警高级筛选
 - [ ] 前端骨架屏 + 首屏优化
 
+## Day 51 - 2026-08-22 ✅ Admin 深色模式补全 + RAG 时效性排序 + pnpm 环境修复
+
+**今日完成：**
+- [x] **Admin 深色模式补全**：57 个 Vue 文件批量替换硬编码颜色 → CSS 变量（#999/#909399 → text-color-secondary, #f56c6c → danger, #67c23a → success, #e6a23c → warning, #409eff → primary 等）
+- [x] **RAG 时效性排序**：`Retriever` 新增 `timelinessBoost` + `recencyScore`（指数衰减，半衰期=maxAge/3），combined score = (1-b)*sim + b*recency，Hit 新增 `rankScore` 字段
+- [x] **npm → pnpm**：npm 10.9.3 bug 导致 install 失败，改用 pnpm 11.22.0 完成安装，vite build 42.63s ✅
+- [x] 自检 13/13 + 静态 5/5 + mvn compile ✅
+
+**关键文件数：** Retriever.java (修改), ~57 Vue 文件 (深色模式修复)
+**明日计划 Day 52：**
+- [ ] Monitor 历史告警高级筛选（severity/service/time range 多条件过滤）
+- [ ] 前端骨架屏 + 首屏加载优化（el-skeleton + 路由懒加载）
+- [ ] 前端 API 路径一致性扫描（前后端参数匹配检查）
+
