@@ -133,7 +133,7 @@ export default defineConfig(({ mode }) => {
       // package.json 中 browserslist 会覆盖
       target: 'es2015',
       // V5.8: sourcemap 关闭 (生产不暴露源码)
-      sourcemap: isProd ? true : 'eval',
+      sourcemap: false,
       // V3.0.0: 浏览器 polyfill 支持
       // V3.5.8+: polyfillModulePreload 弃用, 改用 modulePreload.polyfill
       modulePreload: {
