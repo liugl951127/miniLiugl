@@ -225,7 +225,7 @@ public class AgentController {
     @GetMapping("/multi/history")
     public Result<List<AgentTask>> multiHistory(@AuthenticationPrincipal AuthenticatedUser user,
                                                  @RequestParam(defaultValue = "5") int limit) {
-        Long userId = user != null ? user.getId() : null;
+        Long userId = user != null ? user.id() : null;
         QueryWrapper<AgentTask> qw = new QueryWrapper<>();
         if (userId != null) {
             qw.eq("user_id", userId);

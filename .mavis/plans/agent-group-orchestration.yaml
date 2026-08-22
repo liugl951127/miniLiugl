@@ -1,0 +1,281 @@
+version: 1
+plan:
+  name: "多智能体群编排 (AgentGroup Orchestration)"
+  max_concurrency: 3
+  max_consecutive_failures: 3
+  max_cycles: 5
+  auto_accept: false
+  auto_reject_retries: 1
+
+tasks:
+  # ============ T1: 后端 AgentGroupMember CRUD + Orchestrator ============
+  - id: T1-backend-orchestrator
+    title: "后端: AgentGroupMember CRUD + OrchestratorService 流式执行"
+    assigned_to: general
+    role: produce
+    verified_by: explore
+    depends_on: []
+    timeout_ms: 1800000
+    max_retries: 1
+    prompt: |
+      在 /workspace/miniLiugl/backend/ 新增多智能体群编排能力:
+
+      ## 1. 数据库 (minimax-common/src/main/resources/sql/minimax-schema.sql)
+      加表 `agent_group_member`:
+      ```sql
+      CREATE TABLE IF NOT EXISTS agent_group_member (
+          id BIGINT PRIMARY KEY AUTO_INCREMENT,
+          group_id BIGINT NOT NULL,
+          agent_code VARCHAR(64) NOT NULL,
+          role VARCHAR(32) NOT NULL DEFAULT 'WORKER', -- MANAGER | WORKER | CRITIC
+          position INT NOT NULL DEFAULT 0,
+          config_json VARCHAR(2000) DEFAULT '',
+          enabled TINYINT NOT NULL DEFAULT 1,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_group (group_id, position)
+      );
+      ```
+      加 3 条 seed (针对已有的 AgentGroup.id=1) 到 minimax-seed.sql
+
+      ## 2. 实体 + Mapper (新建 minimax-ai/marketplace 包)
+      - `entity/AgentGroupMember.java` — 字段如上, MyBatis-Plus @TableName
+      - `mapper/AgentGroupMemberMapper.java` — BaseMapper<AgentGroupMember>
+      - 已有 `AgentGroup.java` 不用改
+
+      ## 3. Service + Orchestrator (新建)
+      - `service/AgentGroupMemberService.java` — 简单 CRUD (listByGroupId, addMember, updateMember, removeMember, reorder)
+      - `service/AgentGroupOrchestrator.java` — 核心编排器:
+        ```java
+        public class AgentGroupOrchestrator {
+            public SseEmitter run(Long userId, Long groupId, String goal, List<String> toolCodes);
+            // 1. 加载 group 全部 member (按 position 排序)
+            // 2. 按 strategy 编排:
+            //    - PIPELINE: 顺序执行, 上一步输出作为下一步输入
+            //    - PARALLEL: 并行执行 (CompletableFuture), 合并结果
+            //    - DEBATE: MANAGER 提问 → N WORKER 各自回答 → CRITIC 评分 → 选最高
+            // 3. 通过 SseEmitter 推流:
+            //    event: "step-start" {agentCode, role, position}
+            //    event: "step-token" {agentCode, content}
+            //    event: "step-end" {agentCode, output}
+            //    event: "final" {success, finalAnswer, totalSteps, durationMs}
+            // 4. 复用 LlmGatewayService 调 LLM (或 PromptTemplateService)
+        }
+        ```
+
+      ## 4. Controller (新建)
+      - `controller/AgentGroupOrchestrationController.java`:
+        - `GET    /api/v1/agent-group/{groupId}/members` — 列表
+        - `POST   /api/v1/agent-group/{groupId}/members` (body: {agentCode, role, position, configJson}) — 添加成员
+        - `PUT    /api/v1/agent-group/{groupId}/members/{memberId}` — 更新
+        - `DELETE /api/v1/agent-group/{groupId}/members/{memberId}` — 删除
+        - `PUT    /api/v1/agent-group/{groupId}/members/reorder` (body: [{memberId, position}, ...]) — 调整顺序
+        - `POST   /api/v1/agent-group/{groupId}/run` (body: {goal, tools, strategy}) → SseEmitter — 流式执行
+          strategy 字段: PIPELINE | PARALLEL | DEBATE (默认 PIPELINE)
+        - `GET    /api/v1/agent-group/strategies` — 返回可用策略列表
+
+      ## 5. Strategy pattern
+      - `service/orchestrator/GroupStrategy.java` 接口:
+        ```java
+        public interface GroupStrategy {
+            String name(); // PIPELINE | PARALLEL | DEBATE
+            void execute(Long userId, List<AgentGroupMember> members, String goal, SseEmitter emitter) throws IOException;
+        }
+        ```
+      - 3 个实现: `PipelineStrategy`, `ParallelStrategy`, `DebateStrategy`
+      - 复用现有 LlmGatewayService (在 minimax-model 或 minimax-ai)
+
+      ## 6. Gateway route (minimax-gateway/src/main/resources/application.yml)
+      加路由:
+      ```yaml
+      - id: agent-group-orchestration
+        uri: lb://minimax-ai
+        predicates: [Path=/api/v1/agent-group/**]
+        filters: [StripPrefix=0]
+      ```
+      (假设已有 /api/v1/agent-group 路由则合并; 优先级高于通用 ai 路由)
+
+      ## 最后编译:
+      ```bash
+      cd /workspace/miniLiugl/backend
+      export JAVA_HOME=/opt/jdk-17.0.2
+      export PATH=$JAVA_HOME/bin:/opt/apache-maven-3.9.6/bin:$PATH
+      mvn package -DskipTests -s ~/.m2/settings.xml 2>&1 | tail -30
+      ```
+      必须 BUILD SUCCESS
+
+    verify_prompt: |
+      验证:
+      1. agent_group_member 表在 schema.sql, 3 条 seed 在 seed.sql
+      2. AgentGroupMember entity/mapper/service 完整
+      3. Orchestrator 有 run() 方法返回 SseEmitter
+      4. 3 个 strategy 实现 (PipelineStrategy/ParallelStrategy/DebateStrategy)
+      5. Controller 有 7 个端点 (list/add/update/delete/reorder/run/strategies)
+      6. mvn package BUILD SUCCESS
+
+  # ============ T2: 前端 AgentGroup Designer + Run 流式 ============
+  - id: T2-frontend-designer
+    title: "前端: GroupDesigner 拖拽 + 流式运行"
+    assigned_to: general
+    role: produce
+    verified_by: explore
+    depends_on: [T1-backend-orchestrator]
+    timeout_ms: 1500000
+    max_retries: 1
+    prompt: |
+      在 /workspace/miniLiugl/frontend/ 新增多智能体群编排界面:
+
+      ## 1. API 文件 (新建)
+      `frontend/src/api/agentGroup.js`:
+      ```js
+      import http from './http'
+      export const agentGroupApi = {
+        listMembers: (groupId) => http.get(`/agent-group/${groupId}/members`),
+        addMember: (groupId, data) => http.post(`/agent-group/${groupId}/members`, data),
+        updateMember: (groupId, memberId, data) => http.put(`/agent-group/${groupId}/members/${memberId}`, data),
+        removeMember: (groupId, memberId) => http.delete(`/agent-group/${groupId}/members/${memberId}`),
+        reorder: (groupId, order) => http.put(`/agent-group/${groupId}/members/reorder`, order),
+        getStrategies: () => http.get('/agent-group/strategies'),
+        // SSE 流式
+        runStream: (groupId, body) => fetch(`/api/v1/agent-group/${groupId}/run`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-User-Id': body.userId || '1' },
+          body: JSON.stringify(body)
+        })
+      }
+      ```
+
+      ## 2. 页面 (新建)
+      `frontend/src/views/agent/GroupDesigner.vue`:
+      完整页面, 包含:
+      - 左侧 Agent 候选池 (调 GET /api/v1/agent/list 或硬编码 5-8 个示例 agent):
+        - code, displayName, description, avatar
+        - 可拖入右侧群成员区
+      - 右侧成员列表 (按 position 排序):
+        - 卡片: agentCode + role 选择 (MANAGER/WORKER/CRITIC) + position 显示 + 删除按钮
+        - HTML5 drag-drop 调整顺序
+      - 顶部策略选择: el-radio-group { PIPELINE | PARALLEL | DEBATE }
+      - 底部"运行"按钮 + 目标输入 (el-input v-model="goal")
+      - 右侧抽屉显示运行结果:
+        - 每个 step 一个 card, 显示 agentCode, role, 进度, 输出
+        - 用 EventSource 或 fetch + reader 读 SSE 流
+        - 实时追加 content (用 ref 数组)
+      - 成员保存: 点"保存"调 addMember/updateMember/removeMember
+      - 群 ID 默认 1 (测试用), 顶部可下拉选 group (调 GET /api/v1/agent-group)
+
+      ## 3. 路由 (src/router/)
+      加:
+      ```js
+      {
+        path: 'agent/group-designer',
+        component: () => import('@/views/agent/GroupDesigner.vue'),
+        meta: { title: '智能体群编排', icon: 'Connection' }
+      }
+      ```
+
+      ## 4. 侧边栏菜单
+      `src/components/Sidebar.vue` 或 `src/layouts/...` 在"智能体"组下加"群编排"入口
+
+      ## 5. SSE 处理
+      ```js
+      async function run() {
+        const res = await agentGroupApi.runStream(groupId, { goal, strategy, tools: [] })
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder()
+        let buf = ''
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          buf += decoder.decode(value, { stream: true })
+          // 解析 SSE: "event: step-token\ndata: {...}\n\n"
+          const lines = buf.split('\n\n')
+          buf = lines.pop()
+          for (const chunk of lines) {
+            const [ev, dt] = chunk.split('\n').reduce((acc, l) => {
+              if (l.startsWith('event:')) acc[0] = l.slice(7).trim()
+              if (l.startsWith('data:')) acc[1] = (acc[1] || '') + l.slice(6)
+              return acc
+            }, ['', ''])
+            if (!ev) continue
+            const data = JSON.parse(dt)
+            if (ev === 'step-start') steps.value.push({ ...data, content: '' })
+            else if (ev === 'step-token') {
+              const s = steps.value.find(x => x.agentCode === data.agentCode)
+              if (s) s.content += data.content
+            }
+            else if (ev === 'step-end') { /* 标记完成 */ }
+            else if (ev === 'final') { /* 显示最终结果 */ }
+          }
+        }
+      }
+      ```
+
+      ## 最后编译:
+      ```bash
+      cd /workspace/miniLiugl/frontend
+      NODE_OPTIONS='--max-old-space-size=2200' npx vite build 2>&1 | tail -10
+      ```
+      必须 ✓ built
+
+    verify_prompt: |
+      验证:
+      1. agentGroup.js 存在, 7 个 export 函数
+      2. GroupDesigner.vue 存在, 包含拖拽 UI + 策略选择 + 运行按钮
+      3. router 加了 group-designer 路由
+      4. SSE 处理函数能解析 step-start/step-token/step-end/final 事件
+      5. vite build PASS
+
+  # ============ T3: 集成测试 + 文档 ============
+  - id: T3-integration-docs
+    title: "集成测试 + 使用文档"
+    assigned_to: general
+    role: produce
+    verified_by: explore
+    depends_on: [T1-backend-orchestrator, T2-frontend-designer]
+    timeout_ms: 1200000
+    max_retries: 1
+    prompt: |
+      验证 T1+T2 端到端可用:
+
+      ## 1. 后端冒烟
+      ```bash
+      cd /workspace/miniLiugl/backend
+      export JAVA_HOME=/opt/jdk-17.0.2
+      export PATH=$JAVA_HOME/bin:/opt/apache-maven-3.9.6/bin:$PATH
+      mvn package -DskipTests -s ~/.m2/settings.xml 2>&1 | tail -10
+      ```
+      确认 BUILD SUCCESS
+
+      ## 2. 前端冒烟
+      ```bash
+      cd /workspace/miniLiugl/frontend
+      NODE_OPTIONS='--max-old-space-size=2200' npx vite build 2>&1 | tail -10
+      ```
+      确认 ✓ built
+
+      ## 3. 接口验证
+      grep 检查 7 个新端点都在 Controller:
+      - GET    /api/v1/agent-group/{groupId}/members
+      - POST   /api/v1/agent-group/{groupId}/members
+      - PUT    /api/v1/agent-group/{groupId}/members/{memberId}
+      - DELETE /api/v1/agent-group/{groupId}/members/{memberId}
+      - PUT    /api/v1/agent-group/{groupId}/members/reorder
+      - POST   /api/v1/agent-group/{groupId}/run
+      - GET    /api/v1/agent-group/strategies
+
+      ## 4. 文档
+      写 /workspace/miniLiugl/docs/agent-group-orchestration.md (新建 docs 目录):
+      - 概述 (1 段)
+      - 数据模型 (agent_group_member 表结构)
+      - 7 个 API 列表 (路径/方法/body/响应)
+      - 3 种 strategy 详解 (PIPELINE/PARALLEL/DEBATE) + 适用场景
+      - SSE 事件协议
+      - 前端 GroupDesigner 操作步骤 (3-5 步)
+      - 截图占位符 (后续补)
+
+    verify_prompt: |
+      验证:
+      1. mvn package BUILD SUCCESS
+      2. vite build PASS
+      3. 7 个端点都存在 (grep)
+      4. docs/agent-group-orchestration.md 存在并完整

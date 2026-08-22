@@ -350,6 +350,17 @@ INSERT INTO system_settings (id, siteName, siteLogo, maintenanceMode, allowRegis
 
 
 -- ==========================================================
+-- [T1-backend-orchestrator / P0] agent_group_member 种子
+-- 配套端点: /api/v1/agent-group/{groupId}/members
+-- 针对已有 AgentGroup.id=1 添加 3 个成员
+-- ==========================================================
+INSERT INTO agent_group_member (id, group_id, agent_code, role, position, config_json, enabled, created_at, updated_at) VALUES
+    (1, 1, 'echo-manager',     'MANAGER', 0, '{"capability":"coordinator","weight":2.0}', 1, DEFAULT, DEFAULT),
+    (2, 1, 'echo-writer',      'WORKER',  1, '{"capability":"writer","weight":1.0}',      1, DEFAULT, DEFAULT),
+    (3, 1, 'echo-reviewer',    'CRITIC',  2, '{"capability":"reviewer","weight":1.5}',    1, DEFAULT, DEFAULT);
+
+
+-- ==========================================================
 -- 演示电商数据 (原 demo-init.sql, 整合到本文件)
 -- ==========================================================
 

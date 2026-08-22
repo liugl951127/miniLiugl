@@ -193,6 +193,15 @@ spring.cloud.gateway:
       filters:
         - StripPrefix=0
 
+    # T1: 智能体群编排 (AgentGroup Orchestration) — /api/v1/agent-group/**
+    # 优先级: 此路由必须先于通用 ai 路由 (否则会被 /api/v1/ai/** 兜底)
+    - id: agent-group-orchestration
+      uri: lb://minimax-ai
+      predicates:
+        - Path=/api/v1/agent-group/**
+      filters:
+        - StripPrefix=0
+
     # V7.2: dashboard-impl 重写 (DashboardController 路径与前端不匹配)
     # 前端调 /api/v1/ai/dashboard/*, 后端真实路径 /api/v1/ai/dashboard-impl/*
     - id: ai-dashboard-rewrite

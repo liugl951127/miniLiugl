@@ -875,6 +875,20 @@ CREATE TABLE IF NOT EXISTS agent_group (
     updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- [minimax-ai] agent_group_member (T1: 群成员细粒度表)
+CREATE TABLE IF NOT EXISTS agent_group_member (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    group_id BIGINT NOT NULL,
+    agent_code VARCHAR(64) NOT NULL,
+    role VARCHAR(32) NOT NULL DEFAULT 'WORKER',
+    position INT NOT NULL DEFAULT 0,
+    config_json VARCHAR(2000) DEFAULT '',
+    enabled TINYINT NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_group (group_id, position)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- [minimax-ai] agent_task
 CREATE TABLE IF NOT EXISTS agent_task (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
