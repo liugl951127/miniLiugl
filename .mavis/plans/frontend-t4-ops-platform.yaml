@@ -1,0 +1,123 @@
+version: 1
+plan:
+  name: "前端 T4 运维/平台企业级升级"
+  goal: "把 18 个未覆盖的 view 文件升级到企业级：v-loading + el-empty + ElMessage 反馈 + ElMessageBox.confirm 二次确认 + 表单 :rules + 占位符消除 + console.log 清理"
+
+variables:
+  workspace: /workspace/miniLiugl
+  frontend: /workspace/miniLiugl/frontend
+
+common_standards: |
+  ★ 企业级标准 (每个 task 必须达到):
+  1. 真实 API 集成, 删除硬编码 mock
+  2. 列表/卡片用 v-loading
+  3. 数据为空时 el-empty
+  4. 所有 API 调用 try/catch + ElMessage.error
+  5. 删除等破坏性操作 ElMessageBox.confirm
+  6. 成功 ElMessage.success
+  7. 表单 :rules 验证
+  8. 占位符全部消除 (tab-placeholder / canvas-placeholder / chart-placeholder / explain-placeholder 等)
+  9. console.log 全部清理 (除 pre/模板里的示例)
+  10. 修改文件不超过原文件 +50% 行数
+
+  ★ 验证:
+  - cd /workspace/miniLiugl/frontend && NODE_OPTIONS='--max-old-space-size=1500' npx vite build 必须成功
+
+tasks:
+  - id: T4A-admin-auth
+    title: "admin/* + auth/* + About.vue + Error.vue 企业级升级"
+    assigned_to: general
+    verified_by: explore
+    timeout_ms: 1500000
+    verify_prompt: |
+      验证文件修改:
+      1. admin/Dashboard.vue + admin/Index.vue + admin/Alerts.vue: 都有 v-loading + empty + 反馈
+      2. auth/Login.vue: 登录 loading + 失败 shake + 明确错误 (密码错误/账号不存在/账号锁定区分) + 表单 :rules
+      3. auth/H5Login.vue: H5 登录 + 表单 :rules + 错误反馈
+      4. auth/WechatScanPageV2.vue: 微信扫码有 loading + 状态反馈
+      5. About.vue: 加版本号/版权/链接
+      6. Error.vue: 友好错误页 (404/500/403 区分)
+      7. cd /workspace/miniLiugl/frontend && NODE_OPTIONS='--max-old-space-size=1500' npx vite build 必须成功
+    prompt: |
+      目标文件 (7 个):
+      - /workspace/miniLiugl/frontend/src/views/admin/Dashboard.vue (255 行)
+      - /workspace/miniLiugl/frontend/src/views/admin/Index.vue (141 行)
+      - /workspace/miniLiugl/frontend/src/views/admin/Alerts.vue (615 行)
+      - /workspace/miniLiugl/frontend/src/views/auth/Login.vue (718 行)
+      - /workspace/miniLiugl/frontend/src/views/auth/H5Login.vue (420 行)
+      - /workspace/miniLiugl/frontend/src/views/auth/WechatScanPageV2.vue (57 行)
+      - /workspace/miniLiugl/frontend/src/views/About.vue (42 行)
+      - /workspace/miniLiugl/frontend/src/views/Error.vue (133 行)
+
+      必须完成:
+      1. admin/* : v-loading + empty + 反馈
+      2. auth/Login.vue: 登录有 loading + 失败 shake 动画 + 明确错误区分 (密码错误/账号不存在/账号锁定) + :rules
+      3. auth/H5Login.vue: 同上
+      4. auth/WechatScanPageV2.vue: 扫码状态反馈
+      5. About.vue: 加版本号/版权/链接 (静态展示)
+      6. Error.vue: 友好错误页 (404/500/403 区分)
+      7. 通用: 占位符消除 / console.log 清理 / 表单 :rules
+      最后: cd /workspace/miniLiugl/frontend && NODE_OPTIONS='--max-old-space-size=1500' npx vite build 验证成功
+
+  - id: T4B-collab-monitor
+    title: "collab + monitor + notification + rule + analytics/Index 企业级升级"
+    assigned_to: general
+    verified_by: explore
+    timeout_ms: 1500000
+    verify_prompt: |
+      验证文件修改:
+      1. collab/Index.vue: 房间列表 loading + empty + 创建房间反馈 + WebSocket 断线重连提示
+      2. monitor/Index.vue: 告警/规则/通道都有 v-loading + empty + 反馈 + :rules
+      3. notification/Index.vue: 通知列表 loading + empty + 标记已读/删除有反馈
+      4. rule/Index.vue: 规则 CRUD 完整 + explain-placeholder 改为友好空状态
+      5. analytics/Index.vue: 所有 Tab 都有 v-loading + empty
+      6. cd /workspace/miniLiugl/frontend && NODE_OPTIONS='--max-old-space-size=1500' npx vite build 必须成功
+    prompt: |
+      目标文件 (5 个):
+      - /workspace/miniLiugl/frontend/src/views/collab/Index.vue (592 行)
+      - /workspace/miniLiugl/frontend/src/views/monitor/Index.vue (1219 行)
+      - /workspace/miniLiugl/frontend/src/views/notification/Index.vue (274 行)
+      - /workspace/miniLiugl/frontend/src/views/rule/Index.vue (922 行)
+      - /workspace/miniLiugl/frontend/src/views/analytics/Index.vue (984 行)
+
+      必须完成:
+      1. collab/Index.vue: 房间 v-loading + empty + 创建反馈 + WebSocket 断线重连提示
+      2. monitor/Index.vue: 告警/规则/通道 v-loading + empty + 反馈 + :rules
+      3. notification/Index.vue: 通知列表 v-loading + empty + 标记已读/删除反馈
+      4. rule/Index.vue: 规则 CRUD + explain-placeholder 改为友好空状态
+      5. analytics/Index.vue: 所有 Tab 都有 v-loading + empty + 反馈
+      6. 通用: 占位符消除 / console.log 清理 / :rules
+      最后: cd /workspace/miniLiugl/frontend && NODE_OPTIONS='--max-old-space-size=1500' npx vite build 验证成功
+
+  - id: T4C-misc
+    title: "apikey + tenant + plugins + chat/Stream + agent 子组件 企业级升级"
+    assigned_to: general
+    verified_by: explore
+    timeout_ms: 1200000
+    verify_prompt: |
+      验证文件修改:
+      1. apikey/Index.vue + apikey/Stats.vue: CRUD 完整 + 反馈
+      2. tenant/Index.vue: 租户 CRUD 完整
+      3. plugins/Index.vue: 插件列表 v-loading + empty
+      4. chat/Stream.vue: 流式输入有 loading
+      5. agent/MiniMap.vue + agent/NodePalette.vue + agent/PropertyPanel.vue: 子组件基础 v-loading/empty (如适用)
+      6. cd /workspace/miniLiugl/frontend && NODE_OPTIONS='--max-old-space-size=1500' npx vite build 必须成功
+    prompt: |
+      目标文件 (8 个):
+      - /workspace/miniLiugl/frontend/src/views/apikey/Index.vue (479 行)
+      - /workspace/miniLiugl/frontend/src/views/apikey/Stats.vue (62 行)
+      - /workspace/miniLiugl/frontend/src/views/tenant/Index.vue (80 行)
+      - /workspace/miniLiugl/frontend/src/views/plugins/Index.vue (70 行)
+      - /workspace/miniLiugl/frontend/src/views/chat/Stream.vue (76 行)
+      - /workspace/miniLiugl/frontend/src/views/agent/MiniMap.vue (120 行)
+      - /workspace/miniLiugl/frontend/src/views/agent/NodePalette.vue (104 行)
+      - /workspace/miniLiugl/frontend/src/views/agent/PropertyPanel.vue (429 行)
+
+      必须完成:
+      1. apikey/Index.vue + apikey/Stats.vue: CRUD 完整 + 反馈
+      2. tenant/Index.vue: 租户 CRUD 完整
+      3. plugins/Index.vue: 插件列表 v-loading + empty
+      4. chat/Stream.vue: 流式输入有 loading
+      5. agent/MiniMap.vue + agent/NodePalette.vue + agent/PropertyPanel.vue: 子组件 (小文件, 主要是显示用, 加基本 v-loading/empty)
+      6. 通用: 占位符消除 / console.log 清理
+      最后: cd /workspace/miniLiugl/frontend && NODE_OPTIONS='--max-old-space-size=1500' npx vite build 验证成功

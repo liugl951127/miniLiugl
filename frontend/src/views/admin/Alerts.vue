@@ -26,16 +26,29 @@
             <span style="color: #999; font-size: 12px">
               触发时间: {{ alert.firedAt }} | 持续: {{ alert.duration }}
             </span>
-            <el-button size="small" @click="acknowledge(alert)">确认</el-button>
+            <el-button size="small" :loading="ackingId === alert.id" @click="acknowledge(alert)">确认</el-button>
           </div>
         </div>
-        <el-empty v-if="!firing.length" description="没有触发中的告警" />
+        <div v-if="!loading.firing && firing.length === 0" class="tab-empty">
+          <EmptyState
+            icon="BellFilled"
+            title="没有触发中的告警"
+            description="系统运行良好，所有指标在阈值范围内"
+            compact
+          />
+        </div>
+        <div v-else-if="loading.firing" v-loading="true" class="firing-skeleton"></div>
       </div>
 
       <!-- 告警规则 -->
       <div v-else-if="tab === 'rules'">
-        <el-button type="primary" @click="newRule" style="margin-bottom: 12px">+ 新建规则</el-button>
-        <el-table :data="rules" stripe>
+        <el-button type="primary" :icon="Plus" @click="newRule" style="margin-bottom: 12px">+ 新建规则</el-button>
+        <el-table
+          :data="rules"
+          v-loading="loading.rules"
+          empty-text="暂无告警规则，点击右上角新建"
+          stripe
+        >
           <el-table-column prop="name" label="名称" />
           <el-table-column prop="metric" label="指标" width="160" />
           <el-table-column prop="operator" label="条件" width="100" />
@@ -47,13 +60,13 @@
           </el-table-column>
           <el-table-column prop="enabled" label="启用" width="80">
             <template #default="scope">
-              <el-switch v-model="scope.row.enabled" @change="toggleRule(scope.row)" />
+              <el-switch v-model="scope.row.enabled" :loading="togglingRuleId === scope.row.id" @change="toggleRule(scope.row)" />
             </template>
           </el-table-column>
           <el-table-column label="操作" width="160">
             <template #default="scope">
               <el-button size="small" @click="editRule(scope.row)">编辑</el-button>
-              <el-button size="small" type="danger" @click="deleteRule(scope.row)">删除</el-button>
+              <el-button size="small" type="danger" :loading="deletingRuleId === scope.row.id" @click="deleteRule(scope.row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -61,8 +74,13 @@
 
       <!-- 通知渠道 -->
       <div v-else-if="tab === 'channels'">
-        <el-button type="primary" @click="openChannelDialog()" style="margin-bottom: 12px">+ 新建渠道</el-button>
-        <el-table :data="channels" stripe>
+        <el-button type="primary" :icon="Plus" @click="openChannelDialog()" style="margin-bottom: 12px">+ 新建渠道</el-button>
+        <el-table
+          :data="channels"
+          v-loading="loading.channels"
+          empty-text="暂无通知渠道，点击右上角新建"
+          stripe
+        >
           <el-table-column prop="name" label="名称" />
           <el-table-column prop="type" label="类型" width="120">
             <template #default="scope">
@@ -74,7 +92,7 @@
             <template #default="scope">
               <el-button size="small" @click="testChannel(scope.row)" :loading="testingId === scope.row.id">测试</el-button>
               <el-button size="small" @click="openChannelDialog(scope.row)">编辑</el-button>
-              <el-button size="small" type="danger" @click="deleteChannel(scope.row)">删除</el-button>
+              <el-button size="small" type="danger" :loading="deletingChannelId === scope.row.id" @click="deleteChannel(scope.row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -82,7 +100,12 @@
 
       <!-- 历史 -->
       <div v-else-if="tab === 'history'">
-        <el-table :data="history" stripe>
+        <el-table
+          :data="history"
+          v-loading="loading.history"
+          empty-text="暂无历史告警记录"
+          stripe
+        >
           <el-table-column prop="firedAt" label="时间" width="180" />
           <el-table-column prop="name" label="告警" />
           <el-table-column prop="severity" label="严重度" width="100">
@@ -98,12 +121,17 @@
 
     <!-- 新建/编辑规则对话框 -->
     <el-dialog v-model="ruleDialogVisible" :title="editingRule.id ? '编辑规则' : '新建规则'" width="600px">
-      <el-form :model="editingRule" label-width="100px">
-        <el-form-item label="名称">
-          <el-input v-model="editingRule.name" />
+      <el-form
+        ref="ruleFormRef"
+        :model="editingRule"
+        :rules="ruleFormRules"
+        label-width="100px"
+      >
+        <el-form-item label="名称" prop="name">
+          <el-input v-model="editingRule.name" placeholder="如: CPU 过高告警" maxlength="64" show-word-limit />
         </el-form-item>
-        <el-form-item label="指标">
-          <el-select v-model="editingRule.metric">
+        <el-form-item label="指标" prop="metric">
+          <el-select v-model="editingRule.metric" style="width: 100%">
             <el-option label="CPU 使用率" value="cpu_usage" />
             <el-option label="内存使用率" value="memory_usage" />
             <el-option label="磁盘使用率" value="disk_usage" />
@@ -111,8 +139,8 @@
             <el-option label="响应时间" value="response_time" />
           </el-select>
         </el-form-item>
-        <el-form-item label="条件">
-          <el-select v-model="editingRule.operator">
+        <el-form-item label="条件" prop="operator">
+          <el-select v-model="editingRule.operator" style="width: 100%">
             <el-option label=">" value=">" />
             <el-option label=">=" value=">=" />
             <el-option label="<" value="<" />
@@ -120,11 +148,11 @@
             <el-option label="==" value="==" />
           </el-select>
         </el-form-item>
-        <el-form-item label="阈值">
-          <el-input-number v-model="editingRule.threshold" />
+        <el-form-item label="阈值" prop="threshold">
+          <el-input-number v-model="editingRule.threshold" :min="0" :max="999999" style="width: 100%" />
         </el-form-item>
-        <el-form-item label="严重度">
-          <el-select v-model="editingRule.severity">
+        <el-form-item label="严重度" prop="severity">
+          <el-select v-model="editingRule.severity" style="width: 100%">
             <el-option label="严重" value="critical" />
             <el-option label="警告" value="warning" />
             <el-option label="信息" value="info" />
@@ -133,17 +161,22 @@
       </el-form>
       <template #footer>
         <el-button @click="ruleDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveRule">保存</el-button>
+        <el-button type="primary" :loading="savingRule" @click="saveRule">保存</el-button>
       </template>
     </el-dialog>
 
     <!-- 新建/编辑渠道对话框 (Day 26) -->
     <el-dialog v-model="channelDialogVisible" :title="editingChannel.id ? '编辑渠道' : '新建渠道'" width="500px">
-      <el-form :model="editingChannel" label-width="90px">
-        <el-form-item label="名称" required>
-          <el-input v-model="editingChannel.name" placeholder="如: 运维钉钉群" />
+      <el-form
+        ref="channelFormRef"
+        :model="editingChannel"
+        :rules="channelFormRules"
+        label-width="90px"
+      >
+        <el-form-item label="名称" prop="name">
+          <el-input v-model="editingChannel.name" placeholder="如: 运维钉钉群" maxlength="64" show-word-limit />
         </el-form-item>
-        <el-form-item label="类型" required>
+        <el-form-item label="类型" prop="type">
           <el-select v-model="editingChannel.type" style="width: 100%">
             <el-option label="钉钉群机器人" value="dingtalk" />
             <el-option label="邮件" value="email" />
@@ -152,7 +185,7 @@
             <el-option label="自定义 Webhook" value="webhook" />
           </el-select>
         </el-form-item>
-        <el-form-item label="目标地址" required>
+        <el-form-item label="目标地址" prop="target">
           <el-input
             v-model="editingChannel.target"
             :placeholder="channelTargetPlaceholder"
@@ -195,7 +228,6 @@
           </el-button>
           <!-- 测试结果 -->
           <div v-if="testResult" style="margin-top: 12px">
-            <!-- 状态行 -->
             <el-tag
               :type="testResult.ok ? 'success' : 'danger'"
               size="large"
@@ -204,7 +236,6 @@
               {{ testResult.ok ? '✅ 发送成功' : '❌ 发送失败' }}
               <span v-if="!testResult.ok" style="margin-left: 6px">{{ testResult.error }}</span>
             </el-tag>
-            <!-- 发送内容预览 -->
             <div style="margin-top: 8px">
               <div style="font-size: 12px; color: var(--el-text-color-secondary); margin-bottom: 4px">📨 实际发送内容：</div>
               <pre style="
@@ -226,34 +257,53 @@
       </el-form>
       <template #footer>
         <el-button @click="channelDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveChannel" :loading="savingChannel">保存</el-button>
+        <el-button type="primary" :loading="savingChannel" @click="saveChannel">保存</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+/**
+ * V6.8.10+ 升级: 加 v-loading / empty / 表单 :rules / 移除 console
+ */
+import { ref, computed, reactive, onMounted, onUnmounted, nextTick } from 'vue'
+import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useToast } from '@/composables/useToast'
 import { monitorApi } from '@/api/monitor'
+import EmptyState from '@/components/EmptyState.vue'
 
+const toast = useToast()
 const tab = ref('firing')
 const firing = ref([])
 const rules = ref([])
 const channels = ref([])
 const history = ref([])
 
+// 集中的 loading 状态 (4 个 tab 各一份)
+const loading = reactive({ firing: false, rules: false, channels: false, history: false })
+
+// 行级 loading
+const ackingId = ref(null)
+const togglingRuleId = ref(null)
+const deletingRuleId = ref(null)
+const deletingChannelId = ref(null)
+const testingId = ref(null)
+const testingChannel = ref(false)
+const testResult = ref(null)
+
 // 规则对话框
 const ruleDialogVisible = ref(false)
 const editingRule = ref({})
+const ruleFormRef = ref(null)
+const savingRule = ref(false)
 
 // 渠道对话框 (Day 26 联调修复)
 const channelDialogVisible = ref(false)
 const editingChannel = ref({})
+const channelFormRef = ref(null)
 const savingChannel = ref(false)
-const testingId = ref(null)
-const testingChannel = ref(false)
-const testResult = ref(null)
 
 const CHANNEL_TYPE_MAP = {
   dingtalk: '钉钉机器人',
@@ -283,52 +333,94 @@ function severityType(s) {
   return { critical: 'danger', warning: 'warning', info: 'info' }[s] || ''
 }
 
+// 表单 :rules
+const ruleFormRules = {
+  name: [
+    { required: true, message: '请输入规则名称', trigger: 'blur' },
+    { min: 2, max: 64, message: '名称长度 2-64 字符', trigger: 'blur' }
+  ],
+  metric: [{ required: true, message: '请选择指标', trigger: 'change' }],
+  operator: [{ required: true, message: '请选择条件', trigger: 'change' }],
+  threshold: [
+    { required: true, message: '请输入阈值', trigger: 'blur' },
+    { type: 'number', message: '阈值必须为数字', trigger: 'blur' }
+  ],
+  severity: [{ required: true, message: '请选择严重度', trigger: 'change' }]
+}
+
+const channelFormRules = {
+  name: [
+    { required: true, message: '请输入渠道名称', trigger: 'blur' },
+    { min: 2, max: 64, message: '名称长度 2-64 字符', trigger: 'blur' }
+  ],
+  type: [{ required: true, message: '请选择渠道类型', trigger: 'change' }],
+  target: [
+    { required: true, message: '请输入目标地址', trigger: 'blur' },
+    { min: 4, max: 500, message: '目标地址长度 4-500 字符', trigger: 'blur' }
+  ]
+}
+
 // -------- 加载 --------
 async function loadFiring() {
+  loading.firing = true
   try {
     const res = await monitorApi.getFiringAlerts()
     firing.value = res.data || []
-  } catch {
+  } catch (e) {
     firing.value = [
       { id: 1, name: 'CPU 高', message: 'CPU > 90% 持续 5 分钟', severity: 'critical', firedAt: '2026-07-12 02:30:00', duration: '15 分钟' },
       { id: 2, name: 'API 错误率', message: '错误率 > 5%', severity: 'warning', firedAt: '2026-07-12 02:45:00', duration: '2 分钟' }
     ]
+    toast.warning('无法连接告警服务，已加载演示数据')
+  } finally {
+    loading.firing = false
   }
 }
 
 async function loadRules() {
+  loading.rules = true
   try {
     const res = await monitorApi.listAlertRules()
     rules.value = res.data || []
-  } catch {
+  } catch (e) {
     rules.value = [
       { id: 1, name: 'CPU 过高', metric: 'cpu_usage', operator: '>', threshold: 80, severity: 'warning', enabled: true },
       { id: 2, name: '内存满', metric: 'memory_usage', operator: '>', threshold: 90, severity: 'critical', enabled: true },
       { id: 3, name: 'API 慢', metric: 'response_time', operator: '>', threshold: 3000, severity: 'warning', enabled: false }
     ]
+    toast.warning('无法加载告警规则，已加载演示数据')
+  } finally {
+    loading.rules = false
   }
 }
 
 async function loadChannels() {
+  loading.channels = true
   try {
     const res = await monitorApi.listAlertChannels()
     channels.value = res.data || []
-  } catch {
+  } catch (e) {
     channels.value = [
       { id: 1, name: '钉钉群', type: 'dingtalk', target: 'https://oapi.dingtalk.com/robot/send?access_token=xxx' },
       { id: 2, name: '运维邮件', type: 'email', target: 'ops@example.com' }
     ]
+    toast.warning('无法加载通知渠道，已加载演示数据')
+  } finally {
+    loading.channels = false
   }
 }
 
 async function loadHistory() {
+  loading.history = true
   try {
     const res = await monitorApi.getAlertHistory()
     history.value = res.data || []
-  } catch {
+  } catch (e) {
     history.value = [
       { id: 1, firedAt: '2026-07-12 01:00:00', name: 'CPU 高', severity: 'critical', status: '已恢复', duration: '10 分钟' }
     ]
+  } finally {
+    loading.history = false
   }
 }
 
@@ -336,57 +428,81 @@ async function loadHistory() {
 function newRule() {
   editingRule.value = { name: '', metric: 'cpu_usage', operator: '>', threshold: 80, severity: 'warning', enabled: true }
   ruleDialogVisible.value = true
+  nextTick(() => ruleFormRef.value?.clearValidate())
 }
 
 function editRule(rule) {
   editingRule.value = { ...rule }
   ruleDialogVisible.value = true
+  nextTick(() => ruleFormRef.value?.clearValidate())
 }
 
 async function saveRule() {
+  if (!ruleFormRef.value) return
+  try {
+    await ruleFormRef.value.validate()
+  } catch {
+    toast.warning('请检查表单填写是否正确')
+    return
+  }
+  savingRule.value = true
   try {
     if (editingRule.value.id) {
       await monitorApi.updateAlertRule(editingRule.value.id, editingRule.value)
     } else {
       await monitorApi.createAlertRule(editingRule.value)
     }
-    ElMessage.success('保存成功')
+    toast.success('保存成功')
     ruleDialogVisible.value = false
-    loadRules()
+    await loadRules()
   } catch (e) {
-    ElMessage.error('保存失败: ' + (e.message || '未知错误'))
+    toast.error('保存失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
+  } finally {
+    savingRule.value = false
   }
 }
 
 async function deleteRule(rule) {
-  await ElMessageBox.confirm(`确定删除规则 "${rule.name}"?`, '确认')
+  try {
+    await ElMessageBox.confirm(`确定删除规则 "${rule.name}"?`, '确认删除', { type: 'warning' })
+  } catch { return }
+  deletingRuleId.value = rule.id
   try {
     await monitorApi.deleteAlertRule(rule.id)
-    ElMessage.success('已删除')
-    loadRules()
+    toast.success('已删除')
+    await loadRules()
   } catch (e) {
-    ElMessage.error('删除失败: ' + (e.message || '未知错误'))
+    toast.error('删除失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
+  } finally {
+    deletingRuleId.value = null
   }
 }
 
 async function toggleRule(rule) {
+  togglingRuleId.value = rule.id
+  const target = rule.enabled
   try {
-    await monitorApi.toggleAlertRule(rule.id, rule.enabled)
-    ElMessage.success(rule.enabled ? '已启用' : '已禁用')
+    await monitorApi.toggleAlertRule(rule.id, target)
+    toast.success(target ? '已启用' : '已禁用')
   } catch (e) {
-    ElMessage.error('操作失败')
-    rule.enabled = !rule.enabled
+    rule.enabled = !target
+    toast.error('操作失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
+  } finally {
+    togglingRuleId.value = null
   }
 }
 
 // -------- 告警确认 --------
 async function acknowledge(alert) {
+  ackingId.value = alert.id
   try {
     await monitorApi.acknowledgeAlert(alert.id)
-    ElMessage.success('已确认')
-    loadFiring()
+    toast.success('已确认')
+    await loadFiring()
   } catch (e) {
-    ElMessage.error('操作失败: ' + (e.message || '未知错误'))
+    toast.error('确认失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
+  } finally {
+    ackingId.value = null
   }
 }
 
@@ -398,12 +514,17 @@ function openChannelDialog(channel = null) {
     ? { ...channel }
     : { name: '', type: 'webhook', target: '', config: '' }
   channelDialogVisible.value = true
+  testResult.value = null
+  nextTick(() => channelFormRef.value?.clearValidate())
 }
 
 /** 保存渠道 (新建/编辑) */
 async function saveChannel() {
-  if (!editingChannel.value.name || !editingChannel.value.target) {
-    ElMessage.warning('请填写名称和目标地址')
+  if (!channelFormRef.value) return
+  try {
+    await channelFormRef.value.validate()
+  } catch {
+    toast.warning('请检查表单填写是否正确')
     return
   }
   savingChannel.value = true
@@ -424,11 +545,11 @@ async function saveChannel() {
         template: editingChannel.value.template || null
       })
     }
-    ElMessage.success('保存成功')
+    toast.success('保存成功')
     channelDialogVisible.value = false
-    loadChannels()
+    await loadChannels()
   } catch (e) {
-    ElMessage.error('保存失败: ' + (e.message || '未知错误'))
+    toast.error('保存失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   } finally {
     savingChannel.value = false
   }
@@ -439,9 +560,9 @@ async function testChannel(ch) {
   testingId.value = ch.id
   try {
     await monitorApi.testAlertChannel(ch.id)
-    ElMessage.success('测试消息已发送')
+    toast.success('测试消息已发送')
   } catch (e) {
-    ElMessage.error('发送失败: ' + (e.message || '未知错误'))
+    toast.error('发送失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   } finally {
     testingId.value = null
   }
@@ -450,16 +571,14 @@ async function testChannel(ch) {
 /** 在对话框内测试当前编辑中的渠道配置 (无需保存即可测) */
 async function testChannelInDialog() {
   if (!editingChannel.value.target) {
-    ElMessage.warning('请先填写目标地址')
+    toast.warning('请先填写目标地址')
     return
   }
   testingChannel.value = true
   testResult.value = null
   try {
-    // 如果是已有渠道，直接测；新建渠道时先创建再测
     let channelId = editingChannel.value.id
     if (!channelId) {
-      // 新建渠道 → 临时创建
       const created = await monitorApi.createAlertChannel({
         name: editingChannel.value.name || '临时测试渠道',
         type: editingChannel.value.type,
@@ -471,7 +590,6 @@ async function testChannelInDialog() {
       channelId = created.data?.id
     }
     const res = await monitorApi.testAlertChannel(channelId)
-    console.debug('[AlertChannel] test result:', res)
     if (res.code === 0 || res.code === 200) {
       testResult.value = {
         ok: true,
@@ -491,7 +609,6 @@ async function testChannelInDialog() {
       || e?.response?.data
       || e?.message
       || '网络错误，请检查网络或后端是否运行'
-    console.error('[AlertChannel] test failed:', errMsg, e?.response)
     testResult.value = {
       ok: false,
       error: errMsg,
@@ -512,7 +629,7 @@ function buildTestPreview() {
     metricName: 'test_metric',
     metricValue: '0',
     threshold: '0',
-    message: '[测试消息] 您好，这是来自 MiniMax 平台的告警渠道测试消息。如果收到此消息，说明渠道配置正确。',
+    message: '[测试消息] 您好，这是来自 Liugl-AI 平台的告警渠道测试消息。如果收到此消息，说明渠道配置正确。',
     firedAt: now
   }
   let preview = tpl || '【info】告警: [测试] 告警渠道连通性检测 当前值 0 超过阈值 0'
@@ -524,13 +641,18 @@ function buildTestPreview() {
 
 /** 删除渠道 */
 async function deleteChannel(ch) {
-  await ElMessageBox.confirm(`确定删除渠道 "${ch.name}"?`, '确认')
+  try {
+    await ElMessageBox.confirm(`确定删除渠道 "${ch.name}"?`, '确认删除', { type: 'warning' })
+  } catch { return }
+  deletingChannelId.value = ch.id
   try {
     await monitorApi.deleteAlertChannel(ch.id)
-    ElMessage.success('已删除')
-    loadChannels()
+    toast.success('已删除')
+    await loadChannels()
   } catch (e) {
-    ElMessage.error('删除失败: ' + (e.message || '未知错误'))
+    toast.error('删除失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
+  } finally {
+    deletingChannelId.value = null
   }
 }
 
@@ -551,37 +673,37 @@ function subscribeAlertStream() {
   if (!token) return
   const base = import.meta.env.VITE_API_BASE || 'http://localhost:8080'
   const url = `${base}/api/v1/monitor/alerts/stream`
-  alertEventSource = new EventSource(url, { withCredentials: true })
+  try {
+    alertEventSource = new EventSource(url, { withCredentials: true })
 
-  alertEventSource.onopen = () => {
-    console.debug('[AlertStream] connected')
-  }
-
-  alertEventSource.addEventListener('alert', (e) => {
-    try {
-      const payload = JSON.parse(e.data)
-      if (payload.type === 'alert_fired' && payload.alert) {
-        const newAlert = {
-          ...payload.alert,
-          duration: '刚刚'
-        }
-        // 插入到 firing 列表顶部
-        firing.value.unshift(newAlert)
-        // 最多保留 50 条
-        if (firing.value.length > 50) firing.value.pop()
-        // 如果当前 Tab 不是 firing，提示用户
-        if (tab.value !== 'firing') {
-          ElMessage.warning(`🔔 收到新告警: ${payload.alert.ruleName}`)
-        }
-      }
-    } catch (err) {
-      console.warn('[AlertStream] parse error:', err)
+    alertEventSource.onopen = () => {
+      // SSE 连接成功，无需日志
     }
-  })
 
-  alertEventSource.onerror = () => {
-    console.debug('[AlertStream] disconnected, reconnecting...')
-    // EventSource 会自动重连，无需手动处理
+    alertEventSource.addEventListener('alert', (e) => {
+      try {
+        const payload = JSON.parse(e.data)
+        if (payload.type === 'alert_fired' && payload.alert) {
+          const newAlert = {
+            ...payload.alert,
+            duration: '刚刚'
+          }
+          firing.value.unshift(newAlert)
+          if (firing.value.length > 50) firing.value.pop()
+          if (tab.value !== 'firing') {
+            toast.warning(`🔔 收到新告警: ${payload.alert.ruleName}`)
+          }
+        }
+      } catch (err) {
+        // SSE 数据解析失败，静默忽略
+      }
+    })
+
+    alertEventSource.onerror = () => {
+      // EventSource 会自动重连
+    }
+  } catch (err) {
+    // SSE 不可用（如浏览器不支持），静默忽略
   }
 }
 
@@ -611,5 +733,14 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+.tab-empty {
+  padding: 40px 0;
+  display: flex;
+  justify-content: center;
+}
+.firing-skeleton {
+  min-height: 120px;
+  width: 100%;
 }
 </style>

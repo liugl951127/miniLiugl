@@ -295,7 +295,7 @@
     </el-card>
 
     <!-- ========== 人脸识别 (摄像头拍照 + 人脸分析, V7.3) ========== -->
-    <el-card v-if="activeModule?.key === 'face-recognition'" body-style="padding:20px">
+    <el-card v-if="activeModule?.key === 'face-recognition'" body-style="padding:20px" v-loading="faceLoading">
       <template #header>
         <div style="display:flex;align-items:center;gap:10px">
           <span>👤 人脸识别</span>
@@ -360,6 +360,7 @@
       <div v-if="faceLoading" style="margin-top:16px;color:#909399">
         <el-icon class="is-loading"><Loading /></el-icon> 人脸分析中…
       </div>
+      <el-empty v-else-if="!faceResult" description="尚未分析，请开启摄像头后点击「拍照分析」" :image-size="80" style="margin-top:16px" />
       <div v-if="faceResult" style="margin-top:16px">
         <el-card body-style="padding:16px" shadow="hover">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
@@ -380,7 +381,7 @@
     </el-card>
 
     <!-- ========== 视频理解 (上传视频 + LLM 内容分析, V7.3) ========== -->
-    <el-card v-if="activeModule?.key === 'video-understand'" body-style="padding:20px">
+    <el-card v-if="activeModule?.key === 'video-understand'" body-style="padding:20px" v-loading="videoUnderstLoading">
       <template #header>
         <div style="display:flex;align-items:center;gap:10px">
           <span>🎥 视频内容理解</span>
@@ -459,6 +460,7 @@
       </div>
 
       <!-- 分析结果 -->
+      <el-empty v-if="!videoUnderstLoading && !videoResult" description="尚未分析，请上传视频文件并填写提示词" :image-size="80" style="margin-top:16px" />
       <div v-if="videoResult" style="margin-top:16px">
         <el-card body-style="padding:16px" shadow="hover">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">

@@ -5,9 +5,9 @@
       <h2>🔔 通知中心</h2>
       <div style="display:flex;gap:8px">
         <el-badge :value="unreadCount" :hidden="!unreadCount">
-          <el-button size="small" @click="doMarkAllRead">全部已读</el-button>
+          <el-button size="small" :loading="markingAll" :disabled="!unreadCount" @click="doMarkAllRead">全部已读</el-button>
         </el-badge>
-        <el-button size="small" @click="loadNotifications">
+        <el-button size="small" :loading="loading" @click="loadNotifications">
           <el-icon><Refresh /></el-icon>刷新
         </el-button>
         <el-button size="small" link type="primary" @click="showSettings = true">
@@ -17,7 +17,7 @@
     </div>
 
     <!-- 通知统计 -->
-    <el-row :gutter="12" style="margin-bottom:16px">
+    <el-row :gutter="12" style="margin-bottom:16px" v-loading="loading">
       <el-col :span="6"><el-card body-style="padding:12px;text-align:center">
         <div class="stat-num" style="color:var(--el-color-primary)">{{ notifications.length }}</div>
         <div class="stat-label">总通知</div>
@@ -53,7 +53,8 @@
     </div>
 
     <!-- 通知列表 -->
-    <div class="notif-list">
+    <div class="notif-list" v-loading="loading">
+      <template v-if="!loading">
       <div
         v-for="n in notifications" :key="n.id"
         class="notif-item"
@@ -75,14 +76,20 @@
           </div>
         </div>
         <div class="notif-actions" @click.stop>
-          <el-button v-if="!n.read" size="small" link @click="markRead(n)">已读</el-button>
-          <el-button size="small" link type="danger" @click="deleteNotification(n)">删除</el-button>
+          <el-button v-if="!n.read" size="small" link :loading="markingReadId === n.id" @click="markRead(n)">已读</el-button>
+          <el-button size="small" link type="danger" :loading="deletingId === n.id" @click="deleteNotification(n)">删除</el-button>
         </div>
       </div>
-      <div v-if="!notifications.length && !loading" style="text-align:center;padding:60px;color:#909399">
-        <el-icon :size="48"><Bell /></el-icon>
-        <div style="margin-top:12px">暂无通知</div>
-      </div>
+      <el-empty
+        v-if="!notifications.length"
+        :description="notifEmptyText"
+        :image-size="80"
+      >
+        <el-button v-if="notifEmptyTip" type="primary" size="small" @click="loadNotifications">
+          <el-icon><Refresh /></el-icon>刷新
+        </el-button>
+      </el-empty>
+      </template>
     </div>
 
     <!-- 分页 -->
@@ -156,6 +163,9 @@ import {
 
 const notifications = ref([])
 const loading = ref(false)
+const markingAll = ref(false)
+const markingReadId = ref(null)
+const deletingId = ref(null)
 const typeFilter = ref('')
 const readFilter = ref('')
 const page = ref(1)
@@ -172,6 +182,13 @@ const settings = reactive({
 const unreadCount = computed(() => notifications.value.filter(n => !n.read).length)
 const systemCount = computed(() => notifications.value.filter(n => n.type === 'SYSTEM').length)
 const taskCount = computed(() => notifications.value.filter(n => n.type === 'TASK').length)
+
+const notifEmptyText = computed(() => {
+  if (loading.value) return '加载中...'
+  if (typeFilter.value || readFilter.value) return '没有符合筛选条件的通知'
+  return '暂无通知，系统会在新事件发生时通知您'
+})
+const notifEmptyTip = computed(() => Boolean(typeFilter.value || readFilter.value))
 
 function iconName(type) {
   return { SYSTEM: 'InfoFilled', TASK: 'SuccessFilled', MESSAGE: 'Message', WARNING: 'WarningFilled' }[type] || 'Bell'
@@ -195,31 +212,51 @@ async function loadNotifications() {
     const r = await listNotifications(params)
     notifications.value = r.data?.list || r.data || []
     total.value = r.data?.total || notifications.value.length
-  } catch { notifications.value = [] }
-  finally { loading.value = false }
+  } catch (e) {
+    notifications.value = []
+    ElMessage.error('加载通知失败：' + (e.response?.data?.message || e.message || '请稍后重试'))
+  } finally { loading.value = false }
 }
 
 async function markRead(n) {
+  if (markingReadId.value !== null) return
+  markingReadId.value = n.id
   try {
     await markR(n.id)
     n.read = true
-  } catch {}
+  } catch (e) {
+    ElMessage.error('标记已读失败：' + (e.response?.data?.message || e.message || ''))
+  } finally {
+    markingReadId.value = null
+  }
 }
 
 async function doMarkAllRead() {
+  if (markingAll.value) return
+  markingAll.value = true
   try {
     await markAllRead()
     notifications.value.forEach(n => n.read = true)
-    ElMessage.success('全部已读')
-  } catch { ElMessage.error('操作失败') }
+    ElMessage.success(`已将 ${notifications.value.length} 条通知标记为已读`)
+  } catch (e) {
+    ElMessage.error('操作失败：' + (e.response?.data?.message || e.message || ''))
+  } finally {
+    markingAll.value = false
+  }
 }
 
 async function deleteNotification(n) {
+  if (deletingId.value !== null) return
+  deletingId.value = n.id
   try {
     await deleteNotifApi(n.id)
     notifications.value = notifications.value.filter(x => x.id !== n.id)
-    ElMessage.success('已删除')
-  } catch {}
+    ElMessage.success('通知已删除')
+  } catch (e) {
+    ElMessage.error('删除失败：' + (e.response?.data?.message || e.message || ''))
+  } finally {
+    deletingId.value = null
+  }
 }
 
 function openNotification(n) {
@@ -234,7 +271,7 @@ function navigateToAction(url) {
 }
 
 function saveSettings() {
-  ElMessage.success('通知设置已保存')
+  ElMessage.success('通知设置已保存（仅本地生效）')
   showSettings.value = false
 }
 

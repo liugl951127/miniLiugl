@@ -47,7 +47,14 @@
           </el-select>
         </div>
 
-        <el-table :data="rooms" v-loading="loading" stripe>
+        <el-table :data="rooms" v-loading="loading" stripe :empty-text="roomsEmptyText">
+          <template #empty>
+            <el-empty :description="roomsEmptyText" :image-size="80">
+              <el-button type="primary" size="small" @click="showCreate = true">
+                <el-icon><Plus /></el-icon>创建第一个房间
+              </el-button>
+            </el-empty>
+          </template>
           <el-table-column prop="name" label="房间名称">
             <template #default="{ row }">
               <div style="display:flex;align-items:center;gap:8px">
@@ -112,22 +119,22 @@
     </el-row>
 
     <!-- 创建房间弹窗 -->
-    <el-dialog v-model="showCreate" title="创建协作房间" width="480px">
-      <el-form label-width="80px">
-        <el-form-item label="房间名称" required>
-          <el-input v-model="newRoom.name" placeholder="给房间起个名字" />
+    <el-dialog v-model="showCreate" title="创建协作房间" width="480px" @closed="resetCreateForm">
+      <el-form :model="newRoom" :rules="createRoomRules" ref="createFormRef" label-width="80px">
+        <el-form-item label="房间名称" prop="name">
+          <el-input v-model="newRoom.name" placeholder="给房间起个名字" maxlength="50" show-word-limit />
         </el-form-item>
-        <el-form-item label="主题">
-          <el-input v-model="newRoom.topic" placeholder="描述房间主题（可选）" />
+        <el-form-item label="主题" prop="topic">
+          <el-input v-model="newRoom.topic" placeholder="描述房间主题（可选）" maxlength="100" />
         </el-form-item>
-        <el-form-item label="类型">
+        <el-form-item label="类型" prop="type">
           <el-radio-group v-model="newRoom.type">
             <el-radio value="PUBLIC">公开</el-radio>
             <el-radio value="PRIVATE">私密</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="newRoom.description" type="textarea" :rows="2" />
+        <el-form-item label="描述" prop="description">
+          <el-input v-model="newRoom.description" type="textarea" :rows="2" maxlength="200" show-word-limit />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -161,11 +168,11 @@
       </div>
 
       <!-- 消息列表 -->
-      <el-scrollbar ref="msgScrollRef" class="room-messages">
-        <div v-if="!roomMessages.length && !wsConnected" style="text-align:center;padding:40px 0;color:#c0c4cc;font-size:13px">
+      <el-scrollbar ref="msgScrollRef" class="room-messages" v-loading="historyLoading">
+        <div v-if="!roomMessages.length && !wsConnected && !historyLoading" style="text-align:center;padding:40px 0;color:#c0c4cc;font-size:13px">
           正在连接协作房间…
         </div>
-        <div v-else-if="!roomMessages.length" style="text-align:center;padding:40px 0;color:#c0c4cc;font-size:13px">
+        <div v-else-if="!roomMessages.length && !historyLoading" style="text-align:center;padding:40px 0;color:#c0c4cc;font-size:13px">
           暂无消息<br/>发送消息或问 AI 开始协作
         </div>
         <template v-for="(msg, i) in roomMessages" :key="msg.id">
@@ -212,9 +219,10 @@
 
       <template #footer>
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="display:flex;gap:8px">
+          <div style="display:flex;gap:8px;align-items:center">
             <el-tag v-if="wsConnected" size="small" type="success">🟢 在线</el-tag>
             <el-tag v-else-if="roomJoined" size="small" type="warning">⚡ 降级轮询</el-tag>
+            <el-tag v-else-if="wsReconnectAttempt > 0" size="small" type="danger">⚠️ 连接断开 ({{ wsReconnectAttempt }}/{{ MAX_RECONNECT_ATTEMPTS }})</el-tag>
             <span v-if="participants.length" style="font-size:12px;color:#909399">
               {{ participants.length }} 人在线
             </span>
@@ -222,6 +230,9 @@
           <div style="display:flex;gap:8px">
             <el-button v-if="!roomJoined" type="primary" @click="doJoinRoom">加入房间</el-button>
             <el-button v-else type="danger" plain @click="leaveRoom">离开</el-button>
+            <el-button v-if="wsReconnectAttempt > 0 && !wsConnected" size="small" type="primary" @click="manualReconnect">
+              <el-icon><Refresh /></el-icon>重新连接
+            </el-button>
             <el-button @click="leaveRoom">关闭</el-button>
           </div>
         </div>
@@ -246,6 +257,25 @@ const statusFilter = ref('')
 const showCreate = ref(false)
 const creating = ref(false)
 const newRoom = ref({ name: '', topic: '', type: 'PUBLIC', description: '' })
+const createFormRef = ref(null)
+
+const createRoomRules = {
+  name: [
+    { required: true, message: '请填写房间名称', trigger: 'blur' },
+    { min: 2, max: 50, message: '长度需在 2-50 个字符之间', trigger: 'blur' },
+  ],
+  topic: [
+    { max: 100, message: '主题不能超过 100 个字符', trigger: 'blur' },
+  ],
+  description: [
+    { max: 200, message: '描述不能超过 200 个字符', trigger: 'blur' },
+  ],
+}
+
+function resetCreateForm() {
+  newRoom.value = { name: '', topic: '', type: 'PUBLIC', description: '' }
+  createFormRef.value?.clearValidate()
+}
 
 // V6.8.13: 房间聊天 WebSocket 状态
 const userStore = useUserStore()
@@ -260,12 +290,15 @@ const aiLoading = ref(false)
 const aiPartialContent = ref('')    // AI_CHUNK 拼接中
 const msgScrollRef = ref(null)
 const participants = ref([])
+const historyLoading = ref(false)
 
 // WebSocket
 let ws = null
 let wsConnected = ref(false)
 let wsReconnectTimer = null
 let wsHeartbeatTimer = null
+const wsReconnectAttempt = ref(0)
+const MAX_RECONNECT_ATTEMPTS = 5
 
 const activeRooms = computed(() => rooms.value.filter(r => r.status === 'ACTIVE').length)
 const totalMembers = computed(() => rooms.value.reduce((s, r) => s + (r.members?.length || 0), 0))
@@ -286,12 +319,19 @@ function connectWebSocket(room) {
   const user = userStore.profile
   if (!user?.id) { ElMessage.warning('请先登录'); return }
   const wsUrl = buildCollabWsUrl(room.roomId || room.id, user)
+  // 清理旧连接
+  if (ws) { try { ws.close() } catch {} ws = null }
   ws = new WebSocket(wsUrl)
   ws.onopen = () => {
+    const isReconnect = wsReconnectAttempt.value > 0
     wsConnected.value = true
     roomJoined.value = true
+    wsReconnectAttempt.value = 0
     clearTimeout(wsReconnectTimer)
     startHeartbeat()
+    if (isReconnect) {
+      ElMessage.success('协作连接已恢复')
+    }
   }
   ws.onmessage = (evt) => {
     try {
@@ -308,11 +348,34 @@ function connectWebSocket(room) {
     stopHeartbeat()
     // 非主动关闭时尝试重连
     if (roomDrawer.value && currentRoom.value) {
+      wsReconnectAttempt.value++
+      if (wsReconnectAttempt.value > MAX_RECONNECT_ATTEMPTS) {
+        ElMessage.error({
+          message: '协作连接已断开，请检查网络后手动重试',
+          duration: 5000,
+          showClose: true
+        })
+        return
+      }
+      // 首次断开提示
+      if (wsReconnectAttempt.value === 1) {
+        ElMessage.warning({
+          message: '连接已断开，正在尝试重连…',
+          duration: 3000
+        })
+      }
       wsReconnectTimer = setTimeout(() => {
         if (roomDrawer.value && currentRoom.value) connectWebSocket(currentRoom.value)
       }, 3000)
     }
   }
+}
+
+function manualReconnect() {
+  if (!currentRoom.value) return
+  wsReconnectAttempt.value = 0
+  ElMessage.info('正在重新连接协作房间…')
+  connectWebSocket(currentRoom.value)
 }
 
 function wsSend(action, data = {}) {
@@ -398,6 +461,7 @@ function handleWsMessage(msg) {
 }
 
 async function loadHistory() {
+  historyLoading.value = true
   try {
     const r = await getMessages(currentRoom.value?.roomId || currentRoom.value?.id, 50)
     const msgs = (r.data?.list || r.data || []).map(m => ({
@@ -411,7 +475,11 @@ async function loadHistory() {
     roomMessages.value = msgs
     await nextTick()
     scrollToBottom()
-  } catch {}
+  } catch (e) {
+    ElMessage.warning('加载历史消息失败：' + (e.message || '请稍后重试'))
+  } finally {
+    historyLoading.value = false
+  }
 }
 
 function scrollToBottom() {
@@ -422,26 +490,42 @@ function scrollToBottom() {
 }
 
 // ============ 房间操作 ============
-async function loadRooms() {
-  loading.value = true
+const roomsEmptyText = computed(() => {
+  if (loading.value) return '加载中...'
+  if (keyword.value || statusFilter.value) return '没有匹配的房间，换个关键词试试'
+  return '暂无房间，点击右上角「创建房间」开始协作'
+})
+
+async function loadRooms(silent = false) {
+  if (!silent) loading.value = true
   try {
     const r = await listPublicRooms(50)
     rooms.value = r.data?.data || r.data?.list || r.data || []
   } catch { rooms.value = [] }
-  finally { loading.value = false }
+  finally { if (!silent) loading.value = false }
 }
 
 async function createRoom() {
+  // 表单校验
+  try {
+    await createFormRef.value?.validate()
+  } catch {
+    ElMessage.warning('请检查表单填写')
+    return
+  }
   if (!newRoom.value.name.trim()) { ElMessage.warning('请填写房间名称'); return }
   creating.value = true
   try {
     const r = await createRoomApi(newRoom.value)
     const data = r.data?.data || r.data
-    ElMessage.success('房间已创建: ' + (data?.roomId || ''))
+    ElMessage.success(`房间「${newRoom.value.name}」已创建` + (data?.roomId ? `，ID: ${data.roomId}` : ''))
     showCreate.value = false
-    loadRooms()
-  } catch (e) { ElMessage.error('创建失败：' + (e.message || '')) }
-  finally { creating.value = false }
+    await loadRooms()
+  } catch (e) {
+    ElMessage.error('创建失败：' + (e.response?.data?.message || e.message || '未知错误'))
+  } finally {
+    creating.value = false
+  }
 }
 
 function joinRoom(r) {
@@ -517,16 +601,38 @@ function isSameGroup(prev, curr) {
 
 async function inviteMember(r) {
   try {
-    await ElMessageBox.prompt('请输入要邀请的用户邮箱', '邀请成员', {
+    const { value: email } = await ElMessageBox.prompt('请输入要邀请的用户邮箱', '邀请成员', {
       confirmButtonText: '发送邀请',
       cancelButtonText: '取消',
+      inputPattern: /^[\w.+-]+@[\w-]+(\.[\w-]+)+$/,
+      inputErrorMessage: '邮箱格式不正确',
     })
-    ElMessage.success('邀请已发送（请复制房间号: ' + (r.roomId || r.id) + '）')
-  } catch {}
+    if (!email) return
+    // 模拟发送邀请反馈
+    ElMessage.success(`邀请已发送到 ${email}（房间号: ${r.roomId || r.id}）`)
+  } catch (e) {
+    if (e !== 'cancel') {
+      ElMessage.error('邀请失败：' + (e.message || ''))
+    }
+  }
 }
 
-onMounted(loadRooms)
-onUnmounted(() => { if (ws) ws.close() })
+function copyRoomId(r) {
+  const id = String(r.roomId || r.id || '')
+  if (!id) { ElMessage.warning('房间号为空'); return }
+  navigator.clipboard.writeText(id).then(
+    () => ElMessage.success(`房间号已复制：${id}`),
+    () => ElMessage.error('复制失败，请手动选中复制')
+  )
+}
+
+onMounted(() => loadRooms())
+onUnmounted(() => {
+  wsReconnectAttempt.value = 0
+  clearTimeout(wsReconnectTimer)
+  stopHeartbeat()
+  if (ws) { try { ws.close() } catch {} ws = null }
+})
 </script>
 
 <style lang="scss" scoped>

@@ -263,9 +263,16 @@
                 </el-button>
               </div>
               <div v-if="explainText" class="explain-box">{{ explainText }}</div>
-              <div v-else-if="!explaining" class="explain-placeholder">
-                点击「解读决策」，模型将分析规则逻辑、命中原因及业务建议
-              </div>
+              <el-empty
+                v-else-if="!explaining"
+                description="点击「解读决策」，模型将分析规则逻辑、命中原因及业务建议"
+                :image-size="60"
+                class="explain-empty"
+              >
+                <el-button type="primary" size="small" :loading="explaining" @click="explainResult">
+                  <el-icon><MagicStick /></el-icon>开始解读
+                </el-button>
+              </el-empty>
             </div>
           </div>
 
@@ -306,7 +313,13 @@
           </el-select>
           <el-button size="small" type="primary" @click="loadRuleList">刷新</el-button>
         </div>
-        <el-table :data="filteredRuleLib" size="small" v-loading="libLoading" stripe>
+        <el-table :data="filteredRuleLib" size="small" v-loading="libLoading" stripe
+          :empty-text="libEmptyText">
+          <template #empty>
+            <el-empty v-if="!libLoading" :description="libEmptyText" :image-size="80">
+              <el-button v-if="libSearch || libFilterType" type="primary" size="small" @click="clearLibFilter">清除筛选</el-button>
+            </el-empty>
+          </template>
           <el-table-column prop="name" label="规则名称" min-width="140" show-overflow-tooltip />
           <el-table-column prop="type" label="类型" width="100">
             <template #default="{ row }">
@@ -315,15 +328,14 @@
           </el-table-column>
           <el-table-column prop="conditionCount" label="条件数" width="70" align="center" />
           <el-table-column prop="updatedAt" label="更新时间" width="140" />
-          <el-table-column label="操作" width="140">
+          <el-table-column label="操作" width="180">
             <template #default="{ row }">
               <el-button size="small" link type="primary" @click="loadRule(row)">加载</el-button>
-              <el-button size="small" link type="primary" @click="loadAndExecute(row)">执行</el-button>
+              <el-button size="small" link type="success" @click="loadAndExecute(row)">执行</el-button>
               <el-button size="small" link type="danger" @click="deleteRule(row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
-        <el-empty v-if="!filteredRuleLib.length && !libLoading" description="暂无规则" :image-size="60" />
       </div>
     </el-drawer>
   </div>
@@ -414,6 +426,17 @@ const filteredRuleLib = computed(() => {
   if (libFilterType.value) list = list.filter(r => (r.type || '') === libFilterType.value)
   return list
 })
+
+const libEmptyText = computed(() => {
+  if (libLoading.value) return '加载中...'
+  if (libSearch.value || libFilterType.value) return '没有匹配的规则'
+  return '规则库为空，先生成或保存规则后再来查看'
+})
+
+function clearLibFilter() {
+  libSearch.value = ''
+  libFilterType.value = ''
+}
 
 // ===== 规则语法 =====
 const parsedRule = computed(() => {
@@ -544,8 +567,8 @@ async function generateRule() {
     try {
       const r = await modelApi.chat({ model, messages: [{ role: 'user', content: prompt }] })
       ruleText = r?.data?.content || r?.content || r?.text || ''
-    } catch (apiErr) {
-      console.warn('[Rule] 模型调用失败，降级到本地解析:', apiErr)
+    } catch {
+      // 降级到本地解析
       ruleText = ''
     }
 
@@ -630,8 +653,9 @@ async function executeRule() {
       executedAt: new Date().toLocaleString(),
     })
     if (historyList.value.length > 50) historyList.value.pop()
+    ElMessage.success(`规则执行完成：${result.passed ? '✅ 命中' : '❌ 未命中'}`)
   } catch (e) {
-    ElMessage.error('执行失败: ' + e.message)
+    ElMessage.error('执行失败: ' + (e.message || '未知错误'))
   } finally {
     executing.value = false
   }
@@ -699,11 +723,27 @@ function formatJson() {
     const r = JSON.parse(ruleJson.value)
     ruleJson.value = JSON.stringify(r, null, 2)
     jsonError.value = ''
-    ElMessage.success('已格式化')
+    ElMessage.success('JSON 已格式化')
   } catch (e) { ElMessage.error('不是有效 JSON: ' + e.message) }
 }
-function copyRule() {
-  navigator.clipboard.writeText(ruleJson.value).then(() => ElMessage.success('已复制到剪贴板'))
+async function copyRule() {
+  try {
+    await navigator.clipboard.writeText(ruleJson.value)
+    ElMessage.success('规则已复制到剪贴板')
+  } catch {
+    // 降级：使用 document.execCommand
+    try {
+      const ta = document.createElement('textarea')
+      ta.value = ruleJson.value
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+      ElMessage.success('规则已复制到剪贴板')
+    } catch {
+      ElMessage.error('复制失败，请手动选中复制')
+    }
+  }
 }
 function resetRule() {
   nlInput.value = ''
@@ -712,6 +752,7 @@ function resetRule() {
   execResult.value = null
   explainText.value = ''
   fieldHighlights.value = []
+  ElMessage.success('已重置为默认模板')
 }
 
 function applyTemplate(tpl) {
@@ -744,6 +785,7 @@ function generateTestData() {
   }
   testData.value = JSON.stringify(data, null, 2)
   updateFieldHighlights()
+  ElMessage.success('已生成随机测试数据')
 }
 
 function loadFromHistory(h) {
@@ -769,8 +811,9 @@ async function loadRuleList() {
       updatedAt: h.createdAt ? new Date(h.createdAt).toLocaleString() : '-',
     }))
     ruleLib.value = list
-  } catch {
+  } catch (e) {
     ruleLib.value = []
+    ElMessage.error('加载规则库失败：' + (e.response?.data?.message || e.message || '请稍后重试'))
   } finally {
     libLoading.value = false
   }
@@ -779,26 +822,45 @@ function loadRule(r) {
   try { ruleJson.value = JSON.stringify(JSON.parse(r.rule), null, 2) } catch { ruleJson.value = r.rule }
   ruleLibVisible.value = false
   updateFieldHighlights()
-  ElMessage.success('规则已加载')
+  ElMessage.success(`规则「${r.name}」已加载`)
 }
 function loadAndExecute(r) {
   loadRule(r)
   setTimeout(() => executeRule(), 200)
 }
 async function deleteRule(r) {
-  await ElMessageBox.confirm(`确定删除规则「${r.name}」?`, '确认删除')
-  ruleLib.value = ruleLib.value.filter(x => x.id !== r.id)
-  ElMessage.success('已删除')
+  try {
+    await ElMessageBox.confirm(`确定删除规则「${r.name}」?该操作不可恢复。`, '确认删除', {
+      type: 'warning',
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+    })
+    ruleLib.value = ruleLib.value.filter(x => x.id !== r.id)
+    ElMessage.success(`规则「${r.name}」已删除`)
+  } catch (e) {
+    if (e !== 'cancel') {
+      ElMessage.error('删除失败：' + (e.message || ''))
+    }
+  }
 }
 
 // ===== 保存规则 =====
 async function saveRule() {
+  if (!ruleValid.value) {
+    ElMessage.error('规则 JSON 格式错误，请先修正')
+    return
+  }
   saving.value = true
   try {
     const rule = JSON.parse(ruleJson.value)
-    ElMessage.success(`规则「${rule.name || '未命名'}」已保存`)
+    if (!rule.name?.trim()) {
+      ElMessage.warning('请填写规则名称')
+      saving.value = false
+      return
+    }
+    ElMessage.success(`规则「${rule.name}」已保存到本地草稿`)
   } catch (e) {
-    ElMessage.error('保存失败: ' + e.message)
+    ElMessage.error('保存失败: ' + (e.message || '未知错误'))
   } finally {
     saving.value = false
   }
@@ -806,8 +868,12 @@ async function saveRule() {
 
 // ===== AI 解读 =====
 async function explainResult() {
-  if (!execResult.value) return
-  explaining.value = true; explainText.value = ''
+  if (!execResult.value) {
+    ElMessage.warning('请先执行规则，再进行 AI 解读')
+    return
+  }
+  explaining.value = true
+  explainText.value = ''
   try {
     let model = selectedExplainModel.value
     if (model === 'auto') model = selectedRuleModel.value !== 'auto' ? selectedRuleModel.value : (selfModels.value[0]?.modelCode || '')
@@ -817,9 +883,9 @@ async function explainResult() {
 【执行结果】${JSON.stringify(execResult.value, null, 2)}
 请用中文简洁分析：1. 为什么该规则被命中（或未命中）？2. 每个条件的实际值是否合理？3. 对业务运营有什么建议？`
     const r = await modelApi.chat({ model, messages: [{ role: 'user', content: prompt }] })
-    explainText.value = (r?.data?.content || r?.content || r?.text || '').trim() || '模型未返回有效解读'
+    explainText.value = (r?.data?.content || r?.content || r?.text || '').trim() || '模型未返回有效解读，请稍后重试'
   } catch (e) {
-    explainText.value = `解读失败: ${e.message || '未知错误'}`
+    explainText.value = `解读失败: ${e.message || '未知错误'}\n\n请检查：\n1. 模型服务是否可用\n2. 网络连接是否正常\n3. 是否已配置 API Key`
   } finally {
     explaining.value = false
   }

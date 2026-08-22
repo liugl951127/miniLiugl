@@ -1,9 +1,9 @@
 <!--
-  @file views/agent/PropertyPanel.vue (V6.3+ 4 Tab 属性面板)
-  @version V6.3+ (基本 / 输入 / 输出 / 高级)
+  @file views/agent/PropertyPanel.vue (V6.8.13+ 4 Tab 属性面板 - 企业级)
+  @version V6.8.13 (基本 / 输入 / 输出 / 高级)
 -->
 <template>
-  <div class="property-panel">
+  <div class="property-panel" v-loading="loading">
     <div v-if="!selectedNode && !selectedEdge" class="empty-panel">
       <div class="empty-icon">🎨</div>
       <h3>未选中节点或连线</h3>
@@ -13,12 +13,21 @@
     <div v-else>
       <div class="panel-header">
         <h3>
-          <span class="header-icon">{{ selectedNode ? getIcon(selectedNode.type) : (selectedEdge.type === 'data' ? '🔗' : '🔀') }}</span>
+          <span class="header-icon">
+            {{ selectedNode ? getIcon(selectedNode.type) : (selectedEdge?.type === 'control' ? '🔀' : '🔗') }}
+          </span>
           {{ selectedNode ? selectedNode.name : '连线属性' }}
         </h3>
-        <el-button type="danger" size="small" text @click="handleDelete">
-          <el-icon><Delete /></el-icon>
-        </el-button>
+        <div class="panel-header-actions">
+          <el-tag size="small" effect="plain" type="info">
+            {{ selectedNode ? getName(selectedNode.type) : (selectedEdge?.type === 'control' ? '控制流' : '数据流') }}
+          </el-tag>
+          <el-tooltip content="删除当前选中" placement="top">
+            <el-button type="danger" size="small" text @click="handleDelete">
+              <el-icon><Delete /></el-icon>
+            </el-button>
+          </el-tooltip>
+        </div>
       </div>
 
       <el-tabs v-model="activeTab" class="panel-tabs">
@@ -26,7 +35,13 @@
         <el-tab-pane label="基本" name="basic">
           <el-form v-if="selectedNode" label-position="top" size="small">
             <el-form-item label="名称">
-              <el-input v-model="selectedNode.name" @input="emitUpdate" />
+              <el-input
+                v-model="selectedNode.name"
+                placeholder="节点名称"
+                maxlength="50"
+                show-word-limit
+                @input="emitUpdate"
+              />
             </el-form-item>
             <el-form-item label="类型">
               <el-tag :color="getColor(selectedNode.type)" effect="dark">
@@ -34,7 +49,7 @@
               </el-tag>
             </el-form-item>
             <el-form-item label="状态">
-              <el-select v-model="selectedNode.status" @change="emitUpdate">
+              <el-select v-model="selectedNode.status" placeholder="选择状态" @change="emitUpdate">
                 <el-option label="待运行" value="pending" />
                 <el-option label="运行中" value="running" />
                 <el-option label="成功" value="success" />
@@ -42,11 +57,19 @@
               </el-select>
             </el-form-item>
             <el-form-item label="描述">
-              <el-input v-model="(selectedNode.config || {}).desc" type="textarea" :rows="2" @input="emitUpdate" />
+              <el-input
+                v-model="(selectedNode.config || {}).desc"
+                type="textarea"
+                :rows="2"
+                maxlength="500"
+                show-word-limit
+                placeholder="简要描述此节点的作用"
+                @input="emitUpdate"
+              />
             </el-form-item>
           </el-form>
 
-          <el-form v-else label-position="top" size="small">
+          <el-form v-else-if="selectedEdge" label-position="top" size="small">
             <el-form-item label="连线类型">
               <el-radio-group v-model="selectedEdge.type" @change="emitUpdate">
                 <el-radio-button label="data">数据流</el-radio-button>
@@ -54,7 +77,7 @@
               </el-radio-group>
             </el-form-item>
             <el-form-item label="连线标签">
-              <el-input v-model="selectedEdge.label" @input="emitUpdate" />
+              <el-input v-model="selectedEdge.label" placeholder="选填" maxlength="50" @input="emitUpdate" />
             </el-form-item>
           </el-form>
         </el-tab-pane>
@@ -64,7 +87,7 @@
           <el-form v-if="selectedNode" label-position="top" size="small">
             <template v-if="selectedNode.type === 'llm'">
               <el-form-item label="模型">
-                <el-select v-model="selectedNode.config.model" @change="emitUpdate">
+                <el-select v-model="selectedNode.config.model" placeholder="选择模型" @change="emitUpdate">
                   <el-option label="GPT-3.5 Turbo" value="gpt-3.5-turbo" />
                   <el-option label="GPT-4" value="gpt-4" />
                   <el-option label="Claude 3 Haiku" value="claude-3-haiku" />
@@ -72,31 +95,63 @@
                 </el-select>
               </el-form-item>
               <el-form-item label="Prompt 模板">
-                <el-input v-model="selectedNode.config.prompt" type="textarea" :rows="3" @input="emitUpdate" />
+                <el-input
+                  v-model="selectedNode.config.prompt"
+                  type="textarea"
+                  :rows="3"
+                  placeholder="例如：根据以下输入回答问题：\n$input"
+                  @input="emitUpdate"
+                />
               </el-form-item>
               <el-form-item label="Temperature">
-                <el-slider v-model="selectedNode.config.temperature" :min="0" :max="2" :step="0.1" @change="emitUpdate" />
+                <el-slider
+                  v-model="selectedNode.config.temperature"
+                  :min="0"
+                  :max="2"
+                  :step="0.1"
+                  show-input
+                  @change="emitUpdate"
+                />
               </el-form-item>
               <el-form-item label="Max Tokens">
-                <el-input-number v-model="selectedNode.config.maxTokens" :min="100" :max="32000" @change="emitUpdate" />
+                <el-input-number
+                  v-model="selectedNode.config.maxTokens"
+                  :min="100"
+                  :max="32000"
+                  style="width:100%"
+                  @change="emitUpdate"
+                />
               </el-form-item>
             </template>
             <template v-else-if="selectedNode.type === 'rag'">
               <el-form-item label="知识库">
-                <el-select v-model="selectedNode.config.kbId" @change="emitUpdate">
+                <el-select v-model="selectedNode.config.kbId" placeholder="选择知识库" @change="emitUpdate">
                   <el-option :label="`KB ${i}`" :value="i" v-for="i in 5" :key="i" />
                 </el-select>
               </el-form-item>
               <el-form-item label="Top K">
-                <el-input-number v-model="selectedNode.config.topK" :min="1" :max="20" @change="emitUpdate" />
+                <el-input-number
+                  v-model="selectedNode.config.topK"
+                  :min="1"
+                  :max="20"
+                  style="width:100%"
+                  @change="emitUpdate"
+                />
               </el-form-item>
               <el-form-item label="相似度阈值">
-                <el-slider v-model="selectedNode.config.threshold" :min="0" :max="1" :step="0.05" @change="emitUpdate" />
+                <el-slider
+                  v-model="selectedNode.config.threshold"
+                  :min="0"
+                  :max="1"
+                  :step="0.05"
+                  show-input
+                  @change="emitUpdate"
+                />
               </el-form-item>
             </template>
             <template v-else-if="selectedNode.type === 'tool'">
               <el-form-item label="工具">
-                <el-select v-model="selectedNode.config.toolId" @change="emitUpdate">
+                <el-select v-model="selectedNode.config.toolId" placeholder="选择工具" @change="emitUpdate">
                   <el-option label="时间查询" value="time" />
                   <el-option label="天气查询" value="weather" />
                   <el-option label="计算器" value="calculator" />
@@ -112,12 +167,22 @@
                 </el-radio-group>
               </el-form-item>
               <el-form-item label="代码">
-                <el-input v-model="selectedNode.config.code" type="textarea" :rows="6" @input="emitUpdate" placeholder="# 输入: $input\n# 输出: $output" />
+                <el-input
+                  v-model="selectedNode.config.code"
+                  type="textarea"
+                  :rows="6"
+                  placeholder="# 输入: $input\n# 输出: $output"
+                  @input="emitUpdate"
+                />
               </el-form-item>
             </template>
             <template v-else-if="selectedNode.type === 'http'">
               <el-form-item label="URL">
-                <el-input v-model="selectedNode.config.url" @input="emitUpdate" placeholder="https://api.example.com" />
+                <el-input
+                  v-model="selectedNode.config.url"
+                  placeholder="https://api.example.com"
+                  @input="emitUpdate"
+                />
               </el-form-item>
               <el-form-item label="方法">
                 <el-radio-group v-model="selectedNode.config.method" @change="emitUpdate">
@@ -128,12 +193,23 @@
                 </el-radio-group>
               </el-form-item>
               <el-form-item label="请求体">
-                <el-input v-model="selectedNode.config.body" type="textarea" :rows="3" @input="emitUpdate" />
+                <el-input
+                  v-model="selectedNode.config.body"
+                  type="textarea"
+                  :rows="3"
+                  @input="emitUpdate"
+                />
               </el-form-item>
             </template>
             <template v-else-if="selectedNode.type === 'condition'">
               <el-form-item label="条件表达式">
-                <el-input v-model="selectedNode.config.expression" type="textarea" :rows="3" @input="emitUpdate" placeholder="$input.length > 100" />
+                <el-input
+                  v-model="selectedNode.config.expression"
+                  type="textarea"
+                  :rows="3"
+                  placeholder="$input.length > 100"
+                  @input="emitUpdate"
+                />
               </el-form-item>
             </template>
             <template v-else-if="selectedNode.type === 'memory'">
@@ -144,10 +220,15 @@
                 </el-radio-group>
               </el-form-item>
               <el-form-item label="Key">
-                <el-input v-model="selectedNode.config.key" @input="emitUpdate" />
+                <el-input v-model="selectedNode.config.key" placeholder="记忆键名" @input="emitUpdate" />
               </el-form-item>
               <el-form-item label="TTL (秒)">
-                <el-input-number v-model="selectedNode.config.ttl" :min="0" @change="emitUpdate" />
+                <el-input-number
+                  v-model="selectedNode.config.ttl"
+                  :min="0"
+                  style="width:100%"
+                  @change="emitUpdate"
+                />
               </el-form-item>
             </template>
             <template v-else-if="selectedNode.type === 'loop'">
@@ -160,13 +241,32 @@
                 </el-radio-group>
               </el-form-item>
               <el-form-item label="迭代器">
-                <el-input v-model="selectedNode.config.iterator" @input="emitUpdate" placeholder="$input.items" />
+                <el-input
+                  v-model="selectedNode.config.iterator"
+                  placeholder="$input.items"
+                  @input="emitUpdate"
+                />
               </el-form-item>
-              <el-form-item label="条件" v-if="selectedNode.config.loopType === 'while' || selectedNode.config.loopType === 'doWhile'">
-                <el-input v-model="selectedNode.config.condition" type="textarea" :rows="2" @input="emitUpdate" placeholder="$counter < 10" />
+              <el-form-item
+                v-if="selectedNode.config.loopType === 'while' || selectedNode.config.loopType === 'doWhile'"
+                label="条件"
+              >
+                <el-input
+                  v-model="selectedNode.config.condition"
+                  type="textarea"
+                  :rows="2"
+                  placeholder="$counter < 10"
+                  @input="emitUpdate"
+                />
               </el-form-item>
               <el-form-item label="最大迭代次数">
-                <el-input-number v-model="selectedNode.config.maxIterations" :min="1" :max="10000" @change="emitUpdate" />
+                <el-input-number
+                  v-model="selectedNode.config.maxIterations"
+                  :min="1"
+                  :max="10000"
+                  style="width:100%"
+                  @change="emitUpdate"
+                />
               </el-form-item>
             </template>
             <template v-else-if="selectedNode.type === 'parallel'">
@@ -179,10 +279,22 @@
                 </el-radio-group>
               </el-form-item>
               <el-form-item label="并发度">
-                <el-input-number v-model="selectedNode.config.concurrency" :min="1" :max="100" @change="emitUpdate" />
+                <el-input-number
+                  v-model="selectedNode.config.concurrency"
+                  :min="1"
+                  :max="100"
+                  style="width:100%"
+                  @change="emitUpdate"
+                />
               </el-form-item>
               <el-form-item label="超时 (秒)">
-                <el-input-number v-model="selectedNode.config.timeout" :min="1" :max="3600" @change="emitUpdate" />
+                <el-input-number
+                  v-model="selectedNode.config.timeout"
+                  :min="1"
+                  :max="3600"
+                  style="width:100%"
+                  @change="emitUpdate"
+                />
               </el-form-item>
               <el-form-item label="失败策略">
                 <el-radio-group v-model="selectedNode.config.failStrategy" @change="emitUpdate">
@@ -194,13 +306,29 @@
             </template>
             <template v-else-if="selectedNode.type === 'subflow'">
               <el-form-item label="子流 ID">
-                <el-input v-model="selectedNode.config.subflowId" @input="emitUpdate" placeholder="subflow_xxx" />
+                <el-input
+                  v-model="selectedNode.config.subflowId"
+                  placeholder="subflow_xxx"
+                  @input="emitUpdate"
+                />
               </el-form-item>
               <el-form-item label="输入映射">
-                <el-input v-model="selectedNode.config.inputMap" type="textarea" :rows="2" @input="emitUpdate" placeholder='{"key": "$value"}' />
+                <el-input
+                  v-model="selectedNode.config.inputMap"
+                  type="textarea"
+                  :rows="2"
+                  placeholder='{"key": "$value"}'
+                  @input="emitUpdate"
+                />
               </el-form-item>
               <el-form-item label="输出映射">
-                <el-input v-model="selectedNode.config.outputMap" type="textarea" :rows="2" @input="emitUpdate" placeholder='{"result": "$value"}' />
+                <el-input
+                  v-model="selectedNode.config.outputMap"
+                  type="textarea"
+                  :rows="2"
+                  placeholder='{"result": "$value"}'
+                  @input="emitUpdate"
+                />
               </el-form-item>
               <el-form-item label="同步/异步">
                 <el-radio-group v-model="selectedNode.config.async" @change="emitUpdate">
@@ -209,6 +337,11 @@
                 </el-radio-group>
               </el-form-item>
             </template>
+            <el-empty
+              v-else
+              description="该节点类型暂无可配置输入参数"
+              :image-size="60"
+            />
           </el-form>
         </el-tab-pane>
 
@@ -216,7 +349,7 @@
         <el-tab-pane label="输出" name="output">
           <el-form v-if="selectedNode" label-position="top" size="small">
             <el-form-item label="输出变量名">
-              <el-input :model-value="`\${${selectedNode.name}.output}`" readonly />
+              <el-input :model-value="`\${${selectedNode.name || 'node'}.output}`" readonly />
             </el-form-item>
             <el-form-item label="下游节点">
               <div class="downstream-list">
@@ -225,29 +358,52 @@
                   :key="eid"
                   class="downstream-tag clickable"
                   @click="onDownstreamClick(eid)"
-                >
-                  {{ getNodeName(eid) }}
-                </el-tag>
+                >{{ getNodeName(eid) }}</el-tag>
                 <span v-if="!getDownstream(selectedNode.id).length" class="no-downstream">无下游</span>
               </div>
             </el-form-item>
             <el-form-item label="输出 Schema (JSON)">
-              <el-input :model-value="getOutputSchema(selectedNode)" type="textarea" :rows="4" readonly />
+              <el-input
+                :model-value="getOutputSchema(selectedNode)"
+                type="textarea"
+                :rows="4"
+                readonly
+              />
             </el-form-item>
           </el-form>
+          <el-empty
+            v-else
+            description="连线无输出配置"
+            :image-size="60"
+          />
         </el-tab-pane>
 
         <!-- Tab 4: 高级 -->
         <el-tab-pane label="高级" name="advanced">
           <el-form v-if="selectedNode" label-position="top" size="small">
             <el-form-item label="超时 (秒)">
-              <el-input-number :model-value="(selectedNode.config || {}).timeout || 60" :min="1" :max="3600" @change="v => { selectedNode.config.timeout = v; emitUpdate(); }" />
+              <el-input-number
+                :model-value="(selectedNode.config || {}).timeout || 60"
+                :min="1"
+                :max="3600"
+                style="width:100%"
+                @change="v => { selectedNode.config.timeout = v; emitUpdate(); }"
+              />
             </el-form-item>
             <el-form-item label="重试次数">
-              <el-input-number :model-value="(selectedNode.config || {}).retry || 3" :min="0" :max="10" @change="v => { selectedNode.config.retry = v; emitUpdate(); }" />
+              <el-input-number
+                :model-value="(selectedNode.config || {}).retry || 3"
+                :min="0"
+                :max="10"
+                style="width:100%"
+                @change="v => { selectedNode.config.retry = v; emitUpdate(); }"
+              />
             </el-form-item>
             <el-form-item label="错误处理">
-              <el-radio-group :model-value="(selectedNode.config || {}).onError || 'fail'" @change="v => { selectedNode.config.onError = v; emitUpdate(); }">
+              <el-radio-group
+                :model-value="(selectedNode.config || {}).onError || 'fail'"
+                @change="v => { selectedNode.config.onError = v; emitUpdate(); }"
+              >
                 <el-radio-button label="fail">失败停止</el-radio-button>
                 <el-radio-button label="skip">跳过继续</el-radio-button>
                 <el-radio-button label="retry">重试</el-radio-button>
@@ -255,7 +411,10 @@
               </el-radio-group>
             </el-form-item>
             <el-form-item label="日志级别">
-              <el-radio-group :model-value="(selectedNode.config || {}).logLevel || 'info'" @change="v => { selectedNode.config.logLevel = v; emitUpdate(); }">
+              <el-radio-group
+                :model-value="(selectedNode.config || {}).logLevel || 'info'"
+                @change="v => { selectedNode.config.logLevel = v; emitUpdate(); }"
+              >
                 <el-radio-button label="debug">DEBUG</el-radio-button>
                 <el-radio-button label="info">INFO</el-radio-button>
                 <el-radio-button label="warn">WARN</el-radio-button>
@@ -263,25 +422,35 @@
               </el-radio-group>
             </el-form-item>
             <el-form-item label="缓存结果">
-              <el-switch :model-value="(selectedNode.config || {}).cache || false" @change="v => { selectedNode.config.cache = v; emitUpdate(); }" />
+              <el-switch
+                :model-value="(selectedNode.config || {}).cache || false"
+                @change="v => { selectedNode.config.cache = v; emitUpdate(); }"
+              />
             </el-form-item>
           </el-form>
+          <el-empty
+            v-else
+            description="连线无高级配置"
+            :image-size="60"
+          />
         </el-tab-pane>
       </el-tabs>
     </div>
+    <BackToTop />
   </div>
-  <BackToTop />
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete } from '@element-plus/icons-vue'
 import BackToTop from '@/components/BackToTop.vue'
 
 const props = defineProps({
   selectedNode: { type: Object, default: null },
   selectedEdge: { type: Object, default: null },
-  edges: { type: Array, default: () => [] }  // { from, to, label }[]
+  edges: { type: Array, default: () => [] },
+  loading: { type: Boolean, default: false },
 })
 const emit = defineEmits(['update', 'delete-node', 'delete-edge', 'select-node'])
 
@@ -297,7 +466,7 @@ const NODE_TYPES = [
   { type: 'memory', name: '记忆读写', icon: '🧠', color: '#ec4899' },
   { type: 'loop', name: '循环 Loop', icon: '🔁', color: '#14b8a6' },
   { type: 'parallel', name: '并行 Parallel', icon: '⚡', color: '#f97316' },
-  { type: 'subflow', name: '子流 SubFlow', icon: '📦', color: '#0ea5e9' }
+  { type: 'subflow', name: '子流 SubFlow', icon: '📦', color: '#0ea5e9' },
 ]
 
 function getIcon(type) {
@@ -311,13 +480,13 @@ function getName(type) {
 }
 
 function getDownstream(nodeId) {
-  // 通过 edges prop 找出所有 to === nodeId 的边，返回下游节点 ID 列表
   return (props.edges || [])
     .filter(e => e.from === nodeId)
     .map(e => e.to)
 }
 function getNodeName(id) {
-  // 优先从 edges 的 label 字段读取节点名称兜底
+  // 优先查找节点名（如果父组件传了 nodes 列表）；否则用 edge label 兜底
+  // 这里用 edge.label 兜底，保持向后兼容
   const edge = (props.edges || []).find(e => e.to === id)
   return edge?.label || edge?.name || id
 }
@@ -325,16 +494,33 @@ function getNodeName(id) {
 function onDownstreamClick(nodeId) {
   emit('select-node', nodeId)
 }
-function getOutputSchema(node) {
+function getOutputSchema() {
+  // 简化 schema 描述
   return JSON.stringify({ output: { type: 'string' } }, null, 2)
 }
 
 function emitUpdate() {
   emit('update', props.selectedNode || props.selectedEdge)
 }
-function handleDelete() {
-  if (props.selectedNode) emit('delete-node', props.selectedNode)
-  else if (props.selectedEdge) emit('delete-edge', props.selectedEdge)
+async function handleDelete() {
+  try {
+    await ElMessageBox.confirm(
+      props.selectedNode
+        ? `确认删除节点「${props.selectedNode.name || props.selectedNode.id}」？`
+        : '确认删除当前连线？',
+      '确认',
+      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
+    )
+  } catch {
+    return
+  }
+  if (props.selectedNode) {
+    emit('delete-node', props.selectedNode)
+    ElMessage.success('已删除节点')
+  } else if (props.selectedEdge) {
+    emit('delete-edge', props.selectedEdge)
+    ElMessage.success('已删除连线')
+  }
 }
 </script>
 
@@ -347,6 +533,7 @@ function handleDelete() {
   padding: 16px;
   overflow-y: auto;
   color: white;
+  min-height: 200px;
 }
 .empty-panel {
   text-align: center;
@@ -373,11 +560,23 @@ function handleDelete() {
   margin-bottom: 16px;
   padding-bottom: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 8px;
 }
 .panel-header h3 {
   margin: 0;
   font-size: 14px;
   color: white;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 .header-icon {
   margin-right: 6px;
@@ -405,6 +604,11 @@ function handleDelete() {
 .panel-tabs :deep(.el-input__inner) {
   color: white;
 }
+.panel-tabs :deep(.el-textarea__inner) {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.1);
+}
 .downstream-list {
   display: flex;
   flex-wrap: wrap;
@@ -417,10 +621,10 @@ function handleDelete() {
 }
 .downstream-tag.clickable {
   cursor: pointer;
-  &:hover {
-    background: rgba(168, 85, 247, 0.4);
-    text-decoration: underline;
-  }
+}
+.downstream-tag.clickable:hover {
+  background: rgba(168, 85, 247, 0.4);
+  text-decoration: underline;
 }
 .no-downstream {
   font-size: 11px;

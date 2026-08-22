@@ -5,20 +5,17 @@
   @features
     - 骨架屏 (loading 状态) 避免空白
     - 表单实时校验 + 视觉反馈
-    - 演示账号一键填入 (5 个测试账号)
-    - 错误处理: 网络错 / 401 / 500 都有清晰提示 + 抖动动画
+    - 错误处理: 密码错 / 账号不存在 / 账号锁定 / 网络错 / 500 都有清晰提示 + 抖动动画
     - 密码可见切换
     - 自动登录 (token 持久化, 下次自动登)
     - 键盘快捷键: Enter 提交 / Tab 切换字段
     - 跳转: 不等 fetchProfile, 立刻跳, layout 异步 hydrate
     - 动效: 渐入 / 按钮 hover / 输入框 focus ring
     - i18n 完整接入 (zh / en)
-    - 5 段样板: header / 4 tab (login/register/wechat/quick) / form / demos / features
 -->
 <template>
   <div class="page-login" :class="{ 'is-mobile': isMobile }">
     <!-- 1. page-header: 品牌 + 标题 + 副标题 + 主操作 -->
-    <!-- V3.6.1+ 版本标识 (el-watermark) -->
   <el-watermark v-if="false" content="V3.6.1" :font="{ size: 8 }" class="page-watermark" />
   <header class="page-header">
       <div class="brand">
@@ -115,12 +112,12 @@
             <el-link type="primary" :underline="false" @click="onForgot">{{ t('login.forgot') }}</el-link>
           </div>
 
-          <!-- 5. 错误提示条 -->
+          <!-- 5. 错误提示条 (明确区分错误类型) -->
           <transition name="slide">
             <el-alert
               v-if="errorMsg"
               :title="errorMsg"
-              type="error"
+              :type="errorType"
               :closable="false"
               show-icon
               class="error-alert"
@@ -178,7 +175,7 @@
 
     <!-- 10. 底部版权 -->
     <footer class="page-footer">
-      <p>© 2026 Liugl-AI · 自研大模型平台 · 0 外部 LLM 依赖</p>
+      <p>© {{ currentYear }} Liugl-AI · 自研大模型平台 · 0 外部 LLM 依赖 · v{{ appVersion }}</p>
     </footer>
   </div>
 </template>
@@ -187,7 +184,6 @@
 import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
 import {
   User, UserFilled, Lock, Message, ChatLineRound, ChatDotRound, Plus,
   Cpu, Connection, ChatLineSquare, Promotion, Refresh
@@ -208,15 +204,14 @@ const loading = ref(false)                           // 登录中 loading
 const remember = ref(true)                           // 记住用户名
 const showPassword = ref(false)                      // 密码可见
 const errorMsg = ref('')                             // 错误提示
+const errorType = ref<'error' | 'warning' | 'info'>('error') // 错误类型 (区分严重度)
 const shakeForm = ref(false)                         // 错误抖动
 const isMobile = ref(false)                          // 移动端
 const formRef = ref(null)                            // 表单 ref
-// V6.8.3: 演示模式已永久禁用
-const demoMode = ref(false)
-function onDemoToggle(val) {
-  localStorage.removeItem('minimax_demo_mode')
-  localStorage.removeItem('minimax_demo_user')
-}
+
+// 静态元信息
+const currentYear = new Date().getFullYear()
+const appVersion = '6.8.10'
 
 const form = reactive({
   username: '',
@@ -224,9 +219,6 @@ const form = reactive({
   nickname: '',
   email: ''
 })
-
-// V6.8.3: 演示账号已移除，请使用真实账号登录
-const demoAccounts = []
 
 // === 3. 平台特性 ===
 const features = [
@@ -239,29 +231,23 @@ const features = [
 // === 4. 表单校验规则 (实时 + 错误抖动) ===
 const formRules = computed(() => ({
   username: [
-    { required: true, message: t('login.placeholder.username'), trigger: 'blur' },
-    { min: 3, max: 32, message: '用户名 3-32 字符', trigger: 'blur' }
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, max: 32, message: '用户名长度 3-32 字符', trigger: 'blur' },
+    { pattern: /^[A-Za-z0-9_-]+$/, message: '用户名仅支持字母数字下划线连字符', trigger: 'blur' }
   ],
   password: [
-    { required: true, message: t('login.placeholder.password'), trigger: 'blur' },
-    { min: 6, max: 64, message: '密码 6-64 字符', trigger: 'blur' }
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, max: 64, message: '密码长度 6-64 字符', trigger: 'blur' }
   ],
   nickname: mode.value === 'register' ? [
-    { required: true, message: t('login.placeholder.nickname'), trigger: 'blur' }
+    { required: true, message: '请输入昵称', trigger: 'blur' },
+    { min: 2, max: 32, message: '昵称长度 2-32 字符', trigger: 'blur' }
   ] : [],
   email: mode.value === 'register' ? [
-    { required: true, message: t('login.placeholder.email'), trigger: 'blur' },
+    { required: true, message: '请输入邮箱', trigger: 'blur' },
     { type: 'email', message: '邮箱格式不正确', trigger: 'blur' }
   ] : []
 }))
-
-// V6.8.3: 演示账号已移除
-function fillAccount(acc) {
-  form.username = acc.username
-  form.password = acc.password
-  mode.value = 'login'
-  toast.info(`已填入账号, 请点击登录`)
-}
 
 // === 6. 忘记密码 ===
 function onForgot() {
@@ -269,33 +255,35 @@ function onForgot() {
 }
 
 // === 7. 提交 (核心: loading + 错误处理 + 跳转) ===
-function retryLogin() { errorMsg.value = ''; formRef.value?.clearValidate() }
-const isNetworkError = computed(() => errorMsg.value.includes('网络') || errorMsg.value.includes('服务'))
-// V6.8.3: 演示模式已永久禁用
-function enableDemo() {
-  localStorage.removeItem('minimax_demo_mode')
-  localStorage.removeItem('minimax_demo_user')
-  toast.info('演示模式已禁用，请使用真实账号登录')
+function retryLogin() {
+  errorMsg.value = ''
+  errorType.value = 'error'
+  formRef.value?.clearValidate()
+  // 自动聚焦到用户名
+  setTimeout(() => {
+    const input = document.querySelector('.login-form input[autocomplete="username"]')
+    if (input && input instanceof HTMLElement) input.focus()
+  }, 100)
 }
-
-
 
 async function onSubmit() {
   if (!formRef.value) return
   try {
     await formRef.value.validate()
   } catch {
+    errorType.value = 'warning'
+    errorMsg.value = '请检查表单填写是否正确'
     triggerShake()
     return
   }
 
   errorMsg.value = ''
+  errorType.value = 'error'
   loading.value = true
 
   try {
     if (mode.value === 'login') {
       await userStore.login({ username: form.username, password: form.password })
-      // 记住用户名
       if (remember.value) localStorage.setItem('minimax_remember_user', form.username)
       else localStorage.removeItem('minimax_remember_user')
     } else {
@@ -310,29 +298,40 @@ async function onSubmit() {
     // ✓ 成功 - 立刻跳, 不等 fetchProfile (layout 异步 hydrate)
     toast.success(`${mode.value === 'login' ? '登录' : '注册'}成功`)
     const redirect = route.query.redirect && route.query.redirect !== '/login' ? route.query.redirect : '/chat'
-    router.replace(redirect)  // replace 不留 history
+    router.replace(redirect)
 
     // 异步 fetchProfile (不阻塞跳转)
     userStore.fetchProfile().catch(() => { /* 失败也允许, layout 自己处理 */ })
   } catch (e) {
-    // 错误处理 - 区分错误类型，等待用户手动重新点击登录
-    const msg = e?.response?.data?.message || e?.message || '操作失败'
+    // 错误处理 - 明确区分错误类型
+    const msg = e?.response?.data?.message || e?.response?.data?.msg || e?.message || '操作失败'
     const status = e?.response?.status
-    if (status === 403 || msg.includes('锁定') || msg.includes('封禁') || msg.includes('禁用')) {
-      errorMsg.value = '账号已被锁定，请联系管理员'
-    } else if (status === 404 || msg.includes('不存在') || msg.includes('未找到')) {
-      errorMsg.value = '账号不存在，请检查用户名'
-    } else if (status === 401) {
-      errorMsg.value = '密码错误，请重新输入'
+    if (status === 403 || /锁定|封禁|禁用|banned|locked/i.test(msg)) {
+      errorType.value = 'error'
+      errorMsg.value = '🚫 账号已被锁定或禁用，请联系管理员'
+    } else if (status === 404 || /不存在|未找到|not\s*found|user\s*not\s*exist/i.test(msg)) {
+      errorType.value = 'error'
+      errorMsg.value = '👤 账号不存在，请检查用户名是否正确'
+    } else if (status === 401 || /密码|password|invalid\s*credentials/i.test(msg)) {
+      errorType.value = 'error'
+      errorMsg.value = '🔑 密码错误，请重新输入'
+    } else if (status === 429 || /too\s*many|频繁/i.test(msg)) {
+      errorType.value = 'warning'
+      errorMsg.value = '⏳ 尝试次数过多，请稍后再试'
     } else if (status >= 500) {
-      errorMsg.value = '服务异常，请稍后重试'
-    } else if (msg.includes('Network') || msg.includes('timeout') || msg.includes('网络')) {
-      errorMsg.value = '网络不可用，请检查网络连接'
+      errorType.value = 'error'
+      errorMsg.value = '💥 服务异常，请稍后重试'
+    } else if (/network|timeout|网络|failed to fetch/i.test(msg)) {
+      errorType.value = 'warning'
+      errorMsg.value = '📡 网络不可用，请检查网络连接'
+    } else if (status === 409 || /已存在|exists|duplicate/i.test(msg)) {
+      errorType.value = 'warning'
+      errorMsg.value = '⚠️ 该账号已存在，请直接登录'
     } else {
+      errorType.value = 'error'
       errorMsg.value = msg
     }
     triggerShake()
-    toast.error(errorMsg.value)
   } finally {
     loading.value = false
   }
@@ -347,6 +346,7 @@ function triggerShake() {
 // === 9. Tab 切换 ===
 function onTabChange(name) {
   errorMsg.value = ''
+  errorType.value = 'error'
   if (name === 'wechat') {
     // 微信扫码
   }
@@ -370,15 +370,6 @@ function checkResponsive() {
 
 // === 13. 生命周期 ===
 onMounted(() => {
-  // V3.7.9+ 跨标签同步演示模式
-  function onStorage(e: StorageEvent) {
-    if (e.key === 'minimax_demo_mode') {
-      demoMode.value = e.newValue === 'true'
-      toast.info(demoMode.value ? '🎭 演示模式已启用 (跨标签同步)' : '演示模式已关闭 (跨标签同步)')
-    }
-  }
-  window.addEventListener('storage', onStorage)
-  onUnmounted(() => window.removeEventListener('storage', onStorage))
   checkResponsive()
   window.addEventListener('resize', checkResponsive, { passive: true })
   // 恢复记住的用户名
@@ -677,18 +668,6 @@ onUnmounted(() => {
 .slide-enter-to, .slide-leave-from {
   opacity: 1;
   max-height: 100px;
-}
-
-/* 演示模式 */
-.demo-toggle {
-  margin-top: 12px;
-  text-align: center;
-}
-
-.demo-hint {
-  font-size: 11px;
-  color: var(--liugl-success, #10b981);
-  margin: 4px 0 0;
 }
 
 /* 移动端适配 */

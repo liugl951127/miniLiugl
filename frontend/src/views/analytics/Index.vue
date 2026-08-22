@@ -33,6 +33,7 @@
             <span>📈 数据概览</span>
           </el-tooltip>
         </template>
+        <div v-loading="overviewLoading">
         <el-row :gutter="12">
           <el-col :span="16">
             <el-card title="调用趋势" body-style="padding:16px">
@@ -50,7 +51,10 @@
         <el-row :gutter="12" style="margin-top:12px">
           <el-col :span="12">
             <el-card title="TOP 10 用户" body-style="padding:0">
-              <el-table :data="topUsers" size="small" stripe>
+              <el-table :data="topUsers" size="small" stripe :empty-text="topUsersEmptyText">
+                <template #empty>
+                  <el-empty v-if="!overviewLoading" :description="topUsersEmptyText" :image-size="60" />
+                </template>
                 <el-table-column type="index" width="50" />
                 <el-table-column prop="user" label="用户" />
                 <el-table-column prop="calls" label="调用次数" width="100" align="center" />
@@ -65,6 +69,7 @@
             </el-card>
           </el-col>
         </el-row>
+        </div>
       </el-tab-pane>
 
       <!-- NL2SQL -->
@@ -197,7 +202,7 @@
                 </div>
                 <span style="font-size:11px;color:#909399;white-space:nowrap;margin-left:8px">{{ h.createdAt?.slice(0,16) || '' }}</span>
               </div>
-              <div v-if="!nlHistoryLoading && !nlHistory.length" style="text-align:center;color:#909399;padding:20px">暂无查询历史</div>
+              <el-empty v-if="!nlHistory.length" :description="nlHistoryEmptyText" :image-size="60" />
             </el-card>
           </el-col>
 
@@ -254,6 +259,7 @@
             <span>🗳️ 投票统计</span>
           </el-tooltip>
         </template>
+        <div v-loading="voteLoading">
         <!-- V6.8.1: 统计汇总 -->
         <el-row :gutter="12" style="margin-bottom:12px">
           <el-col v-for="m in voteMetrics" :key="m.label" :span="6">
@@ -273,7 +279,7 @@
             <el-card title="实时投票" body-style="padding:16px">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                 <span style="font-size:13px;color:#909399">共 {{ recentVotes.length }} 条记录</span>
-                <el-button size="small" type="success" @click="exportVotesCsv" :loading="exportingVotes">
+                <el-button size="small" type="success" @click="exportVotesCsv" :loading="exportingVotes" :disabled="!recentVotes.length">
                   <el-icon><Download /></el-icon>导出 CSV
                 </el-button>
               </div>
@@ -299,33 +305,46 @@
                   </el-button>
                 </el-tooltip>
               </div>
-              <div v-if="!recentVotes.length" style="text-align:center;color:#909399;padding:20px">暂无投票</div>
+              <el-empty v-if="!recentVotes.length && !voteLoading" description="暂无投票记录" :image-size="60" />
             </el-card>
           </el-col>
         </el-row>
+        </div>
       </el-tab-pane>
     </el-tabs>
 
     <!-- 数据源表单 -->
     <el-dialog v-model="showDsForm" title="添加数据源" width="480px">
-      <el-form label-width="80px">
-        <el-form-item label="名称"><el-input v-model="dsForm.name" /></el-form-item>
-        <el-form-item label="类型">
+      <el-form :model="dsForm" :rules="dsFormRules" ref="dsFormRef" label-width="80px">
+        <el-form-item label="名称" prop="name">
+          <el-input v-model="dsForm.name" placeholder="例如：生产数据库" maxlength="50" show-word-limit />
+        </el-form-item>
+        <el-form-item label="类型" prop="type">
           <el-select v-model="dsForm.type" style="width:100%">
             <el-option label="MySQL" value="mysql" />
             <el-option label="PostgreSQL" value="postgresql" />
             <el-option label="MongoDB" value="mongodb" />
           </el-select>
         </el-form-item>
-        <el-form-item label="Host"><el-input v-model="dsForm.host" placeholder="localhost" /></el-form-item>
-        <el-form-item label="Port"><el-input-number v-model="dsForm.port" :min="1" :max="65535" /></el-form-item>
-        <el-form-item label="数据库"><el-input v-model="dsForm.database" /></el-form-item>
-        <el-form-item label="用户名"><el-input v-model="dsForm.username" /></el-form-item>
-        <el-form-item label="密码"><el-input v-model="dsForm.password" type="password" show-password /></el-form-item>
+        <el-form-item label="Host" prop="host">
+          <el-input v-model="dsForm.host" placeholder="localhost" />
+        </el-form-item>
+        <el-form-item label="Port" prop="port">
+          <el-input-number v-model="dsForm.port" :min="1" :max="65535" />
+        </el-form-item>
+        <el-form-item label="数据库" prop="database">
+          <el-input v-model="dsForm.database" placeholder="数据库名" />
+        </el-form-item>
+        <el-form-item label="用户名">
+          <el-input v-model="dsForm.username" />
+        </el-form-item>
+        <el-form-item label="密码">
+          <el-input v-model="dsForm.password" type="password" show-password />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showDsForm = false">取消</el-button>
-        <el-button type="primary" @click="addDataSource">保存并测试</el-button>
+        <el-button type="primary" :loading="addingDs" @click="addDataSource">保存并测试</el-button>
       </template>
     </el-dialog>
 
@@ -379,6 +398,8 @@ import * as echarts from 'echarts'
 const route = useRoute()
 const activeTab = ref(route.query.tab || 'overview')
 const metricsLoading = ref(false)
+const overviewLoading = ref(false)
+const voteLoading = ref(false)
 const metrics = ref([
   { label: '总调用量', value: '-', color: '#409eff', tip: '平台累计所有 API 调用总次数' },
   { label: '今日调用', value: '-', color: '#67c23a', tip: '今日 0 点至今的 API 调用量' },
@@ -437,8 +458,34 @@ function confidenceColor(conf) {
   return '#f56c6c'
 }
 const dsForm = reactive({ name: '', type: 'mysql', host: 'localhost', port: 3306, database: '', username: '', password: '' })
+const dsFormRef = ref(null)
+const addingDs = ref(false)
 const dataSources = ref([])
 const topUsers = ref([])
+const topUsersEmptyText = computed(() => {
+  if (overviewLoading.value) return '加载中...'
+  return '暂无用户调用数据'
+})
+const nlHistoryEmptyText = computed(() => {
+  if (nlHistoryLoading.value) return '加载中...'
+  return '暂无查询历史，试试在左侧输入问题'
+})
+
+const dsFormRules = {
+  name: [
+    { required: true, message: '请输入数据源名称', trigger: 'blur' },
+    { min: 2, max: 50, message: '长度需在 2-50 个字符', trigger: 'blur' },
+  ],
+  host: [
+    { required: true, message: '请输入主机地址', trigger: 'blur' },
+  ],
+  port: [
+    { required: true, message: '请输入端口', trigger: 'blur' },
+  ],
+  database: [
+    { required: true, message: '请输入数据库名', trigger: 'blur' },
+  ],
+}
 
 const trendData = ref([])
 const pieData = ref([])
@@ -454,6 +501,7 @@ let trendChart, pieChart, successChart, voteChart
 // 加载概览真实数据
 async function loadOverview() {
   metricsLoading.value = true
+  overviewLoading.value = true
   try {
     const [overview, trend, dist, users, successRate, modelTrend] = await Promise.all([
       http.get('/api/v1/analytics/stats/overview').catch(() => ({})),
@@ -501,9 +549,10 @@ async function loadOverview() {
     const mt = modelTrend.data?.data ?? modelTrend.data ?? modelTrend ?? []
     modelTrendData.value = Array.isArray(mt) ? mt : []
   } catch (e) {
-    console.warn('[Analytics] 概览数据加载失败:', e)
+    ElMessage.warning('加载概览数据失败：' + (e.response?.data?.message || e.message || '请稍后重试'))
   } finally {
     metricsLoading.value = false
+    overviewLoading.value = false
   }
 }
 
@@ -614,30 +663,37 @@ async function runNlQuery(reExec = false) {
           nlResult.value.columns = qr.data?.columns || (nlResult.value.rows[0] ? Object.keys(nlResult.value.rows[0]) : [])
           nlResult.value.duration = qr.data?.duration || 0
           nlResult.value.success = true
+          ElMessage.success(`查询成功，返回 ${nlResult.value.rows.length} 条数据`)
         } catch (e) {
           nlResult.value.success = false
           nlResult.value.errorMsg = e.message || '执行失败'
           ElMessage.error('SQL 执行失败：' + (e.message || ''))
         }
+      } else {
+        ElMessage.success('SQL 已生成，点击「重新执行」手动执行')
       }
     } else {
       nlResult.value = { sql: null, success: false, errorMsg: '未生成 SQL' }
       ElMessage.error(data.explanation || '未生成 SQL')
     }
   } catch (e) {
-    ElMessage.error('查询失败：' + (e.message || ''))
+    ElMessage.error('查询失败：' + (e.response?.data?.message || e.message || ''))
     nlResult.value = { success: false, errorMsg: e.message || '' }
   } finally { nlLoading.value = false }
 }
 
 async function explainSql() {
-  if (!nlResult.value?.sql) return
+  if (!nlResult.value?.sql) {
+    ElMessage.warning('暂无 SQL 可解释')
+    return
+  }
   nlExplainLoading.value = true
   try {
     const r = await nl2sqlExplain(nlResult.value.sql)
     nlExplanation.value = r.data || r || ''
   } catch (e) {
     nlExplanation.value = '(解释失败: ' + (e.message || '') + ')'
+    ElMessage.error('SQL 解释失败：' + (e.message || ''))
   } finally { nlExplainLoading.value = false }
 }
 
@@ -645,21 +701,25 @@ async function exportCsv() {
   const rows = nlResult.value?.rows
   const cols = nlResult.value?.columns
   if (!rows?.length || !cols?.length) { ElMessage.warning('无数据可导出'); return }
-  const csvRows = [cols.join(',')]
-  for (const row of rows) {
-    csvRows.push(cols.map(c => {
-      const v = String(row[c] ?? '')
-      return v.includes(',') || v.includes('"') || v.includes('\n') ? `"${v.replace(/"/g, '""')}"` : v
-    }).join(','))
+  try {
+    const csvRows = [cols.join(',')]
+    for (const row of rows) {
+      csvRows.push(cols.map(c => {
+        const v = String(row[c] ?? '')
+        return v.includes(',') || v.includes('"') || v.includes('\n') ? `"${v.replace(/"/g, '""')}"` : v
+      }).join(','))
+    }
+    const BOM = '\uFEFF'
+    const blob = new Blob([BOM + csvRows.join('\n')], { type: 'text/csv;charset=utf-8' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `nl2sql_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(a.href)
+    ElMessage.success(`已导出 ${rows.length} 条数据到 CSV`)
+  } catch (e) {
+    ElMessage.error('导出失败：' + (e.message || '请重试'))
   }
-  const BOM = '\uFEFF'
-  const blob = new Blob([BOM + csvRows.join('\n')], { type: 'text/csv;charset=utf-8' })
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
-  a.download = `nl2sql_${new Date().toISOString().slice(0, 10)}.csv`
-  a.click()
-  URL.revokeObjectURL(a.href)
-  ElMessage.success('已导出 ' + rows.length + ' 条数据')
 }
 
 function nlTableSummary({ columns, data }) {
@@ -678,7 +738,10 @@ async function loadHistory() {
   try {
     const r = await nl2sqlHistory({ page: 1, size: 20 })
     nlHistory.value = r.data || r || []
-  } catch { nlHistory.value = [] }
+  } catch (e) {
+    nlHistory.value = []
+    ElMessage.warning('加载历史失败：' + (e.response?.data?.message || e.message || ''))
+  }
   finally { nlHistoryLoading.value = false }
 }
 
@@ -692,6 +755,7 @@ function loadHistoryItem(h) {
       columns: [],
     }
     nlExplanation.value = ''
+    ElMessage.info('已加载历史查询')
   }
 }
 
@@ -699,8 +763,21 @@ async function copySql() {
   if (!nlResult.value?.sql) return
   try {
     await navigator.clipboard.writeText(nlResult.value.sql)
-    ElMessage.success('SQL 已复制')
-  } catch { ElMessage.error('复制失败') }
+    ElMessage.success('SQL 已复制到剪贴板')
+  } catch {
+    // 降级
+    try {
+      const ta = document.createElement('textarea')
+      ta.value = nlResult.value.sql
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+      ElMessage.success('SQL 已复制到剪贴板')
+    } catch {
+      ElMessage.error('复制失败，请手动复制')
+    }
+  }
 }
 
 async function onNlDsChange() {
@@ -769,20 +846,35 @@ async function loadDataSources() {
 }
 
 async function addDataSource() {
+  try {
+    await dsFormRef.value?.validate()
+  } catch {
+    ElMessage.warning('请检查表单填写')
+    return
+  }
   if (!dsForm.name) { ElMessage.warning('请填写名称'); return }
+  addingDs.value = true
   try {
     await createDataSource(dsForm)
-    ElMessage.success('数据源已添加')
+    ElMessage.success('数据源已添加并测试连接')
     showDsForm.value = false
+    // 重置表单
+    Object.assign(dsForm, { name: '', type: 'mysql', host: 'localhost', port: 3306, database: '', username: '', password: '' })
     loadDataSources()
-  } catch (e) { ElMessage.error('添加失败：' + (e.message || '')) }
+  } catch (e) {
+    ElMessage.error('添加失败：' + (e.response?.data?.message || e.message || ''))
+  } finally {
+    addingDs.value = false
+  }
 }
 
 async function testDs(row) {
   try {
     await testDataSource(row)
-    ElMessage.success('连接正常')
-  } catch { ElMessage.error('连接失败') }
+    ElMessage.success(`数据源「${row.name || row.id}」连接正常`)
+  } catch (e) {
+    ElMessage.error('连接失败：' + (e.response?.data?.message || e.message || '请检查配置'))
+  }
 }
 
 const recentVotes = ref([])
@@ -869,6 +961,7 @@ onMounted(async () => {
 })
 
 async function loadVotes() {
+  voteLoading.value = true
   try {
     const r = await getVoteRecords({ limit: 10 })
     // V6.8.1 fix: 后端返回 { records, total, page, size }，不是 list
@@ -883,7 +976,11 @@ async function loadVotes() {
       createdAt: v.createdAt || '',
       strategy: v.strategy || '',
     }))
-  } catch { /* 降级：显示空 */ }
+  } catch (e) {
+    // 静默：投票记录非关键
+  } finally {
+    voteLoading.value = false
+  }
 }
 
 // 重新投票 (Day 41)

@@ -1,15 +1,12 @@
 <!--
   @file views/auth/H5Login.vue (H5 跨平台登录)
-  @version V3.5.97+ (重写 - 加演示模式 + 演示账号 + 自动登录)
-  @description 5 段标准结构 - 移动端 4 平台 OAuth + 演示模式 + P0 UX
-  @template V3.5.74 5 段样板 (header / platform / demos / scan / footer)
+  @version V6.8.10+ 企业级升级 (加账号密码表单 + 错误区分 + 反馈)
+  @description H5 跨端登录 - 4 平台 OAuth + 账号密码 + 表单规则
 -->
 <template>
   <div class="page-h5login">
-    <!-- 1. page-header: 顶部品牌 + 切回 PC + 演示模式 -->
-    <!-- V3.6.1+ 版本标识 (el-watermark) -->
-  <el-watermark v-if="false" content="V3.6.1" :font="{ size: 8 }" class="page-watermark" />
-  <header class="page-header">
+    <el-watermark v-if="false" content="V3.6.1" :font="{ size: 8 }" class="page-watermark" />
+    <header class="page-header">
       <div class="brand">
         <img src="/icons/icon-192.svg" alt="Liugl-AI" class="brand-logo" />
         <div>
@@ -18,28 +15,100 @@
         </div>
       </div>
       <div class="header-actions">
-
         <el-button :icon="Back" @click="$router.push('/login')" plain size="small">
           {{ t('h5login.pc') }}
         </el-button>
       </div>
     </header>
 
-    <!-- 2. section: 4 平台 OAuth 按钮 (移动端 2×2 网格) -->
-    <section class="section">
+    <!-- 1. 账号密码登录 (V6.8.10+ 新增，与 PC 端统一) -->
+    <section class="section" v-if="mode === 'account'">
+      <el-card shadow="hover" class="login-card" :class="{ shake: shakeForm }">
+        <el-form
+          ref="formRef"
+          :model="form"
+          :rules="formRules"
+          label-position="top"
+          size="default"
+          @submit.prevent="onSubmit"
+        >
+          <el-form-item label="用户名" prop="username">
+            <el-input
+              v-model="form.username"
+              placeholder="请输入用户名"
+              :prefix-icon="User"
+              clearable
+              autocomplete="username"
+              @keyup.enter="onSubmit"
+            />
+          </el-form-item>
+          <el-form-item label="密码" prop="password">
+            <el-input
+              v-model="form.password"
+              type="password"
+              placeholder="请输入密码"
+              :prefix-icon="Lock"
+              show-password
+              autocomplete="current-password"
+              @keyup.enter="onSubmit"
+            />
+          </el-form-item>
+
+          <!-- 错误提示 (明确区分错误类型) -->
+          <transition name="slide">
+            <el-alert
+              v-if="errorMsg"
+              :title="errorMsg"
+              :type="errorType"
+              :closable="false"
+              show-icon
+              class="error-alert"
+            />
+          </transition>
+
+          <el-button
+            type="primary"
+            :loading="loading"
+            class="submit-btn"
+            @click="onSubmit"
+          >
+            <span v-if="!loading">登录</span>
+            <span v-else>登录中...</span>
+          </el-button>
+          <el-button text size="small" class="switch-btn" @click="mode = 'platform'">
+            ← 返回第三方登录
+          </el-button>
+        </el-form>
+      </el-card>
+    </section>
+
+    <!-- 2. 4 平台 OAuth (V6.8.10+ 强化: 加 loading 反馈) -->
+    <section v-else class="section">
       <h3 class="section-title">{{ t('h5login.platforms') }}</h3>
       <el-row :gutter="12">
         <el-col v-for="p in platforms" :key="p.id" :xs="12" :sm="6">
-          <el-card shadow="hover" class="platform-card" @click="onPlatformLogin(p)">
+          <el-card
+            shadow="hover"
+            class="platform-card"
+            :loading="loggingPlatform === p.id"
+            @click="onPlatformLogin(p)"
+          >
             <el-icon :size="32" :color="p.color"><component :is="p.icon" /></el-icon>
             <div class="platform-name">{{ p.name }}</div>
             <div class="platform-desc">{{ p.desc }}</div>
           </el-card>
         </el-col>
       </el-row>
+
+      <div class="account-fallback">
+        <el-divider><span class="divider-text">或</span></el-divider>
+        <el-button :icon="User" plain size="default" @click="mode = 'account'" class="account-btn">
+          账号密码登录
+        </el-button>
+      </div>
     </section>
 
-    <!-- 3. section: 扫码登录面板 (动态切换) -->
+    <!-- 3. 扫码登录面板 (动态切换) -->
     <transition name="slide">
       <section v-if="activePlatform" class="section">
         <el-card shadow="hover" class="scan-card">
@@ -60,14 +129,14 @@
             <p>{{ activePlatform.name }} 登录开发中</p>
             <p class="hint">请联系管理员开通 {{ activePlatform.name }} OAuth</p>
             <el-alert type="info" :closable="false" style="margin-top: 12px">
-              <template #title>💡 提示: 演示模式可一键登录</template>
+              <template #title>💡 提示: 可使用账号密码登录</template>
             </el-alert>
           </div>
         </el-card>
       </section>
     </transition>
 
-    <!-- 5. section: 移动端信息卡 + 平台识别 + footer -->
+    <!-- 4. 平台能力 + footer -->
     <section v-if="!activePlatform" class="section">
       <el-card shadow="never" class="info-card">
         <el-row :gutter="16" align="middle">
@@ -92,49 +161,70 @@
         <template #default>
           自动识别: <b>{{ detectedPlatform }}</b>
           <span v-if="unionId"> · UnionID: <code>{{ unionId }}</code></span>
-
         </template>
       </el-alert>
-      <p class="footer-text">© 2026 Liugl-AI Platform · H5 跨端登录 V3.5.97+</p>
+      <p class="footer-text">© {{ currentYear }} Liugl-AI Platform · H5 跨端登录 v{{ appVersion }}</p>
     </section>
   </div>
 </template>
 
 <script setup>
 /**
- * V3.5.97 H5 跨平台登录 5 段结构 + 演示模式
- * 1. page-header: 品牌 + 切回 PC + 演示模式 tag
- * 2. section: 4 平台 OAuth 按钮 (微信扫码 / 公众号 / QQ / 支付宝)
- * 3. section: 演示账号 (5 卡片, 移动端 2×2 网格, V3.5.97 新)
- * 4. section: 扫码登录面板 (动态切换)
- * 5. section: 移动端信息 (二维码 + 能力) + 平台识别 + footer
- *
- * V3.5.97 增强:
- * - 演示模式: 一键登录 (无后端)
- * - 演示账号: 5 卡片 (admin/super/operator/auditor/user)
- * - 演示模式 tag: 顶栏 + footer 双重提示
- * - 错误处理: 演示模式 401/500 兜底
+ * V6.8.10 升级: 加账号密码表单 + 错误区分 + 反馈
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, reactive, onMounted, nextTick } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from '@/i18n'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
 import {
-  Back, Close, Check, Promotion,
+  Back, Close, Check, Promotion, User, Lock,
   ChatDotRound, ChatLineRound, Money,
 } from '@element-plus/icons-vue'
+import { useUserStore } from '@/store/user'
 import WechatScanLogin from '@/components/WechatScanLogin.vue'
 
 const { t } = useI18n()
 const router = useRouter()
 const toast = useToast()
-const activePlatform = ref(null)
-const unionId = ref(localStorage.getItem('minimax_unionid') || '')
-// V6.8.3: 演示模式已永久禁用
-const isDemo = ref(false)
+const userStore = useUserStore()
 
-// === 1. 4 平台配置 (数据驱动) ===
+// 静态元信息
+const currentYear = new Date().getFullYear()
+const appVersion = '6.8.10'
+
+// === 1. 模式: platform (默认) / account (账号密码登录) ===
+const mode = ref('platform')
+
+// === 2. 平台扫码相关状态 ===
+const activePlatform = ref(null)
+const loggingPlatform = ref(null)  // 平台 OAuth loading 状态
+const unionId = ref(localStorage.getItem('minimax_unionid') || '')
+
+// === 3. 账号密码登录 ===
+const formRef = ref(null)
+const loading = ref(false)
+const shakeForm = ref(false)
+const errorMsg = ref('')
+const errorType = ref<'error' | 'warning' | 'info'>('error')
+
+const form = reactive({
+  username: '',
+  password: ''
+})
+
+// === 4. 表单 :rules ===
+const formRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, max: 32, message: '用户名长度 3-32 字符', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, max: 64, message: '密码长度 6-64 字符', trigger: 'blur' }
+  ]
+}
+
+// === 5. 4 平台配置 ===
 const platforms = [
   { id: 'wechat', name: '微信扫码', desc: '打开微信扫一扫', icon: ChatDotRound, color: '#07c160' },
   { id: 'mp',     name: '公众号',  desc: '关注后授权登录', icon: ChatLineRound, color: '#07c160' },
@@ -142,7 +232,7 @@ const platforms = [
   { id: 'alipay', name: '支付宝',   desc: '支付宝扫一扫',  icon: Money,        color: '#1677ff' }
 ]
 
-// === 2. 平台能力 ===
+// === 6. 平台能力 ===
 const capabilities = [
   '多模型对话 (GPT/Claude/自研)',
   'AI 工具调用 + 插件市场',
@@ -151,10 +241,7 @@ const capabilities = [
   'OpenTelemetry 链路追踪'
 ]
 
-// V6.8.3: 演示账号已移除，请使用真实账号登录
-const demoAccounts = []
-
-// === 4. 平台检测 ===
+// === 7. 平台检测 ===
 const detectedPlatform = computed(() => {
   const ua = navigator.userAgent
   if (/MicroMessenger/i.test(ua)) return '微信内置浏览器'
@@ -165,27 +252,74 @@ const detectedPlatform = computed(() => {
   return '通用浏览器'
 })
 
-// === 5. 行为 ===
+// === 8. 平台 OAuth 登录 ===
 function onPlatformLogin(p) {
+  if (loggingPlatform.value) return // 防抖
   if (p.id === 'wechat') {
     activePlatform.value = p
   } else {
-    toast.info(`${p.name} 登录开发中, 暂用微信扫码 / 演示账号`)
-    activePlatform.value = p
+    // 非微信平台：模拟 OAuth 流程 + 反馈
+    loggingPlatform.value = p.id
+    setTimeout(() => {
+      loggingPlatform.value = null
+      activePlatform.value = p
+      toast.info(`${p.name} 登录开发中，请使用微信扫码或账号密码登录`)
+    }, 300)
   }
 }
 
-// V6.8.3: 演示模式已永久禁用
-async function onDemoLogin(d) {
-  localStorage.removeItem('minimax_demo_mode')
-  localStorage.removeItem('minimax_demo_user')
-  toast.info('演示模式已禁用，请使用真实账号登录')
-  // 直接跳到聊天
-  setTimeout(() => {
+// === 9. 账号密码登录 (V6.8.10+ 加 :rules + 错误区分) ===
+async function onSubmit() {
+  if (!formRef.value) return
+  try {
+    await formRef.value.validate()
+  } catch {
+    errorType.value = 'warning'
+    errorMsg.value = '请检查表单填写是否正确'
+    triggerShake()
+    return
+  }
+  errorMsg.value = ''
+  loading.value = true
+  try {
+    await userStore.login({ username: form.username, password: form.password })
+    toast.success('登录成功')
     router.replace('/chat')
-  }, 200)
+    userStore.fetchProfile().catch(() => { /* layout 自己 hydrate */ })
+  } catch (e) {
+    const msg = e?.response?.data?.message || e?.response?.data?.msg || e?.message || '操作失败'
+    const status = e?.response?.status
+    if (status === 403 || /锁定|封禁|禁用|banned|locked/i.test(msg)) {
+      errorType.value = 'error'
+      errorMsg.value = '🚫 账号已被锁定或禁用，请联系管理员'
+    } else if (status === 404 || /不存在|未找到|not\s*found/i.test(msg)) {
+      errorType.value = 'error'
+      errorMsg.value = '👤 账号不存在，请检查用户名'
+    } else if (status === 401 || /密码|password|invalid/i.test(msg)) {
+      errorType.value = 'error'
+      errorMsg.value = '🔑 密码错误，请重新输入'
+    } else if (status >= 500) {
+      errorType.value = 'error'
+      errorMsg.value = '💥 服务异常，请稍后重试'
+    } else if (/network|timeout|网络/i.test(msg)) {
+      errorType.value = 'warning'
+      errorMsg.value = '📡 网络不可用，请检查连接'
+    } else {
+      errorType.value = 'error'
+      errorMsg.value = msg
+    }
+    triggerShake()
+  } finally {
+    loading.value = false
+  }
 }
 
+function triggerShake() {
+  shakeForm.value = true
+  setTimeout(() => { shakeForm.value = false }, 500)
+}
+
+// === 10. 微信扫码成功 ===
 function onLogin(user) {
   if (user?.unionId) {
     localStorage.setItem('minimax_unionid', user.unionId)
@@ -196,10 +330,9 @@ function onLogin(user) {
 }
 
 onMounted(() => {
-  // V6.8.3: 演示模式已永久禁用
-  isDemo.value = false
-  localStorage.removeItem('minimax_demo_mode')
-  localStorage.removeItem('minimax_demo_user')
+  // 恢复记住的用户名 (可选增强)
+  const saved = localStorage.getItem('minimax_remember_user')
+  if (saved) form.username = saved
 })
 </script>
 
@@ -263,6 +396,47 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* 账号密码登录 */
+.login-card {
+  border-radius: 12px;
+}
+.login-card.shake {
+  animation: shake 0.4s ease-in-out;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+.error-alert {
+  margin-bottom: 12px;
+  border-radius: 8px;
+}
+.submit-btn {
+  width: 100%;
+  height: 40px;
+  font-weight: 600;
+  border-radius: 8px;
+}
+.switch-btn {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.account-fallback {
+  margin-top: 16px;
+}
+.divider-text {
+  font-size: 12px;
+  color: var(--liugl-text-secondary, #94a3b8);
+}
+.account-btn {
+  width: 100%;
+  height: 40px;
 }
 
 .platform-card {

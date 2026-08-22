@@ -50,14 +50,19 @@
             <span v-if="streamConnected" style="color:#67c23a">● 实时推送已连接</span>
             <span v-else style="color:#f56c6c">○ 实时推送未连接</span>
           </span>
-          <el-button size="small" @click="loadFiringAlerts">
+          <el-button size="small" :loading="alertsLoading" @click="loadFiringAlerts">
             <el-icon><Refresh /></el-icon>刷新
           </el-button>
           <el-button v-if="realtimeAlertCount > 0" size="small" type="primary" @click="realtimeAlertCount = 0">
             清除 ({{ realtimeAlertCount }}) 条新告警
           </el-button>
         </div>
-        <el-table :data="alerts" stripe size="small" @row-click="openAlertDetail" style="cursor:pointer">
+        <el-table :data="alerts" stripe size="small" v-loading="alertsLoading"
+          @row-click="openAlertDetail" style="cursor:pointer"
+          :empty-text="alertsEmptyText">
+          <template #empty>
+            <el-empty :description="alertsEmptyText" :image-size="80" />
+          </template>
           <el-table-column prop="firedAt" label="触发时间" width="170">
             <template #default="{ row }">{{ formatTime(row.firedAt) }}</template>
           </el-table-column>
@@ -102,7 +107,15 @@
           </el-button>
         </div>
 
-        <el-table :data="channels" stripe size="small" v-loading="channelsLoading" style="margin-top:12px">
+        <el-table :data="channels" stripe size="small" v-loading="channelsLoading" style="margin-top:12px"
+          :empty-text="channelsEmptyText">
+          <template #empty>
+            <el-empty v-if="!channelsLoading" :description="channelsEmptyText" :image-size="80">
+              <el-button type="primary" size="small" @click="openChannelForm(null)">
+                <el-icon><Plus /></el-icon>新建渠道
+              </el-button>
+            </el-empty>
+          </template>
           <el-table-column prop="id" label="ID" width="70" />
           <el-table-column prop="name" label="名称" width="160" />
           <el-table-column prop="channelType" label="类型" width="110">
@@ -136,10 +149,6 @@
             </template>
           </el-table-column>
         </el-table>
-
-        <div v-if="!channelsLoading && channels.length === 0" style="text-align:center;padding:40px;color:#909399">
-          暂无通知渠道，点击「新建渠道」添加
-        </div>
       </el-tab-pane>
 
       <!-- ========== 告警规则 (Day 45) ========== -->
@@ -153,7 +162,15 @@
           </el-button>
         </div>
 
-        <el-table :data="rules" stripe size="small" v-loading="rulesLoading" style="margin-top:12px">
+        <el-table :data="rules" stripe size="small" v-loading="rulesLoading" style="margin-top:12px"
+          :empty-text="rulesEmptyText">
+          <template #empty>
+            <el-empty v-if="!rulesLoading" :description="rulesEmptyText" :image-size="80">
+              <el-button type="primary" size="small" @click="openRuleForm(null)">
+                <el-icon><Plus /></el-icon>新建规则
+              </el-button>
+            </el-empty>
+          </template>
           <el-table-column prop="id" label="ID" width="70" />
           <el-table-column prop="name" label="规则名称" width="160" />
           <el-table-column prop="metricName" label="指标" width="130" />
@@ -525,11 +542,11 @@
 
     <!-- ========== 通知渠道编辑弹窗 (Day 42) ========== -->
     <el-dialog v-model="channelFormVisible" :title="channelFormMode === 'edit' ? '编辑渠道' : '新建渠道'" width="520px" destroy-on-close>
-      <el-form :model="channelForm" label-width="90px">
-        <el-form-item label="渠道名称" required>
-          <el-input v-model="channelForm.name" placeholder="例如：生产告警-钉钉" />
+      <el-form :model="channelForm" :rules="channelFormRules" ref="channelFormRef" label-width="90px">
+        <el-form-item label="渠道名称" prop="name">
+          <el-input v-model="channelForm.name" placeholder="例如：生产告警-钉钉" maxlength="50" show-word-limit />
         </el-form-item>
-        <el-form-item label="渠道类型" required>
+        <el-form-item label="渠道类型" prop="channelType">
           <el-select v-model="channelForm.channelType" placeholder="选择类型" style="width:100%">
             <el-option label="📧 邮件 (SMTP)" value="email" />
             <el-option label="🔔 钉钉 Webhook" value="dingtalk" />
@@ -538,8 +555,8 @@
             <el-option label="📱 SMS" value="sms" />
           </el-select>
         </el-form-item>
-        <el-form-item label="目标地址" required>
-          <el-input v-model="channelForm.target" :placeholder="targetPlaceholder" />
+        <el-form-item label="目标地址" prop="target">
+          <el-input v-model="channelForm.target" :placeholder="targetPlaceholder" maxlength="500" />
         </el-form-item>
         <el-form-item label="SMTP/配置" v-if="channelForm.channelType === 'email'">
           <el-input v-model="channelForm.config" type="textarea" :rows="3"
@@ -569,11 +586,11 @@
 
     <!-- 告警规则编辑弹窗 (Day 45) -->
     <el-dialog v-model="ruleFormVisible" :title="ruleFormMode === 'edit' ? '编辑告警规则' : '新建告警规则'" width="580px" destroy-on-close>
-      <el-form :model="ruleForm" label-width="120px" size="default">
-        <el-form-item label="规则名称" required>
-          <el-input v-model="ruleForm.name" placeholder="如：CPU 过高告警" maxlength="100" />
+      <el-form :model="ruleForm" :rules="ruleFormRules" ref="ruleFormRef" label-width="120px" size="default">
+        <el-form-item label="规则名称" prop="name">
+          <el-input v-model="ruleForm.name" placeholder="如：CPU 过高告警" maxlength="100" show-word-limit />
         </el-form-item>
-        <el-form-item label="指标名">
+        <el-form-item label="指标名" prop="metricName">
           <el-select v-model="ruleForm.metricName" placeholder="选择指标" style="width:100%">
             <el-option label="cpu_usage (CPU使用率)" value="cpu_usage" />
             <el-option label="memory_usage (内存使用率)" value="memory_usage" />
@@ -596,7 +613,7 @@
           </el-select>
           <el-input-number v-model="ruleForm.threshold" :min="0" :max="100" style="margin-left:8px;width:120px" />
         </el-form-item>
-        <el-form-item label="严重级别">
+        <el-form-item label="严重级别" prop="severity">
           <el-select v-model="ruleForm.severity" style="width:100%">
             <el-option label="INFO" value="info" />
             <el-option label="WARNING" value="warning" />
@@ -654,6 +671,11 @@ const activeTab = ref('jvm')
 const services = ref([])
 const jvm = ref({ heapUsed: '-', heapMax: '-', nonHeapUsed: '-', gcCount: '-', threads: '-', uptime: '-', cpuUsage: '-' })
 const alerts = ref([])
+const alertsLoading = ref(false)
+const alertsEmptyText = computed(() => {
+  if (alertsLoading.value) return '加载中...'
+  return '当前没有告警，系统运行正常 🎉'
+})
 
 // Day 49: 告警实时推送 (SSE)
 const streamConnected = ref(false)
@@ -672,11 +694,31 @@ const channelFormVisible = ref(false)
 const channelFormMode = ref('create') // 'create' | 'edit'
 const savingChannel = ref(false)
 const testingId = ref(null)
+const channelFormRef = ref(null)
 const channelForm = ref({
   id: null, name: '', channelType: 'dingtalk', target: '', config: '',
   template: '${ruleName} 触发 ${severity} 告警，指标 ${metricName} = ${metricValue}，阈值 ${threshold}\n详情：${message}',
   priority: 1, enabled: true, description: ''
 })
+
+const channelsEmptyText = computed(() => {
+  if (channelsLoading.value) return '加载中...'
+  return '暂无通知渠道，点击「新建渠道」添加'
+})
+
+const channelFormRules = {
+  name: [
+    { required: true, message: '请输入渠道名称', trigger: 'blur' },
+    { min: 2, max: 50, message: '长度需在 2-50 个字符', trigger: 'blur' },
+  ],
+  channelType: [
+    { required: true, message: '请选择渠道类型', trigger: 'change' },
+  ],
+  target: [
+    { required: true, message: '请输入目标地址', trigger: 'blur' },
+    { min: 2, max: 500, message: '长度需在 2-500 个字符', trigger: 'blur' },
+  ],
+}
 
 const targetPlaceholder = computed(() => {
   const map = {
@@ -772,7 +814,7 @@ async function loadStats() {
     initPieChart(stats.value)
     initBarChart(seriesData)
   } catch (e) {
-    console.error('[Monitor] loadStats failed:', e)
+    ElMessage.error('加载告警统计失败：' + (e.response?.data?.message || e.message || ''))
     stats.value = {}
   } finally {
     statsLoading.value = false
@@ -857,7 +899,7 @@ async function loadSla() {
     sla.value = r.data || {}
     sla.value.grade = sla.value.slaGrade
   } catch (e) {
-    console.warn('[Monitor] SLA load failed:', e)
+    ElMessage.warning('加载 SLA 数据失败：' + (e.response?.data?.message || e.message || ''))
   } finally {
     slaLoading.value = false
   }
@@ -899,7 +941,7 @@ async function loadAlertTrend() {
     const maxIdx = totals.indexOf(maxVal)
     trendMaxDate.value = maxIdx >= 0 ? dates[maxIdx] : ''
   } catch (e) {
-    console.warn('[Monitor] Alert trend load failed:', e)
+    ElMessage.warning('加载告警趋势失败：' + (e.response?.data?.message || e.message || ''))
   } finally {
     trendLoading.value = false
   }
@@ -919,12 +961,10 @@ function connectAlertStream() {
 
   eventSource.onopen = () => {
     streamConnected.value = true
-    console.info('[Monitor] SSE stream connected')
   }
 
-  eventSource.onerror = (e) => {
+  eventSource.onerror = () => {
     streamConnected.value = false
-    console.warn('[Monitor] SSE stream error, reconnecting...', e)
     setTimeout(connectAlertStream, 5000) // 5秒后重连
   }
 
@@ -948,8 +988,8 @@ function connectAlertStream() {
           duration: 6000
         })
       }
-    } catch (err) {
-      console.warn('[Monitor] SSE parse error:', err)
+    } catch {
+      // 静默忽略 SSE 解析错误
     }
   })
 
@@ -1040,7 +1080,9 @@ async function loadData() {
       }
       updateJvmChart()
     }
-  } catch {}
+  } catch (e) {
+    // 静默降级：避免后台定时任务刷屏
+  }
 }
 
 function severityType(s) {
@@ -1055,12 +1097,15 @@ function statusLabel(s) {
 
 /** Day 49: 手动刷新告警列表 */
 async function loadFiringAlerts() {
+  alertsLoading.value = true
   try {
     const a = await getFiringAlerts()
     alerts.value = a.data || []
     ElMessage.success('已刷新告警列表')
   } catch (e) {
     ElMessage.error('刷新失败: ' + (e.message || ''))
+  } finally {
+    alertsLoading.value = false
   }
 }
 
@@ -1173,7 +1218,7 @@ async function loadChannels() {
     const r = await listAlertChannels()
     channels.value = r.data || []
   } catch (e) {
-    ElMessage.error('加载渠道失败：' + (e.message || ''))
+    ElMessage.error('加载渠道失败：' + (e.response?.data?.message || e.message || ''))
   } finally {
     channelsLoading.value = false
   }
@@ -1200,6 +1245,12 @@ function openChannelForm(row) {
 }
 
 async function saveChannel() {
+  try {
+    await channelFormRef.value?.validate()
+  } catch {
+    ElMessage.warning('请检查表单填写')
+    return
+  }
   if (!channelForm.value.name?.trim()) {
     ElMessage.warning('请输入渠道名称')
     return
@@ -1213,15 +1264,15 @@ async function saveChannel() {
     const payload = { ...channelForm.value }
     if (channelFormMode.value === 'edit') {
       await updateAlertChannel(payload.id, payload)
-      ElMessage.success('渠道更新成功')
+      ElMessage.success(`渠道「${payload.name}」更新成功`)
     } else {
       await createAlertChannel(payload)
-      ElMessage.success('渠道创建成功')
+      ElMessage.success(`渠道「${payload.name}」创建成功`)
     }
     channelFormVisible.value = false
     await loadChannels()
   } catch (e) {
-    ElMessage.error((channelFormMode.value === 'edit' ? '更新' : '创建') + '失败：' + (e.message || ''))
+    ElMessage.error((channelFormMode.value === 'edit' ? '更新' : '创建') + '失败：' + (e.response?.data?.message || e.message || ''))
   } finally {
     savingChannel.value = false
   }
@@ -1231,9 +1282,9 @@ async function testChannel(row) {
   testingId.value = row.id
   try {
     await testAlertChannel(row.id)
-    ElMessage.success('测试消息发送成功！请检查 ' + channelTypeLabel(row.channelType) + ' 是否收到通知')
+    ElMessage.success(`测试消息已发送！请检查「${row.name}」(${channelTypeLabel(row.channelType)}) 是否收到通知`)
   } catch (e) {
-    ElMessage.error('测试发送失败：' + (e.message || '请检查配置是否正确'))
+    ElMessage.error('测试发送失败：' + (e.response?.data?.message || e.message || '请检查配置是否正确'))
   } finally {
     testingId.value = null
   }
@@ -1246,10 +1297,10 @@ async function deleteChannel(row) {
       '删除渠道', { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
     )
     await deleteAlertChannel(row.id)
-    ElMessage.success('渠道已删除')
+    ElMessage.success(`渠道「${row.name}」已删除`)
     await loadChannels()
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error('删除失败：' + (e.message || ''))
+    if (e !== 'cancel') ElMessage.error('删除失败：' + (e.response?.data?.message || e.message || ''))
   }
 }
 
@@ -1259,6 +1310,7 @@ const rulesLoading = ref(false)
 const ruleFormVisible = ref(false)
 const ruleFormMode = ref('create') // 'create' | 'edit'
 const savingRule = ref(false)
+const ruleFormRef = ref(null)
 const ruleForm = ref({
   id: null, name: '', metricName: 'cpu_usage', operator: '>', threshold: 80,
   severity: 'warning', notifyChannel: '', enabled: true,
@@ -1266,13 +1318,35 @@ const ruleForm = ref({
   cooldownMinutes: 15
 })
 
+const rulesEmptyText = computed(() => {
+  if (rulesLoading.value) return '加载中...'
+  return '暂无告警规则，点击「新建规则」添加'
+})
+
+const ruleFormRules = {
+  name: [
+    { required: true, message: '请输入规则名称', trigger: 'blur' },
+    { min: 2, max: 100, message: '长度需在 2-100 个字符', trigger: 'blur' },
+  ],
+  metricName: [
+    { required: true, message: '请选择指标', trigger: 'change' },
+  ],
+  threshold: [
+    { required: true, message: '请输入阈值', trigger: 'blur' },
+  ],
+  severity: [
+    { required: true, message: '请选择严重级别', trigger: 'change' },
+  ],
+}
+
 async function loadRules() {
   rulesLoading.value = true
   try {
     const r = await getAllAlertRules()
     rules.value = r.data || []
-  } catch {
+  } catch (e) {
     rules.value = []
+    ElMessage.error('加载告警规则失败：' + (e.response?.data?.message || e.message || ''))
   } finally {
     rulesLoading.value = false
   }
@@ -1304,6 +1378,12 @@ function openRuleForm(row) {
 }
 
 async function saveRule() {
+  try {
+    await ruleFormRef.value?.validate()
+  } catch {
+    ElMessage.warning('请检查表单填写')
+    return
+  }
   if (!ruleForm.value.name.trim()) {
     ElMessage.warning('请输入规则名称')
     return
@@ -1315,15 +1395,15 @@ async function saveRule() {
     delete payload.id
     if (ruleFormMode.value === 'edit') {
       await updateAlertRule(ruleForm.value.id, payload)
-      ElMessage.success('规则更新成功')
+      ElMessage.success(`规则「${payload.name}」更新成功`)
     } else {
       await createAlertRule(payload)
-      ElMessage.success('规则创建成功')
+      ElMessage.success(`规则「${payload.name}」创建成功`)
     }
     ruleFormVisible.value = false
     await loadRules()
   } catch (e) {
-    ElMessage.error('保存失败：' + (e.message || ''))
+    ElMessage.error('保存失败：' + (e.response?.data?.message || e.message || ''))
   } finally {
     savingRule.value = false
   }
@@ -1332,10 +1412,10 @@ async function saveRule() {
 async function toggleRule(row) {
   try {
     await toggleAlertRule(row.id, !row.enabled)
-    ElMessage.success(row.enabled ? '规则已禁用' : '规则已启用')
+    ElMessage.success(row.enabled ? `规则「${row.name}」已禁用` : `规则「${row.name}」已启用`)
     await loadRules()
   } catch (e) {
-    ElMessage.error('操作失败：' + (e.message || ''))
+    ElMessage.error('操作失败：' + (e.response?.data?.message || e.message || ''))
   }
 }
 

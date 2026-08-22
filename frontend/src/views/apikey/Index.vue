@@ -1,83 +1,105 @@
-<!-- @file apikey/Index.vue - API Key 管理 V6.8.12 -->
+<!-- @file apikey/Index.vue - API Key 管理 V6.8.13 (企业级) -->
 <template>
   <div class="page-card">
     <div class="page-header">
       <h2>🔑 API Key 管理</h2>
       <div style="display:flex;gap:8px">
-        <el-button size="small" @click="loadKeys">
-          <el-icon><Refresh /></el-icon>刷新
-        </el-button>
-        <el-button size="small" type="primary" @click="showCreate = true">
-          <el-icon><Plus /></el-icon>生成 Key
-        </el-button>
+        <el-button size="small" :icon="Refresh" :loading="loading" @click="loadKeys">刷新</el-button>
+        <el-button size="small" type="primary" :icon="Plus" @click="openCreate">生成 Key</el-button>
       </div>
     </div>
 
     <!-- 统计卡片 -->
     <el-row :gutter="12" style="margin-bottom:16px">
-      <el-col :span="6"><el-card body-style="padding:12px;text-align:center">
+      <el-col :span="6"><el-card body-style="padding:12px;text-align:center" shadow="never">
         <div style="font-size:22px;font-weight:700;color:#409eff">{{ keys.length }}</div>
         <div style="font-size:12px;color:#909399">总 Key 数</div>
       </el-card></el-col>
-      <el-col :span="6"><el-card body-style="padding:12px;text-align:center">
+      <el-col :span="6"><el-card body-style="padding:12px;text-align:center" shadow="never">
         <div style="font-size:22px;font-weight:700;color:#67c23a">{{ activeCount }}</div>
         <div style="font-size:12px;color:#909399">启用中</div>
       </el-card></el-col>
-      <el-col :span="6"><el-card body-style="padding:12px;text-align:center">
+      <el-col :span="6"><el-card body-style="padding:12px;text-align:center" shadow="never">
         <div style="font-size:22px;font-weight:700;color:#e6a23c">{{ totalUsed.toLocaleString() }}</div>
         <div style="font-size:12px;color:#909399">总调用量</div>
       </el-card></el-col>
-      <el-col :span="6"><el-card body-style="padding:12px;text-align:center">
-        <div style="font-size:22px;font-weight:700;color:#909399">{{ totalQuota || '无限' }}</div>
+      <el-col :span="6"><el-card body-style="padding:12px;text-align:center" shadow="never">
+        <div style="font-size:22px;font-weight:700;color:#909399">{{ totalQuotaLabel }}</div>
         <div style="font-size:12px;color:#909399">总限额</div>
       </el-card></el-col>
     </el-row>
 
-    <el-table :data="keys" v-loading="loading" stripe>
-      <el-table-column prop="name" label="名称">
+    <!-- 过滤/搜索 -->
+    <div class="toolbar">
+      <el-input
+        v-model="filterName"
+        placeholder="按名称过滤"
+        clearable
+        :prefix-icon="Search"
+        style="width:220px"
+      />
+      <el-select v-model="filterStatus" placeholder="状态" clearable style="width:140px">
+        <el-option label="启用" value="enabled" />
+        <el-option label="禁用" value="disabled" />
+      </el-select>
+    </div>
+
+    <el-table
+      :data="filteredKeys"
+      v-loading="loading"
+      stripe
+      :empty-text="loading ? '加载中…' : '暂无 API Key，点击右上角“生成 Key”创建'"
+    >
+      <el-table-column label="名称" min-width="180">
         <template #default="{ row }">
           <div style="font-weight:600">{{ row.name }}</div>
-          <div style="font-size:11px;color:#909399">{{ row.description || '' }}</div>
+          <div style="font-size:11px;color:#909399">{{ row.description || '—' }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="Key" width="300">
+      <el-table-column label="Key" min-width="320">
         <template #default="{ row }">
           <div style="display:flex;align-items:center;gap:4px">
-            <code style="font-size:12px;background:#f5f7fa;padding:2px 6px;border-radius:4px;flex:1;overflow:hidden;text-overflow:ellipsis">
-              {{ row.show ? row.key : row.key?.slice(0, 8) + '•'.repeat(28) + row.key?.slice(-4) }}
+            <code class="key-code">
+              {{ row.show ? row.key : maskKey(row.key) }}
             </code>
-            <el-button size="small" link @click="row.show = !row.show">
+            <el-button size="small" link :title="row.show ? '隐藏' : '显示'" @click="row.show = !row.show">
               <el-icon><View v-if="!row.show" /><Hide v-else /></el-icon>
             </el-button>
-            <el-button size="small" link type="primary" @click="copyKey(row)">
+            <el-button size="small" link type="primary" title="复制完整 Key" @click="copyKey(row)">
               <el-icon><CopyDocument /></el-icon>
             </el-button>
           </div>
         </template>
       </el-table-column>
-      <el-table-column label="用量" width="140">
+      <el-table-column label="用量" width="160">
         <template #default="{ row }">
           <div style="display:flex;align-items:center;gap:6px">
-            <el-progress :percentage="quotaPercent(row)" :stroke-width="6"
-              :status="quotaStatus(row)" style="width:80px" />
+            <el-progress
+              :percentage="quotaPercent(row)"
+              :stroke-width="6"
+              :status="quotaStatus(row)"
+              style="width:90px"
+            />
             <span style="font-size:12px;color:#909399">{{ row.used || 0 }}/{{ row.quota || '∞' }}</span>
           </div>
         </template>
       </el-table-column>
-      <el-table-column label="状态" width="80" align="center">
+      <el-table-column label="状态" width="90" align="center">
         <template #default="{ row }">
-          <el-tag :type="row.enabled ? 'success' : 'danger'" size="small">{{ row.enabled ? '启用' : '禁用' }}</el-tag>
+          <el-tag :type="row.enabled ? 'success' : 'danger'" size="small">
+            {{ row.enabled ? '启用' : '禁用' }}
+          </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="有效期" width="110">
+      <el-table-column label="有效期" width="120">
         <template #default="{ row }">
           <span style="font-size:12px;color:#909399">{{ row.expireAt || '永久' }}</span>
         </template>
       </el-table-column>
-      <el-table-column prop="createdAt" label="创建时间" width="160" />
-      <el-table-column label="操作" width="200" align="center">
+      <el-table-column prop="createdAt" label="创建时间" width="170" />
+      <el-table-column label="操作" width="220" align="center" fixed="right">
         <template #default="{ row }">
-          <el-button size="small" link @click="toggleKey(row)">
+          <el-button size="small" link :loading="togglingId === row.id" @click="toggleKey(row)">
             {{ row.enabled ? '禁用' : '启用' }}
           </el-button>
           <el-button size="small" link type="primary" @click="refreshKey(row)">刷新</el-button>
@@ -101,8 +123,10 @@
           </el-alert>
 
           <!-- 调用示例 -->
-          <el-card style="margin-bottom:12px" body-style="padding:0">
-            <template #header><span style="font-size:13px;font-weight:600">📌 调用示例（复制即可使用）</span></template>
+          <el-card style="margin-bottom:12px" body-style="padding:0" shadow="never">
+            <template #header>
+              <span style="font-size:13px;font-weight:600">📌 调用示例（复制即可使用）</span>
+            </template>
             <el-tabs style="padding:0 16px 16px">
               <el-tab-pane label="cURL">
                 <pre class="code-block"># 1. 同步调用（等待结果）
@@ -198,29 +222,36 @@ es.onmessage = e => console.log(JSON.parse(e.data))</pre>
           </el-card>
 
           <!-- 接口列表 -->
-          <el-card body-style="padding:0">
-            <template #header><span style="font-size:13px;font-weight:600">📖 接口清单</span></template>
+          <el-card body-style="padding:0" shadow="never">
+            <template #header>
+              <span style="font-size:13px;font-weight:600">📖 接口清单</span>
+            </template>
             <el-table :data="apiEndpoints" stripe size="small">
-              <el-table-column prop="method" label="方法" width="70" align="center">
+              <el-table-column prop="method" label="方法" width="80" align="center">
                 <template #default="{ row }">
-                  <el-tag :type="row.method==='POST'?'success':row.method==='GET'?'primary':row.method==='DELETE'?'danger':'warning'" size="small">{{ row.method }}</el-tag>
+                  <el-tag
+                    :type="row.method==='POST'?'success':row.method==='GET'?'primary':row.method==='DELETE'?'danger':'warning'"
+                    size="small"
+                  >{{ row.method }}</el-tag>
                 </template>
               </el-table-column>
-              <el-table-column prop="path" label="路径" min-width="300">
+              <el-table-column prop="path" label="路径" min-width="320">
                 <template #default="{ row }">
                   <code style="font-size:12px;color:#409eff">{{ row.path }}</code>
                 </template>
               </el-table-column>
-              <el-table-column prop="desc" label="说明" min-width="200" />
-              <el-table-column label="鉴权" width="80" align="center">
-                <template #default="{ row }"><el-tag size="small" type="info">API Key</el-tag></template>
+              <el-table-column prop="desc" label="说明" min-width="220" />
+              <el-table-column label="鉴权" width="90" align="center">
+                <template #default><el-tag size="small" type="info">API Key</el-tag></template>
               </el-table-column>
             </el-table>
           </el-card>
 
           <!-- Webhook 回调说明 -->
-          <el-card style="margin-top:12px" body-style="padding:16px">
-            <template #header><span style="font-size:13px;font-weight:600">🔔 Webhook 回调说明</span></template>
+          <el-card style="margin-top:12px" body-style="padding:16px" shadow="never">
+            <template #header>
+              <span style="font-size:13px;font-weight:600">🔔 Webhook 回调说明</span>
+            </template>
             <p style="font-size:13px;color:#606266;margin:0 0 8px">
               异步任务完成后，系统会 POST 回调你注册的 Webhook URL。
               请求头包含 <code>X-Webhook-Secret</code>（注册时填的密钥）和 <code>X-Task-Id</code>。
@@ -248,7 +279,9 @@ Body:
   "error": null                    // FAILED 时有值
 }</pre>
             <div style="margin-top:8px">
-              <el-button size="small" @click="testWebhook">🧪 测试 Webhook 连通性</el-button>
+              <el-button size="small" :loading="testingWebhook" @click="testWebhook">
+                🧪 测试 Webhook 连通性
+              </el-button>
               <span style="font-size:12px;color:#909399;margin-left:8px">
                 注册 Webhook URL 后可点击测试，确认外部系统可接收回调。
               </span>
@@ -259,29 +292,46 @@ Body:
     </el-tabs>
 
     <!-- P1-8: Webhook测试结果弹窗 -->
-    <el-dialog v-model="testResultVisible" title="🧪 Webhook 测试结果" width="500px" destroy-on-close>
+    <el-dialog
+      v-model="testResultVisible"
+      title="🧪 Webhook 测试结果"
+      width="500px"
+      destroy-on-close
+    >
       <div style="margin-bottom:12px">
-        <el-tag :type="testResultStatus.includes('成功') ? 'success' : testResultStatus.includes('失败') ? 'danger' : 'warning'" size="large">
-          {{ testResultStatus }}
-        </el-tag>
+        <el-tag
+          :type="testResultTagType"
+          size="large"
+        >{{ testResultStatus }}</el-tag>
       </div>
-      <pre style="background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:6px;font-size:12px;max-height:300px;overflow:auto">{{ testResultContent }}</pre>
+      <pre class="dialog-pre">{{ testResultContent }}</pre>
       <template #footer>
         <el-button @click="testResultVisible = false">关闭</el-button>
       </template>
     </el-dialog>
 
     <!-- 生成 Key 弹窗 -->
-    <el-dialog v-model="showCreate" title="生成 API Key" width="480px">
-      <el-form label-width="90px">
-        <el-form-item label="名称" required>
-          <el-input v-model="newKey.name" placeholder="如：生产环境 Key" />
+    <el-dialog
+      v-model="showCreate"
+      title="生成 API Key"
+      width="480px"
+      :close-on-click-modal="false"
+      @closed="resetCreateForm"
+    >
+      <el-form ref="createFormRef" :model="newKey" :rules="createRules" label-width="100px">
+        <el-form-item label="名称" prop="name">
+          <el-input v-model="newKey.name" placeholder="如：生产环境 Key" maxlength="50" show-word-limit />
         </el-form-item>
         <el-form-item label="描述">
-          <el-input v-model="newKey.description" placeholder="简要描述用途" />
+          <el-input v-model="newKey.description" placeholder="简要描述用途" maxlength="200" show-word-limit />
         </el-form-item>
         <el-form-item label="日调用限额">
-          <el-input-number v-model="newKey.quota" :min="0" style="width:100%" placeholder="0=无限" />
+          <el-input-number
+            v-model="newKey.quota"
+            :min="0"
+            style="width:100%"
+            placeholder="0=无限"
+          />
         </el-form-item>
         <el-form-item label="有效期">
           <el-select v-model="newKey.expireDays" style="width:100%">
@@ -316,19 +366,56 @@ Body:
 <script setup>
 import { ref, computed, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus, Refresh, View, Hide, CopyDocument, Search } from '@element-plus/icons-vue'
 import { apiKeyApi } from '@/api/apikey'
-import { Plus, Refresh, View, Hide, CopyDocument } from '@element-plus/icons-vue'
 
 const keys = ref([])
 const loading = ref(false)
 const creating = ref(false)
+const togglingId = ref(null)
+const refreshingId = ref(null)
 const showCreate = ref(false)
-const newKey = reactive({ name: '', description: '', quota: 0, expireDays: 0, scopes: ['chat'] })
+const createFormRef = ref(null)
+const newKey = reactive({
+  name: '',
+  description: '',
+  quota: 0,
+  expireDays: 0,
+  scopes: ['chat'],
+})
+const filterName = ref('')
+const filterStatus = ref('')
+
+// 过滤后的列表
+const filteredKeys = computed(() => {
+  return keys.value.filter(k => {
+    if (filterName.value && !k.name?.toLowerCase().includes(filterName.value.toLowerCase())) {
+      return false
+    }
+    if (filterStatus.value === 'enabled' && !k.enabled) return false
+    if (filterStatus.value === 'disabled' && k.enabled) return false
+    return true
+  })
+})
+
+const createRules = {
+  name: [
+    { required: true, message: '请输入 Key 名称', trigger: 'blur' },
+    { min: 2, max: 50, message: '名称长度需在 2-50 字符', trigger: 'blur' },
+  ],
+}
 
 // P1-8: Webhook测试结果
 const testResultVisible = ref(false)
 const testResultStatus = ref('')
 const testResultContent = ref('')
+const testingWebhook = ref(false)
+
+const testResultTagType = computed(() => {
+  if (testResultStatus.value.includes('成功')) return 'success'
+  if (testResultStatus.value.includes('失败')) return 'danger'
+  return 'warning'
+})
 
 // 外部 API 文档
 const extTab = ref('')
@@ -345,32 +432,37 @@ const apiEndpoints = [
 ]
 
 async function testWebhook() {
-  // P1-8: 实际发送测试请求到配置的 webhook URL
-  const webhookUrl = await ElMessageBox.prompt(
-    '请输入要测试的 Webhook URL：',
-    '测试 Webhook 连通性',
-    { confirmButtonText: '发送测试', cancelButtonText: '取消', inputValue: 'https://' }
-  ).catch(() => null)
+  let webhookUrl
+  try {
+    const r = await ElMessageBox.prompt(
+      '请输入要测试的 Webhook URL：',
+      '测试 Webhook 连通性',
+      { confirmButtonText: '发送测试', cancelButtonText: '取消', inputValue: 'https://' }
+    )
+    webhookUrl = r.value
+  } catch {
+    return
+  }
   if (!webhookUrl) return
 
   testResultVisible.value = true
   testResultStatus.value = ''
   testResultContent.value = '正在发送测试请求…'
+  testingWebhook.value = true
 
   try {
     const start = Date.now()
-    const response = await fetch(webhookUrl, {
+    await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         event: 'webhook.test',
         message: '这是一条来自 Liugl-AI 平台的 Webhook 测试消息',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       }),
-      mode: 'no-cors' // 跨域模式
+      mode: 'no-cors',
     })
     const elapsed = Date.now() - start
-    // no-cors 模式下 response.ok 不可靠，使用时间判断
     testResultStatus.value = elapsed < 5000 ? '✅ 连接成功' : '⚠️ 连接成功但响应慢'
     testResultContent.value = `请求耗时: ${elapsed}ms\n\n说明: 由于跨域限制，无法获取完整响应内容。\n若 URL 有效，通常会返回 2xx 状态码。\n\n测试数据已发送，请检查目标服务器是否收到回调。`
     ElMessage.success('Webhook 测试完成')
@@ -378,15 +470,23 @@ async function testWebhook() {
     testResultStatus.value = '❌ 连接失败'
     testResultContent.value = '错误: ' + (e.message || '无法连接到目标 URL\n请确认 URL 是否正确且服务器可访问')
     ElMessage.error('Webhook 测试失败')
+  } finally {
+    testingWebhook.value = false
   }
 }
 
 const activeCount = computed(() => keys.value.filter(k => k.enabled).length)
 const totalUsed = computed(() => keys.value.reduce((s, k) => s + (k.used || 0), 0))
-const totalQuota = computed(() => {
+const totalQuotaLabel = computed(() => {
   const q = keys.value.reduce((s, k) => s + (k.quota || 0), 0)
-  return q || null
+  return q ? q.toLocaleString() : '无限'
 })
+
+function maskKey(k) {
+  if (!k) return ''
+  if (k.length <= 12) return '•'.repeat(k.length)
+  return k.slice(0, 8) + '•'.repeat(20) + k.slice(-4)
+}
 
 function quotaPercent(row) {
   if (!row.quota) return 0
@@ -404,55 +504,119 @@ async function loadKeys() {
   try {
     const r = await apiKeyApi.list()
     keys.value = (r.data || []).map(k => ({ ...k, show: false }))
-  } catch { keys.value = [] }
-  finally { loading.value = false }
+  } catch (e) {
+    keys.value = []
+    ElMessage.error('加载 API Key 失败：' + (e?.message || '网络异常'))
+  } finally {
+    loading.value = false
+  }
+}
+
+function openCreate() {
+  showCreate.value = true
+}
+
+function resetCreateForm() {
+  newKey.name = ''
+  newKey.description = ''
+  newKey.quota = 0
+  newKey.expireDays = 0
+  newKey.scopes = ['chat']
+  createFormRef.value?.clearValidate()
 }
 
 async function createKey() {
-  if (!newKey.name.trim()) { ElMessage.warning('请填写名称'); return }
+  if (!createFormRef.value) return
+  try {
+    await createFormRef.value.validate()
+  } catch {
+    return
+  }
   creating.value = true
   try {
     const r = await apiKeyApi.create(newKey)
     const newK = r.data || {}
-    // V6.8.1 fix: 后端 ApiKeyResponse.rawKey，前端误用 newK.key
-    ElMessageBox.alert(
-      `<div style="font-size:13px">Key 已生成，请妥善保存：</div><div style="margin-top:8px;font-family:monospace;background:#f5f7fa;padding:8px;border-radius:4px;word-break:break-all">${newK.rawKey || newK.keyPrefix || '生成成功'}</div>`,
-      'API Key', { dangerouslyUseHTMLString: true }
+    await ElMessageBox.alert(
+      `<div style="font-size:13px">Key 已生成，请妥善保存（仅显示一次）：</div>` +
+      `<div style="margin-top:8px;font-family:monospace;background:#f5f7fa;padding:8px;border-radius:4px;word-break:break-all">${newK.rawKey || newK.keyPrefix || '生成成功'}</div>`,
+      'API Key',
+      { dangerouslyUseHTMLString: true, confirmButtonText: '我已保存' }
     )
     showCreate.value = false
+    ElMessage.success('API Key 已生成')
     loadKeys()
-  } catch (e) { ElMessage.error('生成失败：' + (e.message || '')) }
-  finally { creating.value = false }
+  } catch (e) {
+    if (e !== 'cancel' && e?.message) {
+      ElMessage.error('生成失败：' + (e.message || ''))
+    }
+  } finally {
+    creating.value = false
+  }
 }
 
 async function revokeKey(k) {
-  await ElMessageBox.confirm('撤销后该 Key 将立即失效，确认？', '警告', { type: 'warning' })
+  try {
+    await ElMessageBox.confirm(
+      `撤销后 Key「${k.name}」将立即失效且无法恢复，确认？`,
+      '警告',
+      { type: 'warning', confirmButtonText: '确认撤销', cancelButtonText: '取消' }
+    )
+  } catch {
+    return
+  }
   try {
     await apiKeyApi.remove(k.id)
     ElMessage.success('已撤销')
     loadKeys()
-  } catch { ElMessage.error('撤销失败') }
+  } catch (e) {
+    ElMessage.error('撤销失败：' + (e?.message || '请稍后重试'))
+  }
 }
 
 async function toggleKey(k) {
+  togglingId.value = k.id
   try {
-    // V6.8.1 fix: update → toggle (apikey.js 只有 toggle 方法)
     await apiKeyApi.toggle(k.id, !k.enabled)
     k.enabled = !k.enabled
     ElMessage.success(k.enabled ? '已启用' : '已禁用')
-  } catch { ElMessage.error('操作失败') }
+  } catch (e) {
+    ElMessage.error('操作失败：' + (e?.message || '请稍后重试'))
+  } finally {
+    togglingId.value = null
+  }
 }
 
 async function refreshKey(k) {
+  refreshingId.value = k.id
   try {
-    await apiKeyApi.refresh?.(k.id)
+    const r = await apiKeyApi.rotate(k.id, { expireDays: k.expireDays || 0 })
+    const newK = r.data || {}
+    ElMessageBox.alert(
+      `<div style="font-size:13px">新 Key 已生成，旧 Key 已失效：</div>` +
+      `<div style="margin-top:8px;font-family:monospace;background:#f5f7fa;padding:8px;border-radius:4px;word-break:break-all">${newK.rawKey || newK.keyPrefix || '轮换成功'}</div>`,
+      'API Key 已刷新',
+      { dangerouslyUseHTMLString: true, confirmButtonText: '我已保存' }
+    )
     ElMessage.success('Key 已刷新')
     loadKeys()
-  } catch { ElMessage.error('刷新失败') }
+  } catch (e) {
+    ElMessage.error('刷新失败：' + (e?.message || '请稍后重试'))
+  } finally {
+    refreshingId.value = null
+  }
 }
 
-function copyKey(k) {
-  navigator.clipboard.writeText(k.key || '').then(() => ElMessage.success('已复制')).catch(() => ElMessage.error('复制失败'))
+async function copyKey(k) {
+  if (!k.key) {
+    ElMessage.warning('该 Key 不可复制（仅在创建时显示完整值）')
+    return
+  }
+  try {
+    await navigator.clipboard.writeText(k.key)
+    ElMessage.success('已复制到剪贴板')
+  } catch {
+    ElMessage.error('复制失败，请手动选中复制')
+  }
 }
 
 onMounted(loadKeys)
@@ -460,7 +624,30 @@ onMounted(loadKeys)
 
 <style lang="scss" scoped>
 .page-card { background: #fff; border-radius: 8px; padding: 20px; }
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; h2 { margin: 0; font-size: 16px; } }
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  h2 { margin: 0; font-size: 16px; }
+}
+.toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.key-code {
+  font-size: 12px;
+  background: #f5f7fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .api-doc { padding: 0; }
 .code-block {
   background: #1e1e1e;
@@ -475,5 +662,19 @@ onMounted(loadKeys)
   word-break: break-all;
   max-height: 360px;
   overflow-y: auto;
+  margin: 0;
+}
+.dialog-pre {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  max-height: 300px;
+  overflow: auto;
+  margin: 0;
+  font-family: 'JetBrains Mono', Consolas, monospace;
+  line-height: 1.6;
+  white-space: pre-wrap;
 }
 </style>

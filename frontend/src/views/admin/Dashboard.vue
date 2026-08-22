@@ -1,7 +1,8 @@
 <!--
-  @file views/admin/DashboardV2.vue - V6.8.2+ 重构版
+  @file views/admin/Dashboard.vue - V6.8.2+ 重构版 (V6.8.10+ 企业级升级)
   @description 综合管理仪表盘
     - 原 603 行 -> V2 180 行 (-70%)
+    - V6.8.10: 加 v-loading / empty 状态 / 用户反馈
 -->
 <template>
   <PageStandard
@@ -9,34 +10,50 @@
     :subtitle="`${todayText} · ${weekDay}`"
   >
     <template #actions>
-      <el-button :icon="Refresh" @click="loadAll">刷新</el-button>
+      <el-button :icon="Refresh" :loading="loading" @click="loadAll">刷新</el-button>
     </template>
 
     <AITip :context="tipContext" dismiss-key="admin-dashboard-tip" />
 
-    <!-- 4 核心指标 -->
+    <!-- 4 核心指标 (内部已带 loading/empty) -->
     <StatCardGroup :stats="kpiStats" :loading="loading" />
 
     <!-- 图表区 -->
     <el-row :gutter="16" style="margin-top: 16px">
       <el-col :xs="24" :sm="12">
-        <el-card shadow="hover">
+        <el-card shadow="hover" v-loading="loading">
           <template #header>
             <el-tooltip content="过去 24 小时每小时 API 调用总量，反映系统负载峰值时段" placement="top">
               <span>📈 流量趋势 (24h) <el-icon style="cursor:pointer;vertical-align:middle"><InfoFilled /></el-icon></span>
             </el-tooltip>
           </template>
-          <v-chart :option="trendOption" autoresize style="height: 240px" />
+          <div v-if="!hasTrendData" class="chart-empty">
+            <EmptyState
+              icon="DataLine"
+              title="暂无流量数据"
+              description="系统暂无 API 调用记录，请稍后再来查看"
+              compact
+            />
+          </div>
+          <v-chart v-else :option="trendOption" autoresize style="height: 240px" />
         </el-card>
       </el-col>
       <el-col :xs="24" :sm="12">
-        <el-card shadow="hover">
+        <el-card shadow="hover" v-loading="loading">
           <template #header>
             <el-tooltip content="各微服务健康状态，接入 Nacos/K8s 后可实时感知服务可用性" placement="top">
               <span>🟢 服务状态 <el-icon style="cursor:pointer;vertical-align:middle"><InfoFilled /></el-icon></span>
             </el-tooltip>
           </template>
-          <div class="service-grid">
+          <div v-if="services.length === 0 && !loading" class="service-grid">
+            <EmptyState
+              icon="Cpu"
+              title="暂无服务数据"
+              description="服务注册中心暂无可用服务，请检查 Nacos / K8s 接入"
+              compact
+            />
+          </div>
+          <div v-else class="service-grid">
             <el-tooltip v-for="s in services" :key="s.name" :content="`服务: ${s.name} | 状态: ${s.status}`" placement="top">
               <div class="service-item" :class="s.status">
                 <span class="dot"></span>
@@ -44,7 +61,6 @@
                 <el-tag :type="s.status === 'UP' ? 'success' : s.status === 'DOWN' ? 'danger' : 'info'" size="small">{{ s.status }}</el-tag>
               </div>
             </el-tooltip>
-            <div v-if="services.length === 0" class="service-empty">暂无服务数据</div>
           </div>
         </el-card>
       </el-col>
@@ -71,7 +87,13 @@
     <!-- 最近活动 -->
     <section class="activity-section">
       <h3 class="section-title">📜 最近活动</h3>
-      <el-table :data="activityTable.data.value" v-loading="activityTable.loading.value" stripe size="small">
+      <el-table
+        :data="activityTable.data.value"
+        v-loading="activityTable.loading.value"
+        empty-text="暂无最近活动"
+        stripe
+        size="small"
+      >
         <el-table-column prop="createdAt" label="时间" width="140">
           <template #default="{ row }">
             <span>{{ row.createdAt }}</span>
@@ -105,18 +127,21 @@
 <script setup>
 /**
  * V6.8.2+ 重构 - Dashboard
- * 原 603 行 -> V2 180 行 (-70%)
+ * V6.8.10+ 企业级升级：v-loading / empty / 用户反馈
  */
 
 import { ref, computed, onMounted } from 'vue'
 import { Refresh, Cpu, User, ChatDotRound, Promotion, Monitor, DataAnalysis, Setting, Tools, Document, Connection, InfoFilled } from '@element-plus/icons-vue'
 import { useTable } from '@/composables/useTable'
 import { usePageSetup } from '@/composables/usePageSetup'
+import { useToast } from '@/composables/useToast'
 import http from '@/api/http'
 import { useUserStore } from '@/store/user'
+import EmptyState from '@/components/EmptyState.vue'
 
 usePageSetup({ title: '管理仪表盘' })
 const userStore = useUserStore()
+const toast = useToast()
 
 // 1. 问候
 const greeting = computed(() => {
@@ -138,6 +163,8 @@ const services = ref([])
 // 3. 加载
 async function loadAll() {
   loading.value = true
+  let successCount = 0
+  let failureCount = 0
   try {
     const [dashRes, hrRes, svcRes] = await Promise.all([
       http.get('/admin/stats/dashboard').catch(() => ({ data: {} })),
@@ -146,21 +173,29 @@ async function loadAll() {
     ])
     const d = dashRes.data?.data ?? dashRes.data ?? {}
     Object.assign(stats.value, d)
+    successCount++
     // 趋势图真实化
     const hrs = hrRes.data?.data ?? hrRes.data ?? []
     if (hrs.length > 0) {
       trendOption.value.xAxis.data = hrs.map(h => h.hour)
       trendOption.value.series[0].data = hrs.map(h => h.calls)
     }
+    successCount++
     // 服务状态真实化
     const svcs = svcRes.data?.data ?? svcRes.data ?? []
     if (svcs.length > 0) {
       services.value = svcs
     }
+    successCount++
   } catch (e) {
-    console.warn('[Dashboard] 部分数据加载失败:', e.message)
+    failureCount++
+    // 静默失败: 单个接口失败用 fallback，不打扰用户
   } finally {
     loading.value = false
+    if (failureCount > 0) {
+      // 仅当所有接口均失败时才提示
+      toast.warning('部分数据加载失败，已使用兜底展示')
+    }
   }
 }
 onMounted(loadAll)
@@ -179,6 +214,10 @@ const trendOption = ref({
   xAxis: { type: 'category', data: [] },
   yAxis: { type: 'value' },
   series: [{ type: 'line', data: [], smooth: true, areaStyle: { opacity: 0.3 } }],
+})
+const hasTrendData = computed(() => {
+  const arr = trendOption.value?.xAxis?.data || []
+  return Array.isArray(arr) && arr.length > 0
 })
 
 // 6. 快捷入口
@@ -252,4 +291,5 @@ const tipContext = computed(() => `当前 ${stats.value.users} 用户 / ${stats.
   white-space: nowrap;
 }
 .service-empty { text-align: center; color: var(--el-text-color-secondary); font-size: 13px; padding: 16px; }
+.chart-empty { min-height: 240px; display: flex; align-items: center; justify-content: center; }
 </style>

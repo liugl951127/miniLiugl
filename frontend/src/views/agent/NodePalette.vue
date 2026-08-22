@@ -1,19 +1,35 @@
 <!--
-  @file views/agent/NodePalette.vue (V6.3+ 7 类节点面板)
+  @file views/agent/NodePalette.vue (V6.8.13+ 节点面板 - 企业级)
 -->
 <template>
-  <div class="node-palette">
+  <div class="node-palette" v-loading="loading">
     <div class="palette-header">
       <h3>🧩 节点库</h3>
-      <p>7 类节点</p>
+      <p>{{ nodeTypes?.length || 0 }} 类节点 · 拖拽或点击添加到画布</p>
     </div>
+
+    <el-input
+      v-model="search"
+      placeholder="搜索节点类型"
+      size="small"
+      clearable
+      :prefix-icon="Search"
+      style="margin-bottom:8px"
+    />
+
+    <el-empty
+      v-if="!filteredTypes.length"
+      :description="search ? `未找到 \"${search}\" 相关节点` : '暂无可用节点'"
+      :image-size="60"
+    />
+
     <div
-      v-for="nodeType in nodeTypes"
+      v-for="nodeType in filteredTypes"
       :key="nodeType.type"
       class="palette-item"
       :style="{ borderColor: nodeType.color }"
       draggable="true"
-      @dragstart="$emit('drag-start', $event, nodeType)"
+      @dragstart="onDragStart($event, nodeType)"
       @click="$emit('click', nodeType)"
     >
       <div class="palette-icon" :style="{ background: nodeType.color }">
@@ -28,10 +44,31 @@
 </template>
 
 <script setup>
-defineProps({
-  nodeTypes: { type: Array, required: true }
+import { computed, ref } from 'vue'
+import { Search } from '@element-plus/icons-vue'
+
+const props = defineProps({
+  nodeTypes: { type: Array, default: () => [] },
+  loading: { type: Boolean, default: false },
 })
-defineEmits(['drag-start', 'click'])
+const emit = defineEmits(['drag-start', 'click'])
+
+const search = ref('')
+
+const filteredTypes = computed(() => {
+  const list = props.nodeTypes || []
+  if (!search.value) return list
+  const kw = search.value.toLowerCase()
+  return list.filter(n =>
+    (n.name || '').toLowerCase().includes(kw) ||
+    (n.desc || '').toLowerCase().includes(kw) ||
+    (n.type || '').toLowerCase().includes(kw)
+  )
+})
+
+function onDragStart(e, nodeType) {
+  emit('drag-start', e, nodeType)
+}
 </script>
 
 <style scoped>
@@ -100,5 +137,6 @@ defineEmits(['drag-start', 'click'])
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  margin-top: 2px;
 }
 </style>
