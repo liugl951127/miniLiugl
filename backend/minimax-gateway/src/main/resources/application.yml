@@ -123,6 +123,12 @@ spring.cloud.gateway:
       predicates:
         - Path=/api/v1/monitor/**
 
+    # T-system-module: 系统通用服务 (菜单/信息/公告/健康/心跳)
+    - id: system
+      uri: lb://minimax-system
+      predicates:
+        - Path=/api/v1/system/**
+
     - id: agent
       uri: lb://minimax-agent
       predicates:
@@ -187,6 +193,15 @@ spring.cloud.gateway:
       filters:
         - StripPrefix=0
 
+    # V7.2: dashboard-impl 重写 (DashboardController 路径与前端不匹配)
+    # 前端调 /api/v1/ai/dashboard/*, 后端真实路径 /api/v1/ai/dashboard-impl/*
+    - id: ai-dashboard-rewrite
+      uri: lb://minimax-ai
+      predicates:
+        - Path=/api/v1/ai/dashboard/**
+      filters:
+        - RewritePath=/api/v1/ai/dashboard/(?<remaining>.*), /api/v1/ai/dashboard-impl/$\{remaining}
+
     - id: ws
       uri: lb:ws://minimax-ws
       predicates:
@@ -203,6 +218,14 @@ spring.cloud.gateway:
         - Path=/ai/**
       filters:
         - RewritePath=/ai/(?<remaining>.*), /api/v1/ai/$\{remaining}
+
+    # V7.2: /ai/dashboard-impl 兼容路径 (前端调 /ai/dashboard/* → 后端 /ai/dashboard-impl/*)
+    - id: compat-ai-dashboard
+      uri: lb://minimax-ai
+      predicates:
+        - Path=/ai/dashboard/**
+      filters:
+        - RewritePath=/ai/dashboard/(?<remaining>.*), /api/v1/ai/dashboard-impl/$\{remaining}
 
     # V6.8.1: admin/apikey/* → admin/stats/apikey/* (path 顺序修正)
     - id: compat-admin-apikey-fix

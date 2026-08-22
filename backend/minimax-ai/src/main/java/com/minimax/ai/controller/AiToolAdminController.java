@@ -144,6 +144,28 @@ public class AiToolAdminController {
         return registry.invoke(code, input, userId, null, dsId);
     }
 
+    /**
+     * V7.2: 通用工具调用 (前端兼容路径, 不带 code)
+     * body 中传 toolCode 或 code 字段, 路由到具体工具
+     */
+    @PostMapping("/tools/invoke")
+    @Operation(summary = "通用工具调用 (body.toolCode 路由)")
+    public AiToolRegistry.ToolResult invokeToolGeneric(@RequestBody Map<String, Object> input) {
+        String code = (String) input.getOrDefault("toolCode", input.get("code"));
+        if (code == null || code.isBlank()) {
+            throw new IllegalArgumentException("toolCode / code is required");
+        }
+        // 从 input 中剥离路由字段, 保留业务字段
+        Map<String, Object> realInput = new java.util.LinkedHashMap<>(input);
+        realInput.remove("toolCode");
+        realInput.remove("code");
+        Long dsId = null;
+        if (realInput.containsKey("dataSourceId")) {
+            dsId = ((Number) realInput.get("dataSourceId")).longValue();
+        }
+        return registry.invoke(code, realInput, null, null, dsId);
+    }
+
     // ============== 数据源管理 ==============
 
     @GetMapping("/datasources")

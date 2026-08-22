@@ -1,0 +1,72 @@
+# =============================================================
+# minimax-system 模块配置 (T-system-module)
+# 系统通用服务: 菜单/平台信息/公告/健康/心跳
+# =============================================================
+
+server:
+  port: 9086
+
+spring:
+  application:
+    name: minimax-system
+  profiles:
+    active: dev
+
+# =============================================================
+# Nacos 服务发现 (注册到 Nacos, gateway 通过 lb://minimax-system 调用)
+# =============================================================
+spring.cloud.nacos:
+  discovery:
+    server-addr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
+    namespace: ${NACOS_NS:minimax-dev}
+    username: ${NACOS_USER}
+    password: ${NACOS_PASS}
+    register-enabled: true
+    metadata:
+      version: 1.0.0
+      group: minimax
+
+# =============================================================
+# Swagger / Knife4j
+# =============================================================
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+knife4j:
+  enable: true
+
+# =============================================================
+# Actuator (暴露健康检查)
+# =============================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    defaults:
+      enabled: true
+
+logging:
+  level:
+    root: INFO
+    com.minimax: DEBUG
+    com.alibaba.nacos: WARN
+
+# =============================================================
+# 公共 JWT 配置 (com.minimax.common.security.JwtAuthenticationFilter 需要)
+# 生产环境必须通过环境变量 MINIMAX_JWT_SECRET 覆盖
+# =============================================================
+minimax:
+  jwt:
+    secret: "${MINIMAX_JWT_SECRET:minimax-system-default-jwt-secret-key-32bytes-min-prod}"
+    issuer: minimax-platform
+    header: Authorization
+    prefix: "Bearer "

@@ -33,6 +33,7 @@
         <module>minimax-analytics</module>
         <module>minimax-pipeline</module>
         <module>minimax-ai</module>
+        <module>minimax-system</module>
     </modules>
 
     <properties>

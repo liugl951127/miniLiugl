@@ -1,0 +1,125 @@
+version: 1
+plan:
+  name: "后端 P0 新模块 (system + agent-kg)"
+  goal: "新建 minimax-system 模块 (5 个端点) + AgentKgController (知识图谱 9 个端点), 修复前端调用 404"
+
+variables:
+  workspace: /workspace/miniLiugl
+  backend: /workspace/miniLiugl/backend
+
+common_standards: |
+  ★ 标准 (每个 task 必须达到):
+  1. 创建完整 Maven 模块 (pom.xml + application.yml + Application.java + Controller + Entity/Mapper if needed)
+  2. 注册到根 pom.xml 的 <modules> 里
+  3. 在 minimax-gateway/src/main/resources/application.yml 加路由
+  4. 使用 Result<T> 统一返回格式
+  5. 路径前缀: minimax-system 用 /api/v1/system, AgentKgController 用 /api/v1/agent/kg
+  6. 数据存储: 简单场景用 ConcurrentHashMap / List.of() 即可, 真实持久化可用 MyBatis-Plus + H2 in-memory
+  7. 最后: cd /workspace/miniLiugl/backend && mvn package -pl <module> -am -DskipTests 必须成功
+
+tasks:
+  - id: T-system-module
+    title: "新建 minimax-system 模块 (5 个端点)"
+    assigned_to: general
+    verified_by: explore
+    timeout_ms: 1800000
+    verify_prompt: |
+      验证 /workspace/miniLiugl/backend/minimax-system/:
+      1. pom.xml 存在且与 minimax-common 同结构 (Spring Boot 3, JDK17, Nacos discovery)
+      2. 根 pom.xml <modules> 包含 minimax-system
+      3. 启动类 com.minimax.system.SystemApplication
+      4. SystemController 5 个端点 (GET /menu, GET /info, GET /announcements, GET /health, GET /ping)
+      5. application.yml 含服务名 minimax-system 端口 9086 (Nacos discovery)
+      6. minimax-gateway application.yml 路由 /api/v1/system/** → lb://minimax-system
+      7. mvn package -pl minimax-system -am -DskipTests 必须成功
+    prompt: |
+      在 /workspace/miniLiugl/backend/ 新建一个 minimax-system 微服务模块。
+
+      参考已有模块结构: minimax-monitor (单 Controller, simple data, port 9086)
+
+      任务:
+      1. 复制 minimax-monitor 的 pom.xml 改名为 minimax-system (artifactId 改)
+      2. 修改根 pom.xml (位于 /workspace/miniLiugl/backend/pom.xml) 的 <modules> 加 <module>minimax-system</module>
+      3. 目录结构:
+         minimax-system/
+           pom.xml
+           src/main/java/com/minimax/system/
+             SystemApplication.java
+             controller/SystemController.java
+             service/SystemService.java (可选)
+           src/main/resources/
+             application.yml
+      4. SystemController 路径 /api/v1/system, 5 个端点:
+         - GET /menu    → 返回左侧菜单 JSON (树形, 含 name, path, icon, children[])
+         - GET /info    → 返回平台信息 { name, version, buildTime, javaVersion, serverCount, ... }
+         - GET /announcements → 返回公告列表 [{ id, title, content, level, createdAt }]
+         - GET /health  → 返回健康状态 { status, uptime, services: [...] }
+         - GET /ping    → 返回 { pong: true, ts: <now> }
+      5. application.yml:
+         server: { port: 9086 }
+         spring.application.name: minimax-system
+         spring.cloud.nacos.discovery: { enabled: true }
+      6. minimax-gateway/src/main/resources/application.yml 加路由:
+         - id: system
+           uri: lb://minimax-system
+           predicates: [Path=/api/v1/system/**]
+      7. 最后: cd /workspace/miniLiugl/backend && export JAVA_HOME=/opt/jdk-17.0.2 && mvn package -pl minimax-system -am -DskipTests -s ~/.m2/settings.xml
+         必须成功 (BUILD SUCCESS)
+
+  - id: T-kg-controller
+    title: "新建 AgentKgController (知识图谱 9 个端点)"
+    assigned_to: general
+    verified_by: explore
+    timeout_ms: 1800000
+    verify_prompt: |
+      验证 /workspace/miniLiugl/backend/minimax-agent/src/main/java/com/minimax/agent/controller/AgentKgController.java:
+      1. 类上有 @RequestMapping("/api/v1/agent/kg")
+      2. 9 个端点存在 (POST /entities, GET /entities/{id}, GET /entities/search, DELETE /entities/{id}, POST /relations, GET /entities/{id}/neighbors, GET /entities/{id}/2hop, GET /path, GET /relations)
+      3. 数据存储用内存 ConcurrentHashMap (不需要数据库迁移)
+      4. mvn package -pl minimax-agent -am -DskipTests 必须成功
+    prompt: |
+      在 /workspace/miniLiugl/backend/minimax-agent/src/main/java/com/minimax/agent/controller/ 新建 AgentKgController.java
+
+      前端期望的 9 个端点 (来自 /workspace/miniLiugl/frontend/src/api/kg.js):
+      1. POST   /api/v1/agent/kg/entities             upsertEntity(body: { userId?, name, type, description?, aliases?, importance? })
+         返回: { id, name, type, description, createdAt }
+      2. GET    /api/v1/agent/kg/entities/{id}        getEntity(id, userId?)
+         返回: 实体详情, 404 if not found
+      3. GET    /api/v1/agent/kg/entities/search      searchEntities(userId, keyword, limit=20)
+         返回: { list: [...], total: N }
+      4. DELETE /api/v1/agent/kg/entities/{id}        deleteEntity(id, userId?)
+         返回: { success: true }
+      5. POST   /api/v1/agent/kg/relations            createRelation(body: { userId?, fromId, toId, type, description?, weight? })
+         返回: { id, fromId, toId, type }
+      6. GET    /api/v1/agent/kg/entities/{id}/neighbors    neighbors(id)
+         返回: { entities: [...], relations: [...] } (1跳邻居)
+      7. GET    /api/v1/agent/kg/entities/{id}/2hop    twoHopNeighbors(id)
+         返回: { entities: [...], relations: [...] } (2跳邻居)
+      8. GET    /api/v1/agent/kg/path                  shortestPath(fromId, toId)
+         返回: { path: [id, id, id], length: N } (BFS 最短路径)
+      9. GET    /api/v1/agent/kg/relations             listRelations(entityId?)
+         返回: { list: [...], total: N }
+
+      数据存储: 用 ConcurrentHashMap<Long, KgEntity> 和 ConcurrentHashMap<Long, KgRelation> 内存存储.
+      ID 用 AtomicLong 自增. 启动时种 5-10 个示例数据方便前端测试.
+
+      类结构:
+      ```java
+      package com.minimax.agent.controller;
+      // imports
+      @RestController
+      @RequestMapping("/api/v1/agent/kg")
+      public class AgentKgController {
+          // 内存存储
+          private final Map<Long, KgEntity> entities = new ConcurrentHashMap<>();
+          private final Map<Long, KgRelation> relations = new ConcurrentHashMap<>();
+          private final AtomicLong nextId = new AtomicLong(1);
+          // 9 个 @GetMapping/@PostMapping/@DeleteMapping
+      }
+      ```
+
+      KgEntity inner class: { Long id, Long userId, String name, String type, String description, List<String> aliases, Double importance, LocalDateTime createdAt }
+      KgRelation inner class: { Long id, Long fromId, Long toId, String type, String description, Double weight, LocalDateTime createdAt }
+
+      最后: cd /workspace/miniLiugl/backend && export JAVA_HOME=/opt/jdk-17.0.2 && mvn package -pl minimax-agent -am -DskipTests -s ~/.m2/settings.xml
+      必须成功

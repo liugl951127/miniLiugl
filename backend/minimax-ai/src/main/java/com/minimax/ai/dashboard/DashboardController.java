@@ -183,4 +183,33 @@ public class DashboardController {
                 }, 5, 5, java.util.concurrent.TimeUnit.SECONDS);
         return emitter;
     }
+
+    /**
+     * V7.2: 服务端图表渲染 (前端 /ai/dashboard/render 兼容)
+     * body: { type, title, xAxis, series, options? }
+     * 返回: 图表 JSON 配置 (前端 ECharts 直接用)
+     */
+    @PostMapping("/render")
+    @Operation(summary = "服务端生成图表配置 (前端 ECharts 直接渲染)")
+    public Result<Map<String, Object>> renderChart(@RequestBody Map<String, Object> body) {
+        String type = (String) body.getOrDefault("type", "bar");
+        String title = (String) body.getOrDefault("title", "");
+        Object xAxis = body.getOrDefault("xAxis", List.of());
+        Object series = body.getOrDefault("series", List.of());
+        @SuppressWarnings("unchecked")
+        Map<String, Object> options = (Map<String, Object>) body.getOrDefault("options", Map.of());
+
+        Map<String, Object> config = new java.util.LinkedHashMap<>();
+        config.put("title", Map.of("text", title, "left", "center"));
+        config.put("tooltip", Map.of("trigger", "axis"));
+        config.put("legend", Map.of("data", List.of(), "top", "top"));
+        config.put("grid", Map.of("left", "3%", "right", "4%", "bottom", "3%", "containLabel", true));
+        config.put("xAxis", Map.of("type", "category", "data", xAxis));
+        config.put("yAxis", Map.of("type", "value"));
+        config.put("series", series);
+        config.put("type", type);
+        config.putAll(options);
+
+        return Result.ok(config);
+    }
 }
