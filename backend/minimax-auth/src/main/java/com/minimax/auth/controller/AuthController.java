@@ -82,6 +82,7 @@ public class AuthController {
      */
     @Operation(summary = "认证统计（admin 调用）")
     @GetMapping("/stats")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")  // V6.8.2: 认证统计仅 ADMIN
     public Result<Map<String, Object>> stats() {
         // 总用户数（未删除）
         long totalUsers = userMapper.selectCount(

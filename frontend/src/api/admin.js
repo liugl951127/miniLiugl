@@ -18,19 +18,15 @@
 import http from './http'
 
 export const getAdminHealth = () => {
-  console.log('%c[ADMIN API] getAdminHealth', 'color: #409eff', '')
   return http.get('/admin/health');
 }
 export const getAdminPing = () => {
-  console.log('%c[ADMIN API] getAdminPing', 'color: #409eff', '')
   return http.get('/admin/ping');
 }
 export const getOpsStats = () => {
-  console.log('%c[ADMIN API] getOpsStats', 'color: #409eff', '')
   return http.get('/admin/stats/ops');
 }
 export const getDashboard = () => {
-  console.log('%c[ADMIN API] getDashboard', 'color: #409eff', '')
   return http.get('/admin/stats/dashboard');
 }
 
@@ -49,11 +45,9 @@ export const toggleAdminUser = (id, actorId, enabled) =>
   http.put(`/admin/users/${id}/status?actorId=${actorId}&enabled=${enabled}`)
 
 export const listModelProviders = () => {
-  console.log('%c[ADMIN API] listModelProviders', 'color: #409eff', '')
   return http.get('/admin/models/providers');
 }
 export const listModelConfigs = () => {
-  console.log('%c[ADMIN API] listModelConfigs', 'color: #409eff', '')
   return http.get('/admin/models');
 }
 export const updateRateLimit = (code, actorId, body) =>
@@ -63,7 +57,6 @@ export const getRecentAudit = (limit = 50) =>
   http.get(`/admin/audit-ops/recent?limit=${limit}`)
 
 export const getApiKeyStats = () => {
-  console.log('%c[ADMIN API] getApiKeyStats', 'color: #409eff', '')
   return http.get('/admin/stats/apikey');
 }
 

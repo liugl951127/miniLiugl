@@ -3,6 +3,7 @@ package com.minimax.chat.memory_ext.pref;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -12,6 +13,8 @@ public class UserPrefService {
 
     private final UserPrefMapper mapper;
 
+    // T2: 加 @Transactional 包裹读+写 (避免并发条件下 2 次 selectOne 之间被覆盖)
+    @Transactional
     public void set(Long userId, String key, String value, String source) {
         if (key == null || value == null) return;
         UserPref existing = mapper.selectOne(
@@ -47,6 +50,7 @@ public class UserPrefService {
         return mapper.selectByUser(userId);
     }
 
+    @Transactional
     public boolean delete(Long userId, String key) {
         UserPref p = mapper.selectOne(
                 new LambdaQueryWrapper<UserPref>()

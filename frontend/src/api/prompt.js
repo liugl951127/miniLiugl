@@ -17,8 +17,11 @@ const BASE = '/prompts'
 
 /** 分页列表 */
 export const promptApi = {
-  list(params) {
-    return http.get(BASE, { params })
+  list(params, config = {}) {
+    const { signal, ...rest } = params || {}
+    const axiosConfig = { ...config }
+    if (signal) axiosConfig.signal = signal
+    return http.get(BASE, { params: rest, ...axiosConfig })
   },
   get(id) {
     return http.get(`${BASE}/${id}`)

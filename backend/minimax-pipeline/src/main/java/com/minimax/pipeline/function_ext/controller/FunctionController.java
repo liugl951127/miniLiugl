@@ -82,6 +82,7 @@ public class FunctionController {
 
     @Operation(summary = "注册自定义工具")
     @PostMapping("/tools")
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")  // V6.8.2: 注册需登录
     public Result<Long> createTool(@RequestParam Long ownerId,
                                     @RequestBody Map<String, Object> body) {
         Long id = toolService.createUserTool(ownerId,
@@ -97,6 +98,7 @@ public class FunctionController {
 
     @Operation(summary = "更新工具配置")
     @PutMapping("/tools/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")  // V6.8.2: 更新需登录
     public Result<Boolean> updateTool(@PathVariable Long id,
                                        @RequestParam Long ownerId,
                                        @RequestBody Map<String, Object> body) {
@@ -110,6 +112,7 @@ public class FunctionController {
 
     @Operation(summary = "删除工具")
     @DeleteMapping("/tools/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")  // V6.8.2: 删除需登录
     public Result<Boolean> deleteTool(@PathVariable Long id, @RequestParam Long ownerId) {
         return Result.ok(toolService.delete(id, ownerId));
     }

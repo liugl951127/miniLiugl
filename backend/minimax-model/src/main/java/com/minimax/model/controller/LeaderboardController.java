@@ -88,6 +88,7 @@ public class LeaderboardController {
 
     /**
      * 按 model_code 聚合: 平均分, P50 延迟, 调用次数.
+     * T2: 批量查 model_config, 消除 N+1
      */
     private List<Map<String, Object>> aggregate(String sortBy) {
         List<Map<String, Object>> rows = battleLogMapper.selectMaps(
@@ -100,20 +101,27 @@ public class LeaderboardController {
                         .groupBy("model_code")
                         .orderByDesc("avg_score")
         );
+        // T2: 一次性查所有 model_config, 内存按 modelCode 取
+        java.util.Set<String> modelCodes = rows.stream()
+                .map(r -> (String) r.get("model_code"))
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+        java.util.Map<String, ModelConfig> cfgMap = modelCodes.isEmpty() ? java.util.Map.of() :
+                modelConfigMapper.selectList(
+                                new LambdaQueryWrapper<ModelConfig>().in(ModelConfig::getModelCode, modelCodes))
+                        .stream()
+                        .collect(java.util.stream.Collectors.toMap(ModelConfig::getModelCode, c -> c, (a, b) -> a));
         // 简化: 直接用 MySQL 聚合 (没有 window function 也能跑)
         List<Map<String, Object>> result = new ArrayList<>();
         for (Map<String, Object> r : rows) {
             Map<String, Object> m = new LinkedHashMap<>(r);
             // 加 displayName
-            try {
-                ModelConfig cfg = modelConfigMapper.selectOne(
-                        new LambdaQueryWrapper<ModelConfig>().eq(ModelConfig::getModelCode, (String) r.get("model_code"))
-                );
-                if (cfg != null) {
-                    m.put("displayName", cfg.getDisplayName());
-                    m.put("supportsVision", cfg.getSupportsVision());
-                }
-            } catch (Exception ignore) {}
+            String code = (String) r.get("model_code");
+            ModelConfig cfg = cfgMap.get(code);
+            if (cfg != null) {
+                m.put("displayName", cfg.getDisplayName());
+                m.put("supportsVision", cfg.getSupportsVision());
+            }
             result.add(m);
         }
         if ("latency".equals(sortBy)) {

@@ -39,9 +39,9 @@ export const storeLongTerm = (body) =>
 export const recallLongTerm = (body) =>
   http.post('/memory/long-term/recall', body)
 
-export const recentLongTerm = (userId, limit = 50) => {
+export const recentLongTerm = (userId, limit = 50, config = {}) => {
   const uid = (typeof userId === 'object' && userId !== null) ? (userId.id || userId.userId || null) : userId
-  return uid ? http.get(`/memory/long-term/recent?userId=${uid}&limit=${limit}`) : http.get(`/memory/long-term/recent?limit=${limit}`)
+  return uid ? http.get(`/memory/long-term/recent?userId=${uid}&limit=${limit}`, config) : http.get(`/memory/long-term/recent?limit=${limit}`, config)
 }
 
 export const deleteLongTerm = (id, userId) =>

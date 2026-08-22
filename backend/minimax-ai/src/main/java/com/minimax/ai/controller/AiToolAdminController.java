@@ -74,8 +74,8 @@ public class AiToolAdminController {
     private final MultiDataSourceManager dsManager;
     private final ProjectCodeGenerator codeGenerator;
 
-    // ============== AI 工具管理 ==============
-
+    // V6.8.2: AI 工具/数据源管理仅 ADMIN 访问
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/tools")
     @Operation(summary = "工具列表")
     public Map<String, Object> listTools(@RequestParam(required = false) String category) {
@@ -96,6 +96,7 @@ public class AiToolAdminController {
     }
 
     @PostMapping("/tools")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "注册新工具")
     public AiTool createTool(@RequestBody AiTool tool) {
         tool.setId(null);
@@ -106,6 +107,7 @@ public class AiToolAdminController {
     }
 
     @PutMapping("/tools/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "更新工具")
     public AiTool updateTool(@PathVariable Long id, @RequestBody AiTool tool) {
         tool.setId(id);
@@ -114,6 +116,7 @@ public class AiToolAdminController {
     }
 
     @DeleteMapping("/tools/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "删除工具 (内置不可删)")
     public Map<String, Object> deleteTool(@PathVariable Long id) {
         AiTool tool = toolMapper.selectById(id);
@@ -169,6 +172,7 @@ public class AiToolAdminController {
     // ============== 数据源管理 ==============
 
     @GetMapping("/datasources")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "数据源列表")
     public Map<String, Object> listDataSources() {
         List<DbDataSource> list = dataSourceMapper.selectList(
@@ -182,6 +186,7 @@ public class AiToolAdminController {
     }
 
     @PostMapping("/datasources")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "新增数据源")
     public DbDataSource createDataSource(@RequestBody DbDataSource ds) {
         ds.setId(null);
@@ -195,6 +200,7 @@ public class AiToolAdminController {
     }
 
     @PutMapping("/datasources/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "更新数据源")
     public DbDataSource updateDataSource(@PathVariable Long id, @RequestBody DbDataSource ds) {
         ds.setId(id);
@@ -205,6 +211,7 @@ public class AiToolAdminController {
     }
 
     @DeleteMapping("/datasources/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "删除数据源")
     public Map<String, Object> deleteDataSource(@PathVariable Long id) {
         dsManager.close(id);

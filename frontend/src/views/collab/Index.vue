@@ -177,7 +177,7 @@
         </div>
         <template v-for="(msg, i) in roomMessages" :key="msg.id">
           <!-- P1-6: 不同用户消息之间的分隔线 -->
-          <div v-if="i > 0 && !isSameGroup(msg, roomMessages[i-1])" class="msg-divider"></div>
+          <div v-if="i > 0 && !isSameGroup(roomMessages[i-1], msg)" class="msg-divider"></div>
           <div class="room-msg" :class="msg.role">
             <el-avatar :size="24" class="msg-avatar">
               {{ msg.role === 'ai' ? '🤖' : (msg.user || 'U').charAt(0) }}
@@ -489,12 +489,12 @@ function scrollToBottom() {
   })
 }
 
-// P1-6: 消息时间分组 - 同一用户、同一分钟内隐藏时间戳
-function isSameGroup(curr, prev) {
-  if (!prev) return false
-  if (curr.user !== prev.user) return false
-  if (curr.role !== prev.role) return false
-  const timeDiff = new Date(curr.createdAt).getTime() - new Date(prev.createdAt).getTime()
+// P1-6: 判断两条消息是否属于同一组（同用户、同分钟内）
+function isSameGroup(prev, curr) {
+  if (!prev || !curr) return false
+  if (prev.user !== curr.user) return false
+  if (prev.role !== curr.role) return false
+  const timeDiff = Math.abs(new Date(prev.createdAt) - new Date(curr.createdAt))
   return timeDiff < 60000 // 同一分钟内
 }
 
@@ -599,20 +599,7 @@ function sendRoomAi() {
   aiInput.value = ''
 }
 
-function formatTime(ts) {
-  if (!ts) return ''
-  const d = new Date(typeof ts === 'string' ? ts.replace(' ', 'T') : ts)
-  return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`
-}
-
-// P1-6: 判断两条消息是否属于同一组（同用户、同分钟内）
-function isSameGroup(prev, curr) {
-  if (!prev || !curr) return false
-  const sameUser = prev.user === curr.user && prev.role === curr.role
-  if (!sameUser) return false
-  const timeDiff = Math.abs(new Date(prev.createdAt) - new Date(curr.createdAt))
-  return timeDiff < 60000 // 同一分钟内
-}
+// P1-6: 判断两条消息是否属于同一组 — 已统一在 491 行
 
 async function inviteMember(r) {
   try {

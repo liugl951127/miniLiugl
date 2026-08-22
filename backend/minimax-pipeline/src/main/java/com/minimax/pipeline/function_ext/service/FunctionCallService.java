@@ -182,9 +182,22 @@ public class FunctionCallService {
         if (toolNames == null || toolNames.isEmpty()) {
             return toolService.listAll();
         }
+        // T2: 批量查 tool, 内存过滤 enabled, 消除 N+1
+        List<FunctionTool> all = toolMapper.selectBatchByNames(toolNames);
+        if (all == null || all.isEmpty()) {
+            // 兜底: 逐个查 (兼容 mapper 没 selectBatchByNames)
+            List<FunctionTool> out = new ArrayList<>();
+            for (String n : toolNames) {
+                FunctionTool t = toolMapper.selectByName(n);
+                if (t != null && t.getEnabled() != null && t.getEnabled() == 1) out.add(t);
+            }
+            return out;
+        }
+        Map<String, FunctionTool> byName = new HashMap<>();
+        for (FunctionTool t : all) byName.put(t.getName(), t);
         List<FunctionTool> out = new ArrayList<>();
         for (String n : toolNames) {
-            FunctionTool t = toolMapper.selectByName(n);
+            FunctionTool t = byName.get(n);
             if (t != null && t.getEnabled() != null && t.getEnabled() == 1) out.add(t);
         }
         return out;

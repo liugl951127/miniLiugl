@@ -57,11 +57,18 @@ public class OpenAIGatewayController {
     public ResponseEntity<Map<String, Object>> listModels() {
         List<ModelConfig> enabled = modelConfigMapper.selectList(
                 new LambdaQueryWrapper<ModelConfig>().eq(ModelConfig::getEnabled, 1));
+        // T2: 批量查 provider, 消除 N+1
+        java.util.Set<Long> providerIds = enabled.stream()
+                .map(ModelConfig::getProviderId).filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+        java.util.Map<Long, ModelProvider> providerMap = providerIds.isEmpty() ? java.util.Map.of() :
+                providerMapper.selectBatchIds(providerIds).stream()
+                        .collect(java.util.stream.Collectors.toMap(ModelProvider::getId, p -> p, (a, b) -> a));
         List<Map<String, Object>> data = new ArrayList<>();
         for (ModelConfig m : enabled) {
             String providerName = "minimax";
             if (m.getProviderId() != null) {
-                ModelProvider p = providerMapper.selectById(m.getProviderId());
+                ModelProvider p = providerMap.get(m.getProviderId());
                 if (p != null) providerName = p.getName();
             }
             Map<String, Object> modelObj = new LinkedHashMap<>();

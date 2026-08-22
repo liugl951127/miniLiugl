@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * V2.2: 知识图谱服务
@@ -132,6 +133,7 @@ public class KnowledgeGraphService {
 
     /**
      * V6.8.2: 1 跳邻居查询（加归属校验，防止 IDOR）
+     * T2: 批量 selectById 消除 N+1
      */
     public List<Map<String, Object>> neighbors(Long entityId, Long userId) {
         // V6.8.2: 校验用户是否为该实体的拥有者
@@ -140,14 +142,23 @@ public class KnowledgeGraphService {
         if (entity.getUserId() != null && !entity.getUserId().equals(userId)) {
             throw new SecurityException("无权查看此实体的邻居");
         }
+        List<KgRelation> outRels = getOutRelations(entityId);
+        List<KgRelation> inRels = getInRelations(entityId);
+        // T2: 批量查 to_entity / from_entity, 然后内存 join
+        Set<Long> ids = new HashSet<>();
+        for (KgRelation r : outRels) ids.add(r.getToEntity());
+        for (KgRelation r : inRels) ids.add(r.getFromEntity());
+        Map<Long, KgEntity> entityMap = ids.isEmpty() ? Map.of() :
+                entityMapper.selectBatchIds(ids).stream()
+                        .collect(Collectors.toMap(KgEntity::getId, e -> e, (a, b) -> a));
         List<Map<String, Object>> out = new ArrayList<>();
-        for (KgRelation r : getOutRelations(entityId)) {
-            KgEntity to = entityMapper.selectById(r.getToEntity());
+        for (KgRelation r : outRels) {
+            KgEntity to = entityMap.get(r.getToEntity());
             if (to == null) continue;
             out.add(relationToMap(r, null, to));
         }
-        for (KgRelation r : getInRelations(entityId)) {
-            KgEntity from = entityMapper.selectById(r.getFromEntity());
+        for (KgRelation r : inRels) {
+            KgEntity from = entityMap.get(r.getFromEntity());
             if (from == null) continue;
             out.add(relationToMap(r, from, null));
         }
@@ -156,6 +167,7 @@ public class KnowledgeGraphService {
 
     /**
      * V6.8.2: 2 跳关联（加归属校验，防止 IDOR）
+     * T2: 批量 selectById 消除 N+1
      */
     @Transactional(readOnly = true)
     public List<Map<String, Object>> twoHopNeighbors(Long entityId, Long userId) {
@@ -168,12 +180,30 @@ public class KnowledgeGraphService {
         Set<Long> seen = new HashSet<>();
         seen.add(entityId);
 
-        for (KgRelation r1 : getOutRelations(entityId)) {
-            KgEntity m1 = entityMapper.selectById(r1.getToEntity());
+        List<KgRelation> firstHop = getOutRelations(entityId);
+        // T2: 批量查 1 跳 entity
+        Set<Long> firstIds = firstHop.stream().map(KgRelation::getToEntity).collect(Collectors.toSet());
+        Map<Long, KgEntity> firstEntityMap = firstIds.isEmpty() ? Map.of() :
+                entityMapper.selectBatchIds(firstIds).stream()
+                        .collect(Collectors.toMap(KgEntity::getId, e -> e, (a, b) -> a));
+        // T2: 批量查 2 跳 relations
+        List<KgRelation> allSecondHop = new ArrayList<>();
+        for (KgRelation r1 : firstHop) {
+            Long toId = r1.getToEntity();
+            if (!firstEntityMap.containsKey(toId)) continue;
+            allSecondHop.addAll(getOutRelations(toId));
+        }
+        Set<Long> secondIds = allSecondHop.stream().map(KgRelation::getToEntity).collect(Collectors.toSet());
+        Map<Long, KgEntity> secondEntityMap = secondIds.isEmpty() ? Map.of() :
+                entityMapper.selectBatchIds(secondIds).stream()
+                        .collect(Collectors.toMap(KgEntity::getId, e -> e, (a, b) -> a));
+
+        for (KgRelation r1 : firstHop) {
+            KgEntity m1 = firstEntityMap.get(r1.getToEntity());
             if (m1 == null || !seen.add(m1.getId())) continue;
             out.add(Map.of("hop", 1, "entity", m1, "via", r1.getRelationType()));
             for (KgRelation r2 : getOutRelations(m1.getId())) {
-                KgEntity m2 = entityMapper.selectById(r2.getToEntity());
+                KgEntity m2 = secondEntityMap.get(r2.getToEntity());
                 if (m2 == null || !seen.add(m2.getId())) continue;
                 out.add(Map.of("hop", 2, "entity", m2, "via", r2.getRelationType()));
             }

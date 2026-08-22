@@ -42,12 +42,14 @@ public class SkillApprovalController {
     // ==================== 审批 ====================
 
     @PostMapping("/{id}/approve")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")  // V6.8.2: 审批通过需 ADMIN
     @Operation(summary = "审批通过")
     public Result<Void> approve(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         return approvalClient.approve(id, body);
     }
 
     @PostMapping("/{id}/reject")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")  // V6.8.2: 审批拒绝需 ADMIN
     @Operation(summary = "审批拒绝")
     public Result<Void> reject(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         return approvalClient.reject(id, body);
@@ -62,6 +64,7 @@ public class SkillApprovalController {
     }
 
     @GetMapping("/pending/all")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")  // V6.8.2: 所有待审批仅 ADMIN
     @Operation(summary = "所有待审批 (管理员视角)")
     public Result<List<SkillApprovalDTO>> getAllPending() {
         return approvalClient.getAllPending();

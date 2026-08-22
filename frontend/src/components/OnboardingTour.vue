@@ -46,7 +46,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 
 const emit = defineEmits(['finish', 'skip'])
 
@@ -56,6 +56,7 @@ const props = defineProps({
 
 const visible = ref(false)
 const current = ref(0)
+let showTimer = null
 
 const steps = [
   {
@@ -117,8 +118,15 @@ onMounted(() => {
     const onboarded = typeof localStorage !== 'undefined' && localStorage.getItem('minimax_onboarded')
     if (!onboarded) {
       // 1s 后显示, 让用户先看到页面
-      setTimeout(() => { visible.value = true }, 1000)
+      showTimer = setTimeout(() => { visible.value = true }, 1000)
     }
+  }
+})
+
+onBeforeUnmount(() => {
+  if (showTimer) {
+    clearTimeout(showTimer)
+    showTimer = null
   }
 })
 

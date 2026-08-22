@@ -12,7 +12,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 向量检索器。
@@ -66,9 +70,14 @@ public class Retriever {
         List<Hit> top = hits.subList(0, Math.min(topK, hits.size()));
 
         // touch access + 拉 doc title + 高亮摘要 (Day 43)
+        // T2: 批量 selectById 消除 N+1
+        Set<Long> docIds = top.stream().map(h -> h.docId).filter(java.util.Objects::nonNull).collect(Collectors.toSet());
+        Map<Long, Document> docMap = docIds.isEmpty() ? Map.of() :
+                docMapper.selectBatchIds(docIds).stream()
+                        .collect(Collectors.toMap(Document::getId, d -> d, (a, b) -> a));
         for (Hit h : top) {
             chunkMapper.touchAccess(h.chunkId);
-            Document doc = docMapper.selectById(h.docId);
+            Document doc = docMap.get(h.docId);
             h.docTitle = doc == null ? null : doc.getTitle();
             h.docSource = doc == null ? null : doc.getSourceUri();
             h.setHighlight(query);

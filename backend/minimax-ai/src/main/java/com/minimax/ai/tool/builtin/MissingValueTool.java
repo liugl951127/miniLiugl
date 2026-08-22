@@ -56,9 +56,10 @@ public class MissingValueTool implements AiToolExecutor {
         // 1. 统计缺失值
         int total = 0, missing = 0;
         List<Double> values = new ArrayList<>();
+        // T2: 改用 try-with-resources 自动关闭 ResultSet
         try (Connection conn = ds_.getConnection();
-             Statement st = conn.createStatement()) {
-            ResultSet rs = st.executeQuery("SELECT " + column + " FROM " + table);
+             Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery("SELECT " + column + " FROM " + table)) {
             while (rs.next()) {
                 total++;
                 double v = rs.getDouble(1);

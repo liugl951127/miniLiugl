@@ -10,6 +10,7 @@ import com.minimax.common.result.ResultCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -47,6 +48,7 @@ public class DataSourceServiceImpl implements DataSourceService {
     }
 
     @Override
+    @Transactional
     public Long create(Long userId, DataSourceDTO dto) {
         DataSource entity = new DataSource();
         entity.setUserId(userId);
@@ -63,6 +65,7 @@ public class DataSourceServiceImpl implements DataSourceService {
     }
 
     @Override
+    @Transactional
     public void update(Long userId, Long id, DataSourceDTO dto) {
         DataSource entity = requireOwned(userId, id);
         entity.setName(dto.getName());
@@ -79,6 +82,7 @@ public class DataSourceServiceImpl implements DataSourceService {
     }
 
     @Override
+    @Transactional
     public void delete(Long userId, Long id) {
         requireOwned(userId, id);
         mapper.deleteById(id);

@@ -31,6 +31,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/auth/super")
 @RequiredArgsConstructor
+@org.springframework.security.access.prepost.PreAuthorize("hasRole('SUPER_ADMIN')")  // V6.8.2: 超管专属
 public class SuperAdminController {
 
     private final SysUserMapper userMapper;

@@ -25,6 +25,9 @@ export function usePwa() {
   let deferredPrompt = null
   let registration = null
   let cachePoller = null
+  let updateCheckInterval = null
+  let beforeInstallHandler = null
+  let appInstalledHandler = null
 
   const registerSw = async () => {
     if (!('serviceWorker' in navigator)) {
@@ -168,18 +171,20 @@ export function usePwa() {
 
   onMounted(() => {
     // 安装提示事件
-    window.addEventListener('beforeinstallprompt', (e) => {
+    beforeInstallHandler = (e) => {
       e.preventDefault()
       deferredPrompt = e
       isInstallable.value = true
-    })
+    }
+    window.addEventListener('beforeinstallprompt', beforeInstallHandler)
 
     // 监听安装成功
-    window.addEventListener('appinstalled', () => {
+    appInstalledHandler = () => {
       ElMessage.success('🎉 Liugl-AI PWA 已安装')
       isInstallable.value = false
       deferredPrompt = null
-    })
+    }
+    window.addEventListener('appinstalled', appInstalledHandler)
 
     // 网络状态
     window.addEventListener('online', onOnline)
@@ -193,7 +198,7 @@ export function usePwa() {
     cachePoller = setInterval(updateCacheInfo, 10000)
     
     // V3.7.18+ 5min 周期检查更新
-    setInterval(() => {
+    updateCheckInterval = setInterval(() => {
       if (registration && navigator.onLine) {
         registration.update().catch(() => {})
       }
@@ -201,9 +206,18 @@ export function usePwa() {
   })
 
   onUnmounted(() => {
+    if (beforeInstallHandler) {
+      window.removeEventListener('beforeinstallprompt', beforeInstallHandler)
+      beforeInstallHandler = null
+    }
+    if (appInstalledHandler) {
+      window.removeEventListener('appinstalled', appInstalledHandler)
+      appInstalledHandler = null
+    }
     window.removeEventListener('online', onOnline)
     window.removeEventListener('offline', onOffline)
-    if (cachePoller) clearInterval(cachePoller)
+    if (cachePoller) { clearInterval(cachePoller); cachePoller = null }
+    if (updateCheckInterval) { clearInterval(updateCheckInterval); updateCheckInterval = null }
   })
 
   return {

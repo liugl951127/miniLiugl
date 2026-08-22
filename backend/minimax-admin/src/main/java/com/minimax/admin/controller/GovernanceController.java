@@ -4,6 +4,7 @@ import com.minimax.admin.governance.GovernanceService;
 import com.minimax.common.result.Result;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -28,6 +29,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/admin/governance")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")  // V6.8.2: 治理面板需 ADMIN 权限
 public class GovernanceController {
 
     private final GovernanceService governanceService;

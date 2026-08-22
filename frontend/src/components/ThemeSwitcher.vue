@@ -28,13 +28,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { Sunny, Moon, Monitor, CircleCheck } from '@element-plus/icons-vue'
 import { useI18n } from '@/i18n'
 
 const { t } = useI18n()
 
 const theme = ref(localStorage.getItem('minimax-theme') || 'light')
+let darkSchemeMedia = null
 
 const currentIcon = computed(() => {
   if (theme.value === 'dark') return Moon
@@ -59,12 +60,22 @@ function onCommand(mode) {
 
 watch(theme, applyTheme)
 
+function handleDarkSchemeChange() {
+  if (theme.value === 'auto') applyTheme('auto')
+}
+
 onMounted(() => {
   applyTheme(theme.value)
   // 监听系统主题变化 (auto 模式)
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    if (theme.value === 'auto') applyTheme('auto')
-  })
+  darkSchemeMedia = window.matchMedia('(prefers-color-scheme: dark)')
+  darkSchemeMedia.addEventListener('change', handleDarkSchemeChange)
+})
+
+onBeforeUnmount(() => {
+  if (darkSchemeMedia) {
+    darkSchemeMedia.removeEventListener('change', handleDarkSchemeChange)
+    darkSchemeMedia = null
+  }
 })
 </script>
 

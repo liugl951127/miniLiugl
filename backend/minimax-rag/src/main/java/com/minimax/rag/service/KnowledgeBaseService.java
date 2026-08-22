@@ -8,6 +8,7 @@ import com.minimax.common.tenant.TenantQueryHelper;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -17,6 +18,7 @@ public class KnowledgeBaseService {
 
     private final KnowledgeBaseMapper mapper;
 
+    @Transactional
     public Long create(Long ownerId, String name, String description, String visibility, String tags) {
         if (name == null || name.isBlank()) throw new IllegalArgumentException("name 必填");
         if (visibility == null) visibility = "private";
@@ -72,6 +74,7 @@ public class KnowledgeBaseService {
                         .orderByDesc(KnowledgeBase::getCreatedAt));
     }
 
+    @Transactional
     public boolean delete(Long id, Long ownerId) {
         LambdaQueryWrapper<KnowledgeBase> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(KnowledgeBase::getId, id);
@@ -85,6 +88,7 @@ public class KnowledgeBaseService {
     }
 
     /** V5.33 Day 23: 更新知识库（元数据编辑） */
+    @Transactional
     public KnowledgeBase updateKb(Long id, Long ownerId, Map<String, String> patch) {
         LambdaQueryWrapper<KnowledgeBase> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(KnowledgeBase::getId, id);

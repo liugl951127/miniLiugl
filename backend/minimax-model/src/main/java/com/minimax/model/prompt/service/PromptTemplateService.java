@@ -199,14 +199,19 @@ public class PromptTemplateService {
     }
 
     // ---------- 内置模板初始化 (启动时调用) ----------
+    // T2: 一次性查所有 builtin 名称 + creator_id=1 的模板, 内存判断
     @Transactional
     public void initBuiltin() {
+        java.util.Set<String> builtinNames = new java.util.HashSet<>();
+        for (PromptTemplate bt : BUILTIN_TEMPLATES) builtinNames.add(bt.getName());
+        List<PromptTemplate> existing = mapper.selectList(
+                new LambdaQueryWrapper<PromptTemplate>()
+                        .eq(PromptTemplate::getCreatorId, 1L)
+                        .in(PromptTemplate::getName, builtinNames));
+        java.util.Set<String> existingNames = new java.util.HashSet<>();
+        for (PromptTemplate t : existing) existingNames.add(t.getName());
         for (PromptTemplate builtin : BUILTIN_TEMPLATES) {
-            LambdaQueryWrapper<PromptTemplate> q = new LambdaQueryWrapper<>();
-            q.eq(PromptTemplate::getName, builtin.getName())
-                    .eq(PromptTemplate::getCreatorId, 1L);
-            long count = mapper.selectCount(q);
-            if (count == 0) {
+            if (!existingNames.contains(builtin.getName())) {
                 mapper.insert(builtin);
                 log.info("✅ 初始化内置模板: {}", builtin.getName());
             }

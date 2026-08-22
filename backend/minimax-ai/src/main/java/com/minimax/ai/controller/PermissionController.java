@@ -24,6 +24,7 @@ import java.util.*;
 public class PermissionController {
 
     @GetMapping("/me")
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")  // V6.8.2: 自己权限可看
     public Result<Map<String, Object>> me() {
         String role = SecurityContext.currentRole();
         if (role == null) return Result.fail("未登录");
@@ -38,6 +39,7 @@ public class PermissionController {
     }
 
     @GetMapping("/roles")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")  // V6.8.2: 角色列表仅 ADMIN
     public Result<List<Map<String, Object>>> roles() {
         return Result.ok(PermissionService.listRoles().stream()
                 .map(r -> Map.<String, Object>of(
@@ -48,6 +50,7 @@ public class PermissionController {
     }
 
     @PostMapping("/check")
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")  // V6.8.2: 校验自己权限
     public Result<Map<String, Object>> check(@RequestBody Map<String, Object> req) {
         String role = (String) req.getOrDefault("role", SecurityContext.currentRole());
         @SuppressWarnings("unchecked")

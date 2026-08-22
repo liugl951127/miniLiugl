@@ -1199,6 +1199,8 @@ function onKeyDown(e) {
   }
 }
 
+let canvasResizeObserver = null
+
 onMounted(() => {
   loadModels()
   nextTick(() => {
@@ -1207,15 +1209,19 @@ onMounted(() => {
       canvasH.value = canvasRef.value.offsetHeight
     }
   })
-  const ro = new ResizeObserver(() => {
+  canvasResizeObserver = new ResizeObserver(() => {
     if (canvasRef.value) { canvasW.value = canvasRef.value.offsetWidth; canvasH.value = canvasRef.value.offsetHeight }
   })
-  if (canvasRef.value) ro.observe(canvasRef.value)
+  if (canvasRef.value) canvasResizeObserver.observe(canvasRef.value)
   window.addEventListener('keydown', onKeyDown)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeyDown)
+  if (canvasResizeObserver) {
+    canvasResizeObserver.disconnect()
+    canvasResizeObserver = null
+  }
 })
 </script>
 

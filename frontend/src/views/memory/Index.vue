@@ -43,9 +43,9 @@
       </el-col>
     </el-row>
 
-    <!-- 搜索 & 筛选 -->
+    <!-- 搜索 & 筛选 (P0 竞态修复: 加 @input 防抖) -->
     <div class="filter-bar">
-      <el-input v-model="keyword" size="small" placeholder="搜索记忆内容…" style="width:240px" clearable @change="loadFacts" @keyup.enter="loadFacts">
+      <el-input v-model="keyword" size="small" placeholder="搜索记忆内容…" style="width:240px" clearable @input="onSearchInput" @change="loadFacts" @keyup.enter="loadFacts">
         <template #prefix><el-icon><Search /></el-icon></template>
       </el-input>
       <el-select v-model="category" size="small" style="width:130px" clearable placeholder="全部分类" @change="loadFacts">
@@ -172,10 +172,11 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted } from 'vue'
+import { ref, computed, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { recentLongTerm, storeLongTerm, deleteLongTerm } from '@/api/memory'
 import { Plus, Refresh, Search } from '@element-plus/icons-vue'
+import { debounce } from '@/utils/debounce'
 
 const facts = ref([])
 const loading = ref(false)
@@ -240,14 +241,25 @@ function resetFilter() {
   loadFacts()
 }
 
+// P0 竞态修复: 取消上一次未完成的请求
+let loadFactsController = null
 async function loadFacts() {
+  if (loadFactsController) {
+    try { loadFactsController.abort() } catch (e) { /* ignore */ }
+  }
+  loadFactsController = new AbortController()
+  const signal = loadFactsController.signal
   loading.value = true
   try {
-    const params = {}
-    if (keyword.value) params.keyword = keyword.value
-    if (category.value) params.category = category.value
-    const r = await recentLongTerm(params, 200)
+    // P0 竞态修复: 通过 axios config 传递 signal 实现请求取消
+    const r = await recentLongTerm(undefined, 200, { signal })
+    if (signal.aborted) return
     let data = r.data || []
+    if (keyword.value) {
+      const kw = keyword.value.toLowerCase()
+      data = data.filter(f => (f.value || f.content || f.text || '').toLowerCase().includes(kw))
+    }
+    if (category.value) data = data.filter(f => f.category === category.value)
     if (typeFilter.value) data = data.filter(f => f.type === typeFilter.value)
     facts.value = data.map((item, i) => ({
       id: item.id || i,
@@ -260,11 +272,21 @@ async function loadFacts() {
       updatedAt: item.updatedAt || item.updated_at || '',
     }))
   } catch (e) {
+    if (e?.name === 'AbortError' || signal.aborted) return
     facts.value = []
     ElMessage.error('加载记忆失败：' + (e?.message || '未知错误'))
   } finally {
-    loading.value = false
+    if (!signal.aborted) loading.value = false
+    if (loadFactsController && loadFactsController.signal === signal) {
+      loadFactsController = null
+    }
   }
+}
+
+// P0 竞态修复: 搜索防抖
+const debouncedLoadFacts = debounce(() => loadFacts(), 300)
+function onSearchInput() {
+  debouncedLoadFacts()
 }
 
 function openAdd() {
@@ -347,6 +369,15 @@ function viewDetail(f) {
 }
 
 onMounted(loadFacts)
+
+// P0 内存泄漏/竞态修复: 组件卸载时取消未完成的请求
+onBeforeUnmount(() => {
+  if (loadFactsController) {
+    try { loadFactsController.abort() } catch (e) { /* ignore */ }
+    loadFactsController = null
+  }
+  debouncedLoadFacts.cancel()
+})
 </script>
 
 <style lang="scss" scoped>

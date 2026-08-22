@@ -18,18 +18,20 @@ public interface AlertEventMapper extends BaseMapper<AlertEvent> {
                 .last("LIMIT 1"));
     }
 
-    /** 最近 N 条 */
+    /** 最近 N 条 (V6.8.2 修复: n 是 int, 拼接前先 max(0) 限幅, 再用 String.format 安全拼接) */
     default List<AlertEvent> selectRecent(int n) {
+        int safe = Math.max(0, Math.min(n, 10000));  // 上限 10000 防滥用
         return selectList(new QueryWrapper<AlertEvent>()
                 .orderByDesc("fired_at")
-                .last("LIMIT " + n));
+                .last(String.format("LIMIT %d", safe)));
     }
 
-    /** 按状态查 */
+    /** 按状态查 (V6.8.2 修复: n 限幅, 避免 int 注入隐患) */
     default List<AlertEvent> selectByStatus(String status, int n) {
+        int safe = Math.max(0, Math.min(n, 10000));
         return selectList(new QueryWrapper<AlertEvent>()
                 .eq("status", status)
                 .orderByDesc("fired_at")
-                .last("LIMIT " + n));
+                .last(String.format("LIMIT %d", safe)));
     }
 }

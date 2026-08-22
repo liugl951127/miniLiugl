@@ -1172,6 +1172,8 @@ function formatContent(c) {
   const s = String(c)
   // 去掉 OpenAI image_url JSON 块
   const cleaned = s.replace(/\[\s*\{?"type"?:\s*"image_url".*?\}\s*\]/gs, '[图片附件]')
+  // P0 XSS 修复: 先 HTML 转义所有用户/AI 输出, 再加受控的格式标签 (<br>, <code>, <b>)
+  // 这样即使后端返回恶意脚本, 也会被转义成 &lt;script&gt; 文本, 不会执行
   return cleaned
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/\n/g, '<br>')

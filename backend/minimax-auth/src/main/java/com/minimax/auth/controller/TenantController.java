@@ -37,6 +37,7 @@ public class TenantController {
 
     @Operation(summary = "获取当前用户租户信息")
     @GetMapping("/me/tenant")
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")  // V6.8.2: 任何登录用户可查自己租户
     public Result<Map<String, Object>> myTenant() {
         // 当前用户租户信息 (从 token 推断)
         Long userId = com.minimax.common.tenant.TenantContext.currentTenantId();
@@ -48,6 +49,7 @@ public class TenantController {
 
     @Operation(summary = "列出所有租户")
     @GetMapping("/tenants")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('SUPER_ADMIN')")  // V6.8.2: 租户列表仅超管
     public Result<List<Tenant>> list() {
         SuperAdminGuard.requireSuperAdmin();
         return Result.ok(tenantService.listAll());
@@ -55,6 +57,7 @@ public class TenantController {
 
     @Operation(summary = "获取租户详情")
     @GetMapping("/tenants/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('SUPER_ADMIN')")  // V6.8.2: 租户详情仅超管
     public Result<Tenant> get(@PathVariable Long id) {
         SuperAdminGuard.requireSuperAdmin();
         return Result.ok(tenantService.getById(id));
@@ -62,6 +65,7 @@ public class TenantController {
 
     @Operation(summary = "创建租户")
     @PostMapping("/tenants")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('SUPER_ADMIN')")  // V6.8.2: 创建租户仅超管
     public Result<Long> create(@RequestBody Map<String, Object> body) {
         SuperAdminGuard.requireSuperAdmin();
         Long id = tenantService.create(
@@ -79,6 +83,7 @@ public class TenantController {
 
     @Operation(summary = "设置租户状态（启用/停用）")
     @PostMapping("/tenants/{id}/status")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('SUPER_ADMIN')")  // V6.8.2: 改状态仅超管
     public Result<Boolean> setStatus(@PathVariable Long id, @RequestParam Integer status) {
         SuperAdminGuard.requireSuperAdmin();
         return Result.ok(tenantService.setStatus(id, status));
@@ -86,6 +91,7 @@ public class TenantController {
 
     @Operation(summary = "调整租户配额")
     @PostMapping("/tenants/{id}/quota")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('SUPER_ADMIN')")  // V6.8.2: 配额仅超管
     public Result<Boolean> updateQuota(@PathVariable Long id, @RequestParam Long quota) {
         SuperAdminGuard.requireSuperAdmin();
         return Result.ok(tenantService.updateQuota(id, quota));
@@ -93,6 +99,7 @@ public class TenantController {
 
     @Operation(summary = "删除租户")
     @DeleteMapping("/tenants/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('SUPER_ADMIN')")  // V6.8.2: 删除租户仅超管
     public Result<Boolean> delete(@PathVariable Long id) {
         SuperAdminGuard.requireSuperAdmin();
         return Result.ok(tenantService.delete(id));
@@ -100,6 +107,7 @@ public class TenantController {
 
     @Operation(summary = "列出租户下所有用户")
     @GetMapping("/tenants/{id}/users")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('SUPER_ADMIN')")  // V6.8.2: 列租户用户仅超管
     public Result<List<Map<String, Object>>> listUsers(@PathVariable Long id) {
         SuperAdminGuard.requireSuperAdmin();
         List<SysUser> users = tenantService.listTenantUsers(id);

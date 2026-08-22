@@ -4,6 +4,7 @@ import com.minimax.pipeline.function_ext.entity.FunctionTool;
 import com.minimax.pipeline.function_ext.mapper.FunctionToolMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -33,6 +34,7 @@ public class FunctionToolService {
     /**
      * 用户注册自定义工具。
      */
+    @Transactional
     public Long createUserTool(Long ownerId, String name, String displayName, String description,
                                 String parameters, String endpoint, String httpMethod, String tags) {
         if (name == null || name.isBlank()) throw new IllegalArgumentException("name 必填");
@@ -55,6 +57,7 @@ public class FunctionToolService {
         return t.getId();
     }
 
+    @Transactional
     public boolean update(Long id, Long ownerId, String displayName, String description,
                            String parameters, String endpoint, Integer enabled) {
         FunctionTool t = mapper.selectById(id);
@@ -69,6 +72,7 @@ public class FunctionToolService {
         return true;
     }
 
+    @Transactional
     public boolean delete(Long id, Long ownerId) {
         FunctionTool t = mapper.selectById(id);
         if (t == null) return false;

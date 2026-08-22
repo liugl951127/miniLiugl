@@ -40,15 +40,40 @@ public class WechatUnionidService {
     /**
      * 查 unionid 关联的所有用户 (跨平台: wechat/qq/alipay).
      * V5.2: 同时查 oauth_binding 表.
+     * T2: 批量 selectById 消除 N+1
      */
     public List<Map<String, Object>> findUsersByUnionid(String unionid) {
         List<UnionidRelations> relations = unionidMapper.selectList(
                 new LambdaQueryWrapper<UnionidRelations>().eq(UnionidRelations::getUnionid, unionid));
         if (relations.isEmpty()) return List.of();
 
+        // T2: 一次性批量查所有 user, 然后批量查 wechat binding + oauth binding
+        Set<Long> userIds = relations.stream().map(UnionidRelations::getUserId)
+                .filter(Objects::nonNull).collect(java.util.stream.Collectors.toSet());
+        Map<Long, SysUser> userMap = userIds.isEmpty() ? Map.of() :
+                userMapper.selectBatchIds(userIds).stream()
+                        .collect(java.util.stream.Collectors.toMap(SysUser::getId, u -> u, (a, b) -> a));
+        // 批量查 wechat binding
+        Map<Long, List<WechatUserBinding>> wxBindingMap = new HashMap<>();
+        if (!userIds.isEmpty()) {
+            for (WechatUserBinding b : bindingMapper.selectList(
+                    new LambdaQueryWrapper<WechatUserBinding>().in(WechatUserBinding::getUserId, userIds))) {
+                wxBindingMap.computeIfAbsent(b.getUserId(), k -> new ArrayList<>()).add(b);
+            }
+        }
+        // 批量查 oauth binding
+        Map<Long, List<com.minimax.auth.entity.OAuthBinding>> oauthBindingMap = new HashMap<>();
+        if (!userIds.isEmpty()) {
+            for (com.minimax.auth.entity.OAuthBinding b : oauthBindingMapper.selectList(
+                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.minimax.auth.entity.OAuthBinding>()
+                            .in(com.minimax.auth.entity.OAuthBinding::getUserId, userIds))) {
+                oauthBindingMap.computeIfAbsent(b.getUserId(), k -> new ArrayList<>()).add(b);
+            }
+        }
+
         List<Map<String, Object>> out = new ArrayList<>();
         for (UnionidRelations r : relations) {
-            SysUser u = userMapper.selectById(r.getUserId());
+            SysUser u = userMap.get(r.getUserId());
             if (u == null) continue;
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("userId", u.getId());
@@ -61,12 +86,11 @@ public class WechatUnionidService {
             row.put("firstSeenAt", r.getFirstSeenAt());
             row.put("lastSeenAt", r.getLastSeenAt());
 
-            // 合并 wechat_user_binding + oauth_binding
+            // 合并 wechat_user_binding + oauth_binding (从批量结果中取)
             List<Map<String, Object>> apps = new ArrayList<>();
 
             // 1) 老的 wechat binding
-            List<WechatUserBinding> wxBindings = bindingMapper.selectList(
-                    new LambdaQueryWrapper<WechatUserBinding>().eq(WechatUserBinding::getUserId, u.getId()));
+            List<WechatUserBinding> wxBindings = wxBindingMap.getOrDefault(u.getId(), List.of());
             for (WechatUserBinding b : wxBindings) {
                 Map<String, Object> app = new LinkedHashMap<>();
                 app.put("platform", "wechat");
@@ -80,9 +104,7 @@ public class WechatUnionidService {
             }
 
             // 2) 新的 oauth binding (含 qq/alipay/weibo/github)
-            List<com.minimax.auth.entity.OAuthBinding> oauthBindings = oauthBindingMapper.selectList(
-                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.minimax.auth.entity.OAuthBinding>()
-                            .eq(com.minimax.auth.entity.OAuthBinding::getUserId, u.getId()));
+            List<com.minimax.auth.entity.OAuthBinding> oauthBindings = oauthBindingMap.getOrDefault(u.getId(), List.of());
             for (com.minimax.auth.entity.OAuthBinding b : oauthBindings) {
                 Map<String, Object> app = new LinkedHashMap<>();
                 app.put("platform", b.getPlatform());
@@ -143,6 +165,7 @@ public class WechatUnionidService {
     /**
      * 手动合并账号 (把 userFrom 的所有 binding 转到 userTo)
      * 管理员用: 用户投诉"我有 2 个账号, 帮我合并"
+     * T2: 批量查 target 已有的 binding/relations, 内存判断重复, 消除 N+1
      */
     @Transactional
     public void mergeAccounts(Long userToId, Long userFromId, String reason) {
@@ -156,35 +179,41 @@ public class WechatUnionidService {
         // 把 source 的所有 binding 改到 target
         List<WechatUserBinding> bindings = bindingMapper.selectList(
                 new LambdaQueryWrapper<WechatUserBinding>().eq(WechatUserBinding::getUserId, userFromId));
+        // T2: 一次性查 target 的所有 binding, 内存 Set 判重
+        Set<String> targetBindingKey = new HashSet<>();
+        for (WechatUserBinding tb : bindingMapper.selectList(
+                new LambdaQueryWrapper<WechatUserBinding>().eq(WechatUserBinding::getUserId, userToId))) {
+            targetBindingKey.add(tb.getAppType() + "|" + tb.getOpenid());
+        }
         for (WechatUserBinding b : bindings) {
-            // 检查 target 是否已有同 (app_type, openid)
-            WechatUserBinding dup = bindingMapper.selectOne(
-                    new LambdaQueryWrapper<WechatUserBinding>()
-                            .eq(WechatUserBinding::getUserId, userToId)
-                            .eq(WechatUserBinding::getAppType, b.getAppType())
-                            .eq(WechatUserBinding::getOpenid, b.getOpenid()));
-            if (dup != null) {
+            // 检查 target 是否已有同 (app_type, openid) — 内存判断
+            String key = b.getAppType() + "|" + b.getOpenid();
+            if (targetBindingKey.contains(key)) {
                 // 重复, 删 source 的
                 bindingMapper.deleteById(b.getId());
             } else {
                 b.setUserId(userToId);
                 bindingMapper.updateById(b);
+                targetBindingKey.add(key);
             }
         }
 
         // unionid_relations 也合并
         List<UnionidRelations> sourceRels = unionidMapper.selectList(
                 new LambdaQueryWrapper<UnionidRelations>().eq(UnionidRelations::getUserId, userFromId));
+        // T2: 一次性查 target 的所有 unionid, 内存 Set 判重
+        Set<String> targetUnionid = new HashSet<>();
+        for (UnionidRelations tr : unionidMapper.selectList(
+                new LambdaQueryWrapper<UnionidRelations>().eq(UnionidRelations::getUserId, userToId))) {
+            targetUnionid.add(tr.getUnionid());
+        }
         for (UnionidRelations r : sourceRels) {
-            UnionidRelations targetRel = unionidMapper.selectOne(
-                    new LambdaQueryWrapper<UnionidRelations>()
-                            .eq(UnionidRelations::getUserId, userToId)
-                            .eq(UnionidRelations::getUnionid, r.getUnionid()));
-            if (targetRel == null) {
+            if (targetUnionid.contains(r.getUnionid())) {
+                unionidMapper.deleteById(r.getId());
+            } else {
                 r.setUserId(userToId);
                 unionidMapper.updateById(r);
-            } else {
-                unionidMapper.deleteById(r.getId());
+                targetUnionid.add(r.getUnionid());
             }
         }
 

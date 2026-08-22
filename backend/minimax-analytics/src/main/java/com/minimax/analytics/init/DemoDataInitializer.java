@@ -44,22 +44,18 @@ public class DemoDataInitializer implements ApplicationRunner {
     }
 
     private void initDemoDatabase() {
-        try {
-            // 用 DriverManager 直接获取连接 (不依赖 H2 XA DataSource)
-            Connection conn = DriverManager.getConnection(
+        // T2: 改用 try-with-resources 防止资源泄漏
+        try (Connection conn = DriverManager.getConnection(
                 "jdbc:h2:mem:demo;MODE=MySQL;CASE_INSENSITIVE_IDENTIFIERS=TRUE;DB_CLOSE_DELAY=-1",
                 "sa", "");
+             var res = DemoDataInitializer.class.getClassLoader()
+                     .getResourceAsStream("sql/minimax-seed.sql")) {
 
-            // V7.2: 从 minimax-seed.sql 提取 demo_* 表的 CREATE + INSERT 段
-            var res = DemoDataInitializer.class.getClassLoader()
-                .getResourceAsStream("sql/minimax-seed.sql");
             if (res == null) {
                 log.warn("[DemoInit] sql/minimax-seed.sql not found, skipping demo DB init");
-                conn.close();
                 return;
             }
             String fullSql = new String(res.readAllBytes());
-            res.close();
 
             // 提取 demo_user/demo_category/demo_product/demo_order/demo_order_item/demo_payment 的 CREATE + INSERT
             String sql = extractDemoSection(fullSql);
@@ -80,7 +76,6 @@ public class DemoDataInitializer implements ApplicationRunner {
                     conn.commit();
                 }
             }
-            conn.close();
             log.info("[DemoInit] demo H2 database (demo_order/demo_user/demo_product) initialized");
         } catch (Exception e) {
             log.warn("[DemoInit] demo DB init skipped (non-h2local or already exists): {}", e.getMessage());

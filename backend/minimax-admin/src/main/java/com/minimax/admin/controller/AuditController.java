@@ -45,7 +45,10 @@ public class AuditController {
         if (resourceType != null && !resourceType.isEmpty()) qw.eq("resource_type", resourceType);
         qw.orderByDesc("created_at");
         long total = auditMapper.selectCount(qw);
-        qw.last("LIMIT " + size + " OFFSET " + (page - 1) * size);
+        // V6.8.2 修复: size/page 限幅后用 String.format 安全拼接, 避免 int 拼接隐患
+        int safeSize = Math.max(1, Math.min(size, 200));
+        int safePage = Math.max(1, page);
+        qw.last(String.format("LIMIT %d OFFSET %d", safeSize, (safePage - 1) * safeSize));
         List<AuditLogFull> list = auditMapper.selectList(qw);
         Map<String, Object> r = new LinkedHashMap<>();
         r.put("list", list);

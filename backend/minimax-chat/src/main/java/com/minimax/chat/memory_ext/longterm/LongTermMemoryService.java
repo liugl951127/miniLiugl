@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +35,7 @@ public class LongTermMemoryService {
      * 存入一条长期记忆。
      * @return 新记录 id
      */
+    @Transactional
     public Long store(Long userId, Long sessionId, String role, String content,
                       String summary, String tags, Double importance) {
         if (content == null || content.isBlank()) {
@@ -100,6 +102,7 @@ public class LongTermMemoryService {
         return mapper.selectRecentByUser(userId, limit);
     }
 
+    @Transactional
     public boolean delete(Long id, Long userId) {
         LongTermMemory m = mapper.selectById(id);
         if (m == null) return false;

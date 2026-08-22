@@ -23,6 +23,7 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/v1/ai/admin-real")
 @RequiredArgsConstructor
+@org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")  // V6.8.2: AI 工具管理需 ADMIN
 public class AiAdminRealController {
 
     private final AiToolMapper aiToolMapper;
@@ -41,7 +42,10 @@ public class AiAdminRealController {
         if (keyword != null && !keyword.isEmpty()) qw.like("name", keyword);
         qw.orderByDesc("created_at");
         long total = aiToolMapper.selectCount(qw);
-        qw.last("LIMIT " + (page - 1) * size + ", " + size);
+        // V6.8.2 修复: size/page 限幅 + String.format 拼接
+        int safeSize = Math.max(1, Math.min(size, 200));
+        int safePage = Math.max(1, page);
+        qw.last(String.format("LIMIT %d OFFSET %d", (safePage - 1) * safeSize, safeSize));
         List<AiTool> list = aiToolMapper.selectList(qw);
         Map<String, Object> resp = new HashMap<>();
         resp.put("total", total);

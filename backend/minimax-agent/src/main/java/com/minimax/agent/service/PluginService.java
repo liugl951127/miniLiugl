@@ -6,6 +6,7 @@ import com.minimax.agent.mapper.PluginMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,7 @@ public class PluginService {
     /**
      * 发布插件 (用户提交)。
      */
+    @Transactional
     public Long publish(Long ownerId, String name, String displayName, String description,
                         String version, String author, String category,
                         String entry, String pluginType, String config) {
@@ -81,6 +83,7 @@ public class PluginService {
         return p.getId();
     }
 
+    @Transactional
     public boolean incrementDownload(Long id) {
         Plugin p = mapper.selectById(id);
         if (p == null) return false;
@@ -92,6 +95,7 @@ public class PluginService {
     /**
      * V6.8.2: 评分（记录评分用户，防止刷分）
      */
+    @Transactional
     public boolean rate(Long id, double score, Long userId) {
         if (score < 0 || score > 5) return false;
         Plugin p = mapper.selectById(id);
@@ -102,6 +106,7 @@ public class PluginService {
         return true;
     }
 
+    @Transactional
     public boolean setEnabled(Long id, boolean enabled) {
         Plugin p = mapper.selectById(id);
         if (p == null) return false;
@@ -110,6 +115,7 @@ public class PluginService {
         return true;
     }
 
+    @Transactional
     public boolean delete(Long id, Long ownerId) {
         Plugin p = mapper.selectById(id);
         if (p == null) return false;

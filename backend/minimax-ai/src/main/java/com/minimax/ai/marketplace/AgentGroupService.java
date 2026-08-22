@@ -7,6 +7,7 @@ import com.minimax.ai.framework.group.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -64,6 +65,7 @@ public class AgentGroupService {
     /**
      * 创建群组
      */
+    @Transactional
     public AgentGroup createGroup(String name, String description, String strategy,
                                     List<GroupMember> members, Long ownerId, String tags) {
         // 1. 构造实体

@@ -120,12 +120,13 @@ public class OnnxInferenceService {
         }
         log.info("[OnnxInference] 下载 ONNX 模型: {}", urlStr);
         URL url = new URL(urlStr);
+        // T2: HttpURLConnection 不可 AutoCloseable, 用 try-with-resources 包内层流, finally disconnect
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setConnectTimeout(30_000);
-        conn.setReadTimeout(300_000);
-        long total = conn.getContentLengthLong();
         try (InputStream in = new BufferedInputStream(conn.getInputStream());
              OutputStream out = Files.newOutputStream(dest, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+            conn.setConnectTimeout(30_000);
+            conn.setReadTimeout(300_000);
+            long total = conn.getContentLengthLong();
             byte[] buf = new byte[32768];
             long downloaded = 0;
             int n;
@@ -133,6 +134,8 @@ public class OnnxInferenceService {
                 out.write(buf, 0, n);
                 downloaded += n;
             }
+        } finally {
+            conn.disconnect();
         }
         log.info("[OnnxInference] 下载完成: {} ({} MB)", dest, Files.size(dest) / 1024 / 1024);
         return dest;

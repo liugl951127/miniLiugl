@@ -5,6 +5,7 @@ import com.minimax.ai.entity.KbChunk;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Delete;
 
 import java.util.List;
 
@@ -47,4 +48,8 @@ public interface KbChunkMapper extends BaseMapper<KbChunk> {
 
     @Select("SELECT COUNT(*) FROM kb_chunk WHERE kb_id = #{kb_id}")
     int countByKb(@Param("kbId") String kbId);
+
+    /** T2: 批量按 doc_id 删 chunk (消除 N+1) */
+    @Delete("DELETE FROM kb_chunk WHERE doc_id = #{docId}")
+    int deleteByDoc(@Param("docId") String docId);
 }

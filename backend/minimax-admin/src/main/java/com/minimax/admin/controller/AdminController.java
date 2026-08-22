@@ -53,6 +53,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")  // V6.8.2: 类级 ADMIN 保护，覆盖所有 admin 端点
 public class AdminController {
 
     private final UserMgmtService userMgmt;

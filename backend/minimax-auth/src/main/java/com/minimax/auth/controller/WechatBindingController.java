@@ -69,6 +69,7 @@ public class WechatBindingController {
 
     @Operation(summary = "列出所有微信绑定记录（管理员）")
     @GetMapping("/admin/wechat/bindings")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('SUPER_ADMIN')")  // V6.8.2: 仅超管
     public Result<List<Map<String, Object>>> listAll(
             @RequestParam(defaultValue = "100") int limit,
             @RequestParam(required = false) String keyword) {
@@ -77,12 +78,14 @@ public class WechatBindingController {
 
     @Operation(summary = "按 openid 查询绑定记录（管理员）")
     @GetMapping("/admin/wechat/find")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('SUPER_ADMIN')")  // V6.8.2: 仅超管
     public Result<Map<String, Object>> findByOpenid(@RequestParam String openid) {
         return Result.ok(bindingService.findByOpenid(openid));
     }
 
     @Operation(summary = "管理员强制绑定微信")
     @PostMapping("/admin/wechat/bind")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('SUPER_ADMIN')")  // V6.8.2: 仅超管
     public Result<Void> bindByAdmin(@AuthenticationPrincipal AuthenticatedUser principal,
                                     @RequestBody Map<String, Object> body) {
         requireSuperAdmin(principal);
@@ -98,6 +101,7 @@ public class WechatBindingController {
 
     @Operation(summary = "管理员强制解绑微信")
     @DeleteMapping("/admin/wechat/bind/{userId}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('SUPER_ADMIN')")  // V6.8.2: 仅超管
     public Result<Void> unbindByAdmin(@AuthenticationPrincipal AuthenticatedUser principal,
                                      @PathVariable Long userId) {
         requireSuperAdmin(principal);

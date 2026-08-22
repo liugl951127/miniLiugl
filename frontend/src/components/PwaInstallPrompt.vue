@@ -33,31 +33,42 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { t } from '@/i18n'
 
 const showPrompt = ref(false)
 let deferredPrompt = null
+let iosPromptTimer = null
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
 const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone
+
+function handleBeforeInstallPrompt(e) {
+  e.preventDefault()
+  deferredPrompt = e
+  showPrompt.value = true
+}
 
 onMounted(() => {
   // 已安装不提示
   if (isStandalone) return
 
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault()
-    deferredPrompt = e
-    showPrompt.value = true
-  })
+  window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
 
   // iOS 单独处理
   if (isIOS && !isStandalone) {
-    setTimeout(() => {
+    iosPromptTimer = setTimeout(() => {
       if (!localStorage.getItem('minimax_ios_prompt_dismissed')) {
         showPrompt.value = true
       }
     }, 3000)
+  }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+  if (iosPromptTimer) {
+    clearTimeout(iosPromptTimer)
+    iosPromptTimer = null
   }
 })
 

@@ -30,7 +30,7 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { usePwa } from '@/composables/usePwa'
 
 const { 
@@ -40,6 +40,7 @@ const {
 
 // V3.7.18+ 控制条显示: 1.5s 后延迟显示, 避免闪烁
 const showBar = ref(false)
+let showBarTimer = null
 const hideBar = () => {
   showBar.value = false
   // 1h 后重新显示
@@ -57,7 +58,14 @@ const checkShow = () => {
 
 onMounted(() => {
   // 1.5s 后检查显示
-  setTimeout(checkShow, 1500)
+  showBarTimer = setTimeout(checkShow, 1500)
+})
+
+onBeforeUnmount(() => {
+  if (showBarTimer) {
+    clearTimeout(showBarTimer)
+    showBarTimer = null
+  }
 })
 
 const barClass = computed(() => {

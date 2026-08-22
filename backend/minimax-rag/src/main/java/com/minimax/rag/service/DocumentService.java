@@ -27,7 +27,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -403,6 +405,7 @@ public class DocumentService {
      * - 校验归属（所有 doc 必须属于同一 owner）
      * - 对每个文档重新切片 + 向量化 + 写库
      * - 返回成功数量和失败列表
+     * T2: 批量 selectById 消除 N+1
      *
      * @param docIds  文档 ID 列表
      * @param ownerId 所有者（归属校验）
@@ -416,9 +419,13 @@ public class DocumentService {
         int succeeded = 0;
         List<FailedDoc> failed = new java.util.ArrayList<>();
 
+        // T2: 一次性查所有 doc
+        List<Document> docs = docMapper.selectBatchIds(docIds);
+        Map<Long, Document> docMap = docs.stream()
+                .collect(Collectors.toMap(Document::getId, d -> d, (a, b) -> a));
         for (Long docId : docIds) {
             try {
-                Document d = docMapper.selectById(docId);
+                Document d = docMap.get(docId);
                 if (d == null) {
                     failed.add(new FailedDoc(docId, "文档不存在"));
                     continue;
@@ -481,6 +488,7 @@ public class DocumentService {
      * - 删除 chunks（先删切片再删文档）
      * - 调整所属 KB 的 docCount 和 chunkCount
      * - 返回成功数量和失败列表
+     * T2: 批量 selectById 消除 N+1
      *
      * @param docIds  文档 ID 列表
      * @param ownerId 所有者（归属校验）
@@ -494,9 +502,13 @@ public class DocumentService {
         int succeeded = 0;
         List<FailedDoc> failed = new java.util.ArrayList<>();
 
+        // T2: 一次性查所有 doc
+        List<Document> docs = docMapper.selectBatchIds(docIds);
+        Map<Long, Document> docMap = docs.stream()
+                .collect(Collectors.toMap(Document::getId, d -> d, (a, b) -> a));
         for (Long docId : docIds) {
             try {
-                Document d = docMapper.selectById(docId);
+                Document d = docMap.get(docId);
                 if (d == null) {
                     failed.add(new FailedDoc(docId, "文档不存在"));
                     continue;
@@ -559,8 +571,12 @@ public class DocumentService {
         sb.append("# 文档数量: ").append(docIds.size()).append("\n");
         sb.append("\n");
 
+        // T2: 一次性查所有 doc
+        List<Document> docs = docMapper.selectBatchIds(docIds);
+        Map<Long, Document> docMap = docs.stream()
+                .collect(Collectors.toMap(Document::getId, d -> d, (a, b) -> a));
         for (Long docId : docIds) {
-            Document d = docMapper.selectById(docId);
+            Document d = docMap.get(docId);
             if (d == null) continue;
             if (!d.getOwnerId().equals(ownerId)) continue;
 

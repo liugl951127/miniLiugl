@@ -1,0 +1,134 @@
+version: 1
+plan:
+  name: "深度扫雷 + 缺陷修复"
+  goal: "对 11 个微服务 + 44 个前端页面做深度缺陷扫描: 安全/性能/内存/空指针/XSS, 修复 P0 真实风险"
+
+variables:
+  workspace: /workspace/miniLiugl
+  backend: /workspace/miniLiugl/backend
+  frontend: /workspace/miniLiugl/frontend
+
+common_standards: |
+  ★ 修复原则:
+  1. P0 (安全/数据损坏) 必修
+  2. P1 (性能/内存) 选修
+  3. P2 (代码风格) 跳过
+  4. 改完必须 mvn package -DskipTests 通过 / vite build 通过
+  5. 不要改架构, 只修真实问题
+
+tasks:
+  - id: T1-auth-security
+    title: "P0: 鉴权/越权/SQL注入 深度扫描"
+    assigned_to: general
+    verified_by: explore
+    timeout_ms: 1500000
+    verify_prompt: |
+      验证:
+      1. 所有 Controller 都有 @PreAuthorize 注解或显式 userId 校验 (除公开白名单)
+      2. 后端没有 SQL 字符串拼接注入风险 (用 @Select @Param 不用 +)
+      3. CORS 配置不允许 allowCredentials=true + allowedOrigins=*
+      4. 没有硬编码的密钥/password
+      5. mvn package -DskipTests 全部通过
+    prompt: |
+      扫描 /workspace/miniLiugl/backend/ 所有 11 个微服务, 修复以下安全缺陷:
+
+      1. **越权漏洞 (P0 必修)**
+         - 找 @GetMapping / @PostMapping / @PutMapping / @DeleteMapping 端点
+         - 检查 controller 方法是否:
+           * 用了 @PreAuthorize("hasRole('ADMIN')") 或
+           * 用了 @AuthenticationPrincipal Long userId 或
+           * 用了 @RequestHeader("X-User-Id") 或
+           * 显式检查了 userId
+         - 缺失的: 对 /api/v1/{admin,tenant,audit,user,apikey,system,super,monitor,alert}/* 等敏感端点加 @PreAuthorize("hasRole('ADMIN')")
+         - 不要碰: /api/v1/auth/login, /api/v1/auth/register, /api/v1/auth/refresh, /api/v1/ai/chat, /api/v1/rag/kb/public, /api/v1/agent/external/* (API Key 路径)
+
+      2. **SQL 注入 (P0 必修)**
+         - 找 @Select @Insert @Update @Delete 注解里用 ${...} 的
+         - 找 mapper.xml 里 $ 拼接的
+         - 找 .sql("...").like("%" + x + "%") 这种
+         - 改用 #{...} / @Param / QueryWrapper
+
+      3. **CORS 漏洞 (P0 必修)**
+         - 找 allowedOriginPatterns("*") + allowCredentials(true) 同时存在的
+         - 改为具体域名白名单
+
+      4. **硬编码密钥 (P0 必修)**
+         - 找 String secret = "xxx" (非默认值)
+         - 找 password = "123456" 这种
+         - 改为 @Value 注入
+
+      最后: cd /workspace/miniLiugl/backend && export JAVA_HOME=/opt/jdk-17.0.2 && mvn package -DskipTests -s ~/.m2/settings.xml
+      必须成功
+
+  - id: T2-perf-memory
+    title: "P1: 性能 (N+1) + 资源泄漏 深度修复"
+    assigned_to: general
+    verified_by: explore
+    timeout_ms: 1500000
+    verify_prompt: |
+      验证:
+      1. for 循环里的 .list() 改为批量 .listByMap / .selectBatchIds
+      2. InputStream/Connection 用 try-with-resources 包裹
+      3. @Transactional 加在写操作 (insert/update/delete) 上
+      4. mvn package -DskipTests 通过
+    prompt: |
+      扫描 /workspace/miniLiugl/backend/ 修复:
+
+      1. **N+1 查询 (P1)**
+         - 找 for (X x : list) { mapper.selectList(...); } 模式
+         - 改为批量查询 + 内存 join, 或 MyBatis-Plus 批量方法
+
+      2. **资源泄漏 (P1)**
+         - 找 `InputStream is = new ...; ... is.close();` (没 try-with-resources)
+         - 找 `Connection conn = ...; ... conn.close();` (同上)
+         - 找 `ResultSet rs = ...; ... rs.close();` (同上)
+         - 改用 try (...) 自动关闭
+
+      3. **缺失 @Transactional (P1)**
+         - 找 mapper.insert() / update() / delete() 在 service 方法里但方法没有 @Transactional
+         - 加 @Transactional
+
+      4. **Thread.sleep 在请求线程 (P1)**
+         - 找 Controller / Service 里的 Thread.sleep
+         - 改为异步 / 限流 / 重试
+
+      最后: cd /workspace/miniLiugl/backend && export JAVA_HOME=/opt/jdk-17.0.2 && mvn package -DskipTests -s ~/.m2/settings.xml
+
+  - id: T3-frontend-vue
+    title: "P0: 前端 Vue 内存泄漏 + 竞态 + XSS 深度修复"
+    assigned_to: general
+    verified_by: explore
+    timeout_ms: 1500000
+    verify_prompt: |
+      验证:
+      1. onMounted 里的 setInterval / WebSocket 在 onUnmounted 清理
+      2. 没有 v-html 渲染用户输入 (XSS 风险)
+      3. v-for 都有 :key
+      4. 异步操作有 loading/finally 防竞态
+      5. vite build 通过
+    prompt: |
+      扫描 /workspace/miniLiugl/frontend/src/ 44 个 view + composables, 修复:
+
+      1. **内存泄漏 (P0 必修)**
+         - 找 onMounted(() => { setInterval(...) }) 但 onUnmounted 没 clearInterval
+         - 找 onMounted(() => { ws = new WebSocket(...) }) 但 onUnmounted 没 ws.close()
+         - 找 onMounted(() => { EventBus.on(...) }) 但 onUnmounted 没 EventBus.off
+         - 找 window.addEventListener 但 onUnmounted 没 removeEventListener
+         - 加 onBeforeUnmount 清理
+
+      2. **XSS 漏洞 (P0 必修)**
+         - 找 v-html="..." 渲染后端返回内容
+         - 改为 v-text 或 {{ }} 插值 (自动转义)
+         - 找 dangerouslySetInnerHTML 等价物
+
+      3. **竞态条件 (P0 必修)**
+         - 找 async 函数没 loading/finally 防并发点击
+         - 找 search 框 onChange 触发 fetch 但快速输入会乱序
+         - 加防抖 (debounce) 或取消旧请求 (AbortController)
+
+      4. **v-for :key 缺失 (P1)**
+         - 找 v-for="x in list" 但没 :key="x.id"
+         - 加 :key
+
+      最后: cd /workspace/miniLiugl/frontend && NODE_OPTIONS='--max-old-space-size=2200' npx vite build
+      必须成功

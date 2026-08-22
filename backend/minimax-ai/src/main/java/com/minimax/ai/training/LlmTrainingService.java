@@ -289,32 +289,45 @@ public class LlmTrainingService {
 
     /**
      * 应用到 NgramModel: 增量更新训练语料
+     * T2: 一次性查所有 (intent, keyword) 组合, 内存 dedup, 批量 insert
      */
     @Transactional
     public void applyToModel(Map<String, List<String>> corpus) {
-        // 持久化到 ai_intent_keyword (增量)
+        // 收集所有 (intent, keyword) 候选
+        java.util.Set<String> candidateKeys = new java.util.HashSet<>();
+        java.util.List<AiIntentKeyword> toInsert = new java.util.ArrayList<>();
         for (Map.Entry<String, List<String>> e : corpus.entrySet()) {
             for (String text : e.getValue()) {
                 if (text.length() < 2 || text.length() > 100) continue;
-                // 检查是否已存在
-                Long count = keywordMapper.selectCount(
-                    new QueryWrapper<AiIntentKeyword>()
-                        .eq("intent", e.getKey())
-                        .eq("keyword", text)
-                );
-                if (count == 0) {
+                String key = e.getKey() + "|" + text;
+                if (candidateKeys.add(key)) {
                     AiIntentKeyword kw = new AiIntentKeyword();
                     kw.setIntent(e.getKey());
                     kw.setKeyword(text);
                     kw.setWeight(1);
                     kw.setIsRegex(0);
                     kw.setEnabled(1);
-                    try {
-                        keywordMapper.insert(kw);
-                    } catch (Exception ex) {
-                        // 唯一约束冲突, 跳过
-                    }
+                    toInsert.add(kw);
                 }
+            }
+        }
+        if (toInsert.isEmpty()) {
+            ngramModel.reload();
+            return;
+        }
+        // T2: 一次性查已存在的 (intent, keyword) 组合
+        List<AiIntentKeyword> existing = keywordMapper.selectList(
+                new QueryWrapper<AiIntentKeyword>().select("intent", "keyword"));
+        java.util.Set<String> existingKeys = new java.util.HashSet<>();
+        for (AiIntentKeyword k : existing) existingKeys.add(k.getIntent() + "|" + k.getKeyword());
+        // 过滤掉已存在的, 批量 insert
+        for (AiIntentKeyword kw : toInsert) {
+            String key = kw.getIntent() + "|" + kw.getKeyword();
+            if (existingKeys.contains(key)) continue;
+            try {
+                keywordMapper.insert(kw);
+            } catch (Exception ex) {
+                // 唯一约束冲突, 跳过
             }
         }
         // 重新加载 NgramModel 缓存

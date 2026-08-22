@@ -91,6 +91,7 @@ public class WechatUnionidController {
 
     @Operation(summary = "列出所有unionid关联关系")
     @GetMapping("/admin/wechat/unionid-relations")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('SUPER_ADMIN')")  // V6.8.2: 仅超管
     public Result<List<Map<String, Object>>> listAllUnionidRelations(
             @RequestParam(defaultValue = "100") int limit) {
         return Result.ok(unionidService.listAllUnionidRelations(limit));
@@ -98,6 +99,7 @@ public class WechatUnionidController {
 
     @Operation(summary = "按unionid查询关联用户")
     @GetMapping("/admin/wechat/users-by-unionid")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('SUPER_ADMIN')")  // V6.8.2: 仅超管
     public Result<List<Map<String, Object>>> getUsersByUnionid(
             @RequestParam String unionid) {
         return Result.ok(unionidService.findUsersByUnionid(unionid));
@@ -105,6 +107,7 @@ public class WechatUnionidController {
 
     @Operation(summary = "合并用户账号")
     @PostMapping("/admin/wechat/merge-accounts")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('SUPER_ADMIN')")  // V6.8.2: 仅超管
     public Result<Void> mergeAccounts(@AuthenticationPrincipal AuthenticatedUser principal,
                                       @RequestBody Map<String, Object> body) {
         requireSuperAdmin(principal);
@@ -123,16 +126,27 @@ public class WechatUnionidController {
      */
     @Operation(summary = "跨平台绑定统计面板")
     @GetMapping("/admin/wechat/cross-platform-stats")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('SUPER_ADMIN')")  // V6.8.2: 仅超管
     public Result<Map<String, Object>> crossPlatformStats() {
         Map<String, Object> out = new LinkedHashMap<>();
 
         // 各平台 binding 数 (从 oauth_binding 表)
+        // T2: 一次性 GROUP BY platform, 消除 N+1
         List<Map<String, Object>> byPlatform = new ArrayList<>();
         String[] platforms = {"wechat", "qq", "alipay", "weibo", "github"};
         long totalBindings = 0;
+        List<Map<String, Object>> platformGroups = oauthBindingMapper.selectMaps(
+                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<OAuthBinding>()
+                        .select("platform", "COUNT(*) AS cnt")
+                        .in("platform", java.util.Arrays.asList(platforms))
+                        .groupBy("platform"));
+        java.util.Map<String, Long> platformCnt = new java.util.HashMap<>();
+        for (Map<String, Object> g : platformGroups) {
+            Object c = g.get("cnt");
+            platformCnt.put((String) g.get("platform"), c == null ? 0L : ((Number) c).longValue());
+        }
         for (String p : platforms) {
-            Long cnt = oauthBindingMapper.selectCount(
-                    new LambdaQueryWrapper<OAuthBinding>().eq(OAuthBinding::getPlatform, p));
+            long cnt = platformCnt.getOrDefault(p, 0L);
             byPlatform.add(Map.of("platform", p, "count", cnt));
             totalBindings += cnt;
         }
@@ -149,7 +163,7 @@ public class WechatUnionidController {
                         .apply("(qq_openid IS NOT NULL OR alipay_openid IS NOT NULL) AND wechat_openid IS NOT NULL"));
         out.put("multiPlatformUsers", multiPlatformUsers);
 
-        // 各平台独立用户数
+        // 各平台独立用户数 (仍然单独查每列, 5 次查 - 这是 admin 面板, 调用频率低, 暂保留)
         for (String p : platforms) {
             String col = switch (p) {
                 case "wechat" -> "wechat_openid";

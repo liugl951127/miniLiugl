@@ -666,7 +666,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, nextTick } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, computed, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   imageGenGenerate, imageGenModels,
@@ -881,6 +881,24 @@ async function loadServices() {
 
 onMounted(async () => {
   await Promise.all([loadModuleModels(), loadServices()])
+})
+
+// P0 内存泄漏修复: 组件卸载时清理所有活跃的 setInterval
+const activeTimers = new Set()
+function trackInterval(fn, delay) {
+  const id = setInterval(fn, delay)
+  activeTimers.add(id)
+  return id
+}
+function untrackInterval(id) {
+  if (id && activeTimers.has(id)) {
+    clearInterval(id)
+    activeTimers.delete(id)
+  }
+}
+onBeforeUnmount(() => {
+  activeTimers.forEach(id => clearInterval(id))
+  activeTimers.clear()
 })
 
 // ============ 模块切换 ============
@@ -1134,14 +1152,14 @@ async function uploadVideoFile(file) {
     fd.append('model', model)
 
     // 模拟进度
-    const ticker = setInterval(() => {
+    const ticker = trackInterval(() => {
       if (videoProgress.value < 85) videoProgress.value += 15
     }, 500)
 
     const r = await videoUnderstand(fd, (e) => {
       if (e.total) videoProgress.value = Math.min(90, Math.round(e.loaded / e.total * 100))
     })
-    clearInterval(ticker)
+    untrackInterval(ticker)
     videoProgress.value = 100
     videoProgressColor.value = '#67c23a'
 

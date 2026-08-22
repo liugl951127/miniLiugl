@@ -290,24 +290,28 @@ public class MonitorController {
 
     @Operation(summary = "全部告警规则 (含禁用, V5.9)")
     @GetMapping("/alerts/rules/all")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public Result<List<AlertRule>> allRules() {
         return Result.ok(alert.allRules());
     }
 
     @Operation(summary = "创建告警规则 (V5.9)")
     @PostMapping("/alerts/rules")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public Result<AlertRule> createRule(@RequestBody AlertRule rule) {
         return Result.ok(alert.createRule(rule));
     }
 
     @Operation(summary = "更新告警规则 (V5.9)")
     @PutMapping("/alerts/rules/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public Result<AlertRule> updateRule(@PathVariable("id") Long id, @RequestBody AlertRule patch) {
         return Result.ok(alert.updateRule(id, patch));
     }
 
     @Operation(summary = "删除告警规则 (V5.9)")
     @DeleteMapping("/alerts/rules/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public Result<Void> deleteRule(@PathVariable("id") Long id) {
         alert.deleteRule(id);
         return Result.ok();
@@ -317,30 +321,35 @@ public class MonitorController {
 
     @Operation(summary = "列出告警通知渠道 (V5.33)")
     @GetMapping("/alerts/channels")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public Result<List<AlertChannel>> listChannels() {
         return Result.ok(alertChannelService.list());
     }
 
     @Operation(summary = "获取告警渠道详情 (V5.33)")
     @GetMapping("/alerts/channels/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public Result<AlertChannel> getChannel(@PathVariable Long id) {
         return Result.ok(alertChannelService.getById(id));
     }
 
     @Operation(summary = "创建告警渠道 (V5.33)")
     @PostMapping("/alerts/channels")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public Result<AlertChannel> createChannel(@RequestBody AlertChannel ch) {
         return Result.ok(alertChannelService.create(ch));
     }
 
     @Operation(summary = "更新告警渠道 (V5.33)")
     @PutMapping("/alerts/channels/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public Result<AlertChannel> updateChannel(@PathVariable Long id, @RequestBody AlertChannel patch) {
         return Result.ok(alertChannelService.update(id, patch));
     }
 
     @Operation(summary = "删除告警渠道 (V5.33)")
     @DeleteMapping("/alerts/channels/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public Result<Void> deleteChannel(@PathVariable Long id) {
         alertChannelService.delete(id);
         return Result.ok();
@@ -353,6 +362,7 @@ public class MonitorController {
      */
     @Operation(summary = "告警 RCA 分析 (Day 31)")
     @PostMapping("/alerts/{id}/rca")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public Result<Map<String, Object>> rcaAnalysis(@PathVariable Long id,
                                                     @RequestBody(required = false) Map<String, Object> body) {
         AlertEvent event = alertEventMapper.selectById(id);
@@ -393,6 +403,7 @@ public class MonitorController {
      */
     @Operation(summary = "手动异常检测 (Day 31)")
     @PostMapping("/anomaly/detect")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public Result<AnomalyResult> detectAnomaly(@RequestBody Map<String, Object> body) {
         String metric = (String) body.get("metric");
         Double value = body.get("value") != null ? ((Number) body.get("value")).doubleValue() : null;
@@ -474,6 +485,7 @@ public class MonitorController {
      */
     @Operation(summary = "确认告警")
     @PostMapping("/alerts/{id}/ack")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public Result<Boolean> acknowledgeAlert(@PathVariable Long id,
                                             @RequestBody(required = false) Map<String, String> body) {
         log.info("[monitor] acknowledge alert id={} notes={}", id, body);
@@ -506,6 +518,7 @@ public class MonitorController {
      */
     @Operation(summary = "静默告警事件 (Day 35)")
     @PostMapping("/alerts/{id}/silence")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public Result<Boolean> silenceAlert(@PathVariable Long id,
                                         @RequestBody(required = false) Map<String, Object> body) {
         log.info("[monitor] silence alert id={} body={}", id, body);
@@ -538,6 +551,7 @@ public class MonitorController {
      */
     @Operation(summary = "取消静默告警事件 (Day 35)")
     @PostMapping("/alerts/{id}/unsilence")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public Result<Boolean> unsilenceAlert(@PathVariable Long id) {
         log.info("[monitor] unsilence alert id={}", id);
         AlertEvent e = alertEventMapper.selectById(id);
@@ -556,6 +570,7 @@ public class MonitorController {
      */
     @Operation(summary = "静默告警规则 (Day 35)")
     @PostMapping("/alerts/rules/{id}/silence")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public Result<Boolean> silenceRule(@PathVariable("id") Long id,
                                         @RequestBody(required = false) Map<String, Object> body) {
         log.info("[monitor] silence rule id={} body={}", id, body);
@@ -587,6 +602,7 @@ public class MonitorController {
      */
     @Operation(summary = "取消静默告警规则 (Day 35)")
     @PostMapping("/alerts/rules/{id}/unsilence")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public Result<Boolean> unsilenceRule(@PathVariable("id") Long id) {
         log.info("[monitor] unsilence rule id={}", id);
         AlertRule r = ruleMapper.selectById(id);
@@ -606,6 +622,7 @@ public class MonitorController {
      */
     @Operation(summary = "测试告警通道")
     @PostMapping("/alerts/channels/{id}/test")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public Result<Boolean> testAlertChannel(@PathVariable Long id) {
         log.info("[monitor] test alert channel id={}", id);
         AlertChannel ch = alertChannelService.getById(id);
@@ -725,6 +742,7 @@ public class MonitorController {
      */
     @Operation(summary = "启停告警规则")
     @PostMapping("/alerts/rules/{id}/toggle")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public Result<Boolean> toggleAlertRule(@PathVariable Long id, @RequestParam Boolean enabled) {
         log.info("[monitor] toggle rule id={} enabled={}", id, enabled);
         return Result.ok(enabled);

@@ -14,7 +14,7 @@
 
 <script setup>
 // ───── 依赖导入 ─────
-import { computed, onMounted, defineProps } from 'vue'
+import { computed, onMounted, onBeforeUnmount, defineProps } from 'vue'
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github-dark.css'
@@ -51,23 +51,29 @@ const rendered = computed(() => {
   return html
 })
 
+function handleCopyClick(e) {
+  const t = e.target
+  if (t && t.classList && t.classList.contains('hljs-copy')) {
+    const code = decodeURIComponent(t.getAttribute('data-code') || '')
+    navigator.clipboard.writeText(code).then(() => {
+      const orig = t.textContent
+      t.textContent = '✓ 已复制'
+      t.classList.add('copied')
+      setTimeout(() => {
+        t.textContent = orig
+        t.classList.remove('copied')
+      }, 1500)
+    })
+  }
+}
+
 onMounted(() => {
   // 绑定复制按钮
-  document.addEventListener('click', (e) => {
-    const t = e.target
-    if (t && t.classList && t.classList.contains('hljs-copy')) {
-      const code = decodeURIComponent(t.getAttribute('data-code') || '')
-      navigator.clipboard.writeText(code).then(() => {
-        const orig = t.textContent
-        t.textContent = '✓ 已复制'
-        t.classList.add('copied')
-        setTimeout(() => {
-          t.textContent = orig
-          t.classList.remove('copied')
-        }, 1500)
-      })
-    }
-  })
+  document.addEventListener('click', handleCopyClick)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleCopyClick)
 })
 </script>
 

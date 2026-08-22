@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -24,6 +25,7 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/v1/admin/stats")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")  // V6.8.2: Dashboard 统计仅 ADMIN 可访问
 public class StatsController {
 
     private final AdminAuditLogMapper auditMapper;

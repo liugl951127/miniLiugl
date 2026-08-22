@@ -21,8 +21,8 @@ import http from './http'
 export const createKb = (ownerId, body) =>
   ownerId ? http.post(`/rag/kb?ownerId=${ownerId}`, body) : http.post('/rag/kb', body)
 
-export const listMyKbs = (ownerId) =>
-  ownerId ? http.get(`/rag/kb?ownerId=${ownerId}`) : http.get('/rag/kb')
+export const listMyKbs = (ownerId, config = {}) =>
+  ownerId ? http.get(`/rag/kb?ownerId=${ownerId}`, config) : http.get('/rag/kb', config)
 
 export const listPublicKbs = () =>
   http.get('/rag/kb/public')

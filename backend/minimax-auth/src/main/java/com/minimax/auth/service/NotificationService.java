@@ -46,14 +46,16 @@ public class NotificationService {
     }
 
     /**
-     * 标记单条已读。
+     * 标记单条已读 (V6.8.2 加 userId 校验, 防止 IDOR).
      */
     @Transactional
-    public boolean markRead(Long id) {
+    public boolean markRead(Long userId, Long id) {
+        // V6.8.2: 必须匹配 userId, 防止越权标记别人的通知
         // V5.30.3: 改用 LambdaUpdateWrapper (LambdaQueryWrapper 没有 .set() 方法)
         return notificationMapper.update(null,
                 new LambdaUpdateWrapper<Notification>()
                         .eq(Notification::getId, id)
+                        .eq(Notification::getUserId, userId)
                         .set(Notification::getIsRead, 1)
         ) > 0;
     }

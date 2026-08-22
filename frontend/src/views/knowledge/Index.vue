@@ -16,9 +16,9 @@
           </el-tooltip>
         </div>
 
-        <!-- 搜索栏 -->
+        <!-- 搜索栏 (P0 竞态修复: 加 @input 防抖) -->
         <el-form inline class="search-bar">
-          <el-form-item><el-input v-model="keyword" placeholder="搜索知识库名称" clearable @change="loadKbs" /></el-form-item>
+          <el-form-item><el-input v-model="keyword" placeholder="搜索知识库名称" clearable @input="onSearchInput" @change="loadKbs" /></el-form-item>
           <el-form-item><el-button @click="loadKbs">搜索</el-button></el-form-item>
         </el-form>
 
@@ -662,7 +662,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, shallowRef } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, shallowRef } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -671,6 +671,7 @@ import {
   retrieve, getDocContent, updateDocContent, batchReindexDocs, batchDeleteDocs, exportDocs
 } from '@/api/rag'
 import http from '@/api/http'
+import { debounce, createCancellableFetcher } from '@/utils/debounce'
 import { useUserStore } from '@/store/user'
 import {
   Plus, Upload, UploadFilled, Refresh, Edit, EditPen, Delete, DocumentCopy,
@@ -681,6 +682,29 @@ const userStore = useUserStore()
 const userId = computed(() => userStore.profile?.id || userStore.userInfo?.id || null)
 const route = useRoute()
 const activeTab = ref(route.query.tab || 'kb')
+
+// ========== 生命周期清理 (P0 内存泄漏修复) ==========
+// 追踪所有 setInterval, 在组件卸载时统一清理
+const activeTimers = new Set()
+function trackInterval(fn, delay) {
+  const id = setInterval(() => {
+    fn()
+  }, delay)
+  activeTimers.add(id)
+  return id
+}
+function untrackInterval(id) {
+  if (id && activeTimers.has(id)) {
+    clearInterval(id)
+    activeTimers.delete(id)
+  }
+}
+
+// P0 竞态修复: 搜索防抖 + AbortController 取消旧请求
+const debouncedSearch = debounce(() => loadKbs(), 300)
+function onSearchInput() {
+  debouncedSearch()
+}
 
 // ========== 文档全文阅读 (Day 44) ==========
 const fullContentVisible = ref(false)
@@ -928,7 +952,7 @@ async function doBatchExport() {
   batchExportLoading.value = true
   batchExportProgress.value = 10
 
-  const timer = setInterval(() => {
+  const timer = trackInterval(() => {
     if (batchExportProgress.value < 90) {
       batchExportProgress.value += Math.floor(Math.random() * 12) + 5
       if (batchExportProgress.value > 90) batchExportProgress.value = 90
@@ -937,7 +961,7 @@ async function doBatchExport() {
 
   try {
     const r = await exportDocs(userId.value, selectedDocIds.value, exportFormat.value)
-    clearInterval(timer)
+    untrackInterval(timer)
     batchExportProgress.value = 100
     batchExportDone.value = true
     // r is already the Blob (from responseType: 'blob')
@@ -954,7 +978,7 @@ async function doBatchExport() {
       ElMessage.success(`文档已导出为 ${exportFormat.value.toUpperCase()} 文件`)
     }
   } catch (e) {
-    clearInterval(timer)
+    untrackInterval(timer)
     batchExportProgress.value = 0
     ElMessage.error('导出失败: ' + (e.message || ''))
   } finally {
@@ -978,7 +1002,7 @@ async function doBatchDelete() {
   batchDeleteLoading.value = true
   batchDeleteProgress.value = 10
 
-  const timer = setInterval(() => {
+  const timer = trackInterval(() => {
     if (batchDeleteProgress.value < 90) {
       batchDeleteProgress.value += Math.floor(Math.random() * 15) + 5
       if (batchDeleteProgress.value > 90) batchDeleteProgress.value = 90
@@ -987,14 +1011,14 @@ async function doBatchDelete() {
 
   try {
     const r = await batchDeleteDocs(userId.value, selectedDocIds.value)
-    clearInterval(timer)
+    untrackInterval(timer)
     batchDeleteProgress.value = 100
     batchDeleteResult.value = r.data || r.result
     ElMessage.success('批量删除完成：成功 ' + (r.data?.succeeded || 0) + ' 个，失败 ' + (r.data?.failed?.length || 0) + ' 个')
     refreshDocs()
     loadKbs()
   } catch (e) {
-    clearInterval(timer)
+    untrackInterval(timer)
     batchDeleteProgress.value = 0
     ElMessage.error('批量删除失败: ' + (e.message || ''))
   } finally {
@@ -1025,7 +1049,7 @@ async function doBatchReindex() {
   batchReindexProgress.value = 5
   batchReindexMsg.value = '正在重新索引...'
 
-  const timer = setInterval(() => {
+  const timer = trackInterval(() => {
     if (batchReindexProgress.value < 90) {
       batchReindexProgress.value += Math.floor(Math.random() * 10) + 5
       if (batchReindexProgress.value > 90) batchReindexProgress.value = 90
@@ -1034,7 +1058,7 @@ async function doBatchReindex() {
 
   try {
     const r = await batchReindexDocs(userId.value, selectedDocIds.value)
-    clearInterval(timer)
+    untrackInterval(timer)
     batchReindexProgress.value = 100
     batchReindexResult.value = r.data || r.result
     batchReindexMsg.value = '批量重索引完成！'
@@ -1042,7 +1066,7 @@ async function doBatchReindex() {
     refreshDocs()
     loadKbs()
   } catch (e) {
-    clearInterval(timer)
+    untrackInterval(timer)
     batchReindexProgress.value = 0
     batchReindexMsg.value = ''
     ElMessage.error('批量重索引失败: ' + (e.message || ''))
@@ -1081,7 +1105,7 @@ async function doSaveEditDoc() {
   editDocProgress.value = 10
   editDocProgressMsg.value = '正在重新切片和向量化索引...'
   // 模拟进度（实际由后端 SSE 提供，这里先乐观 UI）
-  const timer = setInterval(() => {
+  const timer = trackInterval(() => {
     if (editDocProgress.value < 90) {
       editDocProgress.value += Math.floor(Math.random() * 8) + 3
       if (editDocProgress.value > 90) editDocProgress.value = 90
@@ -1091,14 +1115,14 @@ async function doSaveEditDoc() {
 
   try {
     await updateDocContent(editDoc.value.id, userId.value, editDocContent.value)
-    clearInterval(timer)
+    untrackInterval(timer)
     editDocProgress.value = 100
     editDocProgressMsg.value = '处理完成！'
     ElMessage.success('文档内容更新成功，已重新切片索引')
     editDocVisible.value = false
     refreshDocs()
   } catch (e) {
-    clearInterval(timer)
+    untrackInterval(timer)
     editDocProgress.value = 0
     ElMessage.error('更新失败: ' + (e.message || ''))
   } finally {
@@ -1107,21 +1131,33 @@ async function doSaveEditDoc() {
 }
 
 // ========== 加载知识库列表 ==========
+let loadKbsController = null
 async function loadKbs() {
+  // P0 竞态修复: 取消上一次未完成的请求, 防止快速搜索时乱序
+  if (loadKbsController) {
+    try { loadKbsController.abort() } catch (e) { /* ignore */ }
+  }
+  loadKbsController = new AbortController()
+  const signal = loadKbsController.signal
   loading.value = true
   try {
-    const r = await listMyKbs(userId.value)
+    const r = await listMyKbs(userId.value, { signal })
+    if (signal.aborted) return
     let list = r.data || []
     if (keyword.value.trim()) {
       list = list.filter(kb => kb.name && kb.name.includes(keyword.value.trim()))
     }
     kbs.value = list
     total.value = list.length
-  } catch {
+  } catch (e) {
+    if (e?.name === 'AbortError' || signal.aborted) return
     kbs.value = []
     total.value = 0
   } finally {
-    loading.value = false
+    if (!signal.aborted) loading.value = false
+    if (loadKbsController && loadKbsController.signal === signal) {
+      loadKbsController = null
+    }
   }
 }
 
@@ -1479,6 +1515,12 @@ function stageLabel(stage) {
 
 // ========== 生命周期 ==========
 onMounted(loadKbs)
+
+// P0 内存泄漏修复: 组件卸载时清理所有活跃的 setInterval
+onBeforeUnmount(() => {
+  activeTimers.forEach(id => clearInterval(id))
+  activeTimers.clear()
+})
 </script>
 
 <style lang="scss" scoped>

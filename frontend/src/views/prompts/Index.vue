@@ -18,7 +18,7 @@
       <el-col :span="14">
         <!-- 搜索 & 筛选 -->
         <div style="display:flex;gap:8px;margin-bottom:12px">
-          <el-input v-model="keyword" size="small" placeholder="搜索模板名称或描述…" style="width:200px" clearable @change="loadPrompts">
+          <el-input v-model="keyword" size="small" placeholder="搜索模板名称或描述…" style="width:200px" clearable @input="onSearchInput" @change="loadPrompts">
             <template #prefix><el-icon><Search /></el-icon></template>
           </el-input>
           <el-select v-model="filterCategory" size="small" style="width:120px" clearable placeholder="全部分类" @change="loadPrompts">
@@ -160,10 +160,11 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted } from 'vue'
+import { ref, computed, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { promptApi } from '@/api/prompt'
 import { Plus, Refresh, Search, CopyDocument, DocumentCopy } from '@element-plus/icons-vue'
+import { debounce } from '@/utils/debounce'
 
 const prompts = ref([])
 const loading = ref(false)
@@ -219,21 +220,41 @@ function renderTemplate() {
   return t
 }
 
+// P0 竞态修复: 取消上一次未完成的请求
+let loadPromptsController = null
 async function loadPrompts() {
+  if (loadPromptsController) {
+    try { loadPromptsController.abort() } catch (e) { /* ignore */ }
+  }
+  loadPromptsController = new AbortController()
+  const signal = loadPromptsController.signal
   loading.value = true
   try {
-    const params = {}
+    const params = { signal }
     if (keyword.value) params.keyword = keyword.value
     if (filterCategory.value) params.category = filterCategory.value
     const r = await promptApi.list(params)
+    if (signal.aborted) return
     prompts.value = r.data?.list || r.data || []
   } catch (e) {
+    if (e?.name === 'AbortError' || signal.aborted) return
     ElMessage.error('加载模板失败: ' + (e.message || ''))
     prompts.value = []
   } finally {
-    loading.value = false
-    firstLoad.value = false
+    if (!signal.aborted) {
+      loading.value = false
+      firstLoad.value = false
+    }
+    if (loadPromptsController && loadPromptsController.signal === signal) {
+      loadPromptsController = null
+    }
   }
+}
+
+// P0 竞态修复: 搜索防抖
+const debouncedLoadPrompts = debounce(() => loadPrompts(), 300)
+function onSearchInput() {
+  debouncedLoadPrompts()
 }
 
 function openCreate() {
@@ -347,6 +368,15 @@ async function copyRendered() {
 }
 
 onMounted(loadPrompts)
+
+// P0 内存泄漏/竞态修复: 组件卸载时取消未完成的请求
+onBeforeUnmount(() => {
+  if (loadPromptsController) {
+    try { loadPromptsController.abort() } catch (e) { /* ignore */ }
+    loadPromptsController = null
+  }
+  debouncedLoadPrompts.cancel()
+})
 </script>
 
 <style lang="scss" scoped>

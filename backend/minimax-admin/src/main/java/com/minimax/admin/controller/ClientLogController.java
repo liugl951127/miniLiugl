@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -25,8 +26,8 @@ import java.util.*;
  * 端点:
  *   POST /api/v1/logs/client   — 接收批量日志 (走队列，异步写)
  *   POST /api/v1/logs/save     — 直接 append 写文件（无队列，立即落盘）
- *   GET  /api/v1/logs/client/file — 读取当日日志文件
- *   GET  /api/v1/logs/client/files — 列出可用日志文件
+ *   GET  /api/v1/logs/client/file — 读取当日日志文件 (ADMIN)
+ *   GET  /api/v1/logs/client/files — 列出可用日志文件 (ADMIN)
  */
 @Slf4j
 @Tag(name = "前端日志")
@@ -102,6 +103,7 @@ public class ClientLogController {
 
     @Operation(summary = "列出可用日志文件")
     @GetMapping("/client/files")
+    @PreAuthorize("hasRole('ADMIN')")  // V6.8.2: 列出日志文件仅管理员
     public Result<List<Map<String, Object>>> listFiles() {
         List<Map<String, Object>> files = new ArrayList<>();
         Path dir = Paths.get(LOG_DIR);
@@ -130,6 +132,7 @@ public class ClientLogController {
 
     @Operation(summary = "读取日志文件内容 (最后 N 行)")
     @GetMapping("/client/file")
+    @PreAuthorize("hasRole('ADMIN')")  // V6.8.2: 读取日志文件仅管理员
     public Result<Map<String, Object>> readFile(
             @RequestParam(required = false) String date,
             @RequestParam(defaultValue = "200") int lines) {

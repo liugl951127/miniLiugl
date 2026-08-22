@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -111,6 +112,7 @@ public class LicenseTemplateService {
     /**
      * 创建模板
      */
+    @Transactional
     public LicenseTemplate create(LicenseTemplateDraft draft) {
         if (mapper.findByKey(draft.getTemplateKey()) != null) {
             throw new IllegalArgumentException("templateKey 已存在: " + draft.getTemplateKey());
@@ -137,6 +139,7 @@ public class LicenseTemplateService {
     /**
      * 更新模板 (version +1)
      */
+    @Transactional
     public LicenseTemplate update(Long id, LicenseTemplateDraft draft) {
         LicenseTemplate existing = mapper.findById(id);
         if (existing == null) throw new IllegalArgumentException("模板不存在: " + id);
@@ -181,6 +184,7 @@ public class LicenseTemplateService {
     /**
      * 软删除 (isActive=0)
      */
+    @Transactional
     public boolean deactivate(Long id) {
         LicenseTemplate t = mapper.findById(id);
         if (t == null) return false;

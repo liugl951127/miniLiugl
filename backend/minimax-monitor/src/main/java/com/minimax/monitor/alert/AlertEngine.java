@@ -22,6 +22,8 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 告警引擎。
@@ -62,14 +64,20 @@ public class AlertEngine {
      * Day 45: 告警升级检查 — 每 60s 执行一次
      * - 查找所有 firing 且未升级的 CRITICAL 事件
      * - 如果触发时间超过规则配置的 escalateAfterMinutes，则升级
+     * T2: 批量 selectById 消除 N+1
      */
     @Scheduled(fixedDelay = 60_000, initialDelay = 30_000)
     public void checkEscalation() {
         try {
             List<AlertEvent> firing = eventMapper.selectByStatus("firing", 500);
+            // T2: 批量加载所有 rule 一次, 避免循环内 selectById
+            Set<Long> ruleIds = firing.stream().map(AlertEvent::getRuleId).filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.toSet());
+            Map<Long, AlertRule> ruleMap = ruleIds.isEmpty() ? java.util.Map.of() :
+                    ruleMapper.selectBatchIds(ruleIds).stream()
+                            .collect(java.util.stream.Collectors.toMap(AlertRule::getId, r -> r, (a, b) -> a));
             for (AlertEvent e : firing) {
                 if (Boolean.TRUE.equals(e.getEscalated())) continue;
-                AlertRule r = ruleMapper.selectById(e.getRuleId());
+                AlertRule r = ruleMap.get(e.getRuleId());
                 if (r == null) continue;
                 Integer wait = r.getEscalateAfterMinutes();
                 if (wait == null || wait <= 0) continue;
@@ -112,13 +120,19 @@ public class AlertEngine {
      * - 查找所有 firing 且规则配置了 autoResolveMinutes > 0 的事件
      * - 如果触发时间超过 autoResolveMinutes，自动标记为 resolved
      * - 由 resolvedBy=SYSTEM 标识
+     * T2: 批量 selectById 消除 N+1
      */
     @Scheduled(fixedDelay = 60_000, initialDelay = 45_000)
     public void checkAutoResolve() {
         try {
             List<AlertEvent> firing = eventMapper.selectByStatus("firing", 500);
+            // T2: 批量加载所有 rule 一次
+            Set<Long> ruleIds = firing.stream().map(AlertEvent::getRuleId).filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.toSet());
+            Map<Long, AlertRule> ruleMap = ruleIds.isEmpty() ? java.util.Map.of() :
+                    ruleMapper.selectBatchIds(ruleIds).stream()
+                            .collect(java.util.stream.Collectors.toMap(AlertRule::getId, r -> r, (a, b) -> a));
             for (AlertEvent e : firing) {
-                AlertRule r = ruleMapper.selectById(e.getRuleId());
+                AlertRule r = ruleMap.get(e.getRuleId());
                 if (r == null) continue;
                 Integer autoMinutes = r.getAutoResolveMinutes();
                 if (autoMinutes == null || autoMinutes <= 0) continue;

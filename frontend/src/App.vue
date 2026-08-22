@@ -50,7 +50,6 @@ onMounted(async () => {
   if (useUserStore().isLogin) {
     await prefsStore.fetchFromBackend().catch(() => {})
   }
-  console.log('[App] 已挂载 V3.6.21+ / 主题:', prefsStore.theme)
 })
 </script>
 

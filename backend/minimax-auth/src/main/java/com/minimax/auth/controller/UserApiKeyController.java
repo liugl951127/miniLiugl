@@ -29,6 +29,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/auth/apikeys")
 @RequiredArgsConstructor
+@org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")  // V6.8.2: API Key 需登录
 public class UserApiKeyController {
 
     private final UserApiKeyService apiKeyService;

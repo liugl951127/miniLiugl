@@ -949,6 +949,8 @@ async function loadAlertTrend() {
 
 // Day 40: 自动刷新
 let refreshTimer = null
+let reconnectTimer = null
+let componentMounted = false
 
 /** Day 49: 连接告警实时推送 SSE */
 function connectAlertStream() {
@@ -965,7 +967,9 @@ function connectAlertStream() {
 
   eventSource.onerror = () => {
     streamConnected.value = false
-    setTimeout(connectAlertStream, 5000) // 5秒后重连
+    if (componentMounted) {
+      reconnectTimer = setTimeout(connectAlertStream, 5000) // 5秒后重连
+    }
   }
 
   // 监听 'alert' 事件
@@ -1000,11 +1004,15 @@ function connectAlertStream() {
 }
 
 onMounted(() => {
+  componentMounted = true
   loadData()
   refreshTimer = setInterval(loadData, 30_000)
   connectAlertStream()
+  window.addEventListener('resize', handleChartResize)
 })
 onUnmounted(() => {
+  componentMounted = false
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null }
   if (eventSource) {
     eventSource.close()
     eventSource = null
@@ -1023,7 +1031,6 @@ function handleChartResize() {
   if (pieChart) pieChart.resize()
   if (barChart) barChart.resize()
 }
-window.addEventListener('resize', handleChartResize)
 
 // Day 42: tab 切换时加载渠道数据
 // Day 43: SLA tab 也懒加载

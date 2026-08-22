@@ -191,16 +191,17 @@ public class KnowledgeBaseService {
 
     /**
      * 删除文档
+     * T2: 用 deleteByDoc 一次性删所有 chunk, 消除 N+1
      */
     public boolean deleteDocument(String docId) {
         KbDocument doc = docMapper.findByDocId(docId);
         if (doc == null) return false;
-        // 1. 删 chunk
+        // 1. 拉所有 chunk 用于清 embedCache, 然后一次性删除
         List<KbChunk> chunks = chunkMapper.findByDoc(docId);
         for (KbChunk c : chunks) {
-            chunkMapper.deleteById(c.getId());
             embedCache.remove(c.getChunkId());
         }
+        chunkMapper.deleteByDoc(docId);
         // 2. 删文件
         try { Files.deleteIfExists(Path.of(doc.getFilePath())); } catch (IOException ignored) {}
         // 3. 删元数据
