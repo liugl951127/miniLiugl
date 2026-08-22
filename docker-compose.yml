@@ -325,6 +325,19 @@ services:
     volumes: *maven-volumes
     networks: [minimax-net]
     deploy: { resources: { limits: { memory: 384M } } }
+  system:
+    build: { context: ./backend, dockerfile: minimax-system/Dockerfile }
+    image: minimax/system:latest
+    container_name: minimax-system
+    restart: unless-stopped
+    depends_on:
+      mariadb: { condition: service_healthy }
+      otel-collector: { condition: service_started }
+    environment: { <<: *jvm-env, SERVER_PORT: "9086" }
+    ports: ["9086:9086"]
+    volumes: *maven-volumes
+    networks: [minimax-net]
+    deploy: { resources: { limits: { memory: 384M } } }
 
   analytics:
     build: { context: ./backend, dockerfile: minimax-analytics/Dockerfile }

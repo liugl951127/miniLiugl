@@ -28,6 +28,7 @@
  */
 import { ref, onUnmounted } from 'vue'
 import { useSSEStream } from './useSSEStream'
+import { useUserStore } from '@/store/user'
 
 // V3.7.25+ 5 type 统一映射
 const TYPE_MAP = {
@@ -87,11 +88,14 @@ export function useBusinessStream() {
     console.groupEnd()
 
     try {
+      const userStore = useUserStore()
+      const token = userStore.accessToken || ''
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'text/event-stream',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(payload),
         signal: signal || sse.abortController?.signal,

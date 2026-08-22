@@ -1,9 +1,12 @@
 package com.minimax.agent.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.minimax.agent.entity.AgentTask;
 import com.minimax.agent.entity.CollabSession;
 import com.minimax.agent.entity.KgEntity;
 import com.minimax.agent.entity.KgRelation;
 import com.minimax.agent.entity.Plugin;
+import com.minimax.agent.mapper.AgentTaskMapper;
 import com.minimax.agent.service.AgentService;
 import com.minimax.agent.service.CollabDbService;
 import com.minimax.agent.service.KnowledgeGraphService;
@@ -45,6 +48,7 @@ public class AgentController {
     private final CollabDbService collab;
     private final PluginService plugin;
     private final MultiAgentService multiAgent;
+    private final AgentTaskMapper agentTaskMapper;
 
     // V6.8.1: 运行中任务追踪（taskId → userId，用于鉴权 stop）
     private final ConcurrentHashMap<String, Long> taskOwners = new ConcurrentHashMap<>();
@@ -215,6 +219,20 @@ public class AgentController {
         resp.put("feedback", eval.feedback());
         resp.put("improvedAnswer", eval.improvedAnswer());
         return Result.ok(resp);
+    }
+
+    @Operation(summary = "V6.8.2: 多智能体历史记录")
+    @GetMapping("/multi/history")
+    public Result<List<AgentTask>> multiHistory(@AuthenticationPrincipal AuthenticatedUser user,
+                                                 @RequestParam(defaultValue = "5") int limit) {
+        Long userId = user != null ? user.getId() : null;
+        QueryWrapper<AgentTask> qw = new QueryWrapper<>();
+        if (userId != null) {
+            qw.eq("user_id", userId);
+        }
+        qw.orderByDesc("created_at");
+        qw.last("LIMIT " + Math.min(limit, 50));
+        return Result.ok(agentTaskMapper.selectList(qw));
     }
 
     // ---------- 知识图谱 ----------
