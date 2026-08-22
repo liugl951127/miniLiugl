@@ -14,7 +14,7 @@ minimax:
     enabled: true
     base-dir: /opt/minimax/models
     provider:
-      code: self-trained
+      code: onnx
       name: 自研训练模型
       description: 平台自主训练，通过 ONNX 文件加载
     models:

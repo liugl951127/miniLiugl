@@ -82,7 +82,7 @@ public class VideoGenController {
     @SuppressWarnings("unchecked")
     public Result<Map<String, Object>> generate(
             @RequestParam("prompt") String prompt,
-            @RequestParam(value = "model", defaultValue = "mock") String model,
+            @RequestParam(value = "model", defaultValue = "") String model,
             @RequestParam(value = "duration", defaultValue = "6") int duration,
             @RequestParam(value = "resolution", defaultValue = "768P") String resolution) {
 
@@ -110,7 +110,7 @@ public class VideoGenController {
     public Result<Map<String, Object>> imageToVideo(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "prompt", defaultValue = "") String prompt,
-            @RequestParam(value = "model", defaultValue = "mock") String model,
+            @RequestParam(value = "model", defaultValue = "") String model,
             @RequestParam(value = "duration", defaultValue = "6") int duration) {
 
         long t0 = System.currentTimeMillis();

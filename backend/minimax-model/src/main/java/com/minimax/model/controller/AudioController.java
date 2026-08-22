@@ -74,7 +74,7 @@ public class AudioController {
     @PostMapping(value = "/asr/transcribe")
     public Result<Map<String, Object>> transcribe(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "model", defaultValue = "mock") String model,
+            @RequestParam(value = "model", defaultValue = "") String model,
             @RequestParam(value = "language", defaultValue = "zh") String language) {
         long t0 = System.currentTimeMillis();
         try {

@@ -161,7 +161,7 @@ public class ImageGenController {
     @SuppressWarnings("unchecked")
     public Result<Map<String, Object>> generate(@RequestBody Map<String, Object> body) {
         String prompt = (String) body.getOrDefault("prompt", "");
-        String model = (String) body.getOrDefault("model", "mock");
+        String model = (String) body.getOrDefault("model", "");
         String size = (String) body.getOrDefault("size", "1024x1024");
         Integer n = body.get("n") != null ? ((Number) body.get("n")).intValue() : 1;
         boolean returnBase64 = Boolean.TRUE.equals(body.get("base64"));

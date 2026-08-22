@@ -33,7 +33,7 @@ public class SelfModelsProperties {
 
     @Data
     public static class Provider {
-        private String code = "self-trained";
+        private String code = "onnx";
         private String name = "自研训练模型";
         private String description = "平台自主训练，通过 ONNX 文件加载";
     }

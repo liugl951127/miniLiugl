@@ -72,7 +72,7 @@ public class MusicGenController {
     public Result<Map<String, Object>> generate(@RequestBody Map<String, Object> body) {
         String prompt = (String) body.getOrDefault("prompt", "");
         String lyrics = (String) body.getOrDefault("lyrics", "");
-        String model = (String) body.getOrDefault("model", "mock");
+        String model = (String) body.getOrDefault("model", "");
 
         if (prompt.isBlank() && lyrics.isBlank()) {
             return Result.fail(400, "prompt 或 lyrics 不能同时为空");
