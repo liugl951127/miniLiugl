@@ -10,7 +10,7 @@
         <el-button size="small" :loading="loading" @click="loadNotifications">
           <el-icon><Refresh /></el-icon>刷新
         </el-button>
-        <el-button size="small" link type="primary" @click="showSettings = true">
+        <el-button size="small" link type="primary" @click="openSettingsDialog">
           <el-icon><Setting /></el-icon>设置
         </el-button>
       </div>
@@ -155,7 +155,7 @@
 <script setup>
 import { ref, computed, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { listNotifications, markRead as markR, markAllRead, deleteNotification as deleteNotifApi } from '@/api/notification'
+import { listNotifications, markRead as markR, markAllRead, deleteNotification as deleteNotifApi, notificationApi } from '@/api/notification'
 import {
   Refresh, Setting, Bell,
   SuccessFilled, WarningFilled, Message, InfoFilled, WarnTriangleFilled,
@@ -270,9 +270,30 @@ function navigateToAction(url) {
   detailVisible.value = false
 }
 
-function saveSettings() {
-  ElMessage.success('通知设置已保存（仅本地生效）')
-  showSettings.value = false
+async function saveSettings() {
+  // T1-mock-fix: 改为真实后端调用
+  try {
+    await notificationApi.updateSettings(settings)
+    ElMessage.success('通知设置已保存')
+    showSettings.value = false
+  } catch (e) {
+    ElMessage.error('保存失败: ' + (e.__result?.message || e.response?.data?.message || e.message || '请稍后重试'))
+  }
+}
+
+/** T1-mock-fix: 打开设置弹窗时, 从后端加载最新设置 */
+async function openSettingsDialog() {
+  showSettings.value = true
+  try {
+    const r = await notificationApi.getSettings()
+    const data = r?.data || r
+    if (data) {
+      Object.assign(settings, notificationApi.parseToForm(data))
+    }
+  } catch (e) {
+    // 加载失败保持默认值, 不打扰用户
+    console.warn('[notification] load settings failed:', e?.message)
+  }
 }
 
 // 定时刷新

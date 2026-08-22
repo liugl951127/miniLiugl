@@ -396,6 +396,7 @@ import { listAdminUsers, toggleAdminUser, getDashboard, getOpsStats, getRecentAu
 import { listTenants, createTenant, setTenantStatus } from '@/api/tenant'
 import { apiKeyApi } from '@/api/apikey'
 import { getFiringAlerts } from '@/api/monitor'
+import { systemApi } from '@/api/system'
 
 // ─── Stores ───
 const route = useRoute()
@@ -636,13 +637,37 @@ async function toggleTenant(row) {
 const sysSettings = ref({ siteName: 'Liugl-AI', maintenance: false, allowRegister: true, defaultModel: 'minimax-01' })
 
 async function saveSysSettings() {
-  // V7.2: 后端尚未提供 /system/settings 持久化接口，配置仅保存在浏览器本地
-  // 如需云端同步，可联系后端实现此接口 (建议路径: minimax-system 模块)
+  // T1-mock-fix: 改为真实后端调用 (minimax-system /api/v1/system/settings)
   try {
-    localStorage.setItem('sysSettings', JSON.stringify(sysSettings.value))
-    ElMessage.success('系统设置已保存（仅本地生效）')
+    const r = await systemApi.updateSettings(sysSettings.value)
+    const data = r?.data || r
+    if (data) {
+      // 同步本地, 确保表单反映后端真实状态
+      Object.assign(sysSettings.value, systemApi.parseToForm(data))
+    }
+    // 同时保留 localStorage 兜底
+    try { localStorage.setItem('sysSettings', JSON.stringify(sysSettings.value)) } catch {}
+    ElMessage.success('系统设置已保存')
   } catch (e) {
-    ElMessage.error('保存失败：' + (e?.message || e))
+    ElMessage.error('保存失败：' + (e?.__result?.message || e?.response?.data?.message || e?.message || '请稍后重试'))
+  }
+}
+
+/** T1-mock-fix: 加载系统设置 (onMounted) */
+async function loadSysSettings() {
+  try {
+    const r = await systemApi.getSettings()
+    const data = r?.data || r
+    if (data) {
+      Object.assign(sysSettings.value, systemApi.parseToForm(data))
+      try { localStorage.setItem('sysSettings', JSON.stringify(sysSettings.value)) } catch {}
+    }
+  } catch (e) {
+    // 后端未配置时回退 localStorage
+    try {
+      const cached = localStorage.getItem('sysSettings')
+      if (cached) Object.assign(sysSettings.value, JSON.parse(cached))
+    } catch {}
   }
 }
 
@@ -694,6 +719,8 @@ onMounted(() => {
   if (isSuperAdmin.value) {
     loadTenants()
     loadMonitor()
+    // T1-mock-fix: 加载系统设置
+    loadSysSettings()
   }
 })
 </script>

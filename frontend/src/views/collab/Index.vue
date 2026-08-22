@@ -244,7 +244,7 @@
 <script setup>
 import { ref, computed, onMounted, nextTick, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { listPublicRooms, createRoom as createRoomApi, getMessages, buildCollabWsUrl } from '@/api/collab'
+import { listPublicRooms, createRoom as createRoomApi, getMessages, buildCollabWsUrl, inviteMember as inviteMemberApi } from '@/api/collab'
 import { getRoom } from '@/api/collab'
 import http from '@/api/http'
 import { useUserStore } from '@/store/user'
@@ -602,20 +602,29 @@ function sendRoomAi() {
 // P1-6: 判断两条消息是否属于同一组 — 已统一在 491 行
 
 async function inviteMember(r) {
+  let email
   try {
-    const { value: email } = await ElMessageBox.prompt('请输入要邀请的用户邮箱', '邀请成员', {
+    const ret = await ElMessageBox.prompt('请输入要邀请的用户邮箱', '邀请成员', {
       confirmButtonText: '发送邀请',
       cancelButtonText: '取消',
       inputPattern: /^[\w.+-]+@[\w-]+(\.[\w-]+)+$/,
       inputErrorMessage: '邮箱格式不正确',
     })
-    if (!email) return
-    // 模拟发送邀请反馈
-    ElMessage.success(`邀请已发送到 ${email}（房间号: ${r.roomId || r.id}）`)
+    email = ret.value
   } catch (e) {
-    if (e !== 'cancel') {
-      ElMessage.error('邀请失败：' + (e.message || ''))
-    }
+    // 用户取消
+    return
+  }
+  if (!email) return
+  // T1-mock-fix: 改为真实后端调用
+  try {
+    const res = await inviteMemberApi(r.roomId || r.id, email)
+    const data = res?.data || res || {}
+    ElMessage.success(
+      data.message || `邀请已发送到 ${email}（房间号: ${r.roomId || r.id}）`
+    )
+  } catch (e) {
+    ElMessage.error('邀请失败：' + (e.__result?.message || e.response?.data?.message || e.message || '请稍后重试'))
   }
 }
 

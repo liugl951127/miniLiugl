@@ -310,6 +310,46 @@ INSERT INTO data_source (id, name, type, jdbcUrl, username, password, driverClas
 
 
 -- ==========================================================
+-- [T1-backend-apis / P0] 5 张新表的种子数据
+-- 配套端点:
+--   rule_definition        (minimax-pipeline,  /api/v1/rule)
+--   trained_model          (minimax-ai,        /api/v1/training/models)
+--   notification_settings  (minimax-auth,      /api/v1/notification/settings)
+--   collab_invite          (minimax-ai,        /api/v1/collab/rooms/{id}/invite)
+--   system_settings        (minimax-system,    /api/v1/system/settings)
+-- ==========================================================
+
+-- [minimax-pipeline] rule_definition
+INSERT INTO rule_definition (id, name, jsonContent, scope, enabled, createdBy, createdAt, updatedAt, deleted) VALUES
+    (1, '默认安全规则', '{"action":"block","pattern":"forbidden_word","level":"high"}', 'GLOBAL', 1, 1, DEFAULT, DEFAULT, 0),
+    (2, '内容审核规则', '{"action":"review","pattern":"sensitive","level":"medium"}', 'GLOBAL', 1, 1, DEFAULT, DEFAULT, 0),
+    (3, '速率限制规则', '{"action":"throttle","limit":100,"window":"1m"}', 'GLOBAL', 1, 1, DEFAULT, DEFAULT, 0);
+
+-- [minimax-ai] trained_model (5 个 seed 数据, 覆盖 ENABLED/DISABLED/DRAFT 三种状态)
+INSERT INTO trained_model (id, code, name, accuracy, status, publishedAt, createdBy, createdAt, updatedAt, deleted) VALUES
+    (1, 'mmx-mini-v1',  'MiniMax 轻量对话 v1',  0.872, 'ENABLED',  '2026-07-15 10:00:00', 1, DEFAULT, DEFAULT, 0),
+    (2, 'mmx-coder-v1', 'MiniMax 代码生成 v1',  0.798, 'ENABLED',  '2026-08-01 14:30:00', 1, DEFAULT, DEFAULT, 0),
+    (3, 'mmx-rag-v1',   'MiniMax 检索增强 v1',  0.835, 'ENABLED',  '2026-08-10 09:15:00', 1, DEFAULT, DEFAULT, 0),
+    (4, 'mmx-mini-v2',  'MiniMax 轻量对话 v2',  0.910, 'DRAFT',    NULL,                    1, DEFAULT, DEFAULT, 0),
+    (5, 'mmx-coder-v2', 'MiniMax 代码生成 v2',  0.752, 'DISABLED', '2026-06-20 11:00:00', 1, DEFAULT, DEFAULT, 0);
+
+-- [minimax-auth] notification_settings (3 个用户各一条)
+INSERT INTO notification_settings (id, userId, channels, events, quietStart, quietEnd, createdAt, updatedAt) VALUES
+    (1, 1, 'email,dingtalk,webhook', 'login,error,alert,system', '22:00', '08:00', DEFAULT, DEFAULT),
+    (2, 2, 'email,webhook',         'error,alert',               '23:00', '07:00', DEFAULT, DEFAULT),
+    (3, 3, 'push,email',            'login,system',              '00:00', '06:00', DEFAULT, DEFAULT);
+
+-- [minimax-ai] collab_invite (2 个示例邀请)
+INSERT INTO collab_invite (id, roomId, inviterId, inviteeEmail, inviteeUserId, token, status, expiresAt, acceptedAt, createdAt, updatedAt, deleted) VALUES
+    (1, 1, 1, 'alice88@minimax.com',   2, 'inv-aaaa-1111-bbbb-2222-cccc-3333dddd4444', 'ACCEPTED', '2026-09-01 00:00:00', '2026-08-15 10:30:00', DEFAULT, DEFAULT, 0),
+    (2, 1, 1, 'bob_dev@minimax.com',   3, 'inv-eeee-5555-ffff-6666-aaaa-7777bbbb8888', 'PENDING',  '2026-09-15 00:00:00', NULL,                    DEFAULT, DEFAULT, 0);
+
+-- [minimax-system] system_settings (单行, id=1)
+INSERT INTO system_settings (id, siteName, siteLogo, maintenanceMode, allowRegister, defaultModelCode, description, contactEmail, updatedBy, createdAt, updatedAt) VALUES
+    (1, 'MiniMax 平台', '/logo.svg', 0, 1, 'gpt-4o', 'MiniMax 大模型平台 - 集成对话/智能体/多模态/训练全流程', 'admin@minimax.com', 1, DEFAULT, DEFAULT);
+
+
+-- ==========================================================
 -- 演示电商数据 (原 demo-init.sql, 整合到本文件)
 -- ==========================================================
 

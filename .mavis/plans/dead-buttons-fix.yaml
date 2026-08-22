@@ -1,0 +1,283 @@
+version: 1
+plan:
+  name: "死按钮修复: P0 11 个"
+  max_concurrency: 3
+  max_consecutive_failures: 3
+  max_cycles: 30
+  auto_accept: false
+  auto_reject_retries: 1
+
+tasks:
+  # ============ T1: 后端补 7 个真实 API ============
+  - id: T1-backend-apis
+    title: "P0: 后端补 7 个真实 API (rule/training/notification/collab/system)"
+    assigned_to: general
+    role: produce
+    verified_by: explore
+    depends_on: []
+    timeout_ms: 1500000
+    max_retries: 1
+    prompt: |
+      扫描 /workspace/miniLiugl/dead-buttons.md 后, 在 /workspace/miniLiugl/backend/ 下补全 7 个新 API 端点。每个都要
+      Controller + Service + Mapper 三层完整实现, 不是 stub。
+
+      1. **POST/DELETE /api/v1/rule** (minimax-pipeline 模块, 新建 RuleController)
+         - 业务: 规则保存/删除
+         - 表: rule_definition (id, name, json_content, scope, enabled, created_at, updated_at)
+         - endpoint:
+           * POST /api/v1/rule (body: {name, json, scope, enabled}) → 创建
+           * GET /api/v1/rule → 列表
+           * GET /api/v1/rule/{id} → 详情
+           * PUT /api/v1/rule/{id} → 更新
+           * DELETE /api/v1/rule/{id} → 删除
+         - mapper 用 MyBatis-Plus BaseMapper<RuleDefinition>
+
+      2. **训练模型 5 个端点** (minimax-ai 模块, 新建 TrainedModelController)
+         - 业务: 自研训练模型管理 (增删改查 + 启停 + 发布)
+         - 表: trained_model (id, code, name, accuracy, status [ENABLED|DISABLED|DRAFT], published_at, created_at, updated_at)
+         - endpoint:
+           * POST /api/v1/training/models (body: {code, name, accuracy, status}) → 创建
+           * PUT /api/v1/training/models/{id}/status (body: {status}) → 启停
+           * POST /api/v1/training/models/{id}/publish → 发布 (设置 published_at)
+           * GET /api/v1/training/models → 列表
+           * DELETE /api/v1/training/models/{id} → 删除
+         - 加 5 个 seed 数据到 minimax-seed.sql
+
+      3. **PUT /api/v1/notification/settings** (minimax-auth 模块, NotificationController)
+         - 业务: 通知设置持久化
+         - 表: notification_settings (id, user_id, channels [email/sms/dingtalk/webhook/push], events [login/error/alert/system], quiet_start, quiet_end, updated_at)
+         - endpoint:
+           * GET /api/v1/notification/settings → 取当前用户的设置
+           * PUT /api/v1/notification/settings (body: 上述字段) → 保存
+         - 注释: 通过 @RequestHeader("X-User-Id") 拿当前 user
+
+      4. **POST /api/v1/collab/rooms/{id}/invite** (minimax-ai 模块, CollabController)
+         - 业务: 协作房间邀请
+         - 表: collab_invite (id, room_id, inviter_id, invitee_email, status [PENDING/ACCEPTED/EXPIRED], created_at)
+         - endpoint:
+           * POST /api/v1/collab/rooms/{id}/invite (body: {email}) → 发送邀请 (返回 invite_id)
+           * GET /api/v1/collab/invites → 当前用户的邀请列表
+
+      5. **PUT /api/v1/system/settings** (minimax-system 模块, SystemController)
+         - 业务: 系统全局设置
+         - 表: system_settings (id, site_name, maintenance_mode, allow_register, default_model_code, updated_at)
+         - endpoint:
+           * GET /api/v1/system/settings → 取全局设置
+           * PUT /api/v1/system/settings (body: 上述字段) → 保存 (upsert 模式, id=1)
+
+      最后: 补全 5 张新表 CREATE TABLE 到 minimax-schema.sql (minimax-schema.sql 已有大部分表, 新增:
+      rule_definition, trained_model, notification_settings, collab_invite, system_settings)
+      补 5 张表的 INSERT seed 到 minimax-seed.sql
+
+      编译验证:
+      ```bash
+      cd /workspace/miniLiugl/backend
+      export JAVA_HOME=/opt/jdk-17.0.2
+      export PATH=$JAVA_HOME/bin:/opt/apache-maven-3.9.6/bin:$PATH
+      mvn package -DskipTests -s ~/.m2/settings.xml 2>&1 | tail -50
+      ```
+      必须 BUILD SUCCESS
+
+    verify_prompt: |
+      验证清单:
+      1. 7 类 endpoint 全部存在 (grep 路径):
+         - rule POST/GET/PUT/DELETE
+         - training models POST/PUT/POST/GET/DELETE
+         - notification/settings GET/PUT
+         - collab/rooms/{id}/invite POST
+         - system/settings GET/PUT
+      2. 5 张新表 CREATE TABLE 在 minimax-schema.sql 中
+      3. 5 张新表 INSERT seed 在 minimax-seed.sql 中
+      4. 每个 endpoint 都有 @Service + @Mapper + @Controller 三层 (不是 stub)
+      5. mvn package -DskipTests BUILD SUCCESS
+
+  # ============ T2: 前端 10 个 MOCK 改成真调用 ============
+  - id: T2-frontend-mock
+    title: "P0: 前端 10 个 MOCK 改成真后端调用"
+    assigned_to: general
+    role: produce
+    verified_by: explore
+    depends_on: [T1-backend-apis]
+    timeout_ms: 1500000
+    max_retries: 1
+    prompt: |
+      扫描 /workspace/miniLiugl/dead-buttons.md 后, 在 /workspace/miniLiugl/frontend/src/ 下把 10 个 MOCK 按钮
+      改成真实后端调用。每个按钮改造 = 加 api 函数 + 改函数体 + 加 loading/error 提示。
+
+      **T1 已补完后端 7 个 API, 前端用 /api/v1/rule, /api/v1/training/models, /api/v1/notification/settings,
+      /api/v1/collab/rooms/{id}/invite, /api/v1/system/settings 即可。**
+
+      1. **views/rule/Index.vue:848** 按钮"保存" saveRule
+         - 改: 调 `POST /api/v1/rule`, body 包含 name/scope/enabled/json
+         - 失败: ElMessage.error
+         - 成功: 刷新列表
+
+      2. **views/rule/Index.vue:831** 按钮"删除规则" deleteRule
+         - 改: 调 `DELETE /api/v1/rule/{id}`
+         - 失败: ElMessage.error
+         - 成功: 刷新列表
+
+      3. **views/model/Index.vue:892** 按钮"测试" testTrained
+         - 改: 调 `POST /api/v1/training/models/{id}/test` (T1 必须补这个端点)
+         - 若 T1 没补, 用现有的 `modelApi.test(row.code)` 兜底
+         - 真实结果弹窗显示 (准确率/响应时间)
+
+      4. **views/model/Index.vue:915** 按钮"禁用/启用" confirmToggleTrained
+         - 改: 调 `PUT /api/v1/training/models/{id}/status`, body: {status}
+         - 成功: 刷新行
+         - 失败: 还原本地 state + 错误提示
+
+      5. **views/model/Index.vue:928** 按钮"发布" publishTrained
+         - 改: 调 `POST /api/v1/training/models/{id}/publish`
+         - 成功: row.enabled = true + 刷新列表
+
+      6. **views/model/Index.vue:940** 按钮"一键启用未启用" confirmEnableAllTrained
+         - 改: 循环调 `PUT /api/v1/training/models/{m.id}/status`
+         - 进度条 + 最终结果
+
+      7. **views/model/Index.vue:955** 按钮"保存训练模型" saveTrainedModel
+         - 改: 调 `POST /api/v1/training/models`, body 包含 code/name/accuracy/status
+         - 成功: 刷新列表
+
+      8. **views/notification/Index.vue:149** 按钮"保存设置" saveSettings
+         - 改: 调 `PUT /api/v1/notification/settings`
+         - 加 onMounted loadSettings (调 GET /api/v1/notification/settings)
+         - 加 @RequestHeader("X-User-Id") 走 axios header
+         - 成功: ElMessage.success("已保存")
+
+      9. **views/collab/Index.vue:86** 按钮"邀请" inviteMember
+         - 改: 调 `POST /api/v1/collab/rooms/${r.id}/invite`, body: {email}
+         - 成功: ElMessage.success("邀请已发送")
+
+      10. **views/settings/Index.vue:333** 按钮"保存系统设置" saveSysSettings
+         - 改: 调 `PUT /api/v1/system/settings`
+         - 加 onMounted loadSysSettings (调 GET /api/v1/system/settings)
+         - 成功: ElMessage.success("已保存")
+         - 失败: 回滚 + 错误提示
+
+      每个 .vue 改造后, 在 src/api/ 下的对应 api.js 加函数 (rule.js/training.js/notification.js/collab.js/system.js
+      若不存在则新建)。 用 import { request } from '@/api/http' 模式。
+
+      最后编译验证:
+      ```bash
+      cd /workspace/miniLiugl/frontend
+      NODE_OPTIONS='--max-old-space-size=2200' npx vite build 2>&1 | tail -30
+      ```
+      必须 ✓ built in Xs
+
+    verify_prompt: |
+      验证清单:
+      1. 10 个按钮的函数体都包含 `await xxxApi.xxx(...)` 或 `await request(...)` 调用真实端点
+      2. 函数体不再有 `ElMessage.success("...已保存")` 之类无调用的假成功
+      3. src/api/ 下新增/修改了 5 个 api 文件 (rule.js, training.js, notification.js, collab.js, system.js)
+      4. vite build 通过
+      5. onMounted 加了 loadSettings / loadSysSettings 用于 GET
+
+  # ============ T3: function/Index.vue 注册 dialog ============
+  - id: T3-function-dialog
+    title: "P0: function/Index.vue 注册工具 dialog 补全"
+    assigned_to: general
+    role: produce
+    verified_by: explore
+    depends_on: []
+    timeout_ms: 1200000
+    max_retries: 1
+    prompt: |
+      /workspace/miniLiugl/frontend/src/views/function/Index.vue:6, 40 有"注册工具"按钮,
+      `@click="showCreate = true"` 但模板中没有 `el-dialog v-model="showVisible"` 绑定, 按钮无反应。
+
+      修复步骤:
+      1. 在 <script setup> 已有 `const showCreate = ref(false)`, 改名为 `const showCreateDialog = ref(false)` (更清晰)
+      2. 把 @click="showCreate = true" 改成 @click="showCreateDialog = true" (两处)
+      3. 在 el-table 上方/下方加 dialog:
+         ```vue
+         <el-dialog v-model="showCreateDialog" title="注册工具" width="560px" @close="resetForm">
+           <el-form :model="toolForm" :rules="toolRules" ref="toolFormRef" label-width="100px">
+             <el-form-item label="工具名称" prop="name">
+               <el-input v-model="toolForm.name" placeholder="例: weather_lookup" />
+             </el-form-item>
+             <el-form-item label="显示名" prop="displayName">
+               <el-input v-model="toolForm.displayName" placeholder="例: 天气查询" />
+             </el-form-item>
+             <el-form-item label="描述" prop="description">
+               <el-input v-model="toolForm.description" type="textarea" :rows="3" />
+             </el-form-item>
+             <el-form-item label="端点 URL" prop="endpoint">
+               <el-input v-model="toolForm.endpoint" placeholder="https://api.example.com/tool" />
+             </el-form-item>
+             <el-form-item label="方法">
+               <el-select v-model="toolForm.method">
+                 <el-option label="GET" value="GET" />
+                 <el-option label="POST" value="POST" />
+               </el-select>
+             </el-form-item>
+             <el-form-item label="入参 JSON" prop="paramsSchema">
+               <el-input v-model="toolForm.paramsSchema" type="textarea" :rows="4"
+                         placeholder='{"location": "string"}' />
+             </el-form-item>
+           </el-form>
+           <template #footer>
+             <el-button @click="showCreateDialog = false">取消</el-button>
+             <el-button type="primary" :loading="creating" @click="confirmCreate">创建</el-button>
+           </template>
+         </el-dialog>
+         ```
+      4. 加 form data:
+         ```js
+         const toolFormRef = ref(null)
+         const creating = ref(false)
+         const toolForm = ref({
+           name: '', displayName: '', description: '',
+           endpoint: '', method: 'POST', paramsSchema: '{}'
+         })
+         const toolRules = {
+           name: [{ required: true, message: '请输入工具名称', trigger: 'blur' }],
+           endpoint: [{ required: true, message: '请输入端点 URL', trigger: 'blur' }]
+         }
+         ```
+      5. 加 confirmCreate 函数:
+         ```js
+         async function confirmCreate() {
+           if (!toolFormRef.value) return
+           await toolFormRef.value.validate()
+           creating.value = true
+           try {
+             await functionApi.createTool(toolForm.value)
+             ElMessage.success('工具注册成功')
+             showCreateDialog.value = false
+             resetForm()
+             // 刷新列表 (用页面已有的 loadTools 之类的函数)
+             if (typeof loadTools === 'function') loadTools()
+           } catch (e) {
+             ElMessage.error('注册失败: ' + (e?.message || e))
+           } finally {
+             creating.value = false
+           }
+         }
+         function resetForm() {
+           toolForm.value = { name: '', displayName: '', description: '', endpoint: '', method: 'POST', paramsSchema: '{}' }
+           toolFormRef.value?.clearValidate()
+         }
+         ```
+      6. 确认 functionApi.createTool 在 src/api/function.js 存在, 若不存在则加:
+         ```js
+         export function createTool(data) {
+           return request({ url: '/api/v1/function/tools', method: 'post', data })
+         }
+         ```
+         (即使后端没这个端点, 也不报错, 401/500 时 ElMessage.error 自然提示)
+
+      最后编译验证:
+      ```bash
+      cd /workspace/miniLiugl/frontend
+      NODE_OPTIONS='--max-old-space-size=2200' npx vite build 2>&1 | tail -20
+      ```
+      必须 ✓ built
+
+    verify_prompt: |
+      验证清单:
+      1. function/Index.vue 模板中有 `<el-dialog v-model="showCreateDialog"` 包含 6 个 form-item
+      2. confirmCreate 函数存在, 调用 functionApi.createTool
+      3. 两处 @click="showCreate = true" 改为 @click="showCreateDialog = true"
+      4. src/api/function.js 有 createTool 函数
+      5. vite build 通过

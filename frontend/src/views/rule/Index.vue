@@ -347,6 +347,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { MagicStick, CaretRight, Download, FolderOpened, WarningFilled } from '@element-plus/icons-vue'
 import { listEnabledModels, modelApi } from '@/api/model'
 import { nl2sqlHistory, nl2sqlAsk } from '@/api/analytics'
+import { ruleApi } from '@/api/rule'
 
 // ===== 示例提示词 =====
 const examples = [
@@ -829,18 +830,23 @@ function loadAndExecute(r) {
   setTimeout(() => executeRule(), 200)
 }
 async function deleteRule(r) {
+  // 备份以便失败回滚
+  const original = ruleLib.value
   try {
     await ElMessageBox.confirm(`确定删除规则「${r.name}」?该操作不可恢复。`, '确认删除', {
       type: 'warning',
       confirmButtonText: '删除',
       cancelButtonText: '取消',
     })
+  } catch { return }
+  try {
+    await ruleApi.remove(r.id)
     ruleLib.value = ruleLib.value.filter(x => x.id !== r.id)
     ElMessage.success(`规则「${r.name}」已删除`)
   } catch (e) {
-    if (e !== 'cancel') {
-      ElMessage.error('删除失败：' + (e.message || ''))
-    }
+    // 失败还原本地数组
+    ruleLib.value = original
+    ElMessage.error('删除失败：' + (e.__result?.message || e.response?.data?.message || e.message || '请稍后重试'))
   }
 }
 
@@ -858,9 +864,19 @@ async function saveRule() {
       saving.value = false
       return
     }
-    ElMessage.success(`规则「${rule.name}」已保存到本地草稿`)
+    // T1-mock-fix: 改为真实后端调用
+    const res = await ruleApi.create({
+      name: rule.name,
+      json: ruleJson.value,
+      scope: 'global',
+      enabled: true,
+    })
+    const newId = res?.data ?? res
+    ElMessage.success(`规则「${rule.name}」已保存 (id: ${newId})`)
+    // 刷新规则库列表 (在后台异步执行, 不阻塞)
+    loadRuleList().catch(() => {})
   } catch (e) {
-    ElMessage.error('保存失败: ' + (e.message || '未知错误'))
+    ElMessage.error('保存失败: ' + (e.__result?.message || e.response?.data?.message || e.message || '未知错误'))
   } finally {
     saving.value = false
   }

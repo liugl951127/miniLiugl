@@ -477,7 +477,7 @@
 import { ref, computed, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { listProviders, updateProvider, localModelApi, testProvider as testProviderApi, createProvider } from '@/api/model'
-import { trainingApi } from '@/api/training'
+import { trainingApi, trainedModelApi } from '@/api/training'
 import { changeStatus } from '@/api/modelMarket'
 import { useUserStore } from '@/store/user'
 import { Plus, Refresh, VideoPlay, Loading } from '@element-plus/icons-vue'
@@ -889,8 +889,32 @@ async function addProvider() {
   })
 }
 
-function testTrained(row) {
-  ElMessage.success(`${row.name} 测试通过，准确率 ${row.accuracy}%`)
+async function testTrained(row) {
+  // T1-mock-fix: 改为真实后端调用
+  try {
+    ElMessage.info({ message: `正在测试「${row.name}」...`, duration: 1500 })
+    const res = await trainedModelApi.test(row.id)
+    const data = res?.data || res || {}
+    // 弹窗显示 accuracy / latencyMs / sampleOutput
+    await ElMessageBox.alert(
+      `<div style="line-height:1.8">
+        <div><b>模型:</b> ${data.name || row.name} <span style="color:#909399;font-size:12px">(${data.code || row.code})</span></div>
+        <div><b>准确率:</b> <span style="color:#67c23a;font-size:18px;font-weight:600">${data.accuracy ?? row.accuracy ?? 0}%</span></div>
+        <div><b>延迟:</b> <span style="color:#409eff;font-weight:600">${data.latencyMs ?? 0} ms</span></div>
+        <div style="margin-top:8px"><b>示例输出:</b></div>
+        <pre style="background:#f5f7fa;padding:8px;border-radius:4px;font-size:12px;margin:4px 0 0;white-space:pre-wrap;word-break:break-all">${data.sampleOutput || '无输出'}</pre>
+      </div>`,
+      '🧪 模型测试结果',
+      {
+        dangerouslyUseHTMLString: true,
+        confirmButtonText: '关闭',
+      }
+    )
+  } catch (e) {
+    if (e !== 'cancel') {
+      ElMessage.error('测试失败: ' + (e.__result?.message || e.response?.data?.message || e.message || '请稍后重试'))
+    }
+  }
 }
 
 function openTrainedForm(row) {
@@ -921,8 +945,17 @@ async function confirmToggleTrained(row) {
       { type: 'info', confirmButtonText: action, cancelButtonText: '取消' }
     )
   } catch { return }
-  row.enabled = !row.enabled
-  ElMessage.success(row.enabled ? '已启用' : '已禁用')
+  // T1-mock-fix: 真实后端调用, 失败时还原本地 state
+  const prevEnabled = row.enabled
+  const newStatus = prevEnabled ? 'DISABLED' : 'ENABLED'
+  row.enabled = !prevEnabled
+  try {
+    await trainedModelApi.changeStatus(row.id, newStatus)
+    ElMessage.success(row.enabled ? '已启用' : '已禁用')
+  } catch (e) {
+    row.enabled = prevEnabled
+    ElMessage.error(`${action}失败: ` + (e.__result?.message || e.response?.data?.message || e.message || '请稍后重试'))
+  }
 }
 
 async function publishTrained(row) {
@@ -933,13 +966,23 @@ async function publishTrained(row) {
       { type: 'info', confirmButtonText: '发布', cancelButtonText: '取消' }
     )
   } catch { return }
-  row.enabled = true
-  ElMessage.success(`${row.name} 已发布上线`)
+  // T1-mock-fix: 真实后端调用
+  try {
+    await trainedModelApi.publish(row.id)
+    row.enabled = true
+    ElMessage.success(`${row.name} 已发布上线`)
+  } catch (e) {
+    ElMessage.error('发布失败: ' + (e.__result?.message || e.response?.data?.message || e.message || '请稍后重试'))
+  }
 }
 
 async function confirmEnableAllTrained() {
-  const count = trainedModels.value.filter(m => !m.enabled).length
-  if (!count) return
+  const targets = trainedModels.value.filter(m => !m.enabled)
+  const count = targets.length
+  if (!count) {
+    ElMessage.info('所有自研模型都已启用')
+    return
+  }
   try {
     await ElMessageBox.confirm(
       `确定要启用全部 ${count} 个未启用的自研模型吗？`,
@@ -947,9 +990,27 @@ async function confirmEnableAllTrained() {
       { type: 'info', confirmButtonText: '一键启用', cancelButtonText: '取消' }
     )
   } catch { return }
-  let n = 0
-  trainedModels.value.forEach(m => { if (!m.enabled) { m.enabled = true; n++ } })
-  ElMessage.success(`已启用 ${n} 个自研模型`)
+  // T1-mock-fix: 真实后端循环调用, 显示进度
+  const progress = ElMessage.info({ message: `开始批量启用 (0/${count})...`, duration: 0 })
+  let success = 0, failed = 0
+  for (let i = 0; i < targets.length; i++) {
+    const m = targets[i]
+    try {
+      await trainedModelApi.changeStatus(m.id, 'ENABLED')
+      m.enabled = true
+      success++
+    } catch (e) {
+      failed++
+      console.warn(`[batch enable] model ${m.id} failed:`, e)
+    }
+    progress.message = `批量启用中 (${i + 1}/${count})...`
+  }
+  setTimeout(() => progress.close(), 100)
+  if (failed === 0) {
+    ElMessage.success(`已启用 ${success} 个自研模型`)
+  } else {
+    ElMessage.warning(`批量启用完成: 成功 ${success}, 失败 ${failed}`)
+  }
 }
 
 async function saveTrainedModel() {
@@ -959,7 +1020,8 @@ async function saveTrainedModel() {
     trainedSaving.value = true
     try {
       if (trainedForm.id) {
-        // 编辑现有模型
+        // T1-mock-fix: 编辑现有模型 — 业务字段变化暂走本地
+        // (后端 trained_model 实体无 vision/contextWindow/version/description 字段, 仅 code/name/accuracy/status)
         const idx = trainedModels.value.findIndex(m => m.id === trainedForm.id)
         if (idx >= 0) {
           trainedModels.value[idx] = {
@@ -973,30 +1035,54 @@ async function saveTrainedModel() {
             description: trainedForm.description,
           }
         }
-        ElMessage.success('训练模型已更新')
+        ElMessage.success('训练模型已更新（仅本地元数据）')
       } else {
-        trainedModels.value.push({
-          id: 'trained-' + Date.now(),
+        // T1-mock-fix: 创建 - 真实后端调用
+        const res = await trainedModelApi.create({
           code: trainedForm.code,
           name: trainedForm.name,
-          provider: trainedForm.industry,
-          vision: trainedForm.vision,
           accuracy: 0,
-          calls: 0,
-          contextWindow: trainedForm.contextWindow,
-          enabled: false,
-          trainedAt: new Date().toLocaleString('zh-CN'),
+          status: 'DRAFT',
         })
-        ElMessage.success('训练模型已添加，请在训练平台完成训练后启用')
+        const newId = res?.data ?? res
+        // 刷新列表从后端拉
+        await refreshTrainedList()
+        ElMessage.success(`训练模型已创建 (id: ${newId})，请在训练平台完成训练后启用`)
       }
       showTrainedForm.value = false
       trainedFormRef.value?.clearValidate()
     } catch (e) {
-      ElMessage.error('保存失败: ' + (e.message || ''))
+      ElMessage.error('保存失败: ' + (e.__result?.message || e.response?.data?.message || e.message || '请稍后重试'))
     } finally {
       trainedSaving.value = false
     }
   })
+}
+
+/** T1-mock-fix: 重新从后端拉取训练模型列表 */
+async function refreshTrainedList() {
+  try {
+    const r = await trainedModelApi.list({ page: 1, size: 50 })
+    const data = r?.data || r
+    const records = data?.records || data?.list || []
+    if (Array.isArray(records) && records.length) {
+      trainedModels.value = records.map(t => ({
+        id: String(t.id),
+        code: t.code,
+        name: t.name,
+        provider: '自研训练',
+        vision: false,
+        accuracy: t.accuracy != null ? Number(t.accuracy) * 100 : 0,
+        calls: 0,
+        contextWindow: 8192,
+        enabled: t.status === 'ENABLED',
+        trainedAt: t.publishedAt || t.updatedAt || '-',
+        status: t.status,
+      }))
+    }
+  } catch (e) {
+    console.warn('[refreshTrainedList] failed, keeping local list:', e?.message)
+  }
 }
 
 onMounted(loadAll)

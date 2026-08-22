@@ -29,3 +29,56 @@ export const clearNotifications = () =>
 /** 删除单条通知 */
 export const deleteNotification = (id) =>
   http.delete(`/auth/notifications/${id}`)
+
+/**
+ * 通知设置 API (T1-mock-fix) - 后端 /api/v1/notification/settings
+ *
+ * 后端模型:
+ *   channels: csv (email/sms/dingtalk/webhook/push)
+ *   events:   csv (login/error/alert/system)
+ *   quietStart, quietEnd: HH:mm
+ *
+ * 前端表单 (views/notification/Index.vue):
+ *   system/task/message/warning (events) + email/sound (channels)
+ *
+ * 为避免破坏后端校验, 在前端做映射:
+ *   events:   system->system, task->alert, message->login, warning->error
+ *   channels: email->email, sound->push
+ */
+export const notificationApi = {
+  /** 取当前用户通知设置 (无则返回默认) */
+  getSettings: () => http.get('/notification/settings'),
+  /** 保存通知设置 (upsert) - body: { channels, events, quietStart, quietEnd } */
+  updateSettings: (form) => {
+    const events = []
+    if (form.system) events.push('system')
+    if (form.task) events.push('alert')
+    if (form.message) events.push('login')
+    if (form.warning) events.push('error')
+    const channels = []
+    if (form.email) channels.push('email')
+    if (form.sound) channels.push('push')
+    return http.put('/notification/settings', {
+      events: events.join(',') || 'system',
+      channels: channels.join(',') || 'email',
+      quietStart: '22:00',
+      quietEnd: '08:00',
+    })
+  },
+  /** 把后端返回的 settings 解析回前端 form 格式 */
+  parseToForm: (settings) => {
+    if (!settings) {
+      return { system: true, task: true, message: true, warning: true, email: true, sound: false }
+    }
+    const events = String(settings.events || '').split(',').map(s => s.trim())
+    const channels = String(settings.channels || '').split(',').map(s => s.trim())
+    return {
+      system: events.includes('system'),
+      task: events.includes('alert'),
+      message: events.includes('login'),
+      warning: events.includes('error'),
+      email: channels.includes('email'),
+      sound: channels.includes('push'),
+    }
+  },
+}

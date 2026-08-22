@@ -17,6 +17,16 @@ export const getParticipants = (roomId, onlineOnly = true) =>
 export const getMessages = (roomId, limit = 50) =>
   http.get(`/api/v1/collab/rooms/${roomId}/messages`, { params: { limit } })
 
+// ===== 邀请 (T1-mock-fix) =====
+/**
+ * 邀请成员加入房间 - POST /api/v1/collab/rooms/{id}/invite
+ * @param {string|number} roomId 房间 ID
+ * @param {string} email 邀请邮箱
+ * @returns { inviteId, roomId, email, status, message }
+ */
+export const inviteMember = (roomId, email) =>
+  http.post(`/collab/rooms/${roomId}/invite`, { email })
+
 // ===== WebSocket 连接 =====
 /** WebSocket 路径 (Vite proxy → localhost:8095) */
 export const WS_COLLAB_PATH = '/ws/collab'

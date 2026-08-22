@@ -1,0 +1,15 @@
+# =============================================================
+# minimax-system MySQL 生产模式 (T1-backend-apis / P0)
+# 用法: java -jar minimax-system.jar --spring.profiles.active=mysql
+# =============================================================
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/${MYSQL_DB:minimax_platform}?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root123456}
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1

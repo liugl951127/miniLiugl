@@ -1918,4 +1918,95 @@ CREATE TABLE IF NOT EXISTS data_source (
     deleted INT DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ============================================================
+-- [T1-backend-apis / P0] 5 new tables for 7 new API endpoints
+-- Modules:
+--   rule_definition     (minimax-pipeline, /api/v1/rule)
+--   trained_model       (minimax-ai,        /api/v1/training/models)
+--   notification_settings (minimax-auth,    /api/v1/notification/settings)
+--   collab_invite       (minimax-ai,        /api/v1/collab/rooms/{id}/invite)
+--   system_settings     (minimax-system,    /api/v1/system/settings)
+-- ============================================================
+
+-- [minimax-pipeline] rule_definition
+CREATE TABLE IF NOT EXISTS rule_definition (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(128) NOT NULL,
+    jsonContent LONGTEXT NOT NULL,
+    scope VARCHAR(64) DEFAULT 'GLOBAL',
+    enabled INT DEFAULT 1,
+    createdBy BIGINT,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted INT DEFAULT 0,
+    KEY idx_name (name),
+    KEY idx_scope (scope),
+    KEY idx_enabled (enabled)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- [minimax-ai] trained_model
+CREATE TABLE IF NOT EXISTS trained_model (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(64) NOT NULL,
+    name VARCHAR(128) NOT NULL,
+    accuracy DECIMAL(6,3) DEFAULT 0,
+    status VARCHAR(32) NOT NULL DEFAULT 'DRAFT' COMMENT 'ENABLED / DISABLED / DRAFT',
+    publishedAt TIMESTAMP NULL,
+    createdBy BIGINT,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted INT DEFAULT 0,
+    UNIQUE KEY uk_code (code),
+    KEY idx_status (status),
+    KEY idx_publishedAt (publishedAt)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- [minimax-auth] notification_settings
+CREATE TABLE IF NOT EXISTS notification_settings (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    userId BIGINT NOT NULL,
+    channels VARCHAR(256) DEFAULT 'email,webhook' COMMENT 'email/sms/dingtalk/webhook/push',
+    events VARCHAR(256) DEFAULT 'login,error,alert,system' COMMENT 'login/error/alert/system',
+    quietStart VARCHAR(8) DEFAULT '22:00',
+    quietEnd VARCHAR(8) DEFAULT '08:00',
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_userId (userId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- [minimax-ai] collab_invite
+CREATE TABLE IF NOT EXISTS collab_invite (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    roomId BIGINT NOT NULL,
+    inviterId BIGINT NOT NULL,
+    inviteeEmail VARCHAR(256) NOT NULL,
+    inviteeUserId BIGINT,
+    token VARCHAR(64) NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING / ACCEPTED / EXPIRED',
+    expiresAt TIMESTAMP NULL,
+    acceptedAt TIMESTAMP NULL,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted INT DEFAULT 0,
+    UNIQUE KEY uk_token (token),
+    KEY idx_roomId (roomId),
+    KEY idx_inviteeEmail (inviteeEmail),
+    KEY idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- [minimax-system] system_settings (single-row table, id=1)
+CREATE TABLE IF NOT EXISTS system_settings (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    siteName VARCHAR(128) DEFAULT 'MiniMax 平台',
+    siteLogo VARCHAR(512),
+    maintenanceMode INT DEFAULT 0 COMMENT '0=normal 1=maintenance',
+    allowRegister INT DEFAULT 1 COMMENT '0=disable 1=enable',
+    defaultModelCode VARCHAR(64) DEFAULT 'gpt-4o',
+    description VARCHAR(512),
+    contactEmail VARCHAR(256),
+    updatedBy BIGINT,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

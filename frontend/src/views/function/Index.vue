@@ -3,7 +3,7 @@
   <div class="page-card">
     <div class="page-header">
       <h2>Function 工具</h2>
-      <el-button type="primary" @click="showCreate = true"><el-icon><Plus /></el-icon>注册工具</el-button>
+      <el-button type="primary" @click="showCreateDialog = true"><el-icon><Plus /></el-icon>注册工具</el-button>
     </div>
 
     <el-table :data="tools" v-loading="loading" stripe>
@@ -37,7 +37,7 @@
       :image-size="100"
       style="padding: 40px 0"
     >
-      <el-button type="primary" @click="showCreate = true">注册第一个工具</el-button>
+      <el-button type="primary" @click="showCreateDialog = true">注册第一个工具</el-button>
     </el-empty>
 
     <!-- 测试弹窗 -->
@@ -54,6 +54,38 @@
       <template #footer>
         <el-button @click="testVisible = false">关闭</el-button>
         <el-button type="primary" :loading="testing" @click="runTest">执行</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 注册工具弹窗 -->
+    <el-dialog v-model="showCreateDialog" title="注册工具" width="560px" @close="resetForm">
+      <el-form :model="toolForm" :rules="toolRules" ref="toolFormRef" label-width="100px">
+        <el-form-item label="工具名称" prop="name">
+          <el-input v-model="toolForm.name" placeholder="例: weather_lookup" />
+        </el-form-item>
+        <el-form-item label="显示名" prop="displayName">
+          <el-input v-model="toolForm.displayName" placeholder="例: 天气查询" />
+        </el-form-item>
+        <el-form-item label="描述" prop="description">
+          <el-input v-model="toolForm.description" type="textarea" :rows="3" />
+        </el-form-item>
+        <el-form-item label="端点 URL" prop="endpoint">
+          <el-input v-model="toolForm.endpoint" placeholder="https://api.example.com/tool" />
+        </el-form-item>
+        <el-form-item label="方法">
+          <el-select v-model="toolForm.method">
+            <el-option label="GET" value="GET" />
+            <el-option label="POST" value="POST" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="入参 JSON" prop="paramsSchema">
+          <el-input v-model="toolForm.paramsSchema" type="textarea" :rows="4"
+                    placeholder='{"location": "string"}' />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showCreateDialog = false">取消</el-button>
+        <el-button type="primary" :loading="creating" @click="confirmCreate">创建</el-button>
       </template>
     </el-dialog>
   </div>
@@ -74,7 +106,21 @@ const testTool_ = ref({})
 const testParams = ref('{}')
 const testResult = ref('')
 const testing = ref(false)
-const showCreate = ref(false)
+const showCreateDialog = ref(false)
+const toolFormRef = ref(null)
+const creating = ref(false)
+const toolForm = ref({
+  name: '',
+  displayName: '',
+  description: '',
+  endpoint: '',
+  method: 'POST',
+  paramsSchema: '{}'
+})
+const toolRules = {
+  name: [{ required: true, message: '请输入工具名称', trigger: 'blur' }],
+  endpoint: [{ required: true, message: '请输入端点 URL', trigger: 'blur' }]
+}
 
 function riskType(r) {
   return { LOW: 'success', MEDIUM: 'warning', HIGH: 'danger', CRITICAL: 'danger' }[r] || 'info'
@@ -147,6 +193,39 @@ async function doToggleTool(t) {
   } catch (e) {
     ElMessage.error(`${action}失败：` + (e?.message || '网络错误'))
   }
+}
+
+async function confirmCreate() {
+  if (!toolFormRef.value) return
+  try {
+    await toolFormRef.value.validate()
+  } catch (e) {
+    return
+  }
+  creating.value = true
+  try {
+    await functionApi.createTool(toolForm.value)
+    ElMessage.success('工具注册成功')
+    showCreateDialog.value = false
+    resetForm()
+    if (typeof loadTools === 'function') loadTools()
+  } catch (e) {
+    ElMessage.error('注册失败: ' + (e?.message || e))
+  } finally {
+    creating.value = false
+  }
+}
+
+function resetForm() {
+  toolForm.value = {
+    name: '',
+    displayName: '',
+    description: '',
+    endpoint: '',
+    method: 'POST',
+    paramsSchema: '{}'
+  }
+  toolFormRef.value?.clearValidate()
 }
 
 onMounted(loadTools)

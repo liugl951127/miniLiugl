@@ -1,0 +1,98 @@
+version: 1
+plan:
+  name: "前端 10 个 MOCK 改成真调用"
+  max_concurrency: 1
+  max_consecutive_failures: 3
+  max_cycles: 5
+  auto_accept: false
+  auto_reject_retries: 0
+
+tasks:
+  - id: T1-mock-fix
+    title: "前端 10 个 MOCK 改成真后端调用"
+    assigned_to: general
+    role: produce
+    verified_by: explore
+    depends_on: []
+    timeout_ms: 1500000
+    max_retries: 1
+    prompt: |
+      后端已经补完 7 个真实 API (在 commit 工作区, 未提交). 现在把前端 10 个 MOCK 按钮改成真调用。
+
+      **后端已实现的端点**:
+      - /api/v1/rule  POST/GET/PUT/DELETE (minimax-pipeline)
+      - /api/v1/training/models  POST/GET/DELETE (minimax-ai)
+      - /api/v1/training/models/{id}/status  PUT
+      - /api/v1/training/models/{id}/publish  POST
+      - /api/v1/training/models/{id}/test  POST (返回 {accuracy, latencyMs, sampleOutput})
+      - /api/v1/notification/settings  GET/PUT (minimax-auth)
+      - /api/v1/collab/rooms/{id}/invite  POST
+      - /api/v1/system/settings  GET/PUT (minimax-system)
+
+      **改造清单 (10 个按钮)**:
+
+      1. **views/rule/Index.vue:848** saveRule
+         - 加 `import { ruleApi } from '@/api/rule'` (rule.js 若不存在则新建)
+         - 改: `const saved = await ruleApi.create({name: rule.name, json: ruleJson.value, scope: 'global', enabled: true})`
+         - 成功: 刷新列表 + ElMessage.success
+
+      2. **views/rule/Index.vue:831** deleteRule
+         - 改: `await ruleApi.remove(r.id)` (或 ruleApi.delete)
+         - 失败: ElMessage.error + 还原本地数组
+
+      3. **views/model/Index.vue:892** testTrained(row)
+         - 改: `const res = await trainingApi.test(row.id)`
+         - 弹窗显示 accuracy / latencyMs / sampleOutput
+         - 失败: ElMessage.error
+
+      4. **views/model/Index.vue:915** confirmToggleTrained(row)
+         - 改: `await trainingApi.changeStatus(row.id, newStatus)`
+         - 失败: 还原本地 state
+
+      5. **views/model/Index.vue:928** publishTrained(row)
+         - 改: `await trainingApi.publish(row.id)`
+         - 成功: row.enabled=true + ElMessage.success
+
+      6. **views/model/Index.vue:940** confirmEnableAllTrained
+         - 改: 循环 `for m of trainedModels.value if (!m.enabled) await trainingApi.changeStatus(m.id, 'ENABLED')`
+         - 进度条 + 最终成功数
+
+      7. **views/model/Index.vue:955** saveTrainedModel
+         - 改: `await trainingApi.create({code, name, accuracy, status})`
+         - 成功后: refreshList() (调 GET /api/v1/training/models)
+
+      8. **views/notification/Index.vue:149** saveSettings
+         - 加 onMounted `await notificationApi.getSettings()` 加载到 form
+         - 改 saveSettings: `await notificationApi.updateSettings(form)`
+         - 成功: ElMessage.success
+
+      9. **views/collab/Index.vue:86** inviteMember
+         - 改: `await collabApi.invite(r.id, email)`
+         - 成功: ElMessage.success
+
+      10. **views/settings/Index.vue:333** saveSysSettings
+         - 加 onMounted `await systemApi.getSettings()` 加载 sysSettings
+         - 改 saveSysSettings: `await systemApi.updateSettings(sysSettings)`
+         - 成功: ElMessage.success
+
+      **API 文件改动** (按需新建):
+      - `frontend/src/api/rule.js` (新建) — `import { request } from './http'`; `export const ruleApi = { list, get, create, update, remove }`
+      - `frontend/src/api/training.js` (新建) — `trainingApi = { list, get, create, remove, changeStatus, publish, test }`
+      - `frontend/src/api/notification.js` (修改, 加 settings) — `notificationApi.getSettings/updateSettings`
+      - `frontend/src/api/collab.js` (修改或新建) — `collabApi.invite`
+      - `frontend/src/api/system.js` (新建) — `systemApi.getSettings/updateSettings`
+
+      **最后编译验证**:
+      ```bash
+      cd /workspace/miniLiugl/frontend
+      NODE_OPTIONS='--max-old-space-size=2200' npx vite build 2>&1 | tail -20
+      ```
+      必须 ✓ built
+
+    verify_prompt: |
+      验证清单:
+      1. 10 个按钮的函数体都包含真实 API 调用 (await xxxApi.xxx 或 await request)
+      2. 不再有 `ElMessage.success('已保存到本地')` 之类的纯前端假成功
+      3. 5 个新 api 文件 (rule/training/notification/collab/system) 至少 3 个存在并有正确 export
+      4. notification/Index.vue 和 settings/Index.vue 加了 onMounted 加载函数
+      5. vite build PASS
