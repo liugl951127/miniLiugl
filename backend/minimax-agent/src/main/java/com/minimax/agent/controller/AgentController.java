@@ -85,7 +85,9 @@ public class AgentController {
         Long ownerId = taskOwners.get(taskId);
         // V6.8.2: 校验是否为任务发起者
         if (ownerId != null && user != null && !ownerId.equals(user.id())) {
-            return Result.fail(403, "无权停止他人的任务");
+            // T1-backend-auth-audit: 统一用 BizException(ResultCode.FORBIDDEN, msg) 替代手动 Result.fail(403, ...)
+            throw new com.minimax.common.exception.BizException(
+                    com.minimax.common.result.ResultCode.FORBIDDEN, "无权停止他人的任务");
         }
         AtomicBoolean flag = runningTasks.get(taskId);
         if (flag != null) {
@@ -245,7 +247,9 @@ public class AgentController {
             return Result.fail(404, "历史记录不存在");
         }
         if (!user.id().equals(task.getUserId())) {
-            return Result.fail(403, "无权删除此历史记录");
+            // T1-backend-auth-audit: 统一用 BizException(ResultCode.FORBIDDEN, msg) 替代手动 Result.fail(403, ...)
+            throw new com.minimax.common.exception.BizException(
+                    com.minimax.common.result.ResultCode.FORBIDDEN, "无权删除此历史记录");
         }
         int rows = agentTaskMapper.deleteById(id);
         return Result.ok(rows > 0);
@@ -437,7 +441,9 @@ public class AgentController {
         } catch (IllegalArgumentException e) {
             return Result.fail(404, e.getMessage());
         } catch (IllegalStateException e) {
-            return Result.fail(403, e.getMessage());
+            // T1-backend-auth-audit: 统一用 BizException(ResultCode.FORBIDDEN, msg) 替代手动 Result.fail(403, ...)
+            throw new com.minimax.common.exception.BizException(
+                    com.minimax.common.result.ResultCode.FORBIDDEN, e.getMessage());
         } catch (Exception e) {
             log.error("[plugin] call failed: {}", e.getMessage());
             return Result.fail(500, "Plugin execution failed: " + e.getMessage());

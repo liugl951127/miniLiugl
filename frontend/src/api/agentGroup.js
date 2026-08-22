@@ -11,13 +11,32 @@
  *   - PUT    /{groupId}/members/reorder
  *   - POST   /{groupId}/run           (SSE)
  *   - GET    /strategies
+ *
+ * T2+: SSE 流式接口 (runStream) 使用 fetch + reader
+ *  - 带 Authorization Bearer (token 鉴权)
+ *  - 带 X-User-Id (从 store 读, 兜底 localStorage / '1')
+ *  - 401 → 自动调 refresh → 重试 1 次
  */
 import http from './http'
+import { useUserStore } from '@/store/user'
+import { ElMessage } from 'element-plus'
+import router from '@/router'
 
 const PREFIX = '/agent-group'
 
-// SSE 用: 优先从 localStorage 取 userId, 兜底 '1'
-const USER_ID = () => localStorage.getItem('userId') || '1'
+// SSE 用: 优先 store.profile → 兜底 localStorage → 最后 '1'
+function resolveUserId() {
+  try {
+    const store = useUserStore()
+    const fromStore = store.profile?.userId ?? store.profile?.id
+    if (fromStore) return String(fromStore)
+  } catch (_) {}
+  try {
+    const ls = localStorage.getItem('userId')
+    if (ls) return ls
+  } catch (_) {}
+  return '1'
+}
 
 // 默认策略 (后端 /strategies 不可用时兜底)
 const DEFAULT_STRATEGIES = [
@@ -28,6 +47,9 @@ const DEFAULT_STRATEGIES = [
 
 // 默认群组 (后端 /list 不可用时兜底)
 const DEFAULT_GROUPS = [{ id: 1, name: '默认群' }]
+
+// T2+: 401 refresh 防风暴 (5s 内只跳一次登录)
+let sseLast401At = 0
 
 export const agentGroupApi = {
   /**
@@ -78,18 +100,53 @@ export const agentGroupApi = {
     http.get(`${PREFIX}/strategies`).catch(() => DEFAULT_STRATEGIES),
 
   /**
-   * SSE 流式执行群组任务
+   * SSE 流式执行群组任务 (T2+ fetch + reader 鉴权修复)
+   * - 内部处理 401: 调 userStore.refreshAccessToken() 拿新 token 后重试 1 次
+   * - 自动注入 Authorization + X-User-Id
+   * - refresh 失败 → 提示并跳登录 (与 http.js 一致)
+   *
    * @param {string|number} groupId
    * @param {object} body { goal, strategy, tools }
    * @returns {Promise<Response>} fetch 的 Response 对象 (调用方负责读 body.getReader())
    */
-  runStream: (groupId, body) => {
+  runStream: async (groupId, body) => {
     const url = `/api/v1/agent-group/${groupId}/run`
-    return fetch(url, {
+    const doFetch = (token) => fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-User-Id': USER_ID() },
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+        'X-User-Id': resolveUserId(),
+        'X-Trace-Id': 'fe-sse-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
       body: JSON.stringify(body)
     })
+    // 第一次请求
+    const userStore = useUserStore()
+    let res = await doFetch(userStore.accessToken)
+    if (res.status !== 401) return res
+    // 401 → refresh → 重试 1 次
+    if (!userStore.refreshToken) return res
+    try {
+      const newToken = await userStore.refreshAccessToken()
+      if (newToken) {
+        res = await doFetch(newToken)
+        return res
+      }
+    } catch (_) {
+      // refresh 失败, 走下面跳登录
+    }
+    // 5s 内只跳一次
+    const now = Date.now()
+    if (now - sseLast401At < 10_000) return res
+    sseLast401At = now
+    ElMessage.warning('登录已过期, 正在跳转登录页...')
+    try { await userStore.logout() } catch (_) {}
+    if (router.currentRoute.value.path !== '/login') {
+      router.replace({ path: '/login', query: { redirect: router.currentRoute.value.fullPath } })
+    }
+    return res
   }
 }
 

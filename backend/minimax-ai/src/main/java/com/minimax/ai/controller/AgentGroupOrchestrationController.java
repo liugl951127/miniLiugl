@@ -7,12 +7,16 @@ import com.minimax.ai.marketplace.orchestrator.DebateStrategy;
 import com.minimax.ai.marketplace.orchestrator.GroupStrategy;
 import com.minimax.ai.marketplace.orchestrator.ParallelStrategy;
 import com.minimax.ai.marketplace.orchestrator.PipelineStrategy;
+import com.minimax.common.exception.BizException;
 import com.minimax.common.result.Result;
+import com.minimax.common.result.ResultCode;
+import com.minimax.common.security.JwtAuthenticationFilter.AuthenticatedUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -54,14 +58,18 @@ public class AgentGroupOrchestrationController {
 
     @Operation(summary = "列出群组全部成员")
     @GetMapping("/{groupId}/members")
-    public Result<List<AgentGroupMember>> listMembers(@PathVariable Long groupId) {
+    public Result<List<AgentGroupMember>> listMembers(@PathVariable Long groupId,
+                                                      @AuthenticationPrincipal AuthenticatedUser user) {
+        if (user == null) throw new BizException(ResultCode.UNAUTHORIZED, "未登录");
         return Result.ok(memberService.listByGroupId(groupId));
     }
 
     @Operation(summary = "新增成员")
     @PostMapping("/{groupId}/members")
     public Result<AgentGroupMember> addMember(@PathVariable Long groupId,
-                                              @RequestBody Map<String, Object> body) {
+                                              @RequestBody Map<String, Object> body,
+                                              @AuthenticationPrincipal AuthenticatedUser user) {
+        if (user == null) throw new BizException(ResultCode.UNAUTHORIZED, "未登录");
         try {
             AgentGroupMember m = new AgentGroupMember();
             m.setAgentCode((String) body.get("agentCode"));
@@ -86,7 +94,9 @@ public class AgentGroupOrchestrationController {
     @PutMapping("/{groupId}/members/{memberId}")
     public Result<AgentGroupMember> updateMember(@PathVariable Long groupId,
                                                  @PathVariable Long memberId,
-                                                 @RequestBody Map<String, Object> body) {
+                                                 @RequestBody Map<String, Object> body,
+                                                 @AuthenticationPrincipal AuthenticatedUser user) {
+        if (user == null) throw new BizException(ResultCode.UNAUTHORIZED, "未登录");
         try {
             AgentGroupMember m = new AgentGroupMember();
             if (body.get("agentCode") != null) m.setAgentCode((String) body.get("agentCode"));
@@ -110,7 +120,9 @@ public class AgentGroupOrchestrationController {
     @Operation(summary = "删除成员")
     @DeleteMapping("/{groupId}/members/{memberId}")
     public Result<Boolean> removeMember(@PathVariable Long groupId,
-                                        @PathVariable Long memberId) {
+                                        @PathVariable Long memberId,
+                                        @AuthenticationPrincipal AuthenticatedUser user) {
+        if (user == null) throw new BizException(ResultCode.UNAUTHORIZED, "未登录");
         boolean ok = memberService.removeMember(groupId, memberId);
         if (!ok) {
             return Result.fail(404, "成员不存在或 groupId 不匹配");
@@ -121,7 +133,9 @@ public class AgentGroupOrchestrationController {
     @Operation(summary = "批量重排 (按入参顺序从 0 开始重写 position)")
     @PutMapping("/{groupId}/members/reorder")
     public Result<Map<String, Object>> reorderMembers(@PathVariable Long groupId,
-                                                       @RequestBody List<Map<String, Object>> orders) {
+                                                       @RequestBody List<Map<String, Object>> orders,
+                                                       @AuthenticationPrincipal AuthenticatedUser user) {
+        if (user == null) throw new BizException(ResultCode.UNAUTHORIZED, "未登录");
         if (orders == null || orders.isEmpty()) {
             return Result.fail(400, "orders 不能为空");
         }
@@ -137,15 +151,18 @@ public class AgentGroupOrchestrationController {
     @Operation(summary = "流式执行群任务 (SSE), strategy 默认 PIPELINE")
     @PostMapping(value = "/{groupId}/run", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter run(@PathVariable Long groupId,
-                          @RequestBody(required = false) Map<String, Object> body) {
+                          @RequestBody(required = false) Map<String, Object> body,
+                          @AuthenticationPrincipal AuthenticatedUser user) {
+        // T1-backend-auth-audit: 强制鉴权, SSE 需登录用户才能运行
+        if (user == null) throw new BizException(ResultCode.UNAUTHORIZED, "未登录, SSE 需鉴权");
         String goal = body == null ? null : (String) body.get("goal");
         @SuppressWarnings("unchecked")
         List<String> tools = body == null ? new ArrayList<>()
                 : (List<String>) body.getOrDefault("tools", new ArrayList<>());
         String strategy = body == null ? null : (String) body.get("strategy");
-        log.info("[orch-ctrl] run groupId={} strategy={} goal-len={} tools={}",
-                groupId, strategy, goal == null ? 0 : goal.length(), tools);
-        return orchestrator.runWithStrategy(null, groupId, goal, tools, strategy);
+        log.info("[orch-ctrl] run groupId={} userId={} strategy={} goal-len={} tools={}",
+                groupId, user.id(), strategy, goal == null ? 0 : goal.length(), tools);
+        return orchestrator.runWithStrategy(user.id(), groupId, goal, tools, strategy);
     }
 
     // ---------- 元信息 ----------

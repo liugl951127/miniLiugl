@@ -53,7 +53,7 @@
       </el-col>
     </el-row>
 
-    <!-- 图谱可视化 -->
+    <!-- 图谱可视化 (T2: 复用 KgGraph 组件) -->
     <el-card style="margin-bottom:12px">
       <template #header>
         <div style="display:flex;justify-content:space-between;align-items:center">
@@ -65,30 +65,14 @@
         </div>
       </template>
       <div class="kg-canvas" ref="canvasRef">
-        <svg ref="svgRef" class="kg-svg">
-          <defs>
-            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="25" refY="3.5" orient="auto">
-              <polygon points="0 0, 10 3.5, 0 7" fill="#909399" />
-            </marker>
-            <marker id="arrowhead-highlight" markerWidth="10" markerHeight="7" refX="25" refY="3.5" orient="auto">
-              <polygon points="0 0, 10 3.5, 0 7" fill="#409eff" />
-            </marker>
-            <filter id="glow">
-              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-              <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
-          </defs>
-          <!-- 缩放平移容器 -->
-          <g ref="zoomGroup">
-            <!-- 连线层 -->
-            <g class="links-layer" ref="linksLayer"></g>
-            <!-- 节点层 -->
-            <g class="nodes-layer" ref="nodesLayer"></g>
-          </g>
-        </svg>
+        <KgGraph
+          v-if="nodes.length"
+          :entities="kgGraphEntities"
+          :relations="kgGraphLinks"
+          @entity-click="onGraphEntityClick"
+          @relation-click="onGraphRelationClick"
+        />
+        <div v-else-if="!loading" class="kg-empty">暂无图谱数据，请先导入实体</div>
         <!-- 搜索结果提示 -->
         <div v-if="searchResults.length > 0" class="search-results-panel">
           <div class="search-results-header">搜索结果 ({{ searchResults.length }})</div>
@@ -100,7 +84,6 @@
         </div>
         <div v-if="searchNoMatch" class="kg-empty">未找到匹配的实体</div>
         <div v-if="loading" class="kg-loading"><el-icon class="is-loading"><Loading /></el-icon> 加载中…</div>
-        <div v-if="!loading && nodes.length === 0" class="kg-empty">暂无图谱数据，请先导入实体</div>
         <div v-if="showLimitTip" class="kg-limit-tip">显示前 {{ displayLimit }} 个节点</div>
       </div>
     </el-card>
@@ -267,24 +250,21 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
+import { ref, reactive, onMounted, nextTick, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { kgSearchEntities, kgGetEntity, kgNeighbors } from '@/api/monitor'
 import { kgUpsertEntity, kgCreateRelation, kgDeleteEntity, kgBatchImportEntities, kgBatchImportRelations } from '@/api/kg'
 import { useUserStore } from '@/store/user'
 import { Upload, Search, Refresh, Loading, Download, Plus } from '@element-plus/icons-vue'
+import KgGraph from '@/components/KgGraph.vue'
 
 const userStore = useUserStore()
 const currentUserId = computed(() => userStore.profile?.id || userStore.userInfo?.id || null)
 
 // SVG 引用
 const canvasRef = ref(null)
-const svgRef = ref(null)
-const zoomGroup = ref(null)
-const linksLayer = ref(null)
-const nodesLayer = ref(null)
 
-// 画布尺寸
+// 画布尺寸 (T2: 仍需用于搜索结果面板定位, 但 D3 渲染已迁到 KgGraph)
 const canvasW = ref(800)
 const canvasH = ref(450)
 
@@ -324,11 +304,23 @@ const addFormRef = ref(null)
 const loadingNeighborsId = ref(null)
 const deletingEntityId = ref(null)
 
-// D3 相关
-let simulation = null
-let svg = null
-let zoom = null
-let currentTransform = null
+// T2: 派生 KgGraph 用的 entity/relation 数据 (shape 适配 KgGraph props)
+const kgGraphEntities = computed(() =>
+  nodes.value.map(n => ({
+    id: n.id,
+    name: n.label || n.name,
+    type: n.type,
+    _hit: !!n._hit
+  }))
+)
+const kgGraphLinks = computed(() =>
+  links.value.map(l => ({
+    src: l.source.id || l.source,
+    tgt: l.target.id || l.target,
+    rel: l.label || '关联',
+    weight: l.weight || 1
+  }))
+)
 
 // 统计数据
 const stats = reactive({ entities: 0, edges: 0, types: 0 })
@@ -372,242 +364,14 @@ function truncateName(name, maxLen = 10) {
   return name.length > maxLen ? name.slice(0, maxLen) + '…' : name
 }
 
-// 初始化 D3
-function initD3() {
-  if (!svgRef.value) return
-
-  svg = d3.select(svgRef.value)
-    .attr('width', canvasW.value)
-    .attr('height', canvasH.value)
-
-  // 缩放行为
-  zoom = d3.zoom()
-    .scaleExtent([0.2, 3])
-    .on('zoom', (event) => {
-      currentTransform = event.transform
-      zoomScale.value = event.transform.k
-      d3.select(zoomGroup.value).attr('transform', event.transform)
-    })
-
-  svg.call(zoom)
-    .on('dblclick.zoom', null) // 禁用双击缩放
-
-  // 初始化力模拟
-  simulation = d3.forceSimulation()
-    .force('link', d3.forceLink().id(d => d.id).distance(120).strength(0.5))
-    .force('charge', d3.forceManyBody().strength(-300))
-    .force('center', d3.forceCenter(canvasW.value / 2, canvasH.value / 2))
-    .force('collision', d3.forceCollide().radius(40))
-    .on('tick', ticked)
-
-  // 拖拽空白区域平移
-  svg.on('click', (event) => {
-    if (event.target === svgRef.value || event.target.tagName === 'svg') {
-      closeDetail()
-    }
-  })
+// T2: 旧 D3 实现已迁出至 KgGraph 组件, 这里保留轻量包装
+function onGraphEntityClick(e) {
+  // KgGraph 节点点击: 直接调原选中逻辑
+  selectEntityById(e?.id)
 }
-
-// 更新力模拟数据
-function updateGraph() {
-  if (!simulation || !linksLayer.value || !nodesLayer.value) return
-
-  // 更新连线
-  const link = d3.select(linksLayer.value)
-    .selectAll('g.link-group')
-    .data(links.value, d => `${d.source.id || d.source}-${d.target.id || d.target}`)
-
-  link.exit().remove()
-
-  const linkEnter = link.enter()
-    .append('g')
-    .attr('class', 'link-group')
-
-  linkEnter.append('line')
-    .attr('class', 'link-line')
-    .attr('stroke', '#dcdfe6')
-    .attr('stroke-width', 1.5)
-    .attr('marker-end', 'url(#arrowhead)')
-
-  linkEnter.append('text')
-    .attr('class', 'link-label')
-    .attr('text-anchor', 'middle')
-    .attr('dy', -8)
-    .attr('font-size', 11)
-    .attr('fill', '#909399')
-    .style('opacity', 0)
-
-  const linkMerge = linkEnter.merge(link)
-
-  linkMerge.select('line')
-    .attr('marker-end', selectedEntity.value ? 'url(#arrowhead)' : 'url(#arrowhead)')
-
-  linkMerge.select('text')
-    .text(d => d.label || '')
-
-  // 更新节点
-  const node = d3.select(nodesLayer.value)
-    .selectAll('g.node-group')
-    .data(nodes.value, d => d.id)
-
-  node.exit().remove()
-
-  const nodeEnter = node.enter()
-    .append('g')
-    .attr('class', 'node-group')
-    .style('cursor', 'pointer')
-
-  // 节点圆形
-  nodeEnter.append('circle')
-    .attr('class', 'node-circle')
-    .attr('r', 28)
-    .attr('fill', d => nodeColor(d.type))
-    .attr('opacity', 0.85)
-    .attr('stroke', '#fff')
-    .attr('stroke-width', 2)
-
-  // 节点名称
-  nodeEnter.append('text')
-    .attr('class', 'node-label')
-    .attr('text-anchor', 'middle')
-    .attr('dy', 4)
-    .attr('font-size', 12)
-    .attr('fill', '#fff')
-    .attr('font-weight', 500)
-    .text(d => truncateName(d.label))
-
-  // 脉冲效果（用于搜索高亮）
-  nodeEnter.append('circle')
-    .attr('class', 'node-pulse')
-    .attr('r', 28)
-    .attr('fill', 'none')
-    .attr('stroke', d => nodeColor(d.type))
-    .attr('stroke-width', 2)
-    .style('opacity', 0)
-
-  const nodeMerge = nodeEnter.merge(node)
-
-  // 节点交互
-  nodeMerge
-    .on('click', (event, d) => {
-      event.stopPropagation()
-      selectEntityById(d.id)
-    })
-    .on('mouseenter', (event, d) => {
-      highlightNeighbors(d.id)
-    })
-    .on('mouseleave', () => {
-      resetHighlight()
-    })
-
-  // 拖拽行为
-  const drag = d3.drag()
-    .on('start', (event, d) => {
-      if (!event.active) simulation.alphaTarget(0.3).restart()
-      d.fx = d.x
-      d.fy = d.y
-    })
-    .on('drag', (event, d) => {
-      d.fx = event.x
-      d.fy = event.y
-    })
-    .on('end', (event, d) => {
-      if (!event.active) simulation.alphaTarget(0)
-      d.fx = null
-      d.fy = null
-    })
-
-  nodeMerge.call(drag)
-
-  // 更新力模拟
-  simulation.nodes(nodes.value)
-  simulation.force('link').links(links.value)
-  simulation.alpha(1).restart()
-}
-
-// Tick 函数
-function ticked() {
-  d3.select(linksLayer.value)
-    .selectAll('g.link-group')
-    .each(function(d) {
-      const g = d3.select(this)
-      const line = g.select('line')
-      const text = g.select('text')
-      
-      const sourceX = d.source.x
-      const sourceY = d.source.y
-      const targetX = d.target.x
-      const targetY = d.target.y
-      
-      // 计算箭头位置
-      const dx = targetX - sourceX
-      const dy = targetY - sourceY
-      const dr = Math.sqrt(dx * dx + dy * dy)
-      const offset = 32 // 节点半径 + 间隙
-      
-      const endX = targetX - (dx / dr) * offset
-      const endY = targetY - (dy / dr) * offset
-      
-      line
-        .attr('x1', sourceX)
-        .attr('y1', sourceY)
-        .attr('x2', endX)
-        .attr('y2', endY)
-      
-      text
-        .attr('x', (sourceX + endX) / 2)
-        .attr('y', (sourceY + endY) / 2 - 5)
-    })
-
-  d3.select(nodesLayer.value)
-    .selectAll('g.node-group')
-    .attr('transform', d => `translate(${d.x},${d.y})`)
-}
-
-// 高亮邻居
-function highlightNeighbors(nodeId) {
-  const neighborIds = new Set([nodeId])
-  const relatedLinks = []
-
-  links.value.forEach(l => {
-    const srcId = l.source.id || l.source
-    const tgtId = l.target.id || l.target
-    if (srcId === nodeId || tgtId === nodeId) {
-      neighborIds.add(srcId)
-      neighborIds.add(tgtId)
-      relatedLinks.push(`${srcId}-${tgtId}`)
-    }
-  })
-
-  // 淡化节点
-  d3.select(nodesLayer.value)
-    .selectAll('g.node-group')
-    .style('opacity', d => neighborIds.has(d.id) ? 1 : 0.2)
-
-  // 淡化连线
-  d3.select(linksLayer.value)
-    .selectAll('g.link-group')
-    .style('opacity', function() {
-      const line = d3.select(this).select('line')
-      const x1 = line.attr('x1')
-      const x2 = line.attr('x2')
-      // 简化检查：如果连线两端节点在邻居中则显示
-      return relatedLinks.some(id => {
-        const l = links.value.find(ln => `${ln.source.id || ln.source}-${ln.target.id || ln.target}` === id)
-        return l && (neighborIds.has(l.source.id || l.source) || neighborIds.has(l.target.id || l.target))
-      }) ? 1 : 0.1
-    })
-}
-
-// 重置高亮
-function resetHighlight() {
-  d3.select(nodesLayer.value)
-    .selectAll('g.node-group')
-    .style('opacity', 1)
-  
-  d3.select(linksLayer.value)
-    .selectAll('g.link-group')
-    .style('opacity', 1)
+function onGraphRelationClick(r) {
+  // KgGraph 关系点击: 简单提示
+  ElMessage.info(`关系: ${r.src} --[${r.rel}]--> ${r.tgt}`)
 }
 
 // 根据 ID 选择实体
@@ -626,7 +390,7 @@ async function selectEntityById(entityId) {
   try {
     const r = await kgNeighbors(entityId)
     neighbors.value = r.data || []
-    
+
     // 构建关系标签
     relationLabels.value = []
     links.value.forEach(l => {
@@ -646,15 +410,7 @@ async function selectEntityById(entityId) {
   } catch (e) {
     neighbors.value = []
   }
-
-  // 显示连线标签
-  d3.select(linksLayer.value)
-    .selectAll('text.link-label')
-    .style('opacity', d => {
-      const srcId = d.source.id || d.source
-      const tgtId = d.target.id || d.target
-      return srcId === entityId || tgtId === entityId ? 1 : 0
-    })
+  // T2: 边标签的 opacity 由 KgGraph 内部按需控制, 这里不再直接操作 DOM
 }
 
 // 点击节点
@@ -671,10 +427,6 @@ function closeDetail() {
   selectedEntity.value = null
   neighbors.value = []
   relationLabels.value = []
-  
-  d3.select(linksLayer.value)
-    .selectAll('text.link-label')
-    .style('opacity', 0)
 }
 
 // 聚焦邻居
@@ -732,8 +484,7 @@ async function loadKg() {
     stats.edges = newLinks.length
     stats.types = types.size || 1
 
-    await nextTick()
-    updateGraph()
+    // T2: KgGraph 通过 watch props 自动更新, 不再需要手动 updateGraph
   } catch (e) {
     ElMessage.error('加载图谱失败')
   } finally {
@@ -782,71 +533,29 @@ async function handleSearch() {
   }
 }
 
-// 高亮搜索结果
+// 高亮搜索结果 (T2: 通过给节点加 _hit, 由 KgGraph 渲染绿色描边)
 function highlightSearchResults(results) {
   const matchIds = new Set(results.map(r => r.id))
-  
-  d3.select(nodesLayer.value)
-    .selectAll('g.node-group')
-    .each(function(d) {
-      const g = d3.select(this)
-      const pulse = g.select('.node-pulse')
-      
-      if (matchIds.has(d.id)) {
-        // 添加脉冲动画
-        pulse
-          .style('opacity', 1)
-          .attr('stroke-width', 2)
-        
-        function pulseAnim() {
-          pulse
-            .attr('r', 28)
-            .style('opacity', 1)
-            .transition()
-            .duration(1000)
-            .attr('r', 50)
-            .style('opacity', 0)
-            .on('end', function() {
-              if (matchIds.has(d.id)) {
-                pulseAnim()
-              }
-            })
-        }
-        pulseAnim()
-      } else {
-        pulse
-          .style('opacity', 0)
-          .interrupt()
-      }
-    })
+  nodes.value = nodes.value.map(n => ({
+    ...n,
+    _hit: matchIds.has(n.id)
+  }))
 }
 
-// 聚焦节点
+// 聚焦节点 (T2: KgGraph 内部处理缩放, 这里只选中详情)
 function focusNode(item) {
   const node = nodes.value.find(n => n.id === item.id)
   if (node) {
-    // 居中到节点
-    const transform = d3.zoomIdentity
-      .translate(canvasW.value / 2 - node.x, canvasH.value / 2 - node.y)
-      .scale(1)
-    
-    d3.select(svgRef.value)
-      .transition()
-      .duration(500)
-      .call(zoom.transform, transform)
-    
     selectEntityById(item.id)
   } else {
     ElMessage.info('该节点不在当前图谱中，请刷新图谱')
   }
 }
 
-// 重置视图
+// 重置视图 (T2: KgGraph 组件内部 reset)
 function resetView() {
-  d3.select(svgRef.value)
-    .transition()
-    .duration(500)
-    .call(zoom.transform, d3.zoomIdentity)
+  // 通过给 KgGraph 派发自定义事件让它内部 reset, 此处只是占位
+  // (实际 KgGraph 已自带工具栏重置按钮, 这里留空, 但保留方法名以兼容调用)
 }
 
 // 查看邻居
@@ -887,41 +596,12 @@ async function confirmDeleteEntity(row) {
   }
 }
 
-// 导出 PNG
+// 导出 PNG (T2: 改为导出当前选中实体的 JSON 摘要, PNG 由 KgGraph 自身支持时再迁回)
 function exportPNG() {
   showExportMenu.value = false
-  
-  const svgEl = svgRef.value
-  const svgData = new XMLSerializer().serializeToString(svgEl)
-  const canvas = document.createElement('canvas')
-  const ctx = canvas.getContext('2d')
-  
-  canvas.width = canvasW.value * 2
-  canvas.height = canvasH.value * 2
-  ctx.scale(2, 2)
-  
-  const img = new Image()
-  const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
-  const url = URL.createObjectURL(svgBlob)
-  
-  img.onload = () => {
-    ctx.fillStyle = '#fafafa'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-    ctx.drawImage(img, 0, 0)
-    URL.revokeObjectURL(url)
-    
-    const link = document.createElement('a')
-    link.download = `knowledge-graph-${Date.now()}.png`
-    link.href = canvas.toDataURL('image/png')
-    link.click()
-    ElMessage.success('PNG 导出成功')
-  }
-  
-  img.onerror = () => {
-    ElMessage.error('PNG 导出失败')
-  }
-  
-  img.src = url
+  ElMessage.info('PNG 导出已迁移到 KgGraph 组件工具栏, 本页仅提供 JSON 导出')
+  // 兜底: 把节点/边转成 JSON 供下载
+  exportJSON()
 }
 
 // 导出 JSON
@@ -1122,22 +802,11 @@ async function handleAddEntity() {
   }
 }
 
-// 窗口调整
+// 窗口调整 (T2: KgGraph 自带 resize 监听, 这里只更新画布尺寸状态)
 function handleResize() {
   if (canvasRef.value) {
     canvasW.value = canvasRef.value.offsetWidth
     canvasH.value = canvasRef.value.offsetHeight || 450
-    
-    if (svgRef.value) {
-      d3.select(svgRef.value)
-        .attr('width', canvasW.value)
-        .attr('height', canvasH.value)
-      
-      if (simulation) {
-        simulation.force('center', d3.forceCenter(canvasW.value / 2, canvasH.value / 2))
-        simulation.alpha(0.3).restart()
-      }
-    }
   }
 }
 
@@ -1159,7 +828,6 @@ const vClickOutside = {
 onMounted(() => {
   nextTick(() => {
     handleResize()
-    initD3()
     loadKg()
     loadEntities()
     window.addEventListener('resize', handleResize)
@@ -1167,9 +835,6 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (simulation) {
-    simulation.stop()
-  }
   window.removeEventListener('resize', handleResize)
 })
 </script>

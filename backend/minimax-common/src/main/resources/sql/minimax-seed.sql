@@ -256,6 +256,44 @@ INSERT INTO demo_payment (paymentId, orderId, userId, amount, payMethod, transac
     ('PAY20250815025', 'ORD20250815025', 1, 89.0, 'WECHAT', 'WX20250815025', 'SUCCESS', '2025-08-15 08:00:00', DEFAULT),
     ('PAY20250815060', 'ORD20250815060', 17, 1299.0, 'CARD', 'CARD20250815060', 'SUCCESS', '2025-08-12 09:00:00', DEFAULT);
 
+-- =============================================================
+-- [T1-backend-kg-extract] KB 1 抽取的实体 + 关系种子
+-- 配套端点: /api/v1/rag/kb/1/kg/{build,stats,search}
+-- 表: kb_extracted_entity, kb_extracted_relation
+-- 10 个示例实体 + 15 条 CO_OCCUR 关系
+-- =============================================================
+
+-- [minimax-rag] kb_extracted_entity 种子 (KB 1)
+INSERT INTO kb_extracted_entity (id, kb_id, name, type, freq, source_doc_id, created_at) VALUES
+    (1, 1, 'MiniMax平台', 'PRODUCT', 24, NULL, DEFAULT),
+    (2, 1, '知识图谱', 'CONCEPT', 19, NULL, DEFAULT),
+    (3, 1, 'RAG检索', 'CONCEPT', 17, NULL, DEFAULT),
+    (4, 1, '向量数据库', 'CONCEPT', 15, NULL, DEFAULT),
+    (5, 1, '大模型', 'CONCEPT', 14, NULL, DEFAULT),
+    (6, 1, '智能体', 'CONCEPT', 12, NULL, DEFAULT),
+    (7, 1, '语义搜索', 'CONCEPT', 10, NULL, DEFAULT),
+    (8, 1, '文档分块', 'CONCEPT', 9, NULL, DEFAULT),
+    (9, 1, 'Embedding', 'CONCEPT', 8, NULL, DEFAULT),
+    (10, 1, '在线问答', 'CONCEPT', 7, NULL, DEFAULT);
+
+-- [minimax-rag] kb_extracted_relation 种子 (KB 1, 15 条 CO_OCCUR)
+INSERT INTO kb_extracted_relation (id, kb_id, src_entity, rel, tgt_entity, weight, created_at) VALUES
+    (1, 1, 'MiniMax平台', 'CO_OCCUR', '知识图谱', 8, DEFAULT),
+    (2, 1, 'MiniMax平台', 'CO_OCCUR', 'RAG检索', 7, DEFAULT),
+    (3, 1, 'MiniMax平台', 'CO_OCCUR', '大模型', 6, DEFAULT),
+    (4, 1, 'MiniMax平台', 'CO_OCCUR', '智能体', 5, DEFAULT),
+    (5, 1, '知识图谱', 'CO_OCCUR', '实体抽取', 4, DEFAULT),
+    (6, 1, 'RAG检索', 'CO_OCCUR', '向量数据库', 6, DEFAULT),
+    (7, 1, 'RAG检索', 'CO_OCCUR', 'Embedding', 5, DEFAULT),
+    (8, 1, 'RAG检索', 'CO_OCCUR', '语义搜索', 4, DEFAULT),
+    (9, 1, 'RAG检索', 'CO_OCCUR', '在线问答', 3, DEFAULT),
+    (10, 1, '向量数据库', 'CO_OCCUR', 'Embedding', 4, DEFAULT),
+    (11, 1, '大模型', 'CO_OCCUR', '智能体', 5, DEFAULT),
+    (12, 1, '大模型', 'CO_OCCUR', 'Embedding', 3, DEFAULT),
+    (13, 1, '文档分块', 'CO_OCCUR', 'Embedding', 3, DEFAULT),
+    (14, 1, '文档分块', 'CO_OCCUR', 'RAG检索', 3, DEFAULT),
+    (15, 1, '语义搜索', 'CO_OCCUR', '在线问答', 2, DEFAULT);
+
 SET FOREIGN_KEY_CHECKS = 1;
 -- ==========================================================
 -- [V7.2] 新增 7 张表的种子数据
@@ -510,5 +548,43 @@ INSERT INTO demo_payment (paymentId, orderId, userId, amount, payMethod, transac
     ('PAY20250813023', 'ORD20250813023', 6, 1080.0, 'ALIPAY', 'ZFB20250813023', 'SUCCESS', '2025-08-13 11:00:00', DEFAULT),
     ('PAY20250815025', 'ORD20250815025', 1, 89.0, 'WECHAT', 'WX20250815025', 'SUCCESS', '2025-08-15 08:00:00', DEFAULT),
     ('PAY20250815060', 'ORD20250815060', 17, 1299.0, 'CARD', 'CARD20250815060', 'SUCCESS', '2025-08-12 09:00:00', DEFAULT);
+
+-- =============================================================
+-- [T1-backend-kg-extract] KB 1 抽取的实体 + 关系种子
+-- 配套端点: /api/v1/rag/kb/1/kg/{build,stats,search}
+-- 表: kb_extracted_entity, kb_extracted_relation
+-- 10 个示例实体 + 15 条 CO_OCCUR 关系
+-- =============================================================
+
+-- [minimax-rag] kb_extracted_entity 种子 (KB 1)
+INSERT INTO kb_extracted_entity (id, kb_id, name, type, freq, source_doc_id, created_at) VALUES
+    (1, 1, 'MiniMax平台', 'PRODUCT', 24, NULL, DEFAULT),
+    (2, 1, '知识图谱', 'CONCEPT', 19, NULL, DEFAULT),
+    (3, 1, 'RAG检索', 'CONCEPT', 17, NULL, DEFAULT),
+    (4, 1, '向量数据库', 'CONCEPT', 15, NULL, DEFAULT),
+    (5, 1, '大模型', 'CONCEPT', 14, NULL, DEFAULT),
+    (6, 1, '智能体', 'CONCEPT', 12, NULL, DEFAULT),
+    (7, 1, '语义搜索', 'CONCEPT', 10, NULL, DEFAULT),
+    (8, 1, '文档分块', 'CONCEPT', 9, NULL, DEFAULT),
+    (9, 1, 'Embedding', 'CONCEPT', 8, NULL, DEFAULT),
+    (10, 1, '在线问答', 'CONCEPT', 7, NULL, DEFAULT);
+
+-- [minimax-rag] kb_extracted_relation 种子 (KB 1, 15 条 CO_OCCUR)
+INSERT INTO kb_extracted_relation (id, kb_id, src_entity, rel, tgt_entity, weight, created_at) VALUES
+    (1, 1, 'MiniMax平台', 'CO_OCCUR', '知识图谱', 8, DEFAULT),
+    (2, 1, 'MiniMax平台', 'CO_OCCUR', 'RAG检索', 7, DEFAULT),
+    (3, 1, 'MiniMax平台', 'CO_OCCUR', '大模型', 6, DEFAULT),
+    (4, 1, 'MiniMax平台', 'CO_OCCUR', '智能体', 5, DEFAULT),
+    (5, 1, '知识图谱', 'CO_OCCUR', '实体抽取', 4, DEFAULT),
+    (6, 1, 'RAG检索', 'CO_OCCUR', '向量数据库', 6, DEFAULT),
+    (7, 1, 'RAG检索', 'CO_OCCUR', 'Embedding', 5, DEFAULT),
+    (8, 1, 'RAG检索', 'CO_OCCUR', '语义搜索', 4, DEFAULT),
+    (9, 1, 'RAG检索', 'CO_OCCUR', '在线问答', 3, DEFAULT),
+    (10, 1, '向量数据库', 'CO_OCCUR', 'Embedding', 4, DEFAULT),
+    (11, 1, '大模型', 'CO_OCCUR', '智能体', 5, DEFAULT),
+    (12, 1, '大模型', 'CO_OCCUR', 'Embedding', 3, DEFAULT),
+    (13, 1, '文档分块', 'CO_OCCUR', 'Embedding', 3, DEFAULT),
+    (14, 1, '文档分块', 'CO_OCCUR', 'RAG检索', 3, DEFAULT),
+    (15, 1, '语义搜索', 'CO_OCCUR', '在线问答', 2, DEFAULT);
 
 SET FOREIGN_KEY_CHECKS = 1;

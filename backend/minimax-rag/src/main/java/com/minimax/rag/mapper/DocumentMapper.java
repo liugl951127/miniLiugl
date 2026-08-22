@@ -20,4 +20,11 @@ public interface DocumentMapper extends BaseMapper<Document> {
     int updateStatus(@Param("id") Long id,
                      @Param("status") String status,
                      @Param("errorMsg") String errorMsg);
+
+    /**
+     * V7.3: 取出 KB 全部文档的 id + title + content (用于 EntityExtractor)
+     * limit=0 表示不限制
+     */
+    List<Document> selectContentByKb(@Param("kbId") Long kbId,
+                                     @Param("limit") int limit);
 }

@@ -7,7 +7,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         "com.minimax.rag",
         "com.minimax.common"
 })
-@MapperScan("com.minimax.rag.mapper")
+@MapperScan({
+        "com.minimax.rag.mapper",
+        "com.minimax.rag.kg.mapper"
+})
 public class RagApplication {
     public static void main(String[] args) {
         SpringApplication.run(RagApplication.class, args);

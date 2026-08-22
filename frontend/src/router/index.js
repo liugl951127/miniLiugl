@@ -99,32 +99,40 @@ const router = createRouter({
 })
 
 // ─── 导航守卫 ───
+// T2+: 路由级 401 重定向 — store 中无 token 且目标非 /login 时强制跳 /login
+//       (同时保留原有: 有 token 但 isLogin=false 时的 fetchProfile 拉取流程)
+const LOGIN_PATH = '/login'
 router.beforeEach((to, from, next) => {
   // 设置页面标题
   if (to.meta.title) {
     document.title = to.meta.title + ' - Liugl-AI'
   }
 
+  const userStore = useUserStore()
+
   // 公开路由跳过校验
   if (to.meta.public) {
     // 已登录用户访问公开路由 → 重定向到首页
-    const userStore = useUserStore()
     if (userStore.isLogin) {
       return next('/chat')
     }
     return next()
   }
 
+  // T2+ 路由级 401 重定向: 无 token 且不是登录页 → 跳登录
+  if (!userStore.accessToken && to.path !== LOGIN_PATH) {
+    return next({ path: LOGIN_PATH, query: { redirect: to.fullPath } })
+  }
+
   // JWT 校验
-  const userStore = useUserStore()
   if (!userStore.isLogin) {
-    // 有 token 但没登录态，尝试刷新
+    // 有 token 但没登录态, 尝试刷新
     if (userStore.accessToken) {
       userStore.fetchProfile().then(() => next()).catch(() => {
-        next({ path: '/login', query: { redirect: to.fullPath } })
+        next({ path: LOGIN_PATH, query: { redirect: to.fullPath } })
       })
     } else {
-      next({ path: '/login', query: { redirect: to.fullPath } })
+      next({ path: LOGIN_PATH, query: { redirect: to.fullPath } })
     }
   } else {
     next()

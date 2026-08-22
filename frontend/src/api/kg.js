@@ -61,6 +61,55 @@ export const kgTwoHop = (id, userId) =>
 export const kgPath = (userId, from, to) =>
   http.get('/agent/kg/path', { params: { userId, from, to } })
 
+// ==================== T2: KB 知识图谱 (基于文档抽取) ====================
+
+/**
+ * 从知识库文档中构建图谱 (实体+关系抽取)
+ * @param {number} kbId
+ */
+export const buildKg = (kbId) =>
+  http.post(`/rag/kb/${kbId}/kg/build`)
+
+/**
+ * 获取知识库全量图谱 (实体+关系)
+ * @param {number} kbId
+ * @returns {Promise<{entities:Array, relations:Array}>}
+ */
+export const getKg = (kbId) =>
+  http.get(`/rag/kb/${kbId}/kg`)
+
+/**
+ * 获取图谱统计
+ * @param {number} kbId
+ * @returns {Promise<{entities:number, relations:number, types:number}>}
+ */
+export const getKgStats = (kbId) =>
+  http.get(`/rag/kb/${kbId}/kg/stats`)
+
+/**
+ * 在图谱中搜索实体
+ * @param {number} kbId
+ * @param {string} kw
+ */
+export const searchKg = (kbId, kw) =>
+  http.get(`/rag/kb/${kbId}/kg/search`, { params: { kw } })
+
+/**
+ * 关系推理: 找两个实体之间的路径
+ * @param {string} src
+ * @param {string} tgt
+ * @returns {Promise<{paths:Array<{path:string[],hops:number}>}>}
+ */
+export const reasonKg = (src, tgt) =>
+  http.get('/rag/kg/reason', { params: { src, tgt } })
+
+/**
+ * 清除知识库图谱
+ * @param {number} kbId
+ */
+export const clearKg = (kbId) =>
+  http.delete(`/rag/kb/${kbId}/kg`)
+
 // ==================== 批量导入 ====================
 
 /**
@@ -138,7 +187,14 @@ const kgApi = {
   kgTwoHop,
   kgPath,
   kgBatchImportEntities,
-  kgBatchImportRelations
+  kgBatchImportRelations,
+  // T2: KB 知识图谱
+  buildKg,
+  getKg,
+  getKgStats,
+  searchKg,
+  reasonKg,
+  clearKg
 }
 export default kgApi
 export { kgApi }

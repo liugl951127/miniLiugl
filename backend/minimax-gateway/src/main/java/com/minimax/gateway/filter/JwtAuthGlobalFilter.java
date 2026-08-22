@@ -39,6 +39,8 @@ import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
 // Spring HTTP - 状态码
 import org.springframework.http.HttpStatus;
+// Spring HTTP - HTTP method enum
+import org.springframework.http.HttpMethod;
 // Spring HTTP - MIME 类型
 import org.springframework.http.MediaType;
 // Spring HTTP 响应式 - 响应对象
@@ -170,6 +172,13 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
         // 1. 取请求路径 (e.g. "/api/v1/auth/login")
         String path = exchange.getRequest().getPath().value();
 
+        // T1-backend-auth-audit: OPTIONS 预检 (CORS preflight) 直接放行
+        // 前端浏览器跨域时, OPTIONS 请求不会带 Authorization 头, 必须放行
+        HttpMethod method = exchange.getRequest().getMethod();
+        if (method == HttpMethod.OPTIONS) {
+            return chain.filter(exchange);
+        }
+
         // 2. 白名单路径直接放行 (无需 token)
         if (isPublicPath(path)) {
             return chain.filter(exchange);
@@ -271,6 +280,7 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
                 || path.equals("/api/v1/admin/health")
                 || path.startsWith("/api/v1/logs/")       // 前端日志上报
                 || path.startsWith("/api/ai/intro")
+                || path.startsWith("/api/v1/agent/external/")  // T1-backend-auth-audit: 外部系统 API Key 鉴权, 免 JWT
                 || path.startsWith("/ws/")               // WebSocket 端点
                 || path.startsWith("/v3/api-docs")         // OpenAPI JSON
                 || path.startsWith("/swagger-ui")          // Swagger UI
@@ -300,6 +310,9 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
      * <p>WebFlux 响应式写响应: {@code response.writeWith(Mono.just(buffer))}
      * 而不是传统 Spring MVC 的 {@code response.getWriter().write(...)}
      *
+     * <p>T1-backend-auth-audit: 响应体 code 与 BizException 一致 (ResultCode.UNAUTHORIZED=1002),
+     * 便于前端统一解析. HTTP 状态仍为 401.
+     *
      * @param exchange WebFlux exchange
      * @param code     错误码 (missing_authorization / invalid_token / invalid_token_payload)
      * @return Mono&lt;Void&gt; 写完响应
@@ -321,8 +334,9 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
         };
 
         // 5. 构造 JSON 响应体 (标准 {code, message, data} 结构)
+        //    T1-backend-auth-audit: 统一用 1002 (ResultCode.UNAUTHORIZED), 便于前端按业务码解析
         String body = String.format(
-                "{\"code\":401,\"message\":\"%s\",\"data\":null}",
+                "{\"code\":1002,\"message\":\"%s\",\"data\":null}",
                 message
         );
 

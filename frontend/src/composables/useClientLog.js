@@ -146,7 +146,12 @@ function patchOnError() {
 function patchUnhandledRejection() {
   window.addEventListener('unhandledrejection', (e) => {
     const entry = buildEntry('error', [e.reason instanceof Error ? e.reason : String(e.reason)])
+    entry.type = 'unhandledrejection'
     logBuffer.push(entry)
+    // 高优先级: 立即 flush (不等 3s)
+    if (logBuffer.length >= 5) {
+      flushLogs()
+    }
   })
 }
 

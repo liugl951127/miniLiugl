@@ -1,0 +1,139 @@
+version: 1
+plan:
+  name: "401/403 鉴权问题修复"
+  max_concurrency: 2
+  max_consecutive_failures: 3
+  max_cycles: 5
+  auto_accept: false
+  auto_reject_retries: 0
+
+tasks:
+  # ============ T1: 后端鉴权扫雷 + 修复 ============
+  - id: T1-backend-auth-audit
+    title: "后端: 网关白名单 + @PreAuthorize + 401/403 响应统一"
+    assigned_to: general
+    role: produce
+    verified_by: explore
+    depends_on: []
+    timeout_ms: 1500000
+    max_retries: 1
+    prompt: |
+      扫描 /workspace/miniLiugl/backend/ 所有 11 个微服务, 修复 401/403 鉴权问题。
+
+      ## 1. 新接口白名单补全
+      查最近 3 个 commit (5426a3e, 1546a3e, 7a395384 区域) 涉及的新接口, 确认 gateway 白名单覆盖:
+      - /workspace/miniLiugl/backend/minimax-gateway/src/main/java/com/minimax/gateway/filter/JwtAuthGlobalFilter.java
+      - 关键: 用户已登录但路径不在白名单, 网关**应**要求 JWT
+      - 路径**必须**在白名单: 登录/注册/微信/健康检查/公共 API 文档
+      - 路径**不**在白名单: 业务接口(必须有 JWT)
+
+      错误的白名单: 任何业务接口误加白名单, 让未登录用户能调 → **删除**白名单项
+
+      ## 2. @PreAuthorize 误用扫雷
+      - 找 @PreAuthorize("hasRole('ADMIN')") 加在普通用户接口上 (应该用 hasAnyRole('USER','ADMIN') 或不加)
+      - 修复: 把"用户自己的数据"接口的 @PreAuthorize 改成 @PreAuthorize("isAuthenticated()") 或
+        @PreAuthorize("hasAnyRole('USER', 'ADMIN')") 或干脆删掉
+      - ADMIN 接口保留 @PreAuthorize("hasRole('ADMIN')")
+
+      ## 3. 401/403 响应统一
+      - 找所有 Controller 里手动返 ResponseEntity.status(401).body(...) 或 403
+      - 改为 BizException, 全局异常处理统一返 {code: 401, message: "..."}
+      - 让前端能统一解析
+
+      ## 4. X-User-Id header 注入校验
+      - 网关 JwtAuthGlobalFilter 是否对所有非白名单路径注入 X-User-Id?
+      - 找代码: `request.mutate().header("X-User-Id", ...)` 应该有
+      - 找漏注入的下游路径, 修复
+
+      ## 5. SSE / WebSocket 鉴权
+      - /api/v1/agent-group/{id}/run (SSE) 走网关时要带 token
+      - 前端 EventSource API 不支持自定义 header, 需用 fetch + reader
+      - 后端 SseEmitter 要从 request 拿 X-User-Id (已经由网关注入)
+      - 修复: 确认 SseEmitter 创建时检查 X-User-Id, 没有就 401
+
+      ## 6. 预检 (OPTIONS) CORS
+      - gateway 是否放行 OPTIONS 预检?
+      - 加白名单: /api/v1/** OPTIONS 直接放行
+
+      ## 7. Token 过期自动续期
+      - 找前端 utils/request.js 是否有 401 自动 refresh token 逻辑
+      - 缺则补: 401 → 自动调 /api/v1/auth/refresh → 重发原请求
+
+      ## 最后编译:
+      ```bash
+      cd /workspace/miniLiugl/backend
+      export JAVA_HOME=/opt/jdk-17.0.2
+      export PATH=$JAVA_HOME/bin:/opt/apache-maven-3.9.6/bin:$PATH
+      mvn package -DskipTests -s ~/.m2/settings.xml 2>&1 | tail -20
+      ```
+      必须 BUILD SUCCESS
+
+    verify_prompt: |
+      验证:
+      1. gateway 白名单不含任何业务接口
+      2. @PreAuthorize 误用清单 (之前 >5, 现在 =0)
+      3. 401/403 统一响应
+      4. SSE 鉴权修了
+      5. OPTIONS 预检放行
+      6. mvn package BUILD SUCCESS
+
+  # ============ T2: 前端 token 处理 + 错误提示 + SSE ============
+  - id: T2-frontend-auth-ux
+    title: "前端: token 续期 + 401/403 友好提示 + SSE 鉴权修复"
+    assigned_to: general
+    role: produce
+    verified_by: explore
+    depends_on: []
+    timeout_ms: 1500000
+    max_retries: 1
+    prompt: |
+      扫描 /workspace/miniLiugl/frontend/src/ 修复 401/403 UX 问题。
+
+      ## 1. axios 401 自动续期
+      /workspace/miniLiugl/frontend/src/api/http.js:
+      - 加 response interceptor: 检测 401 → 自动调 /api/v1/auth/refresh → 用新 token 重发原请求
+      - 防 401 风暴: 已经存在 last401At 检查
+      - 防并发 refresh: 加 refreshing Promise, 多个 401 共享一次 refresh
+
+      ## 2. 403 友好提示
+      当前逻辑: console.error + 弹 ElMessage.error
+      改: 区分
+      - 401 (token 失效): 弹"登录已过期, 正在跳转..." + 跳转 /login
+      - 403 (权限不足): 弹"无权限执行此操作 (需要 ADMIN 角色)" + 不跳转
+      - 500 (服务器错误): 弹"服务异常, 请稍后重试"
+      - 404 (接口不存在): 静默 + console.warn
+      - network: "网络连接失败, 检查后端是否启动"
+
+      ## 3. SSE 鉴权修复
+      - EventSource API 不支持自定义 header, 改用 fetch + reader
+      - 现有 /workspace/miniLiugl/frontend/src/views/agent/GroupDesigner.vue run() 用 fetch
+        验证是否带 X-User-Id (从 localStorage 或 store 读)
+      - 加: if 401, 调 refresh 后重试
+
+      ## 4. 业务请求统一 header
+      - 检查所有 src/api/*.js 用 http.get/post/put/delete 时是否带 X-User-Id
+      - 不带的加: 改 http.js 拦截器自动从 store 注入 X-User-Id
+
+      ## 5. 错误日志改进
+      - 当前 console.error 太啰嗦, 改: 只在开发模式 console.error, 生产模式静默上报
+      - 加全局错误监听: window.addEventListener('unhandledrejection', ...) 上报到 /api/v1/logs/
+
+      ## 6. 路由级 401 重定向
+      - router/index.js 加 beforeEach: 检查 store.token, 没有且不是 /login 跳 /login
+      - 已有就跳过, 缺则补
+
+      ## 最后编译:
+      ```bash
+      cd /workspace/miniLiugl/frontend
+      NODE_OPTIONS='--max-old-space-size=2200' npx vite build 2>&1 | tail -10
+      ```
+      必须 ✓ built
+
+    verify_prompt: |
+      验证:
+      1. http.js 有 401 自动 refresh 逻辑
+      2. 401/403/500/network 错误分类提示
+      3. SSE 请求带 X-User-Id
+      4. 所有 api 调用自动注入 X-User-Id
+      5. 路由有 token 校验
+      6. vite build PASS

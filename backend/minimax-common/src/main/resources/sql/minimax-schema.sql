@@ -1323,6 +1323,36 @@ CREATE TABLE IF NOT EXISTS knowledge_base (
     deleted INT DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- [minimax-rag] kb_extracted_entity
+-- 知识库自动抽取的实体 (EntityExtractor 启发式产出)
+CREATE TABLE IF NOT EXISTS kb_extracted_entity (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    kb_id BIGINT NOT NULL,
+    name VARCHAR(128) NOT NULL,
+    type VARCHAR(32) NOT NULL DEFAULT 'CONCEPT',
+    freq INT NOT NULL DEFAULT 1,
+    source_doc_id BIGINT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_kb (kb_id, freq),
+    INDEX idx_name (name),
+    INDEX idx_type (type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- [minimax-rag] kb_extracted_relation
+-- 知识库自动抽取的关系 (CO_OCCUR 同段共现 / MENTION 提及 / RELATED 关联)
+CREATE TABLE IF NOT EXISTS kb_extracted_relation (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    kb_id BIGINT NOT NULL,
+    src_entity VARCHAR(128) NOT NULL,
+    rel VARCHAR(32) NOT NULL,
+    tgt_entity VARCHAR(128) NOT NULL,
+    weight INT NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_kb_rel (kb_id, src_entity, tgt_entity),
+    INDEX idx_src (src_entity),
+    INDEX idx_tgt (tgt_entity)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- [minimax-pipeline] pipeline_workflow
 CREATE TABLE IF NOT EXISTS pipeline_workflow (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,

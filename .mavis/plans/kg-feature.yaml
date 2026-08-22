@@ -1,0 +1,275 @@
+version: 1
+plan:
+  name: "知识图谱: 替换 placeholder + 真实可视化 + KB 实体抽取"
+  max_concurrency: 2
+  max_consecutive_failures: 3
+  max_cycles: 5
+  auto_accept: false
+  auto_reject_retries: 0
+
+tasks:
+  # ============ T1: 后端 KB → 知识图谱 实体抽取 + 图谱 API ============
+  - id: T1-backend-kg-extract
+    title: "后端: KB 实体抽取 + 图谱查询 + 关系推理"
+    assigned_to: general
+    role: produce
+    verified_by: explore
+    depends_on: []
+    timeout_ms: 1500000
+    max_retries: 1
+    prompt: |
+      在 /workspace/miniLiugl/backend/ 加 KB → 知识图谱 抽取能力。
+      现有的 `kg_entity` / `kg_relation` / `AgentKgController` (在 minimax-agent) 已有 8 个种子实体 + 9 条关系。
+      现需:
+
+      ## 1. 新表 `kb_extracted_entity` (minimax-common/src/main/resources/sql/minimax-schema.sql)
+      ```sql
+      CREATE TABLE IF NOT EXISTS kb_extracted_entity (
+          id BIGINT PRIMARY KEY AUTO_INCREMENT,
+          kb_id BIGINT NOT NULL,
+          name VARCHAR(128) NOT NULL,
+          type VARCHAR(32) NOT NULL DEFAULT 'CONCEPT',  -- PERSON/ORG/CONCEPT/PRODUCT/PLACE
+          freq INT NOT NULL DEFAULT 1,
+          source_doc_id BIGINT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_kb (kb_id, freq)
+      );
+      CREATE TABLE IF NOT EXISTS kb_extracted_relation (
+          id BIGINT PRIMARY KEY AUTO_INCREMENT,
+          kb_id BIGINT NOT NULL,
+          src_entity VARCHAR(128) NOT NULL,
+          rel VARCHAR(32) NOT NULL,        -- CO_OCCUR / RELATED / MENTION
+          tgt_entity VARCHAR(128) NOT NULL,
+          weight INT NOT NULL DEFAULT 1,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_kb_rel (kb_id, src_entity, tgt_entity)
+      );
+      ```
+
+      ## 2. EntityExtractor 服务 (新建 minimax-rag 模块)
+      - `backend/minimax-rag/src/main/java/com/minimax/rag/kg/EntityExtractor.java`
+      - 用 SmartChineseAnalyzer (lucene-analyzers-smartcn 8.11.0, 项目已有依赖) 对 kb_document 文档分词
+      - 启发式抽取实体:
+        1. 名词短语 (长度 2-6 字符, 词性为名词)
+        2. 高频词 (TF > 阈值, 比如 ≥3)
+        3. 跨文档共现: 同一段/同一句出现 2 个实体, 加 CO_OCCUR 边
+      - 输入: kb_id
+      - 输出: List<Entity> + List<Relation>
+      - 调 `kb_document` 已有 mapper, 拉该 KB 全部文档的 `content` 字段
+      - 用 IK/SmartChinese 分词 → 算 TF → 阈值过滤 → 写库
+      - 关联到已有 `kg_entity` (按 name 合并, 跨 KB 全局共享)
+
+      ## 3. Controller (新建)
+      - `backend/minimax-rag/src/main/java/com/minimax/rag/controller/KbKgController.java`:
+        - `POST /api/v1/rag/kb/{kbId}/kg/build` → 触发抽取, 返回 {entities: N, relations: M}
+        - `GET  /api/v1/rag/kb/{kbId}/kg` → 拉该 KB 的图 (entities + relations)
+        - `GET  /api/v1/rag/kb/{kbId}/kg/stats` → 统计
+        - `GET  /api/v1/rag/kb/{kbId}/kg/search?kw=xxx` → 模糊搜索实体
+        - `GET  /api/v1/rag/kg/reason?src=X&tgt=Y` → 关系推理 (BFS 找两实体间路径, 复用 AgentKgController.findPath 逻辑)
+        - `DELETE /api/v1/rag/kb/{kbId}/kg` → 清空该 KB 抽取结果
+
+      ## 4. 复用 AgentKgController.findPath
+      或新写 `RelationReasoner.java` (在 minimax-rag):
+      - BFS 2-hop: src → 中间 → tgt
+      - 3-hop: src → m1 → m2 → tgt
+      - 返回所有路径 + 评分
+
+      ## 5. Gateway (minimax-gateway)
+      路由已有 /api/v1/rag/**, 不用改
+
+      ## 6. seed (minimax-seed.sql)
+      给 1 号 KB 加 10 个 extracted_entity + 15 条 extracted_relation 演示数据
+
+      ## 最后编译:
+      ```bash
+      cd /workspace/miniLiugl/backend
+      export JAVA_HOME=/opt/jdk-17.0.2
+      export PATH=$JAVA_HOME/bin:/opt/apache-maven-3.9.6/bin:$PATH
+      mvn package -DskipTests -s ~/.m2/settings.xml 2>&1 | tail -30
+      ```
+      必须 BUILD SUCCESS
+
+    verify_prompt: |
+      验证:
+      1. kb_extracted_entity / kb_extracted_relation 表在 schema.sql
+      2. EntityExtractor.java 完整, 调 SmartChineseAnalyzer
+      3. KbKgController 有 6 个端点
+      4. seed.sql 加了演示数据
+      5. mvn package BUILD SUCCESS
+
+  # ============ T2: 前端 - 替换 placeholder, 真实图谱可视化 + 推理 ============
+  - id: T2-frontend-kg-viz
+    title: "前端: 替换 placeholder, D3 图谱 + 关系推理 UI"
+    assigned_to: general
+    role: produce
+    verified_by: explore
+    depends_on: []
+    timeout_ms: 1500000
+    max_retries: 1
+    prompt: |
+      在 /workspace/miniLiugl/frontend/ 把 knowledge/Index.vue 的"知识图谱"tab 替换成真实图谱。
+
+      ## 1. 复用 / 重构
+      - 现有 /workspace/miniLiugl/frontend/src/views/kg/Index.vue 是 1464 行完整 D3 图谱实现
+      - 抽核心 D3 逻辑到 /workspace/miniLiugl/frontend/src/components/KgGraph.vue (reusable)
+        - props: entities (Array), relations (Array), selectedKb (Number)
+        - events: @entity-click, @relation-click
+        - 用 d3-force / d3-zoom / d3-drag, 画 svg
+        - 节点: 圆 + label, 类型不同颜色
+        - 边: 直线 + rel 标签
+      - kg/Index.vue 改造: 复用 KgGraph 组件
+
+      ## 2. 修改 /workspace/miniLiugl/frontend/src/views/knowledge/Index.vue
+      把第 72-89 行 (el-tab-pane name="kg" 整个 el-empty placeholder) 替换为:
+      ```vue
+      <el-tab-pane name="kg">
+        <template #label><span>🕸️ 知识图谱</span></template>
+        <div class="kg-tab">
+          <!-- 顶部工具条 -->
+          <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+            <el-select v-model="kgKbId" placeholder="选择知识库" size="small" style="width:200px" @change="loadKg">
+              <el-option v-for="kb in kbs" :key="kb.id" :label="kb.name" :value="kb.id" />
+            </el-select>
+            <el-button type="primary" size="small" :loading="kgBuilding" @click="buildKg">
+              <el-icon><MagicStick /></el-icon>从文档构建图谱
+            </el-button>
+            <el-button size="small" :loading="kgLoading" @click="loadKg">
+              <el-icon><Refresh /></el-icon>刷新
+            </el-button>
+            <el-tag v-if="kgStats.entities" type="info">{{ kgStats.entities }} 实体 / {{ kgStats.relations }} 关系</el-tag>
+            <div style="flex:1"></div>
+            <el-input v-model="kgSearchKw" placeholder="搜索实体" size="small" style="width:160px" clearable @keyup.enter="searchEntity" />
+            <el-button size="small" @click="searchEntity">搜索</el-button>
+            <el-button size="small" type="success" @click="openReasoner">🔗 关系推理</el-button>
+          </div>
+          <!-- 图谱区 -->
+          <el-card shadow="never" style="min-height:560px">
+            <KgGraph
+              v-if="kgEntities.length"
+              :entities="kgEntities"
+              :relations="kgRelations"
+              @entity-click="onEntityClick"
+            />
+            <el-empty v-else description="尚未构建图谱,选个知识库点「从文档构建图谱」" :image-size="80" />
+          </el-card>
+        </div>
+
+        <!-- 关系推理弹窗 -->
+        <el-dialog v-model="reasonerVisible" title="🔗 关系推理 (BFS 路径)" width="640px">
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <el-input v-model="reasonerSrc" placeholder="起点实体" size="small" />
+            <span style="align-self:center">→</span>
+            <el-input v-model="reasonerTgt" placeholder="终点实体" size="small" />
+            <el-button type="primary" size="small" @click="runReasoner">推理</el-button>
+          </div>
+          <div v-if="reasonerPaths.length">
+            <div v-for="(p, i) in reasonerPaths" :key="i" style="padding:8px;margin-bottom:8px;background:#f5f7fa;border-radius:4px">
+              <el-tag :type="i === 0 ? 'success' : 'info'">路径 {{ i+1 }} (跳数 {{ p.hops }})</el-tag>
+              <div style="margin-top:6px;font-size:13px">
+                <span v-for="(n, idx) in p.path" :key="idx">
+                  <strong style="color: var(--el-color-primary)">{{ n }}</strong>
+                  <el-icon v-if="idx < p.path.length - 1" style="margin:0 6px"><Right /></el-icon>
+                </span>
+              </div>
+            </div>
+          </div>
+          <el-empty v-else-if="reasonerRan" description="未找到连通路径" :image-size="60" />
+        </el-dialog>
+      </el-tab-pane>
+      ```
+
+      ## 3. 加 API 调用 (src/api/kg.js 已存在, 扩)
+      - `buildKg(kbId)` POST /api/v1/rag/kb/{kbId}/kg/build
+      - `getKg(kbId)` GET /api/v1/rag/kb/{kbId}/kg
+      - `getKgStats(kbId)` GET /api/v1/rag/kb/{kbId}/kg/stats
+      - `searchKg(kbId, kw)` GET /api/v1/rag/kb/{kbId}/kg/search?kw=
+      - `reasonKg(src, tgt)` GET /api/v1/rag/kg/reason?src=&tgt=
+      - `clearKg(kbId)` DELETE /api/v1/rag/kb/{kbId}/kg
+
+      ## 4. 加 data + functions (script setup 末尾):
+      ```js
+      const kgKbId = ref(null)
+      const kgEntities = ref([])
+      const kgRelations = ref([])
+      const kgLoading = ref(false)
+      const kgBuilding = ref(false)
+      const kgStats = ref({ entities: 0, relations: 0 })
+      const kgSearchKw = ref('')
+      const reasonerVisible = ref(false)
+      const reasonerSrc = ref('')
+      const reasonerTgt = ref('')
+      const reasonerPaths = ref([])
+      const reasonerRan = ref(false)
+
+      async function buildKg() {
+        if (!kgKbId.value) { ElMessage.warning('先选知识库'); return }
+        kgBuilding.value = true
+        try {
+          const r = await kgApi.buildKg(kgKbId.value)
+          ElMessage.success(`抽取完成: ${r?.data?.entities || 0} 实体 / ${r?.data?.relations || 0} 关系`)
+          loadKg()
+        } catch (e) { ElMessage.error('构建失败: ' + (e?.response?.data?.message || e?.message)) }
+        finally { kgBuilding.value = false }
+      }
+      async function loadKg() {
+        if (!kgKbId.value) return
+        kgLoading.value = true
+        try {
+          const r = await kgApi.getKg(kgKbId.value)
+          const d = r?.data || r || {}
+          kgEntities.value = d.entities || []
+          kgRelations.value = d.relations || []
+          kgStats.value = { entities: kgEntities.value.length, relations: kgRelations.value.length }
+        } catch (e) { /* 后端未就绪时静默 */ kgEntities.value = []; kgRelations.value = []; kgStats.value = { entities: 0, relations: 0 } }
+        finally { kgLoading.value = false }
+      }
+      async function searchEntity() {
+        if (!kgKbId.value || !kgSearchKw.value.trim()) return
+        const r = await kgApi.searchKg(kgKbId.value, kgSearchKw.value.trim())
+        const list = r?.data || r || []
+        // 高亮 (简单替换 entities 列表)
+        const lc = kgSearchKw.value.toLowerCase()
+        kgEntities.value = kgEntities.value.map(e => ({ ...e, _hit: e.name?.toLowerCase().includes(lc) }))
+        ElMessage.success(`找到 ${list.length} 个匹配`)
+      }
+      function onEntityClick(e) {
+        reasonerSrc.value = e.name
+      }
+      function openReasoner() { reasonerVisible.value = true; reasonerPaths.value = []; reasonerRan.value = false }
+      async function runReasoner() {
+        if (!reasonerSrc.value || !reasonerTgt.value) { ElMessage.warning('填两个实体'); return }
+        try {
+          const r = await kgApi.reasonKg(reasonerSrc.value, reasonerTgt.value)
+          const d = r?.data || r || {}
+          reasonerPaths.value = d.paths || []
+          reasonerRan.value = true
+          if (!reasonerPaths.value.length) ElMessage.info('未找到路径')
+        } catch (e) { ElMessage.error('推理失败: ' + (e?.response?.data?.message || e?.message)) }
+      }
+      ```
+
+      ## 5. KgGraph 组件 (新建 src/components/KgGraph.vue)
+      抽 kg/Index.vue 核心 D3 逻辑 (force simulation, zoom, drag, node, link).
+      Props: entities (Array<{id, name, type}>), relations (Array<{src, tgt, rel, weight}>)
+      节点类型颜色映射: PERSON=#409EFF, ORG=#67C23A, CONCEPT=#E6A23C, PRODUCT=#F56C6C, PLACE=#909399
+
+      ## 6. 同样替换"记忆中心" placeholder (第 91-108 行)
+      - 改用现有的 `views/memory/Index.vue` (已删除! round 2 cleanup)
+      - 或加简单的"记忆条目列表" 调 minimax-chat LongTermMemoryService
+      - 简化方案: 给个 "已规划到下版本" 的简洁 empty, 不放"敬请期待"
+      - 实际: 显示一个 el-alert 说明"记忆中心由 Agent 自动维护, 数据在 minimax-chat.memory_long_term 表, 通过 API 可见"
+
+      ## 最后编译:
+      ```bash
+      cd /workspace/miniLiugl/frontend
+      NODE_OPTIONS='--max-old-space-size=2200' npx vite build 2>&1 | tail -10
+      ```
+      必须 ✓ built
+
+    verify_prompt: |
+      验证:
+      1. knowledge/Index.vue 第 72-89 行 (知识图谱 tab) 是真实 UI, 包含 KgGraph 组件 / 构建按钮 / 推理弹窗
+      2. KgGraph.vue 存在且有 D3 force simulation
+      3. kg.js API 文件加了 6 个新 export (buildKg, getKg, getKgStats, searchKg, reasonKg, clearKg)
+      4. knowledge/Index.vue 第 91-108 行 (记忆中心 tab) 替换为非 placeholder
+      5. vite build PASS

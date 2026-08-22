@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.minimax.rag.kg.mapper.KbExtractedRelationMapper">
+
+    <resultMap id="BaseResultMap" type="com.minimax.rag.kg.entity.KbExtractedRelation">
+        <id property="id" column="id"/>
+        <result property="kbId" column="kb_id"/>
+        <result property="srcEntity" column="src_entity"/>
+        <result property="rel" column="rel"/>
+        <result property="tgtEntity" column="tgt_entity"/>
+        <result property="weight" column="weight"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <select id="selectByKb" resultMap="BaseResultMap">
+        SELECT id, kb_id, src_entity, rel, tgt_entity, weight, created_at
+        FROM kb_extracted_relation
+        WHERE kb_id = #{kbId}
+        ORDER BY weight DESC, id ASC
+    </select>
+
+    <delete id="deleteByKb">
+        DELETE FROM kb_extracted_relation WHERE kb_id = #{kbId}
+    </delete>
+
+    <select id="countByKb" resultType="int">
+        SELECT COUNT(*) FROM kb_extracted_relation WHERE kb_id = #{kbId}
+    </select>
+
+    <select id="selectEdges" resultMap="BaseResultMap">
+        SELECT id, kb_id, src_entity, rel, tgt_entity, weight, created_at
+        FROM kb_extracted_relation
+        WHERE kb_id = #{kbId}
+          AND (
+              (src_entity = #{a} AND tgt_entity = #{b})
+           OR (src_entity = #{b} AND tgt_entity = #{a})
+          )
+        ORDER BY weight DESC
+    </select>
+
+    <select id="selectOutEdges" resultMap="BaseResultMap">
+        SELECT id, kb_id, src_entity, rel, tgt_entity, weight, created_at
+        FROM kb_extracted_relation
+        WHERE kb_id = #{kbId} AND src_entity = #{entity}
+        ORDER BY weight DESC
+    </select>
+
+</mapper>

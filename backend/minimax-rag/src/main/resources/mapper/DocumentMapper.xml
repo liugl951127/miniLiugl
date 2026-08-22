@@ -25,4 +25,17 @@
         SET status = #{status}, error_msg = #{errorMsg}, updated_at = NOW()
         WHERE id = #{id} AND deleted = 0
     </update>
+
+    <!-- V7.3: EntityExtractor 拉取全 KB 文档内容用于分词 -->
+    <select id="selectContentByKb" resultType="com.minimax.rag.entity.Document">
+        SELECT id, kbId, ownerId, title, sourceType, sourceUri, content, sizeBytes, status,
+               chunkCount, checksum, tags, errorMsg, createdAt, updatedAt
+        FROM document
+        WHERE kbId = #{kbId} AND deleted = 0
+          AND content IS NOT NULL AND content != ''
+        ORDER BY id ASC
+        <if test="limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
 </mapper>

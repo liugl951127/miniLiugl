@@ -72,39 +72,146 @@
       <!-- ═══ 知识图谱 ═══ -->
       <el-tab-pane name="kg">
         <template #label><span>🕸️ 知识图谱</span></template>
-        <el-empty
-          description="知识图谱功能正在建设中,敬请期待"
-          :image-size="100"
-          style="padding:60px 0"
-        >
-          <template #image>
-            <div style="font-size:64px">🕸️</div>
-          </template>
-          <template #default>
-            <div style="color: var(--el-text-color-secondary);font-size:13px;margin-top:8px">
-              基于知识库实体构建可视化图谱，支持关系推理
+        <div class="kg-tab">
+          <!-- 顶部工具条 -->
+          <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+            <el-select v-model="kgKbId" placeholder="选择知识库" size="small" style="width:200px" @change="loadKg">
+              <el-option v-for="kb in kbs" :key="kb.id" :label="kb.name" :value="kb.id" />
+            </el-select>
+            <el-button type="primary" size="small" :loading="kgBuilding" @click="buildKg">
+              <el-icon><MagicStick /></el-icon>从文档构建图谱
+            </el-button>
+            <el-button size="small" :loading="kgLoading" @click="loadKg">
+              <el-icon><Refresh /></el-icon>刷新
+            </el-button>
+            <el-tag v-if="kgStats.entities || kgStats.relations" type="info">
+              {{ kgStats.entities }} 实体 / {{ kgStats.relations }} 关系
+            </el-tag>
+            <div style="flex:1"></div>
+            <el-input
+              v-model="kgSearchKw"
+              placeholder="搜索实体"
+              size="small"
+              style="width:160px"
+              clearable
+              @keyup.enter="searchEntity"
+              @clear="clearSearchHighlight"
+            />
+            <el-button size="small" @click="searchEntity">搜索</el-button>
+            <el-button size="small" type="success" @click="openReasoner">
+              <el-icon><Connection /></el-icon>关系推理
+            </el-button>
+          </div>
+          <!-- 图谱区 -->
+          <el-card shadow="never" style="min-height:560px">
+            <KgGraph
+              v-if="kgEntities.length"
+              :entities="kgEntities"
+              :relations="kgRelations"
+              :selected-kb="kgKbId"
+              @entity-click="onEntityClick"
+              @relation-click="onRelationClick"
+            />
+            <el-empty
+              v-else
+              :description="kgLoading ? '加载中...' : '尚未构建图谱,选个知识库点「从文档构建图谱」'"
+              :image-size="80"
+            />
+          </el-card>
+        </div>
+
+        <!-- 关系推理弹窗 -->
+        <el-dialog v-model="reasonerVisible" title="🔗 关系推理 (BFS 路径)" width="640px">
+          <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+            <el-input v-model="reasonerSrc" placeholder="起点实体" size="small" />
+            <span style="align-self:center">→</span>
+            <el-input v-model="reasonerTgt" placeholder="终点实体" size="small" />
+            <el-button type="primary" size="small" :loading="reasonerLoading" @click="runReasoner">推理</el-button>
+          </div>
+          <div v-if="reasonerPaths.length">
+            <div
+              v-for="(p, i) in reasonerPaths"
+              :key="i"
+              style="padding:8px;margin-bottom:8px;background:#f5f7fa;border-radius:4px"
+            >
+              <el-tag :type="i === 0 ? 'success' : 'info'">路径 {{ i+1 }} (跳数 {{ p.hops }})</el-tag>
+              <div style="margin-top:6px;font-size:13px">
+                <template v-for="(n, idx) in p.path" :key="idx">
+                  <strong style="color: var(--el-color-primary)">{{ n }}</strong>
+                  <el-icon v-if="idx < p.path.length - 1" style="margin:0 6px;vertical-align:middle"><Right /></el-icon>
+                </template>
+              </div>
             </div>
-          </template>
-        </el-empty>
+          </div>
+          <el-empty v-else-if="reasonerRan && !reasonerLoading" description="未找到连通路径" :image-size="60" />
+          <el-empty v-else-if="!reasonerRan" description="填两个实体名, 点「推理」找最短路径" :image-size="60" />
+        </el-dialog>
       </el-tab-pane>
 
       <!-- ═══ 记忆中心 ═══ -->
       <el-tab-pane name="memory">
         <template #label><span>🧠 记忆中心</span></template>
-        <el-empty
-          description="Agent 长期记忆功能正在建设中,敬请期待"
-          :image-size="100"
-          style="padding:60px 0"
-        >
-          <template #image>
-            <div style="font-size:64px">🧠</div>
-          </template>
-          <template #default>
-            <div style="color: var(--el-text-color-secondary);font-size:13px;margin-top:8px">
-              存储 Agent 长期记忆，支持跨会话上下文恢复
-            </div>
-          </template>
-        </el-empty>
+        <div class="memory-tab" style="padding:8px 0">
+          <el-alert
+            type="info"
+            :closable="false"
+            show-icon
+            title="记忆中心由 Agent 自动维护"
+            description="数据存储在 minimax-chat.memory_long_term 表中 (用户级长期记忆 + 会话上下文)。
+            通过聊天会话中的 Agent 工具 (LongTermMemoryService) 写入, 可通过 API 可见。
+            本页面提供只读入口已规划到下个版本。"
+            style="margin-bottom:16px"
+          />
+          <el-row :gutter="12">
+            <el-col :span="8">
+              <el-card shadow="hover" body-style="text-align:center;padding:24px">
+                <div style="font-size:32px">🧠</div>
+                <div style="font-weight:600;margin:8px 0 4px">自动记忆</div>
+                <div style="font-size:12px;color: var(--el-text-color-secondary)">
+                  Agent 在多轮对话中自动提取关键事实/偏好
+                </div>
+              </el-card>
+            </el-col>
+            <el-col :span="8">
+              <el-card shadow="hover" body-style="text-align:center;padding:24px">
+                <div style="font-size:32px">🔍</div>
+                <div style="font-weight:600;margin:8px 0 4px">跨会话恢复</div>
+                <div style="font-size:12px;color: var(--el-text-color-secondary)">
+                  新会话开启时, Agent 自动加载相关历史记忆
+                </div>
+              </el-card>
+            </el-col>
+            <el-col :span="8">
+              <el-card shadow="hover" body-style="text-align:center;padding:24px">
+                <div style="font-size:32px">📊</div>
+                <div style="font-weight:600;margin:8px 0 4px">数据可观测</div>
+                <div style="font-size:12px;color: var(--el-text-color-secondary)">
+                  通过 API (memory_long_term) 检索每条记忆的来源与置信度
+                </div>
+              </el-card>
+            </el-col>
+          </el-row>
+          <el-card shadow="never" style="margin-top:16px">
+            <template #header>
+              <span style="font-size:14px;font-weight:600">📡 数据访问入口</span>
+            </template>
+            <el-descriptions :column="1" border size="small">
+              <el-descriptions-item label="存储表">
+                <code>minimax-chat.memory_long_term</code>
+              </el-descriptions-item>
+              <el-descriptions-item label="服务层">
+                <code>LongTermMemoryService</code> (在 <code>minimax-chat</code> 服务)
+              </el-descriptions-item>
+              <el-descriptions-item label="API (规划中)">
+                <code>GET /api/v1/memory/long-term</code> &nbsp;·&nbsp;
+                <code>DELETE /api/v1/memory/long-term/{id}</code>
+              </el-descriptions-item>
+              <el-descriptions-item label="写入触发">
+                Agent 对话中调用工具 <code>memory_write</code> / <code>memory_recall</code>
+              </el-descriptions-item>
+            </el-descriptions>
+          </el-card>
+        </div>
       </el-tab-pane>
     </el-tabs>
 
@@ -686,13 +793,16 @@ import {
   listDocs, uploadDoc, uploadDocStream, deleteDoc, renameDoc,
   retrieve, getDocContent, updateDocContent, batchReindexDocs, batchDeleteDocs, exportDocs
 } from '@/api/rag'
+import kgApi from '@/api/kg'
 import http from '@/api/http'
 import { debounce, createCancellableFetcher } from '@/utils/debounce'
 import { useUserStore } from '@/store/user'
 import {
   Plus, Upload, UploadFilled, Refresh, Edit, EditPen, Delete, DocumentCopy,
-  Search, ArrowDown, Document, CircleCheck, InfoFilled, Loading, Download, View
+  Search, ArrowDown, Document, CircleCheck, InfoFilled, Loading, Download, View,
+  MagicStick, Connection, Right
 } from '@element-plus/icons-vue'
+import KgGraph from '@/components/KgGraph.vue'
 
 const userStore = useUserStore()
 const userId = computed(() => userStore.profile?.id || userStore.userInfo?.id || null)
@@ -1533,8 +1643,146 @@ function stageLabel(stage) {
   return map[stage] || '⏳ 处理中'
 }
 
+// ========== T2: 知识图谱 (基于 KB 文档抽取) ==========
+const kgKbId = ref(null)
+const kgEntities = ref([])
+const kgRelations = ref([])
+const kgLoading = ref(false)
+const kgBuilding = ref(false)
+const kgStats = ref({ entities: 0, relations: 0 })
+const kgSearchKw = ref('')
+const reasonerVisible = ref(false)
+const reasonerSrc = ref('')
+const reasonerTgt = ref('')
+const reasonerPaths = ref([])
+const reasonerRan = ref(false)
+const reasonerLoading = ref(false)
+
+async function buildKg() {
+  if (!kgKbId.value) { ElMessage.warning('先选知识库'); return }
+  kgBuilding.value = true
+  try {
+    const r = await kgApi.buildKg(kgKbId.value)
+    const d = r?.data || r || {}
+    ElMessage.success(`抽取完成: ${d.entities ?? 0} 实体 / ${d.relations ?? 0} 关系`)
+    await loadKg()
+  } catch (e) {
+    ElMessage.error('构建失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
+  } finally {
+    kgBuilding.value = false
+  }
+}
+
+async function loadKg() {
+  if (!kgKbId.value) {
+    kgEntities.value = []
+    kgRelations.value = []
+    kgStats.value = { entities: 0, relations: 0 }
+    return
+  }
+  kgLoading.value = true
+  try {
+    const r = await kgApi.getKg(kgKbId.value)
+    const d = r?.data || r || {}
+    kgEntities.value = Array.isArray(d.entities) ? d.entities : []
+    kgRelations.value = Array.isArray(d.relations) ? d.relations : []
+    kgStats.value = {
+      entities: kgEntities.value.length,
+      relations: kgRelations.value.length
+    }
+  } catch (e) {
+    // 后端未就绪时静默
+    kgEntities.value = []
+    kgRelations.value = []
+    kgStats.value = { entities: 0, relations: 0 }
+  } finally {
+    kgLoading.value = false
+  }
+}
+
+async function searchEntity() {
+  if (!kgKbId.value) { ElMessage.warning('先选知识库'); return }
+  const kw = (kgSearchKw.value || '').trim()
+  if (!kw) {
+    clearSearchHighlight()
+    return
+  }
+  try {
+    const r = await kgApi.searchKg(kgKbId.value, kw)
+    const list = r?.data || r || []
+    const lc = kw.toLowerCase()
+    // 高亮匹配节点
+    const matchIds = new Set(Array.isArray(list) ? list.map(e => String(e.id)) : [])
+    kgEntities.value = kgEntities.value.map(e => ({
+      ...e,
+      _hit: matchIds.has(String(e.id)) || (e.name && e.name.toLowerCase().includes(lc))
+    }))
+    const count = Array.isArray(list) ? list.length : 0
+    ElMessage.success(`找到 ${count} 个匹配`)
+  } catch (e) {
+    ElMessage.error('搜索失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
+  }
+}
+
+function clearSearchHighlight() {
+  kgEntities.value = kgEntities.value.map(e => {
+    if (e._hit !== undefined) {
+      const { _hit, ...rest } = e
+      return rest
+    }
+    return e
+  })
+}
+
+function onEntityClick(e) {
+  // 点击节点: 把实体名填进推理弹窗的起点
+  reasonerSrc.value = e?.name || ''
+  ElMessage.info(`已选中实体: ${e?.name || e?.id}`)
+}
+
+function onRelationClick(r) {
+  ElMessage.info(`关系: ${r.src} --[${r.rel}]--> ${r.tgt}`)
+}
+
+function openReasoner() {
+  reasonerVisible.value = true
+  reasonerPaths.value = []
+  reasonerRan.value = false
+}
+
+async function runReasoner() {
+  if (!reasonerSrc.value || !reasonerTgt.value) {
+    ElMessage.warning('填两个实体')
+    return
+  }
+  reasonerLoading.value = true
+  try {
+    const r = await kgApi.reasonKg(reasonerSrc.value.trim(), reasonerTgt.value.trim())
+    const d = r?.data || r || {}
+    reasonerPaths.value = Array.isArray(d.paths) ? d.paths : []
+    reasonerRan.value = true
+    if (!reasonerPaths.value.length) {
+      ElMessage.info('未找到路径')
+    } else {
+      ElMessage.success(`找到 ${reasonerPaths.value.length} 条路径`)
+    }
+  } catch (e) {
+    ElMessage.error('推理失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
+    reasonerPaths.value = []
+    reasonerRan.value = true
+  } finally {
+    reasonerLoading.value = false
+  }
+}
+
 // ========== 生命周期 ==========
-onMounted(loadKbs)
+onMounted(() => {
+  loadKbs()
+  // T2: 默认进 KG tab 时预选第一个 KB
+  if (kbs.value.length && !kgKbId.value) {
+    // noop: 用户主动选
+  }
+})
 
 // P0 内存泄漏修复: 组件卸载时清理所有活跃的 setInterval
 onBeforeUnmount(() => {

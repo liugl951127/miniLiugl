@@ -451,6 +451,7 @@ minimax:
         - /api/v1/health
         - /api/v1/logs/save
         - /api/ai/intro
+        - /api/v1/agent/external    # T1: 外部系统 API Key 鉴权, 免 JWT
         - /health
         - /v3/api-docs
         - /swagger-ui

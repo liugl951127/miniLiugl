@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.minimax.rag.kg.mapper.KbExtractedEntityMapper">
+
+    <resultMap id="BaseResultMap" type="com.minimax.rag.kg.entity.KbExtractedEntity">
+        <id property="id" column="id"/>
+        <result property="kbId" column="kb_id"/>
+        <result property="name" column="name"/>
+        <result property="type" column="type"/>
+        <result property="freq" column="freq"/>
+        <result property="sourceDocId" column="source_doc_id"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <select id="selectByKb" resultMap="BaseResultMap">
+        SELECT id, kb_id, name, type, freq, source_doc_id, created_at
+        FROM kb_extracted_entity
+        WHERE kb_id = #{kbId}
+        ORDER BY freq DESC, id ASC
+    </select>
+
+    <select id="searchByName" resultMap="BaseResultMap">
+        SELECT id, kb_id, name, type, freq, source_doc_id, created_at
+        FROM kb_extracted_entity
+        WHERE name LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY freq DESC, id ASC
+        LIMIT #{limit}
+    </select>
+
+    <delete id="deleteByKb">
+        DELETE FROM kb_extracted_entity WHERE kb_id = #{kbId}
+    </delete>
+
+    <select id="countByKb" resultType="int">
+        SELECT COUNT(*) FROM kb_extracted_entity WHERE kb_id = #{kbId}
+    </select>
+
+</mapper>
