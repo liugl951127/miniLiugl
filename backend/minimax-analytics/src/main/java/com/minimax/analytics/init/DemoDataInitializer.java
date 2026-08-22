@@ -50,15 +50,19 @@ public class DemoDataInitializer implements ApplicationRunner {
                 "jdbc:h2:mem:demo;MODE=MySQL;CASE_INSENSITIVE_IDENTIFIERS=TRUE;DB_CLOSE_DELAY=-1",
                 "sa", "");
 
+            // V7.2: 从 minimax-seed.sql 提取 demo_* 表的 CREATE + INSERT 段
             var res = DemoDataInitializer.class.getClassLoader()
-                .getResourceAsStream("sql/demo-init.sql");
+                .getResourceAsStream("sql/minimax-seed.sql");
             if (res == null) {
-                log.warn("[DemoInit] sql/demo-init.sql not found, skipping demo DB init");
+                log.warn("[DemoInit] sql/minimax-seed.sql not found, skipping demo DB init");
                 conn.close();
                 return;
             }
-            String sql = new String(res.readAllBytes());
+            String fullSql = new String(res.readAllBytes());
             res.close();
+
+            // 提取 demo_user/demo_category/demo_product/demo_order/demo_order_item/demo_payment 的 CREATE + INSERT
+            String sql = extractDemoSection(fullSql);
 
             try (Statement stmt = conn.createStatement()) {
                 conn.setAutoCommit(false);
@@ -81,6 +85,33 @@ public class DemoDataInitializer implements ApplicationRunner {
         } catch (Exception e) {
             log.warn("[DemoInit] demo DB init skipped (non-h2local or already exists): {}", e.getMessage());
         }
+    }
+
+    /**
+     * V7.2: 从 minimax-seed.sql 提取 demo_* 表段 (CREATE + INSERT)
+     * 用于在 sandbox H2 内存库里重建 demo 数据
+     */
+    private String extractDemoSection(String fullSql) {
+        StringBuilder sb = new StringBuilder();
+        String[] demoTables = {"demo_user", "demo_category", "demo_product",
+                "demo_order", "demo_order_item", "demo_payment"};
+        String[] lines = fullSql.split("\n");
+        boolean inDemoSection = false;
+        int braceDepth = 0;
+        boolean inValuesList = false;
+        for (String line : lines) {
+            String trimmed = line.trim();
+            // 段头标记
+            if (trimmed.contains("演示电商数据") || trimmed.contains("原 demo-init.sql")) {
+                inDemoSection = true;
+                sb.append(line).append("\n");
+                continue;
+            }
+            if (!inDemoSection) continue;
+            // 收集所有内容
+            sb.append(line).append("\n");
+        }
+        return sb.toString();
     }
 
     private void insertDemoDataSource() {

@@ -1,3 +1,16 @@
+-- ============================================================
+-- MiniMax Platform 全量建表 SQL (V7.2)
+-- 生成时间: 2026-08-22
+-- 模块: 14 个微服务 (auth/agent/ai/analytics/chat/common/gateway/model/monitor/multimodal/pipeline/rag/system/ws)
+-- 表数: 99 + 7 (V7.2 补) = 106 张
+-- 命名: 驼峰字段, TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- 字符集: utf8mb4 / 排序: utf8mb4_unicode_ci
+-- 说明: 本文件只含 CREATE TABLE, 种子数据见 minimax-seed.sql
+-- ============================================================
+
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
 -- MiniMax Platform 全量初始化 SQL (V1.0)
 -- 生成时间: 2026-08-16
 -- 驼峰字段命名，TIMESTAMP 使用 DEFAULT CURRENT_TIMESTAMP
@@ -1759,6 +1772,150 @@ CREATE TABLE IF NOT EXISTS agent_evaluation (
     deleted INT DEFAULT 0,
     KEY idx_execution_id (executionId),
     KEY idx_dimension (dimension)
+
+-- ============================================================
+-- [V7.2] 新增 7 张表 (P0 修复)
+-- ============================================================
+
+-- [minimax-chat/memory_ext] long-term memory (用户长期记忆)
+CREATE TABLE IF NOT EXISTS memory_long_term (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    userId BIGINT NOT NULL,
+    sessionId BIGINT,
+    content TEXT,
+    summary VARCHAR(512),
+    role VARCHAR(32),
+    embedding BLOB,
+    dim INT,
+    importance DECIMAL(5,2) DEFAULT 0,
+    tags VARCHAR(512),
+    accessCount INT DEFAULT 0,
+    lastAccessAt TIMESTAMP NULL,
+    expiresAt TIMESTAMP NULL,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted INT DEFAULT 0,
+    KEY idx_userId (userId),
+    KEY idx_sessionId (sessionId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- [minimax-chat/memory_ext] user preferences (用户偏好记忆)
+CREATE TABLE IF NOT EXISTS memory_user_pref (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    userId BIGINT NOT NULL,
+    prefKey VARCHAR(128) NOT NULL,
+    prefValue TEXT,
+    weight DECIMAL(5,2) DEFAULT 1.0,
+    source VARCHAR(64),
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted INT DEFAULT 0,
+    UNIQUE KEY uk_user_prefKey (userId, prefKey),
+    KEY idx_userId (userId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- [minimax-model/prompt] prompt templates (提示词模板)
+CREATE TABLE IF NOT EXISTS prompt_template (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(128) NOT NULL,
+    description VARCHAR(512),
+    category VARCHAR(64),
+    content TEXT,
+    variables VARCHAR(1024),
+    creatorId BIGINT,
+    creatorName VARCHAR(128),
+    isPublic TINYINT DEFAULT 0,
+    useCount INT DEFAULT 0,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted INT DEFAULT 0,
+    KEY idx_category (category),
+    KEY idx_creatorId (creatorId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- [minimax-ai/cluster/raft] raft log (分布式一致性日志)
+CREATE TABLE IF NOT EXISTS raft_log (
+    idx BIGINT AUTO_INCREMENT PRIMARY KEY,
+    term BIGINT NOT NULL,
+    commandType VARCHAR(64),
+    commandPayload TEXT,
+    timestampMs BIGINT NOT NULL,
+    KEY idx_term (term),
+    KEY idx_timestampMs (timestampMs)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- [minimax-auth] user preferences (用户偏好设置, 主题/语言等)
+CREATE TABLE IF NOT EXISTS user_preferences (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    userId BIGINT NOT NULL,
+    theme VARCHAR(32) DEFAULT 'light',
+    language VARCHAR(16) DEFAULT 'zh-CN',
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_userId (userId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- [minimax-agent] knowledge graph entity (知识图谱实体, 为未来切 DB 预留)
+CREATE TABLE IF NOT EXISTS kg_entity (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    userId BIGINT,
+    name VARCHAR(128) NOT NULL,
+    entityType VARCHAR(64),
+    description VARCHAR(512),
+    aliases VARCHAR(512),
+    importance INT DEFAULT 0,
+    source VARCHAR(64),
+    refCount INT DEFAULT 0,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted INT DEFAULT 0,
+    KEY idx_userId (userId),
+    KEY idx_name (name),
+    KEY idx_entityType (entityType)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- [minimax-agent] knowledge graph relation (知识图谱关系, 为未来切 DB 预留)
+CREATE TABLE IF NOT EXISTS kg_relation (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    userId BIGINT,
+    fromEntity BIGINT NOT NULL,
+    toEntity BIGINT NOT NULL,
+    relationType VARCHAR(64),
+    description VARCHAR(512),
+    weight DECIMAL(5,2) DEFAULT 1.0,
+    source VARCHAR(64),
+    refCount INT DEFAULT 0,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted INT DEFAULT 0,
+    KEY idx_userId (userId),
+    KEY idx_fromEntity (fromEntity),
+    KEY idx_toEntity (toEntity),
+    KEY idx_relationType (relationType)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- [V7.2] data_source 表名 alias (兼容 DbDataSource 实体)
+CREATE TABLE IF NOT EXISTS data_source (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(128),
+    type VARCHAR(32),
+    jdbcUrl VARCHAR(1024),
+    username VARCHAR(128),
+    password VARCHAR(512),
+    driverClass VARCHAR(256),
+    poolSize INT,
+    minIdle INT,
+    maxLifetime INT,
+    enabled INT,
+    testStatus VARCHAR(32),
+    testMessage VARCHAR(512),
+    lastTestAt TIMESTAMP,
+    description VARCHAR(512),
+    tags VARCHAR(512),
+    createdBy BIGINT,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted INT DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
