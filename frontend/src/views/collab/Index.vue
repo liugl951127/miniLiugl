@@ -185,8 +185,8 @@
             <div class="msg-body">
               <div class="msg-meta">
                 {{ msg.role === 'ai' ? '🤖 AI 助手' : (msg.user || '未知') }}
-                <!-- P1-6: 仅显示第一条消息的时间戳 -->
-                <template v-if="!i || isSameGroup(roomMessages[i-1], msg)">
+                <!-- P1-6: 仅显示新分组第一条消息的时间戳 -->
+                <template v-if="!i || !isSameGroup(roomMessages[i-1], msg)">
                   · {{ formatTime(msg.createdAt) }}
                 </template>
                 <el-tag v-if="msg.role === 'ai'" size="small" type="success" style="margin-left:4px">AI</el-tag>
@@ -487,6 +487,21 @@ function scrollToBottom() {
     const el = msgScrollRef.value?.wrapRef
     if (el) el.scrollTop = el.scrollHeight
   })
+}
+
+// P1-6: 消息时间分组 - 同一用户、同一分钟内隐藏时间戳
+function isSameGroup(curr, prev) {
+  if (!prev) return false
+  if (curr.user !== prev.user) return false
+  if (curr.role !== prev.role) return false
+  const timeDiff = new Date(curr.createdAt).getTime() - new Date(prev.createdAt).getTime()
+  return timeDiff < 60000 // 同一分钟内
+}
+
+function formatTime(ts) {
+  if (!ts) return ''
+  const d = new Date(ts)
+  return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 }
 
 // ============ 房间操作 ============
