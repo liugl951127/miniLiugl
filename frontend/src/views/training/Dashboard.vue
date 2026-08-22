@@ -21,32 +21,32 @@
       <el-col :span="6">
         <el-tooltip content="累计创建的训练任务数" placement="top" effect="light">
           <el-card shadow="hover" body-style="padding:16px;text-align:center;cursor:help">
-            <div style="font-size:32px;font-weight:700;color:#409eff">{{ data.totalTasks }}</div>
-            <div style="font-size:12px;color:#909399;margin-top:4px">总任务数</div>
+            <div style="font-size:32px;font-weight:700;color: var(--el-color-primary)">{{ data.totalTasks }}</div>
+            <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">总任务数</div>
           </el-card>
         </el-tooltip>
       </el-col>
       <el-col :span="6">
         <el-tooltip content="成功完成训练的任务" placement="top" effect="light">
           <el-card shadow="hover" body-style="padding:16px;text-align:center;cursor:help">
-            <div style="font-size:32px;font-weight:700;color:#67c23a">{{ data.completed }}</div>
-            <div style="font-size:12px;color:#909399;margin-top:4px">已完成</div>
+            <div style="font-size:32px;font-weight:700;color: var(--el-color-success)">{{ data.completed }}</div>
+            <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">已完成</div>
           </el-card>
         </el-tooltip>
       </el-col>
       <el-col :span="6">
         <el-tooltip content="当前正在训练的任务" placement="top" effect="light">
           <el-card shadow="hover" body-style="padding:16px;text-align:center;cursor:help">
-            <div style="font-size:32px;font-weight:700;color:#e6a23c">{{ data.running }}</div>
-            <div style="font-size:12px;color:#909399;margin-top:4px">运行中</div>
+            <div style="font-size:32px;font-weight:700;color: var(--el-color-warning)">{{ data.running }}</div>
+            <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">运行中</div>
           </el-card>
         </el-tooltip>
       </el-col>
       <el-col :span="6">
         <el-tooltip content="累计训练总时长" placement="top" effect="light">
           <el-card shadow="hover" body-style="padding:16px;text-align:center;cursor:help">
-            <div style="font-size:32px;font-weight:700;color:#9254de">{{ data.totalTrainingHours || 0 }}h</div>
-            <div style="font-size:12px;color:#909399;margin-top:4px">累计训练时长</div>
+            <div style="font-size:32px;font-weight:700;color: var(--el-color-primary)">{{ data.totalTrainingHours || 0 }}h</div>
+            <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">累计训练时长</div>
           </el-card>
         </el-tooltip>
       </el-col>
@@ -56,15 +56,15 @@
       <el-col :span="4">
         <el-tooltip content="训练失败的任务数" placement="top" effect="light">
           <el-card shadow="hover" body-style="padding:12px;text-align:center;cursor:help">
-            <div style="font-size:24px;font-weight:700;color:#f56c6c">{{ data.failed }}</div>
-            <div style="font-size:12px;color:#909399;margin-top:4px">失败</div>
+            <div style="font-size:24px;font-weight:700;color: var(--el-color-danger)">{{ data.failed }}</div>
+            <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">失败</div>
           </el-card>
         </el-tooltip>
       </el-col>
       <el-col :span="4">
         <el-card shadow="hover" body-style="padding:12px;text-align:center">
-          <div style="font-size:24px;font-weight:700;color:#909399">{{ data.pending }}</div>
-          <div style="font-size:12px;color:#909399;margin-top:4px">等待中</div>
+          <div style="font-size:24px;font-weight:700;color: var(--el-text-color-secondary)">{{ data.pending }}</div>
+          <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">等待中</div>
         </el-card>
       </el-col>
       <el-col :span="16">
@@ -95,8 +95,8 @@
                 v-loading="loading && firstLoad" empty-text="暂无训练任务">
                 <el-table-column label="任务" min-width="140">
                   <template #default="{ row }">
-                    <div style="font-size:13px;font-weight:600;color:#303133">{{ row.name }}</div>
-                    <div style="font-size:11px;color:#909399">{{ row.taskId }}</div>
+                    <div style="font-size:13px;font-weight:600;color: var(--el-text-color-primary)">{{ row.name }}</div>
+                    <div style="font-size:11px;color: var(--el-text-color-secondary)">{{ row.taskId }}</div>
                   </template>
                 </el-table-column>
                 <el-table-column label="模型" width="120" align="center">
@@ -113,15 +113,15 @@
                 </el-table-column>
                 <el-table-column label="最终 Loss" width="90" align="center">
                   <template #default="{ row }">
-                    <span v-if="row.finalLoss != null" style="font-size:13px;font-weight:600;color:#67c23a">
+                    <span v-if="row.finalLoss != null" style="font-size:13px;font-weight:600;color: var(--el-color-success)">
                       {{ row.finalLoss.toFixed(4) }}
                     </span>
-                    <span v-else style="color:#c0c4cc">-</span>
+                    <span v-else style="color: var(--el-text-color-placeholder)">-</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="耗时" width="80" align="center">
                   <template #default="{ row }">
-                    <span style="font-size:12px;color:#606266">{{ row.durationStr || '-' }}</span>
+                    <span style="font-size:12px;color: var(--el-text-color-regular)">{{ row.durationStr || '-' }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="操作" width="100" align="center">
@@ -145,7 +145,7 @@
                   <el-option v-for="o in lossOptions" :key="o.taskId" :label="o.name" :value="o.taskId" />
                 </el-select>
               </template>
-              <div v-if="!selectedTaskId" style="text-align:center;color:#909399;padding:40px 0">
+              <div v-if="!selectedTaskId" style="text-align:center;color: var(--el-text-color-secondary);padding:40px 0">
                 <el-empty description="请选择任务查看 Loss 曲线" :image-size="80" />
               </div>
               <div v-else ref="lossChartRef" v-loading="lossLoading" style="height:260px"></div>
@@ -176,7 +176,7 @@
                 <el-table-column label="任务" min-width="120">
                   <template #default="{ row }">
                     <div style="font-size:13px">{{ row.name }}</div>
-                    <div style="font-size:11px;color:#909399">{{ row.taskId }}</div>
+                    <div style="font-size:11px;color: var(--el-text-color-secondary)">{{ row.taskId }}</div>
                   </template>
                 </el-table-column>
                 <el-table-column label="模型" width="100" align="center">
@@ -186,7 +186,7 @@
                 </el-table-column>
                 <el-table-column label="Final Loss" width="110" align="center">
                   <template #default="{ row }">
-                    <span style="font-weight:700;color:#67c23a">{{ row.finalLoss?.toFixed(4) || '-' }}</span>
+                    <span style="font-weight:700;color: var(--el-color-success)">{{ row.finalLoss?.toFixed(4) || '-' }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="训练时长" width="90" align="center">
@@ -215,10 +215,10 @@
           <el-col :span="8">
             <el-card shadow="hover" body-style="padding:16px;text-align:center">
               <div style="font-size:36px;margin-bottom:8px">🟢</div>
-              <div style="font-size:22px;font-weight:700;color:#67c23a">{{ data.running || 0 }}</div>
-              <div style="font-size:13px;color:#909399">当前运行任务</div>
+              <div style="font-size:22px;font-weight:700;color: var(--el-color-success)">{{ data.running || 0 }}</div>
+              <div style="font-size:13px;color: var(--el-text-color-secondary)">当前运行任务</div>
               <el-divider style="margin:12px 0" />
-              <div style="font-size:13px;color:#606266">
+              <div style="font-size:13px;color: var(--el-text-color-regular)">
                 沙箱模式下任务在 JVM 内存中运行<br>共享宿主 CPU 资源
               </div>
             </el-card>
@@ -226,10 +226,10 @@
           <el-col :span="8">
             <el-card shadow="hover" body-style="padding:16px;text-align:center">
               <div style="font-size:36px;margin-bottom:8px">💾</div>
-              <div style="font-size:22px;font-weight:700;color:#409eff">MiniTransformer</div>
-              <div style="font-size:13px;color:#909399">当前模型架构</div>
+              <div style="font-size:22px;font-weight:700;color: var(--el-color-primary)">MiniTransformer</div>
+              <div style="font-size:13px;color: var(--el-text-color-secondary)">当前模型架构</div>
               <el-divider style="margin:12px 0" />
-              <div style="font-size:13px;color:#606266">
+              <div style="font-size:13px;color: var(--el-text-color-regular)">
                 隐藏维度 128 / 4头 / 2层 / 128最大序列<br>
                 轻量级，适合快速迭代验证
               </div>
@@ -238,10 +238,10 @@
           <el-col :span="8">
             <el-card shadow="hover" body-style="padding:16px;text-align:center">
               <div style="font-size:36px;margin-bottom:8px">⏱️</div>
-              <div style="font-size:22px;font-weight:700;color:#9254de">{{ data.totalTrainingHours || 0 }}h</div>
-              <div style="font-size:13px;color:#909399">累计训练时长</div>
+              <div style="font-size:22px;font-weight:700;color: var(--el-color-primary)">{{ data.totalTrainingHours || 0 }}h</div>
+              <div style="font-size:13px;color: var(--el-text-color-secondary)">累计训练时长</div>
               <el-divider style="margin:12px 0" />
-              <div style="font-size:13px;color:#606266">
+              <div style="font-size:13px;color: var(--el-text-color-regular)">
                 共 {{ data.totalTasks }} 个任务<br>
                 {{ data.completed }} 个成功完成
               </div>
@@ -256,8 +256,8 @@
       <div v-if="selectedTask">
         <p>任务: <strong>{{ selectedTask.name }}</strong></p>
         <p>模型: <el-tag type="info">{{ selectedTask.model }}</el-tag></p>
-        <p>Final Loss: <strong style="color:#67c23a">{{ selectedTask.finalLoss?.toFixed(4) }}</strong></p>
-        <p style="color:#909399;font-size:13px">模型将注册到 Model 服务，Agent 可调用。</p>
+        <p>Final Loss: <strong style="color: var(--el-color-success)">{{ selectedTask.finalLoss?.toFixed(4) }}</strong></p>
+        <p style="color: var(--el-text-color-secondary);font-size:13px">模型将注册到 Model 服务，Agent 可调用。</p>
       </div>
       <template #footer>
         <el-button @click="showEnableDialog = false">取消</el-button>

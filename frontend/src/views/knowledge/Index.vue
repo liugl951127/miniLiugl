@@ -72,7 +72,7 @@
       <!-- ═══ 知识图谱 ═══ -->
       <el-tab-pane name="kg">
         <template #label><span>🕸️ 知识图谱</span></template>
-        <div style="padding:40px;text-align:center;color:#909399">
+        <div style="padding:40px;text-align:center;color: var(--el-text-color-secondary)">
           <div style="font-size:48px;margin-bottom:16px">🕸️</div>
           <div style="font-size:18px;font-weight:600;margin-bottom:8px">知识图谱</div>
           <div style="font-size:13px">基于知识库实体构建可视化图谱，支持关系推理</div>
@@ -83,7 +83,7 @@
       <!-- ═══ 记忆中心 ═══ -->
       <el-tab-pane name="memory">
         <template #label><span>🧠 记忆中心</span></template>
-        <div style="padding:40px;text-align:center;color:#909399">
+        <div style="padding:40px;text-align:center;color: var(--el-text-color-secondary)">
           <div style="font-size:48px;margin-bottom:16px">🧠</div>
           <div style="font-size:18px;font-weight:600;margin-bottom:8px">Agent 记忆中心</div>
           <div style="font-size:13px">存储 Agent 长期记忆，支持跨会话上下文恢复</div>
@@ -256,7 +256,7 @@
             <div v-else-if="!retrieveLoading && !retrieveDone" class="retrieve-hint">
               <el-icon size="32" color="#c0d0e0"><Search /></el-icon>
               <p>输入检索内容，点击「开始检索」</p>
-              <p style="font-size:12px;color:#999">Ctrl + Enter 快捷检索</p>
+              <p style="font-size:12px;color: var(--el-text-color-secondary)">Ctrl + Enter 快捷检索</p>
             </div>
           </div>
         </el-tab-pane>
@@ -370,7 +370,7 @@
           <el-icon class="done-icon" color="#67c23a"><CircleCheck /></el-icon>
           <h3>上传完成</h3>
           <p>{{ uploadSuccessCount }} 个文件已成功上传，文档将自动处理并向量化。</p>
-          <p style="font-size:13px;color:#999">处理完成后可在「文档列表」中查看状态。</p>
+          <p style="font-size:13px;color: var(--el-text-color-secondary)">处理完成后可在「文档列表」中查看状态。</p>
         </div>
         <div class="wizard-footer">
           <el-button @click="resetUploadWizard">继续上传</el-button>
@@ -424,8 +424,8 @@
       destroy-on-close
     >
       <div v-if="fullContentLoading" style="text-align:center;padding:40px">
-        <el-icon class="is-loading" style="font-size:32px;color:#409eff"><Loading /></el-icon>
-        <div style="margin-top:8px;color:#909399">加载中...</div>
+        <el-icon class="is-loading" style="font-size:32px;color: var(--el-color-primary)"><Loading /></el-icon>
+        <div style="margin-top:8px;color: var(--el-text-color-secondary)">加载中...</div>
       </div>
       <div v-else-if="fullContentDoc">
         <!-- 文档基本信息 -->
@@ -451,16 +451,16 @@
           <div style="font-size:14px;font-weight:600">
             正文内容
             <!-- Day 50: mammoth.js CDN 动态加载提示 (DOCX) / markdown-it 渲染提示 (MD) -->
-            <span v-if="fullContentDoc.sourceType?.toUpperCase() === 'DOCX'" style="font-size:11px;font-weight:400;color:#67c23a;margin-left:8px">
+            <span v-if="fullContentDoc.sourceType?.toUpperCase() === 'DOCX'" style="font-size:11px;font-weight:400;color: var(--el-color-success);margin-left:8px">
               (Word 文档 · 格式化渲染)
             </span>
-            <span v-else-if="fullContentDoc.sourceType?.toUpperCase() === 'MD'" style="font-size:11px;font-weight:400;color:#409eff;margin-left:8px">
+            <span v-else-if="fullContentDoc.sourceType?.toUpperCase() === 'MD'" style="font-size:11px;font-weight:400;color: var(--el-color-primary);margin-left:8px">
               (Markdown · 已渲染)
             </span>
-            <span v-else-if="fullContentDoc.sourceType?.toUpperCase() === 'PDF'" style="font-size:11px;font-weight:400;color:#e6a23c;margin-left:8px">
+            <span v-else-if="fullContentDoc.sourceType?.toUpperCase() === 'PDF'" style="font-size:11px;font-weight:400;color: var(--el-color-warning);margin-left:8px">
               (PDF 提取文本)
             </span>
-            <span style="font-size:11px;font-weight:400;color:#909399;margin-left:8px">
+            <span style="font-size:11px;font-weight:400;color: var(--el-text-color-secondary);margin-left:8px">
               {{ (fullContentDoc.content || '').length }} 字符
             </span>
           </div>
@@ -475,8 +475,8 @@
           <!-- Word DOCX — mammoth.js CDN 渲染 -->
           <div v-else-if="fullContentDoc.sourceType?.toUpperCase() === 'DOCX'">
             <div v-if="docxRendering" style="text-align:center;padding:20px">
-              <el-icon class="is-loading" style="font-size:20px;color:#67c23a"><Loading /></el-icon>
-              <span style="margin-left:8px;color:#67c23a;font-size:13px">加载 Word 渲染引擎…</span>
+              <el-icon class="is-loading" style="font-size:20px;color: var(--el-color-success)"><Loading /></el-icon>
+              <span style="margin-left:8px;color: var(--el-color-success);font-size:13px">加载 Word 渲染引擎…</span>
             </div>
             <div v-else-if="docxHtml" v-html="docxHtml" class="docx-rendered" />
             <div v-else class="doc-preview-plain">{{ fullContentDoc.content || '（无内容）' }}</div>
@@ -493,7 +493,7 @@
     <!-- 文档在线编辑弹窗 (Day 45) -->
     <el-dialog v-model="editDocVisible" title="在线编辑文档内容" width="860px" destroy-on-close>
       <div v-if="editDocLoading" style="text-align:center;padding:40px">
-        <el-icon class="is-loading" style="font-size:32px;color:#409eff"><Loading /></el-icon>
+        <el-icon class="is-loading" style="font-size:32px;color: var(--el-color-primary)"><Loading /></el-icon>
       </div>
       <div v-else-if="editDoc">
         <el-alert type="warning" :closable="false" style="margin-bottom:12px">
@@ -518,7 +518,7 @@
             />
           </el-form-item>
           <el-form-item style="margin-bottom:0">
-            <span style="font-size:12px;color:#909399">
+            <span style="font-size:12px;color: var(--el-text-color-secondary)">
               字数：{{ editDocContent.length }} |
               预计切片：{{ Math.ceil(editDocContent.length / 300) }} 个（以 300 字/片估算）
             </span>
@@ -527,7 +527,7 @@
         <!-- 处理进度 -->
         <div v-if="editDocSaving" style="margin-top:12px">
           <el-progress :percentage="editDocProgress" :status="editDocProgress >= 100 ? 'success' : undefined" :indeterminate="editDocProgress < 20" />
-          <div style="text-align:center;font-size:13px;color:#606266;margin-top:4px">{{ editDocProgressMsg }}</div>
+          <div style="text-align:center;font-size:13px;color: var(--el-text-color-regular);margin-top:4px">{{ editDocProgressMsg }}</div>
         </div>
       </div>
       <template #footer>
@@ -545,26 +545,26 @@
           确认对 <strong>{{ selectedDocIds.length }}</strong> 个文档执行重新切片 + 重新向量化索引。
           此操作将删除旧切片并重建索引，预计耗时与文档数量和长度成正比。
         </el-alert>
-        <div style="margin-bottom:12px;font-size:13px;color:#606266">
+        <div style="margin-bottom:12px;font-size:13px;color: var(--el-text-color-regular)">
           已选择文档 IDs：<code>{{ selectedDocIds.join(', ') }}</code>
         </div>
         <div v-if="batchReindexLoading" style="margin-top:12px">
           <el-progress :percentage="batchReindexProgress" :status="batchReindexProgress >= 100 ? 'success' : undefined" :indeterminate="batchReindexProgress < 20" />
-          <div style="text-align:center;font-size:13px;color:#606266;margin-top:4px">{{ batchReindexMsg }}</div>
+          <div style="text-align:center;font-size:13px;color: var(--el-text-color-regular);margin-top:4px">{{ batchReindexMsg }}</div>
         </div>
-        <div v-else style="text-align:center;font-size:14px;color:#409eff;padding:10px">{{ batchReindexMsg }}</div>
+        <div v-else style="text-align:center;font-size:14px;color: var(--el-color-primary);padding:10px">{{ batchReindexMsg }}</div>
       </div>
       <!-- 结果展示 -->
       <div v-else>
         <el-result icon="success" title="批量重索引完成">
           <template #sub-title>
-            <p>成功 <strong style="color:#67c23a">{{ batchReindexResult.succeeded }}</strong> 个文档</p>
-            <p v-if="batchReindexResult.failed?.length">失败 <strong style="color:#f56c6c">{{ batchReindexResult.failed.length }}</strong> 个文档</p>
+            <p>成功 <strong style="color: var(--el-color-success)">{{ batchReindexResult.succeeded }}</strong> 个文档</p>
+            <p v-if="batchReindexResult.failed?.length">失败 <strong style="color: var(--el-color-danger)">{{ batchReindexResult.failed.length }}</strong> 个文档</p>
           </template>
         </el-result>
-        <div v-if="batchReindexResult.failed?.length" style="max-height:160px;overflow-y:auto;border:1px solid #f5f5f5;border-radius:4px;padding:10px">
-          <div style="font-size:13px;font-weight:600;color:#f56c6c;margin-bottom:8px">失败详情</div>
-          <div v-for="(f, i) in batchReindexResult.failed" :key="i" style="font-size:12px;color:#606266;margin-bottom:4px">
+        <div v-if="batchReindexResult.failed?.length" style="max-height:160px;overflow-y:auto;border: 1px solid var(--el-border-color-lighter);border-radius:4px;padding:10px">
+          <div style="font-size:13px;font-weight:600;color: var(--el-color-danger);margin-bottom:8px">失败详情</div>
+          <div v-for="(f, i) in batchReindexResult.failed" :key="i" style="font-size:12px;color: var(--el-text-color-regular);margin-bottom:4px">
             <code>docId={{ f.docId }}</code>: {{ f.error }}
           </div>
         </div>
@@ -587,25 +587,25 @@
           确认删除 <strong>{{ selectedDocIds.length }}</strong> 个文档？
           此操作不可恢复，文档内容和所有切片将一并被删除！
         </el-alert>
-        <div style="margin-bottom:12px;font-size:13px;color:#606266">
+        <div style="margin-bottom:12px;font-size:13px;color: var(--el-text-color-regular)">
           已选择文档 IDs：<code>{{ selectedDocIds.join(', ') }}</code>
         </div>
         <div v-if="batchDeleteLoading" style="margin-top:12px">
           <el-progress :percentage="batchDeleteProgress" :status="batchDeleteProgress >= 100 ? 'success' : undefined" :indeterminate="batchDeleteProgress < 20" />
-          <div style="text-align:center;font-size:13px;color:#606266;margin-top:4px">正在删除文档...</div>
+          <div style="text-align:center;font-size:13px;color: var(--el-text-color-regular);margin-top:4px">正在删除文档...</div>
         </div>
       </div>
       <!-- 结果展示 -->
       <div v-else>
         <el-result :icon="batchDeleteResult.succeeded > 0 ? 'success' : 'warning'" :title="batchDeleteResult.succeeded > 0 ? '删除完成' : '删除结果'">
           <template #sub-title>
-            <p>成功 <strong style="color:#67c23a">{{ batchDeleteResult.succeeded }}</strong> 个文档</p>
-            <p v-if="batchDeleteResult.failed?.length">失败 <strong style="color:#f56c6c">{{ batchDeleteResult.failed.length }}</strong> 个文档</p>
+            <p>成功 <strong style="color: var(--el-color-success)">{{ batchDeleteResult.succeeded }}</strong> 个文档</p>
+            <p v-if="batchDeleteResult.failed?.length">失败 <strong style="color: var(--el-color-danger)">{{ batchDeleteResult.failed.length }}</strong> 个文档</p>
           </template>
         </el-result>
-        <div v-if="batchDeleteResult.failed?.length" style="max-height:160px;overflow-y:auto;border:1px solid #f5f5f5;border-radius:4px;padding:10px">
-          <div style="font-size:13px;font-weight:600;color:#f56c6c;margin-bottom:8px">失败详情</div>
-          <div v-for="(f, i) in batchDeleteResult.failed" :key="i" style="font-size:12px;color:#606266;margin-bottom:4px">
+        <div v-if="batchDeleteResult.failed?.length" style="max-height:160px;overflow-y:auto;border: 1px solid var(--el-border-color-lighter);border-radius:4px;padding:10px">
+          <div style="font-size:13px;font-weight:600;color: var(--el-color-danger);margin-bottom:8px">失败详情</div>
+          <div v-for="(f, i) in batchDeleteResult.failed" :key="i" style="font-size:12px;color: var(--el-text-color-regular);margin-bottom:4px">
             <code>docId={{ f.docId }}</code>: {{ f.error }}
           </div>
         </div>
@@ -631,17 +631,17 @@
           </el-form-item>
           <el-form-item label="已选文档">
             <el-tag type="info">{{ selectedDocIds.length }} 个文档</el-tag>
-            <span style="margin-left:8px;font-size:12px;color:#909399">IDs: {{ selectedDocIds.slice(0, 5).join(', ') }}{{ selectedDocIds.length > 5 ? '...' : '' }}</span>
+            <span style="margin-left:8px;font-size:12px;color: var(--el-text-color-secondary)">IDs: {{ selectedDocIds.slice(0, 5).join(', ') }}{{ selectedDocIds.length > 5 ? '...' : '' }}</span>
           </el-form-item>
           <el-form-item label="导出说明">
-            <span style="font-size:12px;color:#909399">
+            <span style="font-size:12px;color: var(--el-text-color-secondary)">
               导出将合并所有文档内容，{{ exportFormat === 'pdf' ? '生成 PDF 文件' : '生成 TXT 文件' }}下载。
             </span>
           </el-form-item>
         </el-form>
         <div v-if="batchExportLoading" style="margin-top:12px">
           <el-progress :percentage="batchExportProgress" :status="batchExportProgress >= 100 ? 'success' : undefined" />
-          <div style="text-align:center;font-size:13px;color:#606266;margin-top:4px">正在生成文件...</div>
+          <div style="text-align:center;font-size:13px;color: var(--el-text-color-regular);margin-top:4px">正在生成文件...</div>
         </div>
       </div>
       <div v-else>
@@ -1599,46 +1599,46 @@ onBeforeUnmount(() => {
   :deep(.el-upload-dragger) {
     padding: 30px 20px; border-radius: 8px;
     background: #f5f8ff; border: 2px dashed #c0d0e0;
-    &:hover { border-color: #409eff; background: #eef4ff; }
+    &:hover { border-color: var(--el-color-primary); background: #eef4ff; }
   }
 }
-.upload-icon { font-size: 40px; color: #409eff; margin-bottom: 10px; }
-.upload-text { color: #606266; font-size: 14px; em { color: #409eff; font-style: normal; } }
-.upload-tip { color: #909399; font-size: 12px; margin-top: 8px; text-align: center; b { color: #409eff; } }
+.upload-icon { font-size: 40px; color: var(--el-color-primary); margin-bottom: 10px; }
+.upload-text { color: var(--el-text-color-regular); font-size: 14px; em { color: var(--el-color-primary); font-style: normal; } }
+.upload-tip { color: var(--el-text-color-secondary); font-size: 12px; margin-top: 8px; text-align: center; b { color: var(--el-color-primary); } }
 
 .format-tips {
   margin-top: 20px; padding: 12px 16px; background: #f0f7ff; border-radius: 6px;
   border: 1px solid #d9ecff;
 }
-.format-tips-title { font-size: 13px; font-weight: 600; color: #409eff; margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
-.format-tips ul { margin: 0; padding-left: 20px; li { font-size: 12px; color: #606266; line-height: 1.8; b { color: #303133; } } }
+.format-tips-title { font-size: 13px; font-weight: 600; color: var(--el-color-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
+.format-tips ul { margin: 0; padding-left: 20px; li { font-size: 12px; color: var(--el-text-color-regular); line-height: 1.8; b { color: var(--el-text-color-primary); } } }
 
 .file-list-review {
   border: 1px solid #ebeef5; border-radius: 6px; padding: 12px;
   max-height: 200px; overflow-y: auto;
 }
-.file-list-title { font-size: 13px; font-weight: 600; color: #303133; margin-bottom: 8px; }
+.file-list-title { font-size: 13px; font-weight: 600; color: var(--el-text-color-primary); margin-bottom: 8px; }
 .file-item {
   display: flex; align-items: center; gap: 8px; padding: 6px 0;
   border-bottom: 1px solid #f5f5f5;
   &:last-child { border-bottom: none; }
 }
-.file-item-name { flex: 1; font-size: 13px; color: #303133; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.file-item-size { font-size: 12px; color: #909399; white-space: nowrap; }
+.file-item-name { flex: 1; font-size: 13px; color: var(--el-text-color-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-item-size { font-size: 12px; color: var(--el-text-color-secondary); white-space: nowrap; }
 
 .upload-progress-list { display: flex; flex-direction: column; gap: 14px; max-height: 350px; overflow-y: auto; }
 .upload-progress-item { }
 .upload-progress-info {
   display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
 }
-.upload-progress-name { flex: 1; font-size: 13px; color: #303133; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.upload-pct { font-size: 12px; color: #606266; min-width: 36px; }
-.upload-error-msg { font-size: 12px; color: #f56c6c; margin-top: 4px; }
+.upload-progress-name { flex: 1; font-size: 13px; color: var(--el-text-color-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.upload-pct { font-size: 12px; color: var(--el-text-color-regular); min-width: 36px; }
+.upload-error-msg { font-size: 12px; color: var(--el-color-danger); margin-top: 4px; }
 
 .done-panel { text-align: center; padding: 20px 0; }
 .done-icon { font-size: 56px; margin-bottom: 12px; display: block; }
-.done-panel h3 { margin: 0 0 10px; font-size: 18px; color: #303133; }
-.done-panel p { margin: 0; color: #606266; font-size: 14px; line-height: 1.6; }
+.done-panel h3 { margin: 0 0 10px; font-size: 18px; color: var(--el-text-color-primary); }
+.done-panel p { margin: 0; color: var(--el-text-color-regular); font-size: 14px; line-height: 1.6; }
 
 .wizard-footer {
   display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;

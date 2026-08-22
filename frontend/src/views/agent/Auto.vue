@@ -135,7 +135,7 @@
           <div v-if="groupsLoading" style="text-align: center; padding: 20px">
             <el-icon class="is-loading"><Loading /></el-icon> 加载中...
           </div>
-          <div v-else-if="savedGroups.length === 0" style="text-align: center; color: #999; padding: 20px">
+          <div v-else-if="savedGroups.length === 0" style="text-align: center; color: var(--el-text-color-secondary); padding: 20px">
             暂无已保存的群组
           </div>
           <div v-else class="saved-group-list">
@@ -184,7 +184,7 @@
           <h4>最终结果</h4>
           <pre class="result-json">{{ JSON.stringify(runResult.result, null, 2) }}</pre>
         </div>
-        <div v-if="runResult.error" style="color: #f56c6c; margin-top: 8px">{{ runResult.error }}</div>
+        <div v-if="runResult.error" style="color: var(--el-color-danger); margin-top: 8px">{{ runResult.error }}</div>
       </div>
     </el-dialog>
   </div>
@@ -410,12 +410,12 @@ onMounted(() => {
 .auto-group-page { padding: 20px; }
 .page-header { margin-bottom: 20px; }
 .page-header h1 { margin: 0; display: flex; align-items: center; gap: 8px; }
-.sub { color: #6b7280; margin: 6px 0 0; font-size: 13px; }
+.sub { color: var(--el-text-color-secondary); margin: 6px 0 0; font-size: 13px; }
 .badge {
   background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 12px;
 }
-.form-tip { font-size: 12px; color: #909399; margin-top: 6px; }
+.form-tip { font-size: 12px; color: var(--el-text-color-secondary); margin-top: 6px; }
 .template-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -447,7 +447,7 @@ onMounted(() => {
 .member-card.role-manager { border-left-color: #3b82f6; background: var(--el-color-primary-light-9); }
 .member-card.role-worker  { border-left-color: #10b981; background: #f0fdf4; }
 .member-card.role-critic { border-left-color: #f59e0b; background: #fffbeb; }
-.member-card.role-observer { border-left-color: #6b7280; }
+.member-card.role-observer { border-left-color: var(--el-text-color-secondary); }
 .member-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .member-icon { font-size: 18px; }
 .member-name { font-weight: 600; color: var(--el-text-color-primary); flex: 1; }
@@ -463,8 +463,8 @@ onMounted(() => {
 }
 .sg-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
 .sg-name { font-weight: 600; color: #1f2937; font-size: 14px; }
-.sg-desc { font-size: 12px; color: #6b7280; margin-bottom: 6px; }
-.sg-meta { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #9ca3af; }
+.sg-desc { font-size: 12px; color: var(--el-text-color-secondary); margin-bottom: 6px; }
+.sg-meta { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--el-text-color-secondary); }
 .result-json {
   background: #1e1e1e;
   color: #d4d4d4;

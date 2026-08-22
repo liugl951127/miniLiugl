@@ -65,7 +65,7 @@
             <el-table-column label="任务目标" min-width="220" show-overflow-tooltip>
               <template #default="{ row }">
                 <div style="font-weight:500">{{ row.goal || row.name || '-' }}</div>
-                <div style="font-size:11px;color:#909399">ID: {{ row.id || row.taskId }}</div>
+                <div style="font-size:11px;color: var(--el-text-color-secondary)">ID: {{ row.id || row.taskId }}</div>
               </template>
             </el-table-column>
             <el-table-column label="轮次" width="80" align="center">
@@ -184,32 +184,32 @@
       <el-col :span="6">
         <el-tooltip :content="getStatTip('total')" placement="top" effect="light">
           <el-card shadow="hover" body-style="text-align:center;padding:12px;cursor:help">
-            <div style="font-size:24px;font-weight:700;color:#409eff">{{ stats.total }}</div>
-            <div style="font-size:12px;color:#909399;margin-top:4px">总任务数</div>
+            <div style="font-size:24px;font-weight:700;color: var(--el-color-primary)">{{ stats.total }}</div>
+            <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">总任务数</div>
           </el-card>
         </el-tooltip>
       </el-col>
       <el-col :span="6">
         <el-tooltip :content="getStatTip('success')" placement="top" effect="light">
           <el-card shadow="hover" body-style="text-align:center;padding:12px;cursor:help">
-            <div style="font-size:24px;font-weight:700;color:#67c23a">{{ stats.success }}</div>
-            <div style="font-size:12px;color:#909399;margin-top:4px">成功</div>
+            <div style="font-size:24px;font-weight:700;color: var(--el-color-success)">{{ stats.success }}</div>
+            <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">成功</div>
           </el-card>
         </el-tooltip>
       </el-col>
       <el-col :span="6">
         <el-tooltip :content="getStatTip('failed')" placement="top" effect="light">
           <el-card shadow="hover" body-style="text-align:center;padding:12px;cursor:help">
-            <div style="font-size:24px;font-weight:700;color:#f56c6c">{{ stats.failed }}</div>
-            <div style="font-size:12px;color:#909399;margin-top:4px">失败</div>
+            <div style="font-size:24px;font-weight:700;color: var(--el-color-danger)">{{ stats.failed }}</div>
+            <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">失败</div>
           </el-card>
         </el-tooltip>
       </el-col>
       <el-col :span="6">
         <el-tooltip :content="getStatTip('running')" placement="top" effect="light">
           <el-card shadow="hover" body-style="text-align:center;padding:12px;cursor:help">
-            <div style="font-size:24px;font-weight:700;color:#e6a23c">{{ stats.running }}</div>
-            <div style="font-size:12px;color:#909399;margin-top:4px">运行中</div>
+            <div style="font-size:24px;font-weight:700;color: var(--el-color-warning)">{{ stats.running }}</div>
+            <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">运行中</div>
           </el-card>
         </el-tooltip>
       </el-col>
@@ -229,11 +229,11 @@
           <el-col :span="14">
             <div style="margin-bottom:12px">
               <div style="display:flex;align-items:center;gap:8px">
-                <span style="font-size:13px;font-weight:600;margin-bottom:8px;color:#303133">
+                <span style="font-size:13px;font-weight:600;margin-bottom:8px;color: var(--el-text-color-primary)">
                   描述你想要的智能体群：
                 </span>
                 <el-tooltip content="详细描述你的需求，AI 会自动设计 Agent 角色、工作流和工具配置" placement="right" effect="light">
-                  <el-icon style="cursor:help;color:#909399;margin-bottom:8px"><QuestionFilled /></el-icon>
+                  <el-icon style="cursor:help;color: var(--el-text-color-secondary);margin-bottom:8px"><QuestionFilled /></el-icon>
                 </el-tooltip>
               </div>
               <el-input
@@ -245,7 +245,7 @@
             </div>
 
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-              <span style="font-size:12px;color:#909399">生成模式：</span>
+              <span style="font-size:12px;color: var(--el-text-color-secondary)">生成模式：</span>
               <el-radio-group v-model="genMode" size="small">
                 <el-radio value="auto">🚀 自动编排</el-radio>
                 <el-radio value="expert">🎯 专家模式</el-radio>
@@ -259,7 +259,7 @@
 
             <!-- 快捷生成示例 -->
             <div style="margin-bottom:12px">
-              <div style="font-size:12px;color:#909399;margin-bottom:6px">💡 快速示例：</div>
+              <div style="font-size:12px;color: var(--el-text-color-secondary);margin-bottom:6px">💡 快速示例：</div>
               <div style="display:flex;flex-wrap:wrap;gap:6px">
                 <el-tag
                   v-for="eg in examples" :key="eg.label"
@@ -290,12 +290,12 @@
           <el-col :span="10">
             <div v-if="generating" style="text-align:center;padding:40px 0">
               <el-icon class="generating-icon" :size="40"><Loading /></el-icon>
-              <div style="margin-top:12px;color:#909399;font-size:13px">正在根据描述生成智能体群配置…</div>
-              <div style="margin-top:6px;color:#c0c4cc;font-size:12px">分析任务 → 设计 Agent → 配置工具 → 构建工作流</div>
+              <div style="margin-top:12px;color: var(--el-text-color-secondary);font-size:13px">正在根据描述生成智能体群配置…</div>
+              <div style="margin-top:6px;color: var(--el-text-color-placeholder);font-size:12px">分析任务 → 设计 Agent → 配置工具 → 构建工作流</div>
             </div>
 
             <div v-else-if="generatedGroup" class="generated-preview">
-              <div style="font-weight:600;font-size:13px;margin-bottom:10px;color:#303133">
+              <div style="font-weight:600;font-size:13px;margin-bottom:10px;color: var(--el-text-color-primary)">
                 ✅ 已生成：{{ generatedGroup.name }}
               </div>
 
@@ -308,16 +308,16 @@
 
               <!-- 工具列表 -->
               <div v-if="generatedGroup.tools?.length" style="margin-top:8px">
-                <div style="font-size:12px;color:#909399;margin-bottom:4px">🧰 工具集：{{ generatedGroup.tools.join(', ') }}</div>
+                <div style="font-size:12px;color: var(--el-text-color-secondary);margin-bottom:4px">🧰 工具集：{{ generatedGroup.tools.join(', ') }}</div>
               </div>
 
               <!-- 工作流 -->
               <div v-if="generatedGroup.workflow?.length" style="margin-top:8px">
-                <div style="font-size:12px;color:#909399;margin-bottom:4px">🔀 工作流：</div>
+                <div style="font-size:12px;color: var(--el-text-color-secondary);margin-bottom:4px">🔀 工作流：</div>
                 <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
                   <span v-for="(step, i) in generatedGroup.workflow" :key="i" style="font-size:11px">
-                    <span style="background:#ecf5ff;padding:2px 6px;border-radius:4px;color:#409eff">{{ step }}</span>
-                    <span v-if="i < generatedGroup.workflow.length - 1" style="color:#c0c4cc;margin:0 2px">→</span>
+                    <span style="background: var(--el-color-primary-light-9);padding:2px 6px;border-radius:4px;color: var(--el-color-primary)">{{ step }}</span>
+                    <span v-if="i < generatedGroup.workflow.length - 1" style="color: var(--el-text-color-placeholder);margin:0 2px">→</span>
                   </span>
                 </div>
               </div>
@@ -346,13 +346,13 @@
                 </el-button>
               </div>
               <!-- P1-3: 详情展开区 -->
-              <div v-if="showDetail" style="margin-top:10px;background:#f5f7fa;border-radius:6px;padding:8px">
-                <div style="font-size:11px;color:#909399;margin-bottom:4px">完整配置 JSON：</div>
+              <div v-if="showDetail" style="margin-top:10px;background: var(--el-fill-color-light);border-radius:6px;padding:8px">
+                <div style="font-size:11px;color: var(--el-text-color-secondary);margin-bottom:4px">完整配置 JSON：</div>
                 <pre style="font-size:11px;margin:0;max-height:200px;overflow:auto">{{ JSON.stringify(generatedGroup, null, 2) }}</pre>
               </div>
             </div>
 
-            <div v-else style="text-align:center;padding:40px 0;color:#c0c4cc;font-size:13px">
+            <div v-else style="text-align:center;padding:40px 0;color: var(--el-text-color-placeholder);font-size:13px">
               <el-icon :size="40"><ChatDotSquare /></el-icon>
               <div style="margin-top:8px">输入描述后点击「生成智能体群」</div>
               <div style="margin-top:4px;font-size:11px">AI 将自动设计 Agent 配置和工具集</div>
@@ -373,7 +373,7 @@
           <div style="text-align:center">
             <div style="font-size:32px;margin-bottom:8px">{{ tpl.icon }}</div>
             <div style="font-weight:600;font-size:13px;margin-bottom:4px">{{ tpl.name }}</div>
-            <div style="font-size:11px;color:#909399;margin-bottom:8px">{{ tpl.desc }}</div>
+            <div style="font-size:11px;color: var(--el-text-color-secondary);margin-bottom:8px">{{ tpl.desc }}</div>
             <el-tag size="small" :type="tpl.difficulty === 'hard' ? 'danger' : tpl.difficulty === 'medium' ? 'warning' : 'success'">
               {{ tpl.difficulty === 'hard' ? '复杂' : tpl.difficulty === 'medium' ? '中等' : '简单' }}
             </el-tag>
@@ -392,7 +392,7 @@
       <el-table-column label="任务描述" min-width="200">
         <template #default="{ row }">
           <div style="font-weight:500">{{ row.description || row.name || row.goal || row.task || '任务 #' + row.id }}</div>
-          <div style="font-size:11px;color:#909399">ID: {{ row.id }}</div>
+          <div style="font-size:11px;color: var(--el-text-color-secondary)">ID: {{ row.id }}</div>
         </template>
       </el-table-column>
       <el-table-column label="状态" width="100" align="center">
@@ -507,7 +507,7 @@
         </div>
         <div v-if="detailResult.result" style="margin-bottom:16px">
           <div style="font-weight:600;font-size:13px;margin-bottom:6px">✅ 执行结果</div>
-          <el-card size="small" style="background:#f0f9eb">
+          <el-card size="small" style="background: var(--el-color-success-light-9)">
             <pre style="white-space:pre-wrap;word-break:break-word;font-size:13px">{{ detailResult.result }}</pre>
           </el-card>
         </div>
@@ -543,7 +543,7 @@
       <div style="padding:0 16px">
         <div style="margin-bottom:12px">
           <el-tag type="success">测试环境 · 沙箱模式</el-tag>
-          <span style="margin-left:8px;font-size:12px;color:#909399">测试输入将在沙箱中执行，不会影响生产环境</span>
+          <span style="margin-left:8px;font-size:12px;color: var(--el-text-color-secondary)">测试输入将在沙箱中执行，不会影响生产环境</span>
         </div>
         <el-input v-model="testInput" type="textarea" :rows="3" placeholder="输入测试内容…" style="margin-bottom:12px" />
         <el-button type="primary" :loading="testing" @click="runTest" style="margin-bottom:16px">
@@ -552,7 +552,7 @@
 
         <div v-if="testResult" style="margin-bottom:16px">
           <div style="font-weight:600;font-size:13px;margin-bottom:8px">📤 测试输出</div>
-          <el-card body-style="padding:12px" style="background:#f0f9eb">
+          <el-card body-style="padding:12px" style="background: var(--el-color-success-light-9)">
             <pre style="white-space:pre-wrap;font-size:13px">{{ testResult }}</pre>
           </el-card>
         </div>
@@ -562,8 +562,8 @@
           <el-timeline>
             <el-timeline-item v-for="(s, i) in testSteps" :key="i" :color="s.ok ? '#67c23a' : '#f56c6c'">
               <div style="font-size:13px;font-weight:600">{{ s.name }}</div>
-              <div v-if="s.output" style="font-size:12px;color:#67c23a;margin-top:4px">{{ s.output }}</div>
-              <div v-if="s.error" style="font-size:12px;color:#f56c6c;margin-top:4px">{{ s.error }}</div>
+              <div v-if="s.output" style="font-size:12px;color: var(--el-color-success);margin-top:4px">{{ s.output }}</div>
+              <div v-if="s.error" style="font-size:12px;color: var(--el-color-danger);margin-top:4px">{{ s.error }}</div>
             </el-timeline-item>
           </el-timeline>
         </div>
@@ -1131,7 +1131,7 @@ onMounted(() => {
 .tab-summary-title {
   font-size: 14px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .ai-generate-card {
@@ -1141,7 +1141,7 @@ onMounted(() => {
 
 .generating-icon {
   animation: spin 1s linear infinite;
-  color: #409eff;
+  color: var(--el-color-primary);
 }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
@@ -1169,9 +1169,9 @@ onMounted(() => {
 .step-item { padding: 4px 0; }
 .step-header { display: flex; align-items: center; margin-bottom: 4px; }
 .step-tool { font-weight: 600; font-size: 13px; }
-.step-thought { font-size: 12px; color: #909399; margin-bottom: 4px; font-style: italic; }
-.step-result { font-size: 12px; color: #67c23a; background: #f0f9eb; padding: 6px; border-radius: 4px; margin-top: 4px;
+.step-thought { font-size: 12px; color: var(--el-text-color-secondary); margin-bottom: 4px; font-style: italic; }
+.step-result { font-size: 12px; color: var(--el-color-success); background: var(--el-color-success-light-9); padding: 6px; border-radius: 4px; margin-top: 4px;
   pre { margin: 0; white-space: pre-wrap; word-break: break-word; } }
-.step-error { font-size: 12px; color: #f56c6c; margin-top: 4px; }
+.step-error { font-size: 12px; color: var(--el-color-danger); margin-top: 4px; }
 .result-detail { padding: 0 4px; }
 </style>

@@ -29,7 +29,7 @@
                 :value="kb.id"
               >
                 <span>{{ kb.name }}</span>
-                <span style="float:right;font-size:11px;color:#909399">{{ kb.docCount || 0 }} 文档</span>
+                <span style="float:right;font-size:11px;color: var(--el-text-color-secondary)">{{ kb.docCount || 0 }} 文档</span>
               </el-option>
             </el-option-group>
             <el-option-group label="公共知识库">
@@ -40,7 +40,7 @@
                 :value="kb.id"
               >
                 <span>{{ kb.name }}</span>
-                <span style="float:right;font-size:11px;color:#67c23a">公开</span>
+                <span style="float:right;font-size:11px;color: var(--el-color-success)">公开</span>
               </el-option>
             </el-option-group>
           </el-select>
@@ -59,7 +59,7 @@
               <el-option-group label="🧬 自研模型（推荐）" v-if="selfTextModels.length">
                 <el-option v-for="m in selfTextModels" :key="m.code" :label="m.name" :value="m.code">
                   {{ m.name }}
-                  <span v-if="m.accuracy" style="float:right;font-size:11px;color:#67c23a">{{ m.accuracy }}%</span>
+                  <span v-if="m.accuracy" style="float:right;font-size:11px;color: var(--el-color-success)">{{ m.accuracy }}%</span>
                 </el-option>
               </el-option-group>
               <el-option-group label="🤖 商业模型">
@@ -74,7 +74,7 @@
 
       <el-scrollbar>
         <div v-if="sessionsLoading" v-loading="true" class="session-loading">
-          <span style="font-size:12px;color:#909399">加载会话列表…</span>
+          <span style="font-size:12px;color: var(--el-text-color-secondary)">加载会话列表…</span>
         </div>
         <el-empty
           v-else-if="!sessions.length"
@@ -96,7 +96,7 @@
             <!-- 会话管理按钮 -->
             <el-button :icon="EditPen" size="small" link style="margin-left:4px;padding:2px"
               title="重命名" @click.stop="renameSession(s)" />
-            <el-button :icon="Delete" size="small" link style="padding:2px;color:#f56c6c"
+            <el-button :icon="Delete" size="small" link style="padding:2px;color: var(--el-color-danger)"
               title="删除会话" @click.stop="removeSession(s)" />
           </el-menu-item>
         </el-menu>
@@ -116,8 +116,8 @@
                 <span>{{ m.name }}</span>
                 <span style="float:right;display:flex;align-items:center;gap:4px">
                   <span style="font-size:10px;background:#f0f9ff;color:#0284c7;padding:1px 5px;border-radius:3px;font-weight:600">自研</span>
-                  <span v-if="m.accuracy" style="font-size:10px;color:#67c23a">{{ m.accuracy }}%</span>
-                  <span style="font-size:10px;color:#9ca3af">{{ m.provider || '' }}</span>
+                  <span v-if="m.accuracy" style="font-size:10px;color: var(--el-color-success)">{{ m.accuracy }}%</span>
+                  <span style="font-size:10px;color: var(--el-text-color-secondary)">{{ m.provider || '' }}</span>
                 </span>
               </el-option>
             </el-option-group>
@@ -127,8 +127,8 @@
                 <span>{{ m.name }}</span>
                 <span style="float:right;display:flex;align-items:center;gap:4px">
                   <span style="font-size:10px;background:#fff7ed;color:#c2410c;padding:1px 5px;border-radius:3px;font-weight:600">⚡ ONNX</span>
-                  <span v-if="m.accuracy" style="font-size:10px;color:#67c23a">{{ m.accuracy }}%</span>
-                  <span style="font-size:10px;color:#9ca3af">{{ m.providerCode || '' }}</span>
+                  <span v-if="m.accuracy" style="font-size:10px;color: var(--el-color-success)">{{ m.accuracy }}%</span>
+                  <span style="font-size:10px;color: var(--el-text-color-secondary)">{{ m.providerCode || '' }}</span>
                 </span>
               </el-option>
             </el-option-group>
@@ -137,7 +137,7 @@
                 <span>{{ m.name }}</span>
                 <span style="float:right;display:flex;align-items:center;gap:4px">
                   <span style="font-size:10px;background:#f0f9ff;color:#0284c7;padding:1px 5px;border-radius:3px;font-weight:600">自研</span>
-                  <span v-if="m.accuracy" style="font-size:10px;color:#67c23a">{{ m.accuracy }}%</span>
+                  <span v-if="m.accuracy" style="font-size:10px;color: var(--el-color-success)">{{ m.accuracy }}%</span>
                 </span>
               </el-option>
             </el-option-group>
@@ -153,13 +153,13 @@
             <el-option-group label="  📝 文本">
               <el-option v-for="m in commercialTextModels" :key="m.code" :label="m.displayName || m.name" :value="m.code">
                 <span>{{ m.displayName || m.name }}</span>
-                <span style="float:right;font-size:10px;color:#6b7280">{{ m.providerName || m.provider || '' }}</span>
+                <span style="float:right;font-size:10px;color: var(--el-text-color-secondary)">{{ m.providerName || m.provider || '' }}</span>
               </el-option>
             </el-option-group>
             <el-option-group label="  🖼️ 视觉" v-if="commercialVisionModels.length">
               <el-option v-for="m in commercialVisionModels" :key="m.code" :label="m.displayName || m.name" :value="m.code">
                 <span>{{ m.displayName || m.name }}</span>
-                <span style="float:right;font-size:10px;color:#6b7280">{{ m.providerName || m.provider || '' }}</span>
+                <span style="float:right;font-size:10px;color: var(--el-text-color-secondary)">{{ m.providerName || m.provider || '' }}</span>
               </el-option>
             </el-option-group>
             <el-option-group label="  🎵 音频" v-if="audioModels.length">
@@ -188,7 +188,7 @@
               :value="agent.agentId || agent.id || agent.name"
             >
               <span>{{ agent.displayName || agent.name }}</span>
-              <span style="float:right;font-size:11px;color:#909399">{{ agent.category || 'agent' }}</span>
+              <span style="float:right;font-size:11px;color: var(--el-text-color-secondary)">{{ agent.category || 'agent' }}</span>
             </el-option>
             <el-option v-if="!availableAgents.length" label="无可用Agent" disabled />
           </el-select>
@@ -212,9 +212,9 @@
         <div class="messages">
           <div v-if="!messages.length" class="welcome-msg">
             <div style="font-size:40px;margin-bottom:12px">🤖</div>
-            <div style="font-size:16px;font-weight:600;color:#303133">你好，我是 MiniMax AI</div>
-            <div style="font-size:13px;color:#909399;margin-top:6px">当前模型: <b>{{ currentModel }}</b>{{ currentModelAccuracy ? ' 🧬自研(' + currentModelAccuracy + '%)' : '' }} · {{ routeTag.label }}</div>
-            <div style="font-size:12px;color:#c0c4cc;margin-top:4px">支持上传图片/视频/文件，我会根据内容智能回复</div>
+            <div style="font-size:16px;font-weight:600;color: var(--el-text-color-primary)">你好，我是 MiniMax AI</div>
+            <div style="font-size:13px;color: var(--el-text-color-secondary);margin-top:6px">当前模型: <b>{{ currentModel }}</b>{{ currentModelAccuracy ? ' 🧬自研(' + currentModelAccuracy + '%)' : '' }} · {{ routeTag.label }}</div>
+            <div style="font-size:12px;color: var(--el-text-color-placeholder);margin-top:4px">支持上传图片/视频/文件，我会根据内容智能回复</div>
           </div>
 
           <div v-for="(msg, i) in messages" :key="i" :class="['message', msg.role]">
@@ -281,7 +281,7 @@
             <el-avatar :size="32">🔍</el-avatar>
             <div class="msg-content">
               <div class="msg-meta">视觉分析</div>
-              <div class="msg-bubble" style="color:#909399;font-size:13px">
+              <div class="msg-bubble" style="color: var(--el-text-color-secondary);font-size:13px">
                 <span v-if="currentAnalyzeType === 'image'">🖼️ 正在分析图片…</span>
                 <span v-else>🎬 正在分析视频…</span>
                 <el-icon class="is-loading" style="margin-left:6px"><Loading /></el-icon>
@@ -303,8 +303,8 @@
           <div v-if="streamError" class="message assistant">
             <el-avatar :size="32">⚠️</el-avatar>
             <div class="msg-content">
-              <div class="msg-bubble" style="background:#fef0f0;border:1px solid #fde2e2">
-                <div style="color:#f56c6c;font-size:13px;margin-bottom:6px">
+              <div class="msg-bubble" style="background:var(--el-color-danger-light-9);border:1px solid var(--el-color-danger-light-7)">
+                <div style="color: var(--el-color-danger);font-size:13px;margin-bottom:6px">
                   ⚠️ 流式响应中断：{{ streamError }}
                 </div>
                 <el-button size="small" type="primary" @click="reconnectStream">
@@ -1252,7 +1252,7 @@ onMounted(async () => {
 }
 .msg-avatar { flex-shrink: 0; background: #dbeafe; color: #1d4ed8; font-weight: 700; }
 .msg-content { max-width: 72%; }
-.msg-meta { font-size: 11px; color: #999; margin-bottom: 4px; display: flex; align-items: center; }
+.msg-meta { font-size: 11px; color: var(--el-text-color-secondary); margin-bottom: 4px; display: flex; align-items: center; }
 
 .msg-bubble {
   padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.6;
@@ -1262,21 +1262,21 @@ onMounted(async () => {
 .attachment-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
 .attachment-chip {
   display: flex; align-items: center; gap: 4px; padding: 3px 8px;
-  background: #f0f9eb; border: 1px solid #e1f3d8; border-radius: 4px;
-  font-size: 12px; color: #67c23a;
+  background: var(--el-color-success-light-9); border: 1px solid #e1f3d8; border-radius: 4px;
+  font-size: 12px; color: var(--el-color-success);
 }
 .pending-attachments {
   display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;
 }
 .pending-chip {
   display: flex; align-items: center; gap: 4px; padding: 4px 10px;
-  background: #ecf5ff; border: 1px solid #d9ecff; border-radius: 20px;
-  font-size: 12px; color: #409eff; cursor: default;
+  background: var(--el-color-primary-light-9); border: 1px solid #d9ecff; border-radius: 20px;
+  font-size: 12px; color: var(--el-color-primary); cursor: default;
   .remove-btn { cursor: pointer; margin-left: 4px; opacity: 0.6; &:hover { opacity: 1; } }
 }
 .inline-images { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
 
-.welcome-msg { text-align: center; padding: 60px 0; color: #909399; }
+.welcome-msg { text-align: center; padding: 60px 0; color: var(--el-text-color-secondary); }
 
 .loading-dots { display: flex; gap: 4px; align-items: center;
   span { width: 6px; height: 6px; background: #999; border-radius: 50%; animation: bounce 1.4s infinite; }
@@ -1285,7 +1285,7 @@ onMounted(async () => {
 }
 @keyframes bounce { 0%,80%,100% { transform: scale(0.6); opacity: 0.5; } 40% { transform: scale(1); opacity: 1; } }
 
-.streaming-indicator { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #67c23a; }
+.streaming-indicator { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--el-color-success); }
 .dot { width: 6px; height: 6px; background: #67c23a; border-radius: 50%; animation: pulse 1s infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
@@ -1296,8 +1296,8 @@ onMounted(async () => {
 .msg-bubble { position: relative; }
 .msg-actions {
   display: flex; gap: 4px; margin-top: 6px;
-  :deep(.el-button) { font-size: 12px; padding: 2px 8px; color: #909399; }
-  :deep(.el-button:hover) { color: #409eff; }
+  :deep(.el-button) { font-size: 12px; padding: 2px 8px; color: var(--el-text-color-secondary); }
+  :deep(.el-button:hover) { color: var(--el-color-primary); }
 }
 
 // V7.3 附件预览行
@@ -1306,12 +1306,12 @@ onMounted(async () => {
   display: flex; align-items: center; gap: 4px;
   padding: 2px 8px; border-radius: 12px;
   background: #f0f7ff; border: 1px solid #d9ecff;
-  font-size: 11px; color: #409eff;
+  font-size: 11px; color: var(--el-color-primary);
 }
 
 // V7.3 视觉分析气泡样式
 .analysis-bubble {
-  background: #f0f9eb;
+  background: var(--el-color-success-light-9);
   border: 1px solid #e1f3d8;
   border-radius: 12px;
   padding: 10px 14px;

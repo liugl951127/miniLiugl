@@ -34,13 +34,13 @@
         <div style="text-align:center">
           <div style="font-size:36px;margin-bottom:8px">{{ m.icon }}</div>
           <div style="font-weight:600;font-size:14px;margin-bottom:4px">{{ m.name }}</div>
-          <div style="font-size:11px;color:#909399;margin-bottom:8px">{{ m.desc }}</div>
+          <div style="font-size:11px;color: var(--el-text-color-secondary);margin-bottom:8px">{{ m.desc }}</div>
           <!-- 当前使用模型 -->
           <div class="cur-model-tag">
             <span v-if="selectedModuleModel[m.key]">
               🏷️ {{ selectedModuleModel[m.key].displayName || selectedModuleModel[m.key].modelCode }}
             </span>
-            <span v-else style="color:#c0c4cc;font-size:10px">未选择模型</span>
+            <span v-else style="color: var(--el-text-color-placeholder);font-size:10px">未选择模型</span>
           </div>
           <el-tag v-if="m.beta" size="small" type="warning" style="margin-top:6px">Beta</el-tag>
         </div>
@@ -63,7 +63,7 @@
                 :label="m.displayName || m.modelCode"
                 :value="m">
                 <span>{{ m.displayName || m.modelCode }}</span>
-                <span v-if="m.accuracy" style="float:right;color:#67c23a;font-size:11px">
+                <span v-if="m.accuracy" style="float:right;color: var(--el-color-success);font-size:11px">
                   {{ (m.accuracy * 100).toFixed(0) }}%
                 </span>
               </el-option>
@@ -145,7 +145,7 @@
                 :label="m.displayName || m.modelCode"
                 :value="m">
                 <span>{{ m.displayName || m.modelCode }}</span>
-                <span v-if="m.accuracy" style="float:right;color:#67c23a;font-size:11px">
+                <span v-if="m.accuracy" style="float:right;color: var(--el-color-success);font-size:11px">
                   {{ (m.accuracy * 100).toFixed(0) }}%
                 </span>
               </el-option>
@@ -163,7 +163,7 @@
       <el-row :gutter="12">
         <el-col :span="12">
           <el-upload :before-upload="uploadAnalyzeImg" :show-file-list="false" drag accept="image/*" style="width:100%">
-            <div style="padding:40px;text-align:center;color:#909399">
+            <div style="padding:40px;text-align:center;color: var(--el-text-color-secondary)">
               <el-icon :size="40"><UploadFilled /></el-icon>
               <div style="margin-top:8px">拖拽图片或点击上传</div>
             </div>
@@ -198,14 +198,14 @@
               <el-option v-for="m in selfModels.tts" :key="m.voiceId"
                 :label="m.name" :value="m">
                 <span>{{ m.name }}</span>
-                <span style="float:right;font-size:10px;color:#909399">{{ m.language }}</span>
+                <span style="float:right;font-size:10px;color: var(--el-text-color-secondary)">{{ m.language }}</span>
               </el-option>
             </el-option-group>
             <el-option-group label="☁️ 云端音色">
               <el-option v-for="m in cloudModels.tts" :key="m.voiceId"
                 :label="m.name" :value="m">
                 <span>{{ m.name }}</span>
-                <span style="float:right;font-size:10px;color:#909399">{{ m.language }}</span>
+                <span style="float:right;font-size:10px;color: var(--el-text-color-secondary)">{{ m.language }}</span>
               </el-option>
             </el-option-group>
           </el-select>
@@ -277,7 +277,7 @@
           <el-icon><Microphone /></el-icon>上传音频文件
         </el-button>
       </el-upload>
-      <div v-if="asrLoading" style="margin-top:12px;color:#909399">
+      <div v-if="asrLoading" style="margin-top:12px;color: var(--el-text-color-secondary)">
         <el-icon class="is-loading"><Loading /></el-icon> 识别中…
       </div>
       <div v-else-if="!asrResult" style="margin-top:16px">
@@ -324,7 +324,7 @@
       <div class="camera-area">
         <video ref="faceVideoEl" autoplay muted playsinline
           :class="{ 'camera-active': faceCameraOn }"
-          style="width:100%;max-width:480px;border-radius:8px;background:#000;display:block" />
+          style="width:100%;max-width:480px;border-radius:8px;background: #000;display:block" />
         <canvas ref="faceCanvasEl" style="display:none" />
       </div>
 
@@ -357,7 +357,7 @@
       </div>
 
       <!-- 分析结果 -->
-      <div v-if="faceLoading" style="margin-top:16px;color:#909399">
+      <div v-if="faceLoading" style="margin-top:16px;color: var(--el-text-color-secondary)">
         <el-icon class="is-loading"><Loading /></el-icon> 人脸分析中…
       </div>
       <el-empty v-else-if="!faceResult" description="尚未分析，请开启摄像头后点击「拍照分析」" :image-size="80" style="margin-top:16px" />
@@ -365,7 +365,7 @@
         <el-card body-style="padding:16px" shadow="hover">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
             <el-tag type="success">✅ 分析完成</el-tag>
-            <span style="font-size:12px;color:#909399">
+            <span style="font-size:12px;color: var(--el-text-color-secondary)">
               耗时 {{ faceResult.durationMs || 0 }}ms · 模型: {{ faceResult.model || '-' }}
             </span>
           </div>
@@ -433,7 +433,7 @@
       <div v-if="videoUnderstLoading" style="margin-top:12px">
         <el-progress :percentage="videoProgress" :stroke-width="10"
           :color="videoProgressColorFn" />
-        <p style="color:#909399;font-size:13px;margin-top:4px">
+        <p style="color: var(--el-text-color-secondary);font-size:13px;margin-top:4px">
           <el-icon class="is-loading"><Loading /></el-icon>
           视频分析中… (提取关键帧 + LLM 视觉理解)
         </p>
@@ -442,7 +442,7 @@
       <!-- 元数据 -->
       <div v-if="videoMeta" style="margin-top:16px">
         <el-card body-style="padding:12px" shadow="never">
-          <div style="font-size:12px;color:#606266">
+          <div style="font-size:12px;color: var(--el-text-color-regular)">
             <el-tag size="small" type="info" style="margin-right:8px">
               ⏱ {{ videoMeta.durationMs ? (videoMeta.durationMs / 1000).toFixed(1) + 's' : '-' }}
             </el-tag>
@@ -465,13 +465,13 @@
         <el-card body-style="padding:16px" shadow="hover">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
             <el-tag type="success">✅ 分析完成</el-tag>
-            <span style="font-size:12px;color:#909399">
+            <span style="font-size:12px;color: var(--el-text-color-secondary)">
               {{ videoResult.frameCount || 0 }} 帧 · 耗时 {{ videoResult.analysisTimeMs || 0 }}ms
             </span>
           </div>
           <div v-for="(frame, idx) in (videoResult.frames || [])" :key="idx"
-            style="margin-bottom:16px;padding:12px;background:#f5f7fa;border-radius:8px">
-            <div style="font-size:12px;color:#909399;margin-bottom:6px">
+            style="margin-bottom:16px;padding:12px;background: var(--el-fill-color-light);border-radius:8px">
+            <div style="font-size:12px;color: var(--el-text-color-secondary);margin-bottom:6px">
               📸 第 {{ frame.frameIndex || idx + 1 }} 帧 (at {{ frame.frameAt || '-' }})
             </div>
             <pre style="white-space:pre-wrap;font-size:13px;line-height:1.6">{{ frame.content || frame.description || JSON.stringify(frame, null, 2) }}</pre>
@@ -497,7 +497,7 @@
               <el-option v-for="m in selfModels.video" :key="m.modelCode"
                 :label="m.displayName || m.modelCode" :value="m">
                 <span>{{ m.displayName || m.modelCode }}</span>
-                <span v-if="m.accuracy" style="float:right;color:#67c23a;font-size:11px">
+                <span v-if="m.accuracy" style="float:right;color: var(--el-color-success);font-size:11px">
                   {{ (m.accuracy * 100).toFixed(0) }}%
                 </span>
               </el-option>
@@ -566,7 +566,7 @@
               <el-option v-for="m in selfModels.doc" :key="m.modelCode"
                 :label="m.displayName || m.modelCode" :value="m">
                 <span>{{ m.displayName || m.modelCode }}</span>
-                <span v-if="m.accuracy" style="float:right;color:#67c23a;font-size:11px">
+                <span v-if="m.accuracy" style="float:right;color: var(--el-color-success);font-size:11px">
                   {{ (m.accuracy * 100).toFixed(0) }}%
                 </span>
               </el-option>
@@ -622,7 +622,7 @@
               <el-option v-for="m in selfModels.music" :key="m.modelCode"
                 :label="m.displayName || m.modelCode" :value="m">
                 <span>{{ m.displayName || m.modelCode }}</span>
-                <span v-if="m.accuracy" style="float:right;color:#67c23a;font-size:11px">
+                <span v-if="m.accuracy" style="float:right;color: var(--el-color-success);font-size:11px">
                   {{ (m.accuracy * 100).toFixed(0) }}%
                 </span>
               </el-option>
@@ -1355,16 +1355,16 @@ function downloadImg(url) {
 
 .service-badge {
   font-size: 12px; padding: 2px 8px; border-radius: 12px;
-  &.ok { background: #f0f9eb; color: #67c23a; border: 1px solid #e1f3d8; }
-  &.loading { background: #f4f4f5; color: #909399; border: 1px solid #e4e7ed; }
+  &.ok { background: var(--el-color-success-light-9); color: var(--el-color-success); border: 1px solid #e1f3d8; }
+  &.loading { background: #f4f4f5; color: var(--el-text-color-secondary); border: 1px solid #e4e7ed; }
 }
 
 .service-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
 .svc-chip {
   font-size: 11px; padding: 2px 8px; border-radius: 10px;
   display: flex; align-items: center; gap: 4px;
-  &.chip-ok { background: #f0f9eb; color: #67c23a; }
-  &.chip-fail { background: #fef0f0; color: #f56c6c; }
+  &.chip-ok { background: var(--el-color-success-light-9); color: var(--el-color-success); }
+  &.chip-fail { background: #fef0f0; color: var(--el-color-danger); }
 }
 
 // 默认桌面: 4列
@@ -1396,8 +1396,8 @@ function downloadImg(url) {
 
 .cur-model-tag {
   font-size: 11px;
-  color: #409eff;
-  background: #ecf5ff;
+  color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
   border: 1px solid #d9ecff;
   border-radius: 10px;
   padding: 2px 8px;

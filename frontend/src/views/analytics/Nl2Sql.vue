@@ -92,18 +92,18 @@
             </div>
 
             <!-- 表列结构 -->
-            <div style="font-size:12px;color:#666;margin-bottom:4px;font-weight:600">字段结构 ({{ tableColumns.length }} 列)</div>
+            <div style="font-size:12px;color: var(--el-text-color-regular);margin-bottom:4px;font-weight:600">字段结构 ({{ tableColumns.length }} 列)</div>
             <el-table :data="tableColumns" stripe size="small" max-height="160">
               <el-table-column prop="name" label="列名" width="130" />
               <el-table-column prop="type" label="类型" width="100" />
               <el-table-column prop="nullable" label="可空" width="55">
                 <template #default="{ row }">
-                  <span :style="{ color: row.nullable ? '#67c23a' : '#f56c6c' }">{{ row.nullable ? 'YES' : 'NO' }}</span>
+                  <span :style="{ color: row.nullable ? 'var(--el-color-success)' : 'var(--el-color-danger)' }">{{ row.nullable ? 'YES' : 'NO' }}</span>
                 </template>
               </el-table-column>
               <el-table-column prop="keyType" label="键" width="50">
                 <template #default="{ row }">
-                  <span v-if="row.keyType" style="color:#e6a23c;font-size:11px">{{ row.keyType }}</span>
+                  <span v-if="row.keyType" style="color: var(--el-color-warning);font-size:11px">{{ row.keyType }}</span>
                 </template>
               </el-table-column>
               <el-table-column prop="comment" label="注释" show-overflow-tooltip />
@@ -145,7 +145,7 @@
         <div class="query-box">
           <div class="query-hint">
             用自然语言描述你想查什么，我帮你生成 SQL
-            <span v-if="selectedTable" style="color:#409eff">（已选表: {{ selectedTable }}）</span>
+            <span v-if="selectedTable" style="color: var(--el-color-primary)">（已选表: {{ selectedTable }}）</span>
           </div>
           <div class="query-input-row">
             <el-input
@@ -185,14 +185,14 @@
           <!-- 解释 -->
           <div v-if="result.explanation" class="result-block">
             <div class="result-header"><span>📖 说明</span></div>
-            <p style="margin:0;font-size:13px;color:#555">{{ result.explanation }}</p>
+            <p style="margin:0;font-size:13px;color: var(--el-text-color-regular)">{{ result.explanation }}</p>
           </div>
 
           <!-- 执行结果表格 -->
           <div v-if="queryResult" class="result-block">
             <div class="result-header">
               <span>📊 查询结果</span>
-              <span style="font-size:12px;color:#888">共 {{ queryResult.rowCount ?? 0 }} 行, 耗时 {{ queryResult.durationMs }}ms</span>
+              <span style="font-size:12px;color: var(--el-text-color-placeholder)">共 {{ queryResult.rowCount ?? 0 }} 行, 耗时 {{ queryResult.durationMs }}ms</span>
             </div>
             <el-table :data="queryResult.rows" stripe size="small" max-height="400" border>
               <el-table-column
@@ -210,7 +210,7 @@
           <div v-if="dryRunResult && !queryResult" class="result-block">
             <div class="result-header">
               <span>⚡ 试运行结果</span>
-              <span style="font-size:12px;color:#888">共 {{ dryRunResult.rowCount ?? 0 }} 行</span>
+              <span style="font-size:12px;color: var(--el-text-color-placeholder)">共 {{ dryRunResult.rowCount ?? 0 }} 行</span>
             </div>
             <el-table :data="dryRunResult.rows" stripe size="small" max-height="300" border>
               <el-table-column
@@ -280,7 +280,7 @@
             type="textarea"
             :rows="2"
           />
-          <div style="color:#999;font-size:11px;margin-top:2px">
+          <div style="color: var(--el-text-color-secondary);font-size:11px;margin-top:2px">
             <span v-if="dsForm.type === 'mysql'">
               格式: jdbc:mysql://host:port/dbname?useSSL=false&amp;serverTimezone=UTC
             </span>
@@ -303,7 +303,7 @@
           <el-button @click="testDs" :loading="testingDs" :type="dsTestOk === true ? 'success' : dsTestOk === false ? 'danger' : 'info'" plain>
             {{ dsTestOk === true ? '✅ 连接成功' : dsTestOk === false ? '❌ 连接失败' : '🔍 测试连接' }}
           </el-button>
-          <span v-if="dsTestMsg" style="margin-left:8px;font-size:12px" :style="{ color: dsTestOk ? '#67c23a' : '#f56c6c' }">{{ dsTestMsg }}</span>
+          <span v-if="dsTestMsg" style="margin-left:8px;font-size:12px" :style="{ color: dsTestOk ? 'var(--el-color-success)' : 'var(--el-color-danger)' }">{{ dsTestMsg }}</span>
         </el-form-item>
 
         <el-form-item>
@@ -709,7 +709,7 @@ function loadHistoryFromItem(item) {
   opacity: 0;
   margin-left: 4px;
   font-size: 12px;
-  color: #409eff;
+  color: var(--el-color-primary);
   cursor: pointer;
   transition: opacity 0.2s;
 }
@@ -726,7 +726,7 @@ function loadHistoryFromItem(item) {
 .query-panel { flex: 1; overflow-y: auto; padding: 16px; background: #fff; }
 
 .query-box { margin-bottom: 16px; }
-.query-hint { font-size: 13px; color: #888; margin-bottom: 8px; }
+.query-hint { font-size: 13px; color: var(--el-text-color-placeholder); margin-bottom: 8px; }
 .query-input-row { display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; }
 .query-input-row .el-textarea { flex: 1; min-width: 0; }
 
@@ -735,7 +735,7 @@ function loadHistoryFromItem(item) {
 .result-block { border: 1px solid #eee; border-radius: 6px; overflow: hidden; }
 .result-header {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 8px 12px; background: #f5f7fa; font-size: 13px; font-weight: 600; color: #333;
+  padding: 8px 12px; background: var(--el-fill-color-light); font-size: 13px; font-weight: 600; color: #333;
   flex-wrap: wrap; gap: 6px;
 }
 .table-stats { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
@@ -752,9 +752,9 @@ function loadHistoryFromItem(item) {
   padding: 8px 10px; border-radius: 4px; cursor: pointer;
   border: 1px solid transparent; margin-bottom: 8px; transition: all .15s;
 }
-.history-item:hover { border-color: #409eff; background: #f0f7ff; }
+.history-item:hover { border-color: var(--el-color-primary); background: #f0f7ff; }
 .hist-q { font-size: 13px; color: #333; margin-bottom: 4px; }
-.hist-sql { font-size: 11px; color: #888; margin: 0; background: #f8f8f8; padding: 4px 8px; border-radius: 3px; overflow-x: auto; }
+.hist-sql { font-size: 11px; color: var(--el-text-color-placeholder); margin: 0; background: #f8f8f8; padding: 4px 8px; border-radius: 3px; overflow-x: auto; }
 
 /* ============================================================
    H5 移动端适配 (max-width: 768px)

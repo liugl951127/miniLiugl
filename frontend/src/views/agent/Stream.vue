@@ -60,5 +60,5 @@ async function runAgent() {
 .page-card { background: #fff; border-radius: 8px; padding: 20px; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; h2 { margin: 0; font-size: 16px; } }
 .step-item { margin-bottom: 12px; }
-.step-result { margin-top: 4px; font-size: 12px; color: #666; white-space: pre-wrap; }
+.step-result { margin-top: 4px; font-size: 12px; color: var(--el-text-color-regular); white-space: pre-wrap; }
 </style>

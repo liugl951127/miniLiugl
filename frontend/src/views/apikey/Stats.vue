@@ -169,7 +169,7 @@ onMounted(() => {
   margin: 0 0 12px;
   font-size: 14px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 .trend-bar {
   display: flex;
@@ -199,12 +199,12 @@ onMounted(() => {
 }
 .trend-bar-label {
   font-size: 11px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-top: 4px;
 }
 .trend-bar-value {
   font-size: 11px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 </style>

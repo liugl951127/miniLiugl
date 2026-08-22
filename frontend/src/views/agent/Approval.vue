@@ -261,7 +261,7 @@ function useTable2({ fetcher }) {
 <style scoped>
 .mt-4 { margin-top: 16px; }
 .code-block {
-  background: #f5f7fa;
+  background: var(--el-fill-color-light);
   padding: 8px 12px;
   border-radius: 4px;
   font-size: 12px;

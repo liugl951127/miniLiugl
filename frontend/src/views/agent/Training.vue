@@ -13,8 +13,8 @@
       <el-col v-for="m in metrics" :key="m.label" :span="6">
         <el-tooltip :content="m.tip || ''" placement="top" effect="light">
           <el-card shadow="hover" style="cursor:default">
-            <div style="font-size:12px;color:#999">{{ m.label }}</div>
-            <div style="font-size:24px;font-weight:700;color:#7c3aed;margin-top:4px">{{ m.value }}</div>
+            <div style="font-size:12px;color: var(--el-text-color-secondary)">{{ m.label }}</div>
+            <div style="font-size:24px;font-weight:700;color: var(--el-color-primary);margin-top:4px">{{ m.value }}</div>
           </el-card>
         </el-tooltip>
       </el-col>
@@ -48,7 +48,7 @@
         </el-table-column>
         <el-table-column label="消息" min-width="120">
           <template #default="{ row }">
-            <span style="color:#909399;font-size:12px">{{ row.message || '-' }}</span>
+            <span style="color: var(--el-text-color-secondary);font-size:12px">{{ row.message || '-' }}</span>
           </template>
         </el-table-column>
         <template #empty>

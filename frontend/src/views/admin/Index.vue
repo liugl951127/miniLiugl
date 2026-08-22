@@ -179,13 +179,13 @@ onMounted(() => { loadUsers(); loadDashboard() })
 </script>
 
 <style lang="scss" scoped>
-.page-card { background: #fff; border-radius: 8px; padding: 20px; }
+.page-card { background: var(--el-bg-color); border-radius: 8px; padding: 20px; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; h2 { margin: 0; font-size: 16px; } }
 .stat-card { text-align: center; }
-.stat-label { font-size: 12px; color: #999; margin-bottom: 8px; }
-.stat-value { font-size: 28px; font-weight: 700; color: #1e40af; }
-.stat-change { font-size: 11px; margin-top: 4px; &.up { color: #10b981; } &.down { color: #ef4444; } }
+.stat-label { font-size: 12px; color: var(--el-text-color-secondary); margin-bottom: 8px; }
+.stat-value { font-size: 28px; font-weight: 700; color: var(--el-color-primary); }
+.stat-change { font-size: 11px; margin-top: 4px; &.up { color: var(--el-color-success); } &.down { color: var(--el-color-danger); } }
 .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-.big-num { font-size: 32px; font-weight: 700; color: #1e40af; text-align: center; }
+.big-num { font-size: 32px; font-weight: 700; color: var(--el-color-primary); text-align: center; }
 .tab-empty { padding: 40px 0; display: flex; justify-content: center; }
 </style>

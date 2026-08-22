@@ -20,20 +20,20 @@
         <!-- 统计卡片 -->
         <el-row :gutter="12" style="margin-bottom:16px">
           <el-col :span="6"><el-card body-style="padding:12px;text-align:center">
-            <div style="font-size:22px;font-weight:700;color:#409eff">{{ apiKeys.length }}</div>
-            <div style="font-size:12px;color:#909399">总 Key 数</div>
+            <div style="font-size:22px;font-weight:700;color: var(--el-color-primary)">{{ apiKeys.length }}</div>
+            <div style="font-size:12px;color: var(--el-text-color-secondary)">总 Key 数</div>
           </el-card></el-col>
           <el-col :span="6"><el-card body-style="padding:12px;text-align:center">
-            <div style="font-size:22px;font-weight:700;color:#67c23a">{{ activeKeyCount }}</div>
-            <div style="font-size:12px;color:#909399">启用中</div>
+            <div style="font-size:22px;font-weight:700;color: var(--el-color-success)">{{ activeKeyCount }}</div>
+            <div style="font-size:12px;color: var(--el-text-color-secondary)">启用中</div>
           </el-card></el-col>
           <el-col :span="6"><el-card body-style="padding:12px;text-align:center">
-            <div style="font-size:22px;font-weight:700;color:#e6a23c">{{ totalUsed.toLocaleString() }}</div>
-            <div style="font-size:12px;color:#909399">总调用量</div>
+            <div style="font-size:22px;font-weight:700;color: var(--el-color-warning)">{{ totalUsed.toLocaleString() }}</div>
+            <div style="font-size:12px;color: var(--el-text-color-secondary)">总调用量</div>
           </el-card></el-col>
           <el-col :span="6"><el-card body-style="padding:12px;text-align:center">
-            <div style="font-size:22px;font-weight:700;color:#909399">{{ totalQuota || '无限' }}</div>
-            <div style="font-size:12px;color:#909399">总限额</div>
+            <div style="font-size:22px;font-weight:700;color: var(--el-text-color-secondary)">{{ totalQuota || '无限' }}</div>
+            <div style="font-size:12px;color: var(--el-text-color-secondary)">总限额</div>
           </el-card></el-col>
         </el-row>
 
@@ -41,12 +41,12 @@
           <el-table-column label="名称">
             <template #default="{ row }">
               <div style="font-weight:600">{{ row.name }}</div>
-              <div style="font-size:11px;color:#909399">{{ row.description || '' }}</div>
+              <div style="font-size:11px;color: var(--el-text-color-secondary)">{{ row.description || '' }}</div>
             </template>
           </el-table-column>
           <el-table-column label="Key" width="280">
             <template #default="{ row }">
-              <code style="font-size:12px;background:#f5f7fa;padding:2px 8px;border-radius:4px">
+              <code style="font-size:12px;background: var(--el-fill-color-light);padding:2px 8px;border-radius:4px">
                 {{ row.show ? row.key : maskKey(row.key) }}
               </code>
               <el-button size="small" link @click="row.show = !row.show">
@@ -86,7 +86,7 @@
             <el-form-item label="描述"><el-input v-model="keyForm.description" type="textarea" :rows="2" /></el-form-item>
             <el-form-item label="每日限额">
               <el-input-number v-model="keyForm.quota" :min="0" :step="1000" />
-              <span style="margin-left:8px;color:#909399;font-size:12px">0 = 不限制</span>
+              <span style="margin-left:8px;color: var(--el-text-color-secondary);font-size:12px">0 = 不限制</span>
             </el-form-item>
           </el-form>
           <template #footer>
@@ -103,8 +103,8 @@
         <el-row :gutter="12" style="margin-bottom:16px">
           <el-col v-for="s in adminStats" :key="s.label" :span="6">
             <el-card shadow="hover" body-style="text-align:center;padding:12px">
-              <div style="font-size:24px;font-weight:700;color:#409eff">{{ s.value }}</div>
-              <div style="font-size:12px;color:#909399;margin-top:4px">{{ s.label }}</div>
+              <div style="font-size:24px;font-weight:700;color: var(--el-color-primary)">{{ s.value }}</div>
+              <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">{{ s.label }}</div>
             </el-card>
           </el-col>
         </el-row>
@@ -233,7 +233,7 @@
             </el-form-item>
             <el-form-item label="数据隔离">
               <el-switch v-model="tenantForm.dataIsolation" />
-              <span style="margin-left:8px;color:#909399;font-size:12px">开启后租户数据完全隔离</span>
+              <span style="margin-left:8px;color: var(--el-text-color-secondary);font-size:12px">开启后租户数据完全隔离</span>
             </el-form-item>
             <el-form-item label="IP 白名单">
               <el-input
@@ -281,7 +281,7 @@
                 :model-value="tenantDetail.dataIsolation !== false"
                 @change="v => updateTenantIsolation(tenantDetail, v)"
               />
-              <span style="margin-left:8px;color:#909399">开启后，该租户用户的对话、知识库、API Key 等数据完全隔离</span>
+              <span style="margin-left:8px;color: var(--el-text-color-secondary)">开启后，该租户用户的对话、知识库、API Key 等数据完全隔离</span>
             </el-form-item>
             <el-form-item label="IP 白名单">
               <el-input
@@ -347,8 +347,8 @@
                 <span style="font-weight:600;font-size:13px">{{ s.name }}</span>
                 <el-tag size="small" :type="s.status === 'UP' ? 'success' : 'danger'">{{ s.status }}</el-tag>
               </div>
-              <div style="margin-top:8px;font-size:12px;color:#666">
-                延迟: <span :style="{color: (s.latency || 0) > 1000 ? '#ef4444' : '#10b981'}">{{ s.latency || '—' }}ms</span>
+              <div style="margin-top:8px;font-size:12px;color: var(--el-text-color-regular)">
+                延迟: <span :style="{color: (s.latency || 0) > 1000 ? 'var(--el-color-danger)' : 'var(--el-color-success)'}">{{ s.latency || '—' }}ms</span>
               </div>
             </el-card>
           </el-col>
@@ -721,7 +721,7 @@ onMounted(() => {
 .big-num {
   font-size: 32px;
   font-weight: 700;
-  color: #1e40af;
+  color: var(--el-color-primary);
   text-align: center;
 }
 </style>

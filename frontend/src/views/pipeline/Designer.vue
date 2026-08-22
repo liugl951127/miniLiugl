@@ -471,19 +471,19 @@ onMounted(() => {
 .designer-header { padding: 10px 16px; border-bottom: 1px solid #e4e7ed; display: flex; justify-content: space-between; align-items: center; h2 { margin: 0; font-size: 15px; } }
 .designer-body { flex: 1; display: flex; overflow: hidden; }
 .node-palette { width: 160px; border-right: 1px solid #e4e7ed; padding: 8px; flex-shrink: 0; overflow-y: auto; }
-.palette-title { font-size: 12px; font-weight: 600; color: #909399; margin-bottom: 8px; }
+.palette-title { font-size: 12px; font-weight: 600; color: var(--el-text-color-secondary); margin-bottom: 8px; }
 .palette-node {
   padding: 8px 10px; border: 1px solid #e4e7ed; border-radius: 4px; margin-bottom: 6px;
-  cursor: grab; font-size: 13px; border-left-width: 3px; background: #f5f7fa;
+  cursor: grab; font-size: 13px; border-left-width: 3px; background: var(--el-fill-color-light);
   transition: all 0.15s; user-select: none;
   display: flex; align-items: center; gap: 6px;
-  &:hover { background: #ecf5ff; border-color: #b3d8ff; transform: translateX(2px); }
+  &:hover { background: var(--el-color-primary-light-9); border-color: #b3d8ff; transform: translateX(2px); }
   &:active { cursor: grabbing; }
   &.is-dragging { opacity: 0.4; }
 }
 .palette-node-icon { font-size: 16px; }
 .palette-node-label { flex: 1; }
-.palette-tip { font-size: 11px; color: #909399; margin-top: 8px; padding: 4px; text-align: center; }
+.palette-tip { font-size: 11px; color: var(--el-text-color-secondary); margin-top: 8px; padding: 4px; text-align: center; }
 
 .canvas-drop {
   flex: 1; position: relative; background: #f8fafc;
@@ -510,10 +510,10 @@ onMounted(() => {
   0%, 100% { box-shadow: 0 0 0 2px #67c23a; }
   50% { box-shadow: 0 0 0 4px rgba(103, 194, 58, 0.4); }
 }
-.node-hdr { padding: 6px 8px; background: #f5f7fa; border-radius: 6px 6px 0 0; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
-.del-btn { opacity: 0; cursor: pointer; font-size: 12px; color: #f56c6c; transition: opacity 0.15s; }
+.node-hdr { padding: 6px 8px; background: var(--el-fill-color-light); border-radius: 6px 6px 0 0; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
+.del-btn { opacity: 0; cursor: pointer; font-size: 12px; color: var(--el-color-danger); transition: opacity 0.15s; }
 .canvas-node:hover .del-btn { opacity: 1; }
-.node-body { padding: 4px 8px 6px; font-size: 11px; color: #909399; }
+.node-body { padding: 4px 8px 6px; font-size: 11px; color: var(--el-text-color-secondary); }
 
 .edge-hint {
   position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
@@ -524,11 +524,11 @@ onMounted(() => {
 }
 
 .prop-panel { width: 240px; border-left: 1px solid #e4e7ed; padding: 8px; flex-shrink: 0; overflow-y: auto; }
-.prop-empty { text-align: center; color: #909399; padding: 30px 0; font-size: 13px; p { margin: 8px 0 0; } }
+.prop-empty { text-align: center; color: var(--el-text-color-secondary); padding: 30px 0; font-size: 13px; p { margin: 8px 0 0; } }
 .prop-form { .el-form-item { margin-bottom: 8px; } }
 .config-error-msg {
-  font-size: 11px; color: #f56c6c; margin-top: 4px;
+  font-size: 11px; color: var(--el-color-danger); margin-top: 4px;
   display: flex; align-items: center; gap: 4px;
 }
-:deep(.is-invalid textarea) { border-color: #f56c6c !important; }
+:deep(.is-invalid textarea) { border-color: var(--el-color-danger) !important; }
 </style>

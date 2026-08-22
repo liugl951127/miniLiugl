@@ -34,7 +34,7 @@
           <el-table-column prop="name" label="名称" width="150">
             <template #default="{ row }">
               <div style="font-weight:600">{{ row.name }}</div>
-              <div style="font-size:11px;color:#909399">{{ row.author || '系统' }}</div>
+              <div style="font-size:11px;color: var(--el-text-color-secondary)">{{ row.author || '系统' }}</div>
             </template>
           </el-table-column>
           <el-table-column prop="description" label="描述" show-overflow-tooltip />
@@ -68,7 +68,7 @@
           <div v-else>
             <div style="margin-bottom:12px">
               <div style="font-weight:600;font-size:15px">{{ selectedPrompt.name }}</div>
-              <div style="font-size:12px;color:#909399;margin-top:4px">{{ selectedPrompt.description }}</div>
+              <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">{{ selectedPrompt.description }}</div>
               <div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">
                 <el-tag size="small">{{ selectedPrompt.category }}</el-tag>
                 <el-tag v-for="t in (selectedPrompt.tags || [])" :key="t" size="small" type="info">{{ t }}</el-tag>
@@ -77,7 +77,7 @@
 
             <!-- 变量提取 -->
             <div v-if="templateVars.length" style="margin-bottom:12px">
-              <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:#409eff">🔧 变量填写</div>
+              <div style="font-size:12px;font-weight:600;margin-bottom:8px;color: var(--el-color-primary)">🔧 变量填写</div>
               <el-form label-width="80px" size="small">
                 <el-form-item v-for="v in templateVars" :key="v" :label="v">
                   <el-input v-model="varValues[v]" :placeholder="`输入 ${v}`" clearable />
@@ -135,7 +135,7 @@
           <el-input v-model="form.template" type="textarea" :rows="10"
             placeholder="使用 {变量名} 占位，例如：帮我分析 {topic} 这个主题，给出 {count} 个关键点。"
             class="template-textarea" />
-          <div style="font-size:11px;color:#909399;margin-top:4px">
+          <div style="font-size:11px;color: var(--el-text-color-secondary);margin-top:4px">
             支持变量占位：<code>{变量名}</code> · 支持 Markdown 格式
           </div>
         </el-form-item>
@@ -148,7 +148,7 @@
         </el-form-item>
         <el-form-item label="是否公开">
           <el-switch v-model="form.public" />
-          <span style="margin-left:8px;font-size:12px;color:#909399">公开模板可供所有用户使用</span>
+          <span style="margin-left:8px;font-size:12px;color: var(--el-text-color-secondary)">公开模板可供所有用户使用</span>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -388,10 +388,10 @@ onBeforeUnmount(() => {
   :deep(.var-token) { color: #fbbf24; background: rgba(251, 191, 36, 0.15); padding: 1px 4px; border-radius: 3px; }
 }
 .rendered-preview {
-  background: #f0f9eb; color: #333; padding: 12px; border-radius: 6px;
+  background: var(--el-color-success-light-9); color: #333; padding: 12px; border-radius: 6px;
   font-size: 13px; white-space: pre-wrap; max-height: 200px; overflow: auto;
   border: 1px solid #e1f3d8;
-  :deep(.var-placeholder) { color: #909399; font-style: italic; border-bottom: 1px dashed #ccc; }
+  :deep(.var-placeholder) { color: var(--el-text-color-secondary); font-style: italic; border-bottom: 1px dashed #ccc; }
 }
 :deep(.template-textarea textarea) { font-family: monospace; font-size: 13px; }
 </style>

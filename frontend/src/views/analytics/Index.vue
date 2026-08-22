@@ -18,8 +18,8 @@
       <el-col v-for="m in metrics" :key="m.label" :span="6">
         <el-tooltip :content="m.tip" placement="top" effect="light">
           <el-card shadow="hover" body-style="padding:12px;text-align:center;cursor:help">
-            <div style="font-size:12px;color:#909399;margin-bottom:6px">{{ m.label }}</div>
-            <div style="font-size:26px;font-weight:700" :style="{ color: m.color || '#1e40af' }">{{ m.value }}</div>
+            <div style="font-size:12px;color: var(--el-text-color-secondary);margin-bottom:6px">{{ m.label }}</div>
+            <div style="font-size:26px;font-weight:700" :style="{ color: m.color || 'var(--el-color-primary)' }">{{ m.value }}</div>
           </el-card>
         </el-tooltip>
       </el-col>
@@ -85,11 +85,11 @@
             <!-- 查询配置栏 -->
             <el-card body-style="padding:12px;margin-bottom:12px">
               <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-                <span style="font-size:12px;color:#909399;white-space:nowrap">数据源：</span>
+                <span style="font-size:12px;color: var(--el-text-color-secondary);white-space:nowrap">数据源：</span>
                 <el-select v-model="nlDsId" placeholder="选择数据源" size="small" style="width:140px" clearable @change="onNlDsChange">
                   <el-option v-for="ds in dataSources.filter(d => d.status === 'CONNECTED')" :key="ds.id" :label="ds.name" :value="ds.id" />
                 </el-select>
-                <span style="font-size:12px;color:#909399;white-space:nowrap">模型：</span>
+                <span style="font-size:12px;color: var(--el-text-color-secondary);white-space:nowrap">模型：</span>
                 <el-select v-model="nlModel" placeholder="默认模型" size="small" style="width:150px" clearable filterable>
                   <el-option-group v-if="nlModelOptions.filter(m => m.local).length" label="🏷️ 自研模型">
                     <el-option v-for="m in nlModelOptions.filter(m => m.local)" :key="m.value" :label="m.label" :value="m.value" />
@@ -146,12 +146,12 @@
                   </div>
                 </template>
                 <pre v-if="nlResult.sql" class="sql-code">{{ nlResult.sql }}</pre>
-                <div v-if="nlResult.promptTokens || nlResult.completionTokens" style="margin-top:6px;font-size:12px;color:#909399">
+                <div v-if="nlResult.promptTokens || nlResult.completionTokens" style="margin-top:6px;font-size:12px;color: var(--el-text-color-secondary)">
                   <span v-if="nlResult.promptTokens">Prompt tokens: {{ nlResult.promptTokens }}</span>
                   <span v-if="nlResult.completionTokens" style="margin-left:12px">Completion tokens: {{ nlResult.completionTokens }}</span>
                 </div>
                 <!-- SQL 解释 -->
-                <div v-if="nlExplanation" style="margin-top:10px;padding:10px;background:#f0f9eb;border-radius:6px;font-size:13px;color:#67c23a">
+                <div v-if="nlExplanation" style="margin-top:10px;padding:10px;background: var(--el-color-success-light-9);border-radius:6px;font-size:13px;color: var(--el-color-success)">
                   <el-icon><InfoFilled /></el-icon> {{ nlExplanation }}
                 </div>
               </el-card>
@@ -160,7 +160,7 @@
               <el-card v-if="nlResult.rows?.length" body-style="padding:0" style="margin-bottom:12px">
                 <template #header>
                   <span>查询结果</span>
-                  <span style="font-size:12px;color:#909399;float:right">
+                  <span style="font-size:12px;color: var(--el-text-color-secondary);float:right">
                     {{ nlResult.rows.length }} 条 · {{ nlResult.duration || 0 }}ms
                   </span>
                 </template>
@@ -180,7 +180,7 @@
               </el-card>
 
               <!-- 安全警告 -->
-              <div v-if="nlResult.explanation?.includes('⚠️')" style="padding:8px 12px;background:#fef0f0;border-radius:6px;font-size:13px;color:#f56c6c">
+              <div v-if="nlResult.explanation?.includes('⚠️')" style="padding:8px 12px;background:#fef0f0;border-radius:6px;font-size:13px;color: var(--el-color-danger)">
                 {{ nlResult.explanation }}
               </div>
             </div>
@@ -200,7 +200,7 @@
                   </el-tag>
                   <span class="nl-query-text">{{ h.question || h.query }}</span>
                 </div>
-                <span style="font-size:11px;color:#909399;white-space:nowrap;margin-left:8px">{{ h.createdAt?.slice(0,16) || '' }}</span>
+                <span style="font-size:11px;color: var(--el-text-color-secondary);white-space:nowrap;margin-left:8px">{{ h.createdAt?.slice(0,16) || '' }}</span>
               </div>
               <el-empty v-if="!nlHistory.length" :description="nlHistoryEmptyText" :image-size="60" />
             </el-card>
@@ -210,7 +210,7 @@
           <el-col :span="12">
             <el-card body-style="padding:12px;margin-bottom:12px">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-                <el-icon style="color:#409eff"><Database /></el-icon>
+                <el-icon style="color: var(--el-color-primary)"><Database /></el-icon>
                 <span style="font-weight:600;font-size:14px">数据 Schema</span>
                 <el-tag v-if="nlDsId && nlDb" size="small" type="primary" style="margin-left:auto">{{ nlDb }}</el-tag>
                 <el-button v-if="nlDb" size="small" link @click="nlDb = ''">重置</el-button>
@@ -219,7 +219,7 @@
               <el-select v-if="nlDsId" v-model="nlDb" placeholder="选择数据库" size="small" clearable style="width:100%;margin-bottom:8px" :loading="nlDbLoading" @change="onNlDbChange">
                 <el-option v-for="db in nlDatabases" :key="db" :label="db" :value="db" />
               </el-select>
-              <div v-if="!nlDsId" style="text-align:center;color:#909399;padding:20px 0;font-size:13px">
+              <div v-if="!nlDsId" style="text-align:center;color: var(--el-text-color-secondary);padding:20px 0;font-size:13px">
                 请先在左侧选择数据源
               </div>
 
@@ -244,8 +244,8 @@
             <el-card body-style="padding:16px">
               <template #header><span>💡 示例查询</span></template>
               <div v-for="q in sampleQueries" :key="q.text" class="sample-query" @click="nlQuery = q.text; nlDsId = q.dsId || nlDsId">
-                <div style="font-size:13px;color:#409eff;font-weight:500">{{ q.text }}</div>
-                <div v-if="q.tip" style="font-size:11px;color:#909399;margin-top:2px">{{ q.tip }}</div>
+                <div style="font-size:13px;color: var(--el-color-primary);font-weight:500">{{ q.text }}</div>
+                <div v-if="q.tip" style="font-size:11px;color: var(--el-text-color-secondary);margin-top:2px">{{ q.tip }}</div>
               </div>
             </el-card>
           </el-col>
@@ -263,9 +263,9 @@
         <!-- V6.8.1: 统计汇总 -->
         <el-row :gutter="12" style="margin-bottom:12px">
           <el-col v-for="m in voteMetrics" :key="m.label" :span="6">
-            <div style="text-align:center;padding:12px;background:#f5f7fa;border-radius:8px">
-              <div style="font-size:22px;font-weight:700;color:#409eff">{{ m.value }}</div>
-              <div style="font-size:12px;color:#909399;margin-top:4px">{{ m.label }}</div>
+            <div style="text-align:center;padding:12px;background: var(--el-fill-color-light);border-radius:8px">
+              <div style="font-size:22px;font-weight:700;color: var(--el-color-primary)">{{ m.value }}</div>
+              <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">{{ m.label }}</div>
             </div>
           </el-col>
         </el-row>
@@ -278,7 +278,7 @@
           <el-col :span="8">
             <el-card title="实时投票" body-style="padding:16px">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                <span style="font-size:13px;color:#909399">共 {{ recentVotes.length }} 条记录</span>
+                <span style="font-size:13px;color: var(--el-text-color-secondary)">共 {{ recentVotes.length }} 条记录</span>
                 <el-button size="small" type="success" @click="exportVotesCsv" :loading="exportingVotes" :disabled="!recentVotes.length">
                   <el-icon><Download /></el-icon>导出 CSV
                 </el-button>
@@ -287,7 +287,7 @@
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
                 <el-input v-model="voteNotifyEmail" size="small" placeholder="投票结束后通知邮箱（可选）" clearable style="flex:1" />
                 <el-tooltip content="投票结束后自动发送邮件通知结果" placement="top">
-                  <el-icon style="color:#909399"><InfoFilled /></el-icon>
+                  <el-icon style="color: var(--el-text-color-secondary)"><InfoFilled /></el-icon>
                 </el-tooltip>
               </div>
               <div v-for="v in recentVotes" :key="v.id" class="vote-item">
@@ -1068,13 +1068,13 @@ onUnmounted(() => {
 .nl-history-item {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px; border-radius: 6px; cursor: pointer; margin-bottom: 4px;
-  background: #f5f7fa; transition: background 0.15s;
-  &:hover { background: #ecf5ff; }
+  background: var(--el-fill-color-light); transition: background 0.15s;
+  &:hover { background: var(--el-color-primary-light-9); }
 }
 .nl-query-text { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 .sample-query {
   padding: 8px 12px; border-radius: 6px; cursor: pointer; margin-bottom: 4px;
-  font-size: 13px; color: #409eff; background: #ecf5ff; transition: background 0.15s;
+  font-size: 13px; color: var(--el-color-primary); background: var(--el-color-primary-light-9); transition: background 0.15s;
   &:hover { background: #dbeafe; }
 }
 .vote-item { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }

@@ -57,11 +57,11 @@
 
     <!-- 状态栏 -->
     <div class="stream-status">
-      <span v-if="lastChunkAt" style="color:#67c23a">
+      <span v-if="lastChunkAt" style="color: var(--el-color-success)">
         ✓ 最近收到数据块: {{ formatTime(lastChunkAt) }}
       </span>
-      <span v-else-if="streaming" style="color:#e6a23c">⏳ 等待数据…</span>
-      <span v-else style="color:#909399">就绪</span>
+      <span v-else-if="streaming" style="color: var(--el-color-warning)">⏳ 等待数据…</span>
+      <span v-else style="color: var(--el-text-color-secondary)">就绪</span>
     </div>
   </div>
 </template>

@@ -15,8 +15,8 @@
             <span style="font-weight:600">{{ s.name }}</span>
             <el-tag size="small" :type="s.status === 'UP' ? 'success' : 'danger'">{{ s.status }}</el-tag>
           </div>
-          <div style="margin-top:8px;font-size:12px;color:#666">
-            延迟: <span :style="{color: s.latency > 1000 ? '#ef4444' : '#10b981'}">{{ s.latency }}ms</span>
+          <div style="margin-top:8px;font-size:12px;color:var(--el-text-color-regular)">
+            延迟: <span :style="{color: s.latency > 1000 ? 'var(--el-color-danger)' : 'var(--el-color-success)'}">{{ s.latency }}ms</span>
           </div>
         </el-card>
       </el-col>
@@ -41,14 +41,14 @@
           <span>告警历史</span>
           <!-- Day 49: 实时推送状态指示 -->
           <el-badge v-if="realtimeAlertCount > 0" :value="realtimeAlertCount" type="danger" style="margin-left:6px" />
-          <span v-if="streamConnected" title="实时推送已连接" style="margin-left:4px;font-size:11px;color:#67c23a">●</span>
-          <span v-else title="实时推送未连接" style="margin-left:4px;font-size:11px;color:#f56c6c">○</span>
+          <span v-if="streamConnected" title="实时推送已连接" style="margin-left:4px;font-size:11px;color:var(--el-color-success)">●</span>
+          <span v-else title="实时推送未连接" style="margin-left:4px;font-size:11px;color:var(--el-color-danger)">○</span>
         </template>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="font-size:13px">
             共 {{ alerts.length }} 条
-            <span v-if="streamConnected" style="color:#67c23a">● 实时推送已连接</span>
-            <span v-else style="color:#f56c6c">○ 实时推送未连接</span>
+            <span v-if="streamConnected" style="color:var(--el-color-success)">● 实时推送已连接</span>
+            <span v-else style="color:var(--el-color-danger)">○ 实时推送未连接</span>
           </span>
           <el-button size="small" :loading="alertsLoading" @click="loadFiringAlerts">
             <el-icon><Refresh /></el-icon>刷新
@@ -185,10 +185,10 @@
           </el-table-column>
           <el-table-column label="升级策略" width="200">
             <template #default="{ row }">
-              <span v-if="row.escalateAfterMinutes" style="font-size:12px;color:#e6a23c">
+              <span v-if="row.escalateAfterMinutes" style="font-size:12px;color:var(--el-color-warning)">
                 ⏱ 超时 {{ row.escalateAfterMinutes }}min 升级
               </span>
-              <span v-else style="font-size:12px;color:#909399">无</span>
+              <span v-else style="font-size:12px;color:var(--el-text-color-placeholder)">无</span>
             </template>
           </el-table-column>
           <el-table-column prop="enabled" label="状态" width="80" align="center">
@@ -229,38 +229,38 @@
         <el-row :gutter="12" style="margin-top:12px" v-loading="statsLoading">
           <el-col :span="4">
             <el-card shadow="hover" body-style="text-align:center;padding:16px">
-              <div style="font-size:12px;color:#909399;margin-bottom:8px">总告警数</div>
+              <div style="font-size:12px;color: var(--el-text-color-secondary);margin-bottom:8px">总告警数</div>
               <div style="font-size:32px;font-weight:700">{{ stats.total || 0 }}</div>
             </el-card>
           </el-col>
           <el-col :span="4">
             <el-card shadow="hover" body-style="text-align:center;padding:16px">
-              <div style="font-size:12px;color:#909399;margin-bottom:8px">活跃</div>
-              <div style="font-size:32px;font-weight:700;color:#f56c6c">{{ stats.active || 0 }}</div>
+              <div style="font-size:12px;color: var(--el-text-color-secondary);margin-bottom:8px">活跃</div>
+              <div style="font-size:32px;font-weight:700;color: var(--el-color-danger)">{{ stats.active || 0 }}</div>
             </el-card>
           </el-col>
           <el-col :span="4">
             <el-card shadow="hover" body-style="text-align:center;padding:16px">
-              <div style="font-size:12px;color:#909399;margin-bottom:8px">已恢复</div>
-              <div style="font-size:32px;font-weight:700;color:#67c23a">{{ stats.resolved || 0 }}</div>
+              <div style="font-size:12px;color: var(--el-text-color-secondary);margin-bottom:8px">已恢复</div>
+              <div style="font-size:32px;font-weight:700;color: var(--el-color-success)">{{ stats.resolved || 0 }}</div>
             </el-card>
           </el-col>
           <el-col :span="4">
             <el-card shadow="hover" body-style="text-align:center;padding:16px">
-              <div style="font-size:12px;color:#909399;margin-bottom:8px">平均持续</div>
-              <div style="font-size:24px;font-weight:700;color:#409eff">{{ stats.avgDurationMinutes != null ? stats.avgDurationMinutes.toFixed(1) + 'min' : '-' }}</div>
+              <div style="font-size:12px;color: var(--el-text-color-secondary);margin-bottom:8px">平均持续</div>
+              <div style="font-size:24px;font-weight:700;color: var(--el-color-primary)">{{ stats.avgDurationMinutes != null ? stats.avgDurationMinutes.toFixed(1) + 'min' : '-' }}</div>
             </el-card>
           </el-col>
           <el-col :span="4">
             <el-card shadow="hover" body-style="text-align:center;padding:16px">
-              <div style="font-size:12px;color:#909399;margin-bottom:8px">已确认</div>
-              <div style="font-size:32px;font-weight:700;color:#e6a23c">{{ stats.acked || 0 }}</div>
+              <div style="font-size:12px;color: var(--el-text-color-secondary);margin-bottom:8px">已确认</div>
+              <div style="font-size:32px;font-weight:700;color: var(--el-color-warning)">{{ stats.acked || 0 }}</div>
             </el-card>
           </el-col>
           <el-col :span="4">
             <el-card shadow="hover" body-style="text-align:center;padding:16px">
-              <div style="font-size:12px;color:#909399;margin-bottom:8px">进行中</div>
-              <div style="font-size:32px;font-weight:700;color:#f56c6c">{{ stats.firing || 0 }}</div>
+              <div style="font-size:12px;color: var(--el-text-color-secondary);margin-bottom:8px">进行中</div>
+              <div style="font-size:32px;font-weight:700;color: var(--el-color-danger)">{{ stats.firing || 0 }}</div>
             </el-card>
           </el-col>
         </el-row>
@@ -301,7 +301,7 @@
           </el-col>
         </el-row>
 
-        <div v-if="!statsLoading && stats.total === 0" style="text-align:center;padding:40px;color:#909399">
+        <div v-if="!statsLoading && stats.total === 0" style="text-align:center;padding:40px;color: var(--el-text-color-secondary)">
           暂无告警数据
         </div>
       </el-tab-pane>
@@ -323,30 +323,30 @@
         <el-row :gutter="12" style="margin-top:12px" v-loading="slaLoading">
           <el-col :span="6">
             <el-card shadow="hover" body-style="text-align:center;padding:16px">
-              <div style="font-size:12px;color:#909399;margin-bottom:8px">SLA 等级</div>
+              <div style="font-size:12px;color: var(--el-text-color-secondary);margin-bottom:8px">SLA 等级</div>
               <div style="font-size:36px;font-weight:700" :style="{ color: slaGradeColor }">{{ sla.grade || '-' }}</div>
-              <div style="font-size:12px;color:#909399;margin-top:4px">近 {{ sla.windowDays || 0 }} 天</div>
+              <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">近 {{ sla.windowDays || 0 }} 天</div>
             </el-card>
           </el-col>
           <el-col :span="6">
             <el-card shadow="hover" body-style="text-align:center;padding:16px">
-              <div style="font-size:12px;color:#909399;margin-bottom:8px">可用率</div>
-              <div style="font-size:28px;font-weight:700;color:#67c23a">{{ sla.availabilityPct != null ? sla.availabilityPct.toFixed(4) + '%' : '-' }}</div>
+              <div style="font-size:12px;color: var(--el-text-color-secondary);margin-bottom:8px">可用率</div>
+              <div style="font-size:28px;font-weight:700;color: var(--el-color-success)">{{ sla.availabilityPct != null ? sla.availabilityPct.toFixed(4) + '%' : '-' }}</div>
               <el-progress :percentage="Math.min(100, (sla.availabilityPct || 0))" :color="availabilityColor" style="margin-top:8px" :show-text="false" />
             </el-card>
           </el-col>
           <el-col :span="6">
             <el-card shadow="hover" body-style="text-align:center;padding:16px">
-              <div style="font-size:12px;color:#909399;margin-bottom:8px">MTBF</div>
-              <div style="font-size:28px;font-weight:700;color:#409eff">{{ sla.mtbfHours != null ? sla.mtbfHours + 'h' : '-' }}</div>
-              <div style="font-size:12px;color:#909399;margin-top:4px">平均故障间隔</div>
+              <div style="font-size:12px;color: var(--el-text-color-secondary);margin-bottom:8px">MTBF</div>
+              <div style="font-size:28px;font-weight:700;color: var(--el-color-primary)">{{ sla.mtbfHours != null ? sla.mtbfHours + 'h' : '-' }}</div>
+              <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">平均故障间隔</div>
             </el-card>
           </el-col>
           <el-col :span="6">
             <el-card shadow="hover" body-style="text-align:center;padding:16px">
-              <div style="font-size:12px;color:#909399;margin-bottom:8px">MTTR</div>
-              <div style="font-size:28px;font-weight:700;color:#e6a23c">{{ sla.mttrMinutes != null ? sla.mttrMinutes + 'min' : '-' }}</div>
-              <div style="font-size:12px;color:#909399;margin-top:4px">平均恢复时间</div>
+              <div style="font-size:12px;color: var(--el-text-color-secondary);margin-bottom:8px">MTTR</div>
+              <div style="font-size:28px;font-weight:700;color: var(--el-color-warning)">{{ sla.mttrMinutes != null ? sla.mttrMinutes + 'min' : '-' }}</div>
+              <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">平均恢复时间</div>
             </el-card>
           </el-col>
         </el-row>
@@ -370,7 +370,7 @@
               <span style="font-weight:600">{{ sla.availabilityPct != null ? sla.availabilityPct.toFixed(4) + '%' : '-' }}</span>
             </el-descriptions-item>
             <el-descriptions-item label="偏差">
-              <span :style="{ color: slaCompliance.compliant ? '#67c23a' : '#f56c6c', fontWeight: 700 }">
+              <span :style="{ color: slaCompliance.compliant ? 'var(--el-color-success)' : 'var(--el-color-danger)', fontWeight: 700 }">
                 {{ slaCompliance.compliant ? '+' : '' }}{{ slaCompliance.gap.toFixed(4) }}%
               </span>
             </el-descriptions-item>
@@ -378,7 +378,7 @@
               <span v-if="slaCompliance.grade === 'A+'">已是最高</span>
               <span v-else-if="slaCompliance.grade === 'F'">—</span>
               <span v-else>
-                还需 <strong :style="{ color: nextGradeTarget > (sla.availabilityPct || 0) ? '#e6a23c' : '#67c23a' }">
+                还需 <strong :style="{ color: nextGradeTarget > (sla.availabilityPct || 0) ? 'var(--el-color-warning)' : 'var(--el-color-success)' }">
                   +{{ Math.max(0, nextGradeTarget - (sla.availabilityPct || 0)).toFixed(4) }}%
                 </strong> 达到 {{ nextGradeName }}
               </span>
@@ -389,17 +389,17 @@
           </el-descriptions>
           <!-- 达标率进度条 -->
           <div style="margin-top:12px">
-            <div style="display:flex;justify-content:space-between;font-size:12px;color:#909399;margin-bottom:4px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--el-text-color-placeholder);margin-bottom:4px">
               <span>当前 {{ sla.availabilityPct != null ? sla.availabilityPct.toFixed(4) + '%' : '-' }}</span>
               <span>目标 {{ slaCompliance.target.toFixed(1) }}%</span>
             </div>
-            <div style="position:relative;height:12px;background:#ebeef5;border-radius:6px;overflow:hidden">
+            <div style="position:relative;height:12px;background:var(--el-border-color-light);border-radius:6px;overflow:hidden">
               <!-- 达标线 -->
-              <div style="position:absolute;top:0;bottom:0;left:100%;width:2px;background:#f56c6c;z-index:2" />
+              <div style="position:absolute;top:0;bottom:0;left:100%;width:2px;background:var(--el-color-danger);z-index:2" />
               <div style="position:absolute;top:0;bottom:0;left:0;background:linear-gradient(90deg,#409eff,#67c23a);transition:width 0.6s;border-radius:6px"
                 :style="{ width: Math.min(100, (sla.availabilityPct || 0)) + '%' }" />
               <!-- 目标标记线 -->
-              <div style="position:absolute;top:-4px;height:20px;width:2px;background:#909399;border-radius:1px;transform:translateX(-1px)"
+              <div style="position:absolute;top:-4px;height:20px;width:2px;background:var(--el-text-color-placeholder);border-radius:1px;transform:translateX(-1px)"
                 :style="{ left: slaCompliance.target + '%' }" />
             </div>
           </div>
@@ -409,20 +409,20 @@
         <el-row :gutter="12" style="margin-top:12px" v-loading="slaLoading">
           <el-col :span="8">
             <el-card shadow="hover" body-style="text-align:center;padding:16px">
-              <div style="font-size:12px;color:#909399;margin-bottom:8px">总告警数</div>
+              <div style="font-size:12px;color: var(--el-text-color-secondary);margin-bottom:8px">总告警数</div>
               <div style="font-size:28px;font-weight:700">{{ sla.totalAlerts || 0 }}</div>
             </el-card>
           </el-col>
           <el-col :span="8">
             <el-card shadow="hover" body-style="text-align:center;padding:16px">
-              <div style="font-size:12px;color:#909399;margin-bottom:8px">活跃告警</div>
-              <div style="font-size:28px;font-weight:700;color:#f56c6c">{{ sla.activeAlerts || 0 }}</div>
+              <div style="font-size:12px;color: var(--el-text-color-secondary);margin-bottom:8px">活跃告警</div>
+              <div style="font-size:28px;font-weight:700;color: var(--el-color-danger)">{{ sla.activeAlerts || 0 }}</div>
             </el-card>
           </el-col>
           <el-col :span="8">
             <el-card shadow="hover" body-style="text-align:center;padding:16px">
-              <div style="font-size:12px;color:#909399;margin-bottom:8px">已恢复</div>
-              <div style="font-size:28px;font-weight:700;color:#67c23a">{{ sla.resolvedAlerts || 0 }}</div>
+              <div style="font-size:12px;color: var(--el-text-color-secondary);margin-bottom:8px">已恢复</div>
+              <div style="font-size:28px;font-weight:700;color: var(--el-color-success)">{{ sla.resolvedAlerts || 0 }}</div>
             </el-card>
           </el-col>
         </el-row>
@@ -443,7 +443,7 @@
           </el-descriptions>
         </el-card>
 
-        <div v-if="!slaLoading && sla.totalAlerts === 0" style="text-align:center;padding:40px;color:#909399">
+        <div v-if="!slaLoading && sla.totalAlerts === 0" style="text-align:center;padding:40px;color: var(--el-text-color-secondary)">
           暂无告警数据，无法计算 SLA
         </div>
       </el-tab-pane>
@@ -451,7 +451,7 @@
       <!-- ========== 告警趋势 (Day 44) ========== -->
       <el-tab-pane label="告警趋势" name="trend">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-          <span style="font-size:13px;color:#606266">时间范围：</span>
+          <span style="font-size:13px;color: var(--el-text-color-regular)">时间范围：</span>
           <el-radio-group v-model="trendDays" size="small" @change="loadAlertTrend">
             <el-radio-button value="7">近7天</el-radio-button>
             <el-radio-button value="14">近14天</el-radio-button>
@@ -479,8 +479,8 @@
     <!-- ========== 告警详情弹窗 (Day 41) ========== -->
     <el-dialog v-model="detailVisible" title="告警详情" width="680px" destroy-on-close>
       <div v-if="detailLoading" style="text-align:center;padding:40px">
-        <el-icon class="is-loading" style="font-size:32px;color:#409eff"><Loading /></el-icon>
-        <p style="color:#909399;margin-top:12px">正在加载 RCA 分析...</p>
+        <el-icon class="is-loading" style="font-size:32px;color: var(--el-color-primary)"><Loading /></el-icon>
+        <p style="color: var(--el-text-color-secondary);margin-top:12px">正在加载 RCA 分析...</p>
       </div>
 
       <div v-else-if="alertDetail">
@@ -526,7 +526,7 @@
               </ul>
             </div>
           </div>
-          <div v-else style="color:#909399;font-size:13px;padding:8px 0">
+          <div v-else style="color: var(--el-text-color-secondary);font-size:13px;padding:8px 0">
             暂无 RCA 分析结果
           </div>
         </div>
@@ -630,7 +630,7 @@
         <el-divider content-position="left" style="font-size:13px">⚠️ 升级策略（仅 CRITICAL 生效）</el-divider>
         <el-form-item label="升级等待时间">
           <el-input-number v-model="ruleForm.escalateAfterMinutes" :min="0" :max="1440" :step="5" style="width:140px" />
-          <span style="margin-left:8px;color:#909399;font-size:13px">分钟（0=不升级）</span>
+          <span style="margin-left:8px;color: var(--el-text-color-secondary);font-size:13px">分钟（0=不升级）</span>
         </el-form-item>
         <el-form-item label="升级通知渠道">
           <el-select v-model="ruleForm.escalationChannel" placeholder="留空则使用原渠道" clearable multiple style="width:100%">
@@ -639,7 +639,7 @@
         </el-form-item>
         <el-form-item label="自动恢复时间">
           <el-input-number v-model="ruleForm.autoResolveMinutes" :min="0" :max="10080" :step="10" style="width:140px" />
-          <span style="margin-left:8px;color:#909399;font-size:13px">分钟（0=不自动恢复）</span>
+          <span style="margin-left:8px;color: var(--el-text-color-secondary);font-size:13px">分钟（0=不自动恢复）</span>
         </el-form-item>
 
         <el-form-item label="启用">
@@ -1453,22 +1453,22 @@ async function deleteRule(row) {
 }
 .rca-header {
   display: flex; justify-content: space-between; align-items: center;
-  font-size: 14px; font-weight: 600; color: #409eff; margin-bottom: 12px;
+  font-size: 14px; font-weight: 600; color: var(--el-color-primary); margin-bottom: 12px;
 }
 .rca-category {
   display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
 }
 .rca-label {
-  font-size: 12px; color: #909399; margin-bottom: 4px;
+  font-size: 12px; color: var(--el-text-color-secondary); margin-bottom: 4px;
 }
 .rca-cause {
   margin-bottom: 10px;
-  .rca-content { font-size: 13px; color: #303133; line-height: 1.6; }
+  .rca-content { font-size: 13px; color: var(--el-text-color-primary); line-height: 1.6; }
 }
 .rca-suggestions {
   ul {
     margin: 0; padding-left: 20px;
-    li { font-size: 13px; color: #303133; line-height: 1.8; }
+    li { font-size: 13px; color: var(--el-text-color-primary); line-height: 1.8; }
   }
 }
 
