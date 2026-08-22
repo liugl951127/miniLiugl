@@ -1,8 +1,8 @@
 package com.minimax.ai.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.minimax.ai.constants.TrainedModelConstants;
 import com.minimax.ai.entity.TrainedModel;
 import com.minimax.ai.mapper.TrainedModelMapper;
 import com.minimax.common.exception.BizException;
@@ -12,19 +12,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 自研训练模型服务 (T1-backend-apis / P0)
  *
- * 5 个端点:
+ * 6 个端点:
  *   - POST   /api/v1/training/models              创建
  *   - PUT    /api/v1/training/models/{id}/status  启停
  *   - POST   /api/v1/training/models/{id}/publish 发布
  *   - GET    /api/v1/training/models              列表
  *   - DELETE /api/v1/training/models/{id}         删除
+ *   - POST   /api/v1/training/models/{id}/test    模型测试 (T1-mock-fix)
  *
  * 前端对接: views/model/Index.vue confirmToggleTrained() / publishTrained() / saveTrainedModel()
  *
@@ -34,8 +36,6 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class TrainedModelService {
-
-    private static final Set<String> ALLOWED_STATUS = Set.of("ENABLED", "DISABLED", "DRAFT");
 
     private final TrainedModelMapper trainedModelMapper;
 
@@ -87,7 +87,7 @@ public class TrainedModelService {
     public void publish(Long id) {
         TrainedModel m = mustExist(id);
         m.setPublishedAt(LocalDateTime.now());
-        m.setStatus("ENABLED");
+        m.setStatus(TrainedModelConstants.STATUS_ENABLED);
         trainedModelMapper.updateById(m);
         log.info("[TrainedModel] published id={} at {}", id, m.getPublishedAt());
     }
@@ -125,30 +125,37 @@ public class TrainedModelService {
      * @param id 模型 id
      * @return 测试结果 map
      */
-    public java.util.Map<String, Object> test(Long id) {
+    public Map<String, Object> test(Long id) {
         TrainedModel m = mustExist(id);
         long start = System.currentTimeMillis();
-        // 模拟推理耗时 (50-300ms 之间随机)
+        // 模拟推理耗时 (T3: 上/下限抽常量)
         long latency;
         try {
-            Thread.sleep(50 + (long) (Math.random() * 250));
+            Thread.sleep(TrainedModelConstants.TEST_LATENCY_MIN_MS
+                    + (long) (Math.random() * TrainedModelConstants.TEST_LATENCY_RAND_MS));
         } catch (InterruptedException e) {
+            // T3: 记录中断日志而不是仅恢复中断标志
+            log.warn("[TrainedModel] test id={} 模拟推理被中断", id, e);
             Thread.currentThread().interrupt();
         }
         latency = System.currentTimeMillis() - start;
         // 准确率: 用持久化的值 (0-1) 转成百分比, 0 时用兜底
-        double acc = m.getAccuracy() != null ? m.getAccuracy().doubleValue() * 100.0 : 87.5;
-        if (acc <= 0) acc = 87.5;
+        BigDecimal accPct;
+        if (m.getAccuracy() == null || m.getAccuracy().signum() <= 0) {
+            accPct = TrainedModelConstants.DEFAULT_ACCURACY_PCT;
+        } else {
+            accPct = m.getAccuracy().multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP);
+        }
         // 示例输出
         String sampleOutput = String.format(
                 "{\"model\":\"%s\",\"prediction\":\"示例预测结果 - 类别: positive, 置信度: 0.92\",\"tokens\":42}",
                 m.getCode());
-        log.info("[TrainedModel] test id={} latencyMs={} accuracy={}", id, latency, acc);
-        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        log.info("[TrainedModel] test id={} latencyMs={} accuracy={}%", id, latency, accPct);
+        Map<String, Object> result = new HashMap<>();
         result.put("id", id);
         result.put("code", m.getCode());
         result.put("name", m.getName());
-        result.put("accuracy", Math.round(acc * 100.0) / 100.0);
+        result.put("accuracy", accPct);
         result.put("latencyMs", latency);
         result.put("sampleOutput", sampleOutput);
         result.put("testedAt", LocalDateTime.now().toString());
@@ -166,10 +173,12 @@ public class TrainedModelService {
     }
 
     private String normalizeStatus(String s) {
-        if (s == null || s.isBlank()) return "DRAFT";
+        if (s == null || s.isBlank()) {
+            return TrainedModelConstants.STATUS_DRAFT;
+        }
         String up = s.trim().toUpperCase();
-        if (!ALLOWED_STATUS.contains(up)) {
-            throw new BizException("状态非法, 允许: " + ALLOWED_STATUS);
+        if (!TrainedModelConstants.ALLOWED_STATUS.contains(up)) {
+            throw new BizException("状态非法, 允许: " + TrainedModelConstants.ALLOWED_STATUS);
         }
         return up;
     }

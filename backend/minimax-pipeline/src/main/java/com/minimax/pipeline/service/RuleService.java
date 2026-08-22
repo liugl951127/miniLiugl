@@ -1,10 +1,10 @@
 package com.minimax.pipeline.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.minimax.common.exception.BizException;
+import com.minimax.pipeline.constants.RuleConstants;
 import com.minimax.pipeline.entity.RuleDefinition;
 import com.minimax.pipeline.mapper.RuleDefinitionMapper;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -54,8 +53,8 @@ public class RuleService {
         RuleDefinition rule = new RuleDefinition();
         rule.setName(name.trim());
         rule.setJsonContent(jsonBody);
-        rule.setScope(scope == null || scope.isBlank() ? "GLOBAL" : scope);
-        rule.setEnabled(enabled == null ? 1 : (enabled == 0 ? 0 : 1));
+        rule.setScope(normalizeScope(scope));
+        rule.setEnabled(normalizeEnabled(enabled));
         rule.setCreatedBy(userId);
         ruleMapper.insert(rule);
         log.info("[Rule] created id={} name='{}' by userId={}", rule.getId(), rule.getName(), userId);
@@ -102,10 +101,10 @@ public class RuleService {
             exist.setName(name.trim());
         }
         if (scope != null && !scope.isBlank()) {
-            exist.setScope(scope);
+            exist.setScope(normalizeScope(scope));
         }
         if (enabled != null) {
-            exist.setEnabled(enabled == 0 ? 0 : 1);
+            exist.setEnabled(normalizeEnabled(enabled));
         }
         // updatedAt 由 MetaObjectHandler 自动填充
         ruleMapper.updateById(exist);
@@ -127,6 +126,7 @@ public class RuleService {
 
     /**
      * 内部 helper: 校验 JSON 格式
+     * (T3: 解析失败时记录 log.error 而非仅抛 BizException, 便于排障)
      */
     private void validateJson(String s) {
         if (s == null || s.isBlank()) {
@@ -135,7 +135,35 @@ public class RuleService {
         try {
             json.readValue(s, Map.class);
         } catch (Exception e) {
+            // 记录原始异常, 再抛业务异常
+            log.error("[Rule] JSON 解析失败, content length={}", s.length(), e);
             throw new BizException("规则 JSON 格式错误: " + e.getMessage());
         }
+    }
+
+    /**
+     * 归一化 scope, 默认为 GLOBAL
+     */
+    private String normalizeScope(String s) {
+        if (s == null || s.isBlank()) {
+            return RuleConstants.SCOPE_GLOBAL;
+        }
+        String up = s.trim().toUpperCase();
+        if (!RuleConstants.SCOPE_GLOBAL.equals(up)
+                && !RuleConstants.SCOPE_TENANT.equals(up)
+                && !RuleConstants.SCOPE_USER.equals(up)) {
+            throw new BizException("scope 非法, 允许: GLOBAL/TENANT/USER, 实际: " + s);
+        }
+        return up;
+    }
+
+    /**
+     * 归一化 enabled 字段: null 或 非0 都视为启用
+     */
+    private int normalizeEnabled(Integer v) {
+        if (v == null) {
+            return RuleConstants.ENABLED;
+        }
+        return v == RuleConstants.DISABLED ? RuleConstants.DISABLED : RuleConstants.ENABLED;
     }
 }

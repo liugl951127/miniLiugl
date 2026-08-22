@@ -476,7 +476,7 @@ async function loadHistory() {
     await nextTick()
     scrollToBottom()
   } catch (e) {
-    ElMessage.warning('加载历史消息失败：' + (e.message || '请稍后重试'))
+    ElMessage.warning('加载历史消息失败: ' + (e?.response?.data?.message || e?.message || '请稍后重试'))
   } finally {
     historyLoading.value = false
   }

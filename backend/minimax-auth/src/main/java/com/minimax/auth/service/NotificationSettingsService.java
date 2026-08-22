@@ -1,6 +1,7 @@
 package com.minimax.auth.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.minimax.auth.constants.NotificationSettingsConstants;
 import com.minimax.auth.entity.NotificationSettings;
 import com.minimax.auth.mapper.NotificationSettingsMapper;
 import com.minimax.common.exception.BizException;
@@ -8,8 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Set;
 
 /**
  * 通知设置服务 (T1-backend-apis / P0)
@@ -26,14 +25,6 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class NotificationSettingsService {
-
-    private static final Set<String> ALLOWED_CHANNELS = Set.of("email", "sms", "dingtalk", "webhook", "push");
-    private static final Set<String> ALLOWED_EVENTS = Set.of("login", "error", "alert", "system");
-
-    private static final String DEFAULT_CHANNELS = "email,webhook";
-    private static final String DEFAULT_EVENTS = "login,error,alert,system";
-    private static final String DEFAULT_QUIET_START = "22:00";
-    private static final String DEFAULT_QUIET_END = "08:00";
 
     private final NotificationSettingsMapper settingsMapper;
 
@@ -94,10 +85,10 @@ public class NotificationSettingsService {
     private NotificationSettings defaultSettings(Long userId) {
         NotificationSettings s = new NotificationSettings();
         s.setUserId(userId);
-        s.setChannels(DEFAULT_CHANNELS);
-        s.setEvents(DEFAULT_EVENTS);
-        s.setQuietStart(DEFAULT_QUIET_START);
-        s.setQuietEnd(DEFAULT_QUIET_END);
+        s.setChannels(NotificationSettingsConstants.DEFAULT_CHANNELS);
+        s.setEvents(NotificationSettingsConstants.DEFAULT_EVENTS);
+        s.setQuietStart(NotificationSettingsConstants.DEFAULT_QUIET_START);
+        s.setQuietEnd(NotificationSettingsConstants.DEFAULT_QUIET_END);
         return s;
     }
 
@@ -106,8 +97,9 @@ public class NotificationSettingsService {
             throw new BizException("channels 不能为空");
         }
         for (String c : csv.split(",")) {
-            if (!ALLOWED_CHANNELS.contains(c.trim())) {
-                throw new BizException("不支持的通知渠道: " + c + " (允许: " + ALLOWED_CHANNELS + ")");
+            if (!NotificationSettingsConstants.ALLOWED_CHANNELS.contains(c.trim())) {
+                throw new BizException("不支持的通知渠道: " + c
+                        + " (允许: " + NotificationSettingsConstants.ALLOWED_CHANNELS + ")");
             }
         }
     }
@@ -117,14 +109,15 @@ public class NotificationSettingsService {
             throw new BizException("events 不能为空");
         }
         for (String e : csv.split(",")) {
-            if (!ALLOWED_EVENTS.contains(e.trim())) {
-                throw new BizException("不支持的通知事件: " + e + " (允许: " + ALLOWED_EVENTS + ")");
+            if (!NotificationSettingsConstants.ALLOWED_EVENTS.contains(e.trim())) {
+                throw new BizException("不支持的通知事件: " + e
+                        + " (允许: " + NotificationSettingsConstants.ALLOWED_EVENTS + ")");
             }
         }
     }
 
     private void validateTime(String hhmm, String field) {
-        if (hhmm == null || !hhmm.matches("^\\d{2}:\\d{2}$")) {
+        if (hhmm == null || !hhmm.matches(NotificationSettingsConstants.HHMM_PATTERN)) {
             throw new BizException(field + " 格式错误, 期望 HH:mm, 实际: " + hhmm);
         }
     }

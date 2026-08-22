@@ -184,6 +184,7 @@
 import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   User, UserFilled, Lock, Message, ChatLineRound, ChatDotRound, Plus,
   Cpu, Connection, ChatLineSquare, Promotion, Refresh
@@ -251,7 +252,21 @@ const formRules = computed(() => ({
 
 // === 6. 忘记密码 ===
 function onForgot() {
-  toast.warning('请联系管理员重置密码 (admin@minimax.io)')
+  // T1: 改为 ElMessageBox.alert 显示重置流程说明, 避免单一 toast 被忽略
+  ElMessageBox.alert(
+    '密码重置流程:\n\n' +
+    '1. 邮件联系平台管理员: admin@minimax.io\n' +
+    '2. 提供您的注册邮箱 + 用户名 + 简短说明\n' +
+    '3. 管理员核实身份后,会向您邮箱发送一次性重置链接 (24h 有效)\n' +
+    '4. 点击链接设置新密码后,即可使用新密码登录\n\n' +
+    '自助密码重置功能正在开发中,预计下版本上线.',
+    '忘记密码 - 密码重置流程',
+    {
+      type: 'info',
+      confirmButtonText: '我知道了',
+      customClass: 'forgot-password-dialog',
+    }
+  ).catch(() => { /* 用户关闭,无操作 */ })
 }
 
 // === 7. 提交 (核心: loading + 错误处理 + 跳转) ===

@@ -307,10 +307,11 @@
                 <div style="color: var(--el-color-danger);font-size:13px;margin-bottom:6px">
                   ⚠️ 流式响应中断：{{ streamError }}
                 </div>
-                <el-button size="small" type="primary" @click="reconnectStream">
-                  <el-icon><Refresh /></el-icon>重连
+                <el-button size="small" type="primary" :loading="reconnecting" @click="reconnectStream">
+                  <el-icon><Refresh /></el-icon>
+                  {{ reconnecting ? `重连中 (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})` : '重连' }}
                 </el-button>
-                <el-button size="small" @click="streamError = ''" style="margin-left:6px">忽略</el-button>
+                <el-button size="small" :disabled="reconnecting" @click="streamError = ''" style="margin-left:6px">忽略</el-button>
               </div>
             </div>
           </div>
@@ -740,19 +741,27 @@ async function onFileSelected(ev) {
 }
 
 async function handlePaste(ev) {
-  const items = ev.clipboardData?.items
-  if (!items) return
-  for (const item of items) {
-    if (item.kind === 'file') {
-      const file = item.getAsFile()
-      if (file) await uploadFile(file)
+  try {
+    const items = ev.clipboardData?.items
+    if (!items) return
+    for (const item of items) {
+      if (item.kind === 'file') {
+        const file = item.getAsFile()
+        if (file) await uploadFile(file)
+      }
     }
+  } catch (e) {
+    ElMessage.error('粘贴处理失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   }
 }
 
 async function handleDrop(ev) {
-  for (const file of ev.dataTransfer?.files || []) {
-    await uploadFile(file)
+  try {
+    for (const file of ev.dataTransfer?.files || []) {
+      await uploadFile(file)
+    }
+  } catch (e) {
+    ElMessage.error('拖拽上传失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   }
 }
 
@@ -789,7 +798,7 @@ async function uploadFile(file) {
     pendingAttachments.value.push({ type, name: file.name, url, localUrl: URL.createObjectURL(file), _file: file })
     ElMessage.success(`已上传: ${file.name}`)
   } catch (e) {
-    ElMessage.error('上传失败: ' + (e.message || ''))
+    ElMessage.error('上传失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   }
 }
 
@@ -999,15 +1008,49 @@ async function sendMessage() {
   }
 }
 
-/** V7.3: 重连流式响应 - 重新发送上次失败的消息 */
+/** V7.3: 重连流式响应 - 重新发送上次失败的消息 (T1: 持续重试 + loading 状态) */
+const reconnecting = ref(false)
+const reconnectAttempts = ref(0)
+const MAX_RECONNECT_ATTEMPTS = 3
+
 async function reconnectStream() {
   if (!lastFailedMessage.value) {
     ElMessage.warning('没有可重连的消息')
     return
   }
+  if (reconnecting.value) return
+  reconnecting.value = true
+  reconnectAttempts.value = 0
   streamError.value = ''
   inputText.value = lastFailedMessage.value
-  await sendMessage()
+
+  // T1: 持续重试策略 - 最多 MAX_RECONNECT_ATTEMPTS 次, 指数退避
+  let lastErr = null
+  while (reconnectAttempts.value < MAX_RECONNECT_ATTEMPTS) {
+    reconnectAttempts.value++
+    try {
+      await sendMessage()
+      // sendMessage 成功会清空 streamError; 检查是否还有错误
+      if (!streamError.value) {
+        ElMessage.success(reconnectAttempts.value > 1
+          ? `重连成功 (第 ${reconnectAttempts.value} 次尝试)`
+          : '已重新发送')
+        return
+      }
+      lastErr = streamError.value
+    } catch (e) {
+      lastErr = e?.message || '未知错误'
+    }
+    // 指数退避: 1s, 2s, 4s
+    if (reconnectAttempts.value < MAX_RECONNECT_ATTEMPTS) {
+      const delay = 1000 * Math.pow(2, reconnectAttempts.value - 1)
+      await new Promise(r => setTimeout(r, delay))
+    }
+  }
+  ElMessage.error(`重连失败: 已尝试 ${MAX_RECONNECT_ATTEMPTS} 次, 最后错误: ${lastErr || '未知'}`)
+  // T1: 失败时也清空 loading 状态, 允许用户手动重试
+  reconnecting.value = false
+  reconnectAttempts.value = 0
 }
 
 // ============ 会话管理 ============

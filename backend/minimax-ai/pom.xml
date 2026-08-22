@@ -48,7 +48,13 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-        
+
+        <!-- T3: jakarta.validation (@NotBlank/@NotNull/@Min/@Max) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
         <!-- Exclude all Druid JARs (h2local uses HikariCP) -->
         <dependency>
             <groupId>com.alibaba</groupId>

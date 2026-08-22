@@ -72,23 +72,39 @@
       <!-- ═══ 知识图谱 ═══ -->
       <el-tab-pane name="kg">
         <template #label><span>🕸️ 知识图谱</span></template>
-        <div style="padding:40px;text-align:center;color: var(--el-text-color-secondary)">
-          <div style="font-size:48px;margin-bottom:16px">🕸️</div>
-          <div style="font-size:18px;font-weight:600;margin-bottom:8px">知识图谱</div>
-          <div style="font-size:13px">基于知识库实体构建可视化图谱，支持关系推理</div>
-          <el-button type="primary" size="large" style="margin-top:24px" disabled>即将上线</el-button>
-        </div>
+        <el-empty
+          description="知识图谱功能正在建设中,敬请期待"
+          :image-size="100"
+          style="padding:60px 0"
+        >
+          <template #image>
+            <div style="font-size:64px">🕸️</div>
+          </template>
+          <template #default>
+            <div style="color: var(--el-text-color-secondary);font-size:13px;margin-top:8px">
+              基于知识库实体构建可视化图谱，支持关系推理
+            </div>
+          </template>
+        </el-empty>
       </el-tab-pane>
 
       <!-- ═══ 记忆中心 ═══ -->
       <el-tab-pane name="memory">
         <template #label><span>🧠 记忆中心</span></template>
-        <div style="padding:40px;text-align:center;color: var(--el-text-color-secondary)">
-          <div style="font-size:48px;margin-bottom:16px">🧠</div>
-          <div style="font-size:18px;font-weight:600;margin-bottom:8px">Agent 记忆中心</div>
-          <div style="font-size:13px">存储 Agent 长期记忆，支持跨会话上下文恢复</div>
-          <el-button type="primary" size="large" style="margin-top:24px" disabled>即将上线</el-button>
-        </div>
+        <el-empty
+          description="Agent 长期记忆功能正在建设中,敬请期待"
+          :image-size="100"
+          style="padding:60px 0"
+        >
+          <template #image>
+            <div style="font-size:64px">🧠</div>
+          </template>
+          <template #default>
+            <div style="color: var(--el-text-color-secondary);font-size:13px;margin-top:8px">
+              存储 Agent 长期记忆，支持跨会话上下文恢复
+            </div>
+          </template>
+        </el-empty>
       </el-tab-pane>
     </el-tabs>
 
@@ -726,7 +742,7 @@ async function openFullContent(docId) {
       renderDocxContent(r.data.content)
     }
   } catch (e) {
-    ElMessage.error('加载文档内容失败: ' + (e.message || ''))
+    ElMessage.error('加载文档内容失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   } finally {
     fullContentLoading.value = false
   }
@@ -980,7 +996,7 @@ async function doBatchExport() {
   } catch (e) {
     untrackInterval(timer)
     batchExportProgress.value = 0
-    ElMessage.error('导出失败: ' + (e.message || ''))
+    ElMessage.error('导出失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   } finally {
     batchExportLoading.value = false
   }
@@ -1020,7 +1036,7 @@ async function doBatchDelete() {
   } catch (e) {
     untrackInterval(timer)
     batchDeleteProgress.value = 0
-    ElMessage.error('批量删除失败: ' + (e.message || ''))
+    ElMessage.error('批量删除失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   } finally {
     batchDeleteLoading.value = false
   }
@@ -1069,7 +1085,7 @@ async function doBatchReindex() {
     untrackInterval(timer)
     batchReindexProgress.value = 0
     batchReindexMsg.value = ''
-    ElMessage.error('批量重索引失败: ' + (e.message || ''))
+    ElMessage.error('批量重索引失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   } finally {
     batchReindexLoading.value = false
   }
@@ -1089,7 +1105,7 @@ async function openEditDoc(doc) {
     editDocContent.value = r.data.content || ''
     editDocProgressMsg.value = '就绪，可以编辑内容后点击「保存并重新索引」'
   } catch (e) {
-    ElMessage.error('加载文档内容失败: ' + (e.message || ''))
+    ElMessage.error('加载文档内容失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
     editDocVisible.value = false
   } finally {
     editDocLoading.value = false
@@ -1124,7 +1140,7 @@ async function doSaveEditDoc() {
   } catch (e) {
     untrackInterval(timer)
     editDocProgress.value = 0
-    ElMessage.error('更新失败: ' + (e.message || ''))
+    ElMessage.error('更新失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   } finally {
     editDocSaving.value = false
   }
@@ -1207,7 +1223,7 @@ async function saveKb() {
     formVisible.value = false
     loadKbs()
   } catch (e) {
-    ElMessage.error('保存失败：' + (e.message || ''))
+    ElMessage.error('保存失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   } finally {
     saving.value = false
     editingKbId.value = null
@@ -1238,10 +1254,14 @@ async function confirmDeleteKb(kb) {
 
 // ========== 文档抽屉 ==========
 async function viewDocs(kb) {
-  currentKb.value = kb
-  docsDrawer.value = true
-  docsTab.value = 'docs'
-  await refreshDocs()
+  try {
+    currentKb.value = kb
+    docsDrawer.value = true
+    docsTab.value = 'docs'
+    await refreshDocs()
+  } catch (e) {
+    ElMessage.error('加载文档列表失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
+  }
 }
 
 async function refreshDocs() {
@@ -1470,7 +1490,7 @@ async function doRetrieve() {
       ElMessage.info('未找到相关结果')
     }
   } catch (e) {
-    ElMessage.error('检索失败：' + (e.message || ''))
+    ElMessage.error('检索失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
     retrieveDone.value = true
   } finally {
     retrieveLoading.value = false

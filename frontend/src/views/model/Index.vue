@@ -580,7 +580,7 @@ async function confirmDeleteLocalProvider(p) {
     ElMessage.success('删除成功')
     await loadLocalProviders()
   } catch (e) {
-    ElMessage.error('删除失败: ' + (e.message || ''))
+    ElMessage.error('删除失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   }
 }
 
@@ -598,7 +598,7 @@ async function confirmToggleLocalProvider(p) {
     p.enabled = !p.enabled
     ElMessage.success(`已${action}`)
   } catch (e) {
-    ElMessage.error(`${action}失败: ` + (e.message || ''))
+    ElMessage.error(`${action}失败: ` + (e?.response?.data?.message || e?.message || '未知错误'))
   }
 }
 
@@ -631,7 +631,7 @@ async function syncLocalModels(p) {
     await loadLocalProviders()
   } catch (e) {
     loadingMsg.close()
-    ElMessage.error('同步失败: ' + (e.message || ''))
+    ElMessage.error('同步失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   } finally {
     syncingId.value = null
   }
@@ -728,12 +728,16 @@ async function loadAll() {
 }
 
 async function onTabChange(tab) {
-  if (tab === 'trained' && trainedModels.value.length === 0) {
-    await loadTrainedModels()
-  } else if (tab === 'local' && localProviders.value.length === 0) {
-    await loadLocalProviders()
-  } else if (tab === 'cloud' && providers.value.length === 0) {
-    await loadCloud()
+  try {
+    if (tab === 'trained' && trainedModels.value.length === 0) {
+      await loadTrainedModels()
+    } else if (tab === 'local' && localProviders.value.length === 0) {
+      await loadLocalProviders()
+    } else if (tab === 'cloud' && providers.value.length === 0) {
+      await loadCloud()
+    }
+  } catch (e) {
+    ElMessage.error('加载 tab 数据失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   }
 }
 
@@ -806,7 +810,7 @@ async function saveModel() {
       ElMessage.success('保存成功')
       formVisible.value = false
       await loadCloud()
-    } catch (e) { ElMessage.error('保存失败：' + (e.message || '')) }
+    } catch (e) { ElMessage.error('保存失败: ' + (e?.response?.data?.message || e?.message || '未知错误')) }
     finally { saving.value = false }
   })
 }
@@ -825,7 +829,7 @@ async function confirmToggleModel(m) {
     m.enabled = !m.enabled
     ElMessage.success(m.enabled ? '已启用' : '已禁用')
   } catch (e) {
-    ElMessage.error('操作失败: ' + (e.message || ''))
+    ElMessage.error('操作失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   }
 }
 
@@ -844,7 +848,7 @@ async function testProvider(p) {
     await testProviderApi(p.code || p.id)
     ElMessage.success(`${p.name} 连接正常`)
   } catch (e) {
-    ElMessage.error(`${p.name} 连接失败: ` + (e.message || ''))
+    ElMessage.error(`${p.name} 连接失败: ` + (e?.response?.data?.message || e?.message || '未知错误'))
   } finally {
     testingProviderCode.value = null
   }
@@ -864,7 +868,7 @@ async function confirmToggleProvider(p) {
     p.enabled = !p.enabled
     ElMessage.success(p.enabled ? '已启用' : '已停用')
   } catch (e) {
-    ElMessage.error('操作失败: ' + (e.message || ''))
+    ElMessage.error('操作失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   }
 }
 
@@ -882,7 +886,7 @@ async function addProvider() {
       Object.assign(providerForm, { name: '', code: '', baseUrl: '', apiKey: '', logo: '', defaultModel: '' })
       providerFormRef.value?.clearValidate()
     } catch (e) {
-      ElMessage.error('添加失败: ' + (e.message || ''))
+      ElMessage.error('添加失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
     } finally {
       providerSaving.value = false
     }

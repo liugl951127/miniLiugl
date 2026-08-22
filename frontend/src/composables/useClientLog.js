@@ -174,7 +174,6 @@ function start() {
   patchOnError()
   patchUnhandledRejection()
   flushTimer = setInterval(flushLogs, FLUSH_INTERVAL_MS)
-  console.info('[ClientLog] 前端日志上报已启动')
 }
 
 function stop() {
@@ -184,7 +183,6 @@ function stop() {
   }
   flushLogs()
   isEnabled.value = false
-  console.info('[ClientLog] 前端日志上报已停止')
 }
 
 function setEnabled(enabled) {

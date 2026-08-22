@@ -97,7 +97,7 @@ async function start() {
     }
     startPoll()
   } catch (e) {
-    ElMessage.error('生成二维码失败: ' + e.message)
+    ElMessage.error('生成二维码失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
     status.value = 'error'
   }
 }
@@ -149,7 +149,7 @@ async function doMockScan() {
     await wechatApi.mockScan(qrcode.value.ticket)
     ElMessage.info('已触发 mock 扫码, 等前端轮询...')
   } catch (e) {
-    ElMessage.error('mock 失败: ' + e.message)
+    ElMessage.error('mock 失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   }
 }
 

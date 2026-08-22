@@ -7,6 +7,9 @@
         <el-button size="small" @click="loadHistory">
           <el-icon><Refresh /></el-icon>刷新
         </el-button>
+        <el-button size="small" :disabled="!lastFailedParams" @click="retryLast" title="回填上次的任务参数">
+          <el-icon><RefreshRight /></el-icon>重新执行
+        </el-button>
         <el-button type="primary" @click="openCreate">
           <el-icon><Plus /></el-icon>新建任务
         </el-button>
@@ -594,7 +597,7 @@ import { autoAgentGroupGenerate } from '@/api/ai'
 import http from '@/api/http'
 import { useClipboard } from '@/composables/useClipboard'
 import {
-  Plus, Refresh, VideoPlay, MagicStick, Download, CaretRight,
+  Plus, Refresh, RefreshRight, VideoPlay, MagicStick, Download, CaretRight,
   ChatDotSquare, Loading, UserFilled, QuestionFilled, CopyDocument,
   List, Brush, Connection, TrendCharts, CircleCheck, ArrowRight,
 } from '@element-plus/icons-vue'
@@ -892,14 +895,19 @@ async function genAgentResponse(agent, input, _origInput) {
     `你是 ${agent.name}，角色: ${agent.role || '通用助手'}。\n请根据你的职责处理以下输入，输出简洁有用的结果。`
 
   // 2. 调后端 (agentApi.execute 对接 /agent/run)
-  const r = await agentApi.execute({
-    goal: input,
-    systemPrompt,
-    agentType: agent.role || 'general',
-    model: genModel.value || 'minimax-01',
-    // 多 Agent 串联：把原始输入也传过去，便于后端理解完整上下文
-    originalInput: _origInput || input,
-  })
+  let r
+  try {
+    r = await agentApi.execute({
+      goal: input,
+      systemPrompt,
+      agentType: agent.role || 'general',
+      model: genModel.value || 'minimax-01',
+      // 多 Agent 串联：把原始输入也传过去，便于后端理解完整上下文
+      originalInput: _origInput || input,
+    })
+  } catch (e) {
+    throw new Error('Agent 执行失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
+  }
 
   // 3. 解析返回（兼容多种格式）
   const output = r?.data?.result ||
@@ -958,7 +966,7 @@ async function runGenerated() {
     testVisible.value = false
     loadHistory()
   } catch (e) {
-    ElMessage.error('运行失败：' + (e.message || ''))
+    ElMessage.error('运行失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   }
 }
 
@@ -977,6 +985,8 @@ const submitting = ref(false)
 const createVisible = ref(false)
 const resultVisible = ref(false)
 const detailResult = ref(null)
+// T1: 上次失败的任务参数, 用于 retryLast 回填
+const lastFailedParams = ref(null)
 
 const form = reactive({
   prompt: '', agentType: 'general', maxSteps: 8,
@@ -1026,20 +1036,44 @@ function runTemplate(tpl) {
 async function submitTask() {
   if (!form.prompt.trim()) { ElMessage.warning('请输入任务描述'); return }
   submitting.value = true
+  // T1: 记录最近一次参数,retry 时回填
+  lastFailedParams.value = {
+    goal: form.prompt, agentType: form.agentType, maxSteps: form.maxSteps,
+    temperature: form.temperature, tools: [...form.tools], model: form.model || '',
+  }
   try {
     const payload = {
       goal: form.prompt, agentType: form.agentType, maxSteps: form.maxSteps,
       temperature: form.temperature, tools: form.tools, model: form.model || undefined,
     }
     const r = await agentApi.execute(payload)
+    // 成功后清空
+    lastFailedParams.value = null
     ElMessage.success('任务已提交！ID: ' + (r.data?.id || '完成'))
     createVisible.value = false
     await loadHistory()
   } catch (e) {
-    ElMessage.error('提交失败：' + (e.message || '网络错误，请检查后端服务'))
+    ElMessage.error('提交失败: ' + (e?.response?.data?.message || e?.message || '网络错误，请检查后端服务'))
   } finally {
     submitting.value = false
   }
+}
+
+// T1: 重新执行 — 从 lastFailedParams 回填表单 (form 用 form.prompt 替代 form.goal)
+async function retryLast() {
+  if (!lastFailedParams.value) {
+    ElMessage.warning('暂无可重试的任务,请先在弹窗中执行一次任务')
+    return
+  }
+  const p = lastFailedParams.value
+  form.prompt = p.goal
+  form.agentType = p.agentType
+  form.maxSteps = p.maxSteps
+  form.temperature = p.temperature
+  form.tools = Array.isArray(p.tools) ? [...p.tools] : []
+  form.model = p.model || ''
+  createVisible.value = true
+  ElMessage.info('已回填上次的任务参数,请检查后点击提交')
 }
 
 async function viewResult(row) {
@@ -1063,16 +1097,19 @@ async function deleteHistory(row) {
       '删除确认',
       { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' }
     )
-    // 优先使用 agentApi.delete，若不存在则尝试 http.delete
-    if (agentApi.delete) {
-      await agentApi.delete(row.id)
+    // T1: 优先用 agentApi.remove（工作流），若无则回退到 history DELETE
+    if (typeof agentApi.remove === 'function') {
+      await agentApi.remove(row.id)
+    } else if (typeof agentApi.deleteHistory === 'function') {
+      await agentApi.deleteHistory(row.id)
     } else {
-      await import('@/api/http').then(m => m.default.delete(`/api/v1/agent/history/${row.id}`))
+      // 兜底: 直接走 http（不推荐，新代码应使用 agentApi）
+      await import('@/api/http').then(m => m.default.delete(`/api/v1/agent/workflows/${row.id}`))
     }
     ElMessage.success('已删除')
     loadHistory()
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error('删除失败')
+    if (e !== 'cancel') ElMessage.error('删除失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   }
 }
 

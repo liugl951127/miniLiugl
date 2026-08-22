@@ -437,19 +437,17 @@ export function initBrowserCompat() {
     console.warn('[BrowserCompat] 不支持特性 (已尝试 polyfill):', missing)
   }
 
-  // CSS 特性警告
+  // CSS 特性警告 (生产代码已禁用, 调试时打开)
   const cssMissing = Object.entries(cssFeatures)
     .filter(([_k, v]) => !v)
     .map(([k]) => k)
   if (cssMissing.length > 0) {
-    console.info('[BrowserCompat] CSS 降级:', cssMissing)
+    // dev-only: console.info('[BrowserCompat] CSS 降级:', cssMissing)
   }
 
-  console.info(
-    `[BrowserCompat] ${browser.name} ${browser.version} | ` +
-    `${browser.isMobile ? '📱 Mobile' : '💻 Desktop'} | ` +
-    `主题=${preferences.colorScheme} | 动效=${preferences.reducedMotion} | ` +
-    `特性 ${Object.values(features).filter(Boolean).length}/${Object.keys(features).length} OK`
-  )
+  // dev-only: console.info(`[BrowserCompat] ${browser.name} ${browser.version} | ` +
+  //   `${browser.isMobile ? '📱 Mobile' : '💻 Desktop'} | ` +
+  //   `主题=${preferences.colorScheme} | 动效=${preferences.reducedMotion} | ` +
+  //   `特性 ${Object.values(features).filter(Boolean).length}/${Object.keys(features).length} OK`)
   return { browser, features, cssFeatures, preferences, missing }
 }

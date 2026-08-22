@@ -121,6 +121,10 @@ export const agentApi = {
   remove(id) {
     return http.delete(`${AGENT_BASE}/workflows/${id}`)
   },
+  // T1: 删除 Agent 历史记录 (基于 agent_task 表)
+  deleteHistory(id) {
+    return http.delete(`${AGENT_BASE}/history/${id}`)
+  },
   // 部署 Plan (LLM plan → run-plan)
   deploy(id) {
     return http.post(`${AGENT_BASE}/run-plan`, { id })

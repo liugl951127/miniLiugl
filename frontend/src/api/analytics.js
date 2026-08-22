@@ -19,18 +19,15 @@ import http from './http'
 
 // ===== 数据源管理 =====
 export const listDataSources = () => {
-  console.log('%c[ANALYTICS API] listDataSources', 'color: #409eff', '')
   return http.get('/analytics/datasources');
 }
 export const getDataSource = (id) => http.get(`/analytics/datasources/${id}`)
 export const createDataSource = (data) => {
-  console.log('%c[ANALYTICS API] createDataSource', 'color: #409eff', data)
   return http.post('/analytics/datasources', data);
 }
 export const updateDataSource = (id, data) => http.put(`/analytics/datasources/${id}`, data)
 export const deleteDataSource = (id) => http.delete(`/analytics/datasources/${id}`)
 export const testDataSource = (data) => {
-  console.log('%c[ANALYTICS API] testDataSource', 'color: #409eff', data)
   return http.post('/analytics/datasources/test', data);
 }
 
@@ -69,30 +66,25 @@ export const getIngestQuality = (taskId) => http.get(`/analytics/ingest/tasks/${
 
 // ===== NL2SQL 实验室 =====
 export const nl2sqlAsk = (data) => {
-  console.log('%c[ANALYTICS API] nl2sqlAsk', 'color: #409eff', data)
   return http.post('/analytics/nlsql/ask', data);
 }
 export const nl2sqlExplain = (sql, dataSourceId) =>
   http.post('/analytics/nlsql/explain', sql, { params: { dataSourceId } })
 export const nl2qlFeedback = (data) => {
-  console.log('%c[ANALYTICS API] nl2qlFeedback', 'color: #409eff', data)
   return http.post('/analytics/nlsql/feedback', data);
 }
 export const nl2sqlHistory = (params) => http.get('/analytics/nlsql/history', { params })
 
 // ===== 查询执行 (SQL 沙盒) =====
 export const executeQuery = (data) => {
-  console.log('%c[ANALYTICS API] executeQuery', 'color: #409eff', data)
   return http.post('/analytics/query/execute', data);
 }
 export const dryRunQuery = (data) => {
-  console.log('%c[ANALYTICS API] dryRunQuery', 'color: #409eff', data)
   return http.post('/analytics/query/dry-run', data);
 }
 
 // ===== 报告生成 =====
 export const generateReport = (data) => {
-  console.log('%c[ANALYTICS API] generateReport', 'color: #409eff', data)
   return http.post('/analytics/reports/generate', data);
 }
 export const getReport = (reportId) => http.get(`/analytics/reports/${reportId}`)
@@ -104,7 +96,6 @@ export const getReport = (reportId) => http.get(`/analytics/reports/${reportId}`
  * 后端可提供: { totalVotes, avgAgreement, avgModelCount, avgLatencyMs }
  */
 export const getVoteStatsSummary = () => {
-  console.log('%c[ANALYTICS API] getVoteStatsSummary', 'color: #409eff', '')
   return http.get('/ai/voting/stats')
 }
 
@@ -113,7 +104,6 @@ export const getVoteStatsSummary = () => {
  * GET /api/v1/ai/voting/stats/trend?strategy=all&bucket=day
  */
 export const getVoteTrend = (params) => {
-  console.log('%c[ANALYTICS API] getVoteTrend', 'color: #409eff', params)
   return http.get('/ai/voting/stats/trend', { params })
 }
 
@@ -122,7 +112,6 @@ export const getVoteTrend = (params) => {
  * GET /api/v1/ai/voting/records?page=1&size=10
  */
 export const getVoteRecords = (params) => {
-  console.log('%c[ANALYTICS API] getVoteRecords', 'color: #409eff', params)
   return http.get('/ai/voting/records', { params })
 }
 
@@ -132,6 +121,5 @@ export const getVoteRecords = (params) => {
  * 返回: { text, strategy, models, originalRecordId }
  */
 export const duplicateVote = (recordId) => {
-  console.log('%c[ANALYTICS API] duplicateVote', 'color: #409eff', recordId)
   return http.get(`/ai/voting/duplicate/${recordId}`)
 }

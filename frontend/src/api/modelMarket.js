@@ -6,7 +6,6 @@
 import http from './http'
 
 export const stats = () => {
-  console.log('%c[MODELMARKET API] stats', 'color: #409eff', '')
   return http.get('/ai/model-market/stats');
 }
 export const browse = (params) => http.get('/ai/model-market/models', { params })
@@ -15,7 +14,6 @@ export const upload = (formData) => http.post('/ai/model-market/upload', formDat
   headers: { 'Content-Type': 'multipart/form-data' }
 })
 export const publish = (data) => {
-  console.log('%c[MODELMARKET API] publish', 'color: #409eff', data)
   return http.post('/ai/model-market/publish', data);
 }
 export const rate = (key, data) => http.post(`/ai/model-market/models/${key}/rate`, data)

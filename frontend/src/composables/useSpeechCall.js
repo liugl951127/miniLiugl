@@ -136,8 +136,8 @@ export function useSpeechCall() {
       ElMessage.success('🎙️ 语音通话已启动 (STT 识别中)')
       return true
     } catch (e) {
-      error.value = e.message
-      ElMessage.error(`启动失败: ${e.message}`)
+      error.value = e?.message || '未知错误'
+      ElMessage.error(`启动失败: ${e?.response?.data?.message || e?.message || '未知错误'}`)
       cleanup()
       return false
     }
@@ -150,7 +150,6 @@ export function useSpeechCall() {
     recognition?.stop()
     synth?.cancel()
     cleanup()
-    console.log('[SpeechCall] 已停止监听')  // V3.6.21+ 不弹 toast, 避免误判
   }
 
   // === 静音切换 ===

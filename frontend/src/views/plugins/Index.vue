@@ -67,14 +67,22 @@
                 :loading="installingId === p.id"
                 @click="installPlugin(p)"
               >{{ p.installed ? '更新' : '安装' }}</el-button>
-              <el-button
-                v-if="p.installed"
-                size="small"
-                link
-                type="danger"
-                :loading="uninstallingId === p.id"
-                @click="uninstallPlugin(p)"
-              >卸载</el-button>
+              <el-tooltip
+                :content="marketplaceApi.uninstallAgent
+                  ? '卸载该插件 (需管理员权限)'
+                  : '后端未提供卸载接口, 该功能暂不可用'"
+                placement="top"
+              >
+                <el-button
+                  v-if="p.installed"
+                  size="small"
+                  link
+                  type="danger"
+                  :loading="uninstallingId === p.id"
+                  :disabled="!marketplaceApi.uninstallAgent"
+                  @click="uninstallPlugin(p)"
+                >卸载</el-button>
+              </el-tooltip>
             </div>
           </el-card>
         </el-col>

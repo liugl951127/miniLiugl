@@ -86,7 +86,6 @@ onMounted(() => {
     const dismissed = localStorage.getItem(`ai_tip_dismissed_${props.dismissKey}`)
     if (dismissed) visible.value = false
   }
-  console.log('%c[AI Tip]', 'color: #a855f7', { context: props.context })
 })
 
 function onAction() {

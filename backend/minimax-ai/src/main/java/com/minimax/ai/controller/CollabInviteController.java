@@ -1,11 +1,14 @@
 package com.minimax.ai.controller;
 
+import com.minimax.ai.dto.CollabInviteRequest;
 import com.minimax.ai.entity.CollabInvite;
 import com.minimax.ai.service.CollabInviteService;
 import com.minimax.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,14 +17,16 @@ import java.util.Map;
 /**
  * 协作房间邀请 Controller (T1-backend-apis / P0)
  *
- * 2 个端点 (修复 views/collab/Index.vue inviteMember() 的 mock 行为):
+ * 3 个端点 (修复 views/collab/Index.vue inviteMember() 的 mock 行为):
  * <ul>
- *   <li>POST /api/v1/collab/rooms/{id}/invite  发送邀请, 返回 { inviteId, token, status }</li>
- *   <li>GET  /api/v1/collab/invites           当前用户的邀请列表</li>
+ *   <li>POST /api/v1/collab/rooms/{id}/invite   发送邀请, 返回 { inviteId, token, status }</li>
+ *   <li>GET  /api/v1/collab/invites             当前用户发起的邀请列表</li>
+ *   <li>GET  /api/v1/collab/invites/received    当前用户收到的邀请列表</li>
  * </ul>
  *
  * @since V7.2
  */
+@Slf4j
 @Tag(name = "协作邀请 (V7.2 P0)")
 @RestController
 @RequestMapping("/api/v1/collab")
@@ -34,19 +39,18 @@ public class CollabInviteController {
     @PostMapping("/rooms/{id}/invite")
     public Result<Map<String, Object>> invite(@PathVariable("id") Long roomId,
                                                @RequestHeader(value = "X-User-Id", required = false) Long userId,
-                                               @RequestBody Map<String, Object> body) {
-        String email = (String) body.get("email");
-        Long inviteId = collabInviteService.sendInvite(roomId, email, userId);
+                                               @Valid @RequestBody CollabInviteRequest req) {
+        Long inviteId = collabInviteService.sendInvite(roomId, req.getEmail(), userId);
         return Result.ok(Map.of(
                 "inviteId", inviteId,
                 "roomId", roomId,
-                "email", email,
+                "email", req.getEmail(),
                 "status", "PENDING",
                 "message", "邀请已发出, 等待对方接受"
         ));
     }
 
-    @Operation(summary = "我的邀请列表 (按 X-User-Id)")
+    @Operation(summary = "我的邀请列表 (按 X-User-Id, 我发起的)")
     @GetMapping("/invites")
     public Result<List<CollabInvite>> myInvites(@RequestHeader(value = "X-User-Id", required = false) Long userId) {
         return Result.ok(collabInviteService.listMyInvites(userId));

@@ -319,7 +319,7 @@ function resetForm() {
   form.corpusPath = '/opt/ai-platform/corpus/sample.txt'
   form.nLayer = 12; form.nHead = 12; form.nEmbd = 768
   form.blockSize = 128; form.maxIters = 100; form.batchSize = 32; form.learningRate = 0.0003
-  ElMessage.success('表单已重置')
+  // T1: 移除误显示的"已重置"提示 (表单字段已重置即可, 无需额外 success toast)
 }
 
 // ---- 轮询实时指标 ----

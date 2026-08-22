@@ -21,13 +21,6 @@ vi.mock('@/views/chat/Index.vue', () => ({
   }
 }))
 
-vi.mock('@/views/admin/Dashboard.vue', () => ({
-  default: {
-    name: 'Dashboard',
-    template: '<div class="dash-mock">Dashboard mock</div>'
-  }
-}))
-
 vi.mock('@/api/auth', () => ({
   authApi: {
     login: vi.fn().mockResolvedValue({

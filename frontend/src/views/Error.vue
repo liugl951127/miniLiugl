@@ -278,15 +278,25 @@ function handleAction(action: string) {
       if (window.history.length > 1) {
         router.back()
       } else {
-        router.push('/admin/dashboard')
+        // T1: /admin/dashboard 路由已删除, 统一走 /chat (首页)
+        router.replace('/chat')
       }
       break
     case 'home':
-      router.push('/admin/dashboard')
+      // T1: /admin/dashboard 路由已删除, 统一走 /chat (首页)
+      router.replace('/chat')
       break
     case 'retry':
     case 'reload':
-      window.location.reload()
+      // T1: 改用 router.replace('/') 触发 layout 重新挂载, 避免 location.reload 全页刷新丢失 SPA 状态
+      try {
+        router.replace('/').catch(() => {
+          // 兜底: 若 SPA 路由被破坏再走 location.reload
+          window.location.reload()
+        })
+      } catch {
+        window.location.reload()
+      }
       break
     case 'login':
       router.push({ path: '/login', query: { redirect: route.fullPath } })

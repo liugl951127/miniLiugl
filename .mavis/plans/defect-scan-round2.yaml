@@ -1,0 +1,171 @@
+version: 1
+plan:
+  name: "深度缺陷扫描 Round 2: 剩余死按钮 + 代码质量 + 新代码健壮性"
+  max_concurrency: 3
+  max_consecutive_failures: 3
+  max_cycles: 10
+  auto_accept: false
+  auto_reject_retries: 1
+
+tasks:
+  # ============ T1: 剩余 P1/P2 死按钮 + 死文件清理 ============
+  - id: T1-remaining-dead-buttons
+    title: "P1/P2 剩余 14 个死按钮 + 死文件清理"
+    assigned_to: general
+    role: produce
+    verified_by: explore
+    depends_on: []
+    timeout_ms: 1500000
+    max_retries: 1
+    prompt: |
+      扫描 /workspace/miniLiugl/dead-buttons.md 的 P1 (9个) + P2 (5个) 列表 + 死文件, 全部修复。
+
+      **P1 死按钮修复清单 (9 个)**:
+      1. views/agent/Index.vue:1075 retryLast (保存 lastFailedParams, retry 时回填)
+      2. views/agent/Index.vue:1068 deleteHistory (确认 /api/v1/agent/history/{id} DELETE 存在, 否则禁用按钮)
+      3. views/agent/Multi.vue:381 retryLast (保存最近 params)
+      4. views/analytics/Index.vue:282 exportVotesCsv (失败时 ElMessage.error, 不静默)
+      5. views/knowledge/Index.vue:79, 90 (移除 disabled "即将上线" 按钮, 改成空状态提示)
+      6. views/admin/Index.vue (确认不在路由, 删除文件)
+      7. views/admin/Dashboard.vue (硬编码 KPI, 改为真实 loadData, 或删除)
+      8. views/monitor/Index.vue:57 清除新告警 (接后端"已读" API, 或在 WebSocket 标记已读)
+      9. views/Error.vue (改用 router.replace('/') 而非 location.reload)
+
+      **P2 死按钮修复清单 (5 个)**:
+      10. views/auth/Login.vue:253 onForgot (改为 ElMessageBox 显示重置流程说明, 或禁用按钮加 tooltip)
+      11. views/chat/Index.vue:610 reconnectStream (持续重试策略 + loading 状态)
+      12. views/agent/Canvas.vue:54 newCanvas (加 ElMessageBox.confirm 确认)
+      13. views/training/Console.vue:316 resetForm (移除误显示的"已重置"提示)
+      14. views/plugins/Index.vue:178 uninstallPlugin (确认 marketplaceApi.uninstallAgent 存在, 否则禁用按钮加 tooltip)
+
+      **死文件清理**:
+      - 确认 views/admin/Index.vue 不在 router 中 (grep router), 删
+      - 确认 views/admin/Dashboard.vue 不在 router 中, 删
+      - 找其他无用 .vue (router 中无引用 + 无 import), 候选删除
+
+      **最后编译验证**:
+      ```bash
+      cd /workspace/miniLiugl/frontend
+      NODE_OPTIONS='--max-old-space-size=2200' npx vite build 2>&1 | tail -10
+      ```
+      必须 ✓ built
+
+    verify_prompt: |
+      验证:
+      1. 14 个 P1/P2 按钮都修复 (代码中有改动)
+      2. 死文件删除 (从 working tree 移除)
+      3. vite build PASS
+      4. 给出每个 P1/P2 按钮的修复后函数体片段
+
+  # ============ T2: 代码质量缺陷扫描 + 修复 ============
+  - id: T2-code-quality
+    title: "代码质量缺陷: console.log/TODO/error handling/Promise 捕获"
+    assigned_to: general
+    role: produce
+    verified_by: explore
+    depends_on: []
+    timeout_ms: 1500000
+    max_retries: 1
+    prompt: |
+      扫描 /workspace/miniLiugl/frontend/src/ 全部 .vue 和 .js 文件, 修复以下质量缺陷:
+
+      1. **console.log/warn/error 残留** (生产代码)
+         - `grep -rn "console\." frontend/src --include="*.vue" --include="*.js"` 找出所有
+         - 保留: console.error (开发期有用), 标记 TODO
+         - 删: console.log (info/debug), 改为不输出
+         - 至少清理 5 个
+
+      2. **TODO/FIXME 注释**
+         - `grep -rn "TODO\|FIXME\|XXX" frontend/src --include="*.vue" --include="*.js"` 找出
+         - 评估: 3 类
+           a. 已实现可删除 → 删
+           b. 真需要后端补 → 加注释"等待 XXX 后端 API" + 关联 issue
+           c. 临时占位 → 删
+         - 至少清理/明确 5 个
+
+      3. **未捕获的 Promise**
+         - `grep -rn "async function.*\n[^}]*await" frontend/src` 找 async 函数没 try/catch
+         - 重点: 异步请求 (await http.get/post) 后无 .catch 或 try
+         - 加 try/catch 包裹
+
+      4. **错误信息暴露内部细节**
+         - `e.message` 直接给用户 → 改为 `ElMessage.error('操作失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))`
+         - 至少改 5 处
+
+      5. **硬编码的 URL**
+         - `grep -rn "http://\|https://" frontend/src --include="*.vue" --include="*.js" | grep -v node_modules`
+         - 排除: 外部链接 (github, demo 等)
+         - 提取: 后端路径硬编码应该走 src/api/*.js 里的 request 包装
+
+      **最后编译验证**:
+      ```bash
+      cd /workspace/miniLiugl/frontend
+      NODE_OPTIONS='--max-old-space-size=2200' npx vite build 2>&1 | tail -10
+      ```
+      必须 ✓ built
+
+    verify_prompt: |
+      验证:
+      1. 至少 5 个 console.log/info 被清理
+      2. 至少 5 个 TODO/FIXME 被处理
+      3. 至少 5 个 async 函数加了 try/catch
+      4. 至少 5 个错误信息改为友好格式
+      5. vite build PASS
+
+  # ============ T3: 新代码 (rule/training/notification/collab/system) 健壮性扫描 ============
+  - id: T3-new-code-robustness
+    title: "新补代码健壮性: 错误处理/参数校验/事务"
+    assigned_to: general
+    role: produce
+    verified_by: explore
+    depends_on: []
+    timeout_ms: 1500000
+    max_retries: 1
+    prompt: |
+      扫描 /workspace/miniLiugl/backend/ 刚补的 5 个新模块的健壮性:
+
+      1. **错误处理**
+         - 找: try { ... } catch (Exception e) { e.printStackTrace(); } 这种吞错
+         - 改为: log.error("xxx failed", e) + throw new BizException(...)
+         - 至少改 3 处
+
+      2. **参数校验**
+         - 找 @PostMapping 接收 @RequestBody DTO 但没 @Valid 或 @NotNull/@NotBlank 注解
+         - 给关键字段加校验: @NotBlank (name, json), @Min/@Max (accuracy 0-100)
+         - 至少加 5 个注解
+
+      3. **事务**
+         - 找 @Service 方法有 mapper.insert() / update() / delete() 多个写操作但没 @Transactional
+         - 加 @Transactional
+         - 至少加 2 个
+
+      4. **硬编码**
+         - 找 "test"/"default"/"admin" 等魔法字符串
+         - 抽到常量类或 @Value 注入
+
+      **重点文件**:
+      - backend/minimax-pipeline/src/main/java/com/minimax/pipeline/controller/RuleController.java
+      - backend/minimax-pipeline/src/main/java/com/minimax/pipeline/service/RuleService.java
+      - backend/minimax-ai/src/main/java/com/minimax/ai/controller/TrainedModelController.java
+      - backend/minimax-ai/src/main/java/com/minimax/ai/service/TrainedModelService.java
+      - backend/minimax-ai/src/main/java/com/minimax/ai/controller/CollabInviteController.java
+      - backend/minimax-auth/src/main/java/com/minimax/auth/controller/NotificationSettingsController.java
+      - backend/minimax-system/src/main/java/com/minimax/system/controller/SystemController.java
+      - backend/minimax-system/src/main/java/com/minimax/system/service/SystemSettingsService.java
+
+      **最后编译验证**:
+      ```bash
+      cd /workspace/miniLiugl/backend
+      export JAVA_HOME=/opt/jdk-17.0.2
+      export PATH=$JAVA_HOME/bin:/opt/apache-maven-3.9.6/bin:$PATH
+      mvn package -DskipTests -s ~/.m2/settings.xml 2>&1 | tail -20
+      ```
+      必须 BUILD SUCCESS
+
+    verify_prompt: |
+      验证:
+      1. 至少 3 处错误处理改进 (log.error + throw BizException)
+      2. 至少 5 个 @Valid/@NotNull/@NotBlank/@Min 注解
+      3. 至少 2 个 @Transactional 加在 service 多写操作
+      4. 至少 1 个魔法字符串抽常量
+      5. mvn package BUILD SUCCESS

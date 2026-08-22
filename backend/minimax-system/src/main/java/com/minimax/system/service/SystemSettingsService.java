@@ -2,14 +2,13 @@ package com.minimax.system.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.minimax.common.exception.BizException;
+import com.minimax.system.constants.SystemSettingsConstants;
 import com.minimax.system.entity.SystemSettings;
 import com.minimax.system.mapper.SystemSettingsMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Set;
 
 /**
  * 系统设置服务 (T1-backend-apis / P0)
@@ -25,16 +24,13 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class SystemSettingsService {
 
-    private static final long SINGLETON_ID = 1L;
-    private static final Set<String> ALLOWED_BOOL = Set.of("0", "1");
-
     private final SystemSettingsMapper settingsMapper;
 
     /**
      * 拿当前系统设置 (无则返回默认)
      */
     public SystemSettings get() {
-        SystemSettings s = settingsMapper.selectById(SINGLETON_ID);
+        SystemSettings s = settingsMapper.selectById(SystemSettingsConstants.SINGLETON_ID);
         if (s == null) {
             s = defaultSettings();
         }
@@ -50,13 +46,15 @@ public class SystemSettingsService {
             throw new BizException("请求体不能为空");
         }
         // 简单校验
-        if (patch.getMaintenanceMode() != null && !ALLOWED_BOOL.contains(String.valueOf(patch.getMaintenanceMode()))) {
+        if (patch.getMaintenanceMode() != null
+                && !SystemSettingsConstants.ALLOWED_BOOL.contains(String.valueOf(patch.getMaintenanceMode()))) {
             throw new BizException("maintenanceMode 只能为 0 或 1");
         }
-        if (patch.getAllowRegister() != null && !ALLOWED_BOOL.contains(String.valueOf(patch.getAllowRegister()))) {
+        if (patch.getAllowRegister() != null
+                && !SystemSettingsConstants.ALLOWED_BOOL.contains(String.valueOf(patch.getAllowRegister()))) {
             throw new BizException("allowRegister 只能为 0 或 1");
         }
-        SystemSettings exist = settingsMapper.selectById(SINGLETON_ID);
+        SystemSettings exist = settingsMapper.selectById(SystemSettingsConstants.SINGLETON_ID);
         if (exist == null) {
             exist = defaultSettings();
             applyPatch(exist, patch);
@@ -70,16 +68,16 @@ public class SystemSettingsService {
             settingsMapper.updateById(exist);
             log.info("[SystemSettings] updated (singleton) by userId={}", updatedBy);
         }
-        return settingsMapper.selectById(SINGLETON_ID);
+        return settingsMapper.selectById(SystemSettingsConstants.SINGLETON_ID);
     }
 
     private SystemSettings defaultSettings() {
         SystemSettings s = new SystemSettings();
-        s.setId(SINGLETON_ID);
-        s.setSiteName("MiniMax 平台");
-        s.setMaintenanceMode(0);
-        s.setAllowRegister(1);
-        s.setDefaultModelCode("gpt-4o");
+        s.setId(SystemSettingsConstants.SINGLETON_ID);
+        s.setSiteName(SystemSettingsConstants.DEFAULT_SITE_NAME);
+        s.setMaintenanceMode(SystemSettingsConstants.MAINTENANCE_OFF);
+        s.setAllowRegister(SystemSettingsConstants.REGISTER_ENABLED);
+        s.setDefaultModelCode(SystemSettingsConstants.DEFAULT_MODEL_CODE);
         return s;
     }
 

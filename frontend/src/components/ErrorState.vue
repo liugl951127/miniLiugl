@@ -3,6 +3,7 @@
   之前: 4 种状态 6 种类别, 各种文案
   现在: 占位组件, 不渲染任何东西
   保留 file 结构以便其他可能的错误场景用
+  状态: 占位组件 - 等待后端/设计统一空态组件 (issue: refactor/error-state)
 -->
 <template>
   <div v-if="false" class="error-state">

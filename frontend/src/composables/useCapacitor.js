@@ -259,10 +259,8 @@ export function useCapacitor() {
  */
 export async function initCapacitor() {
   if (!isNative) {
-    console.log('[capacitor] Web 平台, 跳过原生初始化')
     return
   }
-  console.log('[capacitor] 原生平台:', platform.value)
   try {
     // 1. 配置状态栏
     await statusBar.setStyle('LIGHT')

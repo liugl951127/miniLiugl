@@ -12,13 +12,11 @@ import http from './http'
 
 /** 智能填单 */
 export const autofill = (formType, context = {}) => {
-  console.log('%c[AUTOFILL]', 'color: #a855f7', { formType, context })
   return http.post('/ai/autofill', { formType, context })
 }
 
 /** 一键预览 */
 export const previewForm = (formType) => {
-  console.log('%c[AUTOFILL PREVIEW]', 'color: #a855f7', formType)
   return http.get(`/ai/autofill/preview/${formType}`)
 }
 
@@ -29,7 +27,6 @@ export const recommendField = (formType, field) => {
 
 /** V6.3+ 用户反馈 (在线学习) */
 export const feedback = (formType, feedback, options = {}) => {
-  console.log('%c[AUTOFILL FEEDBACK]', 'color: #a855f7', { formType, feedback, options })
   return http.post('/ai/autofill/feedback', {
     formType,
     formId: options.formId,

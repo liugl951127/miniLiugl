@@ -765,16 +765,20 @@ async function handleSearch() {
   }
 
   searchNoMatch.value = false
-  const r = await kgSearchEntities(null, searchKw.value, 50)
-  const list = r.data?.list || r.data || []
-  
-  if (list.length === 0) {
-    searchNoMatch.value = true
-    searchResults.value = []
-  } else {
-    searchResults.value = list
-    // 高亮搜索结果节点
-    highlightSearchResults(list)
+  try {
+    const r = await kgSearchEntities(null, searchKw.value, 50)
+    const list = r.data?.list || r.data || []
+
+    if (list.length === 0) {
+      searchNoMatch.value = true
+      searchResults.value = []
+    } else {
+      searchResults.value = list
+      // 高亮搜索结果节点
+      highlightSearchResults(list)
+    }
+  } catch (e) {
+    ElMessage.error('搜索失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   }
 }
 

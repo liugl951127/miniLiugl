@@ -133,7 +133,7 @@ async function loadTools() {
     tools.value = r.data || []
   } catch (e) {
     tools.value = []
-    ElMessage.error('加载工具列表失败：' + (e?.message || '网络错误'))
+    ElMessage.error('加载工具列表失败: ' + (e?.response?.data?.message || e?.message || '网络错误'))
   } finally {
     loading.value = false
   }
@@ -163,9 +163,9 @@ async function runTest() {
     testResult.value = JSON.stringify(r.data || r, null, 2)
     ElMessage.success('测试调用成功')
   } catch (e) {
-    const errMsg = '错误: ' + (e.message || e)
+    const errMsg = '错误: ' + (e?.message || e)
     testResult.value = errMsg
-    ElMessage.error('测试失败：' + (e.message || '未知错误'))
+    ElMessage.error('测试失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   } finally {
     testing.value = false
   }

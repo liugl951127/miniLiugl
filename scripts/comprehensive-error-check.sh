@@ -45,7 +45,7 @@ echo "  ✓ $PASS/21 通过"
 # 4. .vue / .js 编译
 echo ""
 echo "--- 3. .vue / .js 编译 ---"
-VIEWS=("src/views/chat/Index.vue" "src/views/kg/Index.vue" "src/views/admin/Dashboard.vue" "src/views/admin/Index.vue" "src/components/ErrorBoundary.vue" "src/components/ErrorState.vue" "src/composables/useSpeechCall.js" "src/composables/useToast.js")
+VIEWS=("src/views/chat/Index.vue" "src/views/kg/Index.vue" "src/views/monitor/Index.vue" "src/views/analytics/Index.vue" "src/components/ErrorBoundary.vue" "src/components/ErrorState.vue" "src/composables/useSpeechCall.js" "src/composables/useToast.js")
 PASS=0
 for v in "${VIEWS[@]}"; do
     code=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/$v" --max-time 5)

@@ -1,11 +1,13 @@
 package com.minimax.system.controller;
 
 import com.minimax.common.result.Result;
+import com.minimax.system.dto.SystemSettingsRequest;
 import com.minimax.system.entity.SystemSettings;
 import com.minimax.system.service.SystemService;
 import com.minimax.system.service.SystemSettingsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -82,7 +84,16 @@ public class SystemController {
     @Operation(summary = "保存全局系统设置 (upsert, id=1)")
     public Result<SystemSettings> saveSettings(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
-            @RequestBody SystemSettings patch) {
+            @Valid @RequestBody SystemSettingsRequest req) {
+        // DTO -> Entity (Service 层用 Entity 即可, 字段名一致)
+        SystemSettings patch = new SystemSettings();
+        patch.setSiteName(req.getSiteName());
+        patch.setSiteLogo(req.getSiteLogo());
+        patch.setMaintenanceMode(req.getMaintenanceMode());
+        patch.setAllowRegister(req.getAllowRegister());
+        patch.setDefaultModelCode(req.getDefaultModelCode());
+        patch.setDescription(req.getDescription());
+        patch.setContactEmail(req.getContactEmail());
         return Result.success(systemSettingsService.upsert(patch, userId));
     }
 }

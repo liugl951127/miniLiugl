@@ -10,7 +10,6 @@ import { useBusinessStream } from '@/composables/useBusinessStream'
 /** 会话管理 */
 export const listSessions = (params) => http.get('/ai/chat/sessions', { params })
 export const createSession = (data) => {
-  console.log('%c[SESSION API] createSession', 'color: #409eff', data)
   return http.post('/ai/chat/sessions', data);
 }
 // V6.8.1 fix: 所有路径补 /ai/chat 前缀 (对齐 AiChatRealController)

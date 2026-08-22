@@ -83,7 +83,7 @@ async function doUnbind() {
     ElMessage.success('已解绑')
     await load()
   } catch (e) {
-    ElMessage.error('解绑失败: ' + e.message)
+    ElMessage.error('解绑失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   }
 }
 

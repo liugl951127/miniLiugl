@@ -35,7 +35,6 @@ export function usePwa() {
       return
     }
     if (!import.meta.env.PROD) {
-      console.log('[PWA] 开发模式跳过 SW 注册')
       return
     }
     try {
@@ -49,7 +48,6 @@ export function usePwa() {
         scope: '/'
       })
       swRegistered.value = true
-      console.log('[PWA] SW registered, scope:', registration.scope)
 
       // 检测更新
       registration.addEventListener('updatefound', () => {
@@ -127,7 +125,7 @@ export function usePwa() {
         return false
       }
     } catch (e) {
-      ElMessage.error('检查更新失败: ' + e.message)
+      ElMessage.error('检查更新失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
       return false
     }
   }

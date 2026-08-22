@@ -7,7 +7,6 @@ import http from './http'
 
 // Runs
 export const listRuns = () => {
-  console.log('%c[TENSORBOARD API] listRuns', 'color: #409eff', '')
   return http.get('/tensorboard/runs');
 }
 
@@ -33,7 +32,6 @@ export const compareRuns = (runIds, tag) =>
 
 // Health
 export const health = () => {
-  console.log('%c[TENSORBOARD API] health', 'color: #409eff', '')
   return http.get('/tensorboard/health');
 }
 

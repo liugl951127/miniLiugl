@@ -549,7 +549,7 @@ async function loadOverview() {
     const mt = modelTrend.data?.data ?? modelTrend.data ?? modelTrend ?? []
     modelTrendData.value = Array.isArray(mt) ? mt : []
   } catch (e) {
-    ElMessage.warning('加载概览数据失败：' + (e.response?.data?.message || e.message || '请稍后重试'))
+    ElMessage.warning('加载概览数据失败: ' + (e?.response?.data?.message || e?.message || '请稍后重试'))
   } finally {
     metricsLoading.value = false
     overviewLoading.value = false
@@ -557,9 +557,13 @@ async function loadOverview() {
 }
 
 async function loadAll() {
-  await loadOverview()
-  await nextTick()
-  renderCharts()
+  try {
+    await loadOverview()
+    await nextTick()
+    renderCharts()
+  } catch (e) {
+    ElMessage.error('加载看板数据失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
+  }
 }
 
 function renderCharts() {
@@ -666,8 +670,8 @@ async function runNlQuery(reExec = false) {
           ElMessage.success(`查询成功，返回 ${nlResult.value.rows.length} 条数据`)
         } catch (e) {
           nlResult.value.success = false
-          nlResult.value.errorMsg = e.message || '执行失败'
-          ElMessage.error('SQL 执行失败：' + (e.message || ''))
+          nlResult.value.errorMsg = e?.response?.data?.message || e?.message || '执行失败'
+          ElMessage.error('SQL 执行失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
         }
       } else {
         ElMessage.success('SQL 已生成，点击「重新执行」手动执行')
@@ -677,8 +681,8 @@ async function runNlQuery(reExec = false) {
       ElMessage.error(data.explanation || '未生成 SQL')
     }
   } catch (e) {
-    ElMessage.error('查询失败：' + (e.response?.data?.message || e.message || ''))
-    nlResult.value = { success: false, errorMsg: e.message || '' }
+    ElMessage.error('查询失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
+    nlResult.value = { success: false, errorMsg: e?.message || '' }
   } finally { nlLoading.value = false }
 }
 
@@ -692,8 +696,8 @@ async function explainSql() {
     const r = await nl2sqlExplain(nlResult.value.sql)
     nlExplanation.value = r.data || r || ''
   } catch (e) {
-    nlExplanation.value = '(解释失败: ' + (e.message || '') + ')'
-    ElMessage.error('SQL 解释失败：' + (e.message || ''))
+    nlExplanation.value = '(解释失败: ' + (e?.response?.data?.message || e?.message || '未知错误') + ')'
+    ElMessage.error('SQL 解释失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   } finally { nlExplainLoading.value = false }
 }
 
@@ -718,7 +722,7 @@ async function exportCsv() {
     URL.revokeObjectURL(a.href)
     ElMessage.success(`已导出 ${rows.length} 条数据到 CSV`)
   } catch (e) {
-    ElMessage.error('导出失败：' + (e.message || '请重试'))
+    ElMessage.error('导出失败: ' + (e?.response?.data?.message || e?.message || '请重试'))
   }
 }
 
@@ -740,7 +744,7 @@ async function loadHistory() {
     nlHistory.value = r.data || r || []
   } catch (e) {
     nlHistory.value = []
-    ElMessage.warning('加载历史失败：' + (e.response?.data?.message || e.message || ''))
+    ElMessage.warning('加载历史失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   }
   finally { nlHistoryLoading.value = false }
 }
@@ -894,7 +898,17 @@ async function exportVotesCsv() {
   try {
     // 获取完整投票记录（不限条数）
     const r = await getVoteRecords({ limit: 500 })
+    // T1: 后端 500 / data 异常时给出明确错误, 不静默
+    if (!r) {
+      throw new Error('后端无响应 (返回 null)')
+    }
+    if (r.code && r.code !== 0 && r.code !== 200) {
+      throw new Error(r.message || `后端返回错误码: ${r.code}`)
+    }
     const records = r.data?.records || r.data?.list || r.data || []
+    if (!Array.isArray(records) || records.length === 0) {
+      ElMessage.warning('后端未返回任何投票记录, 仅导出表头')
+    }
 
     const rows = []
     // CSV 表头
@@ -928,7 +942,9 @@ async function exportVotesCsv() {
     URL.revokeObjectURL(url)
     ElMessage.success(`已导出 ${records.length} 条投票记录`)
   } catch (e) {
-    ElMessage.error('导出失败：' + (e.message || ''))
+    // T1: 失败时显式提示, 不静默
+    console.error('[exportVotesCsv] 导出失败:', e)
+    ElMessage.error('投票 CSV 导出失败: ' + (e?.response?.data?.message || e.message || '网络错误'))
   } finally {
     exportingVotes.value = false
   }
@@ -1010,7 +1026,7 @@ async function onRevote(vote) {
     await loadVoteStats()
     await loadVoteTrend()
   } catch (e) {
-    ElMessage.error('重新投票失败：' + (e.message || ''))
+    ElMessage.error('重新投票失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   }
 }
 

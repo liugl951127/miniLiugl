@@ -128,7 +128,6 @@ function loadDraft() {
     try {
       savedDraft.value = JSON.parse(saved)
       editForm.value = { ...editForm.value, ...savedDraft.value }
-      console.log('[EntityDrawer] 草稿已恢复:', getDraftKey())
     } catch (e) {
       console.warn('[EntityDrawer] 草稿数据损坏:', e)
     }

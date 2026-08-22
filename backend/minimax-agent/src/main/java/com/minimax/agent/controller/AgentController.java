@@ -235,6 +235,22 @@ public class AgentController {
         return Result.ok(agentTaskMapper.selectList(qw));
     }
 
+    @Operation(summary = "T1: 删除 Agent 历史记录 (V6.8.2 鉴权: 只能删自己的)")
+    @DeleteMapping("/history/{id}")
+    public Result<Boolean> deleteAgentHistory(@PathVariable Long id,
+                                              @AuthenticationPrincipal AuthenticatedUser user) {
+        if (user == null) throw new SecurityException("需要登录");
+        AgentTask task = agentTaskMapper.selectById(id);
+        if (task == null) {
+            return Result.fail(404, "历史记录不存在");
+        }
+        if (!user.id().equals(task.getUserId())) {
+            return Result.fail(403, "无权删除此历史记录");
+        }
+        int rows = agentTaskMapper.deleteById(id);
+        return Result.ok(rows > 0);
+    }
+
     // ---------- 知识图谱 ----------
 
     @Operation(summary = "创建/更新实体 (V6.8.2 鉴权)")

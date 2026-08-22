@@ -1,15 +1,15 @@
 package com.minimax.auth.controller;
 
+import com.minimax.auth.dto.NotificationSettingsRequest;
 import com.minimax.auth.entity.NotificationSettings;
 import com.minimax.auth.service.NotificationSettingsService;
 import com.minimax.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 /**
  * 通知设置 Controller (T1-backend-apis / P0)
@@ -42,11 +42,9 @@ public class NotificationSettingsController {
     @Operation(summary = "保存当前用户的通知设置 (upsert by X-User-Id)")
     @PutMapping
     public Result<NotificationSettings> save(@RequestHeader(value = "X-User-Id", required = false) Long userId,
-                                              @RequestBody Map<String, Object> body) {
-        String channels = (String) body.get("channels");
-        String events = (String) body.get("events");
-        String quietStart = (String) body.get("quietStart");
-        String quietEnd = (String) body.get("quietEnd");
-        return Result.ok(settingsService.save(userId, channels, events, quietStart, quietEnd));
+                                              @Valid @RequestBody NotificationSettingsRequest req) {
+        return Result.ok(settingsService.save(
+                userId, req.getChannels(), req.getEvents(),
+                req.getQuietStart(), req.getQuietEnd()));
     }
 }

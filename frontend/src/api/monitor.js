@@ -20,32 +20,25 @@ import http from './http'
 // ==================== 监控基础 ====================
 
 export const getMonitorInfo = () => {
-  console.log('%c[MONITOR API] getMonitorInfo', 'color: #409eff', '')
   return http.get('/monitor/info');
 }
 export const getMonitorHealth = () => {
-  console.log('%c[MONITOR API] getMonitorHealth', 'color: #409eff', '')
   return http.get('/monitor/health');
 }
 export const getJvmHealth = () => {
-  console.log('%c[MONITOR API] getJvmHealth', 'color: #409eff', '')
   return http.get('/monitor/health/jvm');
 }
 export const getDbHealth = () => {
-  console.log('%c[MONITOR API] getDbHealth', 'color: #409eff', '')
   return http.get('/monitor/health/database');
 }
 export const getDiskHealth = () => {
-  console.log('%c[MONITOR API] getDiskHealth', 'color: #409eff', '')
   return http.get('/monitor/health/disk');
 }
 
 export const getMetrics = () => {
-  console.log('%c[MONITOR API] getMetrics', 'color: #409eff', '')
   return http.get('/monitor/metrics');
 }
 export const getMetricsSnapshot = () => {
-  console.log('%c[MONITOR API] getMetricsSnapshot', 'color: #409eff', '')
   return http.get('/monitor/metrics/snapshot');
 }
 
@@ -53,25 +46,21 @@ export const getMetricsSnapshot = () => {
 
 /** 触发中的告警 */
 export const getFiringAlerts = () => {
-  console.log('%c[MONITOR API] getFiringAlerts', 'color: #409eff', '')
   return http.get('/monitor/alerts/firing');
 }
 
 /** 告警摘要 */
 export const getAlertSummary = () => {
-  console.log('%c[MONITOR API] getAlertSummary', 'color: #409eff', '')
   return http.get('/monitor/alerts/summary');
 }
 
 /** 告警规则列表 */
 export const listAlertRules = () => {
-  console.log('%c[MONITOR API] listAlertRules', 'color: #409eff', '')
   return http.get('/monitor/alerts/rules');
 }
 
 /** 创建告警规则 */
 export const createAlertRule = (rule) => {
-  console.log('%c[MONITOR API] createAlertRule', 'color: #409eff', rule)
   return http.post('/monitor/alerts/rules', rule);
 }
 
@@ -122,7 +111,6 @@ export const unsilenceRule = (id) =>
 
 /** 通知渠道列表 */
 export const listAlertChannels = () => {
-  console.log('%c[MONITOR API] listAlertChannels', 'color: #409eff', '')
   return http.get('/monitor/alerts/channels');
 }
 
@@ -131,7 +119,6 @@ export const getAlertChannel = (id) => http.get(`/monitor/alerts/channels/${id}`
 
 /** 创建通知渠道 */
 export const createAlertChannel = (channel) => {
-  console.log('%c[MONITOR API] createAlertChannel', 'color: #409eff', channel)
   return http.post('/monitor/alerts/channels', channel);
 }
 
@@ -220,7 +207,6 @@ export const rcaAnalysis = (alertId, context) => http.post(`/monitor/alerts/${al
 
 /** 手动触发异常检测 (Day 33 修: 加 /api/v1 前缀) */
 export const anomalyDetect = (params) => {
-  console.log('%c[MONITOR API] anomalyDetect', 'color: #409eff', params)
   return http.post('/monitor/anomaly/detect', params);
 }
 
@@ -229,7 +215,6 @@ export const anomalySummary = (params) => http.get('/monitor/anomaly/summary', {
 
 /** 活跃异常检测指标 (Day 33 修: 加 /api/v1 前缀) */
 export const activeAnomalyMetrics = () => {
-  console.log('%c[MONITOR API] activeAnomalyMetrics', 'color: #409eff', '')
   return http.get('/monitor/anomaly/active-metrics');
 }
 
@@ -239,24 +224,20 @@ export const activeAnomalyMetrics = () => {
  * @param {number} [windowDays] 统计窗口(天)，默认 30
  */
 export const getAlertSla = (windowDays) => {
-  console.log('%c[MONITOR API] getAlertSla', 'color: #409eff', { windowDays })
   return http.get('/monitor/alerts/sla', { params: { windowDays } })
 }
 
 /** 告警趋势（按天聚合）Day 44 */
 export const getAlertTrend = (params) => {
-  console.log('%c[MONITOR API] getAlertTrend', 'color: #409eff', params)
   return http.get('/monitor/alerts/trend', { params })
 }
 
 /** 告警统计概览（总数/级别/活跃/Top规则）Day 47 */
 export const getAlertStatistics = (days = 30) => {
-  console.log('%c[MONITOR API] getAlertStatistics', 'color: #409eff', { days })
   return http.get('/monitor/alerts/statistics', { params: { days } })
 }
 
 /** 告警时间序列（按日聚合，ECharts 趋势图用）Day 48 */
 export const getAlertTimeSeries = (days = 30) => {
-  console.log('%c[MONITOR API] getAlertTimeSeries', 'color: #409eff', { days })
   return http.get('/monitor/alerts/timeseries', { params: { days } })
 }

@@ -20,13 +20,11 @@ import http from './http'
 export const listWorkflows = (params) => http.get('/pipeline/workflows', { params })
 export const getWorkflow = (id) => http.get(`/pipeline/workflows/${id}`)
 export const createWorkflow = (data) => {
-  console.log('%c[PIPELINE API] createWorkflow', 'color: #409eff', data)
   return http.post('/pipeline/workflows', data);
 }
 export const updateWorkflow = (id, data) => http.put(`/pipeline/workflows/${id}`, data)
 export const deleteWorkflow = (id) => http.delete(`/pipeline/workflows/${id}`)
 export const validateWorkflow = (data) => {
-  console.log('%c[PIPELINE API] validateWorkflow', 'color: #409eff', data)
   return http.post('/pipeline/workflows/validate', data);
 }
 

@@ -53,7 +53,7 @@
           <el-button size="small" :loading="alertsLoading" @click="loadFiringAlerts">
             <el-icon><Refresh /></el-icon>刷新
           </el-button>
-          <el-button v-if="realtimeAlertCount > 0" size="small" type="primary" @click="realtimeAlertCount = 0">
+          <el-button v-if="realtimeAlertCount > 0" size="small" type="primary" :loading="ackingNewAlerts" @click="clearRealtimeAlerts">
             清除 ({{ realtimeAlertCount }}) 条新告警
           </el-button>
         </div>
@@ -681,6 +681,45 @@ const alertsEmptyText = computed(() => {
 const streamConnected = ref(false)
 let eventSource = null
 const realtimeAlertCount = ref(0)
+const ackingNewAlerts = ref(false)
+
+/** T1: 清除"新告警"标记 — 批量 ack 列表中仍处于 firing 状态的前 N 条新告警 */
+async function clearRealtimeAlerts() {
+  if (ackingNewAlerts.value) return
+  const count = realtimeAlertCount.value
+  if (!count) {
+    ElMessage.info('暂无新告警需要清除')
+    return
+  }
+  ackingNewAlerts.value = true
+  let acked = 0
+  let failed = 0
+  try {
+    // 仅对列表中仍处于 firing 状态且没有 acknowledgedAt 的告警发起 ack
+    const targets = alerts.value
+      .filter(a => (a.status === 'firing' || a.status === 'FIRING') && !a.acknowledgedAt && a.id)
+      .slice(0, count)
+    for (const a of targets) {
+      try {
+        await acknowledgeAlert(a.id, '由前端"清除新告警"按钮批量确认')
+        acked++
+      } catch (e) {
+        failed++
+        console.warn('[monitor] ack 告警失败:', a.id, e)
+      }
+    }
+    realtimeAlertCount.value = 0
+    if (acked > 0) {
+      ElMessage.success(`已确认 ${acked} 条新告警${failed ? `，${failed} 条失败` : ''}`)
+      // 重新拉取以反映新状态
+      loadFiringAlerts()
+    } else if (failed > 0) {
+      ElMessage.warning(`确认失败: ${failed} 条 (后端无 ack 接口或网络异常)`)
+    }
+  } finally {
+    ackingNewAlerts.value = false
+  }
+}
 
 const detailVisible = ref(false)
 const detailLoading = ref(false)
@@ -814,7 +853,7 @@ async function loadStats() {
     initPieChart(stats.value)
     initBarChart(seriesData)
   } catch (e) {
-    ElMessage.error('加载告警统计失败：' + (e.response?.data?.message || e.message || ''))
+    ElMessage.error('加载告警统计失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
     stats.value = {}
   } finally {
     statsLoading.value = false
@@ -899,7 +938,7 @@ async function loadSla() {
     sla.value = r.data || {}
     sla.value.grade = sla.value.slaGrade
   } catch (e) {
-    ElMessage.warning('加载 SLA 数据失败：' + (e.response?.data?.message || e.message || ''))
+    ElMessage.warning('加载 SLA 数据失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
   } finally {
     slaLoading.value = false
   }
@@ -1125,10 +1164,14 @@ function formatTime(ts) {
 // P1-5: JVM堆内存趋势图
 async function initJvmChart() {
   if (!jvmChartRef.value) return
-  const echarts = await import('echarts')
-  if (jvmChart) jvmChart.dispose()
-  jvmChart = echarts.init(jvmChartRef.value)
-  updateJvmChart()
+  try {
+    const echarts = await import('echarts')
+    if (jvmChart) jvmChart.dispose()
+    jvmChart = echarts.init(jvmChartRef.value)
+    updateJvmChart()
+  } catch (e) {
+    ElMessage.error('初始化 JVM 图表失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
+  }
 }
 
 function updateJvmChart() {

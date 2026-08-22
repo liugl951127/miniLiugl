@@ -2,14 +2,17 @@ package com.minimax.pipeline.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.minimax.common.result.Result;
+import com.minimax.pipeline.dto.RuleUpsertRequest;
 import com.minimax.pipeline.entity.RuleDefinition;
 import com.minimax.pipeline.service.RuleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import java.math.BigDecimal;
 
 /**
  * 规则定义 Controller (T1-backend-apis / P0)
@@ -27,6 +30,7 @@ import java.util.Map;
  *
  * @since V7.2
  */
+@Slf4j
 @Tag(name = "规则定义 (V7.2 P0)")
 @RestController
 @RequestMapping("/api/v1/rule")
@@ -38,12 +42,10 @@ public class RuleController {
     @Operation(summary = "创建规则")
     @PostMapping
     public Result<Long> create(@RequestHeader(value = "X-User-Id", required = false) Long userId,
-                                @RequestBody Map<String, Object> body) {
-        String name = (String) body.get("name");
-        String json = (String) body.get("json");
-        String scope = (String) body.get("scope");
-        Integer enabled = toInt(body.get("enabled"));
-        return Result.ok(ruleService.create(name, json, scope, enabled, userId));
+                                @Valid @RequestBody RuleUpsertRequest req) {
+        return Result.ok(ruleService.create(
+                req.getName(), req.getJson(), req.getScope(),
+                req.getEnabled(), userId));
     }
 
     @Operation(summary = "规则列表 (分页)")
@@ -60,16 +62,14 @@ public class RuleController {
         return Result.ok(ruleService.getById(id));
     }
 
-    @Operation(summary = "更新规则")
+    @Operation(summary = "更新规则 (部分字段允许为 null 表示不更新)")
     @PutMapping("/{id}")
     public Result<Void> update(@PathVariable Long id,
                                 @RequestHeader(value = "X-User-Id", required = false) Long userId,
-                                @RequestBody Map<String, Object> body) {
-        String name = (String) body.get("name");
-        String json = (String) body.get("json");
-        String scope = (String) body.get("scope");
-        Integer enabled = toInt(body.get("enabled"));
-        ruleService.update(id, name, json, scope, enabled, userId);
+                                @Valid @RequestBody RuleUpsertRequest req) {
+        ruleService.update(
+                id, req.getName(), req.getJson(), req.getScope(),
+                req.getEnabled(), userId);
         return Result.ok();
     }
 
@@ -81,10 +81,36 @@ public class RuleController {
         return Result.ok();
     }
 
+    /**
+     * 把任意对象转 Integer, 容错: 解析失败时打 log.warn 而不是静默吞错
+     * (T3-new-code-robustness: 替换原 catch (Exception e) { return null; })
+     */
+    @SuppressWarnings("unused")
     private static Integer toInt(Object o) {
         if (o == null) return null;
         if (o instanceof Number n) return n.intValue();
         if (o instanceof Boolean b) return b ? 1 : 0;
-        try { return Integer.parseInt(o.toString()); } catch (Exception e) { return null; }
+        try {
+            return Integer.parseInt(o.toString());
+        } catch (NumberFormatException e) {
+            log.warn("[Rule] toInt 解析失败, value={}", o);
+            return null;
+        }
+    }
+
+    /**
+     * 把任意对象转 BigDecimal, 容错: 解析失败时打 log.warn (T3-new-code-robustness)
+     */
+    @SuppressWarnings("unused")
+    private static BigDecimal toBigDecimal(Object o) {
+        if (o == null) return null;
+        if (o instanceof BigDecimal b) return b;
+        if (o instanceof Number n) return new BigDecimal(n.toString());
+        try {
+            return new BigDecimal(o.toString());
+        } catch (NumberFormatException e) {
+            log.warn("[Rule] toBigDecimal 解析失败, value={}", o);
+            return null;
+        }
     }
 }

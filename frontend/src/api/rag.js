@@ -169,12 +169,10 @@ export const exportDocs = (ownerId, docIds, format = 'txt') => {
 
 // 检索 + 问答
 export const retrieve = (body) => {
-  console.log('%c[RAG API] retrieve', 'color: #409eff', body)
   return http.post('/rag/retrieve', body);
 }
 
 export const ask = (body) => {
-  console.log('%c[RAG API] ask', 'color: #409eff', body)
   return http.post('/rag/ask', body);
 }
 
