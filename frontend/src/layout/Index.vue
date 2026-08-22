@@ -220,6 +220,7 @@ const menuGroups = computed(() => {
       children: [
         { label: '任务编排', path: '/agent', icon: 'MagicStick' },
         { label: '智能体群', path: '/agent-auto', icon: 'Grid' },
+        { label: '群编排', path: '/agent/group-designer', icon: 'Connection' },
         { label: '模型管理', path: '/model', icon: 'Cpu' },
       ]
     },

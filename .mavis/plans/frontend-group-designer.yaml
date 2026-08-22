@@ -1,0 +1,158 @@
+version: 1
+plan:
+  name: "前端 AgentGroup Designer (T2)"
+  max_concurrency: 1
+  max_consecutive_failures: 3
+  max_cycles: 5
+  auto_accept: false
+  auto_reject_retries: 0
+
+tasks:
+  - id: T1-designer
+    title: "前端 GroupDesigner 拖拽 + 流式运行 + 路由 + 侧边栏"
+    assigned_to: general
+    role: produce
+    verified_by: explore
+    depends_on: []
+    timeout_ms: 1800000
+    max_retries: 1
+    prompt: |
+      后端已经完成 (commit 1546a3e), 现在做前端 GroupDesigner。
+
+      ## 1. API 文件 (新建)
+      /workspace/miniLiugl/frontend/src/api/agentGroup.js:
+      ```js
+      import http from './http'
+
+      const PREFIX = '/agent-group'
+      const USER_ID = () => localStorage.getItem('userId') || '1'
+
+      export const agentGroupApi = {
+        listGroups: () => http.get(`${PREFIX}/list`).catch(() => [{ id: 1, name: '默认群' }]),
+        listMembers: (groupId) => http.get(`${PREFIX}/${groupId}/members`),
+        addMember: (groupId, data) => http.post(`${PREFIX}/${groupId}/members`, data),
+        updateMember: (groupId, memberId, data) => http.put(`${PREFIX}/${groupId}/members/${memberId}`, data),
+        removeMember: (groupId, memberId) => http.delete(`${PREFIX}/${groupId}/members/${memberId}`),
+        reorder: (groupId, order) => http.put(`${PREFIX}/${groupId}/members/reorder`, order),
+        getStrategies: () => http.get(`${PREFIX}/strategies`),
+        // SSE 流式
+        runStream: (groupId, body) => {
+          const url = `/api/v1/agent-group/${groupId}/run`
+          return fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-User-Id': USER_ID() },
+            body: JSON.stringify(body)
+          })
+        }
+      }
+      ```
+
+      ## 2. 页面 (新建)
+      /workspace/miniLiugl/frontend/src/views/agent/GroupDesigner.vue:
+      完整可运行页面:
+      - 顶部行:
+        - 群下拉 (el-select v-model="currentGroupId", options: [{id: 1, name: '默认群'}])
+        - 策略选择 (el-radio-group v-model="strategy", options: PIPELINE/PARALLEL/DEBATE)
+        - 加载成员按钮 → agentGroupApi.listMembers
+        - 保存全部按钮 → 调 addMember/updateMember/removeMember 按差异
+      - 左侧 候选池 (el-card "可用智能体"):
+        - 硬编码 5-8 个示例 agent (或调 /api/v1/agent/list):
+          - code/displayName/description/avatar/icon
+        - 拖入右侧
+      - 右侧 成员区 (el-card "群成员 (按顺序执行)"):
+        - 显示当前群成员, 按 position 排序
+        - 每个成员 card: avatar, displayName, role (el-select: MANAGER/WORKER/CRITIC), position 显示, 删除按钮
+        - HTML5 drag-drop 调整顺序
+      - 底部: 目标输入 (el-input v-model="goal" type="textarea" :rows="2") + 运行按钮
+      - 右侧抽屉 (el-drawer v-model="drawerVisible" size="60%"): 实时运行结果
+        - 每个 step 一个 el-card, 显示 agentCode, role, icon, 进度 (loading), 实时追加 content
+        - 监听 SSE step-start/step-token/step-end/final
+        - "最终结果" 区显示 finalAnswer
+
+      ## 3. SSE 处理 (read SSE in run())
+      ```js
+      async function run() {
+        running.value = true
+        steps.value = []
+        drawerVisible.value = true
+        try {
+          const res = await agentGroupApi.runStream(currentGroupId.value, { goal: goal.value, strategy: strategy.value, tools: [] })
+          if (!res.ok) throw new Error('运行失败: HTTP ' + res.status)
+          const reader = res.body.getReader()
+          const decoder = new TextDecoder()
+          let buf = ''
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            buf += decoder.decode(value, { stream: true })
+            const chunks = buf.split('\n\n')
+            buf = chunks.pop()
+            for (const chunk of chunks) {
+              const ev = {}
+              chunk.split('\n').forEach(l => {
+                if (l.startsWith('event:')) ev.name = l.slice(7).trim()
+                if (l.startsWith('data:')) ev.data = (ev.data || '') + l.slice(6)
+              })
+              if (!ev.name || !ev.data) continue
+              let data; try { data = JSON.parse(ev.data) } catch { continue }
+              if (ev.name === 'step-start') {
+                steps.value.push({ ...data, content: '', status: 'running' })
+              } else if (ev.name === 'step-token') {
+                const s = steps.value.find(x => x.agentCode === data.agentCode)
+                if (s) s.content = (s.content || '') + (data.content || '')
+              } else if (ev.name === 'step-end') {
+                const s = steps.value.find(x => x.agentCode === data.agentCode)
+                if (s) s.status = 'done'
+              } else if (ev.name === 'final') {
+                finalResult.value = data
+                ElMessage.success(data.success ? '执行成功' : '执行失败: ' + (data.error || ''))
+              } else if (ev.name === 'error') {
+                ElMessage.error('运行出错: ' + (data.message || ''))
+              }
+            }
+          }
+        } catch (e) {
+          ElMessage.error('运行失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
+        } finally {
+          running.value = false
+        }
+      }
+      ```
+
+      ## 4. 路由 (src/router/)
+      找到 src/router/index.js (或 src/router/modules/agent.js), 在 agent 路由下加:
+      ```js
+      {
+        path: 'group-designer',
+        name: 'AgentGroupDesigner',
+        component: () => import('@/views/agent/GroupDesigner.vue'),
+        meta: { title: '智能体群编排', icon: 'Connection', roles: ['user', 'admin'] }
+      }
+      ```
+
+      ## 5. 侧边栏菜单
+      找到 src/components/Sidebar.vue 或 src/layouts/SidebarItem.vue, 在智能体分组下加一项:
+      - title: '群编排'
+      - icon: Connection
+      - path: /agent/group-designer
+
+      ## 6. 兜底: 若后端 strategies 端点或 listGroups 不存在
+      - getStrategies 默认返回 [{ value: 'PIPELINE', label: '顺序执行' }, { value: 'PARALLEL', label: '并行执行' }, { value: 'DEBATE', label: '辩论' }]
+      - listGroups 默认返回 [{ id: 1, name: '默认群' }]
+      - 后端若返回 404 就用兜底值
+
+      ## 最后编译:
+      ```bash
+      cd /workspace/miniLiugl/frontend
+      NODE_OPTIONS='--max-old-space-size=2200' npx vite build 2>&1 | tail -20
+      ```
+      必须 ✓ built
+
+    verify_prompt: |
+      验证:
+      1. frontend/src/api/agentGroup.js 存在, 8 个 export (listGroups + 6 个 CRUD + runStream)
+      2. frontend/src/views/agent/GroupDesigner.vue 存在且 200+ 行
+      3. router 加了 /agent/group-designer 路由
+      4. Sidebar 菜单加了 "群编排" 入口
+      5. SSE 处理函数能解析 4 个事件 (step-start/step-token/step-end/final)
+      6. vite build PASS

@@ -44,6 +44,7 @@ const routes = [
       { path: 'agent/training', name: 'AgentTraining', redirect: to => ({ path: '/agent', query: { tab: 'training' } }) },
       { path: 'agent/approval', name: 'AgentApproval', redirect: to => ({ path: '/agent', query: { tab: 'approval' } }) },
       { path: 'agent-auto', name: 'AgentAuto', component: () => import('@/views/agent/Auto.vue'), meta: { title: '智能体群生成', icon: 'MagicStick' } },
+      { path: 'agent/group-designer', name: 'AgentGroupDesigner', component: () => import('@/views/agent/GroupDesigner.vue'), meta: { title: '智能体群编排', icon: 'Connection', roles: ['user', 'admin'] } },
 
       // ── 模型与服务 ──
       { path: 'model', name: 'Model', component: () => import('@/views/model/Index.vue'), meta: { title: '模型管理' } },
