@@ -636,8 +636,14 @@ async function toggleTenant(row) {
 const sysSettings = ref({ siteName: 'Liugl-AI', maintenance: false, allowRegister: true, defaultModel: 'minimax-01' })
 
 async function saveSysSettings() {
-  // TODO: 后端尚无 /system/settings 接口，暂存本地
-  ElMessage.success('设置已保存（本地暂存）')
+  // V7.2: 后端尚未提供 /system/settings 持久化接口，配置仅保存在浏览器本地
+  // 如需云端同步，可联系后端实现此接口 (建议路径: minimax-system 模块)
+  try {
+    localStorage.setItem('sysSettings', JSON.stringify(sysSettings.value))
+    ElMessage.success('系统设置已保存（仅本地生效）')
+  } catch (e) {
+    ElMessage.error('保存失败：' + (e?.message || e))
+  }
 }
 
 // ════════════════════════════════════

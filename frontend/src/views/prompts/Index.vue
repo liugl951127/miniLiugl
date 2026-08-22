@@ -1,10 +1,10 @@
 <!-- @file prompts/Index.vue - Prompt 模板中心 V6.8.12 -->
 <template>
-  <div class="page-card">
+  <div class="page-card" v-loading="loading && firstLoad">
     <div class="page-header">
       <h2>💬 Prompt 模板中心</h2>
       <div style="display:flex;gap:8px">
-        <el-button size="small" @click="loadPrompts">
+        <el-button size="small" @click="loadPrompts" :loading="loading">
           <el-icon><Refresh /></el-icon>刷新
         </el-button>
         <el-button size="small" type="primary" @click="openCreate">
@@ -29,7 +29,7 @@
           </el-select>
         </div>
 
-        <el-table :data="prompts" v-loading="loading" stripe>
+        <el-table :data="prompts" v-loading="loading" stripe empty-text="暂无模板，点击右上角「新建模板」开始">
           <el-table-column type="selection" width="40" />
           <el-table-column prop="name" label="名称" width="150">
             <template #default="{ row }">
@@ -46,7 +46,7 @@
           <el-table-column prop="likes" label="❤" width="60" align="center">
             <template #default="{ row }">{{ row.likes || 0 }}</template>
           </el-table-column>
-          <el-table-column label="操作" width="160" align="center">
+          <el-table-column label="操作" width="200" align="center">
             <template #default="{ row }">
               <el-button size="small" link type="primary" @click="preview(row)">预览</el-button>
               <!-- P2-2: 复制按钮统一 -->
@@ -54,6 +54,7 @@
                 <el-icon><CopyDocument /></el-icon>复制
               </el-button>
               <el-button size="small" link @click="openEdit(row)">编辑</el-button>
+              <el-button size="small" link type="danger" @click="confirmDelete(row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -63,9 +64,7 @@
       <el-col :span="10">
         <el-card title="模板预览" body-style="padding:16px">
           <template #header><span>模板预览 & 测试</span></template>
-          <div v-if="!selectedPrompt" style="text-align:center;color:#909399;padding:40px">
-            点击左侧「预览」查看模板详情
-          </div>
+          <el-empty v-if="!selectedPrompt" description="点击左侧「预览」查看模板详情" :image-size="80" />
           <div v-else>
             <div style="margin-bottom:12px">
               <div style="font-weight:600;font-size:15px">{{ selectedPrompt.name }}</div>
@@ -81,7 +80,7 @@
               <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:#409eff">🔧 变量填写</div>
               <el-form label-width="80px" size="small">
                 <el-form-item v-for="v in templateVars" :key="v" :label="v">
-                  <el-input v-model="varValues[v]" :placeholder="`输入 ${v}`" />
+                  <el-input v-model="varValues[v]" :placeholder="`输入 ${v}`" clearable />
                 </el-form-item>
               </el-form>
             </div>
@@ -94,14 +93,17 @@
 
             <!-- 渲染后预览 -->
             <div v-if="templateVars.length" style="margin-bottom:12px">
-              <div style="font-size:12px;font-weight:600;margin-bottom:6px">👁 渲染预览</div>
+              <div style="font-size:12px;font-weight:600;margin-bottom:6px">👁 渲染预览 ({{ filledVarCount }}/{{ templateVars.length }})</div>
               <div class="rendered-preview">{{ renderTemplate() }}</div>
             </div>
 
-            <div style="display:flex;gap:8px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
               <!-- P2-2: 复制按钮统一 -->
-              <el-button type="primary" size="small" @click="usePrompt(selectedPrompt)">
+              <el-button type="primary" size="small" :loading="copying" @click="usePrompt(selectedPrompt)">
                 <el-icon><CopyDocument /></el-icon>复制到剪贴板
+              </el-button>
+              <el-button size="small" @click="copyRendered" :loading="copyingRendered" v-if="templateVars.length">
+                <el-icon><DocumentCopy /></el-icon>复制渲染结果
               </el-button>
               <el-button size="small" @click="openEdit(selectedPrompt)">编辑模板</el-button>
             </div>
@@ -112,24 +114,24 @@
 
     <!-- 新建/编辑弹窗 -->
     <el-dialog v-model="formVisible" :title="form.id ? '编辑模板' : '新建模板'" width="680px" destroy-on-close>
-      <el-form label-width="80px">
-        <el-form-item label="名称" required>
-          <el-input v-model="form.name" placeholder="给模板起个名字" />
+      <el-form ref="formRef" :model="form" :rules="formRules" label-width="80px" @submit.prevent>
+        <el-form-item label="名称" prop="name">
+          <el-input v-model="form.name" placeholder="给模板起个名字" maxlength="100" show-word-limit />
         </el-form-item>
-        <el-form-item label="分类">
+        <el-form-item label="分类" prop="category">
           <el-select v-model="form.category" style="width:100%" allow-create filterable>
             <el-option v-for="c in categories" :key="c" :label="c" :value="c" />
           </el-select>
         </el-form-item>
         <el-form-item label="描述">
-          <el-input v-model="form.description" type="textarea" :rows="2" placeholder="简短描述模板用途…" />
+          <el-input v-model="form.description" type="textarea" :rows="2" placeholder="简短描述模板用途…" maxlength="500" show-word-limit />
         </el-form-item>
         <el-form-item label="标签">
           <el-select v-model="form.tags" multiple style="width:100%" allow-create filterable placeholder="添加标签">
             <el-option v-for="t in allTags" :key="t" :label="t" :value="t" />
           </el-select>
         </el-form-item>
-        <el-form-item label="模板内容" required>
+        <el-form-item label="模板内容" prop="template">
           <el-input v-model="form.template" type="textarea" :rows="10"
             placeholder="使用 {变量名} 占位，例如：帮我分析 {topic} 这个主题，给出 {count} 个关键点。"
             class="template-textarea" />
@@ -151,7 +153,7 @@
       </el-form>
       <template #footer>
         <el-button @click="formVisible = false">取消</el-button>
-        <el-button type="primary" @click="savePrompt">保存</el-button>
+        <el-button type="primary" :loading="saving" @click="savePrompt">保存</el-button>
       </template>
     </el-dialog>
   </div>
@@ -159,13 +161,16 @@
 
 <script setup>
 import { ref, computed, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { promptApi } from '@/api/prompt'
-import { Plus, Refresh, Search, CopyDocument } from '@element-plus/icons-vue'
+import { Plus, Refresh, Search, CopyDocument, DocumentCopy } from '@element-plus/icons-vue'
 
 const prompts = ref([])
 const loading = ref(false)
+const firstLoad = ref(true)
 const formVisible = ref(false)
+const saving = ref(false)
+const formRef = ref(null)
 const form = ref({})
 const selectedPrompt = ref(null)
 const keyword = ref('')
@@ -173,6 +178,8 @@ const filterCategory = ref('')
 const filterTag = ref('')
 const varValues = reactive({})
 const allTags = ref(['system', 'user', 'assistant', 'few-shot', 'chain-of-thought', 'role-play'])
+const copying = ref(false)
+const copyingRendered = ref(false)
 
 const categories = ['通用', '代码', '写作', '分析', '客服', 'RAG', '教育', '办公', '营销', '技术']
 
@@ -181,6 +188,22 @@ const templateVars = computed(() => {
   const matches = t.match(/\{([^}]+)\}/g) || []
   return [...new Set(matches.map(m => m.slice(1, -1)))]
 })
+
+const filledVarCount = computed(() => {
+  return templateVars.value.filter(v => varValues[v]?.trim()).length
+})
+
+const formRules = {
+  name: [
+    { required: true, message: '请输入模板名称', trigger: 'blur' },
+    { min: 2, max: 100, message: '名称长度 2-100 字符', trigger: 'blur' }
+  ],
+  category: [{ required: true, message: '请选择分类', trigger: 'change' }],
+  template: [
+    { required: true, message: '请输入模板内容', trigger: 'blur' },
+    { min: 2, max: 10000, message: '模板长度 2-10000 字符', trigger: 'blur' }
+  ]
+}
 
 function highlightTemplate(t) {
   return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -204,44 +227,123 @@ async function loadPrompts() {
     if (filterCategory.value) params.category = filterCategory.value
     const r = await promptApi.list(params)
     prompts.value = r.data?.list || r.data || []
-  } catch { prompts.value = [] }
-  finally { loading.value = false }
+  } catch (e) {
+    ElMessage.error('加载模板失败: ' + (e.message || ''))
+    prompts.value = []
+  } finally {
+    loading.value = false
+    firstLoad.value = false
+  }
 }
 
 function openCreate() {
   form.value = { category: '通用', tags: [], public: false, model: '' }
   formVisible.value = true
+  formRef.value?.clearValidate()
 }
 
 function openEdit(row) {
-  form.value = { ...row }
+  form.value = { ...row, tags: row.tags || [], public: !!row.public }
   formVisible.value = true
+  formRef.value?.clearValidate()
 }
 
 function preview(row) {
   selectedPrompt.value = row
+  // 清空变量值
   Object.keys(varValues).forEach(k => delete varValues[k])
 }
 
 async function savePrompt() {
-  if (!form.value.name?.trim()) { ElMessage.warning('请填写模板名称'); return }
-  if (!form.value.template?.trim()) { ElMessage.warning('请填写模板内容'); return }
-  try {
-    if (form.value.id) {
-      await promptApi.update(form.value.id, form.value)
-    } else {
-      await promptApi.create(form.value)
+  if (!formRef.value) return
+  await formRef.value.validate(async (valid) => {
+    if (!valid) return
+    saving.value = true
+    try {
+      if (form.value.id) {
+        await promptApi.update(form.value.id, form.value)
+        ElMessage.success('模板已更新')
+      } else {
+        await promptApi.create(form.value)
+        ElMessage.success('模板已创建')
+      }
+      formVisible.value = false
+      await loadPrompts()
+    } catch (e) {
+      ElMessage.error('保存失败：' + (e.message || ''))
+    } finally {
+      saving.value = false
     }
-    ElMessage.success('保存成功')
-    formVisible.value = false
-    loadPrompts()
-  } catch (e) { ElMessage.error('保存失败：' + (e.message || '')) }
+  })
 }
 
-function usePrompt(p) {
+async function confirmDelete(row) {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除模板「${row.name}」吗？此操作不可恢复。`,
+      '删除确认',
+      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
+    )
+  } catch { return }
+  try {
+    await promptApi.remove(row.id)
+    ElMessage.success('模板已删除')
+    if (selectedPrompt.value?.id === row.id) selectedPrompt.value = null
+    await loadPrompts()
+  } catch (e) {
+    ElMessage.error('删除失败: ' + (e.message || ''))
+  }
+}
+
+async function usePrompt(p) {
+  if (!p) return
   const content = p.template || ''
-  navigator.clipboard.writeText(content)
-  ElMessage.success('已复制')
+  copying.value = true
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(content)
+    } else {
+      const textarea = document.createElement('textarea')
+      textarea.value = content
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+    }
+    // 调用后端 use 计数接口
+    if (p.id) promptApi.use(p.id).catch(() => {})
+    ElMessage.success('已复制到剪贴板')
+  } catch (e) {
+    ElMessage.error('复制失败: ' + (e.message || '浏览器不支持剪贴板'))
+  } finally {
+    copying.value = false
+  }
+}
+
+async function copyRendered() {
+  const content = renderTemplate()
+  copyingRendered.value = true
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(content)
+    } else {
+      const textarea = document.createElement('textarea')
+      textarea.value = content
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+    }
+    ElMessage.success('渲染结果已复制')
+  } catch (e) {
+    ElMessage.error('复制失败: ' + (e.message || ''))
+  } finally {
+    copyingRendered.value = false
+  }
 }
 
 onMounted(loadPrompts)

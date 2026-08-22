@@ -1,4 +1,4 @@
-<!-- @file function/Index.vue - Function 工具 V6.8 -->
+<!-- @file function/Index.vue - Function 工具 V6.8.20 -->
 <template>
   <div class="page-card">
     <div class="page-header">
@@ -30,6 +30,16 @@
       </el-table-column>
     </el-table>
 
+    <!-- 空状态 -->
+    <el-empty
+      v-if="!loading && !tools.length"
+      description="暂无可用工具"
+      :image-size="100"
+      style="padding: 40px 0"
+    >
+      <el-button type="primary" @click="showCreate = true">注册第一个工具</el-button>
+    </el-empty>
+
     <!-- 测试弹窗 -->
     <el-dialog v-model="testVisible" :title="'测试: ' + testTool_.name" width="560px">
       <el-form label-width="80px">
@@ -51,7 +61,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { functionApi } from '@/api/function'
 import { Plus } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'
@@ -72,32 +82,70 @@ function riskType(r) {
 
 async function loadTools() {
   loading.value = true
-  try { tools.value = ((await functionApi.listTools())).data || [] }
-  catch { tools.value = [] }
-  finally { loading.value = false }
+  try {
+    const r = await functionApi.listTools()
+    tools.value = r.data || []
+  } catch (e) {
+    tools.value = []
+    ElMessage.error('加载工具列表失败：' + (e?.message || '网络错误'))
+  } finally {
+    loading.value = false
+  }
 }
 
-function testToolDialog(t) { testTool_.value = t; testParams.value = '{}'; testResult.value = ''; testVisible.value = true }
+function testToolDialog(t) {
+  testTool_.value = t
+  testParams.value = '{}'
+  testResult.value = ''
+  testVisible.value = true
+}
 
 async function runTest() {
   testing.value = true
+  testResult.value = ''
   try {
-    const args = JSON.parse(testParams.value)
+    // 验证 JSON 格式
+    let args
+    try {
+      args = JSON.parse(testParams.value)
+    } catch (parseErr) {
+      ElMessage.error('参数 JSON 格式错误：' + parseErr.message)
+      testResult.value = '❌ 参数解析失败：' + parseErr.message
+      return
+    }
     const r = await functionApi.invoke(testTool_.value.name, args)
     testResult.value = JSON.stringify(r.data || r, null, 2)
-  } catch (e) { testResult.value = '错误: ' + (e.message || '') }
-  finally { testing.value = false }
+    ElMessage.success('测试调用成功')
+  } catch (e) {
+    const errMsg = '错误: ' + (e.message || e)
+    testResult.value = errMsg
+    ElMessage.error('测试失败：' + (e.message || '未知错误'))
+  } finally {
+    testing.value = false
+  }
 }
 
 async function doToggleTool(t) {
+  const action = t.enabled ? '禁用' : '启用'
+  try {
+    await ElMessageBox.confirm(
+      `确定要${action}工具「${t.name}」吗？`,
+      `${action}工具`,
+      { confirmButtonText: `确认${action}`, cancelButtonText: '取消', type: 'warning' }
+    )
+  } catch (e) {
+    if (e === 'cancel' || e?.toString?.().includes('cancel')) return
+    ElMessage.error('操作失败：' + (e?.message || '网络错误'))
+    return
+  }
   const ownerId = userStore.profile?.id || userStore.userInfo?.id
   if (!ownerId) { ElMessage.warning('无法获取用户ID'); return }
   try {
     await functionApi.updateTool(t.id, { ownerId, enabled: !t.enabled })
     t.enabled = !t.enabled
     ElMessage.success(t.enabled ? '已启用' : '已禁用')
-  } catch {
-    ElMessage.error('操作失败')
+  } catch (e) {
+    ElMessage.error(`${action}失败：` + (e?.message || '网络错误'))
   }
 }
 

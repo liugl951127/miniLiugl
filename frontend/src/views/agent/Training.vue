@@ -51,10 +51,10 @@
             <span style="color:#909399;font-size:12px">{{ row.message || '-' }}</span>
           </template>
         </el-table-column>
+        <template #empty>
+          <el-empty description="暂无训练任务" :image-size="80" style="padding:24px 0" />
+        </template>
       </el-table>
-      <div v-if="!loading && !taskList.length" style="padding:32px;text-align:center;color:#909399">
-        暂无训练任务
-      </div>
     </el-card>
 
     <!-- 训练曲线 -->
@@ -66,6 +66,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { ElMessage } from 'element-plus'
 import { trainingApi } from '@/api/agent'
 import { Refresh } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
@@ -103,7 +104,10 @@ async function loadMetrics() {
 
     // 渲染准确率曲线（从已完成任务的历史中提取）
     renderChart(list.filter(t => t.status === 'completed').slice(-10))
-  } catch { taskList.value = [] }
+  } catch (e) {
+    taskList.value = []
+    ElMessage.error('加载训练指标失败：' + (e?.message || '网络错误'))
+  }
   finally { loading.value = false }
 }
 

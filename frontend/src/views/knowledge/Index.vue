@@ -23,10 +23,10 @@
         </el-form>
 
         <!-- 知识库列表 -->
-        <el-table :data="kbs" v-loading="loading" stripe>
+        <el-table :data="kbs" v-loading="loading" stripe empty-text="暂无知识库，点击右上角「新建知识库」开始">
           <el-table-column prop="id" label="ID" width="80" />
-          <el-table-column prop="name" label="名称" />
-          <el-table-column prop="description" label="描述" show-overflow-tooltip />
+          <el-table-column prop="name" label="名称" min-width="160" show-overflow-tooltip />
+          <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
           <el-table-column prop="docCount" label="文档数" width="100" align="center">
             <template #default="{ row }"><span>{{ row.docCount || 0 }}</span></template>
           </el-table-column>
@@ -37,20 +37,27 @@
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="220" align="center">
+          <el-table-column label="操作" width="240" align="center" fixed="right">
             <template #default="{ row }">
               <el-tooltip content="查看该知识库下的所有文档，可上传新文档" placement="top">
                 <el-button size="small" @click="viewDocs(row)">文档</el-button>
               </el-tooltip>
               <el-tooltip content="修改知识库名称、描述或向量模型配置" placement="top">
-                <el-button size="small" type="primary" @click="editKb(row)">编辑</el-button>
+                <el-button size="small" type="primary" :loading="editingKbId === row.id" @click="editKb(row)">编辑</el-button>
               </el-tooltip>
               <el-tooltip content="删除知识库将同时删除所有文档，此操作不可恢复" placement="top">
-                <el-button size="small" type="danger" @click="confirmDeleteKb(row)">删除</el-button>
+                <el-button size="small" type="danger" :loading="deletingKbId === row.id" @click="confirmDeleteKb(row)">删除</el-button>
               </el-tooltip>
             </template>
           </el-table-column>
         </el-table>
+
+        <el-empty
+          v-if="!loading && kbs.length === 0"
+          description="还没有知识库，点击右上角「新建知识库」开始"
+          :image-size="80"
+          style="margin-top:24px"
+        />
 
         <el-pagination
           v-model:current-page="page"
@@ -374,14 +381,14 @@
 
     <!-- ==================== 新建/编辑知识库弹窗 ==================== -->
     <el-dialog v-model="formVisible" :title="formMode === 'create' ? '新建知识库' : '编辑知识库'" width="500px" destroy-on-close>
-      <el-form :model="form" label-width="90px" size="default">
-        <el-form-item label="名称" required>
-          <el-input v-model="form.name" placeholder="输入知识库名称" maxlength="50" show-word-limit />
+      <el-form ref="kbFormRef" :model="form" :rules="kbFormRules" label-width="90px" size="default" @submit.prevent>
+        <el-form-item label="名称" prop="name">
+          <el-input v-model="form.name" placeholder="输入知识库名称" maxlength="50" show-word-limit clearable />
         </el-form-item>
-        <el-form-item label="描述">
+        <el-form-item label="描述" prop="description">
           <el-input v-model="form.description" type="textarea" :rows="3" placeholder="简要描述知识库的用途" maxlength="200" show-word-limit />
         </el-form-item>
-        <el-form-item label="向量模型">
+        <el-form-item label="向量模型" prop="embeddingModel">
           <el-select v-model="form.embeddingModel" style="width:100%">
             <el-option label="bge-large-zh（推荐）" value="bge-large-zh" />
             <el-option label="text-embedding-ada-002" value="ada-002" />
@@ -811,6 +818,21 @@ const formVisible = ref(false)
 const formMode = ref('create') // 'create' | 'edit'
 const currentKb = ref(null)
 const form = ref({ name: '', description: '', embeddingModel: 'bge-large-zh' })
+const kbFormRef = ref(null)
+const editingKbId = ref(null)
+const deletingKbId = ref(null)
+const kbFormRules = {
+  name: [
+    { required: true, message: '请输入知识库名称', trigger: 'blur' },
+    { min: 1, max: 50, message: '名称长度应在 1-50 个字符', trigger: 'blur' }
+  ],
+  description: [
+    { max: 200, message: '描述不能超过 200 个字符', trigger: 'blur' }
+  ],
+  embeddingModel: [
+    { required: true, message: '请选择向量模型', trigger: 'change' }
+  ]
+}
 
 // ========== 文档抽屉 ==========
 const docsDrawer = ref(false)
@@ -1108,10 +1130,13 @@ function openCreateKb() {
   form.value = { name: '', description: '', embeddingModel: 'bge-large-zh' }
   formMode.value = 'create'
   formVisible.value = true
+  // 清除上次的校验状态
+  setTimeout(() => kbFormRef.value?.clearValidate(), 0)
 }
 
 function editKb(kb) {
   currentKb.value = kb
+  editingKbId.value = kb.id
   form.value = {
     name: kb.name,
     description: kb.description || '',
@@ -1119,11 +1144,19 @@ function editKb(kb) {
   }
   formMode.value = 'edit'
   formVisible.value = true
+  setTimeout(() => kbFormRef.value?.clearValidate(), 0)
 }
 
 async function saveKb() {
-  if (!form.value.name.trim()) {
-    ElMessage.warning('请输入知识库名称')
+  // 表单校验
+  if (!kbFormRef.value) {
+    ElMessage.warning('表单未就绪')
+    return
+  }
+  try {
+    await kbFormRef.value.validate()
+  } catch (_) {
+    ElMessage.warning('请检查表单填写')
     return
   }
   saving.value = true
@@ -1141,6 +1174,7 @@ async function saveKb() {
     ElMessage.error('保存失败：' + (e.message || ''))
   } finally {
     saving.value = false
+    editingKbId.value = null
   }
 }
 
@@ -1149,13 +1183,20 @@ async function confirmDeleteKb(kb) {
     await ElMessageBox.confirm(
       `确认删除知识库「${kb.name}」？此操作不可恢复，关联的所有文档将被一并删除。`,
       '删除确认',
-      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
+      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消', confirmButtonClass: 'el-button--danger' }
     )
+  } catch (_) {
+    return // 用户取消
+  }
+  deletingKbId.value = kb.id
+  try {
     await deleteKb(kb.id, userId.value)
     ElMessage.success('已删除')
     loadKbs()
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error('删除失败')
+    ElMessage.error('删除失败：' + (e?.message || '未知错误'))
+  } finally {
+    deletingKbId.value = null
   }
 }
 
@@ -1183,17 +1224,21 @@ async function refreshDocs() {
 async function confirmDeleteDoc(doc) {
   try {
     await ElMessageBox.confirm(
-      `确认删除文档「${doc.name}」？`,
+      `确认删除文档「${doc.name}」？此操作不可恢复。`,
       '删除确认',
-      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
+      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消', confirmButtonClass: 'el-button--danger' }
     )
+  } catch (_) {
+    return // 用户取消
+  }
+  try {
     await deleteDoc(doc.id, userId.value)
     ElMessage.success('文档已删除')
     refreshDocs()
     // 同步刷新知识库列表
     loadKbs()
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error('删除失败')
+    ElMessage.error('删除失败：' + (e?.message || '未知错误'))
   }
 }
 

@@ -14,20 +14,36 @@
     <el-tabs v-model="activeTab" class="mt-4">
       <!-- 待审批 -->
       <el-tab-pane label="⏳ 待审批" name="pending">
-        <CrudTable
-          :table="pendingTable"
-          :columns="columns"
-          @action="onPendingAction"
-        />
+        <div v-loading="pendingTable.loading.value">
+          <CrudTable
+            :table="pendingTable"
+            :columns="columns"
+            @action="onPendingAction"
+          />
+          <el-empty
+            v-if="!pendingTable.loading.value && !(pendingTable.data.value || []).length"
+            description="暂无待审批请求"
+            :image-size="100"
+            style="padding: 32px 0"
+          />
+        </div>
       </el-tab-pane>
 
       <!-- 审批历史 -->
       <el-tab-pane label="📋 审批历史" name="history">
-        <CrudTable
-          :table="historyTable"
-          :columns="historyColumns"
-          @action="onHistoryAction"
-        />
+        <div v-loading="historyTable.loading.value">
+          <CrudTable
+            :table="historyTable"
+            :columns="historyColumns"
+            @action="onHistoryAction"
+          />
+          <el-empty
+            v-if="!historyTable.loading.value && !(historyTable.data.value || []).length"
+            description="暂无审批历史"
+            :image-size="100"
+            style="padding: 32px 0"
+          />
+        </div>
       </el-tab-pane>
     </el-tabs>
 
@@ -148,28 +164,50 @@ function showDetail(row) {
 
 async function handleApprove(row) {
   try {
-    await ElMessageBox.prompt('请输入审批意见（可选）', '审批通过', {
-      confirmButtonText: '确认通过',
-      cancelButtonText: '取消',
-    })
+    // 先弹确认框
+    await ElMessageBox.confirm(
+      `确认批准「${row.toolName}」(${row.riskLevel}) 的执行请求？`,
+      '审批通过',
+      { confirmButtonText: '确认通过', cancelButtonText: '取消', type: 'warning' }
+    )
+  } catch (e) {
+    if (e === 'cancel' || e?.toString?.().includes('cancel')) return
+    return
+  }
+  try {
     await http.post(`/skill-approval/${row.id}/approve`, { reason: '' })
     ElMessage.success('已审批通过')
-    loadPending()
+    await loadPending()
     activeTab.value = 'history'
-  } catch {}
+  } catch (e) {
+    ElMessage.error('审批失败：' + (e?.message || '网络错误'))
+  }
 }
 
 async function handleReject(row) {
+  let reason = ''
   try {
     const { value } = await ElMessageBox.prompt('请输入拒绝理由', '审批拒绝', {
       confirmButtonText: '确认拒绝',
       cancelButtonText: '取消',
       inputType: 'textarea',
     })
-    await http.post(`/skill-approval/${row.id}/reject`, { reason: value || '拒绝执行' })
+    if (!value?.trim()) {
+      ElMessage.warning('请输入拒绝理由')
+      return
+    }
+    reason = value.trim()
+  } catch (e) {
+    if (e === 'cancel' || e?.toString?.().includes('cancel')) return
+    return
+  }
+  try {
+    await http.post(`/skill-approval/${row.id}/reject`, { reason: reason || '拒绝执行' })
     ElMessage.success('已拒绝')
-    loadPending()
-  } catch {}
+    await loadPending()
+  } catch (e) {
+    ElMessage.error('拒绝失败：' + (e?.message || '网络错误'))
+  }
 }
 
 async function loadPending() {

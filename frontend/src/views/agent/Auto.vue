@@ -14,18 +14,22 @@
 
           <el-tabs v-model="mode">
             <el-tab-pane label="💬 一句话生成" name="oneliner">
-              <div class="oneliner-form">
-                <el-input
-                  v-model="oneLiner"
-                  type="textarea"
-                  :rows="3"
-                  placeholder="例如: 写一份季度销售报告、分析竞品对比、做一个代码评审、选最佳投资方案..."
-                />
-                <div class="form-tip">输入任务描述，AI 自动识别意图并匹配合适的 Agent 群模板</div>
-                <el-button type="primary" :loading="generating" @click="doOneLiner" style="margin-top: 12px">
-                  🚀 一句话生成
-                </el-button>
-              </div>
+              <el-form :model="{ oneLiner }" :rules="onelinerRules" ref="onelinerFormRef">
+                <div class="oneliner-form">
+                  <el-form-item prop="oneLiner">
+                    <el-input
+                      v-model="oneLiner"
+                      type="textarea"
+                      :rows="3"
+                      placeholder="例如: 写一份季度销售报告、分析竞品对比、做一个代码评审、选最佳投资方案..."
+                    />
+                  </el-form-item>
+                  <div class="form-tip">输入任务描述，AI 自动识别意图并匹配合适的 Agent 群模板</div>
+                  <el-button type="primary" :loading="generating" @click="doOneLiner" style="margin-top: 12px">
+                    🚀 一句话生成
+                  </el-button>
+                </div>
+              </el-form>
             </el-tab-pane>
 
             <el-tab-pane label="📋 使用模板生成" name="template">
@@ -154,8 +158,8 @@
     </el-row>
 
     <el-dialog v-model="showRunDialog" title="▶ 执行群组任务" width="560px">
-      <el-form :model="runForm" label-width="80px">
-        <el-form-item label="任务主题" required>
+      <el-form :model="runForm" :rules="runFormRules" ref="runFormRef" label-width="80px">
+        <el-form-item label="任务主题" prop="subject">
           <el-input v-model="runForm.subject" placeholder="描述本次要完成的具体任务" />
         </el-form-item>
         <el-form-item label="附加输入">
@@ -187,7 +191,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
 import {
@@ -204,6 +208,13 @@ const userStore = useUserStore()
 
 const mode = ref('oneliner')
 const oneLiner = ref('')
+const onelinerFormRef = ref(null)
+const onelinerRules = {
+  oneLiner: [
+    { required: true, message: '请输入任务描述', trigger: 'blur' },
+    { min: 4, max: 2000, message: '任务描述长度 4-2000 字符', trigger: 'blur' },
+  ],
+}
 const selectedTemplate = ref('')
 const templateDesc = ref('')
 const generating = ref(false)
@@ -219,6 +230,13 @@ const showRunDialog = ref(false)
 const showResultDialog = ref(false)
 const running = ref(false)
 const runForm = reactive({ subject: '', input: '' })
+const runFormRef = ref(null)
+const runFormRules = {
+  subject: [
+    { required: true, message: '请输入任务主题', trigger: 'blur' },
+    { min: 2, max: 500, message: '任务主题长度 2-500 字符', trigger: 'blur' },
+  ],
+}
 const runResult = ref(null)
 
 const roleIcon = (role) => ({ MANAGER: '👔', WORKER: '🔧', CRITIC: '🔍', OBSERVER: '👀' }[role] || '🤖')
@@ -253,6 +271,15 @@ function toggleTemplate(name) {
 }
 
 async function doOneLiner() {
+  // 表单校验
+  try {
+    await nextTick()
+    if (onelinerFormRef.value) {
+      await onelinerFormRef.value.validate().catch(() => { throw new Error('validation failed') })
+    }
+  } catch {
+    return
+  }
   if (!oneLiner.value.trim()) return ElMessage.warning('请输入任务描述')
   generating.value = true
   generatedGroup.value = null
@@ -348,6 +375,15 @@ function loadGroupDetail(groupId) {
 }
 
 async function executeGroup() {
+  // 表单校验
+  try {
+    await nextTick()
+    if (runFormRef.value) {
+      await runFormRef.value.validate().catch(() => { throw new Error('validation failed') })
+    }
+  } catch {
+    return  // 校验失败
+  }
   if (!runForm.subject.trim()) return ElMessage.warning('请输入任务主题')
   running.value = true
   runResult.value = null

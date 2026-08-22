@@ -48,7 +48,7 @@
     </div>
 
     <!-- ========== 图片生成 ========== -->
-    <el-card v-if="activeModule?.key === 'image-gen'" body-style="padding:20px">
+    <el-card v-if="activeModule?.key === 'image-gen'" body-style="padding:20px" v-loading="imgLoading">
       <template #header>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span>🎨 图片生成</span>
@@ -78,8 +78,8 @@
           </el-select>
         </div>
       </template>
-      <el-form label-width="80px">
-        <el-form-item label="描述">
+      <el-form ref="imgFormRef" :model="imgForm" :rules="imgFormRules" label-width="80px" @submit.prevent>
+        <el-form-item label="描述" prop="prompt">
           <el-input v-model="imgForm.prompt" type="textarea" :rows="3"
             placeholder="描述你想要的图片，越详细越好" />
         </el-form-item>
@@ -108,12 +108,16 @@
           <el-button type="primary" :loading="imgLoading" @click="generateImage">
             <el-icon><MagicStick /></el-icon>生成图片
           </el-button>
+          <el-button v-if="imgResult.length" size="small" link type="danger" @click="clearImageResult" style="margin-left:8px">
+            清空结果
+          </el-button>
         </el-form-item>
       </el-form>
 
-      <div v-if="imgResult.length" style="margin-top:20px">
-        <div style="font-weight:600;font-size:13px;margin-bottom:12px">生成结果</div>
-        <div class="img-grid">
+      <div style="margin-top:20px">
+        <div style="font-weight:600;font-size:13px;margin-bottom:12px">生成结果 ({{ imgResult.length }})</div>
+        <el-empty v-if="!imgLoading && imgResult.length === 0" description="暂无生成结果，请填写描述后点击生成" :image-size="80" />
+        <div v-else class="img-grid">
           <div v-for="(img, i) in imgResult" :key="i" class="img-item">
             <el-image :src="img.url" fit="cover" style="width:100%;height:200px;border-radius:8px"
               :preview-src-list="imgResult.map(x=>x.url)" />
@@ -127,7 +131,7 @@
     </el-card>
 
     <!-- ========== 图片理解 ========== -->
-    <el-card v-if="activeModule?.key === 'image-understand'" body-style="padding:20px">
+    <el-card v-if="activeModule?.key === 'image-understand'" body-style="padding:20px" v-loading="analyzeLoading && !analyzeImgUrl">
       <template #header>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span>🔍 图片理解</span>
@@ -172,15 +176,16 @@
           <el-button type="primary" :loading="analyzeLoading" @click="analyzeImage" style="margin-bottom:12px">
             <el-icon><Search /></el-icon>分析图片
           </el-button>
-          <el-card v-if="analyzeResult" body-style="padding:12px">
-            <pre style="white-space:pre-wrap;font-size:13px">{{ analyzeResult }}</pre>
+          <el-card v-if="analyzeResult" body-style="padding:12px" shadow="hover">
+            <pre style="white-space:pre-wrap;font-size:13px;margin:0">{{ analyzeResult }}</pre>
           </el-card>
+          <el-empty v-else-if="!analyzeLoading" description="尚未分析，上传图片后点击「分析图片」" :image-size="60" />
         </el-col>
       </el-row>
     </el-card>
 
     <!-- ========== 语音合成 ========== -->
-    <el-card v-if="activeModule?.key === 'tts'" body-style="padding:20px">
+    <el-card v-if="activeModule?.key === 'tts'" body-style="padding:20px" v-loading="ttsLoading && !ttsUrl">
       <template #header>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span>🔊 语音合成 (TTS)</span>
@@ -206,9 +211,10 @@
           </el-select>
         </div>
       </template>
-      <el-form label-width="80px">
-        <el-form-item label="文本">
-          <el-input v-model="ttsForm.text" type="textarea" :rows="4" placeholder="输入要转为语音的文本…" />
+      <el-form ref="ttsFormRef" :model="ttsForm" :rules="ttsFormRules" label-width="80px" @submit.prevent>
+        <el-form-item label="文本" prop="text">
+          <el-input v-model="ttsForm.text" type="textarea" :rows="4"
+            placeholder="输入要转为语音的文本…" show-word-limit maxlength="2000" />
         </el-form-item>
         <el-row :gutter="12">
           <el-col :span="8">
@@ -229,16 +235,20 @@
         </el-form-item>
       </el-form>
       <div v-if="ttsUrl" style="margin-top:16px">
-        <audio :src="ttsUrl" controls style="width:100%" />
-        <div style="margin-top:8px;display:flex;gap:8px">
-          <el-button size="small" @click="copyUrl(ttsUrl)">复制链接</el-button>
-          <el-button size="small" type="primary" @click="downloadImg(ttsUrl)">下载 MP3</el-button>
-        </div>
+        <el-card body-style="padding:12px" shadow="hover">
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px">🎵 合成结果</div>
+          <audio :src="ttsUrl" controls style="width:100%" />
+          <div style="margin-top:8px;display:flex;gap:8px">
+            <el-button size="small" @click="copyUrl(ttsUrl)">复制链接</el-button>
+            <el-button size="small" type="primary" @click="downloadImg(ttsUrl)">下载 MP3</el-button>
+          </div>
+        </el-card>
       </div>
+      <el-empty v-else-if="!ttsLoading" description="尚未合成，请输入文本后点击「合成语音」" :image-size="60" />
     </el-card>
 
     <!-- ========== 语音识别 ========== -->
-    <el-card v-if="activeModule?.key === 'asr'" body-style="padding:20px">
+    <el-card v-if="activeModule?.key === 'asr'" body-style="padding:20px" v-loading="asrLoading && !asrResult">
       <template #header>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span>🎤 语音识别 (ASR)</span>
@@ -270,12 +280,16 @@
       <div v-if="asrLoading" style="margin-top:12px;color:#909399">
         <el-icon class="is-loading"><Loading /></el-icon> 识别中…
       </div>
+      <div v-else-if="!asrResult" style="margin-top:16px">
+        <el-empty description="尚未识别，请上传音频文件" :image-size="60" />
+      </div>
       <div v-if="asrResult" style="margin-top:16px">
-        <el-card body-style="padding:12px">
-          <pre style="white-space:pre-wrap;font-size:13px">{{ asrResult }}</pre>
+        <el-card body-style="padding:12px" shadow="hover">
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px">📝 识别结果</div>
+          <pre style="white-space:pre-wrap;font-size:13px;margin:0">{{ asrResult }}</pre>
         </el-card>
         <div style="margin-top:8px;display:flex;gap:8px">
-          <el-button size="small" @click="copyUrl(asrResult)">复制文本</el-button>
+          <el-button size="small" type="primary" @click="copyUrl(asrResult)">复制文本</el-button>
         </div>
       </div>
     </el-card>
@@ -468,7 +482,7 @@
     </el-card>
 
     <!-- ========== 视频生成 ========== -->
-    <el-card v-if="activeModule?.key === 'video-gen'" body-style="padding:20px">
+    <el-card v-if="activeModule?.key === 'video-gen'" body-style="padding:20px" v-loading="vidLoading && !vidResult">
       <template #header>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span>🎬 视频生成</span>
@@ -495,8 +509,8 @@
           </el-select>
         </div>
       </template>
-      <el-form label-width="80px">
-        <el-form-item label="描述">
+      <el-form ref="vidFormRef" :model="vidForm" :rules="vidFormRules" label-width="80px" @submit.prevent>
+        <el-form-item label="描述" prop="prompt">
           <el-input v-model="vidForm.prompt" type="textarea" :rows="3" placeholder="描述你想生成的视频内容…" />
         </el-form-item>
         <el-row :gutter="12">
@@ -524,12 +538,20 @@
         </el-form-item>
       </el-form>
       <div v-if="vidResult" style="margin-top:16px">
-        <video :src="vidResult" controls style="width:100%;border-radius:8px" />
+        <el-card body-style="padding:12px" shadow="hover">
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px">🎬 生成结果</div>
+          <video :src="vidResult" controls style="width:100%;border-radius:8px" />
+          <div style="margin-top:8px;display:flex;gap:8px">
+            <el-button size="small" @click="copyUrl(vidResult)">复制链接</el-button>
+            <el-button size="small" type="primary" @click="downloadImg(vidResult)">下载视频</el-button>
+          </div>
+        </el-card>
       </div>
+      <el-empty v-else-if="!vidLoading" description="尚未生成，请填写描述后点击「生成视频」" :image-size="60" />
     </el-card>
 
     <!-- ========== 文档理解 ========== -->
-    <el-card v-if="activeModule?.key === 'doc'" body-style="padding:20px">
+    <el-card v-if="activeModule?.key === 'doc'" body-style="padding:20px" v-loading="docLoading && !docResult">
       <template #header>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span>📄 文档理解</span>
@@ -573,14 +595,19 @@
         </el-button>
       </div>
       <div v-if="docResult" style="margin-top:16px">
-        <el-card body-style="padding:12px">
-          <pre style="white-space:pre-wrap;font-size:13px">{{ docResult }}</pre>
+        <el-card body-style="padding:12px" shadow="hover">
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px">💡 回答</div>
+          <pre style="white-space:pre-wrap;font-size:13px;margin:0">{{ docResult }}</pre>
         </el-card>
+        <div style="margin-top:8px">
+          <el-button size="small" @click="copyUrl(docResult)">复制文本</el-button>
+        </div>
       </div>
+      <el-empty v-else-if="!docLoading" description="尚未提问，请先上传文档并输入问题" :image-size="60" />
     </el-card>
 
     <!-- ========== 音乐生成 ========== -->
-    <el-card v-if="activeModule?.key === 'music'" body-style="padding:20px">
+    <el-card v-if="activeModule?.key === 'music'" body-style="padding:20px" v-loading="musicLoading && !musicResult">
       <template #header>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span>🎵 音乐生成</span>
@@ -607,8 +634,8 @@
           </el-select>
         </div>
       </template>
-      <el-form label-width="80px">
-        <el-form-item label="描述">
+      <el-form ref="musicFormRef" :model="musicForm" :rules="musicFormRules" label-width="80px" @submit.prevent>
+        <el-form-item label="描述" prop="prompt">
           <el-input v-model="musicForm.prompt" type="textarea" :rows="3"
             placeholder="描述你想要的音乐，如：轻快的钢琴曲，适合咖啡厅背景音乐" />
         </el-form-item>
@@ -622,8 +649,16 @@
         </el-form-item>
       </el-form>
       <div v-if="musicResult" style="margin-top:16px">
-        <audio :src="musicResult" controls style="width:100%" />
+        <el-card body-style="padding:12px" shadow="hover">
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px">🎵 生成结果</div>
+          <audio :src="musicResult" controls style="width:100%" />
+          <div style="margin-top:8px;display:flex;gap:8px">
+            <el-button size="small" @click="copyUrl(musicResult)">复制链接</el-button>
+            <el-button size="small" type="primary" @click="downloadImg(musicResult)">下载音频</el-button>
+          </div>
+        </el-card>
       </div>
+      <el-empty v-else-if="!musicLoading" description="尚未生成，请填写描述后点击「生成音乐」" :image-size="60" />
     </el-card>
   </div>
 </template>
@@ -734,10 +769,8 @@ async function loadModuleModels() {
 
     // 3. 自动选中第一个可用模型
     autoSelectFirstModel()
-
-    console.log('[Multimodal] 模型加载完成', { selfModels, cloudModels })
   } catch (e) {
-    console.error('[Multimodal] 加载模型失败:', e)
+    ElMessage.warning('加载模型列表失败，已使用默认云端模型')
     fillCloudDefaults()
     autoSelectFirstModel()
   }
@@ -822,7 +855,6 @@ function autoSelectFirstModel() {
 /** 模型切换回调 */
 function onModelChange(moduleKey, model) {
   selectedModuleModel[moduleKey] = model
-  console.log(`[Multimodal] 模块 ${moduleKey} 切换模型:`, model?.modelCode || model?.voiceId)
 }
 
 // ============ 服务状态 ============
@@ -867,41 +899,58 @@ function resetState() {
 }
 
 // ============ 图片生成 ============
+const imgFormRef = ref(null)
 const imgForm = reactive({ prompt: '', ratio: '1:1', resolution: '1K', refImage: '' })
 const imgLoading = ref(false)
 const imgResult = ref([])
+
+const imgFormRules = {
+  prompt: [
+    { required: true, message: '请输入图片描述', trigger: 'blur' },
+    { min: 2, max: 1000, message: '描述长度 2-1000 字符', trigger: 'blur' }
+  ]
+}
 
 async function uploadRefImage(file) {
   const fd = new FormData(); fd.append('file', file)
   try {
     const r = await uploadImage(fd)
     imgForm.refImage = r.data?.url || r.url || ''
-  } catch { ElMessage.warning('参考图上传失败') }
+    ElMessage.success('参考图已上传')
+  } catch (e) { ElMessage.error('参考图上传失败: ' + (e.message || '')) }
   return false
 }
 
 async function generateImage() {
-  if (!imgForm.prompt.trim()) { ElMessage.warning('请输入描述'); return }
-  imgLoading.value = true
-  try {
-    const sizeMap = { '1:1': '1024x1024', '16:9': '1024x576', '9:16': '768x1024', '4:3': '1024x768' }
-    const modelCode = selectedModuleModel['image-gen']?.modelCode || 'mock'
-    const res = await imageGenGenerate({
-      prompt: imgForm.prompt,
-      size: sizeMap[imgForm.ratio] || '1024x1024',
-      model: modelCode,
-    })
-    const images = res.data?.images || []
-    for (const url of images) {
-      imgResult.value.push({ url })
+  if (!imgFormRef.value) return
+  await imgFormRef.value.validate(async (valid) => {
+    if (!valid) return
+    imgLoading.value = true
+    try {
+      const sizeMap = { '1:1': '1024x1024', '16:9': '1024x576', '9:16': '768x1024', '4:3': '1024x768' }
+      const modelCode = selectedModuleModel['image-gen']?.modelCode || 'mock'
+      const res = await imageGenGenerate({
+        prompt: imgForm.prompt,
+        size: sizeMap[imgForm.ratio] || '1024x1024',
+        model: modelCode,
+      })
+      const images = res.data?.images || []
+      for (const url of images) {
+        imgResult.value.push({ url })
+      }
+      if (!images.length) ElMessage.warning('未返回图片，请检查 SILICONFLOW_API_KEY 配置')
+      else ElMessage.success(`生成完成 (${images.length} 张)`)
+    } catch (e) {
+      ElMessage.error('生成失败：' + (e.message || ''))
+    } finally {
+      imgLoading.value = false
     }
-    if (!images.length) ElMessage.warning('未返回图片，请检查 SILICONFLOW_API_KEY 配置')
-    else ElMessage.success('生成完成')
-  } catch (e) {
-    ElMessage.error('生成失败：' + (e.message || ''))
-  } finally {
-    imgLoading.value = false
-  }
+  })
+}
+
+function clearImageResult() {
+  imgResult.value = []
+  ElMessage.success('结果已清空')
 }
 
 // ============ 图片理解 ============
@@ -915,7 +964,8 @@ async function uploadAnalyzeImg(file) {
   try {
     const r = await uploadImage(fd)
     analyzeImgUrl.value = r.data?.url || r.url || ''
-  } catch { ElMessage.warning('图片上传失败') }
+    ElMessage.success('图片已上传')
+  } catch (e) { ElMessage.error('图片上传失败: ' + (e.message || '')) }
   return false
 }
 
@@ -932,36 +982,48 @@ async function analyzeImage() {
     analyzeResult.value = r.data?.description || r.data?.answer || r.data || '分析完成'
     ElMessage.success('分析完成')
   } catch (e) {
-    analyzeResult.value = '图片分析失败：' + (e.message || '请检查 vision API 配置')
+    analyzeResult.value = ''
+    ElMessage.error('图片分析失败：' + (e.message || '请检查 vision API 配置'))
   } finally {
     analyzeLoading.value = false
   }
 }
 
 // ============ TTS ============
+const ttsFormRef = ref(null)
 const ttsForm = reactive({ text: '', speed: 1.0, pitch: 0 })
 const ttsLoading = ref(false)
 const ttsUrl = ref('')
 
+const ttsFormRules = {
+  text: [
+    { required: true, message: '请输入文本', trigger: 'blur' },
+    { min: 1, max: 2000, message: '文本长度 1-2000 字符', trigger: 'blur' }
+  ]
+}
+
 async function doTts() {
-  if (!ttsForm.text.trim()) { ElMessage.warning('请输入文本'); return }
-  ttsLoading.value = true
-  try {
-    const voiceId = selectedModuleModel['tts']?.voiceId || 'zh-CN-XiaoxiaoNeural'
-    const r = await audioTts({
-      text: ttsForm.text,
-      voice: voiceId,
-      speed: ttsForm.speed,
-      pitch: ttsForm.pitch,
-    })
-    ttsUrl.value = r.data?.audio || r.data?.audioUrl || ''
-    if (!ttsUrl.value) ElMessage.warning('未返回音频 URL')
-    else ElMessage.success('合成完成')
-  } catch (e) {
-    ElMessage.error('合成失败：' + (e.message || ''))
-  } finally {
-    ttsLoading.value = false
-  }
+  if (!ttsFormRef.value) return
+  await ttsFormRef.value.validate(async (valid) => {
+    if (!valid) return
+    ttsLoading.value = true
+    try {
+      const voiceId = selectedModuleModel['tts']?.voiceId || 'zh-CN-XiaoxiaoNeural'
+      const r = await audioTts({
+        text: ttsForm.text,
+        voice: voiceId,
+        speed: ttsForm.speed,
+        pitch: ttsForm.pitch,
+      })
+      ttsUrl.value = r.data?.audio || r.data?.audioUrl || ''
+      if (!ttsUrl.value) ElMessage.warning('未返回音频 URL，请检查 TTS API 配置')
+      else ElMessage.success('合成完成')
+    } catch (e) {
+      ElMessage.error('合成失败：' + (e.message || ''))
+    } finally {
+      ttsLoading.value = false
+    }
+  })
 }
 
 // ============ ASR ============
@@ -977,6 +1039,7 @@ async function uploadAsrAudio(file) {
     const r = await audioAsr(fd)
     asrResult.value = r.data?.text || ''
     if (asrResult.value) ElMessage.success('识别完成')
+    else ElMessage.warning('未识别到文本内容')
   } catch (e) {
     asrResult.value = ''
     ElMessage.error('识别失败：' + (e.message || ''))
@@ -1102,29 +1165,40 @@ async function uploadVideoFile(file) {
 }
 
 // ============ 视频生成 ============
+const vidFormRef = ref(null)
 const vidForm = reactive({ prompt: '', duration: '6', resolution: '768P' })
 const vidLoading = ref(false)
 const vidResult = ref('')
 
+const vidFormRules = {
+  prompt: [
+    { required: true, message: '请输入视频描述', trigger: 'blur' },
+    { min: 2, max: 1000, message: '描述长度 2-1000 字符', trigger: 'blur' }
+  ]
+}
+
 async function generateVideo() {
-  if (!vidForm.prompt.trim()) { ElMessage.warning('请输入描述'); return }
-  vidLoading.value = true
-  try {
-    const fd = new FormData()
-    fd.append('prompt', vidForm.prompt)
-    fd.append('duration', vidForm.duration)
-    fd.append('resolution', vidForm.resolution)
-    const modelCode = selectedModuleModel['video-gen']?.modelCode || 'hunyuan-video'
-    fd.append('model', modelCode)
-    const r = await videoGenerate(fd)
-    vidResult.value = r.data?.videoUrl || ''
-    if (!vidResult.value) ElMessage.warning('视频生成需要较长时间，请稍后刷新')
-    else ElMessage.success('生成完成')
-  } catch (e) {
-    ElMessage.error('视频生成失败：' + (e.message || ''))
-  } finally {
-    vidLoading.value = false
-  }
+  if (!vidFormRef.value) return
+  await vidFormRef.value.validate(async (valid) => {
+    if (!valid) return
+    vidLoading.value = true
+    try {
+      const fd = new FormData()
+      fd.append('prompt', vidForm.prompt)
+      fd.append('duration', vidForm.duration)
+      fd.append('resolution', vidForm.resolution)
+      const modelCode = selectedModuleModel['video-gen']?.modelCode || 'hunyuan-video'
+      fd.append('model', modelCode)
+      const r = await videoGenerate(fd)
+      vidResult.value = r.data?.videoUrl || ''
+      if (!vidResult.value) ElMessage.warning('视频生成需要较长时间，请稍后刷新')
+      else ElMessage.success('生成完成')
+    } catch (e) {
+      ElMessage.error('视频生成失败：' + (e.message || ''))
+    } finally {
+      vidLoading.value = false
+    }
+  })
 }
 
 // ============ 文档理解 ============
@@ -1141,9 +1215,10 @@ async function uploadDoc(file) {
   try {
     const r = await docUpload(fd)
     currentDocId = r.data?.docId || null
-    if (!currentDocId) ElMessage.warning('上传成功但未返回 docId')
+    if (currentDocId) ElMessage.success('文档已上传')
+    else ElMessage.warning('上传成功但未返回 docId')
   } catch (e) {
-    ElMessage.warning('上传失败：' + (e.message || ''))
+    ElMessage.error('文档上传失败: ' + (e.message || ''))
   }
   return false
 }
@@ -1162,50 +1237,94 @@ async function askDoc() {
       docResult.value = r.data?.answer || ''
     } else {
       ElMessage.warning('请先上传文档')
+      docLoading.value = false
+      return
     }
     if (docResult.value) ElMessage.success('回答完成')
+    else ElMessage.warning('未返回回答内容')
   } catch (e) {
-    docResult.value = '问答失败：' + (e.message || '')
+    docResult.value = ''
+    ElMessage.error('问答失败: ' + (e.message || ''))
   } finally {
     docLoading.value = false
   }
 }
 
 // ============ 音乐生成 ============
+const musicFormRef = ref(null)
 const musicForm = reactive({ prompt: '', lyrics: '' })
 const musicLoading = ref(false)
 const musicResult = ref('')
 
+const musicFormRules = {
+  prompt: [
+    { required: true, message: '请输入音乐描述', trigger: 'blur' },
+    { min: 2, max: 1000, message: '描述长度 2-1000 字符', trigger: 'blur' }
+  ]
+}
+
 async function generateMusic() {
-  if (!musicForm.prompt.trim()) { ElMessage.warning('请输入描述'); return }
-  musicLoading.value = true
-  try {
-    const modelCode = selectedModuleModel['music']?.modelCode || 'music-gen'
-    const r = await musicGenerate({
-      prompt: musicForm.prompt,
-      lyrics: musicForm.lyrics,
-      model: modelCode,
-    })
-    musicResult.value = r.data?.audioUrl || ''
-    if (musicResult.value) ElMessage.success('生成完成')
-    else ElMessage.warning('未返回音频 URL')
-  } catch (e) {
-    ElMessage.error('生成失败：' + (e.message || ''))
-  } finally {
-    musicLoading.value = false
-  }
+  if (!musicFormRef.value) return
+  await musicFormRef.value.validate(async (valid) => {
+    if (!valid) return
+    musicLoading.value = true
+    try {
+      const modelCode = selectedModuleModel['music']?.modelCode || 'music-gen'
+      const r = await musicGenerate({
+        prompt: musicForm.prompt,
+        lyrics: musicForm.lyrics,
+        model: modelCode,
+      })
+      musicResult.value = r.data?.audioUrl || ''
+      if (musicResult.value) ElMessage.success('生成完成')
+      else ElMessage.warning('未返回音频 URL')
+    } catch (e) {
+      ElMessage.error('生成失败：' + (e.message || ''))
+    } finally {
+      musicLoading.value = false
+    }
+  })
 }
 
 // ============ 工具 ============
-function copyUrl(url) {
-  if (!url) return
-  navigator.clipboard?.writeText(url).then(() => ElMessage.success('已复制')).catch(() => ElMessage.error('复制失败'))
+async function copyUrl(url) {
+  if (!url) {
+    ElMessage.warning('没有可复制的内容')
+    return
+  }
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(url)
+      ElMessage.success('已复制到剪贴板')
+    } else {
+      // 降级方案
+      const textarea = document.createElement('textarea')
+      textarea.value = url
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+      ElMessage.success('已复制到剪贴板')
+    }
+  } catch (e) {
+    ElMessage.error('复制失败: ' + (e.message || '浏览器不支持剪贴板 API'))
+  }
 }
 
 function downloadImg(url) {
-  if (!url) return
+  if (!url) {
+    ElMessage.warning('没有可下载的文件')
+    return
+  }
   const a = document.createElement('a')
-  a.href = url; a.download = ''; a.target = '_blank'; a.click()
+  a.href = url
+  a.download = ''
+  a.target = '_blank'
+  a.rel = 'noopener noreferrer'
+  a.click()
+  ElMessage.success('开始下载')
 }
 </script>
 

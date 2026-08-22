@@ -3,7 +3,7 @@
   V7.0 Flow① 训练总览: 对标 Analytics/Index.vue 的专业仪表盘
 -->
 <template>
-  <div class="page-card">
+  <div class="page-card" v-loading="loading && firstLoad">
     <div class="page-header">
       <h2>📊 训练总览</h2>
       <div style="display:flex;gap:8px">
@@ -17,7 +17,7 @@
     </div>
 
     <!-- 核心指标卡片 -->
-    <el-row :gutter="12" style="margin-bottom:16px">
+    <el-row :gutter="12" style="margin-bottom:16px" v-loading="loading && firstLoad">
       <el-col :span="6">
         <el-tooltip content="累计创建的训练任务数" placement="top" effect="light">
           <el-card shadow="hover" body-style="padding:16px;text-align:center;cursor:help">
@@ -52,7 +52,7 @@
       </el-col>
     </el-row>
 
-    <el-row :gutter="12" style="margin-bottom:16px">
+    <el-row :gutter="12" style="margin-bottom:16px" v-loading="loading && firstLoad">
       <el-col :span="4">
         <el-tooltip content="训练失败的任务数" placement="top" effect="light">
           <el-card shadow="hover" body-style="padding:12px;text-align:center;cursor:help">
@@ -76,7 +76,7 @@
       </el-col>
     </el-row>
 
-    <el-tabs v-model="activeTab">
+    <el-tabs v-model="activeTab" v-loading="loading && firstLoad">
       <!-- Tab1: 最近训练任务 -->
       <el-tab-pane name="recent">
         <template #label>
@@ -91,7 +91,8 @@
                   全部任务 →
                 </el-button>
               </template>
-              <el-table :data="data.recentTasks || []" size="small" stripe v-loading="loading">
+              <el-table :data="data.recentTasks || []" size="small" stripe
+                v-loading="loading && firstLoad" empty-text="暂无训练任务">
                 <el-table-column label="任务" min-width="140">
                   <template #default="{ row }">
                     <div style="font-size:13px;font-weight:600;color:#303133">{{ row.name }}</div>
@@ -145,9 +146,9 @@
                 </el-select>
               </template>
               <div v-if="!selectedTaskId" style="text-align:center;color:#909399;padding:40px 0">
-                选择任务查看 Loss 曲线
+                <el-empty description="请选择任务查看 Loss 曲线" :image-size="80" />
               </div>
-              <div v-else ref="lossChartRef" style="height:260px"></div>
+              <div v-else ref="lossChartRef" v-loading="lossLoading" style="height:260px"></div>
             </el-card>
           </el-col>
         </el-row>
@@ -162,13 +163,15 @@
           <el-col :span="12">
             <el-card shadow="hover" body-style="padding:16px">
               <template #header><span>🤖 按 Base Model 统计</span></template>
-              <div ref="modelPieRef" style="height:300px"></div>
+              <div v-if="!modelPieEmpty" ref="modelPieRef" style="height:300px"></div>
+              <el-empty v-else description="暂无模型数据" />
             </el-card>
           </el-col>
           <el-col :span="12">
             <el-card shadow="hover" body-style="padding:16px">
               <template #header><span>🏆 训练成效排行 (按 Final Loss)</span></template>
-              <el-table :data="lossRanking" size="small" stripe v-loading="loading">
+              <el-table :data="lossRanking" size="small" stripe
+                v-loading="loading && firstLoad" empty-text="暂无已完成任务">
                 <el-table-column type="index" label="排名" width="60" align="center" />
                 <el-table-column label="任务" min-width="120">
                   <template #default="{ row }">
@@ -265,8 +268,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick, watch, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ref, reactive, onMounted, nextTick, onUnmounted, computed } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { trainingApi } from '@/api/training'
 import * as echarts from 'echarts'
 import { useRouter } from 'vue-router'
@@ -275,6 +278,7 @@ const router = useRouter()
 
 // ——— 数据 ———
 const loading = ref(false)
+const firstLoad = ref(true)
 const activeTab = ref('recent')
 const data = ref({
   totalTasks: 0, completed: 0, running: 0,
@@ -292,12 +296,18 @@ const lossChartRef = ref(null)
 const lossChart = ref(null)
 const selectedTaskId = ref(null)
 const lossOptions = ref([])
+const lossLoading = ref(false)
 
 const lossRanking = computed(() => {
   return (data.value.recentTasks || [])
     .filter(t => t.finalLoss != null)
     .sort((a, b) => (a.finalLoss || 999) - (b.finalLoss || 999))
     .slice(0, 10)
+})
+
+const modelPieEmpty = computed(() => {
+  const byModel = data.value.byModel || {}
+  return Object.keys(byModel).length === 0
 })
 
 // ——— 状态分布饼图 ———
@@ -320,10 +330,12 @@ async function load() {
     await nextTick()
     renderStatusPie()
     renderModelPie()
+    if (selectedTaskId.value) await loadLossCurve(selectedTaskId.value)
   } catch (e) {
     ElMessage.error('加载失败: ' + (e.message || ''))
   } finally {
     loading.value = false
+    firstLoad.value = false
   }
 }
 
@@ -337,13 +349,14 @@ function statusType(s) {
 
 // ——— Loss 曲线 ———
 async function loadLossCurve(taskId) {
-  if (!lossChartRef.value) return
+  if (!lossChartRef.value || !taskId) return
+  lossLoading.value = true
   try {
     const r = await trainingApi.getHistory(taskId)
     const history = r.data || []
     if (history.length === 0) {
       if (lossChart.value) {
-        lossChart.value.setOption({ title: { text: '无曲线数据' }, series: [] })
+        lossChart.value.setOption({ title: { text: '暂无曲线数据', left: 'center', top: 'center', textStyle: { color: '#9ca3af', fontSize: 14, fontWeight: 'normal' } }, series: [] })
       }
       return
     }
@@ -357,14 +370,14 @@ async function loadLossCurve(taskId) {
     lossChart.value.setOption({
       tooltip: { trigger: 'axis', formatter: p => {
         const [loss, acc] = p
-        return `<b>Step ${loss.axisValue}</b><br/>Loss: <b>${loss.data?.toFixed(4) || '-'}</b><br/>Acc: <b>${acc?.data?.toFixed(4) || '-'}</b>`
+        return `<b>Step ${loss.axisValue}</b><br/>Loss: <b>${loss.data?.toFixed(4) || '-'}</b><br/>Acc: <b>${acc?.data != null ? (acc.data * 100).toFixed(2) + '%' : '-'}</b>`
       }},
       legend: { data: ['Loss', 'Accuracy'], top: 0, textStyle: { fontSize: 11 } },
       grid: { top: 32, right: 16, bottom: 24, left: 48 },
       xAxis: { type: 'category', data: steps, name: 'Step', nameLocation: 'end', nameTextStyle: { fontSize: 10 } },
       yAxis: [
         { type: 'value', name: 'Loss', nameTextStyle: { fontSize: 10 }, splitLine: { lineStyle: { type: 'dashed', opacity: 0.3 } } },
-        { type: 'value', name: 'Acc', nameTextStyle: { fontSize: 10 }, splitLine: { show: false } }
+        { type: 'value', name: 'Acc', nameTextStyle: { fontSize: 10 }, min: 0, max: 1, splitLine: { show: false } }
       ],
       series: [
         { name: 'Loss', type: 'line', data: losses, smooth: 0.3, color: '#409eff', yAxisIndex: 0 },
@@ -372,13 +385,19 @@ async function loadLossCurve(taskId) {
       ]
     })
   } catch (e) {
-    console.warn('加载曲线失败', e)
+    ElMessage.warning('加载曲线失败: ' + (e.message || ''))
+  } finally {
+    lossLoading.value = false
   }
 }
 
 async function onTaskSelect(taskId) {
   selectedTaskId.value = taskId
-  if (taskId) await loadLossCurve(taskId)
+  if (taskId) {
+    await loadLossCurve(taskId)
+  } else {
+    lossChart.value?.clear()
+  }
 }
 
 // ——— 状态分布饼图 ———
@@ -386,18 +405,19 @@ function renderStatusPie() {
   if (!statusPieRef.value) return
   if (!statusPieChart.value) statusPieChart.value = echarts.init(statusPieRef.value)
   const d = data.value
+  const pieData = [
+    { name: '已完成', value: d.completed || 0, itemStyle: { color: '#67c23a' } },
+    { name: '运行中', value: d.running || 0, itemStyle: { color: '#e6a23c' } },
+    { name: '失败', value: d.failed || 0, itemStyle: { color: '#f56c6c' } },
+    { name: '等待', value: d.pending || 0, itemStyle: { color: '#909399' } }
+  ].filter(x => x.value > 0)
   const option = {
     tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
     legend: { show: false },
     series: [{
       type: 'pie', radius: ['40%', '70%'], center: ['50%', '50%'],
-      label: { show: true, formatter: '{b}\n{c}', fontSize: 11 },
-      data: [
-        { name: '已完成', value: d.completed || 0, itemStyle: { color: '#67c23a' } },
-        { name: '运行中', value: d.running || 0, itemStyle: { color: '#e6a23c' } },
-        { name: '失败', value: d.failed || 0, itemStyle: { color: '#f56c6c' } },
-        { name: '等待', value: d.pending || 0, itemStyle: { color: '#909399' } }
-      ].filter(x => x.value > 0)
+      label: { show: pieData.length > 0, formatter: '{b}\n{c}', fontSize: 11 },
+      data: pieData.length > 0 ? pieData : [{ name: '无数据', value: 1, itemStyle: { color: '#f0f0f0' } }]
     }]
   }
   statusPieChart.value.setOption(option)
@@ -433,6 +453,7 @@ async function openTask(task) {
   if (task.status === 'COMPLETED') {
     showEnableDialog.value = true
   } else {
+    ElMessage.info(`任务状态: ${statusLabel(task.status)}`)
     router.push('/training')
   }
 }
@@ -444,7 +465,7 @@ async function confirmEnable() {
     const r = await trainingApi.enableModel(selectedTask.value.taskId)
     const modelCode = r.data?.modelCode
     // P2-3: 启用按钮反馈
-    ElMessage.success('已在聊天页启用 ' + (selectedTask.value.name || modelCode || '模型'))
+    ElMessage.success('模型已启用: ' + (selectedTask.value.name || modelCode || '模型'))
     showEnableDialog.value = false
     router.push('/chat?model=' + encodeURIComponent(modelCode || ''))
   } catch (e) {
@@ -466,7 +487,6 @@ onMounted(async () => {
   window.addEventListener('resize', handleResize)
 })
 
-import { onUnmounted } from 'vue'
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
   if (statusPieChart.value) statusPieChart.value.dispose()

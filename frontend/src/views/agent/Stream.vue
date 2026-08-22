@@ -6,13 +6,14 @@
     <el-button type="primary" :loading="running" @click="runAgent">执行</el-button>
 
     <el-card style="margin-top:16px" title="执行日志">
-      <el-scrollbar style="height:400px">
+      <el-scrollbar style="height:400px" v-loading="running">
         <div v-for="(step, i) in steps" :key="i" class="step-item">
           <el-tag size="small" :type="step.status === 'done' ? 'success' : step.status === 'error' ? 'danger' : 'primary'">
             {{ step.tool }}
           </el-tag>
           <div class="step-result">{{ step.result }}</div>
         </div>
+        <el-empty v-if="!running && !steps.length" description="暂无执行记录" :image-size="80" style="padding:24px 0" />
       </el-scrollbar>
     </el-card>
   </div>

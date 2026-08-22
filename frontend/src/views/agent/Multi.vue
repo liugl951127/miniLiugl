@@ -31,6 +31,25 @@
       </div>
     </div>
 
+    <!-- ====== 错误状态横幅 (V7.0+) ====== -->
+    <el-alert
+      v-if="lastError && !running"
+      :title="lastError"
+      type="error"
+      show-icon
+      :closable="true"
+      @close="lastError = ''"
+      style="margin: 0 16px 8px;"
+    >
+      <template #default>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span>⚠️ {{ lastError }}</span>
+          <el-button size="small" type="primary" @click="retryLast">重新执行</el-button>
+          <el-button size="small" @click="lastError = ''">忽略</el-button>
+        </div>
+      </template>
+    </el-alert>
+
     <!-- ====== 执行进度条 ====== -->
     <div v-if="running || execStats" class="progress-bar-wrap">
       <div class="progress-meta">
@@ -411,7 +430,7 @@
         <el-button type="primary" @click="openCanvasDialog = true">🎨 在此页面打开画布</el-button>
         <el-button @click="switchTab('collab')">← 切换到协作模式</el-button>
       </div>
-      <div class="canvas-placeholder" @click="openCanvasDialog = true">
+      <div class="canvas-mode-empty" @click="openCanvasDialog = true">
         <span>🎨 点击打开 Agent 画布编辑器</span>
       </div>
     </div>
@@ -485,6 +504,13 @@ const form = reactive({
   maxRounds: 3,
   tools: ['web-search', 'calculator']
 })
+
+// V7.0+: 最后一次错误信息（用于错误横幅 + 重试）
+const lastError = ref('')
+function retryLast() {
+  lastError.value = ''
+  if (form.goal.trim()) startMulti()
+}
 
 // ========== 计算属性 ==========
 const phaseTagType = computed(() => ({
@@ -576,6 +602,7 @@ async function startMulti() {
   currentEval.value = null; execStats.value = null
   totalTokens.value = 0; inputTokens.value = 0; outputTokens.value = 0
   elapsedMs.value = 0
+  lastError.value = ''
 
   // 启动计时器
   const startTime = Date.now()
@@ -600,6 +627,7 @@ async function startMulti() {
     if (e.name === 'AbortError') return
     const msg = e.message || 'SSE 连接失败'
     pushLog('error', { message: msg })
+    lastError.value = msg
     if (msg.includes('401') || msg.includes('Unauthorized') || msg.includes('需要登录')) {
       ElMessage.error('请先登录后再使用多智能体协作')
     } else if (msg.includes('fetch') || msg.includes('Failed') || msg.includes('Network')) {
@@ -975,12 +1003,12 @@ onUnmounted(() => {
 .canvas-mode { flex: 1; display: flex; flex-direction: column; align-items: center;
   justify-content: center; gap: 16px; padding: 30px; }
 .canvas-mode-hint { text-align: center; color: #6b7280; font-size: 14px; line-height: 1.8; }
-.canvas-placeholder {
-  width: 300px; height: 200px; border: 2px dashed #d1d5db; border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: #9ca3af; font-size: 16px; transition: all .2s;
-  &:hover { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
+.canvas-mode-empty {
+  border: 2px dashed #d1d5db; border-radius: 12px; padding: 48px 64px;
+  color: #9ca3af; font-size: 14px; cursor: pointer; transition: all 0.2s;
+  background: #fafafa;
 }
+.canvas-mode-empty:hover { border-color: #6366f1; color: #4f46e5; background: #f5f3ff; }
 .canvas-iframe { width: 100%; height: 70vh; border: none; border-radius: 8px; }
 
 .empty-hint { text-align: center; color: #9ca3af; font-size: 12px; padding: 30px 10px; }

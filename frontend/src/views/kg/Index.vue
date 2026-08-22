@@ -152,11 +152,20 @@
         </el-button>
       </template>
       <!-- 添加实体/关系表单 -->
-      <el-form v-if="showAddForm" :model="addForm" inline size="small" style="margin-bottom:12px;padding:12px;background:#f5f7fa;border-radius:4px">
-        <el-form-item label="名称">
-          <el-input v-model="addForm.name" placeholder="实体名称" style="width:120px" />
+      <el-form
+        v-if="showAddForm"
+        ref="addFormRef"
+        :model="addForm"
+        :rules="addFormRules"
+        inline
+        size="small"
+        style="margin-bottom:12px;padding:12px;background:#f5f7fa;border-radius:4px"
+        @submit.prevent
+      >
+        <el-form-item label="名称" prop="name">
+          <el-input v-model="addForm.name" placeholder="实体名称" style="width:140px" maxlength="50" show-word-limit clearable />
         </el-form-item>
-        <el-form-item label="类型">
+        <el-form-item label="类型" prop="type">
           <el-select v-model="addForm.type" placeholder="选择类型" style="width:120px">
             <el-option label="PERSON" value="PERSON" />
             <el-option label="ORG" value="ORG" />
@@ -166,29 +175,43 @@
             <el-option label="OTHER" value="OTHER" />
           </el-select>
         </el-form-item>
-        <el-form-item label="关系">
-          <el-input v-model="addForm.relation" placeholder="关系目标ID" style="width:120px" />
+        <el-form-item label="关系目标">
+          <el-input v-model="addForm.relation" placeholder="目标实体名称" style="width:140px" maxlength="50" clearable />
         </el-form-item>
         <el-form-item label="关系名">
-          <el-input v-model="addForm.relationLabel" placeholder="关系名称" style="width:100px" />
+          <el-input v-model="addForm.relationLabel" placeholder="关系名称" style="width:100px" maxlength="20" clearable />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleAddEntity">添加</el-button>
+          <el-button type="primary" :loading="addEntityLoading" @click="handleAddEntity">添加</el-button>
+          <el-button size="small" @click="resetAddForm">重置</el-button>
         </el-form-item>
       </el-form>
-      <el-table :data="entities" stripe size="small" v-loading="loading">
+      <el-table :data="entities" stripe size="small" v-loading="loading" empty-text="暂无实体，先添加一个吧">
         <el-table-column prop="id" label="ID" width="220" />
         <el-table-column prop="name" label="名称" />
         <el-table-column prop="type" label="类型" width="120">
           <template #default="{ row }"><el-tag size="small">{{ row.type }}</el-tag></template>
         </el-table-column>
-        <el-table-column label="操作" width="160" align="center">
+        <el-table-column label="操作" width="180" align="center">
           <template #default="{ row }">
-            <el-button size="small" link @click="viewNeighbors(row)">邻居</el-button>
+            <el-button size="small" link :loading="loadingNeighborsId === row.id" @click="viewNeighbors(row)">邻居</el-button>
             <el-button size="small" link type="primary" @click="selectEntity(row)">图谱</el-button>
+            <el-button size="small" link type="danger" :loading="deletingEntityId === row.id" @click="confirmDeleteEntity(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
+      <el-empty
+        v-if="!loading && entities.length === 0 && !searchKw"
+        description="暂无实体，点击右上角「添加实体」开始构建图谱"
+        :image-size="60"
+        style="margin-top:16px"
+      />
+      <el-empty
+        v-else-if="!loading && entities.length === 0 && searchKw"
+        :description="`未找到匹配 \"${searchKw}\" 的实体`"
+        :image-size="60"
+        style="margin-top:16px"
+      />
       <el-pagination
         v-model:current-page="page" :page-size="20" :total="total"
         layout="total, prev, pager, next" style="margin-top:10px;justify-content:center"
@@ -197,7 +220,7 @@
     </el-card>
 
     <!-- 导入弹窗 -->
-    <el-dialog v-model="showUpload" title="导入图谱数据" width="500px">
+    <el-dialog v-model="showUpload" title="导入图谱数据" width="500px" :close-on-click-modal="!importing">
       <div class="upload-area">
         <el-upload
           ref="uploadRef"
@@ -206,27 +229,38 @@
           accept=".json"
           :on-change="handleFileChange"
           :limit="1"
+          :disabled="importing"
         >
           <template #trigger>
-            <el-button type="primary">选择 JSON 文件</el-button>
+            <el-button type="primary" :disabled="importing">选择 JSON 文件</el-button>
           </template>
         </el-upload>
         <div class="upload-tip">
           <p>支持 JSON 格式批量导入：</p>
           <pre class="json-example">{
   "entities": [
-    {"id": "e1", "name": "张三", "type": "PERSON"},
-    {"id": "e2", "name": "阿里巴巴", "type": "ORG"}
+    {"name": "张三", "type": "PERSON"},
+    {"name": "阿里巴巴", "type": "ORG"}
   ],
   "relations": [
-    {"from": "e1", "to": "e2", "label": "工作于"}
+    {"fromName": "张三", "toName": "阿里巴巴", "label": "工作于"}
   ]
 }</pre>
         </div>
+        <el-progress
+          v-if="importing"
+          :percentage="importProgress"
+          :status="importProgress >= 100 ? 'success' : undefined"
+          :indeterminate="importProgress < 5"
+          style="margin-top:12px"
+        />
+        <div v-if="importing" class="import-progress-text">
+          正在导入 {{ importCurrentIndex }} / {{ importTotalCount }} ...
+        </div>
       </div>
       <template #footer>
-        <el-button @click="showUpload = false">取消</el-button>
-        <el-button type="primary" @click="handleImport">导入</el-button>
+        <el-button @click="showUpload = false" :disabled="importing">取消</el-button>
+        <el-button type="primary" :loading="importing" @click="handleImport">导入</el-button>
       </template>
     </el-dialog>
   </div>
@@ -234,9 +268,14 @@
 
 <script setup>
 import { ref, reactive, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { kgSearchEntities, kgGetEntity, kgNeighbors } from '@/api/monitor'
+import { kgUpsertEntity, kgCreateRelation, kgDeleteEntity, kgBatchImportEntities, kgBatchImportRelations } from '@/api/kg'
+import { useUserStore } from '@/store/user'
 import { Upload, Search, Refresh, Loading, Download, Plus } from '@element-plus/icons-vue'
+
+const userStore = useUserStore()
+const currentUserId = computed(() => userStore.profile?.id || userStore.userInfo?.id || null)
 
 // SVG 引用
 const canvasRef = ref(null)
@@ -271,6 +310,20 @@ const zoomScale = ref(1)
 const uploadRef = ref(null)
 const pendingFile = ref(null)
 
+// 导入进度
+const importing = ref(false)
+const importProgress = ref(0)
+const importCurrentIndex = ref(0)
+const importTotalCount = ref(0)
+
+// 添加实体 loading
+const addEntityLoading = ref(false)
+const addFormRef = ref(null)
+
+// 实体操作 loading
+const loadingNeighborsId = ref(null)
+const deletingEntityId = ref(null)
+
 // D3 相关
 let simulation = null
 let svg = null
@@ -287,6 +340,15 @@ const addForm = reactive({
   relation: '',
   relationLabel: ''
 })
+const addFormRules = {
+  name: [
+    { required: true, message: '请输入实体名称', trigger: 'blur' },
+    { min: 1, max: 50, message: '名称长度应在 1-50 个字符', trigger: 'blur' }
+  ],
+  type: [
+    { required: true, message: '请选择实体类型', trigger: 'change' }
+  ]
+}
 
 // 节点颜色映射
 const NODE_COLORS = {
@@ -785,13 +847,39 @@ function resetView() {
 
 // 查看邻居
 async function viewNeighbors(row) {
+  loadingNeighborsId.value = row.id
   try {
     const r = await kgNeighbors(row.id)
     neighbors.value = r.data || []
     ElMessage.success(`找到 ${neighbors.value.length} 个邻居`)
-  } catch {
-    ElMessage.error('加载邻居失败')
+  } catch (e) {
+    ElMessage.error('加载邻居失败：' + (e?.message || '未知错误'))
     neighbors.value = []
+  } finally {
+    loadingNeighborsId.value = null
+  }
+}
+
+// 删除实体
+async function confirmDeleteEntity(row) {
+  try {
+    await ElMessageBox.confirm(
+      `确认删除实体「${row.name}」？关联的关系也会被一并删除。`,
+      '删除确认',
+      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消', confirmButtonClass: 'el-button--danger' }
+    )
+  } catch (_) {
+    return
+  }
+  deletingEntityId.value = row.id
+  try {
+    await kgDeleteEntity(row.id, currentUserId.value)
+    ElMessage.success('已删除')
+    await Promise.all([loadKg(), loadEntities()])
+  } catch (e) {
+    ElMessage.error('删除失败：' + (e?.message || '未知错误'))
+  } finally {
+    deletingEntityId.value = null
   }
 }
 
@@ -863,54 +951,171 @@ function handleFileChange(file) {
   pendingFile.value = file
 }
 
+// 重置添加表单
+function resetAddForm() {
+  addForm.name = ''
+  addForm.type = 'PERSON'
+  addForm.relation = ''
+  addForm.relationLabel = ''
+  addFormRef.value?.clearValidate()
+}
+
 // 导入数据
 async function handleImport() {
   if (!pendingFile.value) {
     ElMessage.warning('请先选择文件')
     return
   }
+  if (importing.value) return // 防止重复点击
+
+  importing.value = true
+  importProgress.value = 0
+  importCurrentIndex.value = 0
+  importTotalCount.value = 0
 
   try {
     const text = await pendingFile.value.raw.text()
     const data = JSON.parse(text)
-    
+
     if (!data.entities || !Array.isArray(data.entities)) {
-      throw new Error('Invalid format: missing entities array')
+      throw new Error('文件格式错误：缺少 entities 数组')
     }
-    
-    // TODO: 调用实际的导入 API
-    // 目前模拟成功
-    ElMessage.success(`成功导入 ${data.entities.length} 个实体${data.relations?.length ? ' 和 ' + data.relations.length + ' 个关系' : ''}`)
-    
+
+    // 1) 解析所有实体, 调批量 upsert API
+    const entitiesArr = data.entities.filter(e => e && e.name)
+    importTotalCount.value = entitiesArr.length
+    if (entitiesArr.length === 0) {
+      throw new Error('文件格式错误：实体列表为空')
+    }
+
+    const entityResult = await kgBatchImportEntities(currentUserId.value, entitiesArr)
+    importCurrentIndex.value = entitiesArr.length
+    importProgress.value = 60
+    if (entityResult.failed.length > 0) {
+      ElMessage.warning(`实体导入: 成功 ${entityResult.succeeded} / 失败 ${entityResult.failed.length}`)
+    }
+
+    // 2) 处理关系 (可选)
+    let relationResult = { succeeded: 0, failed: [] }
+    if (Array.isArray(data.relations) && data.relations.length > 0) {
+      // 通过名称查找实体 ID
+      const entityNameToId = new Map()
+      // 重新拉一次保证 ID 完整
+      try {
+        const r = await kgSearchEntities(currentUserId.value, '', 200)
+        const list = r.data?.list || r.data || []
+        for (const e of list) entityNameToId.set(e.name, e.id)
+      } catch (_) {}
+
+      // 把 from/to name 解析成 id
+      const relationsWithIds = []
+      for (const rel of data.relations) {
+        const fromId = entityNameToId.get(rel.fromName || rel.from)
+        const toId = entityNameToId.get(rel.toName || rel.to)
+        if (fromId && toId) {
+          relationsWithIds.push({
+            fromId, toId,
+            type: rel.label || rel.type || '关联',
+            description: rel.description || '',
+            weight: rel.weight || 1.0
+          })
+        }
+      }
+      if (relationsWithIds.length > 0) {
+        relationResult = await kgBatchImportRelations(currentUserId.value, relationsWithIds)
+      }
+    }
+    importProgress.value = 100
+
+    // 3) 汇总
+    const entitySucceeded = entityResult.succeeded
+    const entityFailed = entityResult.failed.length
+    const relationSucceeded = relationResult.succeeded
+    const relationFailed = relationResult.failed.length
+
+    if (entityFailed === 0 && relationFailed === 0) {
+      ElMessage.success(`导入完成: ${entitySucceeded} 个实体, ${relationSucceeded} 个关系`)
+    } else {
+      ElMessageBox.alert(
+        `实体: 成功 ${entitySucceeded} / 失败 ${entityFailed}\n关系: 成功 ${relationSucceeded} / 失败 ${relationFailed}`,
+        '导入结果 (部分失败)',
+        { type: 'warning', confirmButtonText: '我知道了' }
+      )
+    }
+
+    // 4) 关闭弹窗 + 刷新
     showUpload.value = false
     pendingFile.value = null
     if (uploadRef.value) uploadRef.value.clearFiles()
-    
-    await loadKg()
-    await loadEntities()
+
+    await Promise.all([loadKg(), loadEntities()])
   } catch (e) {
-    ElMessage.error('导入失败：' + (e.message || '文件格式错误'))
+    ElMessage.error('导入失败: ' + (e?.message || '文件格式错误'))
+  } finally {
+    importing.value = false
+    importProgress.value = 0
+    importCurrentIndex.value = 0
+    importTotalCount.value = 0
   }
 }
 
 // 添加实体
 async function handleAddEntity() {
-  if (!addForm.name) {
-    ElMessage.warning('请输入实体名称')
+  if (!addFormRef.value) return
+  try {
+    await addFormRef.value.validate()
+  } catch (_) {
+    ElMessage.warning('请检查表单填写')
     return
   }
-  
-  // TODO: 调用实际的添加 API
-  ElMessage.success('实体添加成功（模拟）')
-  
-  addForm.name = ''
-  addForm.type = 'PERSON'
-  addForm.relation = ''
-  addForm.relationLabel = ''
-  showAddForm.value = false
-  
-  await loadKg()
-  await loadEntities()
+  addEntityLoading.value = true
+  try {
+    // 1) upsert 主实体
+    const mainEntityId = await kgUpsertEntity({
+      userId: currentUserId.value,
+      name: addForm.name.trim(),
+      type: addForm.type,
+      description: ''
+    })
+    const newEntityId = mainEntityId?.data?.data || mainEntityId?.data || mainEntityId
+
+    // 2) 如果填写了关系目标, 先 upsert 目标实体, 再建关系
+    if (addForm.relation && addForm.relationLabel) {
+      try {
+        const targetIdResp = await kgUpsertEntity({
+          userId: currentUserId.value,
+          name: addForm.relation.trim(),
+          type: 'OTHER'
+        })
+        const targetId = targetIdResp?.data?.data || targetIdResp?.data || targetIdResp
+        if (newEntityId && targetId) {
+          await kgCreateRelation({
+            userId: currentUserId.value,
+            fromId: newEntityId,
+            toId: targetId,
+            type: addForm.relationLabel.trim(),
+            description: '',
+            weight: 1.0
+          })
+        }
+      } catch (e) {
+        // 目标实体 upsert 失败不影响主实体创建
+      }
+    }
+
+    ElMessage.success('实体添加成功')
+
+    // 3) 重置表单
+    resetAddForm()
+    showAddForm.value = false
+
+    // 4) 刷新
+    await Promise.all([loadKg(), loadEntities()])
+  } catch (e) {
+    ElMessage.error('添加失败: ' + (e?.message || '请检查后端服务'))
+  } finally {
+    addEntityLoading.value = false
+  }
 }
 
 // 窗口调整

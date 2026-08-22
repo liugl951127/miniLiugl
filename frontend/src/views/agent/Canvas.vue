@@ -470,24 +470,39 @@ function deselectAll() {
 
 function deleteSelected() {
   if (!selectedIds.value.size) return
-  pushHistory()
-  selectedIds.value.forEach(id => {
-    edges.value = edges.value.filter(e => e.from !== id && e.to !== id)
-  })
-  nodes.value = nodes.value.filter(n => !selectedIds.value.has(n.id))
-  selectedIds.value = new Set()
-  selectedId.value = null
+  const count = selectedIds.value.size
+  ElMessageBox.confirm(`确定删除选中的 ${count} 个节点？关联连线会一并删除。`, '删除确认', {
+    confirmButtonText: '删除',
+    cancelButtonText: '取消',
+    type: 'warning',
+  }).then(() => {
+    pushHistory()
+    selectedIds.value.forEach(id => {
+      edges.value = edges.value.filter(e => e.from !== id && e.to !== id)
+    })
+    nodes.value = nodes.value.filter(n => !selectedIds.value.has(n.id))
+    selectedIds.value = new Set()
+    selectedId.value = null
+    ElMessage.success(`已删除 ${count} 个节点`)
+  }).catch(() => { /* cancel */ })
 }
 
 function removeNode(id) {
-  pushHistory()
-  nodes.value = nodes.value.filter(n => n.id !== id)
-  edges.value = edges.value.filter(e => e.from !== id && e.to !== id)
-  if (selectedIds.value.has(id)) {
-    selectedIds.value.delete(id)
-    selectedIds.value = new Set(selectedIds.value)
-  }
-  if (selectedId.value === id) selectedId.value = null
+  ElMessageBox.confirm('确定删除该节点？关联连线会一并删除。', '删除确认', {
+    confirmButtonText: '删除',
+    cancelButtonText: '取消',
+    type: 'warning',
+  }).then(() => {
+    pushHistory()
+    nodes.value = nodes.value.filter(n => n.id !== id)
+    edges.value = edges.value.filter(e => e.from !== id && e.to !== id)
+    if (selectedIds.value.has(id)) {
+      selectedIds.value.delete(id)
+      selectedIds.value = new Set(selectedIds.value)
+    }
+    if (selectedId.value === id) selectedId.value = null
+    ElMessage.success('节点已删除')
+  }).catch(() => { /* cancel */ })
 }
 
 // ── V7.0: Box Selection ────────────────────────────────────────────────
@@ -767,11 +782,22 @@ function newCanvas() {
 }
 
 function clearCanvas() {
-  pushHistory()
-  nodes.value = []
-  edges.value = []
-  selectedIds.value = new Set()
-  selectedId.value = null
+  if (!nodes.value.length && !edges.value.length) {
+    ElMessage.info('画布已为空')
+    return
+  }
+  ElMessageBox.confirm('确定清空画布所有节点和连线？此操作可通过撤销恢复。', '清空画布', {
+    confirmButtonText: '清空',
+    cancelButtonText: '取消',
+    type: 'warning',
+  }).then(() => {
+    pushHistory()
+    nodes.value = []
+    edges.value = []
+    selectedIds.value = new Set()
+    selectedId.value = null
+    ElMessage.success('画布已清空')
+  }).catch(() => { /* cancel */ })
 }
 
 function onDragStart(ev, nt) {

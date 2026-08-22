@@ -20,54 +20,158 @@
       </el-tab-pane>
       <el-tab-pane label="🎨 Agent 画布" name="canvas">
         <span slot="label"><el-icon><Brush /></el-icon> 画布</span>
-        <div class="tab-placeholder">
-          <el-card>
-            <div style="text-align:center;padding:40px">
-              <el-icon :size="48" style="color:#409eff"><Brush /></el-icon>
-              <h3 style="margin:16px 0 8px">Agent 画布</h3>
-              <p style="color:#909399;margin-bottom:16px">可视化编排 Agent 工作流，拖拽节点构建智能体图谱</p>
-              <el-button type="primary" @click="openCanvas">打开画布编辑器</el-button>
-            </div>
-          </el-card>
+        <!-- 内嵌摘要：最近 5 个工作流 -->
+        <div class="tab-summary">
+          <div class="tab-summary-header">
+            <span class="tab-summary-title">🎨 Agent 画布 · 最近工作流</span>
+            <el-button type="primary" size="small" @click="openCanvas">
+              打开完整页面
+              <el-icon><ArrowRight /></el-icon>
+            </el-button>
+          </div>
+          <el-table :data="canvasSummary" v-loading="canvasSummaryLoading" stripe size="small" empty-text="暂无工作流">
+            <el-table-column prop="name" label="工作流名称" min-width="200" show-overflow-tooltip />
+            <el-table-column label="节点数" width="80" align="center">
+              <template #default="{ row }">
+                <el-tag size="small" type="info">{{ (row.nodes || []).length }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="连线数" width="80" align="center">
+              <template #default="{ row }">{{ (row.edges || []).length }}</template>
+            </el-table-column>
+            <el-table-column label="更新时间" width="180">
+              <template #default="{ row }">{{ row.updatedAt || row.createdAt || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="操作" width="120" align="center">
+              <template #default="{ row }">
+                <el-button size="small" type="primary" link @click="openCanvas">在画布打开</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
         </div>
       </el-tab-pane>
       <el-tab-pane label="🔀 多智能体" name="multi">
         <span slot="label"><el-icon><Connection /></el-icon> 多智能体</span>
-        <div class="tab-placeholder">
-          <el-card>
-            <div style="text-align:center;padding:40px">
-              <el-icon :size="48" style="color:#67c23a"><Connection /></el-icon>
-              <h3 style="margin:16px 0 8px">多智能体编排</h3>
-              <p style="color:#909399;margin-bottom:16px">管理多 Agent 协作任务，支持并行推理与结果聚合</p>
-              <el-button type="primary" @click="openMulti">打开多智能体</el-button>
-            </div>
-          </el-card>
+        <!-- 内嵌摘要：最近 5 个多智能体执行 -->
+        <div class="tab-summary">
+          <div class="tab-summary-header">
+            <span class="tab-summary-title">🔀 多智能体 · 最近协作</span>
+            <el-button type="primary" size="small" @click="openMulti">
+              打开完整页面
+              <el-icon><ArrowRight /></el-icon>
+            </el-button>
+          </div>
+          <el-table :data="multiSummary" v-loading="multiSummaryLoading" stripe size="small" empty-text="暂无执行记录">
+            <el-table-column label="任务目标" min-width="220" show-overflow-tooltip>
+              <template #default="{ row }">
+                <div style="font-weight:500">{{ row.goal || row.name || '-' }}</div>
+                <div style="font-size:11px;color:#909399">ID: {{ row.id || row.taskId }}</div>
+              </template>
+            </el-table-column>
+            <el-table-column label="轮次" width="80" align="center">
+              <template #default="{ row }">{{ row.rounds ?? row.round ?? '-' }}</template>
+            </el-table-column>
+            <el-table-column label="耗时" width="100" align="center">
+              <template #default="{ row }">{{ row.totalDurationMs ? (row.totalDurationMs/1000).toFixed(1) + 's' : (row.duration || '-') }}</template>
+            </el-table-column>
+            <el-table-column label="Critic" width="100" align="center">
+              <template #default="{ row }">
+                <el-tag size="small" :type="row.criticPassed ? 'success' : 'danger'">
+                  {{ row.criticPassed ? '✅ 通过' : '⚠️ 未通过' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="时间" width="160">
+              <template #default="{ row }">{{ row.time || row.createdAt || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="操作" width="120" align="center">
+              <template #default>
+                <el-button size="small" type="primary" link @click="openMulti">查看详情</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
         </div>
       </el-tab-pane>
       <el-tab-pane label="📈 训练可视化" name="training">
         <span slot="label"><el-icon><TrendCharts /></el-icon> 训练</span>
-        <div class="tab-placeholder">
-          <el-card>
-            <div style="text-align:center;padding:40px">
-              <el-icon :size="48" style="color:#e6a23c"><TrendCharts /></el-icon>
-              <h3 style="margin:16px 0 8px">训练可视化</h3>
-              <p style="color:#909399;margin-bottom:16px">查看 Agent 模型训练指标、损失曲线与评估结果</p>
-              <el-button type="primary" @click="openTraining">打开训练面板</el-button>
-            </div>
-          </el-card>
+        <!-- 内嵌摘要：最近 5 个训练任务 -->
+        <div class="tab-summary">
+          <div class="tab-summary-header">
+            <span class="tab-summary-title">📈 训练 · 最近任务</span>
+            <el-button type="primary" size="small" @click="openTraining">
+              打开完整页面
+              <el-icon><ArrowRight /></el-icon>
+            </el-button>
+          </div>
+          <el-table :data="trainingSummary" v-loading="trainingSummaryLoading" stripe size="small" empty-text="暂无训练任务">
+            <el-table-column prop="taskId" label="任务ID" width="120" />
+            <el-table-column label="状态" width="100" align="center">
+              <template #default="{ row }">
+                <el-tag size="small" :type="row.status === 'completed' ? 'success' : row.status === 'failed' ? 'danger' : 'primary'">
+                  {{ {running:'进行中',completed:'已完成',failed:'失败'}[row.status] || row.status }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="Epoch" width="80" align="center">
+              <template #default="{ row }">{{ row.epochs ?? '-' }}</template>
+            </el-table-column>
+            <el-table-column label="样本数" width="100" align="right">
+              <template #default="{ row }">{{ row.totalSamples ?? 0 }}</template>
+            </el-table-column>
+            <el-table-column label="意图数" width="100" align="right">
+              <template #default="{ row }">{{ row.totalIntents ?? 0 }}</template>
+            </el-table-column>
+            <el-table-column label="开始时间" width="180">
+              <template #default="{ row }">{{ row.startedAt || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="操作" width="120" align="center">
+              <template #default>
+                <el-button size="small" type="primary" link @click="openTraining">查看</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
         </div>
       </el-tab-pane>
       <el-tab-pane label="✅ Skill 审批" name="approval">
         <span slot="label"><el-icon><CircleCheck /></el-icon> 审批</span>
-        <div class="tab-placeholder">
-          <el-card>
-            <div style="text-align:center;padding:40px">
-              <el-icon :size="48" style="color:#f56c6c"><CircleCheck /></el-icon>
-              <h3 style="margin:16px 0 8px">Skill 审批</h3>
-              <p style="color:#909399;margin-bottom:16px">高风险 Skill 执行需管理员审批，保障系统安全</p>
-              <el-button type="primary" @click="openApproval">打开审批面板</el-button>
-            </div>
-          </el-card>
+        <!-- 内嵌摘要：最近 5 个审批请求 -->
+        <div class="tab-summary">
+          <div class="tab-summary-header">
+            <span class="tab-summary-title">✅ Skill 审批 · 最近请求</span>
+            <el-button type="primary" size="small" @click="openApproval">
+              打开完整页面
+              <el-icon><ArrowRight /></el-icon>
+            </el-button>
+          </div>
+          <el-table :data="approvalSummary" v-loading="approvalSummaryLoading" stripe size="small" empty-text="暂无审批请求">
+            <el-table-column prop="username" label="申请人" width="120" />
+            <el-table-column prop="toolName" label="工具" width="180" show-overflow-tooltip />
+            <el-table-column label="风险" width="90" align="center">
+              <template #default="{ row }">
+                <el-tag size="small" :type="row.riskLevel === 'CRITICAL' ? 'danger' : row.riskLevel === 'HIGH' ? 'warning' : 'info'">
+                  {{ row.riskLevel }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="状态" width="100" align="center">
+              <template #default="{ row }">
+                <el-tag size="small" :type="row.status === 'APPROVED' ? 'success' : row.status === 'REJECTED' ? 'danger' : 'warning'">
+                  {{ {APPROVED:'已通过',REJECTED:'已拒绝',PENDING:'待审批'}[row.status] || row.status }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="执行目的" min-width="200" show-overflow-tooltip>
+              <template #default="{ row }">{{ row.goal || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="时间" width="180">
+              <template #default="{ row }">{{ row.createdAt || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="操作" width="120" align="center">
+              <template #default>
+                <el-button size="small" type="primary" link @click="openApproval">前往审批</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
         </div>
       </el-tab-pane>
     </el-tabs>
@@ -487,11 +591,12 @@ import { ElMessage } from 'element-plus'
 import { ElMessageBox } from 'element-plus'
 import { agentApi } from '@/api/agent'
 import { autoAgentGroupGenerate } from '@/api/ai'
+import http from '@/api/http'
 import { useClipboard } from '@/composables/useClipboard'
 import {
   Plus, Refresh, VideoPlay, MagicStick, Download, CaretRight,
   ChatDotSquare, Loading, UserFilled, QuestionFilled, CopyDocument,
-  List, Brush, Connection, TrendCharts, CircleCheck,
+  List, Brush, Connection, TrendCharts, CircleCheck, ArrowRight,
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -507,6 +612,66 @@ function openCanvas() { router.push('/agent/canvas') }
 function openMulti() { router.push('/agent/multi') }
 function openTraining() { router.push('/agent/training') }
 function openApproval() { router.push('/agent/approval') }
+
+// ===== Tab 摘要数据 (子页面真实数据预览) =====
+const canvasSummary = ref([])
+const canvasSummaryLoading = ref(false)
+const multiSummary = ref([])
+const multiSummaryLoading = ref(false)
+const trainingSummary = ref([])
+const trainingSummaryLoading = ref(false)
+const approvalSummary = ref([])
+const approvalSummaryLoading = ref(false)
+
+async function loadCanvasSummary() {
+  canvasSummaryLoading.value = true
+  try {
+    const r = await agentApi.list({ limit: 5 })
+    canvasSummary.value = r.data?.list || r.data || []
+  } catch { canvasSummary.value = [] }
+  finally { canvasSummaryLoading.value = false }
+}
+
+async function loadMultiSummary() {
+  multiSummaryLoading.value = true
+  try {
+    // 多智能体执行历史（与 Multi.vue 同一接口）
+    const r = await http.get('/agent/multi/history', { params: { limit: 5 } }).catch(() => null)
+    if (r?.data) {
+      const data = r.data
+      multiSummary.value = Array.isArray(data) ? data : (data.list || data)
+    } else {
+      multiSummary.value = []
+    }
+  } catch { multiSummary.value = [] }
+  finally { multiSummaryLoading.value = false }
+}
+
+async function loadTrainingSummary() {
+  trainingSummaryLoading.value = true
+  try {
+    const r = await http.get('/ai/training/llm/list')
+    const list = r.data || []
+    trainingSummary.value = list.slice(0, 5)
+  } catch { trainingSummary.value = [] }
+  finally { trainingSummaryLoading.value = false }
+}
+
+async function loadApprovalSummary() {
+  approvalSummaryLoading.value = true
+  try {
+    // 同时拉取待审批和历史，合并去重
+    const [pendingR, historyR] = await Promise.all([
+      http.get('/skill-approval/pending/all').catch(() => ({ data: [] })),
+      http.get('/skill-approval/history', { params: { page: 1, size: 5 } }).catch(() => ({ data: [] })),
+    ])
+    const merged = [...(pendingR.data || []), ...(historyR.data || [])]
+    // 按 createdAt 倒序
+    merged.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
+    approvalSummary.value = merged.slice(0, 5)
+  } catch { approvalSummary.value = [] }
+  finally { approvalSummaryLoading.value = false }
+}
 
 const templates = [
   { type: 'code', name: '代码审查', icon: '🔍', desc: '分析代码质量，查找 Bug 和优化点', agentType: 'code', difficulty: 'medium', prompt: '请帮我审查以下代码的质量，查找潜在的 Bug、安全问题和性能优化点。' },
@@ -937,15 +1102,37 @@ async function saveAsTemplate(row) {
   } catch {}
 }
 
-onMounted(loadHistory)
+onMounted(() => {
+  loadHistory()
+  // 加载 4 个子模块的摘要数据，让 tab 切换有真实内容
+  loadCanvasSummary()
+  loadMultiSummary()
+  loadTrainingSummary()
+  loadApprovalSummary()
+})
 </script>
 
 <style lang="scss" scoped>
 .page-card { background: #fff; border-radius: 8px; padding: 20px; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; h2 { margin: 0; font-size: 16px; } }
 .agent-tabs { margin-bottom: 0; }
-.tab-placeholder { padding-top: 8px; }
-.tab-placeholder .el-card { max-width: 480px; margin: 0 auto; }
+
+/* ===== V7.0: Tab 内嵌摘要样式 ===== */
+.tab-summary {
+  padding: 12px 0 0;
+}
+.tab-summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+.tab-summary-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+}
 
 .ai-generate-card {
   border: 2px solid #dbeafe;

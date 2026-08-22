@@ -73,7 +73,18 @@
       </div>
 
       <el-scrollbar>
-        <el-menu :default-active="activeSessionId" class="session-menu">
+        <div v-if="sessionsLoading" v-loading="true" class="session-loading">
+          <span style="font-size:12px;color:#909399">加载会话列表…</span>
+        </div>
+        <el-empty
+          v-else-if="!sessions.length"
+          description="还没有会话"
+          :image-size="80"
+          style="padding: 20px 8px"
+        >
+          <el-button type="primary" size="small" @click="createSession">创建第一个会话</el-button>
+        </el-empty>
+        <el-menu v-else :default-active="activeSessionId" class="session-menu">
           <el-menu-item
             v-for="s in sessions" :key="s.id"
             @click="switchSession(s)"
@@ -287,6 +298,22 @@
               </div>
             </div>
           </div>
+
+          <!-- V7.3+: 流式响应中断 - 重连按钮 -->
+          <div v-if="streamError" class="message assistant">
+            <el-avatar :size="32">⚠️</el-avatar>
+            <div class="msg-content">
+              <div class="msg-bubble" style="background:#fef0f0;border:1px solid #fde2e2">
+                <div style="color:#f56c6c;font-size:13px;margin-bottom:6px">
+                  ⚠️ 流式响应中断：{{ streamError }}
+                </div>
+                <el-button size="small" type="primary" @click="reconnectStream">
+                  <el-icon><Refresh /></el-icon>重连
+                </el-button>
+                <el-button size="small" @click="streamError = ''" style="margin-left:6px">忽略</el-button>
+              </div>
+            </div>
+          </div>
         </div>
       </el-scrollbar>
 
@@ -379,6 +406,10 @@ import { Plus, Picture, VideoCamera, Document, Close, Delete, EditPen, VideoPlay
 
 // ============ 状态 ============
 const sessions = ref([])
+const sessionsLoading = ref(false)  // 会话列表加载状态
+// V7.3: 流式响应中断错误
+const streamError = ref('')
+const lastFailedMessage = ref('')  // 上次失败的消息（用于重连）
 // V7.0: 知识库状态
 const selectedKbId = ref(null)
 const ragModel = ref('') // RAG 模式专用模型
@@ -507,7 +538,7 @@ async function loadKnowledgeBases() {
     myKbs.value = myRes.data || []
     publicKbs.value = pubRes.data || []
   } catch (e) {
-    console.warn('[Chat] 加载知识库失败:', e)
+    // V7.4: 静默失败（不影响主功能）
     myKbs.value = []
     publicKbs.value = []
   }
@@ -927,6 +958,7 @@ async function sendMessage() {
       currentStream = await sendMessageStream(activeSessionId.value, streamPayload, {
         onContent: (chunk) => {
           assistantMsg.content += chunk
+          streamError.value = ''  // 收到内容时清空错误状态
           scrollBottom()
         },
         onAgentStatus: (status) => {
@@ -939,17 +971,27 @@ async function sendMessage() {
           assistantMsg.content += '\n\n🤖 【Agent 执行结果】\n' + result + '\n'
           scrollBottom()
         },
-        onDone: () => { assistantMsg.model = model },
+        onDone: () => {
+          assistantMsg.model = model
+          streamError.value = ''
+        },
         onError: (err) => {
-          assistantMsg.content = '⚠️ 流式响应错误：' + (err?.message || '未知错误')
+          const errMsg = err?.message || '未知错误'
+          assistantMsg.content = '⚠️ 流式响应错误：' + errMsg
+          streamError.value = errMsg
+          lastFailedMessage.value = text  // 记录失败的消息用于重连
         },
       })
     }
   } catch (e) {
+    const errMsg = e?.message || '未知错误'
     messages.value.push({
       role: 'assistant',
-      content: '⚠️ 请求失败：' + (e.message || '未知错误'),
+      content: '⚠️ 请求失败：' + errMsg,
     })
+    streamError.value = errMsg
+    lastFailedMessage.value = text
+    ElMessage.error('发送失败：' + errMsg)
   } finally {
     loading.value = false
     isStreaming.value = false
@@ -957,12 +999,29 @@ async function sendMessage() {
   }
 }
 
+/** V7.3: 重连流式响应 - 重新发送上次失败的消息 */
+async function reconnectStream() {
+  if (!lastFailedMessage.value) {
+    ElMessage.warning('没有可重连的消息')
+    return
+  }
+  streamError.value = ''
+  inputText.value = lastFailedMessage.value
+  await sendMessage()
+}
+
 // ============ 会话管理 ============
 async function loadSessions() {
+  sessionsLoading.value = true
   try {
     const r = await listSessions()
     sessions.value = r.data?.list || r.data || []
-  } catch { sessions.value = [] }
+  } catch (e) {
+    sessions.value = []
+    ElMessage.error('加载会话列表失败：' + (e?.message || '网络错误'))
+  } finally {
+    sessionsLoading.value = false
+  }
 }
 
 async function loadMessages(sessionId) {
@@ -973,7 +1032,10 @@ async function loadMessages(sessionId) {
       imageUrls: extractImageUrls(m.content),
       videoUrls: extractVideoUrls(m.content),
     }))
-  } catch { messages.value = [] }
+  } catch (e) {
+    messages.value = []
+    ElMessage.error('加载消息失败：' + (e?.message || '网络错误'))
+  }
 }
 
 async function createSession() {
@@ -996,7 +1058,10 @@ async function createSession() {
       kbId: selectedKbId.value, agentId: selectedAgentId.value })
     activeSessionId.value = id
     messages.value = []
-  } catch { ElMessage.error('创建会话失败') }
+    ElMessage.success('会话已创建')
+  } catch (e) {
+    ElMessage.error('创建会话失败：' + (e?.message || '网络错误'))
+  }
 }
 
 async function switchSession(s) {
@@ -1014,7 +1079,7 @@ async function switchSession(s) {
 // ============ 会话管理 ============
 async function removeSession(s) {
   try {
-    await ElMessageBox.confirm(`删除会话「${s.title || '新会话'}」？`, '确认删除', {
+    await ElMessageBox.confirm(`删除会话「${s.title || '新会话'}」？此操作不可恢复。`, '确认删除', {
       confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning',
     })
     await deleteSession(s.id)
@@ -1024,20 +1089,26 @@ async function removeSession(s) {
       if (sessions.value.length) await switchSession(sessions.value[0])
       else { activeSessionId.value = null; messages.value = [] }
     }
-    ElMessage.success('已删除')
-  } catch { /* cancel */ }
+    ElMessage.success('会话已删除')
+  } catch (e) {
+    if (e === 'cancel' || e?.toString?.().includes('cancel')) return
+    ElMessage.error('删除失败：' + (e?.message || '网络错误'))
+  }
 }
 
 async function renameSession(s) {
-  const { value: newTitle } = await ElMessageBox.prompt(
-    '输入新名称', '重命名会话', { confirmButtonText: '确定', cancelButtonText: '取消',
-      inputValue: s.title || '', })
-  if (!newTitle?.trim()) return
   try {
+    const { value: newTitle } = await ElMessageBox.prompt(
+      '输入新名称', '重命名会话', { confirmButtonText: '确定', cancelButtonText: '取消',
+        inputValue: s.title || '', })
+    if (!newTitle?.trim()) return
     await updateSession(s.id, { title: newTitle.trim() })
     s.title = newTitle.trim()
     ElMessage.success('已重命名')
-  } catch { ElMessage.error('重命名失败') }
+  } catch (e) {
+    if (e === 'cancel' || e?.toString?.().includes('cancel')) return
+    ElMessage.error('重命名失败：' + (e?.message || '网络错误'))
+  }
 }
 
 // ============ 加载模型列表 (V6.8.2: 用 /models 含本地模型) ============
@@ -1150,6 +1221,10 @@ onMounted(async () => {
 }
 .session-menu { border-right: none; }
 .session-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.session-loading {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100px; padding: 16px;
+}
 .kb-selector-wrap {
   padding: 8px 12px;
   border-bottom: 1px solid #f0f0f0;

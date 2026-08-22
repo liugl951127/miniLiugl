@@ -1,0 +1,355 @@
+version: 1
+plan:
+  name: "前端企业级升级 - 4 并行领域"
+  goal: |
+    把前端所有 41 个 view 文件升级到企业级：
+    (1) 修真实"未集成"功能 (placeholder tab / 0-API / TODO)
+    (2) 加 loading / empty / error 状态
+    (3) 加表单验证 / 确认对话框 / 操作反馈
+    (4) 消除 console.log / TODO / 假按钮
+
+variables:
+  workspace: /workspace/miniLiugl
+  frontend: /workspace/miniLiugl/frontend
+  api_dir: /workspace/miniLiugl/frontend/src/api
+  views_dir: /workspace/miniLiugl/frontend/src/views
+
+# 企业级标准
+common_standards: |
+  ★ 企业级标准（每个 task 必须达到）:
+  1. **真实 API 集成**: 所有数据来自后端 API, 删除硬编码 mock / Math.random / 假数据
+  2. **Loading 状态**: 列表/卡片用 `v-loading="loading"`, 首次加载有 skeleton
+  3. **空状态**: 数据为空时显示 `<el-empty description="...">` + 引导按钮
+  4. **错误处理**: 所有 API 调用 `try/catch`, 失败用 `ElMessage.error()` 提示
+  5. **确认对话框**: 删除等破坏性操作必须用 `ElMessageBox.confirm()` 二次确认
+  6. **操作反馈**: 成功用 `ElMessage.success()`, 警告用 `ElMessage.warning()`
+  7. **表单验证**: 必填字段用 `:rules` 校验, 错误信息明确
+  8. **占位符消除**: 不允许 `tab-placeholder` `canvas-placeholder` `chart-placeholder` `scan-placeholder` `explain-placeholder` 这些"假按钮"占位（要么实现要么改为外部跳转引导）
+  9. **零 console.log**: 调试用的 console.log 要么删除要么用 console.debug
+  10. **零 TODO**: 不留 TODO 注释（除非功能确实依赖后端尚未提供的 API）
+
+  ★ 验证方式:
+  - `cd /workspace/miniLiugl/frontend && npm run build` 必须成功
+  - ESLint 无 error
+  - 修改文件不超过原文件 +50% 行数（避免过度膨胀）
+
+tasks:
+  # ════════════════════════════════════════════════
+  # 任务 1: agent/* + chat/* + function/* 升级
+  # ════════════════════════════════════════════════
+  - id: T1-agent-chat
+    title: "核心 AI 工作流企业级升级 (agent + chat + function)"
+    assigned_to: general
+    verified_by: explore
+    timeout_ms: 1800000
+    verify_prompt: |
+      验证 /workspace/miniLiugl/frontend/src/views/agent/ + chat/ + function/ 下的修改:
+      1. agent/Index.vue: 不再有 4 个 tab-placeholder 卡片, 改为内嵌摘要
+      2. chat/Index.vue: CRUD 都有 loading + 反馈
+      3. function/Index.vue: 工具测试有 loading + 反馈
+      4. cd /workspace/miniLiugl/frontend && npm run build 必须成功
+      5. 任意 agent/* 页面 (如 agent/Index.vue) 在浏览器加载后, onMounted 钩子里的 API 调用必须真实
+      6. 关键操作 (删除会话/禁用工具等) 必须有 ElMessageBox.confirm 二次确认
+      不要只看 diff, 实际 grep 文件内容验证。
+    prompt: |
+      目标文件 (15 个):
+      - /workspace/miniLiugl/frontend/src/views/agent/Index.vue (990 行, 重点)
+      - /workspace/miniLiugl/frontend/src/views/agent/Canvas.vue (1363 行)
+      - /workspace/miniLiugl/frontend/src/views/agent/Multi.vue (989 行)
+      - /workspace/miniLiugl/frontend/src/views/agent/Auto.vue (441 行)
+      - /workspace/miniLiugl/frontend/src/views/agent/Approval.vue (236 行)
+      - /workspace/miniLiugl/frontend/src/views/agent/Stream.vue
+      - /workspace/miniLiugl/frontend/src/views/agent/Training.vue
+      - /workspace/miniLiugl/frontend/src/views/agent/PropertyPanel.vue
+      - /workspace/miniLiugl/frontend/src/views/agent/MiniMap.vue
+      - /workspace/miniLiugl/frontend/src/views/agent/NodePalette.vue
+      - /workspace/miniLiugl/frontend/src/views/chat/Index.vue (1246 行, 重点)
+      - /workspace/miniLiugl/frontend/src/views/chat/Stream.vue
+      - /workspace/miniLiugl/frontend/src/views/function/Index.vue
+
+      必须完成的工作:
+
+      **1. agent/Index.vue 改造 (最高优先级)**
+      - 删除所有 4 个 `tab-placeholder` 卡片 (canvas/multi/training/approval, 在 line 21-72)
+      - 这 4 个 tab 改为: 内嵌显示对应子组件的真实摘要 (取该子页面前 5-10 条数据)
+      - "打开完整页面" 按钮保留, 跳转到对应子路由
+      - onMounted 加载所有 4 个子模块的摘要数据
+      - 注意: 顶部 "任务编排" tab (line 18-20) 保留不动, 是真实内容
+
+      **2. agent/Canvas.vue 增强**
+      - 添加 Ctrl+Z 撤销 / Ctrl+Y 重做
+      - 添加 Ctrl+C/V 复制粘贴节点
+      - 添加对齐辅助线（拖拽时显示其他节点的水平/垂直对齐参考线）
+      - 添加多选框选（按住鼠标拖拽空白处选择多个节点）
+      - 节点删除/复制等操作有确认
+
+      **3. agent/Multi.vue 增强**
+      - 锁定自动滚动开关 (用户手动滚动时停止自动滚动)
+      - 多 Agent 协作有错误时显示错误状态
+      - 删除 `canvas-placeholder` div
+
+      **4. chat/Index.vue 完善**
+      - 确认所有 CRUD 都有反馈 (创建会话/删除/重命名)
+      - 加载历史有 loading
+      - 空历史有 empty state (用 el-empty)
+      - 发送消息失败有 error 提示
+      - 流式响应中断有重连按钮
+      - 所有 try/catch 都加 ElMessage
+
+      **5. function/Index.vue 完善**
+      - 工具列表有 v-loading + empty
+      - 测试调用有 loading 状态
+      - 启用/禁用有 ElMessageBox.confirm + 反馈
+
+      **6. agent/Auto.vue 完善**
+      - 表单字段全部加 :rules
+      - 提交有 loading + ElMessage.success/error 反馈
+
+      **7. agent/Approval.vue 完善**
+      - 列表 v-loading + empty
+      - 批准/拒绝有确认 + 反馈
+
+      **8. 通用**
+      - 所有删除操作加 ElMessageBox.confirm
+      - 所有成功操作加 ElMessage.success
+      - 所有失败操作加 ElMessage.error
+      - 占位符 tab 全部消除
+      - 清理 console.log
+
+      最后必须: `cd /workspace/miniLiugl/frontend && npm run build` 验证成功
+
+  # ════════════════════════════════════════════════
+  # 任务 2: pipeline/* + knowledge/* + kg/* + memory/* 升级
+  # ════════════════════════════════════════════════
+  - id: T2-pipeline-knowledge
+    title: "工作流 + 数据 + 知识图谱企业级升级"
+    assigned_to: general
+    verified_by: explore
+    timeout_ms: 1800000
+    verify_prompt: |
+      验证 /workspace/miniLiugl/frontend/src/views/pipeline/ + knowledge/ + kg/ + memory/ 下的修改:
+      1. pipeline/Index.vue: 不再有 tab-placeholder 卡片
+      2. kg/Index.vue: 找 "// TODO: 调用实际的导入 API" 和 "// TODO: 调用实际的添加 API", 必须已实现
+      3. knowledge/Index.vue: 知识库 CRUD 都有 loading + empty + 反馈
+      4. cd /workspace/miniLiugl/frontend && npm run build 必须成功
+      5. 任何"// TODO" 残留需明确说明理由
+    prompt: |
+      目标文件 (6 个):
+      - /workspace/miniLiugl/frontend/src/views/pipeline/Index.vue (重点: 2 个 tab-placeholder)
+      - /workspace/miniLiugl/frontend/src/views/pipeline/Designer.vue
+      - /workspace/miniLiugl/frontend/src/views/pipeline/RunMonitor.vue
+      - /workspace/miniLiugl/frontend/src/views/knowledge/Index.vue (1364 行)
+      - /workspace/miniLiugl/frontend/src/views/kg/Index.vue (重点: 2 个 TODO)
+      - /workspace/miniLiugl/frontend/src/views/memory/Index.vue
+
+      必须完成的工作:
+
+      **1. pipeline/Index.vue 改造 (重点)**
+      - 删除 line 36 和 line 49 的 2 个 `tab-placeholder` div (画布设计器 / 运行监控)
+      - 改为内嵌显示: Designer tab 加载最近 5 个工作流列表, RunMonitor tab 加载最近 5 次运行列表
+      - "打开完整页面" 按钮保留
+
+      **2. pipeline/Designer.vue 完善**
+      - 节点拖拽有反馈
+      - 保存/运行有 loading + toast
+      - 验证 JSON 错误有明确提示
+
+      **3. pipeline/RunMonitor.vue 完善**
+      - 列表 v-loading + empty
+      - 可选 setInterval 5s 轮询刷新
+
+      **4. knowledge/Index.vue 完善**
+      - 知识库列表 v-loading + empty
+      - 文档上传有进度 + 完成反馈
+      - 检索按钮有 loading
+      - 删除有 ElMessageBox.confirm
+      - 全部 CRUD 都有 ElMessage 反馈
+
+      **5. kg/Index.vue 修复 TODO (重点)**
+      - 找到 line 881 "// TODO: 调用实际的导入 API" 实现真正的导入
+      - 找到 line 903 "// TODO: 调用实际的添加 API" 实现真正的添加
+      - 调用 /workspace/miniLiugl/frontend/src/api/kg.js 或 backend kg 相关 API
+      - 失败有 ElMessage.error 提示
+      - 成功后刷新列表
+
+      **6. memory/Index.vue 完善**
+      - 列表 v-loading + empty
+      - 新增/删除/编辑有 loading + 确认 + 反馈
+      - 表单字段加 :rules 验证
+
+      **通用**
+      - 占位符全部消除
+      - 所有 CRUD 都有 loading/反馈/确认
+      - 表单加 :rules
+      - 清理 console.log
+
+      最后必须: `cd /workspace/miniLiugl/frontend && npm run build` 验证成功
+
+  # ════════════════════════════════════════════════
+  # 任务 3: model + training + multimodal + prompts 升级
+  # ════════════════════════════════════════════════
+  - id: T3-model-training-multimodal
+    title: "AI 能力页面企业级升级"
+    assigned_to: general
+    verified_by: explore
+    timeout_ms: 1800000
+    verify_prompt: |
+      验证 /workspace/miniLiugl/frontend/src/views/{model,training,multimodal,prompts} 下的修改:
+      1. model/Index.vue: 真实 API 集成 + loading + empty
+      2. training/Console.vue: chart-placeholder 改为真实图表或友好空状态
+      3. multimodal/Index.vue: 4 个 Tab 都有 loading
+      4. prompts/Index.vue: 模板 CRUD 完整
+      5. cd /workspace/miniLiugl/frontend && npm run build 必须成功
+    prompt: |
+      目标文件 (5 个):
+      - /workspace/miniLiugl/frontend/src/views/model/Index.vue (779 行)
+      - /workspace/miniLiugl/frontend/src/views/training/Console.vue (452 行)
+      - /workspace/miniLiugl/frontend/src/views/training/Dashboard.vue
+      - /workspace/miniLiugl/frontend/src/views/multimodal/Index.vue (1371 行)
+      - /workspace/miniLiugl/frontend/src/views/prompts/Index.vue (265 行)
+
+      必须完成的工作:
+
+      **1. model/Index.vue 完善**
+      - 模型列表 v-loading + empty
+      - Tab 切换正确加载数据
+      - 启用/禁用 Provider 有 ElMessageBox.confirm
+      - 同步模型有 loading + ElMessage 反馈
+      - 表单加 :rules
+
+      **2. training/Console.vue 完善**
+      - 任务列表 v-loading + empty
+      - 启动训练有 loading + 反馈
+      - 取消任务有确认
+      - 实时日志有自动滚动 + 暂停按钮
+      - 删除 line 124 的 `chart-placeholder` div, 改为真实图表 (用 ECharts 画 loss/accuracy 曲线) 或友好空状态 (用 el-empty)
+
+      **3. training/Dashboard.vue 完善**
+      - Dashboard 卡片 v-loading
+      - 启用模型按钮有 ElMessage.success 反馈
+      - 任务选择器有变化时加载数据
+
+      **4. multimodal/Index.vue 完善**
+      - 4 个 Tab (图片生成/识别/语音/视频) 都有 v-loading + empty
+      - 提交按钮有 loading
+      - 失败有 ElMessage.error
+      - 生成结果展示完整 (图片显示/文本展示/音频播放)
+
+      **5. prompts/Index.vue 完善**
+      - 模板列表 v-loading + empty
+      - 新建/编辑/删除有 loading + 确认 + 反馈
+      - 复制到剪贴板有 ElMessage.success
+      - 变量渲染预览
+
+      **通用**
+      - 占位符全部消除 (除 training/Console.vue 的 chart-placeholder 改为友好空状态)
+      - 所有 CRUD 都有 loading/反馈/确认
+      - 表单加 :rules
+      - 清理 console.log
+
+      最后必须: `cd /workspace/miniLiugl/frontend && npm run build` 验证成功
+
+  # ════════════════════════════════════════════════
+  # 任务 4: 运维 + 监控 + 协作 + 平台 升级
+  # ════════════════════════════════════════════════
+  - id: T4-ops-platform
+    title: "运维 + 监控 + 协作 + 平台页面企业级升级"
+    assigned_to: general
+    verified_by: explore
+    timeout_ms: 1800000
+    verify_prompt: |
+      验证 /workspace/miniLiugl/frontend/src/views/{analytics,monitor,collab,admin,settings,super,tenant,apikey,plugins,rule,notification,auth,About,Error} 下的修改:
+      1. analytics/Nl2Sql.vue: 之前 0 API, 现在必须有 onMounted + 真实 API 调用
+      2. settings/Index.vue: TODO 注释 (line 639 "// TODO: 后端尚无 /system/settings 接口") 处理了
+      3. super/Index.vue: TODO 注释 (line 91 "// TODO: 后端尚无 /system/settings 接口") 处理了
+      4. 所有页面 CRUD 完整 (loading + empty + 反馈 + 确认)
+      5. cd /workspace/miniLiugl/frontend && npm run build 必须成功
+    prompt: |
+      目标文件 (20 个):
+      - /workspace/miniLiugl/frontend/src/views/analytics/Index.vue (984 行)
+      - /workspace/miniLiugl/frontend/src/views/analytics/Nl2Sql.vue (重点: 0 API 必须修)
+      - /workspace/miniLiugl/frontend/src/views/monitor/Index.vue (1219 行)
+      - /workspace/miniLiugl/frontend/src/views/collab/Index.vue (592 行)
+      - /workspace/miniLiugl/frontend/src/views/admin/Index.vue
+      - /workspace/miniLiugl/frontend/src/views/admin/Dashboard.vue
+      - /workspace/miniLiugl/frontend/src/views/admin/Alerts.vue
+      - /workspace/miniLiugl/frontend/src/views/settings/Index.vue (721 行)
+      - /workspace/miniLiugl/frontend/src/views/super/Index.vue
+      - /workspace/miniLiugl/frontend/src/views/tenant/Index.vue
+      - /workspace/miniLiugl/frontend/src/views/apikey/Index.vue
+      - /workspace/miniLiugl/frontend/src/views/apikey/Stats.vue
+      - /workspace/miniLiugl/frontend/src/views/plugins/Index.vue
+      - /workspace/miniLiugl/frontend/src/views/rule/Index.vue (922 行)
+      - /workspace/miniLiugl/frontend/src/views/notification/Index.vue
+      - /workspace/miniLiugl/frontend/src/views/auth/Login.vue
+      - /workspace/miniLiugl/frontend/src/views/auth/H5Login.vue
+      - /workspace/miniLiugl/frontend/src/views/auth/WechatScanPageV2.vue
+      - /workspace/miniLiugl/frontend/src/views/About.vue
+      - /workspace/miniLiugl/frontend/src/views/Error.vue
+
+      必须完成的工作:
+
+      **1. analytics/Nl2Sql.vue (重点: 0 API 必须修)**
+      - 当前 0 个 API 调用, 必须接 /workspace/miniLiugl/frontend/src/api/analytics.js
+      - listDataSources / createDataSource / testDataSource / listDatabases / listTables / getTableProfile / runNlQuery 全部接上
+      - 添加 v-loading + empty + 错误处理
+      - 顶部 onMounted 调 listDataSources 加载数据源
+      - 选数据源后调 listDatabases
+      - 选库后调 listTables
+      - 输入自然语言后调 runNlQuery
+
+      **2. analytics/Index.vue 完善**
+      - 所有 Tab 都有 v-loading + empty
+      - 投票/数据源/趋势/NL2SQL 都有真实数据加载
+      - 错误有 ElMessage 反馈
+
+      **3. monitor/Index.vue 完善**
+      - 告警/规则/通道都有 v-loading + empty
+      - 创建/删除有确认 + 反馈
+      - 表单加 :rules
+      - 错误有 toast
+
+      **4. collab/Index.vue 完善**
+      - 房间列表 v-loading + empty
+      - 创建房间有反馈
+      - WebSocket 断线有重连提示
+      - 删除任何 canvas-placeholder 占位
+
+      **5. admin/Dashboard.vue + admin/Index.vue + admin/Alerts.vue**
+      - 加载真实数据
+      - v-loading + empty
+      - 操作有反馈
+
+      **6. settings/Index.vue + super/Index.vue (重点)**
+      - 检查后端是否有 /api/v1/system/settings 接口
+        (可在 /workspace/miniLiugl/backend/ 全局 grep "/system/settings" 找)
+      - 如有: 接入并保存
+      - 如无: 保留本地保存 (加 ElMessage.info 提示用户"已保存到本地")
+      - 删除 line 639 和 line 91 的 TODO 注释
+
+      **7. tenant/Index.vue + apikey/Index.vue + apikey/Stats.vue**
+      - 列表 v-loading + empty
+      - CRUD 都有确认 + 反馈 + loading
+      - API Key 创建/轮换有 loading
+
+      **8. plugins/Index.vue + rule/Index.vue + notification/Index.vue**
+      - 列表 v-loading + empty
+      - CRUD 完整
+      - 删除 rule/Index.vue line 266 的 explain-placeholder, 改为友好空状态
+
+      **9. auth/Login.vue + H5Login.vue + WechatScanPageV2.vue**
+      - 登录有 loading
+      - 失败有 shake 动画 + 明确错误 (如 密码错误 / 账号不存在 / 账号锁定)
+      - 表单 :rules 验证
+
+      **10. About.vue + Error.vue**
+      - About: 加版本号 / 版权 / 链接 (静态展示)
+      - Error: 友好错误页 (404 / 500 / 403 区分)
+
+      **通用**
+      - 占位符全部消除
+      - 所有 CRUD 都有 loading/反馈/确认
+      - 表单加 :rules
+      - 清理 console.log
+
+      最后必须: `cd /workspace/miniLiugl/frontend && npm run build` 验证成功
