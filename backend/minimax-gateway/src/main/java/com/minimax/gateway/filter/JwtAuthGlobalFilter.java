@@ -169,6 +169,11 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
      */
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        // 0. OPTIONS 预检请求直接放行 (CORS)
+        if (exchange.getRequest().getMethod() == org.springframework.http.HttpMethod.OPTIONS) {
+            return chain.filter(exchange);
+        }
+
         // 1. 取请求路径 (e.g. "/api/v1/auth/login")
         String path = exchange.getRequest().getPath().value();
 
@@ -281,6 +286,7 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
                 || path.startsWith("/api/v1/logs/")       // 前端日志上报
                 || path.startsWith("/api/ai/intro")
                 || path.startsWith("/api/v1/agent/external/")  // T1-backend-auth-audit: 外部系统 API Key 鉴权, 免 JWT
+                || path.startsWith("/api/v1/ai/intro")
                 || path.startsWith("/ws/")               // WebSocket 端点
                 || path.startsWith("/v3/api-docs")         // OpenAPI JSON
                 || path.startsWith("/swagger-ui")          // Swagger UI

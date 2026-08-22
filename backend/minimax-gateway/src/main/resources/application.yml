@@ -17,6 +17,8 @@ spring:
   main:
     web-application-type: reactive
     allow-bean-definition-overriding: true
+  security:
+    enabled: false
   data:
     redis:
       host: ${REDIS_HOST:127.0.0.1}
@@ -43,8 +45,8 @@ spring.cloud.gateway:
         allowed-origin-patterns:
           - http://localhost*
           - http://127.0.0.1*
-          - https://ai.liugeliang.com
-          - https://www.ai.liugeliang.com
+          - https://liugeliang.com
+          - https://www.liugeliang.com
         allowed-methods: "*"
         allowed-headers: "*"
         exposed-headers:
@@ -472,8 +474,8 @@ minimax:
       - http://127.0.0.1
       - http://127.0.0.1:80
       - http://127.0.0.1:3000
-      - https://ai.liugeliang.com
-      - https://www.ai.liugeliang.com
+      - https://liugeliang.com
+      - https://www.liugeliang.com
   upload:
     base-dir: ${UPLOAD_DIR:./data/upload}
     max-size-mb: 100
