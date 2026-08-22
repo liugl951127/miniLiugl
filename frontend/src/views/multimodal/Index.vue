@@ -1203,13 +1203,14 @@ async function generateVideo() {
     if (!valid) return
     vidLoading.value = true
     try {
-      const fd = new FormData()
-      fd.append('prompt', vidForm.prompt)
-      fd.append('duration', vidForm.duration)
-      fd.append('resolution', vidForm.resolution)
       const modelCode = selectedModuleModel['video-gen']?.modelCode || 'hunyuan-video'
-      fd.append('model', modelCode)
-      const r = await videoGenerate(fd)
+      const params = new URLSearchParams({
+        prompt: vidForm.prompt,
+        duration: vidForm.duration,
+        resolution: vidForm.resolution,
+        model: modelCode
+      })
+      const r = await videoGenerate(params)
       vidResult.value = r.data?.videoUrl || ''
       if (!vidResult.value) ElMessage.warning('视频生成需要较长时间，请稍后刷新')
       else ElMessage.success('生成完成')

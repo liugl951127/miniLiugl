@@ -56,14 +56,18 @@ export const audioAsrModels = () => http.get('/audio/asr/models')
 export const videoModels = () => http.get('/video/models')
 
 /** 文生视频 - minimax-model VideoGenController
- *  V6.8.1 fix: 不设 Content-Type */
-export const videoGenerate = (formData) =>
-  http.post('/video/generate', formData)
+ *  V6.8.2 fix: 后端使用 @RequestParam，前端改用 URLSearchParams (application/x-www-form-urlencoded) */
+export const videoGenerate = (params) =>
+  http.post('/video/generate', params, {
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  })
 
 /** 图生视频 - minimax-model VideoGenController
- *  V6.8.1 fix: 不设 Content-Type */
-export const videoI2V = (formData) =>
-  http.post('/video/i2v', formData)
+ *  V6.8.2 fix: 后端使用 @RequestParam，前端改用 URLSearchParams (application/x-www-form-urlencoded) */
+export const videoI2V = (params) =>
+  http.post('/video/i2v', params, {
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  })
 
 // ==================== 音乐生成 ====================
 
