@@ -124,6 +124,9 @@ CREATE TABLE IF NOT EXISTS tenant (
     contactEmail VARCHAR(256),
     contactPhone VARCHAR(32),
     remark VARCHAR(512),
+    dataIsolation TINYINT DEFAULT 1 COMMENT 'V6.9+: 数据隔离标记 1=隔离 0=共享',
+    ipWhitelist VARCHAR(1024) COMMENT 'V6.9+: IP 白名单, 多个逗号分隔',
+    isDefault INT DEFAULT 0 COMMENT 'V6.9+: 是否默认租户 1=默认',
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted INT DEFAULT 0
@@ -843,21 +846,6 @@ CREATE TABLE IF NOT EXISTS training_job (
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- [minimax-ai] training_metric
-CREATE TABLE IF NOT EXISTS training_metric (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    taskId VARCHAR(64),
-    epoch INT,
-    step INT,
-    loss DOUBLE,
-    valLoss DOUBLE,
-    accuracy DOUBLE,
-    learningRate DOUBLE,
-    elapsedMs BIGINT,
-    timestamp TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- [minimax-ai] agent_group
 CREATE TABLE IF NOT EXISTS agent_group (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -1152,7 +1140,10 @@ CREATE TABLE IF NOT EXISTS alert_event (
     notes TEXT,
     duration BIGINT,
     silencedUntil TIMESTAMP,
-    sessionId VARCHAR(64)
+    sessionId VARCHAR(64),
+    escalated TINYINT DEFAULT 0 COMMENT 'Day 45: 是否已升级 (true=已触发升级通知)',
+    escalatedAt TIMESTAMP NULL COMMENT 'Day 45: 升级时间',
+    resolvedBy VARCHAR(64) COMMENT 'Day 46: 自动恢复操作人 (SYSTEM = 自动恢复, 其他 = 用户ID)'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- [minimax-monitor] alert_rule
@@ -1171,6 +1162,9 @@ CREATE TABLE IF NOT EXISTS alert_rule (
     notifyChannel VARCHAR(256),
     silencedUntil TIMESTAMP,
     sessionId VARCHAR(64),
+    escalateAfterMinutes INT DEFAULT 30 COMMENT 'Day 45: 升级等待分钟数',
+    escalationChannel VARCHAR(256) COMMENT 'Day 45: 升级通知渠道 (逗号分隔, 如 DINGTALK,EMAIL)',
+    autoResolveMinutes INT DEFAULT 60 COMMENT 'Day 45: 自动恢复分钟数 (超过自动 resolved)',
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1888,6 +1882,20 @@ CREATE TABLE IF NOT EXISTS raft_log (
     KEY idx_timestampMs (timestampMs)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- [minimax-ai] ai_raft_log (Raft 日志条目, 与 cluster/raft 区分)
+CREATE TABLE IF NOT EXISTS ai_raft_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    term BIGINT NOT NULL DEFAULT 0,
+    logIndex BIGINT NOT NULL,
+    nodeId VARCHAR(64) NOT NULL,
+    command TEXT,
+    committed TINYINT DEFAULT 0,
+    committedAt TIMESTAMP NULL,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_term_idx (term, logIndex),
+    KEY idx_node (nodeId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- [minimax-auth] user preferences (用户偏好设置, 主题/语言等)
 CREATE TABLE IF NOT EXISTS user_preferences (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -2054,3 +2062,88 @@ CREATE TABLE IF NOT EXISTS system_settings (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- ============================================
+-- [minimax-deployer] Agent Forge V2.0 (智能体群流水线)
+-- ============================================
+CREATE TABLE IF NOT EXISTS forge_project (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    industry VARCHAR(50),
+    scenario TEXT,
+    raw_requirements TEXT,
+    parsed_requirements TEXT,
+    recommended_agents TEXT,
+    current_release_id BIGINT,
+    status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
+    owner_id BIGINT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_forge_project_owner ON forge_project(owner_id);
+CREATE INDEX IF NOT EXISTS idx_forge_project_status ON forge_project(status);
+
+CREATE TABLE IF NOT EXISTS forge_release (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    project_id BIGINT NOT NULL,
+    version VARCHAR(20) NOT NULL,
+    title VARCHAR(200),
+    changelog TEXT,
+    agent_definitions TEXT,
+    deploy_config TEXT,
+    manifests TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
+    deploy_target VARCHAR(20),
+    replicas INT DEFAULT 2,
+    image_registry VARCHAR(200),
+    image_tag VARCHAR(100),
+    deploy_duration INT,
+    created_by BIGINT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deployed_at TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_forge_release_project ON forge_release(project_id);
+CREATE INDEX IF NOT EXISTS idx_forge_release_status ON forge_release(status);
+
+CREATE TABLE IF NOT EXISTS forge_deployment (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    release_id BIGINT NOT NULL,
+    instance_name VARCHAR(100),
+    stages TEXT,
+    logs TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    target VARCHAR(20),
+    namespace VARCHAR(50),
+    running_replicas INT DEFAULT 0,
+    desired_replicas INT DEFAULT 2,
+    current_qps DOUBLE,
+    error_message TEXT,
+    started_at TIMESTAMP,
+    finished_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_forge_deployment_release ON forge_deployment(release_id);
+CREATE INDEX IF NOT EXISTS idx_forge_deployment_status ON forge_deployment(status);
+
+CREATE TABLE IF NOT EXISTS agent_template (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(100) NOT NULL,
+    industry VARCHAR(50),
+    description TEXT,
+    emoji VARCHAR(10),
+    color VARCHAR(200),
+    agents TEXT,
+    workflow TEXT,
+    tools TEXT,
+    recommended_model VARCHAR(100),
+    usage_count INT DEFAULT 0,
+    status VARCHAR(20) NOT NULL DEFAULT 'PUBLISHED',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_agent_template_industry ON agent_template(industry);
+CREATE INDEX IF NOT EXISTS idx_agent_template_status ON agent_template(status);
+

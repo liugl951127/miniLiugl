@@ -34,6 +34,8 @@ public class ForgeRelease {
     private Long id;
 
     /** 所属项目 ID */
+    
+    @TableField("project_id")
     private Long projectId;
 
     /** 语义化版本号, 如: 1.0.0 */
@@ -46,9 +48,13 @@ public class ForgeRelease {
     private String changelog;
 
     /** 智能体定义 JSON (完整 designer 输出) */
+    
+    @TableField("agent_definitions")
     private String agentDefinitions;
 
     /** 部署配置 JSON (目标/资源/凭证) */
+    
+    @TableField("deploy_config")
     private String deployConfig;
 
     /** 生成的 Dockerfile / K8s manifest (YAML/JSON) */
@@ -58,24 +64,40 @@ public class ForgeRelease {
     private String status;
 
     /** 部署目标: DOCKER / K8S / CLOUD / EDGE */
+    
+    @TableField("deploy_target")
     private String deployTarget;
 
     /** 当前部署实例数 */
     private Integer replicas;
 
     /** 镜像仓库地址 */
+    
+    @TableField("image_registry")
     private String imageRegistry;
 
     /** 镜像 tag (默认等于 version) */
+    
+    @TableField("image_tag")
     private String imageTag;
 
     /** 部署耗时 (秒) */
+    
+    @TableField("deploy_duration")
     private Integer deployDuration;
 
     /** 创建用户 ID */
+    
+    @TableField("created_by")
     private Long createdBy;
 
+    
+    @TableField("created_at")
     private LocalDateTime createdAt;
+    
+    @TableField("updated_at")
     private LocalDateTime updatedAt;
+    
+    @TableField("deployed_at")
     private LocalDateTime deployedAt;
 }

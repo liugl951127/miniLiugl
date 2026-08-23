@@ -56,14 +56,22 @@ public class AgentTemplate {
     private String tools;
 
     /** 推荐模型 */
+    
+    @TableField("recommended_model")
     private String recommendedModel;
 
     /** 使用次数 (热度排序) */
+    
+    @TableField("usage_count")
     private Integer usageCount;
 
     /** 状态: DRAFT / PUBLISHED / DEPRECATED */
     private String status;
 
+    
+    @TableField("created_at")
     private LocalDateTime createdAt;
+    
+    @TableField("updated_at")
     private LocalDateTime updatedAt;
 }

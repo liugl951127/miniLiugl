@@ -29,9 +29,13 @@ public class ForgeDeployment {
     private Long id;
 
     /** 所属 release */
+    
+    @TableField("release_id")
     private Long releaseId;
 
     /** 部署实例名 (用户可指定, 如: prod-blue, staging) */
+    
+    @TableField("instance_name")
     private String instanceName;
 
     /** 部署阶段 JSON 数组, 如:
@@ -55,19 +59,35 @@ public class ForgeDeployment {
     private String namespace;
 
     /** 实际副本数 (running) */
+    
+    @TableField("running_replicas")
     private Integer runningReplicas;
 
     /** 期望副本数 (desired) */
+    
+    @TableField("desired_replicas")
     private Integer desiredReplicas;
 
     /** QPS 当前值 (用于实时监控) */
+    
+    @TableField("current_qps")
     private Double currentQps;
 
     /** 错误信息 (失败时) */
+    
+    @TableField("error_message")
     private String errorMessage;
 
+    
+    @TableField("started_at")
     private LocalDateTime startedAt;
+    
+    @TableField("finished_at")
     private LocalDateTime finishedAt;
+    
+    @TableField("created_at")
     private LocalDateTime createdAt;
+    
+    @TableField("updated_at")
     private LocalDateTime updatedAt;
 }

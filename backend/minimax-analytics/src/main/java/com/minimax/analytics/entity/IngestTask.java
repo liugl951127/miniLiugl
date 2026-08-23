@@ -30,7 +30,7 @@ public class IngestTask {
     private String errorMessage;     // 失败原因
     private String qualityJson;      // 质量报告 JSON
     private Long totalRows;          // 解析后行数
-    private Long totalColumns;       // 列数
+    private Integer totalColumns;       // 列数
     private String columnsJson;      // 列名 JSON 数组
 
     private LocalDateTime createdAt;

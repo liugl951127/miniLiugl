@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
  * <p>所有节点按 (term, logIndex) 顺序应用, 保证状态机最终一致
  */
 @Data
-@TableName("raft_log")
+@TableName("ai_raft_log")
 public class LogEntry {
 
     @TableId(type = IdType.AUTO)

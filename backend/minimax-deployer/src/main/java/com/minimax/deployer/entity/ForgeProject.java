@@ -38,23 +38,37 @@ public class ForgeProject {
     private String scenario;
 
     /** 原始需求文本 (用户输入) */
+    
+    @TableField("raw_requirements")
     private String rawRequirements;
 
     /** 解析后 JSON (LLM 输出, 包含 features/scale/compliance/integrations) */
+    
+    @TableField("parsed_requirements")
     private String parsedRequirements;
 
     /** 推荐智能体 JSON (LLM 输出的 agent 列表) */
+    
+    @TableField("recommended_agents")
     private String recommendedAgents;
 
     /** 当前最新 release ID (冗余字段, 加速查询) */
+    
+    @TableField("current_release_id")
     private Long currentReleaseId;
 
     /** 项目状态: DRAFT(草稿) / ANALYZED(已解析) / DEPLOYED(已部署) / ARCHIVED(归档) */
     private String status;
 
     /** 创建用户 ID */
+    
+    @TableField("owner_id")
     private Long ownerId;
 
+    
+    @TableField("created_at")
     private LocalDateTime createdAt;
+    
+    @TableField("updated_at")
     private LocalDateTime updatedAt;
 }
