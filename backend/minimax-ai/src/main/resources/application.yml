@@ -75,6 +75,21 @@ minimax:
       layers: ${ONNX_LAYERS:4}                      # Transformer 层数
       max-seq-len: ${ONNX_MAX_SEQ_LEN:512}         # 最大序列长度
 
+    # ── V7.1: ONNX 多模态 (本地图片/视频/语音智能) ─────────
+    # 模型路径默认指向 git lfs 跟踪的 ./data/models/
+    onnx-vision:
+      enabled: ${ONNX_VISION_ENABLED:true}
+      resnet50-path: ${ONNX_RESNET50_PATH:./data/models/resnet50/model.onnx}
+      clip-vocab-path: ${ONNX_CLIP_VOCAB_PATH:./data/models/clip-vit-base-patch32/vocab.json}
+      clip-merges-path: ${ONNX_CLIP_MERGES_PATH:./data/models/clip-vit-base-patch32/merges.txt}
+      clip-enabled: ${ONNX_CLIP_ENABLED:true}
+      yolo-path: ${ONNX_YOLO_PATH:./data/models/yolov8n/model.onnx}
+      yolo-enabled: ${ONNX_YOLO_ENABLED:true}
+      yolo-confidence: ${ONNX_YOLO_CONF:0.25}
+      yolo-iou: ${ONNX_YOLO_IOU:0.45}
+      top-k: ${ONNX_VISION_TOPK:5}
+      threads: ${ONNX_VISION_THREADS:4}
+
     # ── V3.5.15+: 4 模型加权投票权重 ──
     intent:
       weight:

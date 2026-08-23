@@ -357,3 +357,4 @@ http.interceptors.response.use(
 )
 
 export default http
+export { http }

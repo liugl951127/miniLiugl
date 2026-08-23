@@ -1,5 +1,5 @@
 /**
- * @file multimodal API 调用层 (V6.8.1)
+ * @file multimodal API 调用层 (V7.1 合并)
  *
  * 对应后端:
  *   - minimax-model: ImageGenController (/api/v1/imagegen)
@@ -8,11 +8,12 @@
  *                     MusicGenController    (/api/v1/music)
  *   - minimax-agent:  DocumentQAController (/api/v1/agent/doc)
  *   - minimax-ai:     MultimodalController  (/api/v1/ai/multimodal)
+ *   - minimax-ai:     OnnxMultimodalController  (/api/v1/multimodal) ← V7.1 新增 (本地 ONNX)
  *
  * V6.8.1 fix: FormData 不手动设 Content-Type (Axios 自动加 boundary)
  *             docAsk 改用 URLSearchParams (application/x-www-form-urlencoded)
  */
-import http from './http'
+import http, { http as httpNamed } from './http'
 
 // ==================== 图片生成 ====================
 
@@ -39,46 +40,40 @@ export const audioTts = (data) => {
   return http.post('/audio/tts/synthesize', data)
 }
 
-/** 列出可用 TTS 音色 */
-export const audioTtsVoices = () => http.get('/audio/tts/voices')
+/** 列出可用 TTS 声音 */
+export const listVoices = () => http.get('/audio/voices')
 
-/** ASR - 调用 minimax-model AudioController
- *  V6.8.1 fix: 不设 Content-Type，Axios 自动用 multipart/form-data + boundary */
-export const audioAsr = (formData) =>
-  http.post('/audio/asr/transcribe', formData)
+/** 别名: 列出 TTS 声音 (兼容 views/multimodal/Index.vue) */
+export const audioTtsVoices = listVoices
 
-/** 列出可用 ASR 模型 */
-export const audioAsrModels = () => http.get('/audio/asr/models')
+/** ASR - 语音转文本 */
+export const audioAsr = (formData) => http.post('/audio/asr/recognize', formData)
 
 // ==================== 视频生成 ====================
 
-/** 列出可用视频模型 */
+/** 文生视频 - 调用 minimax-model VideoGenController */
+export const videoGenerate = (data) => {
+  // data: { prompt, model?, duration? }
+  return http.post('/video/generate', data)
+}
+
+/** 列出可用视频生成模型 (兼容 views/multimodal/Index.vue) */
 export const videoModels = () => http.get('/video/models')
 
-/** 文生视频 - minimax-model VideoGenController
- *  V6.8.2 fix: 后端使用 @RequestParam，前端改用 URLSearchParams (application/x-www-form-urlencoded) */
-export const videoGenerate = (params) =>
-  http.post('/video/generate', params, {
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-  })
-
-/** 图生视频 - minimax-model VideoGenController
- *  V6.8.2 fix: 后端使用 @RequestParam，前端改用 URLSearchParams (application/x-www-form-urlencoded) */
-export const videoI2V = (params) =>
-  http.post('/video/i2v', params, {
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-  })
+/** 视频理解 - 调用 minimax-ai */
+export const videoUnderstand = (videoUrl, prompt) =>
+  http.post('/ai/multimodal/video/understand', { videoUrl, prompt })
 
 // ==================== 音乐生成 ====================
 
-/** 列出可用音乐模型 */
-export const musicModels = () => http.get('/music/models')
-
-/** 文生音乐 - minimax-model MusicGenController */
+/** 音乐生成 - 调用 minimax-model MusicGenController */
 export const musicGenerate = (data) => {
   // data: { prompt, lyrics?, model? }
   return http.post('/music/generate', data)
 }
+
+/** 列出可用音乐生成模型 (兼容 views/multimodal/Index.vue) */
+export const musicModels = () => http.get('/music/models')
 
 // ==================== 文档问答 ====================
 
@@ -110,15 +105,13 @@ export const uploadImage = (formData, onProgress) =>
     onUploadProgress: onProgress
   })
 
-/** 上传音频
- *  V6.8.1 fix: 不设 Content-Type */
+/** 上传音频 */
 export const uploadAudio = (formData, onProgress) =>
   http.post('/ai/multimodal/audio/upload', formData, {
     onUploadProgress: onProgress
   })
 
-/** 上传视频
- *  V6.8.1 fix: 不设 Content-Type */
+/** 上传视频 */
 export const uploadVideo = (formData, onProgress) =>
   http.post('/ai/multimodal/video/upload', formData, {
     onUploadProgress: onProgress
@@ -135,3 +128,48 @@ export const moderateText = (text) => http.post('/ai/multimodal/compliance/moder
 
 /** 数据脱敏 */
 export const maskText = (text) => http.post('/ai/multimodal/compliance/mask', { text })
+
+// ==================== V7.1 本地 ONNX 多模态 ====================
+/**
+ * minimax-ai OnnxMultimodalController (/api/v1/multimodal)
+ * 模型由 data/models/ 下 Git LFS 管理
+ */
+export const multimodalApi = {
+  /** 3 个模型的就绪状态 */
+  status() {
+    return http.get('/multimodal/status')
+  },
+
+  /** 图片分类 (top-k) */
+  classify(file, topK = 5) {
+    const fd = new FormData()
+    fd.append('file', file)
+    return http.post('/multimodal/classify?topK=' + topK, fd)
+  },
+
+  /** 目标检测 */
+  detect(file) {
+    const fd = new FormData()
+    fd.append('file', file)
+    return http.post('/multimodal/detect', fd)
+  },
+
+  /** 图片 embedding */
+  encodeImage(file) {
+    const fd = new FormData()
+    fd.append('file', file)
+    return http.post('/multimodal/encode-image', fd)
+  },
+
+  /** 文本 embedding */
+  encodeText(text) {
+    return http.post('/multimodal/encode-text', { text })
+  },
+
+  /** 文图相似度 */
+  similarity(file, text) {
+    const fd = new FormData()
+    fd.append('file', file)
+    return http.post('/multimodal/text-image-similarity?text=' + encodeURIComponent(text), fd)
+  }
+}

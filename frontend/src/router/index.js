@@ -50,6 +50,7 @@ const routes = [
       { path: 'model', name: 'Model', component: () => import('@/views/model/Index.vue'), meta: { title: '模型管理' } },
       { path: 'function', name: 'Function', component: () => import('@/views/function/Index.vue'), meta: { title: 'Function 工具' } },
       { path: 'multimodal', name: 'Multimodal', component: () => import('@/views/multimodal/Index.vue'), meta: { title: '多模态' } },
+      { path: 'multimodal/local', name: 'MultimodalLocal', component: () => import('@/views/multimodal/LocalOnnx.vue'), meta: { title: '本地多模态 (ONNX)' } },
       { path: 'training', name: 'Training', component: () => import('@/views/training/Console.vue'), meta: { title: '模型训练' } },
       { path: 'training/dashboard', name: 'TrainingDashboard', redirect: to => ({ path: '/training', query: { tab: 'dashboard' } }) },
 

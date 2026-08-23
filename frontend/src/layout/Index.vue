@@ -245,6 +245,7 @@ const menuGroups = computed(() => {
       children: [
         { label: 'Function 工具', path: '/function', icon: 'Tools' },
         { label: '多模态', path: '/multimodal', icon: 'PictureFilled' },
+        { label: '本地多模态', path: '/multimodal/local', icon: 'Cpu' },
         { label: '训练', path: '/training', icon: 'TrendCharts' },
         { label: 'Prompt 模板', path: '/prompts', icon: 'DocumentCopy' },
         { label: '插件市场', path: '/plugins', icon: 'Grid' },

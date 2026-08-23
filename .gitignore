@@ -86,3 +86,7 @@ vite.config.js.timestamp-*
 .env.development
 .eslintcache
 .docker-data/
+
+# Local ONNX models (downloaded by scripts/download-models.sh, not committed)
+data/models/*/
+!data/models/.gitkeep

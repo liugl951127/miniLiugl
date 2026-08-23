@@ -193,6 +193,12 @@ spring.cloud.gateway:
       filters:
         - StripPrefix=0
 
+    # V7.1: ONNX 多模态 (图片分类/目标检测/CLIP 检索) — /api/v1/multimodal/**
+    - id: multimodal-onnx
+      uri: lb://minimax-ai
+      predicates:
+        - Path=/api/v1/multimodal/**
+
     # T1: 智能体群编排 (AgentGroup Orchestration) — /api/v1/agent-group/**
     # 优先级: 此路由必须先于通用 ai 路由 (否则会被 /api/v1/ai/** 兜底)
     - id: agent-group-orchestration
