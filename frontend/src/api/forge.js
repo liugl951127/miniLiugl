@@ -67,3 +67,17 @@ export const subscribeDeployment = (deploymentId, onEvent) => {
   })
   return () => eventSource.close()
 }
+
+// ============ V3.0 ArgoCD GitOps ============
+export const deployViaGitOps = (id) => http.post(`/forge/releases/${id}/deploy-gitops`)
+
+export const queryArgoCdStatus = (appName) => http.get(`/forge/argocd/applications/${appName}`)
+
+// ============ V3.0 LLM 模型选择 (后端默认 qwen2.5-0.5b-instruct) ============
+export const PARSER_MODELS = [
+  { code: 'qwen2.5-0.5b-instruct', name: 'Qwen2.5-0.5B (本地 ONNX, 快速)', desc: 'minimax-ai 本地推理, 488MB, ~1s 响应' },
+  { code: 'qwen2.5-7b-instruct',   name: 'Qwen2.5-7B (云端, 强大)',   desc: 'minimax-ai 服务, 大模型, ~3s 响应' },
+  { code: 'qwen2.5-72b-instruct',  name: 'Qwen2.5-72B (超大, 备用)', desc: '云端 API, 需额外配置' },
+  { code: 'deepseek-chat',         name: 'DeepSeek Chat (备选)',   desc: '云端 API, 需配置 API Key' },
+  { code: 'gpt-4o-mini',           name: 'GPT-4o-mini (备选)',     desc: 'OpenAI API, 需配置 API Key' }
+]

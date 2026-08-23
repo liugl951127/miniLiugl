@@ -36,6 +36,7 @@ public class ForgeReleaseController {
 
     private final ForgeReleaseService releaseService;
     private final com.minimax.deployer.service.DeploymentOrchestrator orchestrator;
+    private final com.minimax.deployer.service.ArgoCdService argoCdService;
 
     @PostMapping("/releases")
     @Operation(summary = "创建 release")
@@ -58,11 +59,25 @@ public class ForgeReleaseController {
     }
 
     @PostMapping("/releases/{id}/deploy")
-    @Operation(summary = "触发部署")
+    @Operation(summary = "触发部署 (V2.0 模拟)")
     public Result<Void> deploy(@PathVariable Long id) {
         log.info("[Release] 触发部署 release={}", id);
         releaseService.triggerDeploy(id);
         return Result.ok();
+    }
+
+    @PostMapping("/releases/{id}/deploy-gitops")
+    @Operation(summary = "V3.0: 通过 ArgoCD GitOps 部署 (推荐)")
+    public Result<Void> deployGitOps(@PathVariable Long id) {
+        log.info("[Release] 触发 ArgoCD GitOps 部署 release={}", id);
+        argoCdService.deployViaGitOps(id);
+        return Result.ok();
+    }
+
+    @GetMapping("/argocd/applications/{appName}")
+    @Operation(summary = "V3.0: 查询 ArgoCD Application 状态")
+    public Result<Map<String, Object>> queryArgoCdStatus(@PathVariable String appName) {
+        return Result.ok(argoCdService.queryApplicationStatus(appName));
     }
 
     @PostMapping("/releases/{id}/rollback/{targetId}")

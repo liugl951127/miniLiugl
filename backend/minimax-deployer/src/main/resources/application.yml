@@ -74,6 +74,24 @@ agent-forge:
     default: registry.minimax.io/agent-forge
   # 命名空间
   namespace: agent-forge
+  # V3.0: LLM 解析配置
+  parser:
+    use-llm: true                # 主用 LLM, 失败降级规则引擎
+    llm-model: qwen2.5-0.5b-instruct   # minimax-ai 本地 ONNX 模型
+  # V3.0: LLM 客户端配置
+  llm:
+    ai-service-url: http://minimax-ai:8090   # Nacos 服务发现 或 静态地址
+    primary-model: qwen2.5-0.5b-instruct     # 本地 ONNX, 488MB
+    fallback-model: qwen2.5-7b-instruct     # 备选, 调用 minimax-ai chat
+    timeout: 30000                # LLM 调用超时 (毫秒)
+  # V3.0: ArgoCD GitOps 集成
+  gitops:
+    repo-url: https://git.minimax.io/agent-forge/manifests.git
+    branch: main
+    path: agents/
+  argocd:
+    server: https://argocd.minimax.io
+    project: default
 
 logging:
   level:
