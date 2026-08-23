@@ -134,6 +134,7 @@
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="profile">个人中心</el-dropdown-item>
+                <el-dropdown-item command="about">关于平台</el-dropdown-item>
                 <el-dropdown-item command="settings" divided>⚙️ 系统管理</el-dropdown-item>
                 <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
               </el-dropdown-menu>
@@ -211,68 +212,59 @@ function toggleSidebar() {
 // V6.9: 合并系统管理为 /settings，知识中心/Agent/数据中心/工作流 各自单页 tab 化
 const menuGroups = computed(() => {
   const groups = [
-    // ── AI 对话 ──
+    // ── 对话 (5 入口合并) ──
     {
-      label: 'AI 对话', icon: 'ChatDotRound',
+      label: '对话', icon: 'ChatDotRound',
       children: [
-        { label: '智能对话', path: '/chat', icon: 'ChatDotRound' },
-        { label: '流式对话', path: '/chat/stream', icon: 'Connection' },
+        { label: 'AI 对话', path: '/chat', icon: 'ChatDotRound' },
         { label: '协作空间', path: '/collab', icon: 'UserFilled' },
       ]
     },
-    // ── 知识中心 ──
+    // ── 知识 (3 入口) ──
     {
-      label: '知识中心', icon: 'Files',
+      label: '知识', icon: 'Files',
       children: [
         { label: '知识库', path: '/knowledge', icon: 'Files' },
+        { label: '知识图谱', path: '/kg', icon: 'Share' },
       ]
     },
-    // ── Agent 编排 ──
+    // ── Agent (4 入口合并) ──
     {
-      label: 'Agent 编排', icon: 'MagicStick',
+      label: 'Agent', icon: 'MagicStick',
       children: [
-        { label: '任务编排', path: '/agent', icon: 'MagicStick' },
+        { label: '画布编排', path: '/agent', icon: 'MagicStick' },
         { label: '智能体群', path: '/agent-auto', icon: 'Grid' },
-        { label: '群编排', path: '/agent/group-designer', icon: 'Connection' },
         { label: '模型管理', path: '/model', icon: 'Cpu' },
       ]
     },
-    // ── 数据中心 ──
+    // ── 数据 (4 入口) ──
     {
-      label: '数据中心', icon: 'DataAnalysis',
+      label: '数据', icon: 'DataAnalysis',
       children: [
         { label: '数据分析', path: '/analytics', icon: 'DataAnalysis' },
-        { label: 'NL 规则助手', path: '/rule', icon: 'MagicStick' },
-      ]
-    },
-    // ── 工作流 ──
-    {
-      label: '工作流', icon: 'Connection',
-      children: [
+        { label: '规则助手', path: '/rule', icon: 'MagicStick' },
         { label: '工作流', path: '/pipeline', icon: 'Connection' },
       ]
     },
-    // ── 应用中心 ──
+    // ── 应用 (4 入口合并) ──
     {
-      label: '应用中心', icon: 'Grid',
+      label: '应用', icon: 'Grid',
       children: [
-        { label: 'Function 工具', path: '/function', icon: 'Tools' },
         { label: '多模态', path: '/multimodal', icon: 'PictureFilled' },
-        { label: '本地多模态', path: '/multimodal/local', icon: 'Cpu' },
         { label: '训练', path: '/training', icon: 'TrendCharts' },
-        { label: 'Prompt 模板', path: '/prompts', icon: 'DocumentCopy' },
-        { label: '插件市场', path: '/plugins', icon: 'Grid' },
-        { label: '通知中心', path: '/notification', icon: 'Bell' },
+        { label: '提示词', path: '/prompts', icon: 'DocumentCopy' },
+        { label: '插件', path: '/plugins', icon: 'Grid' },
       ]
     },
-    // ── 系统管理 ──
+    // ── 系统 (3 入口) ──
     {
-      label: '系统管理', icon: 'Setting',
+      label: '系统', icon: 'Setting',
       children: [
-        { label: '系统管理', path: '/settings', icon: 'Setting' },
+        { label: '运维', path: '/settings', icon: 'Setting' },
+        { label: '监控', path: '/monitor', icon: 'Monitor' },
+        { label: '通知', path: '/notification', icon: 'Bell' },
       ]
     },
-    { label: '关于', icon: 'InfoFilled', path: '/about' },
   ]
   return groups
 })
@@ -308,6 +300,8 @@ async function onCommand(cmd) {
     router.push('/login')
   } else if (cmd === 'profile') {
     ElMessage.info('个人中心开发中')
+  } else if (cmd === 'about') {
+    router.push('/about')
   } else if (cmd === 'settings') {
     router.push('/settings')
   } else {

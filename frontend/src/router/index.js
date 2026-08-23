@@ -135,7 +135,18 @@ const routes = [
 
       // ── 系统管理 (统一为 /settings) ──
       // 旧路由 → /settings + query tab 参数（向后兼容）
-      { path: 'settings', name: 'Settings', component: () => import('@/views/settings/Index.vue'), meta: { title: '系统管理' } },
+      {
+        path: 'settings',
+        component: () => import('@/views/settings/Index.vue'),
+        meta: { title: '系统管理' },
+        children: [
+          { path: '',         name: 'SettingsHome',  redirect: 'settings/users' },
+          { path: 'users',    name: 'SettingsUsers',  component: () => import('@/views/settings/Users.vue'),  meta: { title: '用户租户' } },
+          { path: 'apikey',   name: 'SettingsApikey', component: () => import('@/views/settings/Apikey.vue'), meta: { title: 'API Key' } },
+          { path: 'audit',    name: 'SettingsAudit',  component: () => import('@/views/settings/Audit.vue'),  meta: { title: '审计' } },
+          { path: 'system',   name: 'SettingsSystem', component: () => import('@/views/settings/System.vue'), meta: { title: '系统' } }
+        ]
+      },
       { path: 'apikey', redirect: to => ({ path: '/settings', query: { tab: 'apikey' } }) },
       { path: 'admin', redirect: to => ({ path: '/settings', query: { tab: 'users' } }) },
       { path: 'super', redirect: to => ({ path: '/settings', query: { tab: 'system' } }) },
