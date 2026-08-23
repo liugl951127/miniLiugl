@@ -351,11 +351,12 @@ onMounted(async () => {
 <style lang="scss" scoped>
 .layout-container { height: 100vh; display: flex; }
 .layout-aside {
-  background: #0b1220;
+  background: linear-gradient(180deg, #1e1b4b 0%, #0f172a 50%, #020617 100%);
   transition: width 0.25s;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-shadow: 2px 0 12px rgba(0,0,0,0.05);
 }
 .layout-logo {
   height: 56px;
@@ -365,7 +366,10 @@ onMounted(async () => {
   border-bottom: 1px solid rgba(255,255,255,0.06);
   font-size: 18px;
   font-weight: 700;
-  color: #5b8def;
+  background: linear-gradient(90deg, #818cf8, #c084fc, #f472b6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   flex-shrink: 0;
   &.collapsed { font-size: 22px; }
 }
@@ -377,21 +381,27 @@ onMounted(async () => {
   :deep(.el-menu-item),
   :deep(.el-sub-menu__title) {
     font-size: 13px;
+    border-radius: 8px;
+    margin: 2px 8px;
     &.is-active {
-      background: linear-gradient(90deg, rgba(91,141,239,0.22), transparent) !important;
-      border-left: 3px solid #5b8def;
+      background: linear-gradient(90deg, rgba(99,102,241,0.35), rgba(139,92,246,0.15) 80%, transparent) !important;
+      border-left: 3px solid #818cf8 !important;
+      color: #fff !important;
+      font-weight: 600;
     }
-    &:hover { background: rgba(255,255,255,0.05) !important; }
+    &:hover { background: rgba(255,255,255,0.06) !important; }
   }
   :deep(.el-sub-menu .el-menu-item) { min-width: 0; padding-left: 52px !important; }
 }
 .layout-header {
-  background: #fff;
-  border-bottom: 1px solid #e4e7ed;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding: 0 20px;
   height: 56px;
 }
 .header-left { display: flex; align-items: center; gap: 12px; }
@@ -404,7 +414,10 @@ onMounted(async () => {
 }
 .user-name { font-size: 13px; color: #303133; }
 .layout-main {
-  background: #f5f7fa;
+  background:
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.04) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.03) 0px, transparent 50%),
+    #f8fafc;
   padding: 16px;
   overflow: auto;
   flex: 1;
