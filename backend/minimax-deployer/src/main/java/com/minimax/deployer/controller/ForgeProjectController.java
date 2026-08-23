@@ -63,16 +63,16 @@ public class ForgeProjectController {
         return Result.ok(projectService.getById(id));
     }
 
-    @GetMapping("/{id}/agents")
-    @Operation(summary = "项目的智能体列表 (子表)")
-    public Result<List<ForgeAgent>> agents(@PathVariable Long id) {
-        return Result.ok(projectService.listAgents(id));
+    @GetMapping("/{projectId}/releases/{releaseId}/agents")
+    @Operation(summary = "V4.1: release 的智能体 (按 release, 不再按 project 查)")
+    public Result<List<ForgeAgent>> agents(@PathVariable Long projectId, @PathVariable Long releaseId) {
+        return Result.ok(projectService.listAgentsByRelease(releaseId));
     }
 
-    @GetMapping("/{id}/workflow")
-    @Operation(summary = "项目的工作流步骤 (子表)")
-    public Result<List<ForgeWorkflowStep>> workflow(@PathVariable Long id) {
-        return Result.ok(projectService.listWorkflow(id));
+    @GetMapping("/{projectId}/releases/{releaseId}/workflow")
+    @Operation(summary = "V4.1: release 的工作流")
+    public Result<List<ForgeWorkflowStep>> workflow(@PathVariable Long projectId, @PathVariable Long releaseId) {
+        return Result.ok(projectService.listWorkflowByRelease(releaseId));
     }
 
     @DeleteMapping("/{id}")

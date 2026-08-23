@@ -1,99 +1,66 @@
 package com.minimax.deployer.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import freemarker.template.Configuration;
-import freemarker.template.Template;
-import freemarker.template.TemplateException;
-import lombok.RequiredArgsConstructor;
+import com.minimax.deployer.entity.ForgeAgent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
- * Manifest 生成服务 (V2.0)
+ * Manifest 生成服务 (V4.1)
  *
- * 基于 Freemarker 模板, 为每个智能体生成:
- *  1. Dockerfile        - 容器镜像构建
- *  2. K8s Deployment    - 容器编排
- *  3. K8s Service       - 服务暴露
- *  4. K8s ConfigMap     - 配置注入
+ * V4.1 重构: 直接接收 List<ForgeAgent> 和 Map<String,Object> config,
+ * 不再 parse JSON 字符串 (V4.0 那个 parseAgents/parseDeployConfig 是垃圾)
  *
- * 支持 4 部署目标:
- *  - DOCKER: 仅 Dockerfile
- *  - K8S: Dockerfile + K8s manifest
- *  - CLOUD: Dockerfile + 厂商特定配置 (ACK/TKE/EKS)
- *  - EDGE: Dockerfile + 远程 SSH 部署脚本
+ * 输入参数类型化, 调用方不再需要序列化为 JSON。
  */
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class ManifestGeneratorService {
 
-    private final ObjectMapper objectMapper;
+    /** 部署目标枚举 */
+    public enum Target { K8S, GITOPS, DOCKER, EDGE, CLOUD }
 
-    /** 解析智能体 JSON */
-    public List<Map<String, Object>> parseAgents(String agentsJson) {
-        try {
-            return objectMapper.readValue(agentsJson, new TypeReference<>() {});
-        } catch (Exception e) {
-            log.warn("parseAgents 失败, 返回空: {}", e.getMessage());
-            return Collections.emptyList();
-        }
-    }
+    /**
+     * 生成所有 manifest 文件
+     *
+     * @param agents  智能体列表 (来自 forge_agent 子表)
+     * @param config  部署配置 (replicas / cpu / memory / autoscale / registry / namespace)
+     * @param target  部署目标
+     * @param version 版本号 (semver)
+     * @return 文件路径 → 文件内容
+     */
+    public Map<String, String> generateAll(List<ForgeAgent> agents, Map<String, Object> config, Target target, String version) {
+        Objects.requireNonNull(agents, "agents 必填");
+        Objects.requireNonNull(target, "target 必填");
+        Map<String, Object> cfg = config != null ? config : Map.of();
 
-    /** 解析部署配置 JSON */
-    public Map<String, Object> parseDeployConfig(String configJson) {
-        try {
-            return objectMapper.readValue(configJson, new TypeReference<>() {});
-        } catch (Exception e) {
-            return Collections.emptyMap();
-        }
-    }
-
-    /** 生成所有 manifest (按目标) */
-    public Map<String, String> generateAll(String agentsJson, String configJson, String target, String version) {
-        List<Map<String, Object>> agents = parseAgents(agentsJson);
-        Map<String, Object> config = parseDeployConfig(configJson);
         Map<String, String> result = new LinkedHashMap<>();
-
-        for (Map<String, Object> agent : agents) {
-            String name = (String) agent.get("name");
-            String safeName = name.toLowerCase().replaceAll("[^a-z0-9]", "");
-            String dockerfile = renderDockerfile(agent, version);
-            result.put("dockerfile/" + safeName + ".Dockerfile", dockerfile);
-
-            if ("K8S".equalsIgnoreCase(target) || "CLOUD".equalsIgnoreCase(target)) {
-                result.put("k8s/" + safeName + "-deployment.yaml",
-                    renderK8sDeployment(agent, config, version, safeName));
-                result.put("k8s/" + safeName + "-service.yaml",
-                    renderK8sService(agent, safeName));
-                result.put("k8s/" + safeName + "-configmap.yaml",
-                    renderK8sConfigMap(agent, safeName));
+        for (ForgeAgent a : agents) {
+            String safeName = toSafeName(a.getName());
+            result.put("dockerfile/" + safeName + ".Dockerfile", renderDockerfile(a, version));
+            if (target == Target.K8S || target == Target.GITOPS || target == Target.CLOUD) {
+                result.put("k8s/" + safeName + "-deployment.yaml", renderK8sDeployment(a, cfg, version, safeName));
+                result.put("k8s/" + safeName + "-service.yaml", renderK8sService(safeName));
+                result.put("k8s/" + safeName + "-configmap.yaml", renderK8sConfigMap(a, safeName));
             }
-
-            if ("EDGE".equalsIgnoreCase(target)) {
-                result.put("edge/" + safeName + "-deploy.sh",
-                    renderEdgeDeployScript(agent, config, safeName, version));
+            if (target == Target.EDGE) {
+                result.put("edge/" + safeName + "-deploy.sh", renderEdgeDeployScript(a, cfg, safeName, version));
             }
         }
-
-        // K8s Ingress (如果多 agent)
-        if (agents.size() > 1 && ("K8S".equalsIgnoreCase(target) || "CLOUD".equalsIgnoreCase(target))) {
+        if (agents.size() > 1 && (target == Target.K8S || target == Target.GITOPS || target == Target.CLOUD)) {
             result.put("k8s/ingress.yaml", renderK8sIngress(agents));
         }
-
+        log.info("[Manifest] 生成 {} 个 manifest 文件 (target={}, agents={})", result.size(), target, agents.size());
         return result;
     }
 
-    /** 渲染 Dockerfile */
-    private String renderDockerfile(Map<String, Object> agent, String version) {
-        String name = (String) agent.get("name");
-        String model = (String) agent.getOrDefault("model", "Qwen2.5-7B");
+    public static String toSafeName(String name) {
+        if (name == null) return "agent";
+        return name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+    }
+
+    private String renderDockerfile(ForgeAgent a, String version) {
         return """
             # Agent Forge 自动生成 - %s (v%s)
             FROM minimax/base-agent:v6.8 AS base
@@ -102,58 +69,52 @@ public class ManifestGeneratorService {
                   version="%s" \\
                   agent.name="%s"
 
-            # 复制智能体配置
             COPY prompts/ /app/prompts/
             COPY config/ /app/config/
 
-            # 设置环境变量
             ENV AGENT_NAME=%s \\
                 AGENT_MODEL=%s \\
                 AGENT_VERSION=%s \\
                 JAVA_OPTS="-Xmx512m -Xms256m"
 
-            # 健康检查
             HEALTHCHECK --interval=30s --timeout=5s --retries=3 \\
                 CMD curl -f http://localhost:8080/health || exit 1
 
             EXPOSE 8080
             ENTRYPOINT ["java", "-jar", "/app/agent.jar"]
-            """.formatted(name, version, version, name, model, version);
+            """.formatted(a.getName(), version, version, a.getName(), a.getName(), nullSafe(a.getModel(), "Qwen2.5-7B"), version);
     }
 
-    /** 渲染 K8s Deployment */
-    private String renderK8sDeployment(Map<String, Object> agent, Map<String, Object> config, String version, String safeName) {
-        Integer replicas = (Integer) config.getOrDefault("replicas", 2);
-        Integer cpu = (Integer) config.getOrDefault("cpu", 500);
-        Integer memory = (Integer) config.getOrDefault("memory", 1024);
-        Boolean autoscale = (Boolean) config.getOrDefault("autoscale", false);
+    private String renderK8sDeployment(ForgeAgent a, Map<String, Object> cfg, String version, String safeName) {
+        int replicas = intOr(cfg.get("replicas"), 2);
+        int cpu = intOr(cfg.get("cpu"), 500);
+        int memory = intOr(cfg.get("memory"), 1024);
+        boolean autoscale = boolOr(cfg.get("autoscale"), false);
+        int min = intOr(cfg.get("min"), 2);
+        int max = intOr(cfg.get("max"), 8);
+        String registry = strOr(cfg.get("registry"), "registry.minimax.io/agent-forge");
 
-        String hpaBlock = "";
-        if (Boolean.TRUE.equals(autoscale)) {
-            Integer min = (Integer) config.getOrDefault("min", 2);
-            Integer max = (Integer) config.getOrDefault("max", 8);
-            hpaBlock = """
-                ---
-                apiVersion: autoscaling/v2
-                kind: HorizontalPodAutoscaler
-                metadata:
-                  name: %s-hpa
-                spec:
-                  scaleTargetRef:
-                    apiVersion: apps/v1
-                    kind: Deployment
-                    name: %s
-                  minReplicas: %d
-                  maxReplicas: %d
-                  metrics:
-                    - type: Resource
-                      resource:
-                        name: cpu
-                        target:
-                          type: Utilization
-                          averageUtilization: 70
-                """.formatted(safeName, safeName, min, max);
-        }
+        String hpaBlock = autoscale ? """
+            ---
+            apiVersion: autoscaling/v2
+            kind: HorizontalPodAutoscaler
+            metadata:
+              name: %s-hpa
+            spec:
+              scaleTargetRef:
+                apiVersion: apps/v1
+                kind: Deployment
+                name: %s
+              minReplicas: %d
+              maxReplicas: %d
+              metrics:
+                - type: Resource
+                  resource:
+                    name: cpu
+                    target:
+                      type: Utilization
+                      averageUtilization: 70
+            """.formatted(safeName, safeName, min, max) : "";
 
         return """
             apiVersion: apps/v1
@@ -176,7 +137,7 @@ public class ManifestGeneratorService {
                 spec:
                   containers:
                     - name: %s
-                      image: registry.minimax.io/agent-forge/%s:%s
+                      image: %s/%s:%s
                       ports:
                         - containerPort: 8080
                       env:
@@ -204,18 +165,13 @@ public class ManifestGeneratorService {
                         initialDelaySeconds: 5
                         periodSeconds: 5
             %s
-            """.formatted(
-                safeName, safeName, version,
-                replicas, safeName, safeName,
-                safeName, safeName, version,
-                (String) agent.get("name"), (String) agent.getOrDefault("model", "Qwen2.5-7B"),
-                cpu, memory, cpu * 2, memory * 2,
-                hpaBlock
-            );
+            """.formatted(safeName, safeName, version, replicas, safeName, safeName,
+                safeName, registry, safeName, version,
+                a.getName(), nullSafe(a.getModel(), "Qwen2.5-7B"),
+                cpu, memory, cpu * 2, memory * 2, hpaBlock);
     }
 
-    /** 渲染 K8s Service */
-    private String renderK8sService(Map<String, Object> agent, String safeName) {
+    private String renderK8sService(String safeName) {
         return """
             apiVersion: v1
             kind: Service
@@ -234,9 +190,8 @@ public class ManifestGeneratorService {
             """.formatted(safeName, safeName, safeName);
     }
 
-    /** 渲染 K8s ConfigMap */
-    private String renderK8sConfigMap(Map<String, Object> agent, String safeName) {
-        String prompt = (String) agent.getOrDefault("prompt", "你是" + agent.get("name"));
+    private String renderK8sConfigMap(ForgeAgent a, String safeName) {
+        String prompt = a.getDescription() != null ? a.getDescription() : "你是 " + a.getName();
         return """
             apiVersion: v1
             kind: ConfigMap
@@ -248,16 +203,13 @@ public class ManifestGeneratorService {
                 role: %s
                 system: |
                   %s
-            """.formatted(safeName, agent.get("name"), agent.get("role"),
-                prompt.replace("\n", "\n                  "));
+            """.formatted(safeName, a.getName(), a.getRole(), prompt.replace("\n", "\n                  "));
     }
 
-    /** 渲染 K8s Ingress */
-    private String renderK8sIngress(List<Map<String, Object>> agents) {
+    private String renderK8sIngress(List<ForgeAgent> agents) {
         StringBuilder paths = new StringBuilder();
         for (var a : agents) {
-            String name = (String) a.get("name");
-            String safe = name.toLowerCase().replaceAll("[^a-z0-9]", "");
+            String safe = toSafeName(a.getName());
             paths.append("    - path: /").append(safe).append("\n")
                  .append("      pathType: Prefix\n")
                  .append("      backend:\n")
@@ -282,43 +234,40 @@ public class ManifestGeneratorService {
             """.formatted(paths);
     }
 
-    /** 渲染边缘部署脚本 */
-    private String renderEdgeDeployScript(Map<String, Object> agent, Map<String, Object> config, String safeName, String version) {
+    private String renderEdgeDeployScript(ForgeAgent a, Map<String, Object> cfg, String safeName, String version) {
+        String registry = strOr(cfg.get("registry"), "registry.minimax.io/agent-forge");
         return """
             #!/bin/bash
             # Agent Forge 边缘部署脚本 - %s (v%s)
             set -e
 
             AGENT_NAME="%s"
-            IMAGE="registry.minimax.io/agent-forge/%s:%s"
+            IMAGE="%s/%s:%s"
             CONTAINER_NAME="agent-${AGENT_NAME}"
 
-            echo "🚀 部署 $${AGENT_NAME} 到边缘节点..."
+            echo "🚀 部署 ${AGENT_NAME} 到边缘节点..."
 
-            # 1. 拉取镜像
-            docker pull $${IMAGE}
+            docker pull ${IMAGE}
+            docker stop ${CONTAINER_NAME} 2>/dev/null || true
+            docker rm ${CONTAINER_NAME} 2>/dev/null || true
 
-            # 2. 停止旧容器
-            docker stop $${CONTAINER_NAME} 2>/dev/null || true
-            docker rm $${CONTAINER_NAME} 2>/dev/null || true
+            docker run -d --name ${CONTAINER_NAME} --restart unless-stopped \\
+              -p 8080:8080 -e AGENT_NAME=${AGENT_NAME} ${IMAGE}
 
-            # 3. 启动新容器
-            docker run -d \\
-              --name $${CONTAINER_NAME} \\
-              --restart unless-stopped \\
-              -p 8080:8080 \\
-              -e AGENT_NAME=$${AGENT_NAME} \\
-              $${IMAGE}
-
-            # 4. 健康检查
             sleep 10
             if curl -sf http://localhost:8080/health > /dev/null; then
-              echo "✅ $${AGENT_NAME} 部署成功"
+              echo "✅ ${AGENT_NAME} 部署成功"
             else
               echo "❌ 健康检查失败, 回滚..."
-              docker stop $${CONTAINER_NAME}
+              docker stop ${CONTAINER_NAME}
               exit 1
             fi
-            """.formatted(agent.get("name"), version, agent.get("name"), safeName, version);
+            """.formatted(a.getName(), version, a.getName(), registry, safeName, version);
     }
+
+    // ─── 类型安全辅助 ──────────────────────────────
+    private static int intOr(Object v, int def) { return v instanceof Number n ? n.intValue() : def; }
+    private static boolean boolOr(Object v, boolean def) { return v instanceof Boolean b ? b : def; }
+    private static String strOr(Object v, String def) { return v instanceof String s ? s : def; }
+    private static String nullSafe(String s, String def) { return s != null ? s : def; }
 }

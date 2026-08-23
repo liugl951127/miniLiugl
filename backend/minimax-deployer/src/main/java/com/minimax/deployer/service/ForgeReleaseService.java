@@ -1,10 +1,14 @@
 package com.minimax.deployer.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.minimax.deployer.dto.CreateReleaseRequest;
-import com.minimax.deployer.entity.*;
-import com.minimax.deployer.mapper.*;
-import com.minimax.deployer.state.ReleaseStateMachine;
+import com.minimax.deployer.entity.ForgeAgent;
+import com.minimax.deployer.entity.ForgeProject;
+import com.minimax.deployer.entity.ForgeRelease;
+import com.minimax.deployer.entity.ForgeWorkflowStep;
+import com.minimax.deployer.mapper.ForgeAgentMapper;
+import com.minimax.deployer.mapper.ForgeProjectMapper;
+import com.minimax.deployer.mapper.ForgeReleaseMapper;
+import com.minimax.deployer.mapper.ForgeWorkflowStepMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,13 +19,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Release 管理服务 (V4.0)
+ * Release 管理服务 (V4.1)
  *
- * V4.0 重构: 拆分到子表
- *  - agents → forge_agent (1对多)
- *  - workflow → forge_workflow_step (1对多)
- *  - manifests → forge_manifest (1对多)
- *  - 状态走 ReleaseStateMachine
+ * V4.1 改动:
+ *  - agents / workflow 只在 create 时写 forge_agent / forge_workflow_step 一次 (V4.0 双写修复)
+ *  - Manifest 不在 create 时生成, 改在 deploy 时由 DeploymentService + ManifestGenerator 生成
  */
 @Service
 @Slf4j
@@ -32,16 +34,12 @@ public class ForgeReleaseService {
     private final ForgeProjectMapper projectMapper;
     private final ForgeAgentMapper agentMapper;
     private final ForgeWorkflowStepMapper workflowMapper;
-    private final ManifestGeneratorService manifestGenerator;
     private final DeploymentService deploymentService;
-    private final ReleaseStateMachine stateMachine;
-    private final ObjectMapper objectMapper;
 
     @Transactional
     public ForgeRelease create(Long ownerId, CreateReleaseRequest req) {
         log.info("[Release] 创建 v{} for project={}", req.getVersion(), req.getProjectId());
 
-        // 1. 创建 release 主记录
         String target = req.getDeployConfig() != null
             ? (String) req.getDeployConfig().getOrDefault("target", "k8s") : "k8s";
         Integer replicas = req.getDeployConfig() != null
@@ -64,15 +62,13 @@ public class ForgeReleaseService {
             .createdAt(LocalDateTime.now())
             .build();
         releaseMapper.insert(release);
-        log.info("[Release] id={} created", release.getId());
 
-        // 2. 持久化 agents 到子表
+        // 写 agents 到 forge_agent 子表 (V4.1: 只在 release 写一次, 解决 V4.0 双写)
         if (req.getAgents() != null) {
             int idx = 0;
             for (Map<String, Object> a : req.getAgents()) {
                 agentMapper.insert(ForgeAgent.builder()
                     .releaseId(release.getId())
-                    .projectId(req.getProjectId())
                     .name((String) a.getOrDefault("name", "智能体"))
                     .role((String) a.getOrDefault("role", ""))
                     .emoji((String) a.getOrDefault("emoji", "🤖"))
@@ -86,27 +82,28 @@ public class ForgeReleaseService {
             }
         }
 
-        // 3. 持久化 workflow 到子表
+        // 写 workflow 到 forge_workflow_step
         if (req.getWorkflow() != null) {
             for (Map<String, Object> w : req.getWorkflow()) {
                 workflowMapper.insert(ForgeWorkflowStep.builder()
-                    .projectId(req.getProjectId())
                     .releaseId(release.getId())
                     .stepNo(((Number) w.getOrDefault("step", 1)).intValue())
                     .name((String) w.getOrDefault("name", ""))
                     .type("agent")
-                    .remark(null)
-                    .createdAt(LocalDateTime.now())
                     .build());
             }
         }
 
-        // 4. 同步更新 project.current_release_id
+        // 同步 project.current_release_id
         projectMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<ForgeProject>()
             .eq("id", req.getProjectId())
             .set("current_release_id", release.getId())
             .set("updated_at", LocalDateTime.now()));
 
+        log.info("[Release] id={} created, {} agents, {} workflow steps",
+            release.getId(),
+            req.getAgents() != null ? req.getAgents().size() : 0,
+            req.getWorkflow() != null ? req.getWorkflow().size() : 0);
         return release;
     }
 
@@ -138,9 +135,7 @@ public class ForgeReleaseService {
 
     private List<String> toStringList(Object o) {
         if (o == null) return List.of();
-        if (o instanceof List<?> l) {
-            return l.stream().map(String::valueOf).toList();
-        }
+        if (o instanceof List<?> l) return l.stream().map(String::valueOf).toList();
         return List.of(String.valueOf(o));
     }
 }

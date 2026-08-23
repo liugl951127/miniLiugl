@@ -6,17 +6,18 @@ import com.minimax.deployer.dto.ParseRequirementsRequest;
 import com.minimax.deployer.dto.ParseRequirementsResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 
 /**
- * 需求解析服务 (V4.0)
+ * 需求解析服务 (V4.1)
  *
- * V4.0 简化:
- *  - 单 LlmClient 调用 (替代 V3.0 多层 fallback)
- *  - 失败就明确返回 usedFallback=true, 不偷偷走规则
- *  - 持久化用 forge_agent + forge_workflow_step 子表
+ * V4.1 改动:
+ *  - System prompt 从 application.yml 注入 (@Value), 不再硬编码
+ *  - 单 LlmClient 调用, 失败 usedFallback=true
+ *  - 持久化: 解析阶段不写子表 (V4.1 修复双写), 只在 createRelease 时写
  */
 @Service
 @Slf4j
@@ -26,13 +27,9 @@ public class RequirementsParserService {
     private final LlmClient llmClient;
     private final ObjectMapper objectMapper;
 
-    private static final String SYSTEM_PROMPT = """
-        你是企业级 AI 解决方案架构师。解析用户需求, 输出严格 JSON (无 markdown 标记)。
-        字段: projectType (行业·场景), scenario, features[], scale, compliance[], integrations[], agents[{name, role, emoji, desc, tools[], model, color}], workflow[{step, name}]。
-        颜色池: 紫蓝=linear-gradient(135deg, #6366f1, #8b5cf6), 黄红=#f59e0b→#ef4444, 青绿=#10b981→#06b6d4, 粉红=#ec4899→#f43f5e, 深灰=#1e293b→#475569, 紫粉=#8b5cf6→#ec4899。
-        示例输入: "在线教育 7×24h 客服"。输出 JSON。"度小课" 等命名风格, 中文 2-3 字, emoji 自选。
-        只输出 JSON。
-        """;
+    /** V4.1: System prompt 从 application.yml 注入, 改 prompt 不用重编译 */
+    @Value("${agent-forge.parser.system-prompt}")
+    private String systemPrompt;
 
     public ParseRequirementsResponse parse(ParseRequirementsRequest req) {
         long start = System.currentTimeMillis();
@@ -43,7 +40,7 @@ public class RequirementsParserService {
 
         Optional<String> llmResp = llmClient.chat(
             content.length() > 2000 ? content.substring(0, 2000) + "..." : content,
-            SYSTEM_PROMPT
+            systemPrompt
         );
 
         ParseRequirementsResponse resp = llmResp.map(this::parseLlmJson)

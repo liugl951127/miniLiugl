@@ -2072,8 +2072,6 @@ CREATE TABLE IF NOT EXISTS forge_project (
     industry VARCHAR(50),
     scenario TEXT,
     raw_requirements TEXT,
-    parsed_requirements TEXT,
-    recommended_agents TEXT,
     current_release_id BIGINT,
     status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
     owner_id BIGINT,
@@ -2089,15 +2087,13 @@ CREATE TABLE IF NOT EXISTS forge_release (
     version VARCHAR(20) NOT NULL,
     title VARCHAR(200),
     changelog TEXT,
-    agent_definitions TEXT,
-    deploy_config TEXT,
-    manifests TEXT,
     status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
     deploy_target VARCHAR(20),
     replicas INT DEFAULT 2,
     image_registry VARCHAR(200),
     image_tag VARCHAR(100),
     deploy_duration INT,
+    failure_reason VARCHAR(512),
     created_by BIGINT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -2110,8 +2106,7 @@ CREATE TABLE IF NOT EXISTS forge_deployment (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     release_id BIGINT NOT NULL,
     instance_name VARCHAR(100),
-    stages TEXT,
-    logs TEXT,
+    current_stage VARCHAR(50) DEFAULT 'PENDING',
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
     target VARCHAR(20),
     namespace VARCHAR(50),
@@ -2131,7 +2126,6 @@ CREATE INDEX IF NOT EXISTS idx_forge_deployment_status ON forge_deployment(statu
 CREATE TABLE IF NOT EXISTS forge_agent (
   id BIGINT NOT NULL AUTO_INCREMENT,
   release_id BIGINT NOT NULL,
-  project_id BIGINT DEFAULT NULL,
   name VARCHAR(64) NOT NULL,
   role VARCHAR(128) DEFAULT NULL,
   emoji VARCHAR(16) DEFAULT NULL,
@@ -2143,14 +2137,12 @@ CREATE TABLE IF NOT EXISTS forge_agent (
   created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_release_id (release_id),
-  KEY idx_project_id (project_id),
   KEY idx_name (name)
 );
 
 -- V4.0: Workflow Step 子表
 CREATE TABLE IF NOT EXISTS forge_workflow_step (
   id BIGINT NOT NULL AUTO_INCREMENT,
-  project_id BIGINT DEFAULT NULL,
   release_id BIGINT DEFAULT NULL,
   step_no INT NOT NULL,
   name VARCHAR(128) NOT NULL,
@@ -2159,7 +2151,6 @@ CREATE TABLE IF NOT EXISTS forge_workflow_step (
   remark VARCHAR(256) DEFAULT NULL,
   created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  KEY idx_project_id (project_id),
   KEY idx_release_id (release_id)
 );
 

@@ -32,6 +32,15 @@ mybatis-plus:
 
 # V4.0: Agent Forge 单一配置区
 agent-forge:
+  parser:
+    # V4.1: System prompt 外置 (可改无需编译)
+    system-prompt: |
+      你是企业级 AI 解决方案架构师。解析用户需求, 输出严格 JSON (无 markdown 标记)。
+      字段: projectType (行业·场景), scenario, features[], scale, compliance[], integrations[], agents[{name, role, emoji, desc, tools[], model, color}], workflow[{step, name}]。
+      颜色池: 紫蓝=linear-gradient(135deg, #6366f1, #8b5cf6), 黄红=#f59e0b→#ef4444, 青绿=#10b981→#06b6d4, 粉红=#ec4899→#f43f5e, 深灰=#1e293b→#475569, 紫粉=#8b5cf6→#ec4899。
+      示例输入: "在线教育 7×24h 客服"。输出 JSON。"度小课" 等命名风格, 中文 2-3 字, emoji 自选。
+      只输出 JSON。
+    timeout-ms: 30000
   llm:
     url: ${LLM_URL:http://minimax-ai:8090}
     model: ${LLM_MODEL:qwen2.5-0.5b-instruct}

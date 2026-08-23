@@ -8,24 +8,19 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.Set;
 
 /**
- * Release 状态机 (V4.0)
+ * Release 状态机 (V4.1)
  *
- * 单一状态变更入口, 杜绝 status 字段在多个 service 里散落改动。
+ * V4.1 命名统一 (全部用动词):
+ *  - BUILD     (DRAFT     → BUILDING)   构建 manifest
+ *  - DEPLOY    (BUILDING  → DEPLOYING)  push 镜像 / 推送 Git
+ *  - READY     (DEPLOYING → HEALTHY)    探针通过
+ *  - ACTIVATE  (HEALTHY   → ACTIVE)     流量接入
+ *  - FAIL      (*         → FAILED)     失败 (带 reason)
+ *  - ARCHIVE   (*         → ARCHIVED)   归档 (终态)
  *
- * 状态图:
- *   DRAFT → BUILDING → DEPLOYING → HEALTHY → ACTIVE
- *      ↓         ↓          ↓
- *   ARCHIVED  FAILED    FAILED
- *                 ↓
- *              ARCHIVED
- *
- * 转换规则:
- *  - 只允许白名单转换 (非任意跳)
- *  - 终态 (ACTIVE / ARCHIVED) 不可再转
- *  - 失败状态需带 reason
+ * 任何非法转换抛 IllegalStateException。
  */
 @Component
 @Slf4j
@@ -37,15 +32,14 @@ public class ReleaseStateMachine {
     }
 
     public enum Event {
-        START_BUILD, START_DEPLOY, DEPLOY_HEALTHY, MARK_ACTIVE, FAIL, ARCHIVE
+        BUILD, DEPLOY, READY, ACTIVATE, FAIL, ARCHIVE
     }
 
-    /** 合法转换表 */
     private static final Map<State, Map<Event, State>> TRANSITIONS = Map.of(
-        State.DRAFT,     Map.of(Event.START_BUILD, State.BUILDING, Event.ARCHIVE, State.ARCHIVED),
-        State.BUILDING,  Map.of(Event.START_DEPLOY, State.DEPLOYING, Event.FAIL, State.FAILED),
-        State.DEPLOYING, Map.of(Event.DEPLOY_HEALTHY, State.HEALTHY, Event.FAIL, State.FAILED),
-        State.HEALTHY,   Map.of(Event.MARK_ACTIVE, State.ACTIVE, Event.FAIL, State.FAILED),
+        State.DRAFT,     Map.of(Event.BUILD, State.BUILDING,  Event.ARCHIVE, State.ARCHIVED),
+        State.BUILDING,  Map.of(Event.DEPLOY, State.DEPLOYING, Event.FAIL, State.FAILED),
+        State.DEPLOYING, Map.of(Event.READY, State.HEALTHY,    Event.FAIL, State.FAILED),
+        State.HEALTHY,   Map.of(Event.ACTIVATE, State.ACTIVE,  Event.FAIL, State.FAILED),
         State.FAILED,    Map.of(Event.ARCHIVE, State.ARCHIVED),
         State.ARCHIVED,  Map.of(),
         State.ACTIVE,    Map.of(Event.ARCHIVE, State.ARCHIVED)
@@ -53,25 +47,17 @@ public class ReleaseStateMachine {
 
     private final ForgeReleaseMapper releaseMapper;
 
-    /**
-     * 触发状态转换
-     *
-     * @return 转换后的新状态
-     * @throws IllegalStateException 不允许的转换
-     */
     public State fire(Long releaseId, Event event, String reason) {
         ForgeRelease release = releaseMapper.selectById(releaseId);
         if (release == null) throw new IllegalStateException("Release 不存在: " + releaseId);
 
         State current = State.valueOf(release.getStatus());
         State next = TRANSITIONS.getOrDefault(current, Map.of()).get(event);
-
         if (next == null) {
             throw new IllegalStateException(
                 "非法状态转换: " + current + " --" + event + "--> ? (release=" + releaseId + ")"
             );
         }
-
         log.info("[StateMachine] release={} {} --{}--> {} ({})",
             releaseId, current, event, next, reason != null ? reason : "");
 
@@ -79,6 +65,11 @@ public class ReleaseStateMachine {
             .eq("id", releaseId)
             .set("status", next.name())
             .set("updated_at", LocalDateTime.now()));
+        if (reason != null && (event == Event.FAIL)) {
+            releaseMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<ForgeRelease>()
+                .eq("id", releaseId)
+                .set("failure_reason", reason));
+        }
         return next;
     }
 

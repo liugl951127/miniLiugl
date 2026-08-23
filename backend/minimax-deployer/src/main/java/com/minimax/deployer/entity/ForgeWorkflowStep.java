@@ -13,10 +13,9 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * Forge Workflow Step (V4.0) - 独立子表
+ * Forge Workflow Step (V4.1)
  *
- * 替代 ForgeProject 中存的 workflow JSON 字符串
- * 流程步骤独立成行, 便于展示/编辑/排序
+ * V4.1: 删 project_id 字段, 只绑 release_id (与 ForgeAgent 保持一致)
  */
 @Data
 @Builder
@@ -27,29 +26,21 @@ public class ForgeWorkflowStep implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    @TableField("project_id")
-    private Long projectId;
-
     @TableField("release_id")
     private Long releaseId;
 
-    /** 步骤序号 (从 1 开始) */
     @TableField("step_no")
     private Integer stepNo;
 
-    /** 步骤名称 */
     @TableField("name")
     private String name;
 
-    /** 步骤类型: input/agent/decision/output */
     @TableField("type")
     private String type;
 
-    /** 关联 agent id (可选) */
     @TableField("agent_id")
     private Long agentId;
 
-    /** 备注 */
     @TableField("remark")
     private String remark;
 
