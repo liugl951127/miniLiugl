@@ -244,16 +244,20 @@ onMounted(() => {
   flex: 1;
   overflow-y: auto;
   padding: 16px;
-  background: #f8fafc;
+  background:
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.03) 0px, transparent 40%),
+    radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.02) 0px, transparent 40%),
+    #fafbfc;
 }
-.msg-content { margin-bottom: 12px; }
+.msg-content { margin-bottom: 14px; }
 .msg-bubble {
   background: white;
   padding: 12px 16px;
-  border-radius: 8px;
+  border-radius: 12px;
   display: inline-block;
   max-width: 70%;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #f1f5f9;
 }
 
 /* V8.0: 空状态 hero */

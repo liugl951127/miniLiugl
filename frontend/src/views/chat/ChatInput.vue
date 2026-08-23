@@ -105,19 +105,32 @@ function send() {
 <style scoped>
 .chat-input {
   border-top: 1px solid #e2e8f0;
-  padding: 12px 16px;
-  background: white;
+  padding: 16px 20px 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
 }
 .attachment-row {
   display: flex; flex-wrap: wrap; gap: 6px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 .attachment-chip {
   display: inline-flex; align-items: center; gap: 4px;
-  padding: 4px 8px; background: #eff6ff; border-radius: 12px;
-  font-size: 12px; color: #1e40af;
+  padding: 5px 10px;
+  background: linear-gradient(135deg, #eff6ff 0%, #ede9fe 100%);
+  border: 1px solid #c7d2fe;
+  border-radius: 14px;
+  font-size: 12px; color: #4338ca;
+  font-weight: 500;
 }
 .att-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.input-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
-.input-tools { display: flex; gap: 4px; }
+.input-footer {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 10px;
+}
+.input-tools { display: flex; gap: 2px; }
+.input-tools :deep(.el-button) {
+  color: #64748b; font-weight: 500;
+}
+.input-tools :deep(.el-button:hover) {
+  color: #6366f1; background: #eef2ff;
+}
 </style>
