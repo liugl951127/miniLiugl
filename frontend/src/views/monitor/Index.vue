@@ -96,6 +96,89 @@
         </el-table>
       </el-tab-pane>
 
+      <!-- ========== Day 52: 告警历史高级筛选 ========== -->
+      <el-tab-pane label="历史筛选" name="history">
+        <!-- 筛选工具栏 -->
+        <div class="filter-toolbar" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
+          <el-select v-model="historyFilters.severity" placeholder="全部级别" clearable size="small" style="width:120px">
+            <el-option label="CRITICAL" value="CRITICAL" />
+            <el-option label="WARNING" value="WARNING" />
+            <el-option label="INFO" value="INFO" />
+          </el-select>
+          <el-select v-model="historyFilters.status" placeholder="全部状态" clearable size="small" style="width:120px">
+            <el-option label="触发中" value="firing" />
+            <el-option label="已确认" value="acked" />
+            <el-option label="已解决" value="resolved" />
+          </el-select>
+          <el-input v-model="historyFilters.metricName" placeholder="指标名（模糊）" clearable size="small" style="width:160px" />
+          <el-date-picker v-model="historyFilters.dateRange" type="daterange" range-separator="至"
+            start-placeholder="开始日期" end-placeholder="结束日期" size="small"
+            value-format="YYYY-MM-DDTHH:mm:ss" style="width:260px" />
+          <el-button size="small" type="primary" @click="loadHistory(true)" :loading="historyLoading">
+            <el-icon><Search /></el-icon>查询
+          </el-button>
+          <el-button size="small" @click="resetHistoryFilters">重置</el-button>
+          <span style="margin-left:auto;font-size:12px;color:var(--el-text-color-secondary)">
+            共 {{ historyTotal }} 条
+          </span>
+        </div>
+
+        <!-- 历史告警表格 -->
+        <el-table :data="historyItems" stripe size="small" v-loading="historyLoading"
+          @row-click="openAlertDetail" style="cursor:pointer" :empty-text="historyEmptyText">
+          <template #empty>
+            <el-empty description="暂无符合条件的告警记录" :image-size="80" />
+          </template>
+          <el-table-column prop="firedAt" label="触发时间" width="170">
+            <template #default="{ row }">{{ formatTime(row.firedAt) }}</template>
+          </el-table-column>
+          <el-table-column prop="severity" label="级别" width="90">
+            <template #default="{ row }">
+              <el-tag size="small" :type="severityType(row.severity)">{{ row.severity }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="ruleName" label="规则" width="150" show-overflow-tooltip />
+          <el-table-column prop="metricName" label="指标" width="130" />
+          <el-table-column prop="metricValue" label="当前值" width="90">
+            <template #default="{ row }">{{ row.metricValue }}</template>
+          </el-table-column>
+          <el-table-column prop="status" label="状态" width="90">
+            <template #default="{ row }">
+              <el-tag size="small" :type="statusType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="resolvedBy" label="恢复方式" width="100">
+            <template #default="{ row }">
+              <span v-if="row.resolvedBy === 'SYSTEM'" style="font-size:12px;color:var(--el-color-success)">🔧 自动</span>
+              <span v-else-if="row.resolvedBy" style="font-size:12px;color:var(--el-color-primary)">👤 手动</span>
+              <span v-else style="font-size:12px;color:var(--el-text-color-placeholder)">—</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="message" label="告警信息" show-overflow-tooltip />
+          <el-table-column label="操作" width="120" fixed="right">
+            <template #default="{ row }">
+              <el-button size="small" type="primary" @click.stop="openAlertDetail(row)">
+                <el-icon><View /></el-icon>详情
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <!-- 分页 -->
+        <div style="display:flex;justify-content:center;margin-top:12px">
+          <el-pagination
+            v-model:current-page="historyPage"
+            v-model:page-size="historyLimit"
+            :page-sizes="[20, 50, 100, 200]"
+            :total="historyTotal"
+            layout="total, sizes, prev, pager, next"
+            background
+            @size-change="loadHistory()"
+            @current-change="loadHistory()"
+          />
+        </div>
+      </el-tab-pane>
+
       <!-- ========== 通知渠道管理 (Day 42) ========== -->
       <el-tab-pane label="通知渠道" name="channels">
         <div class="channel-toolbar">
@@ -657,12 +740,13 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Refresh, View, Loading, Plus, Edit, Delete } from '@element-plus/icons-vue'
+import { Refresh, View, Loading, Plus, Edit, Delete, Search } from '@element-plus/icons-vue'
 import {
   getMonitorHealth, getJvmHealth, getFiringAlerts, rcaAnalysis, acknowledgeAlert,
   listAlertChannels, createAlertChannel, updateAlertChannel, deleteAlertChannel, testAlertChannel,
   getAlertSla, getAlertTrend, getAlertStatistics, getAlertTimeSeries,
-  getAllAlertRules, createAlertRule, updateAlertRule, deleteAlertRule, toggleAlertRule
+  getAllAlertRules, createAlertRule, updateAlertRule, deleteAlertRule, toggleAlertRule,
+  getAlertHistoryAdvanced
 } from '@/api/monitor'
 import http from '@/api/http'
 import * as echarts from 'echarts'
@@ -786,6 +870,51 @@ const slaLoading = ref(false)
 const statsWindow = ref(30)
 const statsLoading = ref(false)
 const stats = ref({})
+
+// ========== Day 52: 告警历史高级筛选 ==========
+const historyFilters = ref({
+  severity: '',
+  status: '',
+  metricName: '',
+  dateRange: null
+})
+const historyItems = ref([])
+const historyLoading = ref(false)
+const historyTotal = ref(0)
+const historyPage = ref(1)
+const historyLimit = ref(20)
+const historyEmptyText = computed(() => historyLoading.value ? '加载中...' : '暂无符合条件的告警记录')
+
+async function loadHistory(resetPage = false) {
+  if (resetPage) historyPage.value = 1
+  historyLoading.value = true
+  try {
+    const params = { page: historyPage.value, limit: historyLimit.value }
+    if (historyFilters.value.severity) params.severity = historyFilters.value.severity
+    if (historyFilters.value.status) params.status = historyFilters.value.status
+    if (historyFilters.value.metricName) params.metricName = historyFilters.value.metricName
+    if (historyFilters.value.dateRange && historyFilters.value.dateRange.length === 2) {
+      params.startTime = historyFilters.value.dateRange[0]
+      params.endTime = historyFilters.value.dateRange[1]
+    }
+    const r = await getAlertHistoryAdvanced(params)
+    const data = r.data || r.result || {}
+    historyItems.value = data.items || []
+    historyTotal.value = data.total || 0
+  } catch (e) {
+    ElMessage.error('加载历史告警失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
+    historyItems.value = []
+    historyTotal.value = 0
+  } finally {
+    historyLoading.value = false
+  }
+}
+
+function resetHistoryFilters() {
+  historyFilters.value = { severity: '', status: '', metricName: '', dateRange: null }
+  historyPage.value = 1
+  loadHistory()
+}
 
 // ========== ECharts 可视化 (Day 48) ==========
 const pieChartRef = ref(null)
@@ -1096,6 +1225,9 @@ watch(activeTab, (tab) => {
   }
   if (tab === 'rules' && rules.value.length === 0) {
     loadRules()
+  }
+  if (tab === 'history') {
+    loadHistory()
   }
   if (tab === 'jvm') {
     initJvmChart()

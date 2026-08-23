@@ -134,6 +134,9 @@ export const testAlertChannel = (id) => http.post(`/monitor/alerts/channels/${id
 /** 告警历史 */
 export const getAlertHistory = (params) => http.get('/monitor/alerts/history', { params })
 
+/** Day 52: 告警历史高级筛选（severity / metricName / status / startTime / endTime / page / limit） */
+export const getAlertHistoryAdvanced = (params) => http.get('/monitor/alerts/history/advanced', { params })
+
 // ==================== 审计日志 (V2.7.1 新增) ====================
 
 /** 审计日志列表 */

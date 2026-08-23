@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.minimax.monitor.entity.AlertEvent;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Mapper
@@ -33,5 +34,51 @@ public interface AlertEventMapper extends BaseMapper<AlertEvent> {
                 .eq("status", status)
                 .orderByDesc("fired_at")
                 .last(String.format("LIMIT %d", safe)));
+    }
+
+    /** Day 52: 高级筛选 (severity / metricName / status / 时间范围) */
+    default List<AlertEvent> selectAdvanced(String severity, String metricName,
+            String status, LocalDateTime startTime, LocalDateTime endTime, int limit) {
+        int safe = Math.max(0, Math.min(limit, 10000));
+        QueryWrapper<AlertEvent> q = new QueryWrapper<>();
+        if (severity != null && !severity.isBlank()) {
+            q.eq("severity", severity.toUpperCase());
+        }
+        if (metricName != null && !metricName.isBlank()) {
+            q.like("metric_name", metricName);
+        }
+        if (status != null && !status.isBlank()) {
+            q.eq("status", status.toLowerCase());
+        }
+        if (startTime != null) {
+            q.ge("fired_at", startTime);
+        }
+        if (endTime != null) {
+            q.le("fired_at", endTime);
+        }
+        q.orderByDesc("fired_at").last(String.format("LIMIT %d", safe));
+        return selectList(q);
+    }
+
+    /** Day 52: 高级筛选总数（用于分页） */
+    default long countAdvanced(String severity, String metricName, String status,
+            LocalDateTime startTime, LocalDateTime endTime) {
+        QueryWrapper<AlertEvent> q = new QueryWrapper<>();
+        if (severity != null && !severity.isBlank()) {
+            q.eq("severity", severity.toUpperCase());
+        }
+        if (metricName != null && !metricName.isBlank()) {
+            q.like("metric_name", metricName);
+        }
+        if (status != null && !status.isBlank()) {
+            q.eq("status", status.toLowerCase());
+        }
+        if (startTime != null) {
+            q.ge("fired_at", startTime);
+        }
+        if (endTime != null) {
+            q.le("fired_at", endTime);
+        }
+        return selectCount(q);
     }
 }

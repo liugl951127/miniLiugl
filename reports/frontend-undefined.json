@@ -1,12 +1,12 @@
 {
   "api/ai.js": [
-    "  L60: onComplete()",
-    "  L64: onChunk()",
-    "  L66: onError()",
-    "  L1134: onReconnecting()"
+    "  L59: onComplete()",
+    "  L63: onChunk()",
+    "  L65: onError()",
+    "  L1021: onReconnecting()"
   ],
   "api/model.js": [
-    "  L99: onChunk()"
+    "  L121: onChunk()"
   ],
   "composables/useBackgroundSync.js": [
     "  L37: callback()"
@@ -16,10 +16,29 @@
     "  L401: onColorSchemeChange()"
   ],
   "composables/useBusinessStream.js": [
-    "  L134: onDone()",
-    "  L154: onError()",
-    "  L164: onToolCall()",
-    "  L167: onSource()"
+    "  L143: onDone()",
+    "  L163: onError()",
+    "  L173: onToolCall()",
+    "  L176: onSource()",
+    "  L182: onAgentResult()",
+    "  L185: onAgentStatus()"
+  ],
+  "composables/useClipboard.js": [
+    "  L13: successMsg()"
+  ],
+  "composables/useCrud.js": [
+    "  L74: getApi()",
+    "  L108: createApi()",
+    "  L112: updateApi()",
+    "  L116: refresh()",
+    "  L140: deleteApi()"
+  ],
+  "composables/usePageSetup.js": [
+    "  L69: onMount()",
+    "  L73: onUnmount()",
+    "  L77: onActivate()",
+    "  L81: onDeactivate()",
+    "  L85: setup()"
   ],
   "composables/usePerformance.js": [
     "  L10: WeakMap()",
@@ -32,6 +51,9 @@
     "  L135: startTimers()",
     "  L141: cleanup()"
   ],
+  "composables/useTable.js": [
+    "  L92: fetcher()"
+  ],
   "composables/useToast.js": [
     "  L61: notify()",
     "  L84: clearLog()"
@@ -40,27 +62,36 @@
     "  L27: hasAny()",
     "  L27: hasAll()"
   ],
+  "components/CrudTable.vue": [
+    "  L5: defineOptions()"
+  ],
+  "components/FileUploader.vue": [
+    "  L69: XMLHttpRequest()"
+  ],
+  "components/FormDrawer.vue": [
+    "  L10: defineOptions()"
+  ],
   "components/MarkdownView.vue": [
     "  L17: highlight()"
   ],
+  "components/PageStandard.vue": [
+    "  L5: defineOptions()"
+  ],
   "layout/Index.vue": [
-    "  L26: setDemoMode()",
-    "  L26: switchUser()"
+    "  L183: myTenant()"
   ],
-  "views/admin/Metrics.vue": [
-    "  L36: aggregateDuration()"
+  "views/agent/Index.vue": [
+    "  L354: copyToClipboard()"
   ],
-  "views/auth/Login.vue": [
-    "  L42: StorageEvent()",
-    "  L245: isFirstLogin()"
+  "views/chat/Index.vue": [
+    "  L118: Audio()",
+    "  L482: scrollBottom()"
   ],
-  "views/auth/WechatScanPage.vue": [
-    "  L37: patch()"
+  "views/knowledge/Index.vue": [
+    "  L725: onProgress()",
+    "  L732: onRetry()"
   ],
-  "views/showcase/AudioShowcase.vue": [
-    "  L34: MediaRecorder()"
-  ],
-  "views/showcase/PluginShowcase.vue": [
-    "  L76: Function()"
+  "views/settings/Index.vue": [
+    "  L234: listTenantUsers()"
   ]
 }

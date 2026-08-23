@@ -713,6 +713,70 @@ public class MonitorController {
         return Result.ok(history);
     }
 
+    // ---------- Day 52: 告警历史高级筛选 ----------
+    @Operation(summary = "告警历史高级筛选（severity / 指标名 / 状态 / 时间范围 / 分页）")
+    @GetMapping("/alerts/history/advanced")
+    public Result<Map<String, Object>> getAlertHistoryAdvanced(
+            @RequestParam(required = false) String severity,     // CRITICAL / WARNING / INFO
+            @RequestParam(required = false) String metricName,   // 指标名模糊匹配
+            @RequestParam(required = false) String status,       // firing / acked / resolved
+            @RequestParam(required = false) String startTime,  // ISO: 2026-08-01T00:00:00
+            @RequestParam(required = false) String endTime,     // ISO: 2026-08-23T23:59:59
+            @RequestParam(defaultValue = "100") int limit,
+            @RequestParam(defaultValue = "1") int page) {
+
+        LocalDateTime start = null;
+        LocalDateTime end = null;
+        try {
+            if (startTime != null && !startTime.isBlank()) {
+                start = LocalDateTime.parse(startTime);
+            }
+            if (endTime != null && !endTime.isBlank()) {
+                end = LocalDateTime.parse(endTime);
+            }
+        } catch (Exception ex) {
+            log.warn("时间解析失败 startTime={} endTime={}: {}", startTime, endTime, ex.getMessage());
+        }
+
+        long total = alertEventMapper.countAdvanced(severity, metricName, status, start, end);
+        int safeLimit = Math.max(1, Math.min(limit, 500));
+        int offset = Math.max(0, (page - 1)) * safeLimit;
+
+        List<AlertEvent> events = alertEventMapper.selectAdvanced(
+                severity, metricName, status, start, end, safeLimit);
+
+        List<Map<String, Object>> items = events.stream()
+                .map(e -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("id", e.getId());
+                    m.put("ruleId", e.getRuleId());
+                    m.put("ruleName", e.getRuleName());
+                    m.put("severity", e.getSeverity());
+                    m.put("metricName", e.getMetricName());
+                    m.put("metricValue", e.getMetricValue());
+                    m.put("threshold", e.getThreshold());
+                    m.put("message", e.getMessage());
+                    m.put("status", e.getStatus());
+                    m.put("firedAt", e.getFiredAt());
+                    m.put("resolvedAt", e.getResolvedAt());
+                    m.put("ackedAt", e.getAckedAt());
+                    m.put("ackedBy", e.getAckedBy());
+                    m.put("duration", e.getDuration());
+                    m.put("notes", e.getNotes());
+                    m.put("escalated", e.getEscalated());
+                    m.put("resolvedBy", e.getResolvedBy());
+                    return m;
+                })
+                .toList();
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("total", total);
+        result.put("page", page);
+        result.put("limit", safeLimit);
+        result.put("items", items);
+        return Result.ok(result);
+    }
+
     /**
      * 告警实时推送 (SSE) (Day 27).
      * 前端 EventSource 订阅此端点，新告警触发时实时推送。

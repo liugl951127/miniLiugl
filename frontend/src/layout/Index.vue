@@ -143,6 +143,10 @@
       </el-header>
 
       <el-main class="layout-main">
+        <!-- Day 52: 路由切换骨架屏 -->
+        <div v-if="routeChanging" class="route-skeleton">
+          <el-skeleton :rows="8" animated style="padding:16px" />
+        </div>
         <router-view v-slot="{ Component }">
           <transition name="fade-slide" mode="out-in">
             <component :is="Component" />
@@ -154,7 +158,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'
@@ -176,6 +180,15 @@ const drawerVisible = ref(false)
 const sidebarWidth = '220px'
 const healthSummary = ref(null)
 const currentTenant = ref(null)
+
+// Day 52: 路由切换骨架屏
+const routeChanging = ref(false)
+let routeTimer = null
+watch(() => route.path, () => {
+  routeChanging.value = true
+  if (routeTimer) clearTimeout(routeTimer)
+  routeTimer = setTimeout(() => { routeChanging.value = false }, 400)
+})
 
 // ========== 响应式检测 ==========
 function checkResponsive() {
@@ -448,4 +461,12 @@ onMounted(async () => {
 .el-theme-dark .user-info:hover { background: rgba(255,255,255,0.08) !important; }
 .el-theme-dark .layout-main { background: #1a1a2e !important; }
 .el-theme-dark .app-fallback { background: #1a1a2e !important; }
+
+/* Day 52: 路由切换骨架屏 */
+.route-skeleton {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--el-bg-color, #fff);
+  z-index: 10;
+}
 </style>

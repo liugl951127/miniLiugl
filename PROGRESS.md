@@ -904,3 +904,18 @@
 - [ ] 前端骨架屏 + 首屏加载优化（el-skeleton + 路由懒加载）
 - [ ] 前端 API 路径一致性扫描（前后端参数匹配检查）
 
+
+## Day 52 - 2026-08-23 ✅ Monitor 高级筛选 + 骨架屏 + API一致性扫描
+
+**今日完成：**
+- [x] **Monitor 告警历史高级筛选**：`GET /api/v1/monitor/alerts/history/advanced`（severity/status/metricName/startTime/endTime 分页查询）+ AlertEventMapper 新增 selectAdvanced/countAdvanced + 前端新增「历史筛选」Tab（el-select 级别/状态 + 指标名输入 + date-range + el-pagination 分页）
+- [x] **前端骨架屏**：layout/Index.vue 路由切换时显示 el-skeleton animated（400ms 过渡），路由已全懒加载
+- [x] **API 路径一致性**：scan-api-coverage 13/13 ✅ + scan-frontend-syntax 0 语法错误 ✅ + scan-undefined-funcs 仅假阳性 ✅
+- [x] 自检 13/13 ✅ + Java 静态 5/5 ✅ + vite build 37.55s ✅
+
+**关键文件数：** 后端 3 文件 / 前端 3 文件
+
+**明日计划 Day 53：**
+- [ ] Monitor 告警趋势预测（基于历史数据）
+- [ ] 前端全站深色模式一致性审查
+- [ ] RAG 跨知识库联合检索
