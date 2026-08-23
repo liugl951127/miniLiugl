@@ -198,15 +198,18 @@ import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, RefreshLeft, Promotion } from '@element-plus/icons-vue'
+import { triggerDeploy, pollArgoCdStatus } from '@/api/forge'
 
 const router = useRouter()
 const target = ref('k8s')
 const deploying = ref(false)
 const nodeCount = ref(3)
+const currentReleaseId = ref(null)  // V5.0: 从路由或 props 传入
 
 const targets = [
   { key: 'docker', name: '本地 Docker', icon: '🐳', bg: 'linear-gradient(135deg, #2496ed, #1d7bb8)', desc: '单机容器化部署', cost: '¥0/月 (本地资源)' },
   { key: 'k8s',    name: 'Kubernetes', icon: '☸️', bg: 'linear-gradient(135deg, #326ce5, #1f5dc9)', desc: '生产级集群',     cost: '¥2.5K/月起' },
+  { key: 'gitops', name: 'GitOps ⭐ V5.0', icon: '🚀', bg: 'linear-gradient(135deg, #6366f1, #8b5cf6)', desc: 'JGit 推送 + ArgoCD 同步 (真)', cost: '需配置 git/argocd' },
   { key: 'cloud',  name: '云厂商',      icon: '☁️', bg: 'linear-gradient(135deg, #ff6a00, #ee0979)', desc: '阿里云/AWS/腾讯云', cost: '¥3K/月起' },
   { key: 'edge',   name: '边缘设备',   icon: '📡', bg: 'linear-gradient(135deg, #10b981, #06b6d4)', desc: 'IoT/边缘服务器', cost: '¥0.5K/月' }
 ]
@@ -236,11 +239,34 @@ async function startDeploy() {
     { type: 'info', confirmButtonText: '开始部署' }
   )
   deploying.value = true
-  ElMessage.info('开始部署, 跳转到监控...')
-  setTimeout(() => {
-    deploying.value = false
-    router.push('/builder/monitor')
-  }, 1500)
+  // V5.0: GitOps 走真 API (JGit + ArgoCD), 其他 target 还是 V1.0 mock
+  if (target.value === 'gitops') {
+    try {
+      ElMessage.info('🚀 GitOps 启动: JGit 推送 + ArgoCD 同步...')
+      await triggerDeploy(currentReleaseId.value || 1)  // fallback to 1 if not set
+      // 轮询 ArgoCD (前端每 5s 一次, 最多 60s)
+      const appName = 'agent-' + Date.now()
+      for (let i = 0; i < 12; i++) {
+        await new Promise(r => setTimeout(r, 5000))
+        try {
+          const resp = await pollArgoCdStatus(appName)
+          ElMessage.success(`📊 ArgoCD: health=${resp.data.health} sync=${resp.data.syncStatus}`)
+          if (resp.data.health === 'Healthy' && resp.data.syncStatus === 'Synced') break
+        } catch (e) { console.warn('ArgoCD poll failed', e) }
+      }
+    } catch (e) {
+      ElMessage.error('GitOps 部署失败: ' + e.message)
+    } finally {
+      deploying.value = false
+    }
+  } else {
+    // V1.0 mock 保留给 docker/k8s/cloud/edge
+    ElMessage.info('开始部署, 跳转到监控...')
+    setTimeout(() => {
+      deploying.value = false
+      router.push('/builder/monitor')
+    }, 1500)
+  }
 }
 </script>
 

@@ -103,6 +103,13 @@
             <artifactId>freemarker</artifactId>
         </dependency>
 
+        <!-- V5.0: JGit - 真实 Git 操作 (clone/commit/push) -->
+        <dependency>
+            <groupId>org.eclipse.jgit</groupId>
+            <artifactId>org.eclipse.jgit</artifactId>
+            <version>6.10.0.202406032230-r</version>
+        </dependency>
+
         <!-- 测试 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

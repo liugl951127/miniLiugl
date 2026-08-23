@@ -41,3 +41,8 @@ export const PARSER_MODELS = [
   { code: 'qwen2.5-7b-instruct',   name: 'Qwen2.5-7B (云端)',         desc: 'minimax-ai, ~3s' },
   { code: 'rule-engine',           name: '规则引擎 (离线 fallback)', desc: '无需 LLM, 关键词 + 行业模板' }
 ]
+
+// ============ V5.0: GitOps 真实状态查询 ============
+export const pollArgoCdStatus = (appName) => http.get(`/forge/argocd/applications/${appName}`)
+
+export const triggerArgoCdSync = (appName) => http.post(`/forge/argocd/applications/${appName}/sync`)

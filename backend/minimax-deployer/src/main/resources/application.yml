@@ -53,9 +53,15 @@ agent-forge:
     repo-url: ${GITOPS_REPO:https://git.minimax.io/agent-forge/manifests.git}
     branch: ${GITOPS_BRANCH:main}
     path: ${GITOPS_PATH:agents/}
+    # V5.0: HTTPS Basic Auth 凭证 (生产用 secret 注入)
+    username: ${GITOPS_USER:}
+    password: ${GITOPS_PASS:}
+    local-path: ${GITOPS_LOCAL_PATH:/tmp/agent-forge-gitops}
   argocd:
     server: ${ARGOCD_SERVER:https://argocd.minimax.io}
     project: ${ARGOCD_PROJECT:default}
+    # V5.0: ArgoCD Bearer Token
+    token: ${ARGOCD_TOKEN:}
   edge:
     target: ${EDGE_TARGET:}
 

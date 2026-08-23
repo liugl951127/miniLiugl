@@ -6,6 +6,7 @@ import com.minimax.deployer.entity.ForgeDeployment;
 import com.minimax.deployer.entity.ForgeDeploymentLog;
 import com.minimax.deployer.entity.ForgeManifest;
 import com.minimax.deployer.entity.ForgeRelease;
+import com.minimax.deployer.gitops.ArgoCdClient;
 import com.minimax.deployer.mapper.ForgeDeploymentLogMapper;
 import com.minimax.deployer.mapper.ForgeDeploymentMapper;
 import com.minimax.deployer.mapper.ForgeManifestMapper;
@@ -52,6 +53,7 @@ public class ForgeReleaseController {
     private final ForgeDeploymentMapper deploymentMapper;
     private final ForgeDeploymentLogMapper logMapper;
     private final ForgeManifestMapper manifestMapper;
+    private final ArgoCdClient argoCdClient;
 
     @PostMapping("/releases")
     @Operation(summary = "创建 release")
@@ -117,5 +119,20 @@ public class ForgeReleaseController {
                 .orderByAsc("created_at")
                 .last("LIMIT " + Math.min(limit, 500) + " OFFSET " + Math.max(offset, 0))
         ));
+    }
+
+    // ============ V5.0: ArgoCD 真 API 代理 ============
+
+    @GetMapping("/argocd/applications/{appName}")
+    @Operation(summary = "V5.0: 查询 ArgoCD Application 真实状态")
+    public Result<ArgoCdClient.ApplicationStatus> argoStatus(@PathVariable String appName) {
+        return Result.ok(argoCdClient.queryStatus(appName));
+    }
+
+    @PostMapping("/argocd/applications/{appName}/sync")
+    @Operation(summary = "V5.0: 触发 ArgoCD Application 同步")
+    public Result<Void> argoSync(@PathVariable String appName) {
+        argoCdClient.triggerSync(appName);
+        return Result.ok();
     }
 }

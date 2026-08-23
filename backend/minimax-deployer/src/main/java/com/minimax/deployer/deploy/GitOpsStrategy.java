@@ -4,6 +4,8 @@ import com.minimax.deployer.entity.ForgeAgent;
 import com.minimax.deployer.entity.ForgeDeployment;
 import com.minimax.deployer.entity.ForgeManifest;
 import com.minimax.deployer.entity.ForgeRelease;
+import com.minimax.deployer.gitops.ArgoCdClient;
+import com.minimax.deployer.gitops.GitOpsClient;
 import com.minimax.deployer.mapper.ForgeAgentMapper;
 import com.minimax.deployer.mapper.ForgeDeploymentMapper;
 import com.minimax.deployer.mapper.ForgeManifestMapper;
@@ -20,10 +22,16 @@ import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** GitOps 部署 (V4.1) — 真实生成 ArgoCD CRD + 持久化到 forge_manifest */
+/**
+ * GitOps 部署 (V5.0) — 真做
+ *
+ * V4.1: 渲染 manifest + WARN "未集成"
+ * V5.0: 真 clone+commit+push (JGit) + 真调 ArgoCD REST API
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -35,21 +43,26 @@ public class GitOpsStrategy implements DeploymentStrategy {
     private final ForgeManifestMapper manifestMapper;
     private final ForgeAgentMapper agentMapper;
     private final ManifestGeneratorService manifestGenerator;
+    private final GitOpsClient gitOpsClient;
+    private final ArgoCdClient argoCdClient;
 
     @Value("${agent-forge.gitops.repo-url:}")
     private String repoUrl;
     @Value("${agent-forge.gitops.branch:main}")
     private String branch;
     @Value("${agent-forge.gitops.path:agents/}")
-    private String path;
-    @Value("${agent-forge.argocd.server:}")
-    private String argoServer;
+    private String gitPath;
 
     @Override public String name() { return "gitops"; }
 
     @Override
     public void execute(ForgeRelease release, ForgeDeployment deployment) {
-        // 1. 加载 release 的 agent
+        // 1. 配置预检
+        if (repoUrl == null || repoUrl.isBlank()) {
+            throw new IllegalStateException("需配置 agent-forge.gitops.repo-url");
+        }
+
+        // 2. 加载 agents + 生成 manifests
         List<ForgeAgent> agents = agentMapper.selectList(
             new QueryWrapper<ForgeAgent>().eq("release_id", release.getId()).orderByAsc("sort_order"));
         Map<String, Object> cfg = Map.of(
@@ -57,44 +70,97 @@ public class GitOpsStrategy implements DeploymentStrategy {
             "registry", release.getImageRegistry() != null ? release.getImageRegistry() : ""
         );
 
-        // 2. 真实生成 K8s manifest (用 V4.1 重构后的 ManifestGenerator, 接收 List<ForgeAgent>)
         logService.append(deployment.getId(), "INFO", "BUILD", "生成 K8s manifest (agents=" + agents.size() + ")");
         Map<String, String> manifests = manifestGenerator.generateAll(agents, cfg, ManifestGeneratorService.Target.GITOPS, release.getVersion());
 
-        for (var e : manifests.entrySet()) {
-            persistManifest(release.getId(), e.getKey(), e.getValue());
-        }
-        logService.append(deployment.getId(), "INFO", "BUILD", "✅ 生成 " + manifests.size() + " 个 manifest (已落 forge_manifest 子表)");
-
         // 3. 渲染 ArgoCD Application CRD
         String argoYaml = renderArgoApp(release, deployment);
-        persistManifest(release.getId(), "argocd/application.yaml", argoYaml);
-        logService.append(deployment.getId(), "INFO", "BUILD", "✅ ArgoCD Application: " + deployment.getInstanceName() + ".yaml");
+        Map<String, String> allFiles = new LinkedHashMap<>(manifests);
+        allFiles.put("argocd/application.yaml", argoYaml);
 
-        // 4. 状态机推进
+        // 4. 落 forge_manifest 子表
+        for (var e : allFiles.entrySet()) {
+            persistManifest(release.getId(), e.getKey(), e.getValue());
+        }
+        logService.append(deployment.getId(), "INFO", "BUILD", "✅ 生成 " + allFiles.size() + " 个 manifest");
+
+        // 5. 真 git push (V5.0)
+        String basePath = gitPath + release.getVersion() + "/";
+        try {
+            String commitSha = gitOpsClient.pushManifests(repoUrl, branch, basePath, allFiles);
+            logService.append(deployment.getId(), "INFO", "PUSH", "✅ Git push 成功: " + commitSha.substring(0, Math.min(8, commitSha.length())));
+        } catch (GitOpsClient.GitOpsException e) {
+            logService.append(deployment.getId(), "ERROR", "PUSH", "❌ Git push 失败: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+
+        // 6. 状态机: BUILDING → DEPLOYING
         stateMachine.fire(release.getId(), ReleaseStateMachine.Event.DEPLOY);
-        // stateMachine.fire(release.getId(), ReleaseStateMachine.Event.READY);  // GitOps 真实同步待 V5.0
+        logService.append(deployment.getId(), "INFO", "DEPLOY", "状态机 BUILDING → DEPLOYING");
 
-        // 5. WARN: 真实 git push / ArgoCD sync 未集成
-        if (repoUrl == null || repoUrl.isBlank()) {
-            logService.append(deployment.getId(), "WARN", "PUSH",
-                "⚠️  需配置 agent-forge.gitops.repo-url 才能真推送");
-        } else {
-            logService.append(deployment.getId(), "INFO", "PUSH",
-                "📌 Git push 目标: " + repoUrl + " (V4.1 未集成 JGit, 待 V5.0)");
-        }
-        if (argoServer == null || argoServer.isBlank()) {
-            logService.append(deployment.getId(), "WARN", "DEPLOY",
-                "⚠️  需配置 agent-forge.argocd.server 才能查 ArgoCD 状态");
-        } else {
-            logService.append(deployment.getId(), "INFO", "DEPLOY",
-                "📌 ArgoCD Server: " + argoServer + " (V4.1 未集成 API 轮询, 待 V5.0)");
+        // 7. 触发 ArgoCD sync (V5.0 真做)
+        try {
+            argoCdClient.triggerSync(deployment.getInstanceName());
+            logService.append(deployment.getId(), "INFO", "DEPLOY", "✅ ArgoCD sync 触发");
+        } catch (ArgoCdClient.ArgoCdException e) {
+            logService.append(deployment.getId(), "WARN", "DEPLOY", "⚠️ ArgoCD sync 触发失败: " + e.getMessage());
+            // 不抛 — Git push 成功就算基本完成, ArgoCD 状态走前端轮询
         }
 
-        deploymentMapper.update(null, new UpdateWrapper<ForgeDeployment>()
-            .eq("id", deployment.getId())
-            .set("status", "DEPLOYING")
-            .set("current_stage", "DEPLOY"));
+        // 8. 轮询 ArgoCD 状态 (同步阻塞, 最多 60s)
+        logService.append(deployment.getId(), "INFO", "DEPLOY", "等待 ArgoCD 同步 (最多 60s)...");
+        ArgoCdClient.ApplicationStatus finalStatus = pollArgoCdStatus(deployment, deployment.getInstanceName(), 60_000);
+
+        // 9. 状态机: DEPLOYING → HEALTHY → ACTIVE
+        if (finalStatus != null && "Healthy".equalsIgnoreCase(finalStatus.health())) {
+            stateMachine.fire(release.getId(), ReleaseStateMachine.Event.READY);
+            stateMachine.fire(release.getId(), ReleaseStateMachine.Event.ACTIVATE);
+            deploymentMapper.update(null, new UpdateWrapper<ForgeDeployment>()
+                .eq("id", deployment.getId())
+                .set("status", "RUNNING")
+                .set("running_replicas", deployment.getDesiredReplicas())
+                .set("current_stage", "DONE")
+                .set("finished_at", LocalDateTime.now()));
+            logService.append(deployment.getId(), "INFO", "HEALTH", "✅ ArgoCD " + finalStatus.health() + " (revision=" + finalStatus.revision() + ")");
+        } else if (finalStatus != null) {
+            // 状态不对, FAIL
+            stateMachine.fire(release.getId(), ReleaseStateMachine.Event.FAIL,
+                "ArgoCD health=" + finalStatus.health() + " sync=" + finalStatus.syncStatus());
+            deploymentMapper.update(null, new UpdateWrapper<ForgeDeployment>()
+                .eq("id", deployment.getId())
+                .set("status", "DEGRADED")
+                .set("current_stage", "HEALTH")
+                .set("error_message", "ArgoCD " + finalStatus.health()));
+            logService.append(deployment.getId(), "WARN", "HEALTH",
+                "⚠️ ArgoCD 未健康: " + finalStatus.health() + " sync=" + finalStatus.syncStatus());
+        } else {
+            logService.append(deployment.getId(), "WARN", "DEPLOY", "ArgoCD 状态未确认, 标记 DEPLOYING (待前端轮询)");
+            deploymentMapper.update(null, new UpdateWrapper<ForgeDeployment>()
+                .eq("id", deployment.getId())
+                .set("status", "DEPLOYING")
+                .set("current_stage", "DEPLOY"));
+        }
+    }
+
+    /** 同步轮询 ArgoCD, 直到 Healthy 或超时 */
+    private ArgoCdClient.ApplicationStatus pollArgoCdStatus(ForgeDeployment deployment, String appName, long timeoutMs) {
+        long deadline = System.currentTimeMillis() + timeoutMs;
+        ArgoCdClient.ApplicationStatus last = null;
+        while (System.currentTimeMillis() < deadline) {
+            try {
+                ArgoCdClient.ApplicationStatus s = argoCdClient.queryStatus(appName);
+                last = s;
+                if ("Healthy".equalsIgnoreCase(s.health()) && "Synced".equalsIgnoreCase(s.syncStatus())) {
+                    return s;
+                }
+                logService.append(deployment.getId(), "INFO", "DEPLOY",
+                    "⏳ ArgoCD " + appName + ": health=" + s.health() + " sync=" + s.syncStatus());
+            } catch (ArgoCdClient.ArgoCdException e) {
+                logService.append(deployment.getId(), "WARN", "DEPLOY", "ArgoCD 查询失败: " + e.getMessage());
+            }
+            try { Thread.sleep(3000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
+        }
+        return last;
     }
 
     private void persistManifest(Long releaseId, String path, String content) {
@@ -120,7 +186,7 @@ public class GitOpsStrategy implements DeploymentStrategy {
               source:
                 repoURL: %s
                 targetRevision: %s
-                path: %s
+                path: %s%s
               destination:
                 server: https://kubernetes.default.svc
                 namespace: agent-forge
@@ -131,9 +197,7 @@ public class GitOpsStrategy implements DeploymentStrategy {
                 retry:
                   limit: 5
             """.formatted(
-                deployment.getInstanceName(),
-                repoUrl.isBlank() ? "<configure agent-forge.gitops.repo-url>" : repoUrl,
-                branch, this.path + release.getVersion());
+                deployment.getInstanceName(), repoUrl, branch, gitPath, release.getVersion());
     }
 
     private String sha256(String content) {
