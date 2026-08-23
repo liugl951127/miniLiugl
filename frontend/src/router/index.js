@@ -24,9 +24,10 @@ const routes = [
   {
     path: '/',
     component: () => import('@/layout/Index.vue'),
-    redirect: '/chat',
+    redirect: '/dashboard',
     children: [
       // ── AI 对话 ──
+      { path: 'dashboard', name: 'Dashboard', component: () => import('@/views/Dashboard.vue'), meta: { title: '工作台' } },
       { path: 'chat', name: 'Chat', component: () => import('@/views/chat/Index.vue'), meta: { title: '智能对话' } },
       { path: 'chat/stream', name: 'ChatStream', component: () => import('@/views/chat/Stream.vue'), meta: { title: '流式对话' } },
       { path: 'chat/:sessionId', name: 'ChatSession', component: () => import('@/views/chat/Index.vue'), meta: { title: '对话' } },

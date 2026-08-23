@@ -44,6 +44,21 @@
             <el-button size="small" type="primary" link @click="retryLast">重连</el-button>
           </div>
         </div>
+        <!-- V8.0: 空状态 hero -->
+        <div v-if="!messages.length && !streaming" class="chat-hero">
+          <div class="hero-icon">💬</div>
+          <h2 class="hero-title">开始与 AI 对话</h2>
+          <p class="hero-subtitle">支持本地 ONNX 模型 / 云端商业模型 / Agent 委托</p>
+          <div class="hero-prompts">
+            <div v-for="p in heroPrompts" :key="p.text" class="hero-prompt-card" @click="usePrompt(p.text)">
+              <div class="hp-icon">{{ p.icon }}</div>
+              <div class="hp-text">{{ p.text }}</div>
+            </div>
+          </div>
+          <div class="hero-tips">
+            <el-tag v-for="t in heroTips" :key="t" size="small" effect="plain" round>{{ t }}</el-tag>
+          </div>
+        </div>
       </div>
 
       <ChatInput
@@ -82,6 +97,16 @@ const currentAgentId = ref(null)
 
 const models = reactive({ self: [], onnx: [], cloud: [] })
 const agents = ref([])
+
+// V8.0: hero 提示
+const heroPrompts = [
+  { icon: '💡', text: '用一句话介绍下 Vue 3 的 Composition API' },
+  { icon: '🔍', text: '查找本月销售额最高的产品 TOP 10' },
+  { icon: '🛠️', text: '帮我写一个 Python 爬虫抓取豆瓣电影' },
+  { icon: '✍️', text: '润色一下我的会议纪要, 改成正式邮件' }
+]
+const heroTips = ['Ctrl+Enter 发送', '支持图片/视频/音频', '本地 ONNX 推理', 'Agent 委托']
+function usePrompt(text) { inputText.value = text }
 
 async function loadSessions() {
   try {
@@ -229,6 +254,48 @@ onMounted(() => {
   display: inline-block;
   max-width: 70%;
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* V8.0: 空状态 hero */
+.chat-hero {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 40px 24px; text-align: center;
+  max-width: 640px; margin: 0 auto;
+}
+.hero-icon {
+  font-size: 56px; margin-bottom: 12px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero-title {
+  font-size: 24px; font-weight: 700; margin: 0 0 8px;
+  background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero-subtitle {
+  font-size: 14px; color: #64748b; margin: 0 0 24px;
+}
+.hero-prompts {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 10px; width: 100%; margin-bottom: 20px;
+}
+.hero-prompt-card {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; background: white;
+  border: 1px solid #e2e8f0; border-radius: 10px;
+  cursor: pointer; text-align: left;
+  transition: all 0.2s;
+}
+.hero-prompt-card:hover {
+  border-color: #6366f1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+}
+.hp-icon { font-size: 20px; flex-shrink: 0; }
+.hp-text { font-size: 13px; color: #475569; line-height: 1.4; }
+.hero-tips {
+  display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
 }
 .msg-bubble.error {
   background: var(--el-color-danger-light-9);

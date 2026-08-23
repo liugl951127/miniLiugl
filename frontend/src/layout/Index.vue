@@ -212,6 +212,8 @@ function toggleSidebar() {
 // V6.9: 合并系统管理为 /settings，知识中心/Agent/数据中心/工作流 各自单页 tab 化
 const menuGroups = computed(() => {
   const groups = [
+    // ── 工作台 (首页) ──
+    { label: '工作台', icon: 'HomeFilled', path: '/dashboard' },
     // ── 对话 (5 入口合并) ──
     {
       label: '对话', icon: 'ChatDotRound',
