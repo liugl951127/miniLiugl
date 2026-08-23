@@ -152,21 +152,6 @@ export const getAuditByDay = (params) => http.get('/admin/audit/by-day', { param
 export const exportAuditLogs = (params) =>
   http.get('/admin/audit/export', { params, responseType: 'blob' })
 
-// 默认导出 (兼容 import monitorApi)
-const monitorApi = {
-  getMonitorInfo, getMonitorHealth, getJvmHealth, getDbHealth, getDiskHealth,
-  getMetrics, getMetricsSnapshot,
-  getFiringAlerts, getAlertSummary,
-  listAlertRules, createAlertRule, updateAlertRule, deleteAlertRule, toggleAlertRule,
-  acknowledgeAlert, silenceAlert, unsilenceAlert,
-  silenceRule, unsilenceRule,
-  listAlertChannels, createAlertChannel, deleteAlertChannel,
-  testAlertChannel, getAlertHistory,
-  getAuditLogs, getAuditByUser, getAuditByDay, exportAuditLogs,
-  getAlertSla, getAlertTrend
-}
-export default monitorApi
-export { monitorApi }
 
 // 别名 (兼容 monitor/Index.vue 旧 API) - 必须在定义后导出
 export const getMonitorAlertRules = listAlertRules
@@ -244,3 +229,21 @@ export const getAlertStatistics = (days = 30) => {
 export const getAlertTimeSeries = (days = 30) => {
   return http.get('/monitor/alerts/timeseries', { params: { days } })
 }
+
+// ==================== V8.0.1 默认导出 (必须放在所有 const 之后) ====================
+// 修复: getAlertSla/getAlertTrend 在 229 行才声明, monitorApi 对象在 156 行引用会 TDZ
+// 修复方法: 移到文件末尾, 此时所有 const 已完成初始化
+const monitorApi = {
+  getMonitorInfo, getMonitorHealth, getJvmHealth, getDbHealth, getDiskHealth,
+  getMetrics, getMetricsSnapshot,
+  getFiringAlerts, getAlertSummary,
+  listAlertRules, createAlertRule, updateAlertRule, deleteAlertRule, toggleAlertRule,
+  acknowledgeAlert, silenceAlert, unsilenceAlert,
+  silenceRule, unsilenceRule,
+  listAlertChannels, createAlertChannel, deleteAlertChannel,
+  testAlertChannel, getAlertHistory,
+  getAuditLogs, getAuditByUser, getAuditByDay, exportAuditLogs,
+  getAlertSla, getAlertTrend
+}
+export default monitorApi
+export { monitorApi }
