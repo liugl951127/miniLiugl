@@ -38,4 +38,7 @@ public class CreateReleaseRequest {
 
     /** 部署配置 */
     private Map<String, Object> deployConfig;
+
+    /** V4.0: 工作流步骤 */
+    private List<Map<String, Object>> workflow;
 }

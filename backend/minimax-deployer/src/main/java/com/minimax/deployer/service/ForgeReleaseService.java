@@ -1,28 +1,27 @@
 package com.minimax.deployer.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.minimax.deployer.dto.CreateReleaseRequest;
-import com.minimax.deployer.entity.ForgeRelease;
-import com.minimax.deployer.mapper.ForgeProjectMapper;
-import com.minimax.deployer.mapper.ForgeReleaseMapper;
+import com.minimax.deployer.entity.*;
+import com.minimax.deployer.mapper.*;
+import com.minimax.deployer.state.ReleaseStateMachine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Release 管理服务 (V2.0)
+ * Release 管理服务 (V4.0)
  *
- * 语义化版本管理:
- *  - create: 创建新 release
- *  - list: 列出项目所有 release
- *  - rollback: 回滚到指定 release
- *  - diff: 计算两版本差异 (用于前端展示)
+ * V4.0 重构: 拆分到子表
+ *  - agents → forge_agent (1对多)
+ *  - workflow → forge_workflow_step (1对多)
+ *  - manifests → forge_manifest (1对多)
+ *  - 状态走 ReleaseStateMachine
  */
 @Service
 @Slf4j
@@ -31,73 +30,90 @@ public class ForgeReleaseService {
 
     private final ForgeReleaseMapper releaseMapper;
     private final ForgeProjectMapper projectMapper;
+    private final ForgeAgentMapper agentMapper;
+    private final ForgeWorkflowStepMapper workflowMapper;
     private final ManifestGeneratorService manifestGenerator;
-    private final DeploymentOrchestrator orchestrator;
+    private final DeploymentService deploymentService;
+    private final ReleaseStateMachine stateMachine;
     private final ObjectMapper objectMapper;
 
-    /**
-     * 创建 release (含 manifest 生成)
-     */
+    @Transactional
     public ForgeRelease create(Long ownerId, CreateReleaseRequest req) {
-        log.info("[Release] 创建 release v{} for project={}", req.getVersion(), req.getProjectId());
+        log.info("[Release] 创建 v{} for project={}", req.getVersion(), req.getProjectId());
 
-        // 1. 序列化 agent 定义
-        String agentJson = toJson(Map.of(
-            "agents", req.getAgents() != null ? req.getAgents() : List.of(),
-            "connections", req.getConnections() != null ? req.getConnections() : List.of()
-        ));
+        // 1. 创建 release 主记录
+        String target = req.getDeployConfig() != null
+            ? (String) req.getDeployConfig().getOrDefault("target", "k8s") : "k8s";
+        Integer replicas = req.getDeployConfig() != null
+            ? (Integer) req.getDeployConfig().getOrDefault("replicas", 2) : 2;
+        String registry = req.getDeployConfig() != null
+            ? (String) req.getDeployConfig().getOrDefault("registry", "registry.minimax.io/agent-forge")
+            : "registry.minimax.io/agent-forge";
 
-        // 2. 序列化部署配置
-        String configJson = toJson(req.getDeployConfig());
-
-        // 3. 生成 manifest (Dockerfile + K8s)
-        String target = (String) req.getDeployConfig().getOrDefault("target", "K8S");
-        Map<String, String> manifests = manifestGenerator.generateAll(agentJson, configJson, target, req.getVersion());
-        String manifestsJson = toJson(manifests);
-
-        // 4. 持久化
         ForgeRelease release = ForgeRelease.builder()
             .projectId(req.getProjectId())
             .version(req.getVersion())
             .title(req.getTitle() != null ? req.getTitle() : "Release v" + req.getVersion())
             .changelog(req.getChangelog())
-            .agentDefinitions(agentJson)
-            .deployConfig(configJson)
-            .manifests(manifestsJson)
             .status("DRAFT")
             .deployTarget(target)
-            .replicas((Integer) req.getDeployConfig().getOrDefault("replicas", 2))
-            .imageRegistry((String) req.getDeployConfig().getOrDefault("registry", "registry.minimax.io/agent-forge"))
+            .replicas(replicas)
+            .imageRegistry(registry)
             .imageTag(req.getVersion())
             .createdBy(ownerId)
+            .createdAt(LocalDateTime.now())
             .build();
         releaseMapper.insert(release);
+        log.info("[Release] id={} created", release.getId());
 
-        log.info("[Release] release id={} version=v{} manifests={} files",
-            release.getId(), req.getVersion(), manifests.size());
+        // 2. 持久化 agents 到子表
+        if (req.getAgents() != null) {
+            int idx = 0;
+            for (Map<String, Object> a : req.getAgents()) {
+                agentMapper.insert(ForgeAgent.builder()
+                    .releaseId(release.getId())
+                    .projectId(req.getProjectId())
+                    .name((String) a.getOrDefault("name", "智能体"))
+                    .role((String) a.getOrDefault("role", ""))
+                    .emoji((String) a.getOrDefault("emoji", "🤖"))
+                    .description((String) a.getOrDefault("desc", ""))
+                    .color((String) a.getOrDefault("color", "linear-gradient(135deg, #6366f1, #8b5cf6)"))
+                    .tools(String.join(",", toStringList(a.get("tools"))))
+                    .model((String) a.getOrDefault("model", "Qwen2.5-7B"))
+                    .sortOrder(idx++)
+                    .createdAt(LocalDateTime.now())
+                    .build());
+            }
+        }
+
+        // 3. 持久化 workflow 到子表
+        if (req.getWorkflow() != null) {
+            for (Map<String, Object> w : req.getWorkflow()) {
+                workflowMapper.insert(ForgeWorkflowStep.builder()
+                    .projectId(req.getProjectId())
+                    .releaseId(release.getId())
+                    .stepNo(((Number) w.getOrDefault("step", 1)).intValue())
+                    .name((String) w.getOrDefault("name", ""))
+                    .type("agent")
+                    .remark(null)
+                    .createdAt(LocalDateTime.now())
+                    .build());
+            }
+        }
+
+        // 4. 同步更新 project.current_release_id
+        projectMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<ForgeProject>()
+            .eq("id", req.getProjectId())
+            .set("current_release_id", release.getId())
+            .set("updated_at", LocalDateTime.now()));
 
         return release;
     }
 
-    /**
-     * 触发部署
-     */
-    public void triggerDeploy(Long releaseId) {
-        ForgeRelease release = releaseMapper.selectById(releaseId);
-        if (release == null) throw new IllegalArgumentException("Release 不存在: " + releaseId);
-        orchestrator.startDeployment(releaseId);
+    public Long deploy(Long releaseId) {
+        return deploymentService.deploy(releaseId);
     }
 
-    /**
-     * 回滚
-     */
-    public void rollback(Long currentReleaseId, Long targetReleaseId) {
-        orchestrator.rollback(currentReleaseId, targetReleaseId);
-    }
-
-    /**
-     * 列出项目所有 release
-     */
     public List<ForgeRelease> listByProject(Long projectId) {
         return releaseMapper.findByProjectId(projectId);
     }
@@ -106,15 +122,10 @@ public class ForgeReleaseService {
         return releaseMapper.selectById(id);
     }
 
-    /**
-     * 计算两个 release 的差异 (用于前端可视化)
-     */
     public Map<String, Object> diff(Long fromId, Long toId) {
         ForgeRelease from = releaseMapper.selectById(fromId);
         ForgeRelease to = releaseMapper.selectById(toId);
         if (from == null || to == null) return Map.of("error", "release 不存在");
-
-        // 简化实现: 返回基本元数据差异
         return Map.of(
             "from", Map.of("id", fromId, "version", from.getVersion(), "status", from.getStatus()),
             "to", Map.of("id", toId, "version", to.getVersion(), "status", to.getStatus()),
@@ -125,8 +136,11 @@ public class ForgeReleaseService {
         );
     }
 
-    private String toJson(Object obj) {
-        try { return objectMapper.writeValueAsString(obj); }
-        catch (Exception e) { return "{}"; }
+    private List<String> toStringList(Object o) {
+        if (o == null) return List.of();
+        if (o instanceof List<?> l) {
+            return l.stream().map(String::valueOf).toList();
+        }
+        return List.of(String.valueOf(o));
     }
 }

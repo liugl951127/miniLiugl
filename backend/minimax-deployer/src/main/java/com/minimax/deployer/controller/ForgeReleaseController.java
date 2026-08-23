@@ -2,30 +2,44 @@ package com.minimax.deployer.controller;
 
 import com.minimax.common.result.Result;
 import com.minimax.deployer.dto.CreateReleaseRequest;
+import com.minimax.deployer.entity.ForgeDeployment;
+import com.minimax.deployer.entity.ForgeDeploymentLog;
+import com.minimax.deployer.entity.ForgeManifest;
 import com.minimax.deployer.entity.ForgeRelease;
+import com.minimax.deployer.mapper.ForgeDeploymentLogMapper;
+import com.minimax.deployer.mapper.ForgeDeploymentMapper;
+import com.minimax.deployer.mapper.ForgeManifestMapper;
 import com.minimax.deployer.service.ForgeReleaseService;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * Agent Forge Release 控制器 (V2.0)
+ * Agent Forge Release 控制器 (V4.0)
+ *
+ * V4.0 简化:
+ *  - 删 /deploy-gitops (V3.0 假功能)  → 统一走 /deploy, target 字段在 body 决定
+ *  - 删 /argocd/applications/{name}      → 由 deployment 的 status 字段反映
+ *  - 删 /deployments/{id}/stream (SSE)   → 简化为 /deployments/{id}/logs 分页查询
+ *  - 状态变更统一走 ReleaseStateMachine
  *
  * 提供:
- *  - POST   /api/v1/forge/releases              - 创建 release
+ *  - POST   /api/v1/forge/releases              - 创建 release (agent/workflow 落子表)
  *  - GET    /api/v1/forge/releases/{id}         - 详情
  *  - GET    /api/v1/forge/releases?projectId=X  - 项目的所有 release
- *  - POST   /api/v1/forge/releases/{id}/deploy  - 触发部署
- *  - POST   /api/v1/forge/releases/{id}/rollback - 回滚
+ *  - POST   /api/v1/forge/releases/{id}/deploy  - 触发部署 (按 deploy_target 路由)
+ *  - GET    /api/v1/forge/releases/{id}/manifests - 列出 manifest
+ *  - POST   /api/v1/forge/releases/{id}/rollback/{targetId} - 回滚
  *  - GET    /api/v1/forge/releases/{from}/diff/{to} - 差异
- *  - GET    /api/v1/forge/deployments/{id}/stream - SSE 实时状态
+ *  - GET    /api/v1/forge/deployments/{id}/logs - 部署日志 (子表分页)
+ *  - GET    /api/v1/forge/deployments/{id}      - 部署详情
  */
 @Tag(name = "Agent Forge - 发布管理")
 @RestController
@@ -35,15 +49,15 @@ import java.util.Map;
 public class ForgeReleaseController {
 
     private final ForgeReleaseService releaseService;
-    private final com.minimax.deployer.service.DeploymentOrchestrator orchestrator;
-    private final com.minimax.deployer.service.ArgoCdService argoCdService;
+    private final ForgeDeploymentMapper deploymentMapper;
+    private final ForgeDeploymentLogMapper logMapper;
+    private final ForgeManifestMapper manifestMapper;
 
     @PostMapping("/releases")
     @Operation(summary = "创建 release")
-    public Result<ForgeRelease> create(@Valid @RequestBody CreateReleaseRequest request,
+    public Result<ForgeRelease> create(@Valid @RequestBody CreateReleaseRequest req,
                                        @RequestHeader(value = "X-User-Id", required = false) Long userId) {
-        ForgeRelease release = releaseService.create(userId, request);
-        return Result.ok(release);
+        return Result.ok(releaseService.create(userId, req));
     }
 
     @GetMapping("/releases/{id}")
@@ -58,34 +72,26 @@ public class ForgeReleaseController {
         return Result.ok(releaseService.listByProject(projectId));
     }
 
+    @GetMapping("/releases/{id}/manifests")
+    @Operation(summary = "release 的所有 manifest (子表)")
+    public Result<List<ForgeManifest>> manifests(@PathVariable Long id) {
+        return Result.ok(manifestMapper.selectList(
+            new QueryWrapper<ForgeManifest>().eq("release_id", id).orderByAsc("type")
+        ));
+    }
+
     @PostMapping("/releases/{id}/deploy")
-    @Operation(summary = "触发部署 (V2.0 模拟)")
-    public Result<Void> deploy(@PathVariable Long id) {
-        log.info("[Release] 触发部署 release={}", id);
-        releaseService.triggerDeploy(id);
-        return Result.ok();
-    }
-
-    @PostMapping("/releases/{id}/deploy-gitops")
-    @Operation(summary = "V3.0: 通过 ArgoCD GitOps 部署 (推荐)")
-    public Result<Void> deployGitOps(@PathVariable Long id) {
-        log.info("[Release] 触发 ArgoCD GitOps 部署 release={}", id);
-        argoCdService.deployViaGitOps(id);
-        return Result.ok();
-    }
-
-    @GetMapping("/argocd/applications/{appName}")
-    @Operation(summary = "V3.0: 查询 ArgoCD Application 状态")
-    public Result<Map<String, Object>> queryArgoCdStatus(@PathVariable String appName) {
-        return Result.ok(argoCdService.queryApplicationStatus(appName));
+    @Operation(summary = "触发部署 (按 release.deploy_target 路由)")
+    public Result<Long> deploy(@PathVariable Long id) {
+        log.info("[Release] 部署 release={}", id);
+        return Result.ok(releaseService.deploy(id));
     }
 
     @PostMapping("/releases/{id}/rollback/{targetId}")
-    @Operation(summary = "回滚到指定 release")
-    public Result<Void> rollback(@PathVariable Long id, @PathVariable Long targetId) {
+    @Operation(summary = "回滚到指定 release (重新部署 target)")
+    public Result<Long> rollback(@PathVariable Long id, @PathVariable Long targetId) {
         log.info("[Release] 回滚 release={} -> {}", id, targetId);
-        releaseService.rollback(id, targetId);
-        return Result.ok();
+        return Result.ok(releaseService.deploy(targetId));
     }
 
     @GetMapping("/releases/{fromId}/diff/{toId}")
@@ -94,10 +100,22 @@ public class ForgeReleaseController {
         return Result.ok(releaseService.diff(fromId, toId));
     }
 
-    @GetMapping(value = "/deployments/{id}/stream", produces = "text/event-stream")
-    @Operation(summary = "SSE 实时部署状态")
-    public SseEmitter stream(@PathVariable Long id) {
-        log.info("[Release] 订阅部署状态 deploymentId={}", id);
-        return orchestrator.subscribe(id);
+    @GetMapping("/deployments/{id}")
+    @Operation(summary = "部署详情")
+    public Result<ForgeDeployment> deployment(@PathVariable Long id) {
+        return Result.ok(deploymentMapper.selectById(id));
+    }
+
+    @GetMapping("/deployments/{id}/logs")
+    @Operation(summary = "部署日志 (分页, 子表)")
+    public Result<List<ForgeDeploymentLog>> logs(@PathVariable Long id,
+                                                 @RequestParam(defaultValue = "0") int offset,
+                                                 @RequestParam(defaultValue = "100") int limit) {
+        return Result.ok(logMapper.selectList(
+            new QueryWrapper<ForgeDeploymentLog>()
+                .eq("deployment_id", id)
+                .orderByAsc("created_at")
+                .last("LIMIT " + Math.min(limit, 500) + " OFFSET " + Math.max(offset, 0))
+        ));
     }
 }

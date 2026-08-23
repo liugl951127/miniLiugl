@@ -2127,6 +2127,69 @@ CREATE TABLE IF NOT EXISTS forge_deployment (
 CREATE INDEX IF NOT EXISTS idx_forge_deployment_release ON forge_deployment(release_id);
 CREATE INDEX IF NOT EXISTS idx_forge_deployment_status ON forge_deployment(status);
 
+-- V4.0: Agent 子表 (替代 agent_definitions JSON 字符串)
+CREATE TABLE IF NOT EXISTS forge_agent (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  release_id BIGINT NOT NULL,
+  project_id BIGINT DEFAULT NULL,
+  name VARCHAR(64) NOT NULL,
+  role VARCHAR(128) DEFAULT NULL,
+  emoji VARCHAR(16) DEFAULT NULL,
+  description VARCHAR(512) DEFAULT NULL,
+  color VARCHAR(256) DEFAULT NULL,
+  tools VARCHAR(512) DEFAULT NULL,
+  model VARCHAR(64) DEFAULT NULL,
+  sort_order INT DEFAULT 0,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_release_id (release_id),
+  KEY idx_project_id (project_id),
+  KEY idx_name (name)
+);
+
+-- V4.0: Workflow Step 子表
+CREATE TABLE IF NOT EXISTS forge_workflow_step (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  project_id BIGINT DEFAULT NULL,
+  release_id BIGINT DEFAULT NULL,
+  step_no INT NOT NULL,
+  name VARCHAR(128) NOT NULL,
+  type VARCHAR(32) DEFAULT 'agent',
+  agent_id BIGINT DEFAULT NULL,
+  remark VARCHAR(256) DEFAULT NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_project_id (project_id),
+  KEY idx_release_id (release_id)
+);
+
+-- V4.0: Manifest 子表 (替代 manifests JSON 字符串)
+CREATE TABLE IF NOT EXISTS forge_manifest (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  release_id BIGINT NOT NULL,
+  type VARCHAR(32) NOT NULL,
+  path VARCHAR(256) NOT NULL,
+  content MEDIUMTEXT,
+  content_hash VARCHAR(64) DEFAULT NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_release_id (release_id),
+  KEY idx_type (type)
+);
+
+-- V4.0: Deployment Log 子表 (替代 logs TEXT)
+CREATE TABLE IF NOT EXISTS forge_deployment_log (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  deployment_id BIGINT NOT NULL,
+  level VARCHAR(16) DEFAULT 'INFO',
+  stage VARCHAR(64) DEFAULT NULL,
+  message VARCHAR(1024) DEFAULT NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_deployment_id (deployment_id),
+  KEY idx_created_at (created_at)
+);
+
 CREATE TABLE IF NOT EXISTS agent_template (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(50) NOT NULL UNIQUE,

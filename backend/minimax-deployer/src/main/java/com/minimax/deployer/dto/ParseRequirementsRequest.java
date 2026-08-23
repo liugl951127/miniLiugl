@@ -27,4 +27,7 @@ public class ParseRequirementsRequest {
 
     /** 用户 ID (从 JWT 解析) */
     private Long userId;
+
+    /** V4.0: 指定的 LLM 模型 (可选, 默认后端配置) */
+    private String llmModel;
 }

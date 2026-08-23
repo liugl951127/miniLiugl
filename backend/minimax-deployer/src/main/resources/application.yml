@@ -1,114 +1,56 @@
+server:
+  port: 9010
+
 spring:
   application:
     name: minimax-deployer
   profiles:
-    active: sandbox
-
-  # H2 沙箱模式 (与现有 12 个服务一致)
-  datasource:
-    url: jdbc:h2:mem:minimax_deployer;MODE=MySQL;DB_CLOSE_DELAY=-1
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ''
+    active: h2
   h2:
     console:
-      enabled: false
+      enabled: true
+  datasource:
+    url: jdbc:h2:mem:deployer;MODE=MySQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
   sql:
     init:
       mode: always
       schema-locations: classpath:schema.sql
       data-locations: classpath:data.sql
-      continue-on-error: false
+  freemarker:
+    template-loader-path: classpath:/templates/
+    suffix: .ftl
 
-  jpa:
-    hibernate:
-      ddl-auto: none
-
-  servlet:
-    multipart:
-      max-file-size: 20MB
-      max-request-size: 25MB
-
-server:
-  port: 9010
-  compression:
-    enabled: true
-  forward-headers-strategy: framework
-  tomcat:
-    max-threads: 200
-
-# Springdoc
-springdoc:
-  api-docs:
-    path: /v3/api-docs
-  swagger-ui:
-    path: /swagger-ui.html
-
-# MyBatis-Plus
 mybatis-plus:
-  mapper-locations: classpath*:mapper/**/*.xml
-  type-aliases-package: com.minimax.deployer.entity
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
   global-config:
     db-config:
       id-type: auto
-      logic-delete-field: deleted
-      logic-delete-value: 1
-      logic-not-delete-value: 0
 
-# Freemarker (用于生成 Dockerfile / K8s manifest)
-spring.freemarker:
-  template-loader-path: classpath:/templates/
-  cache: false
-  charset: UTF-8
-
-# 部署配置
+# V4.0: Agent Forge 单一配置区
 agent-forge:
-  # 模拟部署每阶段耗时 (毫秒) - 生产环境会读取真实 K8s API
-  deploy:
-    stage-simulation: true
-  # 镜像仓库
-  registry:
-    default: registry.minimax.io/agent-forge
-  # 命名空间
-  namespace: agent-forge
-  # V3.0: LLM 解析配置
-  parser:
-    use-llm: true                # 主用 LLM, 失败降级规则引擎
-    llm-model: qwen2.5-0.5b-instruct   # minimax-ai 本地 ONNX 模型
-  # V3.0: LLM 客户端配置
   llm:
-    ai-service-url: http://minimax-ai:8090   # Nacos 服务发现 或 静态地址
-    primary-model: qwen2.5-0.5b-instruct     # 本地 ONNX, 488MB
-    fallback-model: qwen2.5-7b-instruct     # 备选, 调用 minimax-ai chat
-    timeout: 30000                # LLM 调用超时 (毫秒)
-  # V3.0: ArgoCD GitOps 集成
+    url: ${LLM_URL:http://minimax-ai:8090}
+    model: ${LLM_MODEL:qwen2.5-0.5b-instruct}
+    timeout-ms: 30000
+  deploy:
+    namespace: agent-forge
+    default-replicas: 2
+    default-registry: registry.minimax.io/agent-forge
   gitops:
-    repo-url: https://git.minimax.io/agent-forge/manifests.git
-    branch: main
-    path: agents/
+    repo-url: ${GITOPS_REPO:https://git.minimax.io/agent-forge/manifests.git}
+    branch: ${GITOPS_BRANCH:main}
+    path: ${GITOPS_PATH:agents/}
   argocd:
-    server: https://argocd.minimax.io
-    project: default
+    server: ${ARGOCD_SERVER:https://argocd.minimax.io}
+    project: ${ARGOCD_PROJECT:default}
+  edge:
+    target: ${EDGE_TARGET:}
 
 logging:
   level:
-    root: INFO
-    com.minimax: INFO
     com.minimax.deployer: INFO
-  pattern:
-    console: "%clr(%d{HH:mm:ss.SSS}){faint} %clr(%5p) %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} : %m%n"
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,prometheus
-  endpoint:
-    health:
-      show-details: always
-  metrics:
-    tags:
-      application: ${spring.application.name}
+    com.minimax.deployer.state: DEBUG

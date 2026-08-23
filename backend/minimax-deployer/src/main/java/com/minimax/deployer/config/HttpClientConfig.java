@@ -7,19 +7,13 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
 
-/**
- * RestTemplate 配置 (V3.0)
- *
- * LLM 调用需要合理超时, 避免 LLM 服务卡死导致 deployer 线程阻塞。
- */
+/** HTTP 客户端配置 (V4.0) — 单一 RestTemplate Bean */
 @Configuration
-public class RestTemplateConfig {
-
+public class HttpClientConfig {
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder) {
-        return builder
-            .setConnectTimeout(Duration.ofSeconds(5))
-            .setReadTimeout(Duration.ofSeconds(30))
-            .build();
+        return builder.setConnectTimeout(Duration.ofSeconds(5))
+                      .setReadTimeout(Duration.ofSeconds(30))
+                      .build();
     }
 }

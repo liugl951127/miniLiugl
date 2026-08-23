@@ -36,4 +36,7 @@ public class ParseRequirementsResponse {
 
     /** 使用的模型 */
     private String model;
+
+    /** V4.0: 是否走了规则 fallback (false=真 LLM 解析, true=规则引擎) */
+    private boolean usedFallback;
 }
