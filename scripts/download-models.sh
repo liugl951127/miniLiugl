@@ -102,13 +102,18 @@ download_yolo() {
 
 # ─── 主流程 ──────────────────────────────────────────────
 case "${1:-all}" in
-    clip)    download_clip ;;
-    resnet)  download_resnet ;;
-    yolo)    download_yolo ;;
+    clip)     download_clip ;;
+    resnet)   download_resnet ;;
+    yolo)     download_yolo ;;
+    whisper)  download_whisper ;;
+    vad)      download_vad ;;
+    audio)    download_whisper; download_vad ;;
     all|"")
         download_clip
         download_resnet
         download_yolo
+        download_whisper
+        download_vad
         ;;
     *)
         err "Unknown arg: $1"

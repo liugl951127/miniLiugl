@@ -171,5 +171,19 @@ export const multimodalApi = {
     const fd = new FormData()
     fd.append('file', file)
     return http.post('/multimodal/text-image-similarity?text=' + encodeURIComponent(text), fd)
+  },
+
+  /** 语音转文字 (Whisper-tiny) */
+  transcribe(file, lang = 'zh') {
+    const fd = new FormData()
+    fd.append('file', file)
+    return http.post('/multimodal/transcribe?lang=' + lang, fd)
+  },
+
+  /** 语音活动检测 (Silero VAD) */
+  vad(file) {
+    const fd = new FormData()
+    fd.append('file', file)
+    return http.post('/multimodal/vad', fd)
   }
 }

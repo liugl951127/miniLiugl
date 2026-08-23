@@ -1,5 +1,8 @@
 package com.minimax.ai.controller;
 
+import com.minimax.ai.multimodal.audio.OnnxSileroVadService;
+import com.minimax.ai.multimodal.audio.OnnxWhisperService;
+import com.minimax.ai.multimodal.audio.WavReader;
 import com.minimax.ai.multimodal.onnx.OnnxClipService;
 import com.minimax.ai.multimodal.onnx.OnnxObjectDetectorService;
 import com.minimax.ai.multimodal.onnx.OnnxResNet50Service;
@@ -38,6 +41,8 @@ public class OnnxMultimodalController {
     private final OnnxResNet50Service resnet;
     private final OnnxClipService clip;
     private final OnnxObjectDetectorService detector;
+    private final OnnxWhisperService whisper;
+    private final OnnxSileroVadService vad;
 
     // ─── 1. 状态 ──────────────────────────────────────────
 
@@ -58,7 +63,18 @@ public class OnnxMultimodalController {
             "ready",   detector.isReady(),
             "path",    detector.getModelPath()
         ));
-        m.put("version", "V7.1");
+        m.put("whisper", Map.of(
+            "enabled", true,
+            "ready",   whisper.isReady(),
+            "path",    whisper.getModelPath()
+        ));
+        m.put("vad", Map.of(
+            "enabled", true,
+            "ready",   vad.isReady(),
+            "path",    vad.getModelPath(),
+            "threshold", vad.getThreshold()
+        ));
+        m.put("version", "V7.2");
         return ResponseEntity.ok(Map.of("code", 0, "data", m));
     }
 
@@ -168,6 +184,68 @@ public class OnnxMultimodalController {
                 "ready", clip.isReady()
             )));
         } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("code", 500, "message", e.getMessage()));
+        }
+    }
+
+    // ─── 7. 语音转文字 (Whisper-tiny ONNX) ─────────────────
+
+    @PostMapping("/transcribe")
+    public ResponseEntity<Map<String, Object>> transcribe(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "lang", defaultValue = "zh") String lang) {
+        try {
+            if (file == null || file.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("code", 400, "message", "音频文件为空"));
+            }
+            if (!whisper.isReady()) {
+                return ResponseEntity.ok(Map.of("code", 1001,
+                    "message", "Whisper 模型未就绪, 请先执行 scripts/download-models.sh whisper",
+                    "data", Map.of()));
+            }
+            float[] pcm = WavReader.readAsMonoFloat16k(file.getBytes());
+            if (pcm.length == 0) {
+                return ResponseEntity.ok(Map.of("code", 400,
+                    "message", "音频解析失败 (仅支持 WAV/PCM, MP3 需 ffmpeg 预转码)"));
+            }
+            OnnxWhisperService.TranscribeResult result = whisper.transcribe(pcm, lang);
+            return ResponseEntity.ok(Map.of("code", result.isSuccess() ? 0 : 500, "data", result.toMap()));
+        } catch (Exception e) {
+            log.error("transcribe 失败", e);
+            return ResponseEntity.ok(Map.of("code", 500, "message", e.getMessage()));
+        }
+    }
+
+    // ─── 8. 语音活动检测 (Silero VAD) ─────────────────────
+
+    @PostMapping("/vad")
+    public ResponseEntity<Map<String, Object>> vadDetect(
+            @RequestParam("file") MultipartFile file) {
+        try {
+            if (file == null || file.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("code", 400, "message", "音频文件为空"));
+            }
+            if (!vad.isReady()) {
+                return ResponseEntity.ok(Map.of("code", 1001,
+                    "message", "Silero VAD 模型未就绪",
+                    "data", Collections.emptyList()));
+            }
+            float[] pcm = WavReader.readAsMonoFloat16k(file.getBytes());
+            if (pcm.length == 0) {
+                return ResponseEntity.ok(Map.of("code", 400, "message", "音频解析失败"));
+            }
+            List<OnnxSileroVadService.SpeechSegment> segs = vad.detectSegments(pcm);
+            List<Map<String, Object>> data = new ArrayList<>(segs.size());
+            for (OnnxSileroVadService.SpeechSegment s : segs) data.add(s.toMap());
+            return ResponseEntity.ok(Map.of("code", 0, "data", Map.of(
+                "segments", data,
+                "totalDuration", (float) pcm.length / 16000,
+                "speechRatio", segs.isEmpty() ? 0f :
+                    segs.stream().map(OnnxSileroVadService.SpeechSegment::duration)
+                        .reduce(0f, Float::sum) / ((float) pcm.length / 16000)
+            )));
+        } catch (Exception e) {
+            log.error("vad 失败", e);
             return ResponseEntity.ok(Map.of("code", 500, "message", e.getMessage()));
         }
     }

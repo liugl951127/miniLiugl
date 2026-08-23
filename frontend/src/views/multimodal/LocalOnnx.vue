@@ -13,12 +13,12 @@
   <div class="mm-page">
     <header class="mm-header">
       <h1>🎨 本地多模态智能</h1>
-      <p class="sub">基于 ONNX Runtime 的本地图片分类 / 目标检测 / 以文搜图 (V7.1)</p>
+      <p class="sub">基于 ONNX Runtime 的本地图片/语音智能 (V7.2 · ResNet50/YOLOv8/CLIP/Whisper/VAD)</p>
     </header>
 
     <!-- 模型状态卡 -->
     <el-row :gutter="16" class="status-row">
-      <el-col :span="8" v-for="m in models" :key="m.key">
+      <el-col :span="8" :md="8" :sm="12" :xs="24" v-for="m in models" :key="m.key">
         <el-card class="status-card" :class="{ ready: m.ready }">
           <div class="status-row-inner">
             <div class="status-icon">{{ m.icon }}</div>
@@ -168,6 +168,99 @@
           </div>
         </el-card>
       </el-tab-pane>
+
+      <!-- 4. 语音转文字 (Whisper) -->
+      <el-tab-pane label="语音转文字 (Whisper)" name="whisper">
+        <el-card>
+          <el-upload
+            drag
+            :auto-upload="false"
+            :on-change="onAudioFile"
+            :show-file-list="false"
+            accept="audio/*,.wav"
+            v-loading="loading.whisper"
+          >
+            <el-icon class="el-icon--upload"><microphone /></el-icon>
+            <div class="el-upload__text">拖拽音频到此处, 或<em>点击上传</em></div>
+            <template #tip>
+              <div class="el-upload__tip">支持 WAV/PCM, Whisper-tiny 39M 参数, 中英双语</div>
+            </template>
+          </el-upload>
+
+          <el-form v-if="audioUrl" style="margin-top: 16px">
+            <el-form-item label="语言">
+              <el-radio-group v-model="whisperLang">
+                <el-radio-button value="zh">中文</el-radio-button>
+                <el-radio-button value="en">English</el-radio-button>
+              </el-radio-group>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" :loading="loading.whisper" @click="runTranscribe">开始转写</el-button>
+            </el-form-item>
+            <el-form-item>
+              <audio :src="audioUrl" controls style="width: 100%" />
+            </el-form-item>
+          </el-form>
+
+          <div v-if="whisperText" class="transcribe-result">
+            <h3>转写结果 <el-tag size="small">{{ whisperCost }}ms</el-tag></h3>
+            <el-input v-model="whisperText" type="textarea" :rows="4" readonly />
+          </div>
+        </el-card>
+      </el-tab-pane>
+
+      <!-- 5. 语音活动检测 (VAD) -->
+      <el-tab-pane label="语音活动检测 (VAD)" name="vad">
+        <el-card>
+          <el-upload
+            drag
+            :auto-upload="false"
+            :on-change="onAudioFile"
+            :show-file-list="false"
+            accept="audio/*,.wav"
+            v-loading="loading.vad"
+          >
+            <el-icon class="el-icon--upload"><video-camera /></el-icon>
+            <div class="el-upload__text">拖拽音频到此处, 或<em>点击上传</em></div>
+            <template #tip>
+              <div class="el-upload__tip">Silero VAD v5, 16kHz 32ms chunk</div>
+            </template>
+          </el-upload>
+
+          <el-form v-if="audioUrl" style="margin-top: 16px">
+            <el-form-item>
+              <audio :src="audioUrl" controls style="width: 100%" />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" :loading="loading.vad" @click="runVad">检测语音段</el-button>
+            </el-form-item>
+          </el-form>
+
+          <div v-if="vadResult" class="vad-result">
+            <el-descriptions :column="3" border>
+              <el-descriptions-item label="总时长">{{ vadResult.totalDuration?.toFixed(2) }}s</el-descriptions-item>
+              <el-descriptions-item label="语音占比">{{ ((vadResult.speechRatio || 0) * 100).toFixed(1) }}%</el-descriptions-item>
+              <el-descriptions-item label="段数">{{ vadResult.segments?.length || 0 }}</el-descriptions-item>
+            </el-descriptions>
+            <el-table :data="vadResult.segments" stripe style="margin-top: 12px">
+              <el-table-column label="起始">
+                <template #default="{ row }">{{ row.start.toFixed(2) }}s</template>
+              </el-table-column>
+              <el-table-column label="结束">
+                <template #default="{ row }">{{ row.end.toFixed(2) }}s</template>
+              </el-table-column>
+              <el-table-column label="时长">
+                <template #default="{ row }">{{ row.duration.toFixed(2) }}s</template>
+              </el-table-column>
+              <el-table-column label="置信度">
+                <template #default="{ row }">
+                  <el-progress :percentage="Math.round(row.confidence * 100)" :stroke-width="10" />
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </el-card>
+      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
@@ -175,24 +268,34 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { UploadFilled, Aim, Picture } from '@element-plus/icons-vue'
+import { UploadFilled, Aim, Picture, Microphone, VideoCamera } from '@element-plus/icons-vue'
 import { multimodalApi } from '@/api/multimodal'
 
 const active = ref('classify')
 const currentFile = ref(null)
 const previewUrl = ref('')
-const loading = reactive({ classify: false, detect: false, clip: false })
+const loading = reactive({ classify: false, detect: false, clip: false, whisper: false, vad: false })
 
 const models = ref([
   { key: 'resnet50', name: 'ResNet50 分类', icon: '🏷️', ready: false, path: '' },
   { key: 'clip',     name: 'CLIP 双塔',   icon: '🔗', ready: false, path: '' },
-  { key: 'yolo',     name: 'YOLOv8 检测', icon: '🎯', ready: false, path: '' }
+  { key: 'yolo',     name: 'YOLOv8 检测', icon: '🎯', ready: false, path: '' },
+  { key: 'whisper',  name: 'Whisper STT', icon: '🎙️', ready: false, path: '' },
+  { key: 'vad',      name: 'Silero VAD', icon: '🔊', ready: false, path: '' }
 ])
 
 const classifications = ref([])
 const detections = ref([])
 const clipScore = ref(null)
 const clipText = ref('a cat sitting on a sofa')
+
+// Audio
+const currentAudio = ref(null)
+const audioUrl = ref('')
+const whisperText = ref('')
+const whisperCost = ref(0)
+const whisperLang = ref('zh')
+const vadResult = ref(null)
 
 const detectImg = ref(null)
 const detectCanvas = ref(null)
@@ -208,6 +311,10 @@ async function loadStatus() {
       models.value[1].path = '(BPE tokenizer)'
       models.value[2].ready = d.yolo.ready
       models.value[2].path = d.yolo.path
+      models.value[3].ready = d.whisper.ready
+      models.value[3].path = d.whisper.path
+      models.value[4].ready = d.vad.ready
+      models.value[4].path = d.vad.path
     }
   } catch (e) {
     console.error('loadStatus', e)
@@ -312,6 +419,56 @@ async function runSimilarity() {
   }
 }
 
+function onAudioFile(file) {
+  if (!file?.raw) return
+  currentAudio.value = file.raw
+  audioUrl.value = URL.createObjectURL(file.raw)
+  whisperText.value = ''
+  vadResult.value = null
+  if (active.value === 'whisper') runTranscribe()
+  else if (active.value === 'vad') runVad()
+}
+
+async function runTranscribe() {
+  if (!currentAudio.value) return ElMessage.warning('请先上传音频')
+  loading.whisper = true
+  try {
+    const res = await multimodalApi.transcribe(currentAudio.value, whisperLang.value)
+    if (res.code === 0) {
+      whisperText.value = res.data.text || ''
+      whisperCost.value = res.data.costMs
+      if (!whisperText.value) ElMessage.info('未识别到语音内容')
+    } else if (res.code === 1001) {
+      ElMessage.warning(res.message)
+    } else {
+      ElMessage.error(res.message || '转写失败')
+    }
+  } catch (e) {
+    ElMessage.error('转写失败: ' + (e.message || ''))
+  } finally {
+    loading.whisper = false
+  }
+}
+
+async function runVad() {
+  if (!currentAudio.value) return ElMessage.warning('请先上传音频')
+  loading.vad = true
+  try {
+    const res = await multimodalApi.vad(currentAudio.value)
+    if (res.code === 0) {
+      vadResult.value = res.data
+    } else if (res.code === 1001) {
+      ElMessage.warning(res.message)
+    } else {
+      ElMessage.error(res.message || 'VAD 失败')
+    }
+  } catch (e) {
+    ElMessage.error('VAD 失败: ' + (e.message || ''))
+  } finally {
+    loading.vad = false
+  }
+}
+
 onMounted(loadStatus)
 </script>
 
@@ -339,4 +496,9 @@ onMounted(loadStatus)
 .class-name .cn { font-weight: 600; margin-right: 8px; color: #1e293b; }
 .class-name .en { color: #64748b; font-size: 0.9em; }
 @media (max-width: 768px) { .preview-row { grid-template-columns: 1fr; } }
+
+.transcribe-result { margin-top: 24px; }
+.transcribe-result h3 { margin: 0 0 12px; color: #1e293b; }
+.vad-result { margin-top: 24px; }
+.vad-result h3 { margin: 0 0 12px; color: #1e293b; }
 </style>
