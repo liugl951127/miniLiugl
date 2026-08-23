@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: minimax-deployer
+  cloud:
+    nacos:
+      # 沙箱模式不连 Nacos (与其他 12 个服务一致)
+      discovery:
+        enabled: false
+      config:
+        enabled: false
+  profiles:
+    active: sandbox

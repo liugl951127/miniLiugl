@@ -1,0 +1,96 @@
+spring:
+  application:
+    name: minimax-deployer
+  profiles:
+    active: sandbox
+
+  # H2 沙箱模式 (与现有 12 个服务一致)
+  datasource:
+    url: jdbc:h2:mem:minimax_deployer;MODE=MySQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ''
+  h2:
+    console:
+      enabled: false
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+      continue-on-error: false
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 25MB
+
+server:
+  port: 9010
+  compression:
+    enabled: true
+  forward-headers-strategy: framework
+  tomcat:
+    max-threads: 200
+
+# Springdoc
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+# MyBatis-Plus
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.minimax.deployer.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# Freemarker (用于生成 Dockerfile / K8s manifest)
+spring.freemarker:
+  template-loader-path: classpath:/templates/
+  cache: false
+  charset: UTF-8
+
+# 部署配置
+agent-forge:
+  # 模拟部署每阶段耗时 (毫秒) - 生产环境会读取真实 K8s API
+  deploy:
+    stage-simulation: true
+  # 镜像仓库
+  registry:
+    default: registry.minimax.io/agent-forge
+  # 命名空间
+  namespace: agent-forge
+
+logging:
+  level:
+    root: INFO
+    com.minimax: INFO
+    com.minimax.deployer: INFO
+  pattern:
+    console: "%clr(%d{HH:mm:ss.SSS}){faint} %clr(%5p) %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} : %m%n"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}

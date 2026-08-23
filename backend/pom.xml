@@ -34,6 +34,7 @@
         <module>minimax-pipeline</module>
         <module>minimax-ai</module>
         <module>minimax-system</module>
+        <module>minimax-deployer</module>
     </modules>
 
     <properties>
