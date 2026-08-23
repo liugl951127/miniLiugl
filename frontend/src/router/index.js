@@ -89,7 +89,17 @@ const routes = [
       { path: 'admin', redirect: to => ({ path: '/settings', query: { tab: 'users' } }) },
       { path: 'super', redirect: to => ({ path: '/settings', query: { tab: 'system' } }) },
       { path: 'tenant', redirect: to => ({ path: '/settings', query: { tab: 'tenant' } }) },
-      { path: 'monitor', redirect: to => ({ path: '/settings', query: { tab: 'monitor' } }) },
+      {
+        path: 'monitor',
+        component: () => import('@/views/monitor/Index.vue'),
+        meta: { title: '监控中心' },
+        children: [
+          { path: '',         name: 'MonitorHome',    redirect: 'monitor/overview' },
+          { path: 'overview', name: 'MonitorOverview', component: () => import('@/views/monitor/Overview.vue'), meta: { title: '概览' } },
+          { path: 'alerts',   name: 'MonitorAlerts',   component: () => import('@/views/monitor/Alerts.vue'),   meta: { title: '告警' } },
+          { path: 'config',   name: 'MonitorConfig',   component: () => import('@/views/monitor/Config.vue'),   meta: { title: '配置' } }
+        ]
+      },
 
       // ── 关于 ──
       { path: 'about', name: 'About', component: () => import('@/views/About.vue'), meta: { title: '关于' } },
