@@ -214,6 +214,8 @@ const menuGroups = computed(() => {
   const groups = [
     // ── 工作台 (首页) ──
     { label: '工作台', icon: 'HomeFilled', path: '/dashboard' },
+    // ── Agent Forge (高级) ──
+    { label: 'Agent Forge', icon: 'MagicStick', path: '/builder' },
     // ── 对话 (5 入口合并) ──
     {
       label: '对话', icon: 'ChatDotRound',

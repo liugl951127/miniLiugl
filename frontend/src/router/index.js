@@ -137,6 +137,20 @@ const routes = [
       // ── 系统管理 (统一为 /settings) ──
       // 旧路由 → /settings + query tab 参数（向后兼容）
       {
+        path: 'builder',
+        component: () => import('@/views/builder/Index.vue'),
+        meta: { title: 'Agent Forge' },
+        children: [
+          { path: '',            name: 'BuilderHome',    redirect: 'builder/requirements' },
+          { path: 'requirements',name: 'BuilderReqs',     component: () => import('@/views/builder/Requirements.vue'), meta: { title: '需求接收' } },
+          { path: 'analysis',    name: 'BuilderAnalysis', component: () => import('@/views/builder/Analysis.vue'),     meta: { title: 'AI 解析' } },
+          { path: 'designer',    name: 'BuilderDesigner', component: () => import('@/views/builder/Designer.vue'),     meta: { title: '团队设计' } },
+          { path: 'deploy',      name: 'BuilderDeploy',   component: () => import('@/views/builder/Deploy.vue'),       meta: { title: '远程部署' } },
+          { path: 'monitor',     name: 'BuilderMonitor',  component: () => import('@/views/builder/Monitor.vue'),      meta: { title: '实时监控' } },
+          { path: 'releases',    name: 'BuilderReleases', component: () => import('@/views/builder/Releases.vue'),     meta: { title: '发布管理' } }
+        ]
+      },
+      {
         path: 'settings',
         component: () => import('@/views/settings/Index.vue'),
         meta: { title: '系统管理' },
