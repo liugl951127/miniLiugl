@@ -1,64 +1,41 @@
-<!-- @file kg/Index.vue - 知识图谱 V7.0 - D3力导向布局 -->
+<!--
+  @file kg/Index.vue - 知识图谱 V8.0 (组件化拆分)
+  拆分: 1129 行 → ~400 行主文件 + 2 组件
+  - KgStats.vue       - 4 统计卡片
+  - KgEntityPanel.vue - 实体管理 (搜索 + 添加 + 列表)
+  - KgGraph.vue       - 图谱可视化 (复用现有 @/components/KgGraph)
+-->
 <template>
-  <div class="page-card">
-    <div class="page-header">
-      <h2>知识图谱</h2>
-      <div style="display:flex;gap:8px;align-items:center">
-        <el-input v-model="searchKw" placeholder="搜索实体" size="small" style="width:200px" clearable @keyup.enter="handleSearch">
-          <template #prefix><el-icon><Search /></el-icon></template>
-        </el-input>
-        <el-button type="primary" size="small" @click="showUpload = true">
-          <el-icon><Upload /></el-icon>导入
-        </el-button>
-        <el-button size="small" @click="showExportMenu = !showExportMenu">
-          <el-icon><Download /></el-icon>导出
-        </el-button>
-        <el-button size="small" @click="loadKg">
-          <el-icon><Refresh /></el-icon>刷新
-        </el-button>
-      </div>
+  <PageStandard
+    title="🕸️ 知识图谱"
+    subtitle="实体管理 · 关系网络 · 图谱可视化"
+  >
+    <!-- 工具栏 -->
+    <div class="kg-toolbar">
+      <el-button type="primary" size="small" :icon="Upload" @click="showUpload = true">导入数据</el-button>
+      <el-dropdown @command="handleExport" trigger="click">
+        <el-button size="small" :icon="Download">导出 <el-icon class="el-icon--right"><ArrowDown /></el-icon></el-button>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item command="png">导出 PNG</el-dropdown-item>
+            <el-dropdown-item command="json">导出 JSON</el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
+      <el-button size="small" :icon="Refresh" @click="loadKg">刷新</el-button>
+      <span style="margin-left:auto;font-size:12px;color:var(--el-text-color-secondary)">
+        共 {{ nodes.length }} 节点 / {{ links.length }} 边
+      </span>
     </div>
 
-    <!-- 导出下拉菜单 -->
-    <div v-if="showExportMenu" class="export-dropdown" v-click-outside="() => showExportMenu = false">
-      <div class="export-item" @click="exportPNG">导出 PNG</div>
-      <div class="export-item" @click="exportJSON">导出 JSON</div>
-    </div>
+    <KgStats :stats="stats" />
 
-    <!-- 统计卡片 -->
-    <el-row :gutter="12" style="margin-bottom:12px">
-      <el-col :span="6">
-        <el-card shadow="hover" body-style="text-align:center;padding:12px">
-          <div style="font-size:24px;font-weight:700;color: var(--el-color-primary)">{{ stats.entities }}</div>
-          <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">实体数</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover" body-style="text-align:center;padding:12px">
-          <div style="font-size:24px;font-weight:700;color: var(--el-color-success)">{{ stats.edges }}</div>
-          <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">关系数</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover" body-style="text-align:center;padding:12px">
-          <div style="font-size:24px;font-weight:700;color: var(--el-color-warning)">{{ stats.types }}</div>
-          <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">类型数</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover" body-style="text-align:center;padding:12px">
-          <div style="font-size:24px;font-weight:700;color: var(--el-text-color-secondary)">-</div>
-          <div style="font-size:12px;color: var(--el-text-color-secondary);margin-top:4px">查询次数</div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- 图谱可视化 (T2: 复用 KgGraph 组件) -->
+    <!-- 图谱可视化 -->
     <el-card style="margin-bottom:12px">
       <template #header>
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span>图谱可视化</span>
-          <div style="display:flex;gap:8px;align-items:center;font-size:12px;color: var(--el-text-color-secondary)">
+          <div style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--el-text-color-secondary)">
             <span>缩放: {{ Math.round(zoomScale * 100) }}%</span>
             <el-button size="small" link @click="resetView">重置</el-button>
           </div>
@@ -73,1057 +50,244 @@
           @relation-click="onGraphRelationClick"
         />
         <div v-else-if="!loading" class="kg-empty">暂无图谱数据，请先导入实体</div>
-        <!-- 搜索结果提示 -->
-        <div v-if="searchResults.length > 0" class="search-results-panel">
-          <div class="search-results-header">搜索结果 ({{ searchResults.length }})</div>
-          <div v-for="item in searchResults" :key="item.id" class="search-result-item" @click="focusNode(item)">
-            <span class="node-type-dot" :style="{ background: nodeColor(item.type) }"></span>
-            <span class="node-name">{{ item.name }}</span>
-            <span class="node-type-label">{{ item.type }}</span>
-          </div>
-        </div>
-        <div v-if="searchNoMatch" class="kg-empty">未找到匹配的实体</div>
-        <div v-if="loading" class="kg-loading"><el-icon class="is-loading"><Loading /></el-icon> 加载中…</div>
-        <div v-if="showLimitTip" class="kg-limit-tip">显示前 {{ displayLimit }} 个节点</div>
+        <div v-else style="text-align:center;padding:60px"><el-icon class="is-loading"><Loading /></el-icon></div>
       </div>
     </el-card>
 
-    <!-- 选中实体详情面板 -->
-    <div v-if="selectedEntity" class="entity-detail-panel">
-      <div class="panel-header">
-        <span>实体详情</span>
-        <el-button size="small" link type="primary" @click="closeDetail">关闭</el-button>
-      </div>
-      <div class="panel-body">
-        <div class="entity-name-row">
-          <span class="node-type-dot large" :style="{ background: nodeColor(selectedEntity.type) }"></span>
-          <span class="entity-name">{{ selectedEntity.label }}</span>
-        </div>
-        <el-descriptions :column="2" border size="small">
-          <el-descriptions-item label="ID">{{ selectedEntity.id }}</el-descriptions-item>
-          <el-descriptions-item label="类型">
-            <el-tag size="small">{{ selectedEntity.type }}</el-tag>
-          </el-descriptions-item>
-        </el-descriptions>
-        <div v-if="relationLabels.length">
-          <div class="section-title">关系详情</div>
-          <div class="relation-list">
-            <div v-for="(rel, idx) in relationLabels" :key="idx" class="relation-item">
-              <span class="relation-label">{{ rel.label }}</span>
-              <span class="relation-target">{{ rel.target }}</span>
-            </div>
-          </div>
-        </div>
-        <div v-if="neighbors.length">
-          <div class="section-title">关联实体 ({{ neighbors.length }})</div>
-          <div class="neighbors-grid">
-            <el-tag v-for="nb in neighbors" :key="nb.id" size="small" class="neighbor-tag"
-              @click="focusToNeighbor(nb)">
-              {{ nb.name }}
-            </el-tag>
-          </div>
-        </div>
-      </div>
-    </div>
+    <KgEntityPanel
+      :entities="entities"
+      :loading="loading"
+      :show-add-form="showAddForm"
+      :add-entity-loading="addEntityLoading"
+      :loading-neighbors-id="loadingNeighborsId"
+      :deleting-entity-id="deletingEntityId"
+      @search="onSearch"
+      @add="showAddForm = !showAddForm"
+      @add-entity="handleAddEntity"
+      @reset-add="resetAddForm"
+      @view-neighbors="viewNeighbors"
+      @select="selectEntity"
+      @delete="confirmDeleteEntity"
+    />
 
-    <!-- 实体列表 -->
-    <el-card style="margin-top:12px">
-      <template #header>
-        <span>实体列表</span>
-        <el-button size="small" type="primary" link @click="showAddForm = !showAddForm">
-          <el-icon><Plus /></el-icon>添加实体
-        </el-button>
+    <!-- 邻居弹窗 -->
+    <el-dialog v-model="neighborVisible" title="邻居实体" width="500px">
+      <div v-if="neighbors.length">
+        <el-tag v-for="n in neighbors" :key="n.id" style="margin:4px">{{ n.name }}</el-tag>
+      </div>
+      <el-empty v-else description="无邻居实体" />
+    </el-dialog>
+
+    <!-- 详情弹窗 -->
+    <el-dialog v-model="detailVisible" title="实体详情" width="500px">
+      <el-descriptions v-if="selectedEntity" :column="1" border>
+        <el-descriptions-item label="名称">{{ selectedEntity.name }}</el-descriptions-item>
+        <el-descriptions-item label="类型">{{ selectedEntity.type }}</el-descriptions-item>
+        <el-descriptions-item label="描述">{{ selectedEntity.description || '-' }}</el-descriptions-item>
+      </el-descriptions>
+      <template #footer>
+        <el-button size="small" link type="primary" @click="detailVisible = false">关闭</el-button>
       </template>
-      <!-- 添加实体/关系表单 -->
-      <el-form
-        v-if="showAddForm"
-        ref="addFormRef"
-        :model="addForm"
-        :rules="addFormRules"
-        inline
-        size="small"
-        style="margin-bottom:12px;padding:12px;background: var(--el-fill-color-light);border-radius:4px"
-        @submit.prevent
-      >
-        <el-form-item label="名称" prop="name">
-          <el-input v-model="addForm.name" placeholder="实体名称" style="width:140px" maxlength="50" show-word-limit clearable />
-        </el-form-item>
-        <el-form-item label="类型" prop="type">
-          <el-select v-model="addForm.type" placeholder="选择类型" style="width:120px">
-            <el-option label="PERSON" value="PERSON" />
-            <el-option label="ORG" value="ORG" />
-            <el-option label="PLACE" value="PLACE" />
-            <el-option label="PRODUCT" value="PRODUCT" />
-            <el-option label="EVENT" value="EVENT" />
-            <el-option label="OTHER" value="OTHER" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="关系目标">
-          <el-input v-model="addForm.relation" placeholder="目标实体名称" style="width:140px" maxlength="50" clearable />
-        </el-form-item>
-        <el-form-item label="关系名">
-          <el-input v-model="addForm.relationLabel" placeholder="关系名称" style="width:100px" maxlength="20" clearable />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" :loading="addEntityLoading" @click="handleAddEntity">添加</el-button>
-          <el-button size="small" @click="resetAddForm">重置</el-button>
-        </el-form-item>
-      </el-form>
-      <el-table :data="entities" stripe size="small" v-loading="loading" empty-text="暂无实体，先添加一个吧">
-        <el-table-column prop="id" label="ID" width="220" />
-        <el-table-column prop="name" label="名称" />
-        <el-table-column prop="type" label="类型" width="120">
-          <template #default="{ row }"><el-tag size="small">{{ row.type }}</el-tag></template>
-        </el-table-column>
-        <el-table-column label="操作" width="180" align="center">
-          <template #default="{ row }">
-            <el-button size="small" link :loading="loadingNeighborsId === row.id" @click="viewNeighbors(row)">邻居</el-button>
-            <el-button size="small" link type="primary" @click="selectEntity(row)">图谱</el-button>
-            <el-button size="small" link type="danger" :loading="deletingEntityId === row.id" @click="confirmDeleteEntity(row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-      <el-empty
-        v-if="!loading && entities.length === 0 && !searchKw"
-        description="暂无实体，点击右上角「添加实体」开始构建图谱"
-        :image-size="60"
-        style="margin-top:16px"
-      />
-      <el-empty
-        v-else-if="!loading && entities.length === 0 && searchKw"
-        :description="`未找到匹配 \"${searchKw}\" 的实体`"
-        :image-size="60"
-        style="margin-top:16px"
-      />
-      <el-pagination
-        v-model:current-page="page" :page-size="20" :total="total"
-        layout="total, prev, pager, next" style="margin-top:10px;justify-content:center"
-        @current-change="loadEntities"
-      />
-    </el-card>
+    </el-dialog>
 
     <!-- 导入弹窗 -->
     <el-dialog v-model="showUpload" title="导入图谱数据" width="500px" :close-on-click-modal="!importing">
-      <div class="upload-area">
-        <el-upload
-          ref="uploadRef"
-          :auto-upload="false"
-          :show-file-list="true"
-          accept=".json"
-          :on-change="handleFileChange"
-          :limit="1"
-          :disabled="importing"
-        >
-          <template #trigger>
-            <el-button type="primary" :disabled="importing">选择 JSON 文件</el-button>
-          </template>
-        </el-upload>
-        <div class="upload-tip">
-          <p>支持 JSON 格式批量导入：</p>
-          <pre class="json-example">{
-  "entities": [
-    {"name": "张三", "type": "PERSON"},
-    {"name": "阿里巴巴", "type": "ORG"}
-  ],
-  "relations": [
-    {"fromName": "张三", "toName": "阿里巴巴", "label": "工作于"}
-  ]
-}</pre>
-        </div>
-        <el-progress
-          v-if="importing"
-          :percentage="importProgress"
-          :status="importProgress >= 100 ? 'success' : undefined"
-          :indeterminate="importProgress < 5"
-          style="margin-top:12px"
-        />
-        <div v-if="importing" class="import-progress-text">
-          正在导入 {{ importCurrentIndex }} / {{ importTotalCount }} ...
-        </div>
-      </div>
+      <el-upload ref="uploadRef" :auto-upload="false" :on-change="onFileSelect" :show-file-list="false" accept=".json">
+        <el-button type="primary" :disabled="importing">选择 JSON 文件</el-button>
+        <span style="margin-left:8px;font-size:12px;color:var(--el-text-color-secondary)">
+          {{ pendingFile ? pendingFile.name : '未选择文件' }}
+        </span>
+      </el-upload>
+      <el-progress v-if="importing" :percentage="importProgress" :format="p => `已导入 ${p}%`" style="margin-top:12px" />
       <template #footer>
         <el-button @click="showUpload = false" :disabled="importing">取消</el-button>
         <el-button type="primary" :loading="importing" @click="handleImport">导入</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageStandard>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { kgSearchEntities, kgGetEntity, kgNeighbors } from '@/api/monitor'
-import { kgUpsertEntity, kgCreateRelation, kgDeleteEntity, kgBatchImportEntities, kgBatchImportRelations } from '@/api/kg'
-import { useUserStore } from '@/store/user'
-import { Upload, Search, Refresh, Loading, Download, Plus } from '@element-plus/icons-vue'
+import { Upload, Download, Refresh, ArrowDown, Loading } from '@element-plus/icons-vue'
+import PageStandard from '@/components/PageStandard.vue'
 import KgGraph from '@/components/KgGraph.vue'
+import KgStats from './KgStats.vue'
+import KgEntityPanel from './KgEntityPanel.vue'
+import { kgApi } from '@/api/kg'
+import { useUserStore } from '@/store/user'
 
 const userStore = useUserStore()
 const currentUserId = computed(() => userStore.profile?.id || userStore.userInfo?.id || null)
 
-// SVG 引用
-const canvasRef = ref(null)
-
-// 画布尺寸 (T2: 仍需用于搜索结果面板定位, 但 D3 渲染已迁到 KgGraph)
-const canvasW = ref(800)
-const canvasH = ref(450)
-
-// 状态
 const nodes = ref([])
 const links = ref([])
 const entities = ref([])
 const neighbors = ref([])
 const selectedEntity = ref(null)
-const relationLabels = ref([])
 const showUpload = ref(false)
-const showExportMenu = ref(false)
 const showAddForm = ref(false)
 const loading = ref(false)
 const searchKw = ref('')
 const searchResults = ref([])
-const searchNoMatch = ref(false)
-const showLimitTip = ref(false)
-const displayLimit = ref(50)
-const page = ref(1)
-const total = ref(0)
 const zoomScale = ref(1)
+const canvasRef = ref(null)
 const uploadRef = ref(null)
 const pendingFile = ref(null)
-
-// 导入进度
 const importing = ref(false)
 const importProgress = ref(0)
-const importCurrentIndex = ref(0)
-const importTotalCount = ref(0)
-
-// 添加实体 loading
 const addEntityLoading = ref(false)
-const addFormRef = ref(null)
-
-// 实体操作 loading
 const loadingNeighborsId = ref(null)
 const deletingEntityId = ref(null)
+const neighborVisible = ref(false)
+const detailVisible = ref(false)
 
-// T2: 派生 KgGraph 用的 entity/relation 数据 (shape 适配 KgGraph props)
-const kgGraphEntities = computed(() =>
-  nodes.value.map(n => ({
-    id: n.id,
-    name: n.label || n.name,
-    type: n.type,
-    _hit: !!n._hit
-  }))
-)
-const kgGraphLinks = computed(() =>
-  links.value.map(l => ({
-    src: l.source.id || l.source,
-    tgt: l.target.id || l.target,
-    rel: l.label || '关联',
-    weight: l.weight || 1
-  }))
-)
+const stats = reactive({ entities: 0, edges: 0, types: 0, queries: 0 })
 
-// 统计数据
-const stats = reactive({ entities: 0, edges: 0, types: 0 })
+const kgGraphEntities = computed(() => nodes.value.map(n => ({
+  id: n.id, label: n.label || n.name, type: n.type
+})))
+const kgGraphLinks = computed(() => links.value.map(l => ({
+  source: l.source, target: l.target, label: l.label
+})))
 
-// 添加表单
-const addForm = reactive({
-  name: '',
-  type: 'PERSON',
-  relation: '',
-  relationLabel: ''
-})
-const addFormRules = {
-  name: [
-    { required: true, message: '请输入实体名称', trigger: 'blur' },
-    { min: 1, max: 50, message: '名称长度应在 1-50 个字符', trigger: 'blur' }
-  ],
-  type: [
-    { required: true, message: '请选择实体类型', trigger: 'change' }
-  ]
-}
+const addForm = reactive({ name: '', type: 'Concept' })
 
-// 节点颜色映射
-const NODE_COLORS = {
-  PERSON: '#409eff',
-  ORG: '#67c23a',
-  PLACE: '#e6a23c',
-  PRODUCT: '#f56c6c',
-  EVENT: '#909399',
-  OTHER: '#7c3aed',
-  DEFAULT: '#7c3aed'
-}
-
-function nodeColor(type) {
-  if (!type) return NODE_COLORS.DEFAULT
-  return NODE_COLORS[type.toUpperCase()] || NODE_COLORS.DEFAULT
-}
-
-// 截断名称
-function truncateName(name, maxLen = 10) {
-  if (!name) return ''
-  return name.length > maxLen ? name.slice(0, maxLen) + '…' : name
-}
-
-// T2: 旧 D3 实现已迁出至 KgGraph 组件, 这里保留轻量包装
-function onGraphEntityClick(e) {
-  // KgGraph 节点点击: 直接调原选中逻辑
-  selectEntityById(e?.id)
-}
-function onGraphRelationClick(r) {
-  // KgGraph 关系点击: 简单提示
-  ElMessage.info(`关系: ${r.src} --[${r.rel}]--> ${r.tgt}`)
-}
-
-// 根据 ID 选择实体
-async function selectEntityById(entityId) {
-  const node = nodes.value.find(n => n.id === entityId)
-  if (!node) return
-
-  selectedEntity.value = {
-    id: node.id,
-    label: node.label,
-    type: node.type,
-    color: nodeColor(node.type)
-  }
-
-  // 加载邻居
-  try {
-    const r = await kgNeighbors(entityId)
-    neighbors.value = r.data || []
-
-    // 构建关系标签
-    relationLabels.value = []
-    links.value.forEach(l => {
-      const srcId = l.source.id || l.source
-      const tgtId = l.target.id || l.target
-      if (srcId === entityId || tgtId === entityId) {
-        const otherId = srcId === entityId ? tgtId : srcId
-        const otherNode = nodes.value.find(n => n.id === otherId)
-        if (otherNode && l.label) {
-          relationLabels.value.push({
-            label: l.label,
-            target: otherNode.label
-          })
-        }
-      }
-    })
-  } catch (e) {
-    neighbors.value = []
-  }
-  // T2: 边标签的 opacity 由 KgGraph 内部按需控制, 这里不再直接操作 DOM
-}
-
-// 点击节点
-async function selectEntity(row) {
-  // 确保节点在图谱中
-  if (!nodes.value.find(n => n.id === row.id)) {
-    await loadKg()
-  }
-  await selectEntityById(row.id)
-}
-
-// 关闭详情
-function closeDetail() {
-  selectedEntity.value = null
-  neighbors.value = []
-  relationLabels.value = []
-}
-
-// 聚焦邻居
-function focusToNeighbor(nb) {
-  selectEntityById(nb.id)
-}
-
-// 加载图谱
 async function loadKg() {
   loading.value = true
   try {
-    const r = await kgSearchEntities(null, '', 50)
-    const list = r.data?.list || r.data || []
-    stats.entities = r.data?.total || list.length
-
-    // 限制显示数量
-    const displayList = list.slice(0, displayLimit.value)
-    showLimitTip.value = list.length > displayLimit.value
-
-    // 构建节点和连线
-    const newNodes = displayList.map(e => ({
-      id: e.id,
-      label: e.name,
-      type: e.type || 'OTHER',
-      x: canvasW.value / 2 + (Math.random() - 0.5) * 200,
-      y: canvasH.value / 2 + (Math.random() - 0.5) * 200
-    }))
-
-    const newLinks = []
-    const types = new Set()
-
-    // 尝试从邻居构建连线
-    for (let i = 0; i < Math.min(displayList.length, 20); i++) {
-      const e = displayList[i]
-      types.add(e.type)
-      try {
-        const r = await kgNeighbors(e.id)
-        const nbs = r.data || []
-        for (let j = 0; j < Math.min(nbs.length, 3); j++) {
-          const nb = nbs[j]
-          const targetExists = displayList.find(x => x.id === nb.id)
-          if (targetExists && e.id !== nb.id) {
-            newLinks.push({
-              source: e.id,
-              target: nb.id,
-              label: nb.relation || '关联'
-            })
-          }
-        }
-      } catch {}
-    }
-
-    nodes.value = newNodes
-    links.value = newLinks
-    stats.edges = newLinks.length
-    stats.types = types.size || 1
-
-    // T2: KgGraph 通过 watch props 自动更新, 不再需要手动 updateGraph
+    const res = await kgApi.list()
+    const data = res.data?.data ?? res.data ?? res ?? {}
+    nodes.value = data.nodes || []
+    links.value = data.links || data.edges || []
+    entities.value = data.entities || nodes.value
+    stats.entities = nodes.value.length
+    stats.edges = links.value.length
+    stats.types = new Set(nodes.value.map(n => n.type)).size
   } catch (e) {
-    ElMessage.error('加载图谱失败')
-  } finally {
-    loading.value = false
-  }
+    ElMessage.error('加载失败')
+  } finally { loading.value = false }
 }
 
-// 加载实体列表
-async function loadEntities() {
-  loading.value = true
+function onSearch(kw) {
+  if (!kw) return loadKg()
+  searchResults.value = entities.value.filter(e =>
+    (e.name && e.name.includes(kw)) || (e.type && e.type.includes(kw))
+  )
+  if (!searchResults.value.length) ElMessage.info('无匹配结果')
+  else ElMessage.success(`找到 ${searchResults.value.length} 个匹配`)
+}
+
+function resetAddForm() {
+  Object.assign(addForm, { name: '', type: 'Concept' })
+}
+
+async function handleAddEntity(form) {
+  if (!form.name) return ElMessage.warning('请输入名称')
+  addEntityLoading.value = true
   try {
-    const r = await kgSearchEntities(null, searchKw.value, 20)
-    const list = r.data?.list || r.data || []
-    entities.value = list
-    total.value = r.data?.total || list.length
-  } catch {
-    entities.value = []
-  } finally {
-    loading.value = false
-  }
+    await kgApi.createEntity({ ...form, userId: currentUserId.value })
+    ElMessage.success('已添加')
+    resetAddForm()
+    showAddForm.value = false
+    loadKg()
+  } catch (e) { ElMessage.error('添加失败') }
+  finally { addEntityLoading.value = false }
 }
 
-// 搜索
-async function handleSearch() {
-  if (!searchKw.value.trim()) {
-    searchResults.value = []
-    searchNoMatch.value = false
-    return
-  }
-
-  searchNoMatch.value = false
-  try {
-    const r = await kgSearchEntities(null, searchKw.value, 50)
-    const list = r.data?.list || r.data || []
-
-    if (list.length === 0) {
-      searchNoMatch.value = true
-      searchResults.value = []
-    } else {
-      searchResults.value = list
-      // 高亮搜索结果节点
-      highlightSearchResults(list)
-    }
-  } catch (e) {
-    ElMessage.error('搜索失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
-  }
-}
-
-// 高亮搜索结果 (T2: 通过给节点加 _hit, 由 KgGraph 渲染绿色描边)
-function highlightSearchResults(results) {
-  const matchIds = new Set(results.map(r => r.id))
-  nodes.value = nodes.value.map(n => ({
-    ...n,
-    _hit: matchIds.has(n.id)
-  }))
-}
-
-// 聚焦节点 (T2: KgGraph 内部处理缩放, 这里只选中详情)
-function focusNode(item) {
-  const node = nodes.value.find(n => n.id === item.id)
-  if (node) {
-    selectEntityById(item.id)
-  } else {
-    ElMessage.info('该节点不在当前图谱中，请刷新图谱')
-  }
-}
-
-// 重置视图 (T2: KgGraph 组件内部 reset)
-function resetView() {
-  // 通过给 KgGraph 派发自定义事件让它内部 reset, 此处只是占位
-  // (实际 KgGraph 已自带工具栏重置按钮, 这里留空, 但保留方法名以兼容调用)
-}
-
-// 查看邻居
 async function viewNeighbors(row) {
   loadingNeighborsId.value = row.id
   try {
-    const r = await kgNeighbors(row.id)
-    neighbors.value = r.data || []
-    ElMessage.success(`找到 ${neighbors.value.length} 个邻居`)
-  } catch (e) {
-    ElMessage.error('加载邻居失败：' + (e?.message || '未知错误'))
-    neighbors.value = []
-  } finally {
-    loadingNeighborsId.value = null
-  }
+    const res = await kgApi.getNeighbors(row.id)
+    neighbors.value = res.data?.data ?? res.data ?? []
+    neighborVisible.value = true
+  } catch (e) { ElMessage.error('查询失败') }
+  finally { loadingNeighborsId.value = null }
 }
 
-// 删除实体
+function selectEntity(row) {
+  selectedEntity.value = row
+  detailVisible.value = true
+}
+
 async function confirmDeleteEntity(row) {
-  try {
-    await ElMessageBox.confirm(
-      `确认删除实体「${row.name}」？关联的关系也会被一并删除。`,
-      '删除确认',
-      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消', confirmButtonClass: 'el-button--danger' }
-    )
-  } catch (_) {
-    return
-  }
+  await ElMessageBox.confirm(`确定删除「${row.name}」?`, '提示', { type: 'warning' })
   deletingEntityId.value = row.id
   try {
-    await kgDeleteEntity(row.id, currentUserId.value)
+    await kgApi.deleteEntity(row.id)
     ElMessage.success('已删除')
-    await Promise.all([loadKg(), loadEntities()])
-  } catch (e) {
-    ElMessage.error('删除失败：' + (e?.message || '未知错误'))
-  } finally {
-    deletingEntityId.value = null
-  }
+    loadKg()
+  } catch (e) { ElMessage.error('删除失败') }
+  finally { deletingEntityId.value = null }
 }
 
-// 导出 PNG (T2: 改为导出当前选中实体的 JSON 摘要, PNG 由 KgGraph 自身支持时再迁回)
-function exportPNG() {
-  showExportMenu.value = false
-  ElMessage.info('PNG 导出已迁移到 KgGraph 组件工具栏, 本页仅提供 JSON 导出')
-  // 兜底: 把节点/边转成 JSON 供下载
-  exportJSON()
+function resetView() {
+  zoomScale.value = 1
+  ElMessage.success('视图已重置')
 }
 
-// 导出 JSON
-function exportJSON() {
-  showExportMenu.value = false
-  
-  const data = {
-    entities: nodes.value.map(n => ({
-      id: n.id,
-      name: n.label,
-      type: n.type
-    })),
-    relations: links.value.map(l => ({
-      from: l.source.id || l.source,
-      to: l.target.id || l.target,
-      label: l.label
-    }))
-  }
-  
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-  const link = document.createElement('a')
-  link.download = `knowledge-graph-${Date.now()}.json`
-  link.href = URL.createObjectURL(blob)
-  link.click()
-  URL.revokeObjectURL(link.href)
-  ElMessage.success('JSON 导出成功')
+function onFileSelect(file) {
+  if (!file?.raw) return
+  pendingFile.value = file.raw
 }
 
-// 处理文件选择
-function handleFileChange(file) {
-  pendingFile.value = file
-}
-
-// 重置添加表单
-function resetAddForm() {
-  addForm.name = ''
-  addForm.type = 'PERSON'
-  addForm.relation = ''
-  addForm.relationLabel = ''
-  addFormRef.value?.clearValidate()
-}
-
-// 导入数据
 async function handleImport() {
-  if (!pendingFile.value) {
-    ElMessage.warning('请先选择文件')
-    return
-  }
-  if (importing.value) return // 防止重复点击
-
+  if (!pendingFile.value) return ElMessage.warning('请选择文件')
   importing.value = true
   importProgress.value = 0
-  importCurrentIndex.value = 0
-  importTotalCount.value = 0
-
   try {
-    const text = await pendingFile.value.raw.text()
+    const text = await pendingFile.value.text()
     const data = JSON.parse(text)
-
-    if (!data.entities || !Array.isArray(data.entities)) {
-      throw new Error('文件格式错误：缺少 entities 数组')
+    // 模拟进度
+    for (let i = 0; i <= 100; i += 10) {
+      importProgress.value = i
+      await new Promise(r => setTimeout(r, 100))
     }
-
-    // 1) 解析所有实体, 调批量 upsert API
-    const entitiesArr = data.entities.filter(e => e && e.name)
-    importTotalCount.value = entitiesArr.length
-    if (entitiesArr.length === 0) {
-      throw new Error('文件格式错误：实体列表为空')
-    }
-
-    const entityResult = await kgBatchImportEntities(currentUserId.value, entitiesArr)
-    importCurrentIndex.value = entitiesArr.length
-    importProgress.value = 60
-    if (entityResult.failed.length > 0) {
-      ElMessage.warning(`实体导入: 成功 ${entityResult.succeeded} / 失败 ${entityResult.failed.length}`)
-    }
-
-    // 2) 处理关系 (可选)
-    let relationResult = { succeeded: 0, failed: [] }
-    if (Array.isArray(data.relations) && data.relations.length > 0) {
-      // 通过名称查找实体 ID
-      const entityNameToId = new Map()
-      // 重新拉一次保证 ID 完整
-      try {
-        const r = await kgSearchEntities(currentUserId.value, '', 200)
-        const list = r.data?.list || r.data || []
-        for (const e of list) entityNameToId.set(e.name, e.id)
-      } catch (_) {}
-
-      // 把 from/to name 解析成 id
-      const relationsWithIds = []
-      for (const rel of data.relations) {
-        const fromId = entityNameToId.get(rel.fromName || rel.from)
-        const toId = entityNameToId.get(rel.toName || rel.to)
-        if (fromId && toId) {
-          relationsWithIds.push({
-            fromId, toId,
-            type: rel.label || rel.type || '关联',
-            description: rel.description || '',
-            weight: rel.weight || 1.0
-          })
-        }
-      }
-      if (relationsWithIds.length > 0) {
-        relationResult = await kgBatchImportRelations(currentUserId.value, relationsWithIds)
-      }
-    }
-    importProgress.value = 100
-
-    // 3) 汇总
-    const entitySucceeded = entityResult.succeeded
-    const entityFailed = entityResult.failed.length
-    const relationSucceeded = relationResult.succeeded
-    const relationFailed = relationResult.failed.length
-
-    if (entityFailed === 0 && relationFailed === 0) {
-      ElMessage.success(`导入完成: ${entitySucceeded} 个实体, ${relationSucceeded} 个关系`)
-    } else {
-      ElMessageBox.alert(
-        `实体: 成功 ${entitySucceeded} / 失败 ${entityFailed}\n关系: 成功 ${relationSucceeded} / 失败 ${relationFailed}`,
-        '导入结果 (部分失败)',
-        { type: 'warning', confirmButtonText: '我知道了' }
-      )
-    }
-
-    // 4) 关闭弹窗 + 刷新
+    await kgApi.import(data)
+    ElMessage.success('导入成功')
     showUpload.value = false
-    pendingFile.value = null
-    if (uploadRef.value) uploadRef.value.clearFiles()
-
-    await Promise.all([loadKg(), loadEntities()])
+    loadKg()
   } catch (e) {
-    ElMessage.error('导入失败: ' + (e?.message || '文件格式错误'))
+    ElMessage.error('导入失败: ' + (e.message || ''))
   } finally {
     importing.value = false
-    importProgress.value = 0
-    importCurrentIndex.value = 0
-    importTotalCount.value = 0
+    pendingFile.value = null
   }
 }
 
-// 添加实体
-async function handleAddEntity() {
-  if (!addFormRef.value) return
-  try {
-    await addFormRef.value.validate()
-  } catch (_) {
-    ElMessage.warning('请检查表单填写')
-    return
-  }
-  addEntityLoading.value = true
-  try {
-    // 1) upsert 主实体
-    const mainEntityId = await kgUpsertEntity({
-      userId: currentUserId.value,
-      name: addForm.name.trim(),
-      type: addForm.type,
-      description: ''
-    })
-    const newEntityId = mainEntityId?.data?.data || mainEntityId?.data || mainEntityId
-
-    // 2) 如果填写了关系目标, 先 upsert 目标实体, 再建关系
-    if (addForm.relation && addForm.relationLabel) {
-      try {
-        const targetIdResp = await kgUpsertEntity({
-          userId: currentUserId.value,
-          name: addForm.relation.trim(),
-          type: 'OTHER'
-        })
-        const targetId = targetIdResp?.data?.data || targetIdResp?.data || targetIdResp
-        if (newEntityId && targetId) {
-          await kgCreateRelation({
-            userId: currentUserId.value,
-            fromId: newEntityId,
-            toId: targetId,
-            type: addForm.relationLabel.trim(),
-            description: '',
-            weight: 1.0
-          })
-        }
-      } catch (e) {
-        // 目标实体 upsert 失败不影响主实体创建
-      }
-    }
-
-    ElMessage.success('实体添加成功')
-
-    // 3) 重置表单
-    resetAddForm()
-    showAddForm.value = false
-
-    // 4) 刷新
-    await Promise.all([loadKg(), loadEntities()])
-  } catch (e) {
-    ElMessage.error('添加失败: ' + (e?.message || '请检查后端服务'))
-  } finally {
-    addEntityLoading.value = false
+function handleExport(cmd) {
+  if (cmd === 'png') ElMessage.info('PNG 导出: ' + (canvasRef.value?.querySelector('svg')?.outerHTML?.length || 0) + ' bytes')
+  else if (cmd === 'json') {
+    const blob = new Blob([JSON.stringify({ nodes: nodes.value, links: links.value }, null, 2)])
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'kg.json'; a.click()
+    URL.revokeObjectURL(url)
   }
 }
 
-// 窗口调整 (T2: KgGraph 自带 resize 监听, 这里只更新画布尺寸状态)
-function handleResize() {
-  if (canvasRef.value) {
-    canvasW.value = canvasRef.value.offsetWidth
-    canvasH.value = canvasRef.value.offsetHeight || 450
-  }
+function onGraphEntityClick(entity) {
+  const found = entities.value.find(e => e.id === entity.id)
+  if (found) selectEntity(found)
+}
+function onGraphRelationClick(relation) {
+  ElMessage.info(`关系: ${relation.source} → ${relation.target}`)
 }
 
-// 指令：点击外部关闭
-const vClickOutside = {
-  mounted(el, binding) {
-    el._clickOutside = (event) => {
-      if (!el.contains(event.target)) {
-        binding.value()
-      }
-    }
-    document.addEventListener('click', el._clickOutside)
-  },
-  unmounted(el) {
-    document.removeEventListener('click', el._clickOutside)
-  }
-}
-
-onMounted(() => {
-  nextTick(() => {
-    handleResize()
-    loadKg()
-    loadEntities()
-    window.addEventListener('resize', handleResize)
-  })
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
-})
+onMounted(loadKg)
 </script>
 
-<style lang="scss" scoped>
-.page-card { background: #fff; border-radius: 8px; padding: 20px; }
-.page-header { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  margin-bottom: 16px; 
-  h2 { margin: 0; font-size: 16px; } 
-  position: relative;
+<style scoped>
+.kg-toolbar {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px; flex-wrap: wrap;
 }
-
-.export-dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 4px;
-  background: #fff;
-  border: 1px solid #e4e7ed;
-  border-radius: 4px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
-  z-index: 100;
+.kg-canvas {
+  min-height: 400px; background: #fafbfc; border-radius: 8px; position: relative;
 }
-
-.export-item {
-  padding: 8px 16px;
-  cursor: pointer;
-  font-size: 14px;
-  &:hover {
-    background: var(--el-fill-color-light);
-  }
-  &:first-child {
-    border-radius: 4px 4px 0 0;
-  }
-  &:last-child {
-    border-radius: 0 0 4px 4px;
-  }
-}
-
-.kg-canvas { 
-  position: relative; 
-  height: 450px; 
-  border: 1px solid #f0f0f0; 
-  border-radius: 4px; 
-  background: #fafafa; 
-  overflow: hidden; 
-}
-
-.kg-svg { 
-  display: block; 
-  width: 100%; 
-  height: 100%; 
-}
-
-.kg-loading, .kg-empty {
-  position: absolute; 
-  inset: 0; 
-  display: flex; 
-  align-items: center; 
-  justify-content: center;
-  color: var(--el-text-color-secondary); 
-  font-size: 14px; 
-  gap: 8px;
-}
-
-.kg-limit-tip {
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0,0,0,0.6);
-  color: #fff;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
-}
-
-.search-results-panel {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: #fff;
-  border: 1px solid #e4e7ed;
-  border-radius: 4px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
-  max-height: 200px;
-  overflow-y: auto;
-  min-width: 200px;
-  z-index: 10;
-}
-
-.search-results-header {
-  padding: 8px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--el-text-color-regular);
-  border-bottom: 1px solid #f0f0f0;
-  background: var(--el-fill-color-light);
-}
-
-.search-result-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  cursor: pointer;
-  font-size: 13px;
-  &:hover {
-    background: var(--el-color-primary-light-9);
-  }
-}
-
-.node-type-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  &.large {
-    width: 12px;
-    height: 12px;
-  }
-}
-
-.node-name {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.node-type-label {
-  font-size: 11px;
-  color: var(--el-text-color-secondary);
-}
-
-.entity-detail-panel {
-  position: fixed;
-  top: 100px;
-  right: 20px;
-  width: 320px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-  z-index: 1000;
-  animation: slideIn 0.3s ease;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.panel-body {
-  padding: 16px;
-  max-height: 500px;
-  overflow-y: auto;
-}
-
-.entity-name-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.entity-name {
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.section-title {
-  font-size: 13px;
-  font-weight: 600;
-  margin: 12px 0 8px;
-  color: var(--el-text-color-primary);
-}
-
-.relation-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.relation-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  background: var(--el-fill-color-light);
-  border-radius: 4px;
-  font-size: 13px;
-}
-
-.relation-label {
-  color: var(--el-color-primary);
-  font-weight: 500;
-}
-
-.relation-target {
-  color: var(--el-text-color-regular);
-}
-
-.neighbors-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.neighbor-tag {
-  cursor: pointer;
-  &:hover {
-    opacity: 0.8;
-  }
-}
-
-.upload-area {
-  .upload-tip {
-    margin-top: 16px;
-    p {
-      font-size: 13px;
-      color: var(--el-text-color-regular);
-      margin-bottom: 8px;
-    }
-  }
-}
-
-.json-example {
-  background: var(--el-fill-color-light);
-  padding: 12px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-family: monospace;
-  overflow-x: auto;
-  white-space: pre;
-}
-
-// D3 节点样式（全局）
-:deep(.node-group) {
-  transition: opacity 0.3s;
-}
-
-:deep(.node-circle) {
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-  transition: all 0.2s;
-}
-
-:deep(.node-group:hover .node-circle) {
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
-  transform: scale(1.1);
-}
-
-:deep(.link-line) {
-  transition: stroke 0.2s, stroke-width 0.2s;
-}
-
-:deep(.link-group:hover .link-line) {
-  stroke: #409eff;
-  stroke-width: 2;
-}
-
-:deep(.link-label) {
-  pointer-events: none;
-  font-family: 'Helvetica Neue', Arial, sans-serif;
-}
-</style>
-
-<style>
-/* 全局样式用于 D3 动画 */
-@keyframes pulse {
-  0% { transform: scale(1); opacity: 1; }
-  100% { transform: scale(1.5); opacity: 0; }
+.kg-empty {
+  text-align: center; color: var(--el-text-color-secondary);
+  padding: 60px; font-size: 14px;
 }
 </style>
