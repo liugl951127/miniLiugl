@@ -47,12 +47,20 @@ const routes = [
       { path: 'memory', name: 'MemoryLegacy', redirect: '/knowledge/memory' },
 
       // ── Agent 编排 (单页 tab) ──
-      { path: 'agent', name: 'Agent', component: () => import('@/views/agent/Index.vue'), meta: { title: 'Agent 编排' } },
-      { path: 'agent/stream', name: 'AgentStream', redirect: to => ({ path: '/agent', query: { tab: 'stream' } }) },
-      { path: 'agent/canvas', name: 'AgentCanvas', redirect: to => ({ path: '/agent', query: { tab: 'canvas' } }) },
-      { path: 'agent/multi', name: 'AgentMulti', redirect: to => ({ path: '/agent', query: { tab: 'multi' } }) },
-      { path: 'agent/training', name: 'AgentTraining', redirect: to => ({ path: '/agent', query: { tab: 'training' } }) },
-      { path: 'agent/approval', name: 'AgentApproval', redirect: to => ({ path: '/agent', query: { tab: 'approval' } }) },
+      {
+        path: 'agent',
+        component: () => import('@/views/agent/Index.vue'),
+        meta: { title: 'Agent 编排' },
+        children: [
+          { path: '',          name: 'AgentHome',     redirect: 'agent/tasks' },
+          { path: 'tasks',    name: 'AgentTasks',    component: () => import('@/views/agent/Tasks.vue'),    meta: { title: '任务' } },
+          { path: 'canvas',   name: 'AgentCanvas',   component: () => import('@/views/agent/Canvas.vue'),   meta: { title: '画布' } },
+          { path: 'multi',    name: 'AgentMulti',    component: () => import('@/views/agent/GroupDesigner.vue'), meta: { title: '多智能体' } },
+          { path: 'training', name: 'AgentTraining', redirect: '/training' },
+          { path: 'approval', name: 'AgentApproval', component: () => import('@/views/agent/Approval.vue'),  meta: { title: '审批' } }
+        ]
+      },
+      { path: 'agent/stream', name: 'AgentStream', redirect: '/agent/canvas' },
       { path: 'agent-auto', name: 'AgentAuto', component: () => import('@/views/agent/Auto.vue'), meta: { title: '智能体群生成', icon: 'MagicStick' } },
       { path: 'agent/group-designer', name: 'AgentGroupDesigner', component: () => import('@/views/agent/GroupDesigner.vue'), meta: { title: '智能体群编排', icon: 'Connection', roles: ['user', 'admin'] } },
 
