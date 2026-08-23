@@ -106,7 +106,17 @@ const routes = [
       { path: 'training/dashboard', name: 'TrainingDashboard', redirect: to => ({ path: '/training', query: { tab: 'dashboard' } }) },
 
       // ── 数据中心 (单页 tab) ──
-      { path: 'analytics', name: 'Analytics', component: () => import('@/views/analytics/Index.vue'), meta: { title: '数据分析' } },
+      {
+        path: 'analytics',
+        component: () => import('@/views/analytics/Index.vue'),
+        meta: { title: '数据分析' },
+        children: [
+          { path: '',         name: 'AnalyticsHome',  redirect: 'analytics/overview' },
+          { path: 'overview', name: 'AnalyticsOverview', component: () => import('@/views/analytics/Overview.vue'), meta: { title: '总览' } },
+          { path: 'nlsql',    name: 'AnalyticsNlsql',    component: () => import('@/views/analytics/Nlsql.vue'),    meta: { title: 'NL2SQL' } },
+          { path: 'vote',     name: 'AnalyticsVote',     component: () => import('@/views/analytics/Vote.vue'),     meta: { title: '多模型投票' } }
+        ]
+      },
       { path: 'analytics/nlsql', name: 'Nl2Sql', redirect: to => ({ path: '/analytics', query: { tab: 'nlsql' } }) },
       { path: 'rule', name: 'RuleAssistant', component: () => import('@/views/rule/Index.vue'), meta: { title: 'NL 规则助手' } },
 
