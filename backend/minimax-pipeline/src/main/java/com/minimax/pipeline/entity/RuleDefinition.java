@@ -26,15 +26,19 @@ public class RuleDefinition {
     private Long id;
 
     /** 规则名 (唯一+可读) */
+    @TableField("name")
     private String name;
 
     /** 规则 JSON DSL */
+    @TableField("json_content")
     private String jsonContent;
 
     /** 作用域: GLOBAL / TENANT / USER */
+    @TableField("scope")
     private String scope;
 
     /** 0=禁用 1=启用 */
+    @TableField("enabled")
     private Integer enabled;
 
     @TableField(fill = FieldFill.INSERT)

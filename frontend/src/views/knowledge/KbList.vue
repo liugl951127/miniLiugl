@@ -153,10 +153,7 @@
               </el-form-item>
               <el-form-item label="系统提示模板" style="margin-bottom:8px">
                 <el-select v-model="retrievePromptTemplate" placeholder="选择提示模板（可选）" clearable style="width:100%">
-                  <el-option label="【默认】简洁检索" value="default" />
-                  <el-option label="【详细】带上下文" value="detailed" />
-                  <el-option label="【学术】引用文献" value="academic" />
-                  <el-option label="【对比】多角度检索" value="multi" />
+                  <el-option v-for="s in retrievalStrategies" :key="s.value" :label="s.label" :value="s.value" />
                 </el-select>
               </el-form-item>
               <el-form-item style="margin-bottom:0">
@@ -301,9 +298,7 @@
           </el-form-item>
           <el-form-item label="分块策略">
             <el-select v-model="uploadChunkMode" style="width:100%">
-              <el-option label="自动（默认）" value="auto" />
-              <el-option label="按段落" value="paragraph" />
-              <el-option label="固定长度" value="fixed" />
+              <el-option v-for="s in chunkingStrategies" :key="s.value" :label="s.label" :value="s.value" />
             </el-select>
           </el-form-item>
           <el-form-item label="标签（可选）">
@@ -643,6 +638,7 @@ import {
   listDocs, uploadDoc, uploadDocStream, deleteDoc, renameDoc,
   retrieve, getDocContent, updateDocContent, batchReindexDocs, batchDeleteDocs, exportDocs
 } from '@/api/rag'
+import { dictApi } from '@/api/dict'
 import kgApi from '@/api/kg'
 import http from '@/api/http'
 import { debounce, createCancellableFetcher } from '@/utils/debounce'
@@ -806,6 +802,15 @@ async function copyDocContent() {
 // ========== 数据状态 ==========
 const kbs = ref([])
 const docs = ref([])
+
+// V8.0.3: 字典下拉
+const retrievalStrategies = ref([])
+const chunkingStrategies = ref([])
+dictApi.kbStrategies().then(r => {
+  const list = r.data?.data || r.data || []
+  retrievalStrategies.value = list.filter(s => s.category === 'retrieval')
+  chunkingStrategies.value = list.filter(s => s.category === 'chunking')
+}).catch(() => {})
 const loading = ref(false)
 const saving = ref(false)
 const docsLoading = ref(false)

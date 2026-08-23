@@ -1,6 +1,7 @@
 package com.minimax.agent.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Data;
 
 import java.io.Serial;
@@ -16,13 +17,21 @@ public class KgEntity implements Serializable {
 
     @TableId(type = IdType.AUTO)
     private Long id;
+    @TableField("user_id")
     private Long userId;
+    @TableField("name")
     private String name;
+    @TableField("entity_type")
     private String entityType;
+    @TableField("description")
     private String description;
+    @TableField("aliases")
     private String aliases;
+    @TableField("importance")
     private Integer importance;
+    @TableField("source")
     private String source;
+    @TableField("ref_count")
     private Integer refCount;
 
     @TableField(fill = FieldFill.INSERT)

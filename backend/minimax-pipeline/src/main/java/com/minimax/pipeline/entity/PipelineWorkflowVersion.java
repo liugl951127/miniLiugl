@@ -1,6 +1,7 @@
 package com.minimax.pipeline.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -19,10 +20,16 @@ public class PipelineWorkflowVersion {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    @TableField("workflow_id")
     private Long workflowId;
+    @TableField("version")
     private Integer version;
+    @TableField("definition")
     private String definition;        // 快照
+    @TableField("change_log")
     private String changeLog;
+    @TableField("create_by")
     private Long createBy;
+    @TableField("create_time")
     private LocalDateTime createTime;
 }

@@ -1,6 +1,7 @@
 package com.minimax.ai.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -33,23 +34,41 @@ public class AiGenerationLog {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    @TableField("generation_id")
     private String generationId;
+    @TableField("user_id")
     private Long userId;
+    @TableField("username")
     private String username;
+    @TableField("user_ip")
     private String userIp;
+    @TableField("modality")
     private String modality;
+    @TableField("model_name")
     private String modelName;
+    @TableField("model_version")
     private String modelVersion;
+    @TableField("prompt")
     private String prompt;
+    @TableField("negative_prompt")
     private String negativePrompt;
+    @TableField("parameters")
     private String parameters;
+    @TableField("output_url")
     private String outputUrl;
+    @TableField("output_size")
     private Long outputSize;
+    @TableField("output_hash")
     private String outputHash;
+    @TableField("watermarked")
     private Integer watermarked;
+    @TableField("watermark_text")
     private String watermarkText;
+    @TableField("duration_ms")
     private Integer durationMs;
+    @TableField("status")
     private String status;
+    @TableField("error_msg")
     private String errorMsg;
 
     @TableField(fill = FieldFill.INSERT)

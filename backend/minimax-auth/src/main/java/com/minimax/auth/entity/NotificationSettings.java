@@ -28,18 +28,23 @@ public class NotificationSettings {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    @TableField("user_id")
     private Long userId;
 
     /** 渠道列表 (CSV) */
+    @TableField("channels")
     private String channels;
 
     /** 事件列表 (CSV) */
+    @TableField("events")
     private String events;
 
     /** 免打扰开始 (HH:mm) */
+    @TableField("quiet_start")
     private String quietStart;
 
     /** 免打扰结束 (HH:mm) */
+    @TableField("quiet_end")
     private String quietEnd;
 
     @TableField(fill = FieldFill.INSERT)

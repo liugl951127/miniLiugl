@@ -1,6 +1,7 @@
 package com.minimax.ai.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -28,19 +29,28 @@ public class AiIntentKeyword {
     @TableId(type = IdType.AUTO)
     private Long id;
     /** 意图 */
+    @TableField("intent")
     private String intent;
     /** 关键词或正则 */
+    @TableField("keyword")
     private String keyword;
     /** 权重 (1-10) */
+    @TableField("weight")
     private Integer weight;
     /** 是否正则 0/1 */
+    @TableField("is_regex")
     private Integer isRegex;
     /** 启用 0/1 */
+    @TableField("enabled")
     private Integer enabled;
     /** 语言 (zh/en) */
+    @TableField("language")
     private String language;
     /** 备注 */
+    @TableField("remark")
     private String remark;
+    @TableField("created_at")
     private LocalDateTime createdAt;
+    @TableField("updated_at")
     private LocalDateTime updatedAt;
 }

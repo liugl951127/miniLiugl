@@ -1,6 +1,7 @@
 package com.minimax.model.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Data;
 
 import java.io.Serial;
@@ -17,12 +18,19 @@ public class ModelQuota implements Serializable {
 
     @TableId(type = IdType.AUTO)
     private Long id;
+    @TableField("user_id")
     private Long userId;
+    @TableField("model_id")
     private Long modelId;
+    @TableField("quota_date")
     private LocalDate quotaDate;
+    @TableField("used_tokens")
     private Long usedTokens;
+    @TableField("used_requests")
     private Integer usedRequests;
+    @TableField("limit_tokens")
     private Long limitTokens;
+    @TableField("limit_requests")
     private Integer limitRequests;
 
     @TableField(fill = FieldFill.INSERT)

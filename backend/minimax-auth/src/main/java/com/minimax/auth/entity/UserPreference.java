@@ -1,6 +1,7 @@
 package com.minimax.auth.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -17,6 +18,7 @@ public class UserPreference {
     private Long id;
 
     /** 用户 ID（唯一约束） */
+    @TableField("user_id")
     private Long userId;
 
     /** 主题: light | dark */

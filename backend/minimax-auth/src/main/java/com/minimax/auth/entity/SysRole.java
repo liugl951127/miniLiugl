@@ -1,6 +1,7 @@
 package com.minimax.auth.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Data;
 
 import java.io.Serial;
@@ -16,10 +17,15 @@ public class SysRole implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    @TableField("code")
     private String code;
+    @TableField("name")
     private String name;
+    @TableField("description")
     private String description;
+    @TableField("sort")
     private Integer sort;
+    @TableField("enabled")
     private Integer enabled;
 
     @TableField(fill = FieldFill.INSERT)

@@ -85,11 +85,7 @@
         </el-form-item>
         <el-form-item label="类型">
           <el-select v-model="channelDialog.form.type">
-            <el-option label="钉钉" value="dingtalk" />
-            <el-option label="飞书" value="feishu" />
-            <el-option label="企业微信" value="wechat_work" />
-            <el-option label="邮件" value="email" />
-            <el-option label="Webhook" value="webhook" />
+            <el-option v-for="c in alertChannels" :key="c.value" :label="c.label" :value="c.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="配置">
@@ -146,6 +142,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { monitorApi } from '@/api/monitor'
+import { dictApi } from '@/api/dict'
 
 const activeTab = ref('channels')
 
@@ -153,6 +150,10 @@ const loadingChannels = ref(false)
 const loadingRules = ref(false)
 
 const channels = ref([])
+
+// V8.0.3: 字典下拉
+const alertChannels = ref([])
+dictApi.alertChannels().then(r => alertChannels.value = r.data?.data || r.data || []).catch(() => {})
 const rules = ref([])
 
 const channelDialog = reactive({ visible: false, id: null, form: { name: '', type: 'dingtalk', config: '' } })

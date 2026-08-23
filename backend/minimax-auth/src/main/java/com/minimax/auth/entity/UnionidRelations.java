@@ -1,6 +1,7 @@
 package com.minimax.auth.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -22,15 +23,21 @@ public class UnionidRelations {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    @TableField("user_id")
     private Long userId;
 
+    @TableField("unionid")
     private String unionid;
 
+    @TableField("platform")
     private String platform;
 
+    @TableField("first_seen_at")
     private LocalDateTime firstSeenAt;
 
+    @TableField("last_seen_at")
     private LocalDateTime lastSeenAt;
 
+    @TableField("binding_count")
     private Integer bindingCount;
 }

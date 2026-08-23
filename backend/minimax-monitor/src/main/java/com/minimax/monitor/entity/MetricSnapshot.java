@@ -1,6 +1,7 @@
 package com.minimax.monitor.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Data;
 
 import java.io.Serial;
@@ -17,9 +18,13 @@ public class MetricSnapshot implements Serializable {
 
     @TableId(type = IdType.AUTO)
     private Long id;
+    @TableField("service")
     private String service;
+    @TableField("metric_name")
     private String metricName;
+    @TableField("metric_value")
     private BigDecimal metricValue;
+    @TableField("tags")
     private String tags;
 
     @TableField(fill = FieldFill.INSERT)

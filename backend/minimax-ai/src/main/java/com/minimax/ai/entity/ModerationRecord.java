@@ -1,6 +1,7 @@
 package com.minimax.ai.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -34,18 +35,31 @@ public class ModerationRecord {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    @TableField("trace_id")
     private String traceId;
+    @TableField("user_id")
     private Long userId;
+    @TableField("username")
     private String username;
+    @TableField("content_type")
     private String contentType;
+    @TableField("content_hash")
     private String contentHash;
+    @TableField("content_size")
     private Long contentSize;
+    @TableField("content_url")
     private String contentUrl;
+    @TableField("moderation_status")
     private String moderationStatus;
+    @TableField("risk_level")
     private String riskLevel;
+    @TableField("risk_labels")
     private String riskLabels;
+    @TableField("risk_score")
     private BigDecimal riskScore;
+    @TableField("moderator")
     private String moderator;
+    @TableField("rejection_reason")
     private String rejectionReason;
 
     @TableField(fill = FieldFill.INSERT)

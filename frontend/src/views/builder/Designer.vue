@@ -102,11 +102,7 @@
               </el-form-item>
               <el-form-item label="角色">
                 <el-select v-model="currentNode.role" style="width:100%">
-                  <el-option label="客服" value="客服" />
-                  <el-option label="顾问" value="顾问" />
-                  <el-option label="质检" value="质检" />
-                  <el-option label="调度" value="调度" />
-                  <el-option label="专业领域" value="专业领域" />
+                  <el-option v-for="r in agentRoles" :key="r.value" :label="r.label" :value="r.value" />
                 </el-select>
               </el-form-item>
               <el-form-item label="模型">
@@ -159,9 +155,7 @@
         <el-form-item label="名称"><el-input v-model="newAgent.name" /></el-form-item>
         <el-form-item label="角色">
           <el-select v-model="newAgent.role" style="width:100%">
-            <el-option label="客服" value="客服" />
-            <el-option label="顾问" value="顾问" />
-            <el-option label="质检" value="质检" />
+            <el-option v-for="r in agentRoles" :key="r.value" :label="r.label" :value="r.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="Emoji"><el-input v-model="newAgent.emoji" placeholder="🤖" /></el-form-item>
@@ -179,6 +173,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Plus, Search, Rank, ZoomIn, ZoomOut, RefreshLeft, ArrowRight } from '@element-plus/icons-vue'
+import { dictApi } from '@/api/dict'
 
 const router = useRouter()
 const canvasRef = ref(null)
@@ -186,6 +181,10 @@ const canvasW = ref(800)
 const canvasH = ref(500)
 const zoom = ref(1)
 const selectedNode = ref(null)
+
+// V8.0.3: 字典下拉
+const agentRoles = ref([])
+dictApi.agentRoles().then(r => agentRoles.value = r.data?.data || r.data || []).catch(() => {})
 const dragging = ref(null)
 const dragOffset = reactive({ x: 0, y: 0 })
 const showAddAgent = ref(false)

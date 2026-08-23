@@ -1,6 +1,7 @@
 package com.minimax.ai.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -33,16 +34,22 @@ public class AiChatMessage {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    @TableField("session_id")
     private String sessionId;
 
+    @TableField("role")
     private String role;
 
+    @TableField("content")
     private String content;
 
+    @TableField("tool_code")
     private String toolCode;
 
+    @TableField("tool_input")
     private String toolInput;
 
+    @TableField("tool_output")
     private String toolOutput;
 
     @TableField(fill = FieldFill.INSERT)

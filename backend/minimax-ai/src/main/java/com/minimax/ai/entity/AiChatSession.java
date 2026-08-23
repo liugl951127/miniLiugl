@@ -1,6 +1,7 @@
 package com.minimax.ai.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -33,12 +34,16 @@ public class AiChatSession {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    @TableField("session_id")
     private String sessionId;
 
+    @TableField("user_id")
     private Long userId;
 
+    @TableField("username")
     private String username;
 
+    @TableField("title")
     private String title;
 
     @TableField(fill = FieldFill.INSERT)
@@ -55,43 +60,52 @@ public class AiChatSession {
     /**
      * V6.8.1: 关联意图 (来自 IntentService.RecognitionResult)
      */
+    @TableField("intent")
     private String intent;
 
     /**
      * V6.8.1: 意图置信度
      */
+    @TableField("confidence")
     private Double confidence;
 
     /**
      * V6.8.1: 备选意图列表 (JSON 格式)
      */
+    @TableField("alternatives")
     private String alternatives;
 
     /**
      * V6.8.1: 关联模型
      */
+    @TableField("model")
     private String model;
 
     /**
      * V7.0: 关联知识库 ID (RAG 用)
      */
+    @TableField("kb_id")
     private Long kbId;
 
     /**
      * V7.0: 知识库名称 (冗余展示用)
      */
+    @TableField("kb_name")
     private String kbName;
 
     /**
      * V7.0: 关联 Agent ID (委托执行)
      */
+    @TableField("agent_id")
     private String agentId;
 
     /**
      * V7.0: Agent 名称 (冗余展示用)
      */
+    @TableField("agent_name")
     private String agentName;
 
     @TableLogic
+    @TableField("deleted")
     private Integer deleted;
 }

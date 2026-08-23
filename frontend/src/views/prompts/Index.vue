@@ -1,17 +1,13 @@
 <!-- @file prompts/Index.vue - Prompt 模板中心 V6.8.12 -->
 <template>
-  <div class="page-card" v-loading="loading && firstLoad">
-    <div class="page-header">
-      <h2>💬 Prompt 模板中心</h2>
-      <div style="display:flex;gap:8px">
-        <el-button size="small" @click="loadPrompts" :loading="loading">
-          <el-icon><Refresh /></el-icon>刷新
-        </el-button>
-        <el-button size="small" type="primary" @click="openCreate">
-          <el-icon><Plus /></el-icon>新建模板
-        </el-button>
-      </div>
-    </div>
+  <PageStandard
+    title="💬 Prompt 模板中心"
+    subtitle="预制提示词 · 多场景模板 · 变量插值"
+  >
+    <template #actions>
+      <el-button size="small" @click="loadPrompts" :loading="loading">刷新</el-button>
+      <el-button size="small" type="primary" @click="openCreate">新建模板</el-button>
+    </template>
 
     <el-row :gutter="12">
       <!-- 左侧: 列表 -->
@@ -141,9 +137,7 @@
         </el-form-item>
         <el-form-item label="模型">
           <el-select v-model="form.model" style="width:100%" clearable placeholder="不限制">
-            <el-option label="GPT-4o" value="gpt-4o" />
-            <el-option label="Claude-3.5" value="claude-3.5" />
-            <el-option label="DeepSeek" value="deepseek" />
+            <el-option v-for="m in dictModels" :key="m.value" :label="m.label" :value="m.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="是否公开">
@@ -156,19 +150,25 @@
         <el-button type="primary" :loading="saving" @click="savePrompt">保存</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageStandard>
 </template>
 
 <script setup>
+import PageStandard from '@/components/PageStandard.vue'
 import { ref, computed, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { promptApi } from '@/api/prompt'
+import { dictApi } from '@/api/dict'
 import { Plus, Refresh, Search, CopyDocument, DocumentCopy } from '@element-plus/icons-vue'
 import { debounce } from '@/utils/debounce'
 
 const prompts = ref([])
 const loading = ref(false)
 const firstLoad = ref(true)
+
+// V8.0.3: 字典下拉
+const dictModels = ref([])
+dictApi.models().then(r => dictModels.value = r.data?.data || r.data || []).catch(() => {})
 const formVisible = ref(false)
 const saving = ref(false)
 const formRef = ref(null)
@@ -380,8 +380,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="scss" scoped>
-.page-card { background: #fff; border-radius: 8px; padding: 20px; }
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; h2 { margin: 0; font-size: 16px; } }
+
 .template-preview {
   background: #1e293b; color: #a5f3fc; padding: 12px; border-radius: 6px;
   font-size: 13px; font-family: monospace; max-height: 200px; overflow: auto;

@@ -1,6 +1,7 @@
 package com.minimax.ai.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -26,21 +27,27 @@ public class LogEntry {
     private Long id;
 
     /** 任期号 (从 1 开始, 每次选举增 1) */
+    @TableField("term")
     private Long term;
 
     /** 日志索引 (从 1 开始, 严格递增) */
+    @TableField("log_index")
     private Long logIndex;
 
     /** 节点 ID (产生该日志的节点, 唯一) */
+    @TableField("node_id")
     private String nodeId;
 
     /** 业务命令 (JSON) */
+    @TableField("command")
     private String command;
 
     /** 是否已提交 */
+    @TableField("committed")
     private Boolean committed;
 
     /** 提交时间 */
+    @TableField("committed_at")
     private LocalDateTime committedAt;
 
     /** 创建时间 */

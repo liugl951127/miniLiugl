@@ -125,14 +125,7 @@
         </el-form-item>
         <el-form-item label="所属行业">
           <el-select v-model="trainedForm.industry" style="width:100%">
-            <el-option label="通用" value="通用" />
-            <el-option label="法律" value="法律" />
-            <el-option label="医疗" value="医疗" />
-            <el-option label="金融" value="金融" />
-            <el-option label="代码" value="代码" />
-            <el-option label="客服" value="客服" />
-            <el-option label="教育" value="教育" />
-            <el-option label="其他" value="其他" />
+            <el-option v-for="i in industries" :key="i.value" :label="i.label" :value="i.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="支持视觉">
@@ -161,12 +154,17 @@ import { ref, computed, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { trainedModelApi, trainingApi } from '@/api/training'
+import { dictApi } from '@/api/dict'
 
 const pageLoading = ref(false)
 const trainedModels = ref([])
 const trainingRecords = ref([])
 const trainedLoading = ref(false)
 const trainedSearch = ref('')
+
+// V8.0.3: 字典下拉
+const industries = ref([])
+dictApi.industries().then(r => industries.value = r.data?.data || r.data || []).catch(() => {})
 
 const filteredTrainedModels = computed(() => {
   const k = trainedSearch.value

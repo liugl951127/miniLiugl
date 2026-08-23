@@ -177,13 +177,17 @@ async function sendMessage() {
   scrollToBottom()
   streaming.value = true
   try {
-    const res = await sendMessageStream({
-      sessionId: activeSessionId.value,
-      content: userMsg.content,
-      model: currentModel.value,
-      agentId: currentAgentId.value,
-      attachments: userMsg.attachments
-    })
+    // V8.0.3 fix: sendMessageStream 签名是 (sessionId, body, opts),
+    // 之前调错了 (整对象当 sessionId 传), 现在拆开
+    const res = await sendMessageStream(
+      activeSessionId.value,
+      {
+        content: userMsg.content,
+        model: currentModel.value,
+        agentId: currentAgentId.value,
+        attachments: userMsg.attachments
+      }
+    )
     // 简化处理: 流式响应最终合并
     messages.value.push({ role: 'assistant', content: res.data?.text || res.data || '...', model: currentModel.value })
   } catch (e) {

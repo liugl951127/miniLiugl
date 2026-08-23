@@ -1,6 +1,7 @@
 package com.minimax.auth.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -25,18 +26,23 @@ public class Notification implements Serializable {
     private Long id;
 
     /** 接收用户 ID */
+    @TableField("user_id")
     private Long userId;
 
     /** 通知类型：SESSION_CREATED / AGENT_COMPLETE / DOC_APPROVED ... */
+    @TableField("type")
     private String type;
 
     /** 通知标题 */
+    @TableField("title")
     private String title;
 
     /** 通知内容 */
+    @TableField("content")
     private String content;
 
     /** 是否已读：0-未读 1-已读 */
+    @TableField("is_read")
     private Integer isRead;
 
     @TableField(fill = FieldFill.INSERT)

@@ -1,6 +1,7 @@
 package com.minimax.ai.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -18,14 +19,19 @@ public class KbPermission {
     private Long id;
 
     /** 关联知识库 kbId */
+    @TableField("kb_id")
     private String kbId;
     /** 主体类型: USER / ROLE / ORG */
+    @TableField("subject_type")
     private String subjectType;
     /** 主体 ID (userId / roleId / orgId) */
+    @TableField("subject_id")
     private Long subjectId;
     /** 权限: READ / WRITE / ADMIN */
+    @TableField("permission")
     private String permission;
     /** 授权人 */
+    @TableField("grant_by")
     private Long grantBy;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

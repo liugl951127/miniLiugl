@@ -1,6 +1,7 @@
 package com.minimax.deployer.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -29,30 +30,39 @@ public class AgentTemplate {
     private Long id;
 
     /** 模板 code (如: edu-customer-service) */
+    @TableField("code")
     private String code;
 
     /** 模板名 */
+    @TableField("name")
     private String name;
 
     /** 行业分类 */
+    @TableField("industry")
     private String industry;
 
     /** 描述 */
+    @TableField("description")
     private String description;
 
     /** Emoji */
+    @TableField("emoji")
     private String emoji;
 
     /** 主题色 (CSS gradient) */
+    @TableField("color")
     private String color;
 
     /** 智能体列表 JSON */
+    @TableField("agents")
     private String agents;
 
     /** 工作流 JSON (节点 + 连线) */
+    @TableField("workflow")
     private String workflow;
 
     /** 工具列表 */
+    @TableField("tools")
     private String tools;
 
     /** 推荐模型 */

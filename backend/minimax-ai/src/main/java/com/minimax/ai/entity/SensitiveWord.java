@@ -1,6 +1,7 @@
 package com.minimax.ai.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -33,10 +34,15 @@ public class SensitiveWord {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    @TableField("word")
     private String word;
+    @TableField("category")
     private String category;
+    @TableField("level")
     private String level;
+    @TableField("action")
     private String action;
+    @TableField("enabled")
     private Integer enabled;
 
     @TableField(fill = FieldFill.INSERT)

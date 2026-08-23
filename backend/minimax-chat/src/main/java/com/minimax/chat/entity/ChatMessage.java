@@ -1,6 +1,7 @@
 package com.minimax.chat.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Data;
 
 import java.io.Serial;
@@ -17,13 +18,20 @@ public class ChatMessage implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    @TableField("session_id")
     private Long sessionId;
+    @TableField("user_id")
     private Long userId;
     /** user / assistant / system / tool */
+    @TableField("role")
     private String role;
+    @TableField("content")
     private String content;
+    @TableField("tokens")
     private Integer tokens;
+    @TableField("finish_reason")
     private String finishReason;
+    @TableField("error_message")
     private String errorMessage;
 
     @TableField(fill = FieldFill.INSERT)

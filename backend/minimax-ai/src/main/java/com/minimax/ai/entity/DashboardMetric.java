@@ -1,6 +1,7 @@
 package com.minimax.ai.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -18,12 +19,16 @@ public class DashboardMetric {
     private Long id;
 
     /** 指标名 (e.g. "user.total", "ai.call.count", "ai.tool.usage") */
+    @TableField("metric")
     private String metric;
     /** 维度 (e.g. "global", "user:123", "tool:ppt.gen") */
+    @TableField("dimension")
     private String dimension;
     /** 数值 */
+    @TableField("value")
     private Double value;
     /** 额外标签 (JSON) */
+    @TableField("tags")
     private String tags;
     /** 快照时间 (聚合时间) */
     @TableField(fill = FieldFill.INSERT)

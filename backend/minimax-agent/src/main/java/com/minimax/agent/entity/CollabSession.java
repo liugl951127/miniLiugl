@@ -1,6 +1,7 @@
 package com.minimax.agent.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Data;
 
 import java.io.Serial;
@@ -16,10 +17,15 @@ public class CollabSession implements Serializable {
 
     @TableId(type = IdType.AUTO)
     private Long id;
+    @TableField("session_id")
     private String sessionId;
+    @TableField("owner_id")
     private Long ownerId;
+    @TableField("title")
     private String title;
+    @TableField("max_users")
     private Integer maxUsers;
+    @TableField("status")
     private String status;
 
     @TableField(fill = FieldFill.INSERT)

@@ -30,18 +30,23 @@ public class TrainedModel {
     private Long id;
 
     /** 模型唯一编码 (前端引用, e.g. mmx-mini-v1) */
+    @TableField("code")
     private String code;
 
     /** 显示名称 */
+    @TableField("name")
     private String name;
 
     /** 准确率 0-1 (e.g. 0.872 = 87.2%) */
+    @TableField("accuracy")
     private BigDecimal accuracy;
 
     /** ENABLED / DISABLED / DRAFT */
+    @TableField("status")
     private String status;
 
     /** 发布时间 (只有发布过的模型才有) */
+    @TableField("published_at")
     private LocalDateTime publishedAt;
 
     @TableField(fill = FieldFill.INSERT)

@@ -1,6 +1,7 @@
 package com.minimax.ai.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -27,36 +28,46 @@ public class AiVotingRecord {
     private Long id;
 
     /** 会话ID */
+    @TableField("session_id")
     private String sessionId;
 
     /** 用户ID */
+    @TableField("user_id")
     private Long userId;
 
     /** 用户名 */
+    @TableField("username")
     private String username;
 
     /** 投票问题文本 */
+    @TableField("question")
     private String question;
 
     /** 最终答案 (A/B/C/D) */
+    @TableField("final_answer")
     private String finalAnswer;
 
     /** 投票策略 (majority/weighted/random) */
+    @TableField("strategy")
     private String strategy;
 
     /** 参与模型数 */
+    @TableField("total_votes")
     private Integer totalVotes;
 
     /** 一致率 (0.0000-1.0000) */
+    @TableField("agreement_rate")
     private BigDecimal agreementRate;
 
     /**
      * 各模型投票 JSON
      * 例: [{"model":"gpt-4","answer":"A","confidence":0.92}]
      */
+    @TableField("model_votes")
     private String modelVotes;
 
     /** 投票耗时ms */
+    @TableField("duration_ms")
     private Integer durationMs;
 
     @TableField(fill = FieldFill.INSERT)

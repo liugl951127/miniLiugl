@@ -30,20 +30,28 @@ public class CollabInvite {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    @TableField("room_id")
     private Long roomId;
+    @TableField("inviter_id")
     private Long inviterId;
+    @TableField("invitee_email")
     private String inviteeEmail;
 
     /** 已注册用户可填; 邮箱邀请时为空 */
+    @TableField("invitee_user_id")
     private Long inviteeUserId;
 
     /** 邀请唯一 token, 用于接受时校验 */
+    @TableField("token")
     private String token;
 
     /** PENDING / ACCEPTED / EXPIRED */
+    @TableField("status")
     private String status;
 
+    @TableField("expires_at")
     private LocalDateTime expiresAt;
+    @TableField("accepted_at")
     private LocalDateTime acceptedAt;
 
     @TableField(fill = FieldFill.INSERT)
