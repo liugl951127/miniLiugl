@@ -192,5 +192,18 @@ export const multimodalApi = {
     const fd = new FormData()
     fd.append('file', file)
     return http.post('/multimodal/analyze-video', fd)
+  },
+
+  /** 文本 embedding (BGE-zh) */
+  embedText(texts) {
+    return http.post('/multimodal/embed-text', { texts: Array.isArray(texts) ? texts : [texts] })
+  },
+
+  /** Qwen2.5 对话 */
+  chatQwen(prompt, system = null, maxTokens = null) {
+    const body = { prompt }
+    if (system) body.system = system
+    if (maxTokens) body.maxTokens = maxTokens
+    return http.post('/multimodal/chat-qwen', body)
   }
 }

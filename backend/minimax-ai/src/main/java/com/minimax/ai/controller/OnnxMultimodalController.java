@@ -2,6 +2,8 @@ package com.minimax.ai.controller;
 
 import com.minimax.ai.multimodal.audio.OnnxSileroVadService;
 import com.minimax.ai.multimodal.video.OnnxVideoAnalyzerService;
+import com.minimax.ai.embedding.onnx.OnnxBgeEmbeddingService;
+import com.minimax.ai.llm.onnx.OnnxQwenChatService;
 import com.minimax.ai.multimodal.audio.OnnxWhisperService;
 import com.minimax.ai.multimodal.audio.WavReader;
 import com.minimax.ai.multimodal.onnx.OnnxClipService;
@@ -45,6 +47,8 @@ public class OnnxMultimodalController {
     private final OnnxWhisperService whisper;
     private final OnnxSileroVadService vad;
     private final OnnxVideoAnalyzerService video;
+    private final OnnxBgeEmbeddingService bge;
+    private final OnnxQwenChatService qwen;
 
     // ─── 1. 状态 ──────────────────────────────────────────
 
@@ -81,7 +85,19 @@ public class OnnxMultimodalController {
             "available", video.isAvailable(),
             "requiresFfmpeg", true
         ));
-        m.put("version", "V7.3");
+        m.put("bge", Map.of(
+            "enabled", true,
+            "ready", bge.isReady(),
+            "path", bge.getModelPath(),
+            "dim", bge.isReady() ? bge.getEmbeddingDim() : 0
+        ));
+        m.put("qwen", Map.of(
+            "enabled", true,
+            "ready", qwen.isReady(),
+            "path", qwen.getModelPath(),
+            "vocab", qwen.getVocabSize()
+        ));
+        m.put("version", "V7.4");
         return ResponseEntity.ok(Map.of("code", 0, "data", m));
     }
 
@@ -279,6 +295,63 @@ public class OnnxMultimodalController {
             ));
         } catch (Exception e) {
             log.error("analyze-video 失败", e);
+            return ResponseEntity.ok(Map.of("code", 500, "message", e.getMessage()));
+        }
+    }
+
+    // ─── 10. 文本 Embedding (BGE-zh) ───────────────────────
+
+    @PostMapping("/embed-text")
+    public ResponseEntity<Map<String, Object>> embedText(@RequestBody Map<String, Object> body) {
+        try {
+            Object input = body.get("texts");
+            String[] texts;
+            if (input instanceof List) {
+                List<?> list = (List<?>) input;
+                texts = list.stream().map(Object::toString).toArray(String[]::new);
+            } else if (input instanceof String) {
+                texts = new String[]{(String) input};
+            } else {
+                return ResponseEntity.badRequest().body(Map.of("code", 400, "message", "texts 字段缺失或格式错"));
+            }
+            if (!bge.isReady()) {
+                return ResponseEntity.ok(Map.of("code", 1001,
+                    "message", "BGE 模型未就绪, 请先执行 scripts/download-models.sh bge",
+                    "data", Map.of()));
+            }
+            float[][] embs = bge.encodeBatch(texts);
+            List<Map<String, Object>> data = new ArrayList<>(texts.length);
+            for (int i = 0; i < embs.length; i++) {
+                data.add(Map.of("index", i, "text", texts[i], "dim", embs[i].length, "vector", embs[i]));
+            }
+            return ResponseEntity.ok(Map.of("code", 0, "data", data));
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("code", 500, "message", e.getMessage()));
+        }
+    }
+
+    // ─── 11. Qwen2.5 对话 ────────────────────────────────
+
+    @PostMapping("/chat-qwen")
+    public ResponseEntity<Map<String, Object>> chatQwen(@RequestBody Map<String, Object> body) {
+        try {
+            String prompt = (String) body.getOrDefault("prompt", "");
+            String system = (String) body.getOrDefault("system", null);
+            Integer maxTokens = (Integer) body.getOrDefault("maxTokens", null);
+            if (!qwen.isReady()) {
+                return ResponseEntity.ok(Map.of("code", 1001,
+                    "message", "Qwen2.5 模型未就绪, 请先执行 scripts/download-models.sh qwen",
+                    "data", Map.of()));
+            }
+            OnnxQwenChatService.ChatResult result = maxTokens != null
+                ? qwen.chat(prompt, system, maxTokens)
+                : qwen.chat(prompt, system);
+            return ResponseEntity.ok(Map.of(
+                "code", result.isSuccess() ? 0 : 500,
+                "data", result.toMap(),
+                "message", result.error()
+            ));
+        } catch (Exception e) {
             return ResponseEntity.ok(Map.of("code", 500, "message", e.getMessage()));
         }
     }

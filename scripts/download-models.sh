@@ -100,6 +100,43 @@ download_yolo() {
              "$yolo_dir/coco.yaml" || true
 }
 
+
+# ─── 6. BGE-small-zh (Embedding) ───────────────────────
+download_bge() {
+    log "=== BGE-small-zh-v1.5 (BAAI, 512d, 91MB) ==="
+    local bge_dir="$MODELS_DIR/bge-small-zh-v15"
+    mkdir -p "$bge_dir"
+
+    download "$HF_BASE/Xenova/bge-small-zh-v1.5/resolve/main/onnx/model.onnx" \
+             "$bge_dir/model.onnx" || true
+
+    # 配置和词表 (从 BAAI 官方仓)
+    for f in tokenizer.json tokenizer_config.json vocab.txt config.json special_tokens_map.json; do
+        download "https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/$f" \
+                 "$bge_dir/$f" || true
+    done
+}
+
+# ─── 7. Qwen2.5-0.5B-Instruct (LLM) ──────────────────
+download_qwen() {
+    log "=== Qwen2.5-0.5B-Instruct (int4, 488MB) ==="
+    local qwen_dir="$MODELS_DIR/qwen2.5-0.5b-instruct"
+    mkdir -p "$qwen_dir"
+
+    # int4 量化版 (优先)
+    download "$HF_BASE/onnx-community/Qwen2.5-0.5B-Instruct/resolve/main/onnx/model_quantized.onnx" \
+             "$qwen_dir/model_quantized.onnx" || \
+    download "$HF_BASE/onnx-community/Qwen2.5-0.5B-Instruct/resolve/main/onnx/model.onnx" \
+             "$qwen_dir/model.onnx" || true
+
+    # 配置
+    for f in tokenizer.json tokenizer_config.json config.json generation_config.json \
+              special_tokens_map.json merges.txt vocab.json; do
+        download "https://huggingface.co/onnx-community/Qwen2.5-0.5B-Instruct/resolve/main/$f" \
+                 "$qwen_dir/$f" || true
+    done
+}
+
 # ─── 主流程 ──────────────────────────────────────────────
 case "${1:-all}" in
     clip)     download_clip ;;
@@ -108,12 +145,17 @@ case "${1:-all}" in
     whisper)  download_whisper ;;
     vad)      download_vad ;;
     audio)    download_whisper; download_vad ;;
+    bge)      download_bge ;;
+    qwen)     download_qwen ;;
+    llm)      download_bge; download_qwen ;;
     all|"")
         download_clip
         download_resnet
         download_yolo
         download_whisper
         download_vad
+        download_bge
+        download_qwen
         ;;
     *)
         err "Unknown arg: $1"

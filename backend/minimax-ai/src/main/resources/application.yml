@@ -100,6 +100,15 @@ minimax:
       video-fps: ${ONNX_VIDEO_FPS:1.0}
       video-max-frames: ${ONNX_VIDEO_MAX_FRAMES:30}
       video-tmp-dir: ${ONNX_VIDEO_TMP_DIR:/tmp/minimax-video}
+      # V7.4: LLM 升级 (BGE embedding + Qwen2.5 chat)
+      bge-path: ${ONNX_BGE_PATH:./data/models/bge-small-zh-v15/model.onnx}
+      bge-vocab: ${ONNX_BGE_VOCAB:./data/models/bge-small-zh-v15/vocab.txt}
+      bge-max-len: ${ONNX_BGE_MAX_LEN:512}
+      qwen-path: ${ONNX_QWEN_PATH:./data/models/qwen2.5-0.5b-instruct/model_quantized.onnx}
+      qwen-tokenizer: ${ONNX_QWEN_TOKENIZER:./data/models/qwen2.5-0.5b-instruct/tokenizer.json}
+      qwen-config: ${ONNX_QWEN_CONFIG:./data/models/qwen2.5-0.5b-instruct/config.json}
+      qwen-max-tokens: ${ONNX_QWEN_MAX_TOKENS:512}
+      qwen-max-context: ${ONNX_QWEN_MAX_CTX:2048}
 
     # ── V3.5.15+: 4 模型加权投票权重 ──
     intent:

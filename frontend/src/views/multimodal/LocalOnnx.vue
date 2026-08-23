@@ -13,7 +13,7 @@
   <div class="mm-page">
     <header class="mm-header">
       <h1>🎨 本地多模态智能</h1>
-      <p class="sub">基于 ONNX Runtime 的本地图片/语音/视频智能 (V7.3 · ResNet50/YOLO/CLIP/Whisper/VAD/Video)</p>
+      <p class="sub">基于 ONNX Runtime 的本地图片/语音/视频/语言智能 (V7.4 · ResNet50/YOLO/CLIP/Whisper/VAD/Video/BGE/Qwen2.5)</p>
     </header>
 
     <!-- 模型状态卡 -->
@@ -334,6 +334,82 @@
           </div>
         </el-card>
       </el-tab-pane>
+
+      <!-- 7. BGE 文本 Embedding -->
+      <el-tab-pane label="文本 Embedding (BGE)" name="bge">
+        <el-card>
+          <el-form>
+            <el-form-item label="输入文本 (一行一条)">
+              <el-input
+                v-model="bgeInput"
+                type="textarea"
+                :rows="6"
+                placeholder="例如:&#10;今天天气真好&#10;人工智能改变世界&#10;深度学习是机器学习的一个分支"
+              />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" :loading="loading.bge" @click="runEmbed">计算 Embedding</el-button>
+            </el-form-item>
+          </el-form>
+
+          <div v-if="bgeResult" class="bge-result">
+            <h3>Embedding 结果 ({{ bgeResult.length }} 个, {{ bgeDim }} 维)</h3>
+            <el-table :data="bgeResult" stripe>
+              <el-table-column prop="index" label="#" width="60" />
+              <el-table-column prop="text" label="文本" />
+              <el-table-column label="向量 (前 10 维)">
+                <template #default="{ row }">
+                  <code class="vec">[{{ row.vector.slice(0, 10).map(v => v.toFixed(3)).join(', ') }}...]</code>
+                </template>
+              </el-table-column>
+              <el-table-column label="范数">
+                <template #default="{ row }">
+                  {{ Math.sqrt(row.vector.reduce((s, v) => s + v * v, 0)).toFixed(3) }}
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </el-card>
+      </el-tab-pane>
+
+      <!-- 8. Qwen2.5 对话 -->
+      <el-tab-pane label="Qwen2.5 对话" name="qwen">
+        <el-card>
+          <el-form>
+            <el-form-item label="系统 Prompt (可选)">
+              <el-input v-model="qwenSystem" placeholder="你是 MiniMax 智能助手, 简洁专业地回答" />
+            </el-form-item>
+            <el-form-item label="用户输入">
+              <el-input
+                v-model="qwenInput"
+                type="textarea"
+                :rows="3"
+                placeholder="例如: 介绍一下你自己"
+              />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" :loading="loading.qwen" @click="runChat">发送</el-button>
+            </el-form-item>
+          </el-form>
+
+          <div v-if="qwenResult" class="qwen-result">
+            <h3>回复 <el-tag size="small">{{ qwenResult.costMs }}ms</el-tag> <el-tag size="small" type="info">{{ qwenResult.length }} 字符</el-tag></h3>
+            <el-input v-model="qwenResult.text" type="textarea" :rows="6" readonly />
+          </div>
+          <el-alert
+            v-if="!models.find(m => m.key === 'qwen').ready"
+            title="Qwen2.5 模型未就绪"
+            type="info"
+            :closable="false"
+            show-icon
+            style="margin-top: 16px"
+          >
+            <template #default>
+              请先执行 <code>./scripts/download-models.sh qwen</code> 下载 Qwen2.5-0.5B-Instruct int4 量化版 (488MB).
+            </template>
+          </el-alert>
+        </el-card>
+      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
@@ -347,7 +423,7 @@ import { multimodalApi } from '@/api/multimodal'
 const active = ref('classify')
 const currentFile = ref(null)
 const previewUrl = ref('')
-const loading = reactive({ classify: false, detect: false, clip: false, whisper: false, vad: false, video: false })
+const loading = reactive({ classify: false, detect: false, clip: false, whisper: false, vad: false, video: false, bge: false, qwen: false })
 
 const models = ref([
   { key: 'resnet50', name: 'ResNet50 分类', icon: '🏷️', ready: false, path: '' },
@@ -355,7 +431,9 @@ const models = ref([
   { key: 'yolo',     name: 'YOLOv8 检测', icon: '🎯', ready: false, path: '' },
   { key: 'whisper',  name: 'Whisper STT', icon: '🎙️', ready: false, path: '' },
   { key: 'vad',      name: 'Silero VAD', icon: '🔊', ready: false, path: '' },
-  { key: 'video',    name: '视频智能',  icon: '🎬', ready: false, path: '' }
+  { key: 'video',    name: '视频智能',  icon: '🎬', ready: false, path: '' },
+  { key: 'bge',      name: 'BGE 中文 Embedding', icon: '📐', ready: false, path: '' },
+  { key: 'qwen',     name: 'Qwen2.5 对话',     icon: '💬', ready: false, path: '' }
 ])
 
 const classifications = ref([])
@@ -374,6 +452,13 @@ const vadResult = ref(null)
 const currentVideo = ref(null)
 const videoUrl = ref('')
 const videoResult = ref(null)
+// BGE + Qwen
+const bgeInput = ref('今天天气真好\n人工智能改变世界\n深度学习是机器学习的一个分支')
+const bgeResult = ref(null)
+const bgeDim = ref(0)
+const qwenSystem = ref('你是 MiniMax 智能助手, 简洁专业地回答')
+const qwenInput = ref('用一句话介绍一下你自己')
+const qwenResult = ref(null)
 
 const detectImg = ref(null)
 const detectCanvas = ref(null)
@@ -394,7 +479,11 @@ async function loadStatus() {
       models.value[4].ready = d.vad.ready
       models.value[4].path = d.vad.path
       models.value[5].ready = d.video.available
-      models.value[5].path = '复用 ResNet50 + Whisper'  // V7.3
+      models.value[5].path = '复用 ResNet50 + Whisper'
+      models.value[6].ready = d.bge.ready
+      models.value[6].path = d.bge.path
+      models.value[7].ready = d.qwen.ready
+      models.value[7].path = d.qwen.path  // V7.4
     }
   } catch (e) {
     console.error('loadStatus', e)
@@ -577,6 +666,48 @@ async function runAnalyzeVideo() {
   }
 }
 
+async function runEmbed() {
+  if (!bgeInput.value.trim()) return ElMessage.warning('请输入文本')
+  const texts = bgeInput.value.split('\n').map(s => s.trim()).filter(Boolean)
+  if (!texts.length) return ElMessage.warning('请输入有效文本')
+  loading.bge = true
+  try {
+    const res = await multimodalApi.embedText(texts)
+    if (res.code === 0) {
+      bgeResult.value = res.data
+      bgeDim.value = res.data[0]?.dim || 0
+    } else if (res.code === 1001) {
+      ElMessage.warning(res.message)
+    } else {
+      ElMessage.error(res.message || '计算失败')
+    }
+  } catch (e) {
+    ElMessage.error('计算失败: ' + (e.message || ''))
+  } finally {
+    loading.bge = false
+  }
+}
+
+async function runChat() {
+  if (!qwenInput.value.trim()) return ElMessage.warning('请输入内容')
+  loading.qwen = true
+  try {
+    const res = await multimodalApi.chatQwen(qwenInput.value, qwenSystem.value || null)
+    if (res.code === 0) {
+      qwenResult.value = res.data
+      if (!res.data.text) ElMessage.info('生成内容为空')
+    } else if (res.code === 1001) {
+      ElMessage.warning(res.message)
+    } else {
+      ElMessage.error(res.message || '对话失败')
+    }
+  } catch (e) {
+    ElMessage.error('对话失败: ' + (e.message || ''))
+  } finally {
+    loading.qwen = false
+  }
+}
+
 onMounted(loadStatus)
 </script>
 
@@ -616,4 +747,10 @@ onMounted(loadStatus)
 .timeline-block .cn { font-weight: 600; color: #1e293b; }
 .timeline-block .en { color: #64748b; font-size: 0.9em; }
 .transcript-block { margin-top: 16px; }
+
+.bge-result { margin-top: 24px; }
+.bge-result h3 { margin: 0 0 12px; color: #1e293b; }
+.bge-result .vec { font-size: 0.8em; color: #475569; }
+.qwen-result { margin-top: 24px; }
+.qwen-result h3 { margin: 0 0 12px; color: #1e293b; }
 </style>
