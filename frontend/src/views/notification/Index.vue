@@ -1,20 +1,17 @@
 <!-- @file notification/Index.vue - 通知中心 V6.8.12 -->
 <template>
-  <div class="page-card">
-    <div class="page-header">
-      <h2>🔔 通知中心</h2>
-      <div style="display:flex;gap:8px">
-        <el-badge :value="unreadCount" :hidden="!unreadCount">
-          <el-button size="small" :loading="markingAll" :disabled="!unreadCount" @click="doMarkAllRead">全部已读</el-button>
-        </el-badge>
-        <el-button size="small" :loading="loading" @click="loadNotifications">
-          <el-icon><Refresh /></el-icon>刷新
-        </el-button>
-        <el-button size="small" link type="primary" @click="openSettingsDialog">
-          <el-icon><Setting /></el-icon>设置
-        </el-button>
-      </div>
-    </div>
+  <PageStandard title="🔔 通知中心" subtitle="系统消息 · 告警 · 任务通知">
+    <template #actions>
+      <el-badge :value="unreadCount" :hidden="!unreadCount">
+        <el-button size="small" :loading="markingAll" :disabled="!unreadCount" @click="doMarkAllRead">全部已读</el-button>
+      </el-badge>
+      <el-button size="small" :loading="loading" @click="loadNotifications">
+        <el-icon><Refresh /></el-icon>刷新
+      </el-button>
+      <el-button size="small" link type="primary" @click="openSettingsDialog">
+        <el-icon><Setting /></el-icon>设置
+      </el-button>
+    </template>
 
     <!-- 通知统计 -->
     <el-row :gutter="12" style="margin-bottom:16px" v-loading="loading">
@@ -149,12 +146,13 @@
         <el-button type="primary" @click="saveSettings">保存设置</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageStandard>
 </template>
 
 <script setup>
 import { ref, computed, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import PageStandard from '@/components/PageStandard.vue'
 import { listNotifications, markRead as markR, markAllRead, deleteNotification as deleteNotifApi, notificationApi } from '@/api/notification'
 import {
   Refresh, Setting, Bell,
@@ -306,8 +304,6 @@ onUnmounted(() => clearInterval(refreshTimer))
 </script>
 
 <style lang="scss" scoped>
-.page-card { background: #fff; border-radius: 8px; padding: 20px; }
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; h2 { margin: 0; font-size: 16px; } }
 .notif-list { display: flex; flex-direction: column; gap: 2px; }
 .notif-item {
   display: flex; align-items: flex-start; gap: 12px;

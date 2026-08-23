@@ -1,10 +1,9 @@
 <!-- @file function/Index.vue - Function 工具 V6.8.20 -->
 <template>
-  <div class="page-card">
-    <div class="page-header">
-      <h2>Function 工具</h2>
+  <PageStandard title="🛠️ Function 工具" subtitle="工具函数 · 自定义能力 · API 集成">
+    <template #actions>
       <el-button type="primary" @click="showCreateDialog = true"><el-icon><Plus /></el-icon>注册工具</el-button>
-    </div>
+    </template>
 
     <el-table :data="tools" v-loading="loading" stripe>
       <el-table-column prop="name" label="工具名" width="180" />
@@ -88,10 +87,11 @@
         <el-button type="primary" :loading="creating" @click="confirmCreate">创建</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageStandard>
 </template>
 
 <script setup>
+import PageStandard from '@/components/PageStandard.vue'
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { functionApi } from '@/api/function'
@@ -232,8 +232,6 @@ onMounted(loadTools)
 </script>
 
 <style lang="scss" scoped>
-.page-card { background: #fff; border-radius: 8px; padding: 20px; }
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; h2 { margin: 0; font-size: 16px; } }
 .result-label { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
 .result-code { background: #1e293b; color: #a5f3fc; padding: 10px; border-radius: 6px; font-size: 12px; max-height: 200px; overflow: auto; }
 </style>

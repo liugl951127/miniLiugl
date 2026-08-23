@@ -1,11 +1,5 @@
 <template>
-  <div class="auto-group-page">
-    <div class="page-header">
-      <div>
-        <h1>🤖 智能体群生成 <span class="badge">V3.4.2</span></h1>
-        <p class="sub">一句话描述任务 → AI 自动选模板 → 生成完整 Agent 协作群 → 可直接执行</p>
-      </div>
-    </div>
+  <PageStandard title="🤖 智能体群生成" subtitle="一句话描述任务 → AI 自动选模板 → 生成完整 Agent 协作群 → 可直接执行">
 
     <el-row :gutter="20">
       <el-col :span="14">
@@ -187,7 +181,7 @@
         <div v-if="runResult.error" style="color: var(--el-color-danger); margin-top: 8px">{{ runResult.error }}</div>
       </div>
     </el-dialog>
-  </div>
+  </PageStandard>
 </template>
 
 <script setup>
@@ -407,14 +401,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.auto-group-page { padding: 20px; }
-.page-header { margin-bottom: 20px; }
-.page-header h1 { margin: 0; display: flex; align-items: center; gap: 8px; }
-.sub { color: var(--el-text-color-secondary); margin: 6px 0 0; font-size: 13px; }
-.badge {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 12px;
-}
 .form-tip { font-size: 12px; color: var(--el-text-color-secondary); margin-top: 6px; }
 .template-grid {
   display: grid;

@@ -23,12 +23,12 @@
 -->
 <template>
   <div class="page-standard" :class="`theme-${theme}`">
-    <!-- 1. 增强水印 (用户名 + 角色 + 时间) -->
+    <!-- 1. 轻量水印 (用户名 + 角色, 去掉时间) -->
     <el-watermark
       v-if="watermark"
       :content="watermarkContent"
-      :font="{ size: 12, color: 'rgba(99, 102, 241, 0.05)' }"
-      :gap="[160, 100]"
+      :font="{ size: 10, color: 'rgba(99, 102, 241, 0.04)' }"
+      :gap="[180, 120]"
       class="page-watermark"
     />
 
@@ -127,10 +127,8 @@ const watermarkContent = computed(() => {
     return [props.watermarkText]
   }
   return [
-    'MiniMax AI V6.8.2',
-    userStore.profile?.username || 'Guest',
-    (userStore.profile?.roles || ['USER'])[0],
-    new Date().toLocaleString('zh-CN'),
+    'Liugl-AI',
+    userStore.profile?.username || ''
   ]
 })
 </script>

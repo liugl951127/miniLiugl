@@ -1,12 +1,11 @@
 <!-- @file pipeline/Index.vue - 工作流管理 V7.0 (内嵌设计器/监控预览) -->
 <template>
-  <div class="page-card">
-    <div class="page-header">
-      <h2>🔄 工作流</h2>
+  <PageStandard title="🔄 工作流" subtitle="可视化设计 · 节点编排 · 监控执行">
+    <template #actions>
       <el-button type="primary" :loading="creating" @click="goDesigner()">
         <el-icon><EditPen /></el-icon>新建工作流
       </el-button>
-    </div>
+    </template>
 
     <!-- V7.0 Tab 导航 -->
     <el-tabs v-model="activeTab" class="pipeline-tabs">
@@ -106,7 +105,7 @@
         />
       </el-tab-pane>
     </el-tabs>
-  </div>
+  </PageStandard>
 </template>
 
 <script setup>
@@ -259,11 +258,6 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.page-card { background: #fff; border-radius: 8px; padding: 20px; }
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
-  h2 { margin: 0; font-size: 16px; }
-}
-.pipeline-tabs { margin-bottom: 0; }
 .preview-header {
   display: flex; justify-content: space-between; align-items: center;
   margin-bottom: 12px;
