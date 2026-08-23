@@ -185,5 +185,12 @@ export const multimodalApi = {
     const fd = new FormData()
     fd.append('file', file)
     return http.post('/multimodal/vad', fd)
+  },
+
+  /** 视频智能分析 (复用 ResNet50 + Whisper) */
+  analyzeVideo(file) {
+    const fd = new FormData()
+    fd.append('file', file)
+    return http.post('/multimodal/analyze-video', fd)
   }
 }

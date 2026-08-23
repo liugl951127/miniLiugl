@@ -13,7 +13,7 @@
   <div class="mm-page">
     <header class="mm-header">
       <h1>🎨 本地多模态智能</h1>
-      <p class="sub">基于 ONNX Runtime 的本地图片/语音智能 (V7.2 · ResNet50/YOLOv8/CLIP/Whisper/VAD)</p>
+      <p class="sub">基于 ONNX Runtime 的本地图片/语音/视频智能 (V7.3 · ResNet50/YOLO/CLIP/Whisper/VAD/Video)</p>
     </header>
 
     <!-- 模型状态卡 -->
@@ -261,6 +261,79 @@
           </div>
         </el-card>
       </el-tab-pane>
+
+      <!-- 6. 视频智能分析 -->
+      <el-tab-pane label="视频智能分析" name="video">
+        <el-card>
+          <el-upload
+            drag
+            :auto-upload="false"
+            :on-change="onVideoFile"
+            :show-file-list="false"
+            accept="video/*,.mp4,.mov,.avi"
+            v-loading="loading.video"
+          >
+            <el-icon class="el-icon--upload"><video-play /></el-icon>
+            <div class="el-upload__text">拖拽视频到此处, 或<em>点击上传</em></div>
+            <template #tip>
+              <div class="el-upload__tip">支持 MP4/MOV/AVI, 复用 ResNet50 + Whisper</div>
+            </template>
+          </el-upload>
+
+          <el-form v-if="videoUrl" style="margin-top: 16px">
+            <el-form-item>
+              <video :src="videoUrl" controls style="max-width: 100%; max-height: 360px" />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" :loading="loading.video" @click="runAnalyzeVideo">开始分析</el-button>
+            </el-form-item>
+          </el-form>
+
+          <div v-if="videoResult" class="video-result">
+            <h3>分析结果 <el-tag size="small">{{ videoResult.costMs }}ms</el-tag></h3>
+
+            <!-- 媒体信息 -->
+            <el-descriptions v-if="videoResult.media" :column="4" border>
+              <el-descriptions-item label="时长">{{ videoResult.media.durationSec?.toFixed(1) }}s</el-descriptions-item>
+              <el-descriptions-item label="分辨率">{{ videoResult.media.width }}×{{ videoResult.media.height }}</el-descriptions-item>
+              <el-descriptions-item label="帧率">{{ videoResult.media.fps?.toFixed(1) }} fps</el-descriptions-item>
+              <el-descriptions-item label="轨道">{{ (videoResult.media.hasVideo ? '视频 ' : '') + (videoResult.media.hasAudio ? '音频' : '') }}</el-descriptions-item>
+            </el-descriptions>
+
+            <!-- 关键时间轴 (同类合并) -->
+            <div v-if="videoResult.timeline?.length" class="timeline-block">
+              <h4>🎬 关键场景时间轴 ({{ videoResult.timeline.length }} 段)</h4>
+              <el-table :data="videoResult.timeline" stripe>
+                <el-table-column label="时间">
+                  <template #default="{ row }">
+                    {{ row.start.toFixed(1) }}s ~ {{ row.end.toFixed(1) }}s ({{ row.duration.toFixed(1) }}s)
+                  </template>
+                </el-table-column>
+                <el-table-column label="场景">
+                  <template #default="{ row }">
+                    <span class="cn">{{ row.labelCn }}</span>
+                    <span class="en"> / {{ row.labelEn }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="置信度">
+                  <template #default="{ row }">
+                    <el-progress :percentage="Math.round(row.confidence * 100)" :stroke-width="10" />
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+
+            <!-- 完整文本转写 -->
+            <div v-if="videoResult.transcript" class="transcript-block">
+              <h4>📝 音轨转写 <el-tag size="small">{{ videoResult.asrCostMs }}ms</el-tag></h4>
+              <el-input v-model="videoResult.transcript" type="textarea" :rows="4" readonly />
+            </div>
+
+            <el-empty v-if="!videoResult.timeline?.length && !videoResult.transcript"
+              description="视频无有效内容或模型未就绪" />
+          </div>
+        </el-card>
+      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
@@ -268,20 +341,21 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { UploadFilled, Aim, Picture, Microphone, VideoCamera } from '@element-plus/icons-vue'
+import { UploadFilled, Aim, Picture, Microphone, VideoCamera, VideoPlay } from '@element-plus/icons-vue'
 import { multimodalApi } from '@/api/multimodal'
 
 const active = ref('classify')
 const currentFile = ref(null)
 const previewUrl = ref('')
-const loading = reactive({ classify: false, detect: false, clip: false, whisper: false, vad: false })
+const loading = reactive({ classify: false, detect: false, clip: false, whisper: false, vad: false, video: false })
 
 const models = ref([
   { key: 'resnet50', name: 'ResNet50 分类', icon: '🏷️', ready: false, path: '' },
   { key: 'clip',     name: 'CLIP 双塔',   icon: '🔗', ready: false, path: '' },
   { key: 'yolo',     name: 'YOLOv8 检测', icon: '🎯', ready: false, path: '' },
   { key: 'whisper',  name: 'Whisper STT', icon: '🎙️', ready: false, path: '' },
-  { key: 'vad',      name: 'Silero VAD', icon: '🔊', ready: false, path: '' }
+  { key: 'vad',      name: 'Silero VAD', icon: '🔊', ready: false, path: '' },
+  { key: 'video',    name: '视频智能',  icon: '🎬', ready: false, path: '' }
 ])
 
 const classifications = ref([])
@@ -296,6 +370,10 @@ const whisperText = ref('')
 const whisperCost = ref(0)
 const whisperLang = ref('zh')
 const vadResult = ref(null)
+// Video
+const currentVideo = ref(null)
+const videoUrl = ref('')
+const videoResult = ref(null)
 
 const detectImg = ref(null)
 const detectCanvas = ref(null)
@@ -315,6 +393,8 @@ async function loadStatus() {
       models.value[3].path = d.whisper.path
       models.value[4].ready = d.vad.ready
       models.value[4].path = d.vad.path
+      models.value[5].ready = d.video.available
+      models.value[5].path = '复用 ResNet50 + Whisper'  // V7.3
     }
   } catch (e) {
     console.error('loadStatus', e)
@@ -469,6 +549,34 @@ async function runVad() {
   }
 }
 
+function onVideoFile(file) {
+  if (!file?.raw) return
+  currentVideo.value = file.raw
+  videoUrl.value = URL.createObjectURL(file.raw)
+  videoResult.value = null
+}
+
+async function runAnalyzeVideo() {
+  if (!currentVideo.value) return ElMessage.warning('请先上传视频')
+  loading.video = true
+  try {
+    const res = await multimodalApi.analyzeVideo(currentVideo.value)
+    if (res.code === 0) {
+      videoResult.value = res.data
+      const total = res.data.timeline?.length || 0
+      ElMessage.success(`分析完成: ${total} 段场景${res.data.transcript ? ' + 文本' : ''}`)
+    } else if (res.code === 1001) {
+      ElMessage.warning(res.message)
+    } else {
+      ElMessage.error(res.message || '分析失败')
+    }
+  } catch (e) {
+    ElMessage.error('分析失败: ' + (e.message || ''))
+  } finally {
+    loading.video = false
+  }
+}
+
 onMounted(loadStatus)
 </script>
 
@@ -501,4 +609,11 @@ onMounted(loadStatus)
 .transcribe-result h3 { margin: 0 0 12px; color: #1e293b; }
 .vad-result { margin-top: 24px; }
 .vad-result h3 { margin: 0 0 12px; color: #1e293b; }
+
+.video-result { margin-top: 24px; }
+.video-result h3 { margin: 0 0 12px; color: #1e293b; }
+.video-result h4 { margin: 16px 0 8px; color: #334155; font-size: 1.05em; }
+.timeline-block .cn { font-weight: 600; color: #1e293b; }
+.timeline-block .en { color: #64748b; font-size: 0.9em; }
+.transcript-block { margin-top: 16px; }
 </style>

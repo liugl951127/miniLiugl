@@ -1,6 +1,7 @@
 package com.minimax.ai.controller;
 
 import com.minimax.ai.multimodal.audio.OnnxSileroVadService;
+import com.minimax.ai.multimodal.video.OnnxVideoAnalyzerService;
 import com.minimax.ai.multimodal.audio.OnnxWhisperService;
 import com.minimax.ai.multimodal.audio.WavReader;
 import com.minimax.ai.multimodal.onnx.OnnxClipService;
@@ -43,6 +44,7 @@ public class OnnxMultimodalController {
     private final OnnxObjectDetectorService detector;
     private final OnnxWhisperService whisper;
     private final OnnxSileroVadService vad;
+    private final OnnxVideoAnalyzerService video;
 
     // ─── 1. 状态 ──────────────────────────────────────────
 
@@ -74,7 +76,12 @@ public class OnnxMultimodalController {
             "path",    vad.getModelPath(),
             "threshold", vad.getThreshold()
         ));
-        m.put("version", "V7.2");
+        m.put("video", Map.of(
+            "enabled", true,
+            "available", video.isAvailable(),
+            "requiresFfmpeg", true
+        ));
+        m.put("version", "V7.3");
         return ResponseEntity.ok(Map.of("code", 0, "data", m));
     }
 
@@ -246,6 +253,32 @@ public class OnnxMultimodalController {
             )));
         } catch (Exception e) {
             log.error("vad 失败", e);
+            return ResponseEntity.ok(Map.of("code", 500, "message", e.getMessage()));
+        }
+    }
+
+    // ─── 9. 视频智能分析 (复用 ResNet50 + Whisper) ──────────
+
+    @PostMapping("/analyze-video")
+    public ResponseEntity<Map<String, Object>> analyzeVideo(
+            @RequestParam("file") MultipartFile file) {
+        try {
+            if (file == null || file.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("code", 400, "message", "视频文件为空"));
+            }
+            if (!video.isAvailable()) {
+                return ResponseEntity.ok(Map.of("code", 1001,
+                    "message", "视频分析需要: ffmpeg + (ResNet50 或 Whisper) 至少一个就绪",
+                    "data", Map.of()));
+            }
+            OnnxVideoAnalyzerService.VideoAnalysisResult result = video.analyze(file.getBytes());
+            return ResponseEntity.ok(Map.of(
+                "code", result.success() ? 0 : 500,
+                "data", result.toMap(),
+                "message", result.error()
+            ));
+        } catch (Exception e) {
+            log.error("analyze-video 失败", e);
             return ResponseEntity.ok(Map.of("code", 500, "message", e.getMessage()));
         }
     }
