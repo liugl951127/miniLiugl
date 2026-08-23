@@ -34,23 +34,18 @@
 
     <!-- 2. 主登录卡片 -->
     <el-card shadow="hover" class="login-card" :class="{ shake: shakeForm }">
-      <el-tabs v-model="mode" class="login-tabs" stretch @tab-change="onTabChange">
-        <el-tab-pane :label="t('login.tab.account')" name="login">
-          <template #label>
-            <span class="tab-label"><el-icon><User /></el-icon>{{ t('login.tab.account') }}</span>
-          </template>
-        </el-tab-pane>
-        <el-tab-pane name="register">
-          <template #label>
-            <span class="tab-label"><el-icon><Plus /></el-icon>{{ t('login.tab.register') }}</span>
-          </template>
-        </el-tab-pane>
-        <el-tab-pane name="wechat">
-          <template #label>
-            <span class="tab-label"><el-icon><ChatDotRound /></el-icon>{{ t('login.tab.wechat') }}</span>
-          </template>
-        </el-tab-pane>
-      </el-tabs>
+      <!-- 模式选择器 (pill 风格, 替换 el-tabs) -->
+      <div class="mode-switcher">
+        <button
+          v-for="m in modes" :key="m.value"
+          class="mode-pill" :class="{ active: mode === m.value }"
+          @click="onTabChange(m.value)"
+          type="button"
+        >
+          <el-icon><component :is="m.icon" /></el-icon>
+          <span>{{ m.label }}</span>
+        </button>
+      </div>
 
       <!-- 3. 登录 / 注册 表单 -->
       <transition name="fade" mode="out-in">
@@ -209,6 +204,13 @@ const errorType = ref<'error' | 'warning' | 'info'>('error') // 错误类型 (�
 const shakeForm = ref(false)                         // 错误抖动
 const isMobile = ref(false)                          // 移动端
 const formRef = ref(null)                            // 表单 ref
+
+// 模式选择器 (V8.0 替换 el-tabs 为 pill 按钮)
+const modes = computed(() => [
+  { value: 'login',    label: t('login.tab.account'),  icon: User },
+  { value: 'register', label: t('login.tab.register'), icon: Plus },
+  { value: 'wechat',   label: t('login.tab.wechat'),   icon: ChatDotRound }
+])
 
 // 静态元信息
 const currentYear = new Date().getFullYear()
@@ -499,6 +501,26 @@ onUnmounted(() => {
   align-items: center;
   gap: 4px;
 }
+
+/* V8.0: 模式选择器 (pill 风格) */
+.mode-switcher {
+  display: flex; gap: 4px; background: #f1f5f9;
+  border-radius: 10px; padding: 4px; margin-bottom: 16px;
+}
+.mode-pill {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  gap: 6px; padding: 10px 14px;
+  background: transparent; border: none;
+  border-radius: 8px; cursor: pointer;
+  color: #64748b; font-size: 14px; font-weight: 500;
+  transition: all 0.2s;
+}
+.mode-pill:hover { background: rgba(255, 255, 255, 0.6); color: #1e293b; }
+.mode-pill.active {
+  background: white; color: #1e293b; font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+.mode-pill .el-icon { font-size: 16px; }
 
 /* 表单 */
 .login-form {
