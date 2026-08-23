@@ -65,7 +65,17 @@ const routes = [
       { path: 'agent/group-designer', name: 'AgentGroupDesigner', component: () => import('@/views/agent/GroupDesigner.vue'), meta: { title: '智能体群编排', icon: 'Connection', roles: ['user', 'admin'] } },
 
       // ── 模型与服务 ──
-      { path: 'model', name: 'Model', component: () => import('@/views/model/Index.vue'), meta: { title: '模型管理' } },
+      {
+        path: 'model',
+        component: () => import('@/views/model/Index.vue'),
+        meta: { title: '模型管理' },
+        children: [
+          { path: '',         name: 'ModelHome',  redirect: 'model/local' },
+          { path: 'trained',  name: 'ModelTrained', component: () => import('@/views/model/Trained.vue'), meta: { title: '训练模型' } },
+          { path: 'local',    name: 'ModelLocal',   component: () => import('@/views/model/Local.vue'),   meta: { title: '本地模型' } },
+          { path: 'cloud',    name: 'ModelCloud',   component: () => import('@/views/model/Cloud.vue'),   meta: { title: '第三方模型' } }
+        ]
+      },
       { path: 'function', name: 'Function', component: () => import('@/views/function/Index.vue'), meta: { title: 'Function 工具' } },
       {
         path: 'multimodal',
