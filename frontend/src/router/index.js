@@ -68,7 +68,18 @@ const routes = [
       { path: 'model', name: 'Model', component: () => import('@/views/model/Index.vue'), meta: { title: '模型管理' } },
       { path: 'function', name: 'Function', component: () => import('@/views/function/Index.vue'), meta: { title: 'Function 工具' } },
       { path: 'multimodal', name: 'Multimodal', component: () => import('@/views/multimodal/Index.vue'), meta: { title: '多模态' } },
-      { path: 'multimodal/local', name: 'MultimodalLocal', component: () => import('@/views/multimodal/LocalOnnx.vue'), meta: { title: '本地多模态 (ONNX)' } },
+      {
+        path: 'multimodal/local',
+        component: () => import('@/views/multimodal/LocalOnnx.vue'),
+        meta: { title: '本地多模态 (ONNX)' },
+        children: [
+          { path: '',       name: 'LocalOnnxHome', redirect: 'multimodal/local/image' },
+          { path: 'image', name: 'LocalImage',    component: () => import('@/views/multimodal/LocalImage.vue'), meta: { title: '图片' } },
+          { path: 'audio', name: 'LocalAudio',    component: () => import('@/views/multimodal/LocalAudio.vue'), meta: { title: '语音' } },
+          { path: 'video', name: 'LocalVideo',    component: () => import('@/views/multimodal/LocalVideo.vue'), meta: { title: '视频' } },
+          { path: 'llm',   name: 'LocalLlm',      component: () => import('@/views/multimodal/LocalLlm.vue'),   meta: { title: '语言' } }
+        ]
+      },
       { path: 'training', name: 'Training', component: () => import('@/views/training/Console.vue'), meta: { title: '模型训练' } },
       { path: 'training/dashboard', name: 'TrainingDashboard', redirect: to => ({ path: '/training', query: { tab: 'dashboard' } }) },
 
