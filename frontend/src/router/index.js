@@ -67,7 +67,19 @@ const routes = [
       // ── 模型与服务 ──
       { path: 'model', name: 'Model', component: () => import('@/views/model/Index.vue'), meta: { title: '模型管理' } },
       { path: 'function', name: 'Function', component: () => import('@/views/function/Index.vue'), meta: { title: 'Function 工具' } },
-      { path: 'multimodal', name: 'Multimodal', component: () => import('@/views/multimodal/Index.vue'), meta: { title: '多模态' } },
+      {
+        path: 'multimodal',
+        component: () => import('@/views/multimodal/Index.vue'),
+        meta: { title: '多模态能力中心' },
+        children: [
+          { path: '',         name: 'MultimodalHome',    redirect: 'multimodal/overview' },
+          { path: 'overview', name: 'MultimodalOverview', component: () => import('@/views/multimodal/Overview.vue'), meta: { title: '概览' } },
+          { path: 'image',    name: 'MultimodalImage',    component: () => import('@/views/multimodal/Image.vue'),    meta: { title: '图像' } },
+          { path: 'audio',    name: 'MultimodalAudio',    component: () => import('@/views/multimodal/Audio.vue'),    meta: { title: '语音' } },
+          { path: 'video',    name: 'MultimodalVideo',    component: () => import('@/views/multimodal/Video.vue'),    meta: { title: '视频' } },
+          { path: 'document', name: 'MultimodalDocument', component: () => import('@/views/multimodal/Document.vue'), meta: { title: '文档音乐' } }
+        ]
+      },
       {
         path: 'multimodal/local',
         component: () => import('@/views/multimodal/LocalOnnx.vue'),
