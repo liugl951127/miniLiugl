@@ -2,104 +2,30 @@
 <template>
   <div class="page-card" style="padding:0;overflow:hidden" @contextmenu.prevent>
     <!-- 顶部工具栏 -->
-    <div class="canvas-toolbar">
-      <span style="font-size:14px;font-weight:600;color:#303133">Agent 画布</span>
-      <div style="display:flex;gap:8px;align-items:center">
-        <!-- Undo / Redo -->
-        <el-tooltip content="撤销 (Ctrl+Z)" placement="bottom">
-          <el-button size="small" @click="undo" :disabled="undoStack.length === 0">
-            <el-icon><RefreshLeft /></el-icon>
-          </el-button>
-        </el-tooltip>
-        <el-tooltip content="重做 (Ctrl+Y)" placement="bottom">
-          <el-button size="small" @click="redo" :disabled="redoStack.length === 0">
-            <el-icon><RefreshRight /></el-icon>
-          </el-button>
-        </el-tooltip>
-
-        <el-divider direction="vertical" />
-
-        <!-- Copy / Paste -->
-        <el-tooltip content="复制 (Ctrl+C)" placement="bottom">
-          <el-button size="small" @click="copySelected" :disabled="selectedIds.size === 0">
-            <el-icon><CopyDocument /></el-icon>
-          </el-button>
-        </el-tooltip>
-        <el-tooltip content="粘贴 (Ctrl+V)" placement="bottom">
-          <el-button size="small" @click="pasteNodes(null)" :disabled="clipboard.length === 0">
-            <el-icon><DocumentCopy /></el-icon>
-          </el-button>
-        </el-tooltip>
-
-        <el-divider direction="vertical" />
-
-        <!-- Search -->
-        <el-tooltip content="搜索节点 (Ctrl+F)" placement="bottom">
-          <el-button size="small" @click="openSearch">
-            <el-icon><Search /></el-icon>
-          </el-button>
-        </el-tooltip>
-
-        <!-- Selection badge -->
-        <span v-if="selectedIds.size > 0" class="sel-badge">
-          已选中 {{ selectedIds.size }} 个
-          <el-button size="small" type="danger" circle style="margin-left:4px;width:18px;height:18px;padding:0;font-size:11px" @click="deleteSelected">
-            <el-icon style="font-size:11px"><Close /></el-icon>
-          </el-button>
-        </span>
-
-        <el-divider direction="vertical" />
-
-        <!-- Version History -->
-        <el-tooltip content="历史版本" placement="bottom">
-          <el-button size="small" @click="showVersionHistory = true" :type="localVersions.length > 0 ? 'info' : ''">
-            <el-icon><Clock /></el-icon>
-          </el-button>
-        </el-tooltip>
-
-        <!-- Shortcut help -->
-        <el-tooltip content="快捷键 (F1)" placement="bottom">
-          <el-button size="small" @click="showShortcuts = true">
-            <el-icon><QuestionFilled /></el-icon>
-          </el-button>
-        </el-tooltip>
-
-        <el-divider direction="vertical" />
-
-        <el-button size="small" @click="loadWorkflows"><el-icon><Refresh /></el-icon>加载</el-button>
-        <el-button size="small" @click="newCanvas"><el-icon><Plus /></el-icon>新建</el-button>
-        <el-button type="primary" size="small" @click="saveCanvas"><el-icon><FolderChecked /></el-icon>保存</el-button>
-        <el-button type="success" size="small" @click="runCanvas" :loading="running"><el-icon><VideoPlay /></el-icon>执行</el-button>
-        <el-button v-if="running && multiRunMode" type="danger" size="small" @click="stopCanvasMulti">
-          ⏹ 停止
-        </el-button>
-        <el-button size="small" :type="multiRunMode?'warning':''" @click="multiRunMode = !multiRunMode" :disabled="running">
-          {{ multiRunMode ? '⚡ 多Agent ON' : '🤖 多Agent' }}
-        </el-button>
-        <el-button size="small" @click="autoLayout"><el-icon><Grid /></el-icon>自动布局</el-button>
-        <el-button size="small" @click="exportFlow"><el-icon><Download /></el-icon>导出</el-button>
-        <el-button size="small" @click="importFlow"><el-icon><Upload /></el-icon>导入</el-button>
-        <el-button size="small" @click="clearCanvas"><el-icon><Delete /></el-icon>清空</el-button>
-      </div>
-    </div>
+    <CanvasToolbar
+      :can-undo="undoStack.length > 0"
+      :can-redo="redoStack.length > 0"
+      :has-selection="selectedIds.size > 0"
+      :has-clipboard="clipboard.length > 0"
+      :has-versions="localVersions.length > 0"
+      :running="running"
+      :multi-run-mode="multiRunMode"
+      @undo="undo" @redo="redo" @copy="copySelected" @paste="pasteNodes(null)"
+      @search="searchVisible = true" @history="showVersionHistory = true"
+      @shortcuts="showShortcuts = true"
+      @load="loadWorkflows" @new="newCanvas" @save="saveCanvas"
+      @run="runCanvas" @stop="stopCanvasMulti" @toggle-multi="multiRunMode = !multiRunMode"
+      @auto-layout="autoLayout" @export="exportFlow" @import="importFlow"
+      @clear="clearCanvas"
+    />
 
     <div class="canvas-body">
       <!-- 左侧节点面板 -->
-      <div class="node-palette">
-        <div class="palette-title">节点库</div>
-        <div
-          v-for="nt in nodeTypes" :key="nt.type"
-          class="palette-node"
-          :style="{ borderLeftColor: nt.color }"
-          draggable="true"
-          @dragstart="onDragStart($event, nt)"
-          @contextmenu.stop.prevent="onNodeTypeContextMenu($event, nt)"
-        >
-          <el-icon><component :is="nt.icon" /></el-icon>
-          <span>{{ nt.label }}</span>
-        </div>
-      </div>
-
+      <NodePalette
+        :node-types="nodeTypes"
+        @drag-start="onDragStart"
+        @context-menu="onNodeTypeContextMenu"
+      />
       <!-- 画布区域 -->
       <div class="canvas-area" ref="canvasRef"
         @dragover.prevent
@@ -450,6 +376,8 @@ import {
   ChatDotRound, Connection, Operation, Files, Tools, DataLine, Folder, Grid, Upload, Download,
   RefreshLeft, RefreshRight, CopyDocument, DocumentCopy, Search, Clock, QuestionFilled, Select
 } from '@element-plus/icons-vue'
+import CanvasToolbar from './CanvasToolbar.vue'
+import NodePalette from './NodePalette.vue'
 
 const canvasRef = ref(null)
 const canvasW = ref(900)
