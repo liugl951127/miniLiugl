@@ -1,0 +1,381 @@
+{
+  "info": {
+    "name": "minimax 冒烟测试集",
+    "_postman_id": "minimax-smoke-2026-08-22",
+    "description": "覆盖 P0 死按钮 / 401/403 修复 / 知识图谱 / 智能体群编排",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. 鉴权 - 登录",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('login returns token', function() {",
+              "  var j = pm.response.json();",
+              "  pm.expect(j.code).to.eql(0);",
+              "  pm.expect(j.data.token).to.exist;",
+              "  pm.collectionVariables.set('token', j.data.token);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\":\"admin\",\"password\":\"admin123\"}"
+        },
+        "url": "{{baseUrl}}/api/v1/auth/login"
+      }
+    },
+    {
+      "name": "2. 鉴权 - 无 token 应 401",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('no token should 401', function() {",
+              "  pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/chat/sessions"
+      }
+    },
+    {
+      "name": "3. 鉴权 - 错误 token 应 401",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('bad token should 401', function() {",
+              "  pm.expect(pm.response.code).to.eql(401);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Authorization", "value": "Bearer invalid.token.here"}],
+        "url": "{{baseUrl}}/api/v1/chat/sessions"
+      }
+    },
+    {
+      "name": "4. 知识库 - 列列表",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('kb list ok', function() {",
+              "  pm.expect(pm.response.code).to.eql(200);",
+              "  var j = pm.response.json();",
+              "  pm.expect(j.code).to.eql(0);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+        "url": "{{baseUrl}}/api/v1/rag/kb?page=1&size=20"
+      }
+    },
+    {
+      "name": "5. 知识图谱 - 构建图谱 (取第一个 KB)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('kg build ok', function() {",
+              "  pm.expect(pm.response.code).to.eql(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+        "url": "{{baseUrl}}/api/v1/rag/kb/1/kg/build"
+      }
+    },
+    {
+      "name": "6. 知识图谱 - 查图",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('kg get ok', function() {",
+              "  var j = pm.response.json();",
+              "  pm.expect(j.code).to.eql(0);",
+              "  pm.expect(j.data).to.have.property('entities');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+        "url": "{{baseUrl}}/api/v1/rag/kb/1/kg"
+      }
+    },
+    {
+      "name": "7. 知识图谱 - 推理",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('kg reason responds', function() {",
+              "  pm.expect(pm.response.code).to.eql(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+        "url": "{{baseUrl}}/api/v1/rag/kg/reason?src=爱因斯坦&tgt=诺贝尔奖"
+      }
+    },
+    {
+      "name": "8. 智能体群 - 列策略",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('strategies ok', function() {",
+              "  var j = pm.response.json();",
+              "  pm.expect(j.code).to.eql(0);",
+              "  pm.expect(j.data).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+        "url": "{{baseUrl}}/api/v1/agent-group/strategies"
+      }
+    },
+    {
+      "name": "9. 智能体群 - 列成员",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('members list ok', function() {",
+              "  var j = pm.response.json();",
+              "  pm.expect(j.code).to.eql(0);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+        "url": "{{baseUrl}}/api/v1/agent-group/1/members"
+      }
+    },
+    {
+      "name": "10. 训练模型 - 列列表",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('models list ok', function() {",
+              "  var j = pm.response.json();",
+              "  pm.expect(j.code).to.eql(0);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+        "url": "{{baseUrl}}/api/v1/training/models?page=1&size=20"
+      }
+    },
+    {
+      "name": "11. 训练模型 - 创建",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('model create ok', function() {",
+              "  var j = pm.response.json();",
+              "  pm.expect(j.code).to.eql(0);",
+              "  pm.expect(j.data.id).to.exist;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}, {"key": "Content-Type", "value": "application/json"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"code\":\"test-model-001\",\"name\":\"测试模型\",\"accuracy\":92.5,\"status\":\"DRAFT\"}"
+        },
+        "url": "{{baseUrl}}/api/v1/training/models"
+      }
+    },
+    {
+      "name": "12. 规则 - 列表",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('rule list ok', function() {",
+              "  var j = pm.response.json();",
+              "  pm.expect(j.code).to.eql(0);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+        "url": "{{baseUrl}}/api/v1/rule?page=1&size=20"
+      }
+    },
+    {
+      "name": "13. 系统设置 - 读",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('system settings ok', function() {",
+              "  var j = pm.response.json();",
+              "  pm.expect(j.code).to.eql(0);",
+              "  pm.expect(j.data).to.have.property('siteName');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+        "url": "{{baseUrl}}/api/v1/system/settings"
+      }
+    },
+    {
+      "name": "14. 系统设置 - 写",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('settings update ok', function() {",
+              "  var j = pm.response.json();",
+              "  pm.expect(j.code).to.eql(0);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}, {"key": "Content-Type", "value": "application/json"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"siteName\":\"minimax 测试站\",\"maintenanceMode\":false,\"allowRegister\":true,\"defaultModelCode\":\"gpt-4\"}"
+        },
+        "url": "{{baseUrl}}/api/v1/system/settings"
+      }
+    },
+    {
+      "name": "15. 协作邀请",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('invite ok', function() {",
+              "  var j = pm.response.json();",
+              "  pm.expect(j.code).to.eql(0);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}, {"key": "Content-Type", "value": "application/json"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"test@minimax.io\"}"
+        },
+        "url": "{{baseUrl}}/api/v1/collab/rooms/1/invite"
+      }
+    },
+    {
+      "name": "16. 健康检查",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('health ok', function() {",
+              "  pm.expect(pm.response.code).to.eql(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/admin/health"
+      }
+    }
+  ],
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:9001", "type": "string"}
+  ]
+}
