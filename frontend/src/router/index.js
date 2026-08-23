@@ -32,9 +32,19 @@ const routes = [
       { path: 'chat/:sessionId', name: 'ChatSession', component: () => import('@/views/chat/Index.vue'), meta: { title: '对话' } },
 
       // ── 知识中心 (单页 tab) ──
-      { path: 'knowledge', name: 'Knowledge', component: () => import('@/views/knowledge/Index.vue'), meta: { title: '知识库' } },
-      { path: 'kg', name: 'Kg', redirect: to => ({ path: '/knowledge', query: { tab: 'kg' } }) },
-      { path: 'memory', name: 'Memory', redirect: to => ({ path: '/knowledge', query: { tab: 'memory' } }) },
+      {
+        path: 'knowledge',
+        component: () => import('@/views/knowledge/Index.vue'),
+        meta: { title: '知识中心' },
+        children: [
+          { path: '',           name: 'KnowledgeHome',   redirect: 'knowledge/list' },
+          { path: 'list',       name: 'KnowledgeList',   component: () => import('@/views/knowledge/KbList.vue'),  meta: { title: '知识库' } },
+          { path: 'kg',         name: 'KnowledgeKg',     component: () => import('@/views/knowledge/Kg.vue'),     meta: { title: '知识图谱' } },
+          { path: 'memory',     name: 'KnowledgeMemory', component: () => import('@/views/knowledge/Memory.vue'), meta: { title: '记忆中心' } }
+        ]
+      },
+      { path: 'kg',     name: 'KgLegacy',     redirect: '/knowledge/kg' },
+      { path: 'memory', name: 'MemoryLegacy', redirect: '/knowledge/memory' },
 
       // ── Agent 编排 (单页 tab) ──
       { path: 'agent', name: 'Agent', component: () => import('@/views/agent/Index.vue'), meta: { title: 'Agent 编排' } },
