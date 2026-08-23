@@ -103,6 +103,7 @@ public class CollabService {
                 .ownerName(ownerName)
                 .isPublic(isPublic ? 1 : 0)
                 .maxParticipants(maxCount > 0 ? maxCount : 50)
+                .description("")
                 .status("ACTIVE")
                 .currentParticipants(0)
                 .createdAt(LocalDateTime.now())
@@ -263,12 +264,7 @@ public class CollabService {
      */
     public List<CollabRoom> listPublicRooms(int limit) {
         if (limit <= 0) limit = 50;
-        return roomMapper.selectList(
-            new QueryWrapper<CollabRoom>()
-                .eq("is_public", 1)
-                .eq("status", "ACTIVE")
-                .orderByDesc("last_activity_at")
-                .last("LIMIT " + limit));
+        return roomMapper.selectPublicRooms(limit);
     }
 
     /**

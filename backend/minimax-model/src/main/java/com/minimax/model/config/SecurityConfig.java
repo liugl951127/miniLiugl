@@ -53,6 +53,9 @@ public class SecurityConfig {
                     .requestMatchers("/imagegen/**", "/api/v1/imagegen/**").permitAll()
                     .requestMatchers("/audio/**", "/api/v1/audio/**").permitAll()
                     .requestMatchers("/leaderboard/**", "/api/v1/leaderboard/**").permitAll()
+                    // V6.8.2: 内部服务间调用免认证
+                    .requestMatchers("/api/v1/models/internal/**").permitAll()
+                    .requestMatchers("/api/v1/models/chat").permitAll()
                     .anyRequest().authenticated()
             )
             .exceptionHandling(eh -> eh

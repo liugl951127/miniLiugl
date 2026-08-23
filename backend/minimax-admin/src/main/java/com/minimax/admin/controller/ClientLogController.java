@@ -51,8 +51,9 @@ public class ClientLogController {
      */
     @PostMapping("/save")
     public String saveDirect(@RequestBody List<Map<String, Object>> logs,
-                             @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+                             @RequestHeader(value = "X-User-Id", required = false) String userIdStr) {
         if (logs == null || logs.isEmpty()) return "ok";
+        Long userId = parseUserId(userIdStr);
 
         String dateStr = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
         Path file = Paths.get(LOG_DIR, "client-" + dateStr + ".log");
@@ -88,10 +89,11 @@ public class ClientLogController {
     @Operation(summary = "接收前端批量日志 (异步写文件)")
     @PostMapping("/client")
     public Result<Void> receiveClientLogs(@RequestBody List<Map<String, Object>> logs,
-                                         @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+                                         @RequestHeader(value = "X-User-Id", required = false) String userIdStr) {
         if (logs == null || logs.isEmpty()) {
             return Result.ok();
         }
+        Long userId = parseUserId(userIdStr);
         for (Map<String, Object> entry : logs) {
             if (entry.get("userId") == null && userId != null) {
                 entry.put("userId", userId);
@@ -159,5 +161,17 @@ public class ClientLogController {
             result.put("lineCount", 0);
         }
         return Result.ok(result);
+    }
+
+    /** 安全解析用户 ID，处理 anonymous 等非数字字符串 */
+    private Long parseUserId(String userIdStr) {
+        if (userIdStr == null || userIdStr.isBlank() || "anonymous".equalsIgnoreCase(userIdStr)) {
+            return null;
+        }
+        try {
+            return Long.valueOf(userIdStr);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

@@ -31,7 +31,7 @@ RUN java -Djarmode=layertools -jar \
     minimax-ai/target/minimax-ai.jar extract --destination extracted
 
 # ─── Stage 3: 运行层 ───
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre
 WORKDIR /app
 
 # 4 层按 变化少→多 顺序 COPY (缓存命中率高)

@@ -149,12 +149,12 @@ public class OnnxLLMService {
     // ========== ONNX 推理 ==========
 
     private GeneratedResult onnxGenerate(String prompt, double temperature, int maxTokens, double topP) throws Exception {
-        int[] promptTokens = tokenizer.encode(prompt);
-        int promptLen = promptTokens.length;
+        int[] promptTokensInt = tokenizer.encode(prompt);
+        int promptLen = promptTokensInt.length;
 
         int ctxLen = Math.min(promptLen + maxTokens, maxSeqLen);
-        int[] tokens = new int[ctxLen];
-        System.arraycopy(promptTokens, 0, tokens, 0, promptLen);
+        long[] tokens = new long[ctxLen];
+        for (int i = 0; i < promptLen; i++) tokens[i] = promptTokensInt[i];
         int pos = promptLen;
 
         int eosId = ChineseTokenizer.EOS;
@@ -165,14 +165,16 @@ public class OnnxLLMService {
         int completionTokens = 0;
         boolean hitEos = false;
 
+        // 固定输入长度 512（与 ONNX 模型导出时一致）
+        final int FIXED_LEN = 512;
         for (int step = 0; step < maxTokens && pos < ctxLen; step++) {
-            // 构造输入: int64[1, pos]
-            long[][] inputData = new long[1][pos];
-            System.arraycopy(tokens, 0, inputData[0], 0, pos);
-            long[] inputShape = new long[]{1, pos};
+            // 构造输入: int64[1, 512]，不足部分填充 0 (PAD)
+            long[][] inputData = new long[1][FIXED_LEN];
+            int copyLen = Math.min(pos, FIXED_LEN);
+            System.arraycopy(tokens, 0, inputData[0], 0, copyLen);
+            long[] inputShape = new long[]{1, FIXED_LEN};
 
-            try (OnnxTensor inputTensor = OnnxTensor.createTensor(
-                    env, java.nio.LongBuffer.wrap(inputData[0]), inputShape)) {
+            try (OnnxTensor inputTensor = OnnxTensor.createTensor(env, inputData)) {
                 // 运行推理
                 try (OnnxValue resultVal = activeSession.run(
                         Collections.singletonMap(inputName, inputTensor)).get(0)) {
@@ -202,19 +204,38 @@ public class OnnxLLMService {
                     }
                     for (int v = 0; v < probs.length; v++) probs[v] /= sum;
 
-                    // Top-P 采样
-                    double cumsum = 0;
-                    int cutoff = probs.length;
-                    for (int v = 0; v < probs.length; v++) {
-                        if (topP < 1.0f && cumsum > topP) { cutoff = v; break; }
-                        cumsum += probs[v];
+                    // 构建 (tokenId, prob) 对并按概率降序排序
+                    int[] sortedIds = new int[probs.length];
+                    for (int v = 0; v < probs.length; v++) sortedIds[v] = v;
+                    for (int i = 0; i < probs.length - 1; i++) {
+                        for (int j = i + 1; j < probs.length; j++) {
+                            if (probs[sortedIds[j]] > probs[sortedIds[i]]) {
+                                int tmp = sortedIds[i];
+                                sortedIds[i] = sortedIds[j];
+                                sortedIds[j] = tmp;
+                            }
+                        }
                     }
+
+                    // Top-K 采样: 只保留概率最高的 topK 个 token
+                    int topK = 50;  // 默认 top-50
+                    int effectiveK = Math.min(topK, sortedIds.length);
+
+                    // Top-P 采样: 在 top-K 候选上按概率累加截断
+                    double cumsum = 0;
+                    int cutoff = effectiveK;
+                    for (int v = 0; v < effectiveK; v++) {
+                        cumsum += probs[sortedIds[v]];
+                        if (topP < 1.0f && cumsum >= topP) { cutoff = v + 1; break; }
+                    }
+
+                    // 在截断后的候选上随机采样
                     double target = rand.nextDouble() * cumsum;
                     cumsum = 0;
-                    int nextId = 0;
+                    int nextId = sortedIds[0];  // 默认选最高概率
                     for (int v = 0; v < cutoff; v++) {
-                        cumsum += probs[v];
-                        if (cumsum >= target) { nextId = v; break; }
+                        cumsum += probs[sortedIds[v]];
+                        if (cumsum >= target) { nextId = sortedIds[v]; break; }
                     }
 
                     tokens[pos++] = nextId;
@@ -234,22 +255,31 @@ public class OnnxLLMService {
         // 常见格式: float[][][] → [1][seqLen][vocabSize] 或 float[][] → [seqLen][vocabSize]
         if (raw instanceof float[][][]) {
             float[][][] arr3 = (float[][][]) raw;
+            if (arr3.length == 0 || arr3[0].length == 0) return getUniformLogits();
             return arr3[0][arr3[0].length - 1];
         } else if (raw instanceof float[][]) {
             float[][] arr2 = (float[][]) raw;
+            if (arr2.length == 0) return getUniformLogits();
             return arr2[arr2.length - 1];
         } else if (raw instanceof double[][][]) {
             double[][][] arr3 = (double[][][]) raw;
+            if (arr3.length == 0 || arr3[0].length == 0) return getUniformLogits();
             float[] out = new float[arr3[0][arr3[0].length - 1].length];
             for (int i = 0; i < out.length; i++) out[i] = (float) arr3[0][arr3[0].length - 1][i];
             return out;
         } else if (raw instanceof double[][]) {
             double[][] arr2 = (double[][]) raw;
+            if (arr2.length == 0) return getUniformLogits();
             float[] out = new float[arr2[arr2.length - 1].length];
             for (int i = 0; i < out.length; i++) out[i] = (float) arr2[arr2.length - 1][i];
             return out;
         }
         // 回退：返回均匀分布
+        return getUniformLogits();
+    }
+
+    /** 返回均匀分布的 logits，作为降级方案 */
+    private float[] getUniformLogits() {
         float[] uniform = new float[vocabSize];
         for (int i = 0; i < vocabSize; i++) uniform[i] = 1.0f / vocabSize;
         return uniform;

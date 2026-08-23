@@ -32,9 +32,9 @@ import java.util.List;
 @Mapper
 public interface ModelRatingMapper extends BaseMapper<ModelRating> {
 
-    @Select("SELECT * FROM model_rating WHERE modelKey = #{modelKey} ORDER BY createdAt DESC LIMIT #{limit}")
+    @Select("SELECT * FROM model_rating WHERE model_key = #{modelKey} ORDER BY created_at DESC LIMIT #{limit}")
     List<ModelRating> findByModelKey(@Param("modelKey") String modelKey, @Param("limit") int limit);
 
-    @Select("SELECT * FROM model_rating WHERE modelKey = #{modelKey} AND userId = #{userId} LIMIT 1")
+    @Select("SELECT * FROM model_rating WHERE model_key = #{modelKey} AND user_id = #{userId} LIMIT 1")
     ModelRating findUserRating(@Param("modelKey") String modelKey, @Param("userId") Long userId);
 }

@@ -315,17 +315,23 @@ public class AiChatRealController {
                     }
                 }
 
-                ChatRequestDTO req = new ChatRequestDTO();
-                req.setModel(model);
-                req.setTemperature(0.7);
-                req.setMaxTokens(1024);
-                req.setMessages(List.of(
-                    Map.of("role", "system", "content", fullSystem.toString()),
-                    Map.of("role", "user", "content", message)
-                ));
+                // V7.0: 使用 ONNX 本地推理，跳过外部 API 调用
+                String prompt = fullSystem.toString() + "\n用户: " + message;
+                long onnxStart = System.currentTimeMillis();
+                OnnxLLMService.GeneratedResult genResult = onnxLLMService.generate(prompt, 0.7, 1024, 0.9);
+                long onnxLatency = System.currentTimeMillis() - onnxStart;
+                String content = genResult.getText() != null ? genResult.getText() : "";
 
-                ChatResponseDTO resp = modelClient.chat(0L, req);
-                String content = resp.getContent() != null ? resp.getContent() : "";
+                ChatResponseDTO resp = ChatResponseDTO.builder()
+                    .model("mini-transformer-onnx")
+                    .content(content)
+                    .promptTokens(genResult.getPromptTokens())
+                    .completionTokens(genResult.getCompletionTokens())
+                    .totalTokens(genResult.getPromptTokens() + genResult.getCompletionTokens())
+                    .finishReason(genResult.isEos() ? "stop" : "length")
+                    .latencyMs(onnxLatency)
+                    .providerCode("onnx-local")
+                    .build();
 
                 // 分块推送（每 20 字符一个 SSE chunk）
                 int chunkSize = 20;

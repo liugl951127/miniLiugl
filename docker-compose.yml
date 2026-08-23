@@ -386,6 +386,7 @@ services:
       - ./.docker-data/maven-repo:/root/.m2
       - ./.docker-data/logs:/var/log/minimax
       - /opt/minimax/ai-models/data:/app/data/ai
+      - /opt/minimax/ai-models/onnx:/workspace/onnx-models
     networks: [minimax-net]
     deploy: { resources: { limits: { memory: 512M } } }
 

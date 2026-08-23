@@ -30,11 +30,11 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface WebhookMapper extends BaseMapper<Webhook> {
 
-    @Update("UPDATE webhook SET deliveryCount = deliveryCount + 1, " +
-            "successCount = successCount + #{successDelta}, " +
-            "failCount = failCount + #{failDelta}, " +
-            "lastDeliveryAt = NOW(), lastStatus = #{status} " +
-            "WHERE webhookId = #{webhookId}")
+    @Update("UPDATE webhook SET delivery_count = delivery_count + 1, " +
+            "success_count = success_count + #{successDelta}, " +
+            "fail_count = fail_count + #{failDelta}, " +
+            "last_delivery_at = NOW(), last_status = #{status} " +
+            "WHERE webhook_id = #{webhookId}")
     int updateDeliveryStats(@Param("webhookId") String webhookId,
                             @Param("successDelta") int successDelta,
                             @Param("failDelta") int failDelta,

@@ -21,8 +21,8 @@ public interface CollabMessageMapper extends BaseMapper<CollabMessage> {
     /**
      * 查询房间最近消息 (按时间正序, 用于回放)
      */
-    @Select("SELECT * FROM collab_message WHERE room_id = #{room_id} " +
-            "AND createdAt >= #{since} ORDER BY createdAt ASC LIMIT #{limit}")
+    @Select("SELECT * FROM collab_message WHERE room_id = #{roomId} " +
+            "AND created_at >= #{since} ORDER BY created_at ASC LIMIT #{limit}")
     List<CollabMessage> findRecent(@Param("roomId") String roomId,
                                    @Param("since") java.time.LocalDateTime since,
                                    @Param("limit") int limit);
@@ -30,14 +30,14 @@ public interface CollabMessageMapper extends BaseMapper<CollabMessage> {
     /**
      * 查询聊天历史 (CHAT + AI 类型, 倒序)
      */
-    @Select("SELECT * FROM collab_message WHERE room_id = #{room_id} " +
-            "AND type IN ('CHAT', 'AI') ORDER BY createdAt DESC LIMIT #{limit}")
+    @Select("SELECT * FROM collab_message WHERE room_id = #{roomId} " +
+            "AND type IN ('CHAT', 'AI') ORDER BY created_at DESC LIMIT #{limit}")
     List<CollabMessage> findChatHistory(@Param("roomId") String roomId, @Param("limit") int limit);
 
     /**
      * 统计房间消息数
      */
-    @Select("SELECT COUNT(*) FROM collab_message WHERE room_id = #{room_id}")
+    @Select("SELECT COUNT(*) FROM collab_message WHERE room_id = #{roomId}")
     long countByRoom(@Param("roomId") String roomId);
 
     /**

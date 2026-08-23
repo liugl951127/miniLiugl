@@ -30,12 +30,12 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface ModelMarketMapper extends BaseMapper<ModelEntry> {
 
-    @Update("UPDATE model_market SET downloadCount = downloadCount + 1 WHERE modelKey = #{modelKey}")
+    @Update("UPDATE model_market SET download_count = download_count + 1 WHERE model_key = #{modelKey}")
     int incrementDownload(@Param("modelKey") String modelKey);
 
     @Update("UPDATE model_market SET " +
-            "avgRating = COALESCE((SELECT AVG(rating) FROM model_rating WHERE modelKey = #{modelKey}), 0), " +
-            "ratingCount = (SELECT COUNT(*) FROM model_rating WHERE modelKey = #{modelKey}) " +
-            "WHERE modelKey = #{modelKey}")
+            "avg_rating = COALESCE((SELECT AVG(rating) FROM model_rating WHERE model_key = #{modelKey}), 0), " +
+            "rating_count = (SELECT COUNT(*) FROM model_rating WHERE model_key = #{modelKey}) " +
+            "WHERE model_key = #{modelKey}")
     int updateRatingStats(@Param("modelKey") String modelKey);
 }

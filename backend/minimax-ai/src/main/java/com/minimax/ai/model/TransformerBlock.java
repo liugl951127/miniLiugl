@@ -488,6 +488,9 @@ public class TransformerBlock {
      */
     private double[][] layerNorm(double[][] x, double[] gamma, double[] beta) {
         int rows = x.length;
+        if (rows == 0 || x[0] == null || x[0].length == 0) {
+            return new double[0][0];
+        }
         int cols = x[0].length;
         double[][] result = new double[rows][cols];
         // 对每个 token (行) 独立归一化

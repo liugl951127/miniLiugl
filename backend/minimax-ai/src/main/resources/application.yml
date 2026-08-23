@@ -11,6 +11,9 @@ spring:
     import: classpath:application-common.yml
   application:
     name: minimax-ai
+  mvc:
+    async:
+      request-timeout: 120000
   profiles:
     active: mysql   # V3.5.5+ 默认 MySQL/MariaDB 生产连接 (H2 → 沙箱 / dev → 内存开发)
   main:

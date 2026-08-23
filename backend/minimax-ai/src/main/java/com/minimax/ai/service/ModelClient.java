@@ -4,13 +4,23 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.minimax.common.feign.model.ChatRequestDTO;
 import com.minimax.common.feign.model.ChatResponseDTO;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +39,12 @@ public class ModelClient {
     @Value("${minimax.model.service-url:http://minimax-model:8084}")
     private String modelServiceUrl;
 
+    @Value("${minimax.jwt.secret}")
+    private String jwtSecret;
+
+    @Value("${minimax.jwt.issuer:minimax-platform}")
+    private String jwtIssuer;
+
     public ModelClient() {
         this.modelRestTemplate = new org.springframework.boot.web.client.RestTemplateBuilder()
                 .setConnectTimeout(Duration.ofMillis(5000))
@@ -45,14 +61,21 @@ public class ModelClient {
      */
     public ChatResponseDTO chat(Long userId, ChatRequestDTO req) {
         try {
-            String url = modelServiceUrl + "/api/v1/models/chat";
+            String url = modelServiceUrl + "/api/v1/models/internal/chat?userId=" + (userId != null ? userId : 0);
             log.debug("[ModelClient] 调用 Model 服务: url={}, model={}", url, req.getModel());
 
             // 构建请求体
             JSONObject body = JSONObject.from(req);
 
-            // 发送 POST 请求
-            String resp = modelRestTemplate.postForObject(url, body, String.class);
+            // 生成内部服务 JWT Token
+            String internalToken = generateInternalToken(userId);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(internalToken);
+            HttpEntity<JSONObject> entity = new HttpEntity<>(body, headers);
+
+            // 发送 POST 请求（携带认证 Token）
+            String resp = modelRestTemplate.postForObject(url, entity, String.class);
             if (resp == null) {
                 log.warn("[ModelClient] Model 服务返回空");
                 return null;
@@ -131,5 +154,29 @@ public class ModelClient {
             log.warn("[ModelClient] 获取本地模型列表失败: {}", e.getMessage());
         }
         return List.of();
+    }
+
+    /**
+     * 生成内部服务调用的 JWT Token
+     */
+    private String generateInternalToken(Long userId) {
+        try {
+            byte[] raw = jwtSecret.getBytes(StandardCharsets.UTF_8);
+            byte[] hash = MessageDigest.getInstance("SHA-256").digest(raw);
+            SecretKey key = Keys.hmacShaKeyFor(hash);
+            long uid = userId != null ? userId : 0;
+            return Jwts.builder()
+                    .subject(String.valueOf(uid))
+                    .claim("uname", "internal-service")
+                    .claim("roles", List.of("SUPER_ADMIN"))
+                    .issuer(jwtIssuer)
+                    .issuedAt(new Date())
+                    .expiration(new Date(System.currentTimeMillis() + 60_000))
+                    .signWith(key)
+                    .compact();
+        } catch (Exception e) {
+            log.error("[ModelClient] 生成内部 Token 失败: {}", e.getMessage());
+            return "";
+        }
     }
 }
