@@ -230,20 +230,24 @@ export const getAlertTimeSeries = (days = 30) => {
   return http.get('/monitor/alerts/timeseries', { params: { days } })
 }
 
-// ==================== V8.0.1 默认导出 (必须放在所有 const 之后) ====================
-// 修复: getAlertSla/getAlertTrend 在 229 行才声明, monitorApi 对象在 156 行引用会 TDZ
-// 修复方法: 移到文件末尾, 此时所有 const 已完成初始化
-const monitorApi = {
-  getMonitorInfo, getMonitorHealth, getJvmHealth, getDbHealth, getDiskHealth,
-  getMetrics, getMetricsSnapshot,
-  getFiringAlerts, getAlertSummary,
-  listAlertRules, createAlertRule, updateAlertRule, deleteAlertRule, toggleAlertRule,
-  acknowledgeAlert, silenceAlert, unsilenceAlert,
-  silenceRule, unsilenceRule,
-  listAlertChannels, createAlertChannel, deleteAlertChannel,
-  testAlertChannel, getAlertHistory,
-  getAuditLogs, getAuditByUser, getAuditByDay, exportAuditLogs,
-  getAlertSla, getAlertTrend
+// ==================== V8.0.2 默认导出 (lazy function 初始化) ====================
+// 修复: getAlertSla/getAlertTrend 较晚才声明, 之前 monitorApi 对象直接构造会 TDZ
+// 修复方法: 用函数封装, 对象只在函数调用时才构造 (此时所有 const 已完成)
+// 即使 minifier 重排代码, 函数体内的引用都在调用时才求值, 不会 TDZ
+function createMonitorApi() {
+  return {
+    getMonitorInfo, getMonitorHealth, getJvmHealth, getDbHealth, getDiskHealth,
+    getMetrics, getMetricsSnapshot,
+    getFiringAlerts, getAlertSummary,
+    listAlertRules, createAlertRule, updateAlertRule, deleteAlertRule, toggleAlertRule,
+    acknowledgeAlert, silenceAlert, unsilenceAlert,
+    silenceRule, unsilenceRule,
+    listAlertChannels, createAlertChannel, deleteAlertChannel,
+    testAlertChannel, getAlertHistory,
+    getAuditLogs, getAuditByUser, getAuditByDay, exportAuditLogs,
+    getAlertSla, getAlertTrend
+  }
 }
+const monitorApi = createMonitorApi()
 export default monitorApi
 export { monitorApi }
