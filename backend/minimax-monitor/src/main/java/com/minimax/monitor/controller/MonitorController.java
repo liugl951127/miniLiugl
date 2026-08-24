@@ -9,6 +9,7 @@ import com.minimax.monitor.collector.MetricsCollector;
 import com.minimax.monitor.entity.AlertChannel;
 import com.minimax.monitor.entity.AlertEvent;
 import com.minimax.monitor.service.AlertMetricsService;
+import com.minimax.monitor.service.AlertPredictionService;
 import com.minimax.monitor.mapper.AlertEventMapper;
 import com.minimax.monitor.entity.AlertRule;
 import com.minimax.monitor.entity.MetricSnapshot;
@@ -89,6 +90,7 @@ public class MonitorController {
     private final AlertRcaService rcaService;
     private final LogAnomalyDetector anomalyDetector;
     private final AlertMetricsService alertMetricsService;
+    private final AlertPredictionService predictionService;
 
     // V5.10: Java HttpClient 复用 (跨服务调 /actuator/prometheus)
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -711,6 +713,24 @@ public class MonitorController {
                 })
                 .toList();
         return Result.ok(history);
+    }
+
+    // ---------- Day 53: 告警趋势预测 (EWMA + 线性回归) ----------
+    @Operation(summary = "告警趋势预测（指数加权移动平均 + 线性回归 + 风险预警）")
+    @GetMapping("/alerts/predict")
+    public Result<Map<String, Object>> alertPredict(
+            @RequestParam(required = false, defaultValue = "30") Integer historyDays,
+            @RequestParam(required = false, defaultValue = "7") Integer forecastDays,
+            @RequestParam(required = false) String severity) {
+        return Result.ok(predictionService.predict(historyDays, forecastDays, severity));
+    }
+
+    @Operation(summary = "按级别预测（CRITICAL / WARNING / INFO 分别预测）")
+    @GetMapping("/alerts/predict/by-severity")
+    public Result<Map<String, Object>> alertPredictBySeverity(
+            @RequestParam(required = false, defaultValue = "30") Integer historyDays,
+            @RequestParam(required = false, defaultValue = "7") Integer forecastDays) {
+        return Result.ok(predictionService.predictBySeverity(historyDays, forecastDays));
     }
 
     // ---------- Day 52: 告警历史高级筛选 ----------

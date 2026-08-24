@@ -916,6 +916,21 @@
 **关键文件数：** 后端 3 文件 / 前端 3 文件
 
 **明日计划 Day 53：**
-- [ ] Monitor 告警趋势预测（基于历史数据）
-- [ ] 前端全站深色模式一致性审查
-- [ ] RAG 跨知识库联合检索
+- [x] Monitor 告警趋势预测（基于历史数据）
+- [x] 前端全站深色模式一致性审查
+- [x] RAG 跨知识库联合检索
+
+## Day 53 - 2026-08-24 ✅ 告警趋势预测 + 深色模式修复 + 跨 KB 联合检索
+
+**今日完成：**
+- [x] **Monitor 告警趋势预测**：`AlertPredictionService`（EWMA 平滑 + 线性回归趋势 + 风险等级 + 预警）+ `/alerts/predict` + `/alerts/predict/by-severity` 两个 API
+- [x] **前端深色模式一致性**：compat.scss 新增 stat/icon/text CSS 变量 + dark mode 覆盖，修复 Dashboard/Canvas/CanvasToolbar/Vote/Analysis/Deploy/Stream/prompts 8 个 Vue 文件共 16 处硬编码颜色
+- [x] **RAG 跨知识库联合检索**：`Retriever.retrieveMultiKb()`（多 KB 并行 + 去重 + KB 间均衡 + 时效性加权）+ `/rag/retrieve/multi` + `/rag/ask/multi` 两个 API
+- [x] 自检 13/13 ✅ + Java 静态 5/5 ✅ + vite build 43.17s ✅
+
+**关键文件数：** 后端 4 文件 / 前端 8 文件
+
+**明日计划 Day 54：**
+- [ ] Monitor 告警根因知识库（同类告警自动关联历史处理记录）
+- [ ] 前端性能优化（Code Splitting / 路由预加载）
+- [ ] RAG 语义重排序（Cross-Encoder rerank 优化 top-K 准确率）

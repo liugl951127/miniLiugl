@@ -171,8 +171,8 @@
         <div v-if="nodes.length === 0 && !loading" class="canvas-empty">
           <div style="font-size:40px">🕸️</div>
           <div style="margin-top:8px">从左侧拖拽节点到画布</div>
-          <div style="font-size:12px;color:#909399;margin-top:4px">或点击"加载"导入已有工作流</div>
-          <div style="font-size:11px;color:#c0c4cc;margin-top:8px">右键画布查看快捷操作</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">或点击"加载"导入已有工作流</div>
+          <div style="font-size:11px;color:var(--text-faint);margin-top:8px">右键画布查看快捷操作</div>
         </div>
 
         <!-- Zoom controls -->
@@ -258,7 +258,7 @@
                   <el-option-group v-if="trainedModels.length" label="🏷️ 自研模型">
                     <el-option v-for="m in trainedModels" :key="m.code" :label="m.name" :value="m.code">
                       {{ m.name }}
-                      <span v-if="m.accuracy" style="float:right;font-size:11px;color:#67c23a">{{ m.accuracy }}%</span>
+                      <span v-if="m.accuracy" style="float:right;font-size:11px;color:var(--liugl-success)">{{ m.accuracy }}%</span>
                     </el-option>
                   </el-option-group>
                   <el-option-group label="🤖 云端模型">
@@ -285,7 +285,7 @@
           <span class="log-tool">{{ step.tool }}</span>
           <span class="log-result">{{ step.result }}</span>
         </div>
-        <div v-if="!runLog.length" style="color:#909399;text-align:center;padding:40px">暂无执行记录</div>
+        <div v-if="!runLog.length" style="color:var(--text-muted);text-align:center;padding:40px">暂无执行记录</div>
       </div>
     </el-drawer>
 
@@ -307,14 +307,14 @@
         >
           <span class="search-result-dot" :style="{ background: n.color }" />
           <span>{{ n.label }}</span>
-          <span style="color:#909399;font-size:12px;margin-left:6px">{{ n.type }}</span>
+          <span style="color:var(--text-muted);font-size:12px;margin-left:6px">{{ n.type }}</span>
         </div>
       </div>
-      <div v-else-if="searchQuery && searchResults.length === 0" style="color:#909399;text-align:center;padding:20px">
+      <div v-else-if="searchQuery && searchResults.length === 0" style="color:var(--text-muted);text-align:center;padding:20px">
         未找到匹配节点
       </div>
       <template #footer>
-        <span style="font-size:12px;color:#c0c4cc">Enter 定位 · Esc 关闭</span>
+        <span style="font-size:12px;color:var(--text-faint)">Enter 定位 · Esc 关闭</span>
       </template>
     </el-dialog>
 
@@ -341,7 +341,7 @@
 
     <!-- 版本历史 -->
     <el-dialog v-model="showVersionHistory" title="📜 本地版本历史" width="520px" :append-to-body="true">
-      <div v-if="localVersions.length === 0" style="color:#909399;text-align:center;padding:30px">
+      <div v-if="localVersions.length === 0" style="color:var(--text-muted);text-align:center;padding:30px">
         暂无本地版本记录<br/>
         <span style="font-size:12px">点击工具栏「保存」时会自动创建快照</span>
       </div>
@@ -359,7 +359,7 @@
         </div>
       </div>
       <template #footer>
-        <span style="font-size:12px;color:#c0c4cc">最多保存 10 个本地快照 · 刷新页面后清除</span>
+        <span style="font-size:12px;color:var(--text-faint)">最多保存 10 个本地快照 · 刷新页面后清除</span>
       </template>
     </el-dialog>
   </div>

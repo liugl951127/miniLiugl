@@ -188,7 +188,7 @@ async function send() {
 }
 .stream-empty {
   text-align: center;
-  color: rgba(226, 232, 240, 0.4);
+  color: var(--liugl-text-secondary);
   padding: 80px 20px;
   .stream-empty-icon {
     font-size: 48px;

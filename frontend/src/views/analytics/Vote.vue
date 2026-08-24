@@ -8,25 +8,25 @@
       <el-col :span="6">
         <el-card body-style="padding:14px" shadow="hover">
           <div style="font-size:12px;color:var(--el-text-color-secondary)">总投票数</div>
-          <div style="font-size:24px;font-weight:700;color:#409eff">{{ summary.totalVotes || 0 }}</div>
+          <div style="font-size:24px;font-weight:700;color:var(--liugl-primary)">{{ summary.totalVotes || 0 }}</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card body-style="padding:14px" shadow="hover">
           <div style="font-size:12px;color:var(--el-text-color-secondary)">总问题数</div>
-          <div style="font-size:24px;font-weight:700;color:#67c23a">{{ summary.totalQuestions || 0 }}</div>
+          <div style="font-size:24px;font-weight:700;color:var(--liugl-success)">{{ summary.totalQuestions || 0 }}</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card body-style="padding:14px" shadow="hover">
           <div style="font-size:12px;color:var(--el-text-color-secondary)">平均一致率</div>
-          <div style="font-size:24px;font-weight:700;color:#e6a23c">{{ summary.avgAgreement || 0 }}%</div>
+          <div style="font-size:24px;font-weight:700;color:var(--liugl-warning)">{{ summary.avgAgreement || 0 }}%</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card body-style="padding:14px" shadow="hover">
           <div style="font-size:12px;color:var(--el-text-color-secondary)">参与模型数</div>
-          <div style="font-size:24px;font-weight:700;color:#f56c6c">{{ summary.modelCount || 0 }}</div>
+          <div style="font-size:24px;font-weight:700;color:var(--liugl-danger)">{{ summary.modelCount || 0 }}</div>
         </el-card>
       </el-col>
     </el-row>

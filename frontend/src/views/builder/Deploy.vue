@@ -138,11 +138,11 @@
             </el-form-item>
             <el-form-item label="每副本 CPU">
               <el-slider v-model="config.resources.cpu" :min="100" :max="4000" :step="100" show-stops />
-              <div style="font-size:11px;color:#64748b">{{ config.resources.cpu }}m (毫核)</div>
+              <div style="font-size:11px;color:var(--liugl-text-secondary)">{{ config.resources.cpu }}m (毫核)</div>
             </el-form-item>
             <el-form-item label="每副本内存">
               <el-slider v-model="config.resources.memory" :min="128" :max="8192" :step="128" show-stops />
-              <div style="font-size:11px;color:#64748b">{{ config.resources.memory }} MiB</div>
+              <div style="font-size:11px;color:var(--liugl-text-secondary)">{{ config.resources.memory }} MiB</div>
             </el-form-item>
             <el-form-item label="自动伸缩">
               <el-switch v-model="config.resources.autoscale" />

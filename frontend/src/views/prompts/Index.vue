@@ -382,9 +382,10 @@ onBeforeUnmount(() => {
 <style lang="scss" scoped>
 
 .template-preview {
-  background: #1e293b; color: #a5f3fc; padding: 12px; border-radius: 6px;
-  font-size: 13px; font-family: monospace; max-height: 200px; overflow: auto;
-  :deep(.var-token) { color: #fbbf24; background: rgba(251, 191, 36, 0.15); padding: 1px 4px; border-radius: 3px; }
+  background: var(--liugl-bg); color: var(--liugl-text); border: 1px solid var(--liugl-border);
+  padding: 12px; border-radius: 6px;
+  font-size: 13px; font-family: var(--liugl-font-mono); max-height: 200px; overflow: auto;
+  :deep(.var-token) { color: var(--liugl-warning); background: rgba(245, 158, 11, 0.15); padding: 1px 4px; border-radius: 3px; }
 }
 .rendered-preview {
   background: var(--el-color-success-light-9); color: #333; padding: 12px; border-radius: 6px;

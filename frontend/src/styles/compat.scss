@@ -30,6 +30,19 @@
   --liugl-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
                        "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial,
                        sans-serif;
+  // Stat card icon colors (light mode)
+  --stat-blue-bg: #dbeafe;
+  --stat-blue-fg: #2563eb;
+  --stat-green-bg: #d1fae5;
+  --stat-green-fg: #059669;
+  --stat-amber-bg: #fef3c7;
+  --stat-amber-fg: #d97706;
+  --stat-red-bg: #fee2e2;
+  --stat-red-fg: #dc2626;
+  // Muted text defaults
+  --text-muted: #909399;
+  --text-faint: #c0c4cc;
+  --text-strong: #303133;
   --liugl-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas,
                      "Liberation Mono", "Courier New", monospace;
   --liugl-transition-fast: 150ms ease;
@@ -48,6 +61,18 @@
     --liugl-text-secondary: #9ca3af;
     --liugl-border: #2a3245;
     --liugl-border-strong: #374151;
+    // Stat icon colors dark mode
+    --stat-blue-bg: rgba(59, 130, 246, 0.2);
+    --stat-blue-fg: #60a5fa;
+    --stat-green-bg: rgba(16, 185, 129, 0.2);
+    --stat-green-fg: #34d399;
+    --stat-amber-bg: rgba(245, 158, 11, 0.2);
+    --stat-amber-fg: #fbbf24;
+    --stat-red-bg: rgba(239, 68, 68, 0.2);
+    --stat-red-fg: #f87171;
+    --text-muted: #9ca3af;
+    --text-faint: #6b7280;
+    --text-strong: #e5e7eb;
   }
 }
 
@@ -58,6 +83,18 @@
   --liugl-text-secondary: #9ca3af;
   --liugl-border: #2a3245;
   --liugl-border-strong: #374151;
+  // Stat icon colors dark mode
+  --stat-blue-bg: rgba(59, 130, 246, 0.2);
+  --stat-blue-fg: #60a5fa;
+  --stat-green-bg: rgba(16, 185, 129, 0.2);
+  --stat-green-fg: #34d399;
+  --stat-amber-bg: rgba(245, 158, 11, 0.2);
+  --stat-amber-fg: #fbbf24;
+  --stat-red-bg: rgba(239, 68, 68, 0.2);
+  --stat-red-fg: #f87171;
+  --text-muted: #9ca3af;
+  --text-faint: #6b7280;
+  --text-strong: #e5e7eb;
 }
 
 // =============================================================

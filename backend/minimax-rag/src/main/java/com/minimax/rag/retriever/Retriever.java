@@ -127,6 +127,83 @@ public class Retriever {
     }
 
     /**
+     * Day 53: 跨知识库联合检索.
+     * 在多个 KB 中并行检索，合并去重，按综合分排序返回 topK.
+     *
+     * @param kbIds         知识库 ID 列表（不可为空或空列表）
+     * @param query         用户查询
+     * @param topK          返回数量（每个 KB 取 topK*2 的候选，合并后取 topK）
+     * @param useTimeliness 是否启用时效性加权
+     * @return 合并排序后的命中结果，含 kbName 字段
+     */
+    public List<Hit> retrieveMultiKb(List<Long> kbIds, String query, int topK, boolean useTimeliness) {
+        if (kbIds == null || kbIds.isEmpty()) {
+            log.warn("retrieveMultiKb: kbIds is empty");
+            return List.of();
+        }
+        if (query == null || query.isBlank()) return List.of();
+        if (topK <= 0) topK = 5;
+        if (topK > 50) topK = 50;
+
+        // 并行检索每个 KB（候选量放大以确保合并后仍有足够可选）
+        List<Hit> allHits = new ArrayList<>();
+        for (Long kbId : kbIds) {
+            try {
+                // 每个 KB 多取一些候选，防止某个 KB 大量命中而其他 KB 少的情况
+                List<Hit> hits = retrieve(kbId, query, topK * 2, useTimeliness);
+                allHits.addAll(hits);
+            } catch (Exception e) {
+                log.warn("retrieveMultiKb: kbId={} 检索失败: {}", kbId, e.getMessage());
+            }
+        }
+
+        if (allHits.isEmpty()) return List.of();
+
+        // 按综合分排序（已含时效性加权）
+        allHits.sort((a, b) -> Double.compare(b.rankScore, a.rankScore));
+
+        // 去重：同一 docId 的 chunk 只保留最高分那个
+        Map<Long, Hit> deduped = new HashMap<>();
+        for (Hit h : allHits) {
+            if (!deduped.containsKey(h.chunkId) || deduped.get(h.chunkId).rankScore < h.rankScore) {
+                deduped.put(h.chunkId, h);
+            }
+        }
+
+        // KB 间均衡：每个 KB 至少保留 N 个（如果总数足够）
+        int minPerKb = Math.max(1, topK / Math.max(kbIds.size(), 1));
+        Map<Long, List<Hit>> byKb = new HashMap<>();
+        for (Hit h : deduped.values()) {
+            byKb.computeIfAbsent(h.kbId, k -> new ArrayList<>()).add(h);
+        }
+
+        List<Hit> balanced = new ArrayList<>();
+        for (List<Hit> kbHits : byKb.values()) {
+            kbHits.sort((a, b) -> Double.compare(b.rankScore, a.rankScore));
+            balanced.addAll(kbHits.subList(0, Math.min(minPerKb, kbHits.size())));
+        }
+        // 补齐剩余配额（按全局分数）
+        Set<Long> already = balanced.stream().map(h -> h.chunkId).collect(Collectors.toSet());
+        for (Hit h : deduped.values()) {
+            if (!already.contains(h.chunkId)) balanced.add(h);
+            if (balanced.size() >= topK) break;
+        }
+
+        // 最终 topK
+        List<Hit> result = balanced.subList(0, Math.min(topK, balanced.size()));
+        log.info("retrieveMultiKb: kbIds={} queryLen={} candidates={} deduped={} final={}",
+                kbIds, query.length(), allHits.size(), deduped.size(), result.size());
+        return result;
+    }
+
+    /**
+     * 跨 KB 检索（默认启用时效性加权）.
+     */
+    public List<Hit> retrieveMultiKb(List<Long> kbIds, String query, int topK) {
+        return retrieveMultiKb(kbIds, query, topK, true);
+    }
+
+    /**
      * 计算时效性得分 (0~1)，越新的文档分数越高.
      * 使用指数衰减：score = exp(-days / halfLife)，halfLife = maxAge / 3
      */

@@ -84,7 +84,7 @@
             </div>
             <el-divider />
             <div class="complexity-meter">
-              <div style="display:flex;justify-content:space-between;font-size:12px;color:#64748b;margin-bottom:4px">
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--liugl-text-secondary);margin-bottom:4px">
                 <span>复杂度</span><span>{{ complexityLevel }}</span>
               </div>
               <el-progress :percentage="complexity" :color="complexityColor" :show-text="false" />

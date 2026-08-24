@@ -18,7 +18,7 @@
     <el-row :gutter="12" style="margin-bottom:16px">
       <el-col :span="6">
         <el-card shadow="hover" class="stat-card" @click="$router.push('/chat')">
-          <div class="stat-icon" style="background:#dbeafe;color:#2563eb"><el-icon><ChatDotRound /></el-icon></div>
+          <div class="stat-icon stat-icon-blue"><el-icon><ChatDotRound /></el-icon></div>
           <div class="stat-body">
             <div class="stat-value">{{ stats.sessions || 0 }}</div>
             <div class="stat-label">我的会话</div>
@@ -27,7 +27,7 @@
       </el-col>
       <el-col :span="6">
         <el-card shadow="hover" class="stat-card" @click="$router.push('/knowledge')">
-          <div class="stat-icon" style="background:#d1fae5;color:#059669"><el-icon><Files /></el-icon></div>
+          <div class="stat-icon stat-icon-green"><el-icon><Files /></el-icon></div>
           <div class="stat-body">
             <div class="stat-value">{{ stats.docs || 0 }}</div>
             <div class="stat-label">知识文档</div>
@@ -36,7 +36,7 @@
       </el-col>
       <el-col :span="6">
         <el-card shadow="hover" class="stat-card" @click="$router.push('/analytics')">
-          <div class="stat-icon" style="background:#fef3c7;color:#d97706"><el-icon><DataAnalysis /></el-icon></div>
+          <div class="stat-icon stat-icon-amber"><el-icon><DataAnalysis /></el-icon></div>
           <div class="stat-body">
             <div class="stat-value">{{ stats.calls || 0 }}</div>
             <div class="stat-label">今日调用</div>
@@ -45,7 +45,7 @@
       </el-col>
       <el-col :span="6">
         <el-card shadow="hover" class="stat-card" @click="$router.push('/monitor')">
-          <div class="stat-icon" style="background:#fee2e2;color:#dc2626"><el-icon><Monitor /></el-icon></div>
+          <div class="stat-icon stat-icon-red"><el-icon><Monitor /></el-icon></div>
           <div class="stat-body">
             <div class="stat-value">{{ stats.health || '🟢 正常' }}</div>
             <div class="stat-label">服务健康</div>
@@ -171,14 +171,18 @@ onMounted(() => {
   display: flex; align-items: center; gap: 12px;
   cursor: pointer; transition: all 0.2s;
 }
-.stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.08); }
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--liugl-shadow); }
 .stat-icon {
   width: 48px; height: 48px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   font-size: 24px;
 }
-.stat-value { font-size: 22px; font-weight: 700; color: #1e293b; }
-.stat-label { font-size: 12px; color: #64748b; margin-top: 2px; }
+.stat-icon-blue  { background: var(--stat-blue-bg);   color: var(--stat-blue-fg);   }
+.stat-icon-green { background: var(--stat-green-bg);  color: var(--stat-green-fg);  }
+.stat-icon-amber { background: var(--stat-amber-bg);  color: var(--stat-amber-fg);  }
+.stat-icon-red   { background: var(--stat-red-bg);    color: var(--stat-red-fg);    }
+.stat-value { font-size: 22px; font-weight: 700; color: var(--liugl-text); }
+.stat-label { font-size: 12px; color: var(--liugl-text-secondary); margin-top: 2px; }
 
 .shortcut-card {
   display: flex; flex-direction: column; align-items: center;
@@ -187,21 +191,21 @@ onMounted(() => {
   border: 1px solid transparent;
 }
 .shortcut-card:hover {
-  background: #f8fafc; border-color: #e2e8f0; transform: translateY(-2px);
+  background: var(--liugl-bg-elevated); border-color: var(--liugl-border); transform: translateY(-2px);
 }
 .sc-icon {
   width: 40px; height: 40px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   font-size: 22px; margin-bottom: 8px;
 }
-.sc-name { font-size: 13px; font-weight: 600; color: #1e293b; }
-.sc-desc { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+.sc-name { font-size: 13px; font-weight: 600; color: var(--liugl-text); }
+.sc-desc { font-size: 11px; color: var(--liugl-text-secondary); margin-top: 2px; }
 
 .notice-item {
   display: flex; align-items: center; padding: 10px 0;
   border-bottom: 1px solid #f1f5f9;
 }
 .notice-item:last-child { border-bottom: none; }
-.notice-text { flex: 1; font-size: 13px; color: #334155; }
-.notice-date { font-size: 11px; color: #94a3b8; }
+.notice-text { flex: 1; font-size: 13px; color: var(--liugl-text); }
+.notice-date { font-size: 11px; color: var(--liugl-text-secondary); }
 </style>

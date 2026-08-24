@@ -392,6 +392,155 @@ public class RagController {
         return Result.ok(retriever.retrieve(kbId, query, topK));
     }
 
+    // ---------- Day 53: 跨知识库联合检索 ----------
+    /**
+     * Day 53: 跨知识库联合检索.
+     * POST /api/v1/rag/retrieve/multi
+     * body: { "kbIds": [1, 2, 3], "query": "...", "topK": 5 }
+     * 返回: [{ chunkId, docId, kbId, content, score, rankScore, docTitle, highlight, ... }]
+     * 特性:
+     *   - 多 KB 并行检索
+     *   - 去重（同一 doc 保留最高分 chunk）
+     *   - KB 间均衡（每个 KB 至少保留 topK/N 个）
+     *   - 综合分排序（相关性 + 时效性加权）
+     */
+    @Operation(summary = "跨知识库联合检索（多 KB 并行 + 去重 + 均衡 + 时效性加权）")
+    @PostMapping("/retrieve/multi")
+    public Result<List<Retriever.Hit>> retrieveMulti(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @RequestBody Map<String, Object> body) {
+        Object kbIdsObj = body.get("kbIds");
+        String query = (String) body.get("query");
+        Integer topK = (Integer) body.getOrDefault("topK", 5);
+
+        if (kbIdsObj == null) {
+            return Result.fail("kbIds 不能为空");
+        }
+        if (!(kbIdsObj instanceof List)) {
+            return Result.fail("kbIds 必须是数组格式");
+        }
+
+        @SuppressWarnings("unchecked")
+        List<Long> kbIds = ((List<?>) kbIdsObj).stream()
+                .map(o -> ((Number) o).longValue())
+                .toList();
+
+        if (kbIds.isEmpty()) {
+            return Result.fail("kbIds 不能为空数组");
+        }
+
+        // 归属校验：所有 KB 必须可访问
+        Long userId = user != null ? user.id() : null;
+        for (Long kbId : kbIds) {
+            kbService.verifyAccess(kbId, userId);
+        }
+
+        List<Retriever.Hit> hits = retriever.retrieveMultiKb(kbIds, query, topK);
+        return Result.ok(hits);
+    }
+
+    /**
+     * Day 53: 跨知识库 RAG 问答.
+     * POST /api/v1/rag/ask/multi
+     * body: { "kbIds": [1, 2], "question": "...", "history": "...", "topK": 5, "systemPrompt": "..." }
+     */
+    @Operation(summary = "跨知识库 RAG 问答（多 KB 联合检索 + LLM 生成答案）")
+    @PostMapping("/ask/multi")
+    public Result<Map<String, Object>> askMulti(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @RequestBody Map<String, Object> body) {
+        Object kbIdsObj = body.get("kbIds");
+        String question = (String) body.get("question");
+        String history = (String) body.get("history");
+        Integer topK = (Integer) body.getOrDefault("topK", 5);
+        String systemPrompt = (String) body.get("systemPrompt");
+
+        if (kbIdsObj == null || !(kbIdsObj instanceof List) || ((List<?>) kbIdsObj).isEmpty()) {
+            return Result.fail("kbIds 必须是包含至少一个 KB 的数组");
+        }
+        if (question == null || question.isBlank()) {
+            return Result.fail("question 不能为空");
+        }
+
+        @SuppressWarnings("unchecked")
+        List<Long> kbIds = ((List<?>) kbIdsObj).stream()
+                .map(o -> ((Number) o).longValue())
+                .toList();
+
+        // 归属校验
+        Long userId = user != null ? user.id() : null;
+        for (Long kbId : kbIds) {
+            kbService.verifyAccess(kbId, userId);
+        }
+
+        // 跨 KB 检索
+        List<Retriever.Hit> hits = retriever.retrieveMultiKb(kbIds, question, topK);
+
+        // 构建上下文（每个 KB 分别标注）
+        Map<Long, String> kbNameMap = new java.util.LinkedHashMap<>();
+        for (Long kbId : kbIds) {
+            try {
+                var kb = kbService.get(kbId, userId);
+                kbNameMap.put(kbId, kb != null ? kb.getName() : "KB-" + kbId);
+            } catch (Exception e) {
+                kbNameMap.put(kbId, "KB-" + kbId);
+            }
+        }
+
+        // 拼带 KB 来源标注的上下文
+        StringBuilder ctx = new StringBuilder();
+        if (systemPrompt != null && !systemPrompt.isBlank()) {
+            ctx.append(systemPrompt).append("\n\n");
+        } else {
+            ctx.append("你是基于多个知识库回答问题的助手。请根据以下参考资料回答，引用处标注 [来源N:文档标题]。\n\n");
+        }
+        for (int i = 0; i < hits.size(); i++) {
+            Retriever.Hit h = hits.get(i);
+            String kbName = kbNameMap.getOrDefault(h.kbId, "KB-" + h.kbId);
+            ctx.append("[").append(i + 1).append("] [").append(kbName).append("] ")
+               .append(h.docTitle != null ? h.docTitle : "(无标题)")
+               .append(" (相似度 ").append(String.format("%.2f", h.score)).append(")\n")
+               .append(h.content).append("\n\n");
+        }
+
+        // 调用 LLM
+        List<Map<String, String>> messages = new ArrayList<>();
+        messages.add(Map.of("role", "system", "content", ctx.toString()));
+        if (history != null && !history.isBlank()) {
+            messages.add(Map.of("role", "user", "content", history));
+        }
+        messages.add(Map.of("role", "user", "content", question));
+
+        // 构造结果
+        Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("question", question);
+        result.put("kbCount", kbIds.size());
+        result.put("kbNames", kbNameMap.values().toList());
+        result.put("hitCount", hits.size());
+        result.put("sources", hits.stream().map(h ->
+                Map.of("chunkId", h.chunkId, "docId", h.docId, "kbId", h.kbId,
+                        "docTitle", h.docTitle != null ? h.docTitle : "",
+                        "score", h.score,
+                        "rankScore", h.rankScore,
+                        "highlight", h.highlight != null ? h.highlight : h.content)
+        ).toList());
+
+        // 简单 LLM 调用（失败不阻塞返回）
+        try {
+            var answer = ragService.ask(null, question, history, topK, systemPrompt);
+            result.put("answer", answer.answer());
+            result.put("strategy", answer.strategy());
+            result.put("elapsedMs", answer.elapsedMs());
+        } catch (Exception e) {
+            log.warn("跨 KB RAG LLM 调用失败: {}", e.getMessage());
+            result.put("answer", "（LLM 暂时不可用，以下为检索内容）\n\n" + ctx);
+            result.put("strategy", "RETRIEVAL_ONLY");
+            result.put("elapsedMs", 0);
+        }
+
+        return Result.ok(result);
+    }
+
     @Operation(summary = "RAG问答 (支持 systemPrompt 自定义模板)")
     @PostMapping("/ask")
     public Result<RagService.RagAnswer> ask(@AuthenticationPrincipal AuthenticatedUser user,

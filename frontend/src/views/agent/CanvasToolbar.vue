@@ -3,7 +3,7 @@
 -->
 <template>
   <div class="canvas-toolbar">
-    <span style="font-size:14px;font-weight:600;color:#303133">Agent 画布</span>
+    <span style="font-size:14px;font-weight:600;color:var(--text-strong)">Agent 画布</span>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <!-- Undo / Redo -->
       <el-tooltip content="撤销 (Ctrl+Z)" placement="bottom">
