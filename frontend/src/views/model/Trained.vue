@@ -154,7 +154,7 @@ import { ref, computed, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { trainedModelApi, trainingApi } from '@/api/training'
-import { dictApi } from '@/api/dict'
+import { useDict } from '@/api/dict'
 
 const pageLoading = ref(false)
 const trainedModels = ref([])
@@ -162,9 +162,8 @@ const trainingRecords = ref([])
 const trainedLoading = ref(false)
 const trainedSearch = ref('')
 
-// V8.0.3: 字典下拉
-const industries = ref([])
-dictApi.industries().then(r => industries.value = r.data?.data || r.data || []).catch(() => {})
+// V8.0.3.2: 字典下拉 (useDict composable, API 失败用 fallback)
+const { data: industries } = useDict('industries')
 
 const filteredTrainedModels = computed(() => {
   const k = trainedSearch.value

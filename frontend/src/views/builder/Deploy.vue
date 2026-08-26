@@ -197,7 +197,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, RefreshLeft, Promotion } from '@element-plus/icons-vue'
 import { triggerDeploy, pollArgoCdStatus } from '@/api/forge'
-import { dictApi } from '@/api/dict'
+import { useDict } from '@/api/dict'
 
 const router = useRouter()
 const target = ref('k8s')
@@ -205,9 +205,8 @@ const deploying = ref(false)
 const nodeCount = ref(3)
 const currentReleaseId = ref(null)  // V5.0: 从路由或 props 传入
 
-// V8.0.3: 字典下拉 (从后端拉, 不再 hardcoded)
-const k8sClusters = ref([])
-dictApi.k8sClusters().then(r => k8sClusters.value = r.data?.data || r.data || []).catch(() => {})
+// V8.0.3.2: 字典下拉 (useDict composable, API 失败用 fallback)
+const { data: k8sClusters } = useDict('k8sClusters')
 
 const targets = [
   { key: 'docker', name: '本地 Docker', icon: '🐳', bg: 'linear-gradient(135deg, #2496ed, #1d7bb8)', desc: '单机容器化部署', cost: '¥0/月 (本地资源)' },

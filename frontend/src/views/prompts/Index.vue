@@ -158,7 +158,7 @@ import PageStandard from '@/components/PageStandard.vue'
 import { ref, computed, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { promptApi } from '@/api/prompt'
-import { dictApi } from '@/api/dict'
+import { useDict } from '@/api/dict'
 import { Plus, Refresh, Search, CopyDocument, DocumentCopy } from '@element-plus/icons-vue'
 import { debounce } from '@/utils/debounce'
 
@@ -166,9 +166,8 @@ const prompts = ref([])
 const loading = ref(false)
 const firstLoad = ref(true)
 
-// V8.0.3: 字典下拉
-const dictModels = ref([])
-dictApi.models().then(r => dictModels.value = r.data?.data || r.data || []).catch(() => {})
+// V8.0.3.2: 字典下拉 (useDict composable, API 失败用 fallback)
+const { data: dictModels } = useDict('models')
 const formVisible = ref(false)
 const saving = ref(false)
 const formRef = ref(null)

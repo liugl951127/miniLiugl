@@ -1,4 +1,4 @@
-package com.minimax.common.controller;
+package com.minimax.system.controller;
 
 import com.minimax.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,19 +11,21 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 字典控制器 (V8.0.3) — 统一收口下拉字典
+ * 字典控制器 (V8.0.3.1) — 修致命设计错
  *
- * 之前各前端页面把 K8s 集群/Agent 角色/通知渠道/行业类型/检索策略等
- * 写死在 <el-option>, 新增一项得改前端。
+ * 之前 V8.0.3 放在 minimax-common, 但:
+ *  - common 是 library (packaging=jar), 不是 Spring Boot 应用
+ *  - 即使 gateway 扫 com.minimax, common 里 controller 永远不会被启动
+ *  - gateway 路由表是 /api/v1/system/**, 前端调 /dict/* 会 404
  *
- * V8.0.3: 全部走这个端点, 前端从 /api/v1/dict/{type} 拉, 后台可改可配。
+ * 修: 移到 minimax-system, 前端改成 /system/dict/*
+ * 走 gateway 现有路由 /api/v1/system/**, 会命中 system 服务
  */
-@Tag(name = "公共字典")
+@Tag(name = "系统-字典")
 @RestController
-@RequestMapping("/api/v1/dict")
+@RequestMapping("/api/v1/system/dict")
 public class DictController {
 
-    /** K8s 集群列表 */
     @GetMapping("/k8s-clusters")
     @Operation(summary = "K8s 集群字典")
     public Result<List<Map<String, String>>> k8sClusters() {
@@ -34,7 +36,6 @@ public class DictController {
         ));
     }
 
-    /** Agent 角色字典 */
     @GetMapping("/agent-roles")
     @Operation(summary = "Agent 角色字典")
     public Result<List<Map<String, String>>> agentRoles() {
@@ -47,7 +48,6 @@ public class DictController {
         ));
     }
 
-    /** 通知渠道字典 */
     @GetMapping("/alert-channels")
     @Operation(summary = "告警通知渠道字典")
     public Result<List<Map<String, String>>> alertChannels() {
@@ -61,7 +61,6 @@ public class DictController {
         ));
     }
 
-    /** 行业类型字典 */
     @GetMapping("/industries")
     @Operation(summary = "行业类型字典")
     public Result<List<Map<String, String>>> industries() {
@@ -76,7 +75,6 @@ public class DictController {
         ));
     }
 
-    /** 检索/分块策略字典 */
     @GetMapping("/kb-strategies")
     @Operation(summary = "知识库检索/分块策略字典")
     public Result<List<Map<String, String>>> kbStrategies() {
@@ -91,7 +89,6 @@ public class DictController {
         ));
     }
 
-    /** 模型列表 (从 model 模块拉, 这里是简化版) */
     @GetMapping("/models")
     @Operation(summary = "可用模型字典")
     public Result<List<Map<String, String>>> models() {

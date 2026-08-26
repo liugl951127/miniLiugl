@@ -173,7 +173,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Plus, Search, Rank, ZoomIn, ZoomOut, RefreshLeft, ArrowRight } from '@element-plus/icons-vue'
-import { dictApi } from '@/api/dict'
+import { useDict } from '@/api/dict'
 
 const router = useRouter()
 const canvasRef = ref(null)
@@ -182,9 +182,8 @@ const canvasH = ref(500)
 const zoom = ref(1)
 const selectedNode = ref(null)
 
-// V8.0.3: 字典下拉
-const agentRoles = ref([])
-dictApi.agentRoles().then(r => agentRoles.value = r.data?.data || r.data || []).catch(() => {})
+// V8.0.3.2: 字典下拉 (useDict composable, API 失败用 fallback)
+const { data: agentRoles } = useDict('agentRoles')
 const dragging = ref(null)
 const dragOffset = reactive({ x: 0, y: 0 })
 const showAddAgent = ref(false)

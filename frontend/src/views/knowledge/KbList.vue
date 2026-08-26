@@ -638,7 +638,7 @@ import {
   listDocs, uploadDoc, uploadDocStream, deleteDoc, renameDoc,
   retrieve, getDocContent, updateDocContent, batchReindexDocs, batchDeleteDocs, exportDocs
 } from '@/api/rag'
-import { dictApi } from '@/api/dict'
+import { useDict } from '@/api/dict'
 import kgApi from '@/api/kg'
 import http from '@/api/http'
 import { debounce, createCancellableFetcher } from '@/utils/debounce'
@@ -803,14 +803,10 @@ async function copyDocContent() {
 const kbs = ref([])
 const docs = ref([])
 
-// V8.0.3: 字典下拉
-const retrievalStrategies = ref([])
-const chunkingStrategies = ref([])
-dictApi.kbStrategies().then(r => {
-  const list = r.data?.data || r.data || []
-  retrievalStrategies.value = list.filter(s => s.category === 'retrieval')
-  chunkingStrategies.value = list.filter(s => s.category === 'chunking')
-}).catch(() => {})
+// V8.0.3.2: 字典下拉 (useDict composable, API 失败用 fallback)
+const { data: allKbStrategies } = useDict('kbStrategies')
+const retrievalStrategies = computed(() => (allKbStrategies.value || []).filter(s => s.category === 'retrieval'))
+const chunkingStrategies = computed(() => (allKbStrategies.value || []).filter(s => s.category === 'chunking'))
 const loading = ref(false)
 const saving = ref(false)
 const docsLoading = ref(false)

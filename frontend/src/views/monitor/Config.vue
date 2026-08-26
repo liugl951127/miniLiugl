@@ -142,7 +142,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { monitorApi } from '@/api/monitor'
-import { dictApi } from '@/api/dict'
+import { useDict } from '@/api/dict'
 
 const activeTab = ref('channels')
 
@@ -151,9 +151,8 @@ const loadingRules = ref(false)
 
 const channels = ref([])
 
-// V8.0.3: 字典下拉
-const alertChannels = ref([])
-dictApi.alertChannels().then(r => alertChannels.value = r.data?.data || r.data || []).catch(() => {})
+// V8.0.3.2: 字典下拉 (useDict composable, API 失败用 fallback)
+const { data: alertChannels } = useDict('alertChannels')
 const rules = ref([])
 
 const channelDialog = reactive({ visible: false, id: null, form: { name: '', type: 'dingtalk', config: '' } })
