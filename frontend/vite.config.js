@@ -140,7 +140,7 @@ export default defineConfig(({ mode }) => {
         polyfill: true
       },
       cssCodeSplit: true,
-      chunkSizeWarningLimit: 1500,
+      chunkSizeWarningLimit: 2000,
       // V5.8: 智能分包 (按依赖 + 路由)
       // V3.5.64: 4 核心库独立 chunk, 本地打包, Rollup 不打包, 用 externalGlobals 映射到 window 全局
       rollupOptions: {
@@ -154,6 +154,7 @@ export default defineConfig(({ mode }) => {
               if (id.includes('axios')) return 'common'
               if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router')) return 'vue'
               if (id.includes('dayjs') || id.includes('markdown') || id.includes('highlight')) return 'vendor'
+              if (id.includes('@vueuse/')) return 'vueuse'
               return 'vendor'
             }
             if (id.includes('/src/api/') || id.includes('/src/views/admin/')) return 'admin'

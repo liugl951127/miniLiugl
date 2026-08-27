@@ -176,6 +176,23 @@ export const ask = (body) => {
   return http.post('/rag/ask', body);
 }
 
+// ==================== Day 53: 跨知识库联合检索 ====================
+export const retrieveMulti = (body) => http.post('/rag/retrieve/multi', body)
+export const askMulti = (body) => http.post('/rag/ask/multi', body)
+
+// ==================== Day 54: Cross-Encoder 语义重排序 ====================
+/**
+ * Cross-Encoder 语义重排序检索
+ * @param {object} body { kbId, query, topK?, finalTop?, rerankTopK? }
+ */
+export const retrieveRerank = (body) => http.post('/rag/retrieve/rerank', body)
+
+/**
+ * 端到端 RAG 问答 + Cross-Encoder 重排序
+ * @param {object} body { kbId, question, history?, topK?, finalTop?, systemPrompt? }
+ */
+export const askRerank = (body) => http.post('/rag/ask/rerank', body)
+
 /**
  * SSE 流式上传 (Day 41) + 自动重试 (Day 42)
  * 使用 fetch + ReadableStream 实现 SSE，EventSource 不支持 POST 文件上传

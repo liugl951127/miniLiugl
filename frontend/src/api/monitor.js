@@ -206,6 +206,48 @@ export const activeAnomalyMetrics = () => {
   return http.get('/monitor/anomaly/active-metrics');
 }
 
+// ==================== Day 53: 告警趋势预测 API ====================
+
+/** 告警趋势预测 (EWMA + 线性回归) */
+export const getAlertPredict = (params) => {
+  return http.get('/monitor/alerts/predict', { params })
+}
+
+/** 按级别预测 (CRITICAL / WARNING / INFO) */
+export const getAlertPredictBySeverity = (params) => {
+  return http.get('/monitor/alerts/predict/by-severity', { params })
+}
+
+// ==================== Day 54: 告警根因知识库 API ====================
+
+/**
+ * 查询告警知识库：同类历史告警处理经验
+ * @param {object} params metricName?, historyDays?, limit?
+ */
+export const getAlertRcaKnowledge = (params) =>
+  http.get('/monitor/alerts/rca/knowledge', { params })
+
+/**
+ * 根据告警ID查找同类历史告警处理经验
+ * @param {number} alertId 当前告警ID
+ * @param {number} [historyDays=30] 历史窗口
+ * @param {number} [limit] 最大返回数
+ */
+export const getAlertRcaSimilar = (alertId, historyDays, limit) =>
+  http.get('/monitor/alerts/rca/similar', {
+    params: { alertId, historyDays, limit }
+  })
+
+/**
+ * 告警知识摘要（高频级别/平均恢复时长/常见原因）
+ * @param {string} [metricName] 指标名（可选）
+ * @param {number} [historyDays=30] 历史窗口
+ */
+export const getAlertRcaSummary = (metricName, historyDays) =>
+  http.get('/monitor/alerts/rca/summary', {
+    params: { metricName, historyDays }
+  })
+
 // ==================== Day 43: SLA 统计 API ====================
 /**
  * 告警 SLA 统计
@@ -245,7 +287,11 @@ function createMonitorApi() {
     listAlertChannels, createAlertChannel, deleteAlertChannel,
     testAlertChannel, getAlertHistory,
     getAuditLogs, getAuditByUser, getAuditByDay, exportAuditLogs,
-    getAlertSla, getAlertTrend
+    getAlertSla, getAlertTrend,
+    // Day 53: 告警趋势预测
+    getAlertPredict, getAlertPredictBySeverity,
+    // Day 54: 告警根因知识库
+    getAlertRcaKnowledge, getAlertRcaSimilar, getAlertRcaSummary
   }
 }
 const monitorApi = createMonitorApi()

@@ -43,7 +43,13 @@ spring:
 
 # 模块特殊配置
 minimax:
-  # (无特殊配置)
+  rag:
+    # Day 54: Cross-Encoder 重排序配置
+    reranker:
+      enabled: true
+      top-k: 20          # 首轮 Bi-Encoder 候选数量（用于重排序）
+      alpha: 0.6         # 正向权重（query→doc），0.4 留给反向
+      final-top: 5      # 最终返回数量
 
 # =============================================================
 # V5.7 Nacos 服务发现 (注册当前微服务, gateway 通过 lb:// 调用)

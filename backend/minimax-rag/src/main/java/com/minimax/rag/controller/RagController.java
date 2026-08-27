@@ -6,6 +6,7 @@ import com.minimax.rag.entity.Document;
 import com.minimax.rag.entity.DocumentChunk;
 import com.minimax.rag.entity.KnowledgeBase;
 import com.minimax.rag.retriever.Retriever;
+import com.minimax.rag.reranker.CrossEncoderReranker;
 import com.minimax.rag.service.DocumentService;
 import com.minimax.rag.service.KnowledgeBaseService;
 import com.minimax.rag.service.RagService;
@@ -60,6 +61,7 @@ public class RagController {
     private final KnowledgeBaseService kbService;
     private final DocumentService docService;
     private final Retriever retriever;
+    private final CrossEncoderReranker reranker;
     private final RagService ragService;
 
     /**
@@ -437,6 +439,155 @@ public class RagController {
 
         List<Retriever.Hit> hits = retriever.retrieveMultiKb(kbIds, query, topK);
         return Result.ok(hits);
+    }
+
+    // ---------- Day 54: Cross-Encoder 语义重排序 ----------
+
+    /**
+     * 对已有候选结果进行 Cross-Encoder 语义重排序.
+     *
+     * POST /api/v1/rag/retrieve/rerank
+     * body: {
+     *   "kbId": 1,                    // 知识库 ID
+     *   "query": "用户查询",
+     *   "topK": 20,                   // 首次检索候选数（默认 20）
+     *   "finalTop": 5,                // 最终返回数（默认 5）
+     *   "rerankTopK": 20             // 重排序候选数（默认 20）
+     * }
+     */
+    @Operation(summary = "Cross-Encoder 语义重排序（首轮检索 + 交叉注意力精排）")
+    @PostMapping("/retrieve/rerank")
+    public Result<Map<String, Object>> retrieveRerank(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @RequestBody Map<String, Object> body) {
+        Long kbId = body.get("kbId") == null ? null : ((Number) body.get("kbId")).longValue();
+        String query = (String) body.get("query");
+        Integer topK = (Integer) body.getOrDefault("topK", 20);
+        Integer finalTop = (Integer) body.getOrDefault("finalTop", 5);
+        Boolean useTimeliness = (Boolean) body.getOrDefault("useTimeliness", true);
+
+        if (query == null || query.isBlank()) {
+            return Result.fail("query 不能为空");
+        }
+
+        kbService.verifyAccess(kbId, user != null ? user.id() : null);
+
+        long start = System.currentTimeMillis();
+
+        // Step 1: 首轮 Bi-Encoder 检索（取更多候选供重排序）
+        List<Retriever.Hit> candidates = retriever.retrieve(kbId, query, Math.max(topK, 20), useTimeliness);
+        if (candidates.isEmpty()) {
+            return Result.ok(Map.of(
+                    "query", query,
+                    "totalHits", 0,
+                    "rerankedHits", List.of(),
+                    "method", "bi-encoder (empty)"
+            ));
+        }
+
+        // Step 2: Cross-Encoder 重排序
+        List<Retriever.Hit> reranked = reranker.rerank(candidates, query, finalTop);
+
+        long elapsed = System.currentTimeMillis() - start;
+
+        Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("query", query);
+        result.put("totalHits", candidates.size());
+        result.put("rerankedHits", reranked.stream().map(h -> Map.of(
+                "chunkId", h.chunkId,
+                "docId", h.docId,
+                "docTitle", h.docTitle != null ? h.docTitle : "",
+                "content", h.content != null && h.content.length() > 200
+                        ? h.content.substring(0, 200) + "..." : (h.content != null ? h.content : ""),
+                "score", h.score,
+                "rankScore", h.rankScore,
+                "highlight", h.highlight != null ? h.highlight : ""
+        )).toList());
+        result.put("method", "cross-encoder-rerank");
+        result.put("elapsedMs", elapsed);
+        return Result.ok(result);
+    }
+
+    /**
+     * 端到端 RAG 问答（含 Cross-Encoder 重排序）.
+     *
+     * POST /api/v1/rag/ask/rerank
+     * body: {
+     *   "kbId": 1,
+     *   "question": "用户问题",
+     *   "history": "对话历史（可选）",
+     *   "topK": 20,
+     *   "finalTop": 5,
+     *   "systemPrompt": "可选系统提示"
+     * }
+     */
+    @Operation(summary = "RAG 问答 + Cross-Encoder 重排序（端到端）")
+    @PostMapping("/ask/rerank")
+    public Result<Map<String, Object>> askRerank(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @RequestBody Map<String, Object> body) {
+        Long kbId = body.get("kbId") == null ? null : ((Number) body.get("kbId")).longValue();
+        String question = (String) body.get("question");
+        String history = (String) body.get("history");
+        Integer topK = (Integer) body.getOrDefault("topK", 20);
+        Integer finalTop = (Integer) body.getOrDefault("finalTop", 5);
+        String systemPrompt = (String) body.get("systemPrompt");
+
+        if (question == null || question.isBlank()) {
+            return Result.fail("question 不能为空");
+        }
+
+        kbService.verifyAccess(kbId, user != null ? user.id() : null);
+
+        long start = System.currentTimeMillis();
+
+        // Step 1: 首轮检索
+        List<Retriever.Hit> candidates = retriever.retrieve(kbId, question, Math.max(topK, 20), true);
+
+        // Step 2: Cross-Encoder 重排序
+        List<Retriever.Hit> hits = reranker.rerank(candidates, question, finalTop);
+
+        // Step 3: 构建上下文
+        StringBuilder ctx = new StringBuilder();
+        if (systemPrompt != null && !systemPrompt.isBlank()) {
+            ctx.append(systemPrompt).append("\n\n");
+        } else {
+            ctx.append("你是基于知识库回答问题的助手。请根据以下参考资料回答，引用处标注 [来源N]。\n\n");
+        }
+        for (int i = 0; i < hits.size(); i++) {
+            Retriever.Hit h = hits.get(i);
+            ctx.append("[").append(i + 1).append("] ")
+               .append(h.docTitle != null ? h.docTitle : "(无标题)")
+               .append(" (相似度 ").append(String.format("%.2f", h.score)).append(")\n")
+               .append(h.content).append("\n\n");
+        }
+
+        Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("question", question);
+        result.put("hitCount", hits.size());
+        result.put("sources", hits.stream().map(h -> Map.of(
+                "chunkId", h.chunkId,
+                "docId", h.docId,
+                "docTitle", h.docTitle != null ? h.docTitle : "",
+                "score", h.score,
+                "rankScore", h.rankScore,
+                "highlight", h.highlight != null ? h.highlight : h.content
+        )).toList());
+
+        // Step 4: LLM 生成
+        try {
+            var answer = ragService.ask(kbId, question, history, finalTop, systemPrompt);
+            result.put("answer", answer.answer());
+            result.put("strategy", "CROSS_ENCODER_RERANK");
+            result.put("elapsedMs", System.currentTimeMillis() - start);
+        } catch (Exception e) {
+            log.warn("Cross-Encoder RAG LLM 调用失败: {}", e.getMessage());
+            result.put("answer", "（LLM 暂时不可用，以下为检索内容）\n\n" + ctx);
+            result.put("strategy", "CROSS_ENCODER_RETRIEVAL_ONLY");
+            result.put("elapsedMs", System.currentTimeMillis() - start);
+        }
+
+        return Result.ok(result);
     }
 
     /**

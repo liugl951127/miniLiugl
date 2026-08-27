@@ -20,6 +20,8 @@ import com.minimax.monitor.mapper.AlertRuleMapper;
 import com.minimax.monitor.service.AlertChannelService;
 import com.minimax.monitor.service.AlertRcaService;
 import com.minimax.monitor.service.AlertRcaService.RcaResult;
+import com.minimax.monitor.service.AlertRcaKnowledgeService;
+import com.minimax.monitor.service.AlertRcaKnowledgeService.KnowledgeEntry;
 import com.minimax.monitor.service.LogAnomalyDetector;
 import com.minimax.monitor.service.LogAnomalyDetector.AnomalyResult;
 import com.minimax.monitor.service.SnapshotService;
@@ -91,6 +93,7 @@ public class MonitorController {
     private final LogAnomalyDetector anomalyDetector;
     private final AlertMetricsService alertMetricsService;
     private final AlertPredictionService predictionService;
+    private final AlertRcaKnowledgeService rcaKnowledgeService;
 
     // V5.10: Java HttpClient 复用 (跨服务调 /actuator/prometheus)
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -713,6 +716,75 @@ public class MonitorController {
                 })
                 .toList();
         return Result.ok(history);
+    }
+
+    // ---------- Day 54: 告警根因知识库 (同类告警历史处理经验) ----------
+
+    /**
+     * 查询告警知识库：同类历史告警的处理经验.
+     */
+    @Operation(summary = "查询告警知识库（同指标历史处理经验）")
+    @GetMapping("/alerts/rca/knowledge")
+    public Result<List<Map<String, Object>>> rcaKnowledge(
+            @RequestParam(required = false) String metricName,
+            @RequestParam(required = false, defaultValue = "30") Integer historyDays,
+            @RequestParam(required = false) Integer limit) {
+        List<KnowledgeEntry> entries = rcaKnowledgeService.queryKnowledge(metricName, historyDays, limit);
+        List<Map<String, Object>> items = entries.stream().map(e -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("alertId", e.alertId());
+            m.put("metricName", e.metricName());
+            m.put("ruleName", e.ruleName());
+            m.put("severity", e.severity());
+            m.put("status", e.status());
+            m.put("message", e.message());
+            m.put("firedAt", e.firedAt());
+            m.put("resolvedAt", e.resolvedAt());
+            m.put("duration", e.duration());
+            m.put("notes", e.notes());
+            m.put("resolvedBy", e.resolvedBy());
+            return m;
+        }).toList();
+        return Result.ok(items);
+    }
+
+    /**
+     * 根据当前告警 ID 查找同类历史告警处理经验.
+     */
+    @Operation(summary = "同类告警查找（根据告警ID找历史处理记录）")
+    @GetMapping("/alerts/rca/similar")
+    public Result<List<Map<String, Object>>> rcaSimilar(
+            @RequestParam Long alertId,
+            @RequestParam(required = false, defaultValue = "30") Integer historyDays,
+            @RequestParam(required = false) Integer limit) {
+        List<KnowledgeEntry> entries = rcaKnowledgeService.findSimilar(alertId, historyDays, limit);
+        List<Map<String, Object>> items = entries.stream().map(e -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("alertId", e.alertId());
+            m.put("metricName", e.metricName());
+            m.put("ruleName", e.ruleName());
+            m.put("severity", e.severity());
+            m.put("status", e.status());
+            m.put("message", e.message());
+            m.put("firedAt", e.firedAt());
+            m.put("resolvedAt", e.resolvedAt());
+            m.put("duration", e.duration());
+            m.put("notes", e.notes());
+            m.put("resolvedBy", e.resolvedBy());
+            return m;
+        }).toList();
+        return Result.ok(items);
+    }
+
+    /**
+     * 指标告警知识摘要（高频级别/平均恢复时长/常见原因）.
+     */
+    @Operation(summary = "告警知识摘要（高频级别/平均恢复时长/常见原因）")
+    @GetMapping("/alerts/rca/summary")
+    public Result<Map<String, Object>> rcaSummary(
+            @RequestParam(required = false) String metricName,
+            @RequestParam(required = false, defaultValue = "30") Integer historyDays) {
+        return Result.ok(rcaKnowledgeService.knowledgeSummary(metricName, historyDays));
     }
 
     // ---------- Day 53: 告警趋势预测 (EWMA + 线性回归) ----------

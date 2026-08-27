@@ -28,6 +28,13 @@
     <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Liugl-AI 大模型平台</title>
+    <!-- Day 54: 性能优化 - 关键域名预连接 -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <!-- 关键路由预加载（Dashboard / Chat / Knowledge - 用户最常用） -->
+    <link rel="prefetch" href="/dashboard" />
+    <link rel="prefetch" href="/chat" />
+    <link rel="prefetch" href="/knowledge/list" />
+    <link rel="prefetch" href="/agent/canvas" />
     <!-- D3.js for Knowledge Graph Force Layout -->
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
     <style>
