@@ -931,6 +931,22 @@
 **关键文件数：** 后端 4 文件 / 前端 8 文件
 
 **明日计划 Day 54：**
-- [ ] Monitor 告警根因知识库（同类告警自动关联历史处理记录）
-- [ ] 前端性能优化（Code Splitting / 路由预加载）
-- [ ] RAG 语义重排序（Cross-Encoder rerank 优化 top-K 准确率）
+- [x] Monitor 告警根因知识库（同类告警自动关联历史处理记录）
+- [x] 前端性能优化（Code Splitting / 路由预加载）
+- [x] RAG 语义重排序（Cross-Encoder rerank 优化 top-K 准确率）
+
+## Day 54 - 2026-08-28 ✅ RCA知识集成 + Cross-Encoder重排 + 路由预加载
+
+**今日完成：**
+- [x] **Monitor RCA × RAG 知识集成**：`AlertRcaService` 注入 `AlertRcaKnowledgeService`，`llmAnalyze()` 先查同类历史告警处理经验注入 LLM prompt；`RcaResult` 新增 `historicalKnowledge` 字段透传到 API 响应
+- [x] **RAG Cross-Encoder 语义重排序**：`Retriever` 注入 `CrossEncoderReranker`，`retrieve()` 首轮取 topK*2 候选 → Cross-Encoder 重排序 → 最终 topK；`retrieveMultiKb()` 末尾同样精排
+- [x] **前端路由预加载**：`router.afterEach` 触发 `requestIdleCallback` 空闲预取高频路由（Dashboard/Chat/Knowledge）；`vite.config.js` `optimizeDeps.include` 扩展 10+ 个 Element Plus 组件 CSS 预编译
+
+**关键文件：** 后端 2 文件 / 前端 2 文件
+**自检：** 13/13 ✅ + 静态 5/5 ✅ + vite build 40.68s ✅
+
+**明日计划 Day 55：**
+- [ ] Monitor 告警 RCA 结果前端展示（Alerts.vue 详情抽屉显示根因分类 + 建议操作 + 历史知识条目）
+- [ ] Monitor 告警根因知识库前端入口（AlertRcaKnowledgeService → 前端 API 调用 + 知识库 Tab）
+- [ ] RAG 检索结果置信度展示（前端显示 cross-encoder 得分 / rankScore）
+- [ ] MiniMax 大模型平台日常维护（前端语法检查 / API 路径一致性 / SQL 脚本同步）

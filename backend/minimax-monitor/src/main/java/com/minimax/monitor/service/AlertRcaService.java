@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -59,7 +58,14 @@ public class AlertRcaService {
     @Value("${minimax.monitor.rca.service-url:http://localhost:8083}")
     private String modelServiceUrl;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    @Value("${minimax.monitor.rca-knowledge.enabled:true}")
+    private boolean knowledgeEnabled;
+
+    @Value("${minimax.monitor.rca-knowledge.inject-limit:5}")
+    private int knowledgeInjectLimit;
+
+    private final RestTemplate restTemplate;
+    private final AlertRcaKnowledgeService rcaKnowledgeService;
 
     // ============== 公开 API ==============
 
@@ -256,10 +262,16 @@ public class AlertRcaService {
 
     // ============== LLM 深度推理 ==============
 
-    /** 通过 LLM 进行根因推理 */
+    /** 通过 LLM 进行根因推理（含知识库上下文增强） */
     private RcaResult llmAnalyze(AlertEvent event, AlertProfile profile,
                                  List<AlertEvent> recentEvents, long startTime) {
+        // 先查同类历史告警处理经验（知识库增强，Day 54）
+        KnowledgeContext knowledge = buildKnowledgeContext(event);
+
         String context = buildLlmPrompt(event, profile, recentEvents);
+        if (!knowledge.context().isBlank()) {
+            context = knowledge.context() + "\n\n" + context;
+        }
 
         try {
             Map<String, Object> body = Map.of(
@@ -284,7 +296,7 @@ public class AlertRcaService {
                 return RcaResult.notAnalyzed(event.getId(), "LLM returned empty");
             }
 
-            return parseLlmResult(event.getId(), answer, elapsed);
+            return parseLlmResult(event.getId(), answer, elapsed, knowledge.entries());
 
         } catch (Exception e) {
             log.warn("[RCA] LLM call failed for alert {}: {}", event.getId(), e.getMessage());
@@ -323,6 +335,54 @@ public class AlertRcaService {
                 """;
     }
 
+    /** 从知识库拉取同类历史告警处理经验，注入 prompt（Day 54） */
+    private KnowledgeContext buildKnowledgeContext(AlertEvent event) {
+        if (!knowledgeEnabled) return new KnowledgeContext("", List.of());
+        try {
+            List<AlertRcaKnowledgeService.KnowledgeEntry> history =
+                    rcaKnowledgeService.findSimilar(event.getId(), 30, knowledgeInjectLimit);
+            if (history == null || history.isEmpty()) {
+                // 尝试按 metricName 直接匹配
+                history = rcaKnowledgeService.queryKnowledge(event.getMetricName(), 30, knowledgeInjectLimit);
+            }
+            if (history == null || history.isEmpty()) return new KnowledgeContext("", List.of());
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("## 同类历史告警处理经验（来自知识库）\n");
+            for (int i = 0; i < history.size(); i++) {
+                AlertRcaKnowledgeService.KnowledgeEntry e = history.get(i);
+                sb.append(String.format(
+                        "[历史%ds] %s | %s | %s | 持续 %s | 处理人: %s\n",
+                        (i + 1),
+                        e.severity(),
+                        e.ruleName() != null ? e.ruleName() : e.metricName(),
+                        e.status(),
+                        e.duration() != null ? formatDuration(e.duration()) : "未知",
+                        e.resolvedBy() != null ? e.resolvedBy() : "未知"
+                ));
+                if (e.notes() != null && !e.notes().isBlank()) {
+                    sb.append("  → 处理方案: ").append(e.notes()).append("\n");
+                }
+            }
+            log.info("[RCA] alert {} enriched with {} historical knowledge entries",
+                    event.getId(), history.size());
+            return new KnowledgeContext(sb.toString(), history);
+        } catch (Exception ex) {
+            log.warn("[RCA] Failed to fetch knowledge for alert {}: {}", event.getId(), ex.getMessage());
+            return new KnowledgeContext("", List.of());
+        }
+    }
+
+    /** 格式化时长（秒 → 友好字符串） */
+    private String formatDuration(long seconds) {
+        if (seconds < 60) return seconds + "s";
+        if (seconds < 3600) return (seconds / 60) + "m " + (seconds % 60) + "s";
+        return String.format("%.1fh", seconds / 3600.0);
+    }
+
+    /** 知识上下文：prompt 注入字符串 + 结构化条目 */
+    private record KnowledgeContext(String context, List<AlertRcaKnowledgeService.KnowledgeEntry> entries) {}
+
     private String buildLlmPrompt(AlertEvent event, AlertProfile profile,
                                   List<AlertEvent> recent) {
         StringBuilder sb = new StringBuilder();
@@ -354,7 +414,8 @@ public class AlertRcaService {
     }
 
     /** 解析 LLM 返回结果 */
-    private RcaResult parseLlmResult(Long alertId, String answer, long elapsed) {
+    private RcaResult parseLlmResult(Long alertId, String answer, long elapsed,
+                                     List<AlertRcaKnowledgeService.KnowledgeEntry> historicalKnowledge) {
         RootCauseCategory category = RootCauseCategory.UNKNOWN;
         String cause = "";
         List<String> actions = new ArrayList<>();
@@ -396,7 +457,8 @@ public class AlertRcaService {
         }
 
         return new RcaResult(alertId, category, cause, actions,
-                elapsed, "llm", 0.7, answer);
+                elapsed, "llm", 0.7, answer,
+                historicalKnowledge != null ? historicalKnowledge : List.of());
     }
 
     @SuppressWarnings("unchecked")
@@ -431,10 +493,13 @@ public class AlertRcaService {
         private final double confidence;   // 0.0 ~ 1.0
         private final String rawAnswer;    // LLM 原始回答
         private final String error;
+        /** Day 54: 历史知识条目（来自同类告警处理经验） */
+        private final List<AlertRcaKnowledgeService.KnowledgeEntry> historicalKnowledge;
 
         public RcaResult(Long alertId, RootCauseCategory category, String cause,
                         List<String> suggestedActions, long analysisMs, String method,
-                        double confidence, String rawAnswer) {
+                        double confidence, String rawAnswer,
+                        List<AlertRcaKnowledgeService.KnowledgeEntry> historicalKnowledge) {
             this.alertId = alertId;
             this.category = category;
             this.cause = cause != null ? cause : "";
@@ -444,6 +509,7 @@ public class AlertRcaService {
             this.confidence = Math.max(0.0, Math.min(1.0, confidence));
             this.rawAnswer = rawAnswer;
             this.error = null;
+            this.historicalKnowledge = historicalKnowledge != null ? List.copyOf(historicalKnowledge) : List.of();
         }
 
         /** V6.8.2 兼容别名 */
@@ -461,6 +527,7 @@ public class AlertRcaService {
             this.confidence = 0.0;
             this.rawAnswer = null;
             this.error = error;
+            this.historicalKnowledge = List.of();
         }
 
         private RcaResult(Long alertId, String message) {
@@ -473,12 +540,13 @@ public class AlertRcaService {
             this.confidence = 0.0;
             this.rawAnswer = null;
             this.error = message;
+            this.historicalKnowledge = List.of();
         }
 
         public static RcaResult of(Long alertId, RootCauseCategory cat,
                                    String cause, List<String> actions,
                                    long ms, String method) {
-            return new RcaResult(alertId, cat, cause, actions, ms, method, 0.85, null);
+            return new RcaResult(alertId, cat, cause, actions, ms, method, 0.85, null, List.of());
         }
 
         public static RcaResult notAnalyzed(Long alertId, String reason) {

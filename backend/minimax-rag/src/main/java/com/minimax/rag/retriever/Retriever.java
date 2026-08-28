@@ -5,6 +5,7 @@ import com.minimax.rag.entity.Document;
 import com.minimax.rag.entity.DocumentChunk;
 import com.minimax.rag.mapper.DocumentChunkMapper;
 import com.minimax.rag.mapper.DocumentMapper;
+import com.minimax.rag.reranker.CrossEncoderReranker;
 import com.minimax.rag.service.VectorUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +39,7 @@ public class Retriever {
     private final DocumentChunkMapper chunkMapper;
     private final DocumentMapper docMapper;
     private final EmbeddingClient embedding;
+    private final CrossEncoderReranker reranker;  // Day 54: Cross-Encoder 重排序
 
     @Value("${minimax.rag.retrieve.min-score:0.10}")
     private double minScore;
@@ -100,7 +102,14 @@ public class Retriever {
         });
         hits.sort((a, b) -> Double.compare(b.rankScore, a.rankScore));
 
-        List<Hit> top = hits.subList(0, Math.min(topK, hits.size()));
+        // Day 54: Cross-Encoder 重排序 — 候选量放大后重排序，再取 topK
+        // 首轮取 topK * 2 候选送 reranker，避免 reranking 降低召回
+        int rerankCandidate = Math.min(hits.size(), topK * 2);
+        List<Hit> rerankCandidates = hits.subList(0, rerankCandidate);
+        List<Hit> reranked = reranker.rerank(rerankCandidates, query, topK);
+        // rerank 返回空时降级到原始排序
+        List<Hit> top = (!reranked.isEmpty() ? reranked : rerankCandidates).stream()
+                .limit(topK).toList();
 
         // touch access + 拉 doc title + 高亮摘要 (Day 43)
         Set<Long> topDocIds = top.stream().map(h -> h.docId).filter(java.util.Objects::nonNull).collect(Collectors.toSet());
@@ -114,8 +123,8 @@ public class Retriever {
             h.docSource = doc == null ? null : doc.getSourceUri();
             h.setHighlight(query);
         }
-        log.info("retrieve: kbId={} queryLen={} candidates={} hits={} topK={} timeliness={}",
-                kbId, query.length(), all.size(), hits.size(), top.size(), useTimeliness);
+        log.info("retrieve: kbId={} queryLen={} candidates={} hits={} topK={} timeliness={} reranked={}",
+                kbId, query.length(), all.size(), hits.size(), top.size(), useTimeliness, !reranked.isEmpty());
         return top;
     }
 
@@ -191,6 +200,9 @@ public class Retriever {
 
         // 最终 topK
         List<Hit> result = balanced.subList(0, Math.min(topK, balanced.size()));
+        // Day 54: Cross-Encoder 重排序（多 KB 结果融合后精排）
+        List<Hit> reranked = reranker.rerank(result, query, topK);
+        if (!reranked.isEmpty()) result = reranked;
         log.info("retrieveMultiKb: kbIds={} queryLen={} candidates={} deduped={} final={}",
                 kbIds, query.length(), allHits.size(), deduped.size(), result.size());
         return result;

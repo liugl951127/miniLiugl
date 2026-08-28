@@ -237,4 +237,32 @@ router.beforeEach((to, from, next) => {
   }
 })
 
+// ─── Day 54: 路由预加载优化 ───
+// 用户空闲时预取高频路由（Dashboard / Chat / Knowledge），降低切换延迟
+const PREFETCH_ROUTES = ['/chat', '/knowledge', '/knowledge/list', '/agent']
+function prefetchOnIdle() {
+  const cb = () => {
+    PREFETCH_ROUTES.forEach(path => {
+      const record = router.resolve(path)
+      if (record.matched.length > 0) {
+        // 触发 Vite/SW 预加载（利用 <link rel=modulepreload>）
+        record.matched.forEach(r => {
+          if (r.components?.default) {
+            const comp = r.components.default
+            if (typeof comp === 'function' && !comp._loaded) {
+              comp().then(m => { comp._loaded = true })
+            }
+          }
+        })
+      }
+    })
+  }
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(cb, { timeout: 3000 })
+  } else {
+    setTimeout(cb, 2000)
+  }
+}
+router.afterEach(() => { prefetchOnIdle() })
+
 export default router
