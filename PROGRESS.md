@@ -950,3 +950,18 @@
 - [ ] Monitor 告警根因知识库前端入口（AlertRcaKnowledgeService → 前端 API 调用 + 知识库 Tab）
 - [ ] RAG 检索结果置信度展示（前端显示 cross-encoder 得分 / rankScore）
 - [ ] MiniMax 大模型平台日常维护（前端语法检查 / API 路径一致性 / SQL 脚本同步）
+
+## Day 55 - 2026-08-29 ✅ RCA前端展示 + RAG rankScore置信度 + 自检通过
+
+**今日完成：**
+- [x] **Monitor RCA 前端展示**：Alerts.vue 活跃告警新增「根因分析」按钮 + 详情抽屉，展示 RCA category 颜色标签 / cause 文本 / suggestedActions 列表 / historicalKnowledge 历史经验卡片（Day 55 核心亮点）/ method 标识 / 置信度；支持「重新分析」刷新
+- [x] **RAG rankScore 置信度展示**：KbList.vue 检索结果卡片升级，精排态显示 rankScore（蓝色主分 + 「精排」标签）+ score（灰色副分）；普通态保持进度条样式；结果头部自动检测「精排」徽章（useRerank computed）
+- [x] **npm 依赖修复**：使用 `--legacy-peer-deps` 绕过 npm 10.9.3 exit-handler bug，完成 node_modules 安装
+- [x] 自检 13/13 ✅ + 静态 5/5 ✅ + vite build 42.43s ✅
+
+**关键文件：** 前端 2 文件（Alerts.vue / KbList.vue）
+
+**明日计划 Day 56：**
+- [ ] Monitor 告警根因知识库前端入口（AlertRcaKnowledgeService → 前端知识库 Tab）
+- [ ] RAG 检索结果置信度可视化（置信度热力条 + 颜色渐变）
+- [ ] MiniMax 大模型平台日常维护（前端语法检查 / API 路径一致性）

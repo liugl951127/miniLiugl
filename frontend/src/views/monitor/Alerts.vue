@@ -1,7 +1,8 @@
 <!--
-  @file monitor/Alerts.vue - 告警管理 (V7.6)
+  @file monitor/Alerts.vue - 告警管理 (V7.7, Day 55)
   路由: /monitor/alerts
   合并: 活跃告警 + 历史告警 (原 2 个 tab)
+  Day 55 新增: RCA 根因分析详情抽屉 (category / cause / suggestedActions / historicalKnowledge)
 -->
 <template>
   <div class="alerts-page">
@@ -33,9 +34,10 @@
           <el-table-column prop="title" label="标题" />
           <el-table-column prop="source" label="来源" width="120" />
           <el-table-column prop="firedAt" label="触发时间" width="180" />
-          <el-table-column label="操作" width="180">
+          <el-table-column label="操作" width="260">
             <template #default="{ row }">
-              <el-button size="small" link type="primary" @click="ackAlert(row)">确认</el-button>
+              <el-button size="small" link type="primary" @click="openRcaDrawer(row)">根因分析</el-button>
+              <el-button size="small" link type="warning" @click="ackAlert(row)">确认</el-button>
               <el-button size="small" link type="success" @click="resolveAlert(row)">解决</el-button>
             </template>
           </el-table-column>
@@ -87,13 +89,102 @@
         />
       </el-tab-pane>
     </el-tabs>
+
+    <!-- ========== RCA 详情抽屉 (Day 55) ========== -->
+    <el-drawer v-model="rcaDrawerVisible" title="告警根因分析" size="600px" direction="rtl">
+      <div v-if="rcaLoading" style="text-align:center;padding:60px 0">
+        <el-icon class="is-loading" style="font-size:32px"><Loading /></el-icon>
+        <p style="margin-top:12px;color:var(--el-text-color-secondary)">正在分析根因...</p>
+      </div>
+
+      <div v-else-if="rcaError" style="padding:20px">
+        <el-alert type="error" :title="rcaError" show-icon :closable="false" />
+      </div>
+
+      <div v-else-if="rcaResult" class="rca-content">
+        <!-- 分析元信息 -->
+        <div class="rca-meta">
+          <el-tag :type="getRcaMethodType(rcaResult.method)" size="small">
+            {{ getRcaMethodLabel(rcaResult.method) }}
+          </el-tag>
+          <span class="rca-ms">耗时 {{ rcaResult.analysisMs }}ms</span>
+          <el-tooltip v-if="rcaResult.confidence > 0" content="分析置信度">
+            <span class="rca-confidence">
+              置信度 {{ (rcaResult.confidence * 100).toFixed(0) }}%
+            </span>
+          </el-tooltip>
+        </div>
+
+        <!-- 根因分类 -->
+        <div class="rca-section">
+          <h4 class="rca-section-title">根因分类</h4>
+          <el-tag :type="getCategoryType(rcaResult.category)" size="large" style="font-size:14px;padding:6px 16px">
+            {{ getCategoryLabel(rcaResult.category) }}
+          </el-tag>
+        </div>
+
+        <!-- 根因分析 -->
+        <div v-if="rcaResult.cause" class="rca-section">
+          <h4 class="rca-section-title">根因分析</h4>
+          <p class="rca-cause">{{ rcaResult.cause }}</p>
+        </div>
+
+        <!-- 建议操作 -->
+        <div v-if="rcaResult.suggestedActions?.length" class="rca-section">
+          <h4 class="rca-section-title">建议操作</h4>
+          <ul class="rca-actions">
+            <li v-for="(action, i) in rcaResult.suggestedActions" :key="i">{{ action }}</li>
+          </ul>
+        </div>
+
+        <!-- 历史知识 (Day 55) -->
+        <div v-if="rcaResult.historicalKnowledge?.length" class="rca-section">
+          <h4 class="rca-section-title">
+            历史处理经验
+            <el-tag type="info" size="small" style="margin-left:8px">{{ rcaResult.historicalKnowledge.length }} 条</el-tag>
+          </h4>
+          <div class="rca-knowledge-list">
+            <div v-for="(entry, i) in rcaResult.historicalKnowledge" :key="i" class="rca-knowledge-item">
+              <div class="rca-knowledge-header">
+                <el-tag :type="getLevelType(entry.severity)" size="small">{{ entry.severity }}</el-tag>
+                <span class="rca-knowledge-title">{{ entry.ruleName || entry.metricName }}</span>
+                <span class="rca-knowledge-status">{{ entry.status }}</span>
+              </div>
+              <div v-if="entry.duration" class="rca-knowledge-meta">
+                持续 {{ formatDuration(entry.duration) }} · 处理人: {{ entry.resolvedBy || '未知' }}
+              </div>
+              <div v-if="entry.notes" class="rca-knowledge-notes">
+                <el-icon size="12"><InfoFilled /></el-icon>
+                {{ entry.notes }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 原始回答 (LLM 时展开) -->
+        <div v-if="rcaResult.rawAnswer && rcaResult.method === 'llm'" class="rca-section">
+          <h4 class="rca-section-title">
+            LLM 原始分析
+            <el-button link type="primary" size="small" style="margin-left:8px" @click="rawAnswerExpanded = !rawAnswerExpanded">
+              {{ rawAnswerExpanded ? '收起' : '展开' }}
+            </el-button>
+          </h4>
+          <pre v-if="rawAnswerExpanded" class="rca-raw-answer">{{ rcaResult.rawAnswer }}</pre>
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="rcaDrawerVisible = false">关闭</el-button>
+        <el-button type="primary" @click="refreshRca" :loading="rcaLoading">重新分析</el-button>
+      </template>
+    </el-drawer>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Refresh, Search } from '@element-plus/icons-vue'
+import { Refresh, Search, Loading, InfoFilled } from '@element-plus/icons-vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { monitorApi } from '@/api/monitor'
 
@@ -110,11 +201,90 @@ const historyFilter = reactive({ dateRange: null, level: '' })
 const historyPage = ref(1)
 const historyTotal = ref(0)
 
+// ==================== RCA 抽屉 (Day 55) ====================
+const rcaDrawerVisible = ref(false)
+const rcaLoading = ref(false)
+const rcaError = ref('')
+const rcaResult = ref(null)
+const rcaCurrentAlert = ref(null)
+const rawAnswerExpanded = ref(false)
+
 function getLevelType(level) {
   return { critical: 'danger', warning: 'warning', info: 'info' }[level] || 'info'
 }
 function getLevelLabel(level) {
   return { critical: '严重', warning: '警告', info: '信息' }[level] || level
+}
+
+// RCA 方法标签
+function getRcaMethodType(method) {
+  return { llm: 'primary', 'rule-based': 'success', 'rule-based fallback': 'warning', error: 'danger', skipped: 'info' }[method] || 'info'
+}
+function getRcaMethodLabel(method) {
+  return { llm: 'LLM 分析', 'rule-based': '规则匹配', 'rule-based fallback': '规则降级', error: '分析失败', skipped: '已跳过' }[method] || method
+}
+
+// 根因分类标签
+function getCategoryType(cat) {
+  return {
+    RESOURCE_BOTTLENECK: 'danger',
+    CONFIG_ERROR: 'warning',
+    EXTERNAL_DEPENDENCY: 'info',
+    CODE_BUG: 'danger',
+    TRAFFIC_SPIKE: 'warning',
+    NETWORK: 'info',
+    UNKNOWN: 'info'
+  }[cat] || 'info'
+}
+function getCategoryLabel(cat) {
+  return {
+    RESOURCE_BOTTLENECK: '资源瓶颈',
+    CONFIG_ERROR: '配置错误',
+    EXTERNAL_DEPENDENCY: '外部依赖',
+    CODE_BUG: '代码缺陷',
+    TRAFFIC_SPIKE: '流量突增',
+    NETWORK: '网络问题',
+    UNKNOWN: '未知'
+  }[cat] || cat
+}
+
+// 时长格式化
+function formatDuration(seconds) {
+  if (!seconds) return '未知'
+  if (seconds < 60) return seconds + 's'
+  if (seconds < 3600) return Math.floor(seconds / 60) + 'm ' + (seconds % 60) + 's'
+  return (seconds / 3600).toFixed(1) + 'h'
+}
+
+async function openRcaDrawer(alert) {
+  rcaCurrentAlert.value = alert
+  rcaDrawerVisible.value = true
+  rcaError.value = ''
+  rcaResult.value = null
+  rawAnswerExpanded.value = false
+  await fetchRca()
+}
+
+async function fetchRca() {
+  if (!rcaCurrentAlert.value) return
+  rcaLoading.value = true
+  rcaError.value = ''
+  try {
+    const res = await monitorApi.rcaAnalysis(rcaCurrentAlert.value.id)
+    if (res.code === 0) {
+      rcaResult.value = res.data
+    } else {
+      rcaError.value = res.message || 'RCA 分析失败'
+    }
+  } catch (e) {
+    rcaError.value = e.message || '网络错误，请重试'
+  } finally {
+    rcaLoading.value = false
+  }
+}
+
+async function refreshRca() {
+  await fetchRca()
 }
 
 async function loadActive() {
@@ -172,4 +342,21 @@ onMounted(() => {
 .alerts-page { background: white; border-radius: 12px; padding: 16px; }
 .alerts-tabs { background: transparent; }
 .toolbar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
+
+/* RCA 抽屉样式 (Day 55) */
+.rca-content { padding: 0 20px 20px; }
+.rca-meta { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding: 10px 14px; background: var(--el-fill-color-light); border-radius: 8px; }
+.rca-ms, .rca-confidence { font-size: 12px; color: var(--el-text-color-secondary); }
+.rca-section { margin-bottom: 20px; }
+.rca-section-title { font-size: 13px; font-weight: 600; color: var(--el-text-color-primary); margin: 0 0 10px; display: flex; align-items: center; }
+.rca-cause { margin: 0; font-size: 13px; color: var(--el-text-color-regular); line-height: 1.7; white-space: pre-wrap; }
+.rca-actions { margin: 0; padding-left: 20px; font-size: 13px; color: var(--el-text-color-regular); line-height: 2; }
+.rca-knowledge-list { display: flex; flex-direction: column; gap: 10px; }
+.rca-knowledge-item { padding: 10px 12px; border: 1px solid var(--el-border-color-light); border-radius: 8px; background: var(--el-fill-color-blank); }
+.rca-knowledge-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.rca-knowledge-title { font-size: 13px; font-weight: 500; color: var(--el-text-color-primary); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rca-knowledge-status { font-size: 11px; color: var(--el-color-success); }
+.rca-knowledge-meta { font-size: 11px; color: var(--el-text-color-secondary); }
+.rca-knowledge-notes { font-size: 11px; color: var(--el-text-color-secondary); margin-top: 4px; display: flex; align-items: flex-start; gap: 4px; }
+.rca-raw-answer { font-size: 11px; background: var(--el-fill-color-dark); color: var(--el-text-color-regular); padding: 12px; border-radius: 6px; white-space: pre-wrap; word-break: break-all; max-height: 300px; overflow-y: auto; margin: 0; }
 </style>

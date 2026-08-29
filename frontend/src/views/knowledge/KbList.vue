@@ -1,5 +1,6 @@
-<!-- @file knowledge/KbList.vue - 知识库管理 (V7.6 从原 Index.vue 1977 行提取)
+<!-- @file knowledge/KbList.vue - 知识库管理 (V7.7, Day 55 从原 Index.vue 提取)
      路由: /knowledge/list
+     Day 55: Cross-Encoder rankScore 综合分展示 (精排标签 + 双分数对比)
 -->
 <template>
   <div class="kb-list-page">
@@ -169,6 +170,9 @@
             <div v-if="retrieveResults.length > 0" class="retrieve-results">
               <div class="retrieve-results-header">
                 <span>检索结果</span>
+                <el-tag v-if="useRerank" size="small" type="primary">
+                  <el-icon style="margin-right:2px"><Finished /></el-icon>Cross-Encoder 精排
+                </el-tag>
                 <el-tag size="small" type="info">{{ retrieveResults.length }} 条</el-tag>
               </div>
               <div v-for="(item, idx) in retrieveResults" :key="idx" class="retrieve-item">
@@ -186,11 +190,25 @@
                     </el-tag>
                   </div>
                   <div class="retrieve-score-wrap">
-                    <span class="retrieve-score-label">相关度</span>
-                    <div class="retrieve-score-bar">
-                      <div class="retrieve-score-fill" :style="{ width: ((item.score ?? item.relevance ?? 0) * 100).toFixed(1) + '%' }" />
-                    </div>
-                    <span class="retrieve-score-value">{{ ((item.score ?? item.relevance ?? 0) * 100).toFixed(1) }}%</span>
+                    <!-- Day 55: 显示 rankScore (综合分) + score (向量相似度) -->
+                    <span v-if="item.rankScore != null && item.rankScore !== (item.score ?? item.relevance ?? 0)" class="retrieve-score-label" style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+                      <span>
+                        <el-tooltip content="Cross-Encoder 综合分（语义重排+时效加权）" placement="top">
+                          <span class="retrieve-score-value" style="color:var(--el-color-primary);cursor:help">{{ (item.rankScore * 100).toFixed(1) }}%</span>
+                        </el-tooltip>
+                        <el-tag size="small" type="primary" style="margin-left:4px;font-size:10px">精排</el-tag>
+                      </span>
+                      <span class="retrieve-score-label" style="font-size:10px;color:var(--el-text-color-secondary)">
+                        向量 {{ ((item.score ?? item.relevance ?? 0) * 100).toFixed(1) }}%
+                      </span>
+                    </span>
+                    <template v-else>
+                      <span class="retrieve-score-label">相关度</span>
+                      <div class="retrieve-score-bar">
+                        <div class="retrieve-score-fill" :style="{ width: ((item.score ?? item.relevance ?? 0) * 100).toFixed(1) + '%' }" />
+                      </div>
+                      <span class="retrieve-score-value">{{ ((item.score ?? item.relevance ?? 0) * 100).toFixed(1) }}%</span>
+                    </template>
                   </div>
                   <el-button v-if="item.docId" size="small" type="primary" link style="margin-left:8px" @click.stop="openFullContent(item.docId)">
                     阅读全文
@@ -646,7 +664,7 @@ import { useUserStore } from '@/store/user'
 import {
   Plus, Upload, UploadFilled, Refresh, Edit, EditPen, Delete, DocumentCopy,
   Search, ArrowDown, Document, CircleCheck, InfoFilled, Loading, Download, View,
-  MagicStick, Connection, Right
+  MagicStick, Connection, Right, Finished
 } from '@element-plus/icons-vue'
 import KgGraph from '@/components/KgGraph.vue'
 
@@ -861,6 +879,10 @@ const retrievePromptTemplate = ref('default')
 const retrieveLoading = ref(false)
 const retrieveResults = ref([])
 const retrieveDone = ref(false)
+/** Day 55: 是否使用了 Cross-Encoder 精排（任一结果 rankScore != score 则为 true） */
+const useRerank = computed(() =>
+  retrieveResults.value.some(item => item.rankScore != null && item.rankScore !== (item.score ?? item.relevance ?? 0))
+)
 const expandedIdx = ref(-1)  // 当前展开的行索引，同一时间只展开一行
 
 // 高亮关键词（用于展开后的完整内容区域）
