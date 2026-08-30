@@ -965,3 +965,16 @@
 - [ ] Monitor 告警根因知识库前端入口（AlertRcaKnowledgeService → 前端知识库 Tab）
 - [ ] RAG 检索结果置信度可视化（置信度热力条 + 颜色渐变）
 - [ ] MiniMax 大模型平台日常维护（前端语法检查 / API 路径一致性）
+
+## Day 56 - 2026-08-30 ✅ 知识库独立Tab + RAG置信度热力条
+
+**今日完成：**
+- [x] **Monitor 知识库独立 Tab**：`Alerts.vue` 新增「知识库」Tab（与活跃/历史并列），支持指标名搜索/级别/时间范围筛选，5 列知识摘要卡片，8 列历史经验表格，`monitorApi.getAlertRcaKnowledge` + `getAlertRcaSummary` 全链路接入
+- [x] **RAG 置信度热力条**：`KbList.vue` 检索结果置信度颜色渐变（绿≥80%/橙≥60%/红≥40%/灰<40%），结果头部新增置信度分布摘要（高/中/低/极低四档计数）+ 60px 渐变色图例
+- [x] **npm → pnpm**：npm 10.9.3 exit-handler bug，改用 pnpm 11.24.0 完成安装，vite build 46.49s ✅
+- [x] 自检 13/13 ✅ + 静态 5/5 ✅ + vite build ✅
+
+**明日计划 Day 57：**
+- [ ] Monitor 知识库 → RCA 分析联动（点击知识条目自动触发同类 RCA）
+- [ ] RAG 检索结果排序维度切换（相关性 / 时效性 / 权威性三档）
+- [ ] MiniMax 大模型平台日常维护（前端语法检查 / API 路径一致性）

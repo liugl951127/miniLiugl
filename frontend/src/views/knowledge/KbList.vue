@@ -169,11 +169,26 @@
             <!-- 检索结果 -->
             <div v-if="retrieveResults.length > 0" class="retrieve-results">
               <div class="retrieve-results-header">
-                <span>检索结果</span>
-                <el-tag v-if="useRerank" size="small" type="primary">
-                  <el-icon style="margin-right:2px"><Finished /></el-icon>Cross-Encoder 精排
-                </el-tag>
-                <el-tag size="small" type="info">{{ retrieveResults.length }} 条</el-tag>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  <span>检索结果</span>
+                  <el-tag v-if="useRerank" size="small" type="primary">
+                    <el-icon style="margin-right:2px"><Finished /></el-icon>Cross-Encoder 精排
+                  </el-tag>
+                  <el-tag size="small" type="info">{{ retrieveResults.length }} 条</el-tag>
+                  <!-- Day 56: 置信度分布摘要 -->
+                  <span v-if="retrieveResults.length > 0" class="confidence-dist-summary">
+                    <span v-for="(level, idx) in confidenceDist" :key="idx" class="confidence-dist-item">
+                      <span class="confidence-dot" :style="{ background: level.color }" />
+                      {{ level.label }}: {{ level.count }}
+                    </span>
+                  </span>
+                </div>
+                <!-- Day 56: 置信度图例 -->
+                <div class="confidence-legend">
+                  <span class="confidence-legend-bar" />
+                  <span style="font-size:11px;color:var(--el-text-color-secondary)">低</span>
+                  <span style="font-size:11px">高</span>
+                </div>
               </div>
               <div v-for="(item, idx) in retrieveResults" :key="idx" class="retrieve-item">
                 <div class="retrieve-item-header">
@@ -204,8 +219,9 @@
                     </span>
                     <template v-else>
                       <span class="retrieve-score-label">相关度</span>
+                      <!-- Day 56: 置信度热力条 -->
                       <div class="retrieve-score-bar">
-                        <div class="retrieve-score-fill" :style="{ width: ((item.score ?? item.relevance ?? 0) * 100).toFixed(1) + '%' }" />
+                        <div class="retrieve-score-fill" :style="{ width: ((item.score ?? item.relevance ?? 0) * 100).toFixed(1) + '%', background: getConfidenceColor(item.score ?? item.relevance ?? 0) }" />
                       </div>
                       <span class="retrieve-score-value">{{ ((item.score ?? item.relevance ?? 0) * 100).toFixed(1) }}%</span>
                     </template>
@@ -892,6 +908,31 @@ function highlightKeyword(text, keyword) {
   const re = new RegExp(`(${escaped})`, 'gi')
   return escapeHtml(text).replace(re, '<mark>$1</mark>')
 }
+
+// Day 56: 置信度热力颜色（红→黄→绿渐变）
+function getConfidenceColor(score) {
+  const s = Math.max(0, Math.min(1, score))
+  if (s >= 0.8) return '#67c23a'      // 绿色: 高置信度
+  if (s >= 0.6) return '#e6a23c'      // 橙色: 中置信度
+  if (s >= 0.4) return '#f56c6c'      // 红色: 低置信度
+  return '#909399'                      // 灰色: 极低
+}
+
+// Day 56: 置信度分布统计
+function getConfidenceDist(results) {
+  const high = results.filter(r => (r.rankScore ?? r.score ?? r.relevance ?? 0) >= 0.8).length
+  const med  = results.filter(r => { const s = r.rankScore ?? r.score ?? r.relevance ?? 0; return s >= 0.6 && s < 0.8 }).length
+  const low  = results.filter(r => { const s = r.rankScore ?? r.score ?? r.relevance ?? 0; return s >= 0.4 && s < 0.6 }).length
+  const vlow = results.filter(r => (r.rankScore ?? r.score ?? r.relevance ?? 0) < 0.4).length
+  return [
+    { label: '高', count: high, color: '#67c23a' },
+    { label: '中', count: med,  color: '#e6a23c' },
+    { label: '低', count: low,  color: '#f56c6c' },
+    { label: '极低', count: vlow, color: '#909399' }
+  ].filter(l => l.count > 0)
+}
+
+const confidenceDist = computed(() => getConfidenceDist(retrieveResults.value))
 
 function escapeHtml(str) {
   if (!str) return ''
@@ -1696,6 +1737,14 @@ onBeforeUnmount(() => {
 }
 .retrieve-item-header {
   display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+}
+.confidence-dist-summary { display: flex; gap: 10px; font-size: 12px; align-items: center; }
+.confidence-dist-item { display: flex; align-items: center; gap: 3px; color: var(--el-text-color-secondary); }
+.confidence-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.confidence-legend { display: flex; align-items: center; gap: 4px; }
+.confidence-legend-bar {
+  width: 60px; height: 6px; border-radius: 3px;
+  background: linear-gradient(to right, #909399 0%, #f56c6c 25%, #e6a23c 50%, #67c23a 100%);
 }
 .retrieve-item-name { font-size: 13px; font-weight: 600; color: var(--el-color-primary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .retrieve-score-wrap {

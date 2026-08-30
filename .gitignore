@@ -90,3 +90,4 @@ vite.config.js.timestamp-*
 # Local ONNX models (downloaded by scripts/download-models.sh, not committed)
 data/models/*/
 !data/models/.gitkeep
+frontend/.sw-build-time.json

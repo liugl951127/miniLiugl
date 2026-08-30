@@ -50,6 +50,91 @@
         />
       </el-tab-pane>
 
+      <!-- 知识库 (Day 56) -->
+      <el-tab-pane label="知识库" name="knowledge">
+        <div class="toolbar">
+          <el-input
+            v-model="kbFilter.metricName"
+            placeholder="搜索指标名称"
+            size="default"
+            style="width: 240px"
+            clearable
+            @keyup.enter="loadKbKnowledge"
+          />
+          <el-select v-model="kbFilter.severity" placeholder="级别" size="default" clearable style="width: 120px" @change="loadKbKnowledge">
+            <el-option label="严重" value="critical" />
+            <el-option label="警告" value="warning" />
+            <el-option label="信息" value="info" />
+          </el-select>
+          <el-select v-model="kbFilter.days" placeholder="时间范围" size="default" style="width: 130px" @change="loadKbKnowledge">
+            <el-option label="近 7 天" :value="7" />
+            <el-option label="近 30 天" :value="30" />
+            <el-option label="近 90 天" :value="90" />
+          </el-select>
+          <el-button type="primary" :icon="Search" @click="loadKbKnowledge">查询</el-button>
+          <el-button :icon="Refresh" @click="loadKbSummary">知识摘要</el-button>
+        </div>
+
+        <!-- 知识摘要卡片 (Day 56) -->
+        <div v-if="kbSummary" class="kb-summary-cards">
+          <div class="kb-summary-card">
+            <div class="kb-summary-num">{{ kbSummary.totalCount || 0 }}</div>
+            <div class="kb-summary-label">历史经验总数</div>
+          </div>
+          <div class="kb-summary-card">
+            <div class="kb-summary-num" :style="{ color: getLevelColor(kbSummary.topSeverity) }">{{ kbSummary.topSeverity || '-' }}</div>
+            <div class="kb-summary-label">高频级别</div>
+          </div>
+          <div class="kb-summary-card">
+            <div class="kb-summary-num">{{ kbSummary.avgDuration ? formatDuration(kbSummary.avgDuration) : '-' }}</div>
+            <div class="kb-summary-label">平均恢复时长</div>
+          </div>
+          <div class="kb-summary-card">
+            <div class="kb-summary-num">{{ kbSummary.topMetric || '-' }}</div>
+            <div class="kb-summary-label">高频指标</div>
+          </div>
+          <div class="kb-summary-card">
+            <div class="kb-summary-num">{{ kbSummary.resolvedCount || 0 }}</div>
+            <div class="kb-summary-label">已解决</div>
+          </div>
+        </div>
+
+        <!-- 知识库列表 -->
+        <el-table :data="kbEntries" v-loading="kbLoading" stripe style="margin-top:12px" empty-text="暂无知识库记录">
+          <el-table-column prop="severity" label="级别" width="80">
+            <template #default="{ row }">
+              <el-tag :type="getLevelType(row.severity)" size="small">{{ getLevelLabel(row.severity) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="metricName" label="指标名称" min-width="140" show-overflow-tooltip />
+          <el-table-column prop="ruleName" label="规则名" min-width="120" show-overflow-tooltip />
+          <el-table-column prop="status" label="状态" width="90">
+            <template #default="{ row }">
+              <el-tag :type="row.status === 'resolved' ? 'success' : row.status === 'acked' ? 'warning' : 'info'" size="small">
+                {{ { resolved: '已解决', acked: '已确认', firing: '触发中' }[row.status] || row.status }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="duration" label="持续时长" width="100">
+            <template #default="{ row }"><span>{{ row.duration ? formatDuration(row.duration) : '-' }}</span></template>
+          </el-table-column>
+          <el-table-column prop="firedAt" label="触发时间" width="170" />
+          <el-table-column prop="resolvedAt" label="解决时间" width="170" />
+          <el-table-column prop="resolvedBy" label="处理人" width="90" show-overflow-tooltip />
+          <el-table-column prop="notes" label="备注" min-width="160" show-overflow-tooltip />
+        </el-table>
+
+        <el-pagination
+          v-if="kbTotal > 20"
+          v-model:current-page="kbPage"
+          :total="kbTotal"
+          :page-size="20"
+          layout="total, prev, pager, next"
+          @current-change="loadKbKnowledge"
+          style="margin-top: 12px; justify-content: flex-end; display: flex"
+        />
+      </el-tab-pane>
+
       <!-- 历史告警 -->
       <el-tab-pane label="历史告警" name="history">
         <div class="toolbar">
@@ -209,6 +294,42 @@ const rcaResult = ref(null)
 const rcaCurrentAlert = ref(null)
 const rawAnswerExpanded = ref(false)
 
+// ==================== 知识库 Tab (Day 56) ====================
+const kbLoading = ref(false)
+const kbEntries = ref([])
+const kbSummary = ref(null)
+const kbFilter = reactive({ metricName: '', severity: '', days: 30 })
+const kbPage = ref(1)
+const kbTotal = ref(0)
+
+async function loadKbKnowledge() {
+  kbLoading.value = true
+  try {
+    const params = { historyDays: kbFilter.days, limit: 100 }
+    if (kbFilter.metricName) params.metricName = kbFilter.metricName
+    if (kbFilter.severity) params.severity = kbFilter.severity
+    const res = await monitorApi.getAlertRcaKnowledge(params)
+    if (res.code === 0) {
+      const list = Array.isArray(res.data) ? res.data : res.data?.list || []
+      kbEntries.value = list
+      kbTotal.value = list.length
+    }
+  } catch (e) { ElMessage.error('加载知识库失败: ' + e.message) }
+  finally { kbLoading.value = false }
+}
+
+async function loadKbSummary() {
+  try {
+    const res = await monitorApi.getAlertRcaSummary(kbFilter.metricName || null, kbFilter.days)
+    if (res.code === 0) kbSummary.value = res.data
+    else kbSummary.value = null
+  } catch { kbSummary.value = null }
+}
+
+function getLevelColor(level) {
+  return { critical: 'var(--el-color-danger)', warning: 'var(--el-color-warning)', info: 'var(--el-color-info)' }[level] || 'inherit'
+}
+
 function getLevelType(level) {
   return { critical: 'danger', warning: 'warning', info: 'info' }[level] || 'info'
 }
@@ -335,6 +456,8 @@ async function resolveAlert(row) {
 onMounted(() => {
   loadActive()
   loadHistory()
+  loadKbKnowledge()
+  loadKbSummary()
 })
 </script>
 
@@ -359,4 +482,10 @@ onMounted(() => {
 .rca-knowledge-meta { font-size: 11px; color: var(--el-text-color-secondary); }
 .rca-knowledge-notes { font-size: 11px; color: var(--el-text-color-secondary); margin-top: 4px; display: flex; align-items: flex-start; gap: 4px; }
 .rca-raw-answer { font-size: 11px; background: var(--el-fill-color-dark); color: var(--el-text-color-regular); padding: 12px; border-radius: 6px; white-space: pre-wrap; word-break: break-all; max-height: 300px; overflow-y: auto; margin: 0; }
+
+/* 知识库 Tab (Day 56) */
+.kb-summary-cards { display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.kb-summary-card { flex: 1; min-width: 100px; background: var(--el-fill-color-light); border-radius: 8px; padding: 12px 16px; text-align: center; border: 1px solid var(--el-border-color-lighter); }
+.kb-summary-num { font-size: 22px; font-weight: 700; color: var(--el-text-color-primary); line-height: 1.2; }
+.kb-summary-label { font-size: 11px; color: var(--el-text-color-secondary); margin-top: 4px; }
 </style>
