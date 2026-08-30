@@ -28,4 +28,7 @@ public class Nl2SqlResult {
     // V5.31 扩展: 报告 (如生成)
     private String reportId;           // 关联的 report id
     private String markdown;           // 简版报告
+
+    // V9.1: LLM 响应来源 (前端可显式标注)
+    private String llmSource;          // CLOUD | LOCAL | LOCAL_FALLBACK | UNAVAILABLE
 }

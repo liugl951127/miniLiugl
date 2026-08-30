@@ -38,6 +38,7 @@ import java.math.BigDecimal;
 public class RuleController {
 
     private final RuleService ruleService;
+    private final com.minimax.pipeline.service.RuleAiService ruleAiService;  // V9.1
 
     @Operation(summary = "创建规则")
     @PostMapping
@@ -112,5 +113,13 @@ public class RuleController {
             log.warn("[Rule] toBigDecimal 解析失败, value={}", o);
             return null;
         }
+    }
+
+    /** V9.1: AI 生成规则 (自然语言 → 规则 JSON) */
+    @Operation(summary = "自然语言生成规则 (V9.1)")
+    @PostMapping("/ai-generate")
+    public Result<com.minimax.pipeline.service.RuleAiService.AiGenResult> aiGenerate(
+            @RequestBody Map<String, String> body) {
+        return Result.ok(ruleAiService.generate(body.get("text")));
     }
 }

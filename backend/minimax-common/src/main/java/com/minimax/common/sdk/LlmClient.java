@@ -1,20 +1,24 @@
 package com.minimax.common.sdk;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import jakarta.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;
 
 /**
- * LLM 客户端 SDK (V9.0) — 共享给所有微服务
+ * LLM 客户端 SDK (V9.0/V9.0.1) — 共享给所有微服务
+ *
+ * V9.0.1 修致命错: 自己 new RestTemplate, 不依赖外部 Bean
+ *   (minimax-common 没提供 RestTemplate bean, 之前用 @RequiredArgsConstructor 注入会 NoSuchBean)
  *
  * 各业务服务 (chat/analytics/agent/rule/rag) 调这个类即可获得
  *  cloud→local 兜底, 不用自己实现重试/降级.
@@ -30,17 +34,27 @@ import java.util.Map;
  */
 @Component
 @Slf4j
-@RequiredArgsConstructor
 public class LlmClient {
 
-    private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${minimax-ai.url:http://localhost:8090}")
     private String aiServiceUrl;
 
     @Value("${minimax-ai.llm-timeout-ms:30000}")
     private int timeoutMs;
+
+    /** 自己 new, 不依赖 Spring 容器 (关键: 解决 V9.0 致命错) */
+    private RestTemplate restTemplate;
+
+    @PostConstruct
+    public void init() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(3000);
+        factory.setReadTimeout(timeoutMs);
+        this.restTemplate = new RestTemplate(factory);
+        log.info("[LlmClient] 初始化完成, minimax-ai URL: {}, timeout: {}ms", aiServiceUrl, timeoutMs);
+    }
 
     public enum Source { CLOUD, LOCAL, LOCAL_FALLBACK, UNAVAILABLE }
 

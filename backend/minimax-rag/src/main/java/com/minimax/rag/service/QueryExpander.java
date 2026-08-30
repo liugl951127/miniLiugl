@@ -75,6 +75,7 @@ public class QueryExpander {
     private String token;
 
     private final Retriever retriever;
+    private final com.minimax.common.sdk.LlmClient llmClient;  // V9.1: LLM 兜底
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final RestTemplate restTemplate = new RestTemplate();
@@ -267,12 +268,22 @@ public class QueryExpander {
                     "temperature", 0.8
             );
 
-            @SuppressWarnings("unchecked")
-            Map<String, Object> resp = restTemplate.postForObject(
-                    modelBaseUrl + "/models/chat",
-                    body, Map.class);
-
-            String text = extractContent(resp);
+            // V9.1: 优先调 minimax-model, 失败时降级到 LLM Gateway (cloud→local 兜底)
+            String text = null;
+            try {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> resp = restTemplate.postForObject(
+                        modelBaseUrl + "/models/chat", body, Map.class);
+                text = extractContent(resp);
+            } catch (Exception modelErr) {
+                log.warn("[QueryExpander] minimax-model 失败, 降级到 LLM Gateway: {}", modelErr.getMessage());
+                com.minimax.common.sdk.LlmClient.LlmResult fallback = llmClient.chat(
+                    List.of(Map.of("role", "user", "content", prompt)));
+                if (fallback.available()) {
+                    text = fallback.content();
+                    log.info("[QueryExpander] 降级成功, source={}", fallback.source());
+                }
+            }
             if (text == null || text.isBlank()) return List.of(query);
 
             // 解析每行作为展开查询

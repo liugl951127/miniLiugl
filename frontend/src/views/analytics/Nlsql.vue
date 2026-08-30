@@ -54,7 +54,19 @@
 
     <el-card v-if="nlResult" style="margin-top:12px">
       <template #header>
-        <span>📊 查询结果 (SQL: <code>{{ nlResult.sql }}</code>)</span>
+        <div style="display:flex; align-items:center; gap:8px">
+          <span>📊 查询结果 (SQL: <code>{{ nlResult.sql }}</code>)</span>
+          <!-- V9.1: 显示 LLM 响应来源 -->
+          <el-tag v-if="nlResult.llmSource" size="small" :type="sourceTagType(nlResult.llmSource)">
+            {{ sourceLabel(nlResult.llmSource) }}
+          </el-tag>
+          <el-tag v-if="nlResult.model" size="small" type="info">
+            {{ nlResult.model }}
+          </el-tag>
+          <el-tag v-if="nlResult.durationMs" size="small" type="info">
+            ⏱ {{ nlResult.durationMs }}ms
+          </el-tag>
+        </div>
       </template>
       <el-table :data="nlPaginatedRows" stripe>
         <el-table-column
@@ -128,6 +140,14 @@ const nlQuery = ref('')
 const nlLoading = ref(false)
 const nlResult = ref(null)
 const nlHistory = ref([])
+
+// V9.1: source 标签辅助
+const sourceLabel = (s) => ({
+  CLOUD: '☁️ 云端', LOCAL: '💻 本地', LOCAL_FALLBACK: '🔄 本地兜底', UNAVAILABLE: '❌ 不可用'
+}[s] || s)
+const sourceTagType = (s) => ({
+  CLOUD: 'primary', LOCAL: 'success', LOCAL_FALLBACK: 'warning', UNAVAILABLE: 'danger'
+}[s] || 'info')
 const nlHistoryLoading = ref(false)
 const nlPage = ref(1)
 const nlPageSize = 20

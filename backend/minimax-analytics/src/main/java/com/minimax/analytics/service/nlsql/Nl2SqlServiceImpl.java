@@ -39,6 +39,7 @@ import java.util.regex.Pattern;
 public class Nl2SqlServiceImpl implements Nl2SqlService {
 
     private final ModelChatClient modelChatClient;
+    private final com.minimax.common.sdk.LlmClient llmClient;  // V9.1: LLM 兜底
     private final SchemaService schemaService;
     private final SqlSafetyChecker safetyChecker;
     private final QueryService queryService;
@@ -99,7 +100,7 @@ public class Nl2SqlServiceImpl implements Nl2SqlService {
             String sysPrompt = PromptTemplates.system() + "\n\n" + PromptTemplates.fewShot();
             String userPrompt = PromptTemplates.user(request.getQuestion(), schemas);
 
-            // 3. 调 LLM（通过 Feign → minimax-model/internal/chat）
+            // 3. 调 LLM（V9.1: Feign → minimax-model, 失败时降级到 LlmClient → minimax-ai 的 LLM Gateway）
             ChatRequestDTO chatReq = new ChatRequestDTO();
             chatReq.setModel(history.getModel());
             chatReq.setMessages(List.of(
@@ -109,13 +110,41 @@ public class Nl2SqlServiceImpl implements Nl2SqlService {
             chatReq.setTemperature(temperature);
             chatReq.setMaxTokens(maxTokens);
 
-            Result<ChatResponseDTO> respResult = modelChatClient.chat(userId, chatReq);
-            if (respResult == null || respResult.getCode() == null || respResult.getCode() != 0 || respResult.getData() == null) {
-                throw new BizException(ResultCode.SYSTEM_ERROR, "LLM 调用失败: " +
-                        (respResult != null ? respResult.getMessage() : "null response"));
+            String llmOutput = null;
+            String llmSource = "CLOUD";  // V9.1: 记录 source
+            String llmModel = history.getModel();
+
+            // 3a. 优先走 Feign → minimax-model
+            try {
+                Result<ChatResponseDTO> respResult = modelChatClient.chat(userId, chatReq);
+                if (respResult == null || respResult.getCode() == null || respResult.getCode() != 0 || respResult.getData() == null) {
+                    throw new BizException(ResultCode.SYSTEM_ERROR, "Feign 返: " +
+                            (respResult != null ? respResult.getMessage() : "null"));
+                }
+                llmOutput = respResult.getData().getContent();
+                log.info("[Nl2Sql] Feign 成功, model={}", llmModel);
+            } catch (Exception feignErr) {
+                // 3b. V9.1: Feign 失败 → 降级到 LlmClient (走 LLM Gateway, 内部 cloud→local 兜底)
+                log.warn("[Nl2Sql] Feign 失败, 降级到 LLM Gateway: {}", feignErr.getMessage());
+                com.minimax.common.sdk.LlmClient.LlmResult fallback = llmClient.chat(
+                    java.util.List.of(
+                        Map.of("role", "system", "content", sysPrompt),
+                        Map.of("role", "user", "content", userPrompt)
+                    )
+                );
+                if (fallback.available()) {
+                    llmOutput = fallback.content();
+                    llmSource = fallback.source().name();
+                    llmModel = fallback.model();
+                    log.info("[Nl2Sql] 降级成功, source={}, model={}", llmSource, llmModel);
+                } else {
+                    throw new BizException(ResultCode.SYSTEM_ERROR,
+                        "LLM 调用失败 (Feign + 降级): " + fallback.reason());
+                }
             }
-            ChatResponseDTO resp = respResult.getData();
-            String llmOutput = resp.getContent();
+            if (llmOutput == null || llmOutput.isBlank()) {
+                throw new BizException(ResultCode.SYSTEM_ERROR, "LLM 未生成内容");
+            }
 
             // 4. 解析 SQL
             String sql = extractSql(llmOutput);
@@ -126,17 +155,17 @@ public class Nl2SqlServiceImpl implements Nl2SqlService {
             history.setGeneratedSql(sql);
             history.setSuccess(true);
             history.setDurationMs(System.currentTimeMillis() - t0);
-            if (resp != null) {
-                history.setPromptTokens(resp.getPromptTokens());
-                history.setCompletionTokens(resp.getCompletionTokens());
-            }
+            // V9.1: 记 source (Feign 成功时是 CLOUD, 降级时是 LOCAL_FALLBACK)
+            // 通过 response 返回, 暂不改 entity (避免 DDL/Mapper 同步)
+            // V9.2: 持久化到 history.llm_source 列
 
             Nl2SqlResult.Nl2SqlResultBuilder result = Nl2SqlResult.builder()
                     .question(request.getQuestion())
                     .generatedSql(sql)
                     .explanation(explanation)
                     .durationMs(history.getDurationMs())
-                    .model(history.getModel())
+                    .model(llmModel)  // V9.1: 用实际用的模型
+                    .llmSource(llmSource)  // V9.1: CLOUD / LOCAL_FALLBACK / LOCAL
                     .promptTokens(history.getPromptTokens())
                     .completionTokens(history.getCompletionTokens());
 

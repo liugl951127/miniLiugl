@@ -21,4 +21,6 @@ export const ruleApi = {
   remove: (id) => http.delete(`/rule/${id}`),
   /** 别名: delete 同 remove */
   delete: (id) => http.delete(`/rule/${id}`),
+  /** V9.1: AI 生成规则 (自然语言 → JSON DSL) - POST /api/v1/rule/ai-generate */
+  aiGenerate: (text) => http.post('/rule/ai-generate', { text }),
 }

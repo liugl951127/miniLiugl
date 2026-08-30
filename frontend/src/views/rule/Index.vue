@@ -566,31 +566,22 @@ function parseValue(v) {
   return v
 }
 
-// ===== LLM 生成 =====
+// ===== LLM 生成 (V9.1: 走 LlmClient, 自动兜底) =====
 async function generateRule() {
   if (!nlInput.value.trim()) return ElMessage.warning('请输入业务规则描述')
   generating.value = true
   try {
-    if (llmReady.value) {
-      // 真实 LLM
-      const res = await multimodalApi.chatQwen(
-        buildQwenPrompt(nlInput.value),
-        '你是一个 JSON 业务规则生成器, 只输出 JSON, 不解释。',
-        512
-      )
-      if (res.code === 0 && res.data.text) {
-        const parsed = extractJson(res.data.text)
-        if (parsed) {
-          Object.assign(rule, normalizeRule(parsed))
-          ElMessage.success(`Qwen2.5 生成成功 (${res.data.costMs}ms)`)
-        } else {
-          throw new Error('LLM 输出不是合法 JSON')
-        }
-      } else {
-        throw new Error(res.data.error || 'LLM 失败')
-      }
+    // V9.1: 调后端 AI 端点 (LlmClient 走 LLM Gateway, cloud→local 兜底)
+    const res = await ruleApi.aiGenerate(nlInput.value)
+    if (res.code === 0 && res.data && res.data.jsonContent) {
+      Object.assign(rule, normalizeRule(res.data.jsonContent))
+      const sourceLabel = res.data.llmSource === 'CLOUD' ? '☁️ 云端'
+        : res.data.llmSource === 'LOCAL' ? '💻 本地'
+        : res.data.llmSource === 'LOCAL_FALLBACK' ? '🔄 本地兜底'
+        : '❌ ' + res.data.llmSource
+      ElMessage.success(`AI 生成成功 (${sourceLabel} · ${res.data.llmModel} · ${res.data.durationMs}ms)`)
     } else {
-      throw new Error('本地 LLM 未就绪')
+      throw new Error(res.data?.reason || 'AI 返回空')
     }
   } catch (e) {
     // 降级到本地简化解析

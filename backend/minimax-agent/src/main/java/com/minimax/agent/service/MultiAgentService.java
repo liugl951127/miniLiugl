@@ -45,6 +45,7 @@ import java.util.concurrent.Executors;
 public class MultiAgentService {
 
     private final AgentService agentService;
+    private final com.minimax.common.sdk.LlmClient llmClient;  // V9.1: LLM 兜底
 
     @Value("${minimax.agent.base-url:http://localhost:8083}")
     private String baseUrl;
@@ -254,39 +255,54 @@ public class MultiAgentService {
         ));
         body.put("temperature", temperature);
 
-        HttpRequest.Builder hb = HttpRequest.newBuilder()
-            .uri(URI.create(stripSlash(baseUrl) + "/api/v1/models/chat"))
-            .timeout(Duration.ofSeconds(60))
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body)));
-        if (token != null && !token.isBlank()) {
-            hb.header("Authorization", "Bearer " + token);
+        // V9.1: 优先调 minimax-model, 失败时降级到 LlmClient (走 LLM Gateway, cloud→local 兜底)
+        String content = null;
+        int promptTokens = 0, completionTokens = 0;
+        try {
+            HttpRequest.Builder hb = HttpRequest.newBuilder()
+                .uri(URI.create(stripSlash(baseUrl) + "/api/v1/models/chat"))
+                .timeout(Duration.ofSeconds(60))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body)));
+            if (token != null && !token.isBlank()) {
+                hb.header("Authorization", "Bearer " + token);
+            }
+            HttpResponse<String> resp = client.send(hb.build(), HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() >= 400) {
+                throw new RuntimeException("LLM HTTP " + resp.statusCode() + " " + truncate(resp.body(), 200));
+            }
+            @SuppressWarnings("unchecked")
+            Map<String, Object> root = json.readValue(resp.body(), Map.class);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> data = (Map<String, Object>) root.get("data");
+            if (data != null) {
+                Object c = data.get("content");
+                content = c == null ? "" : c.toString();
+                Object u = data.get("usage");
+                if (u instanceof Map<?, ?> um) {
+                    Object pt = um.get("prompt_tokens"); if (pt instanceof Number n) promptTokens = n.intValue();
+                    Object ct = um.get("completion_tokens"); if (ct instanceof Number n2) completionTokens = n2.intValue();
+                }
+            }
+        } catch (Exception modelErr) {
+            // V9.1: 降级到 LlmClient (走 LLM Gateway)
+            log.warn("[MultiAgent] minimax-model 失败, 降级到 LLM Gateway: {}", modelErr.getMessage());
+            com.minimax.common.sdk.LlmClient.LlmResult fallback = llmClient.chat(List.of(
+                Map.of("role", "system", "content", sysPrompt),
+                Map.of("role", "user", "content", userMsg)));
+            if (fallback.available()) {
+                content = fallback.content();
+                log.info("[MultiAgent] 降级成功, source={}, model={}", fallback.source(), fallback.model());
+            } else {
+                return new LlmResponse("", 0, 0);
+            }
         }
-        HttpResponse<String> resp = client.send(hb.build(), HttpResponse.BodyHandlers.ofString());
-        if (resp.statusCode() >= 400) {
-            throw new RuntimeException("LLM HTTP " + resp.statusCode() + " " + truncate(resp.body(), 200));
-        }
-        @SuppressWarnings("unchecked")
-        Map<String, Object> root = json.readValue(resp.body(), Map.class);
-        @SuppressWarnings("unchecked")
-        Map<String, Object> data = (Map<String, Object>) root.get("data");
-        if (data == null) return new LlmResponse("", 0, 0);
+        if (content == null) return new LlmResponse("", 0, 0);
 
-        // 解析 usage (V7.0: 支持多种格式)
-        @SuppressWarnings("unchecked")
-        Map<String, Object> usage = (Map<String, Object>) data.get("usage");
-        int inputTokens = 0, outputTokens = 0;
-        if (usage != null) {
-            Object in = usage.getOrDefault("inputTokens", usage.getOrDefault("prompt_tokens", 0));
-            Object out = usage.getOrDefault("outputTokens", usage.getOrDefault("completion_tokens", 0));
-            inputTokens = in instanceof Number ? ((Number) in).intValue() : 0;
-            outputTokens = out instanceof Number ? ((Number) out).intValue() : 0;
-        }
+        // 解析 usage (V7.0: 支持多种格式) — V9.1: 已在 try 内提取过, 这里复用
+        sendTokenUpdate(emitter, promptTokens, completionTokens);
 
-        sendTokenUpdate(emitter, inputTokens, outputTokens);
-
-        String content = (String) data.get("content");
-        return new LlmResponse(content != null ? content : "", inputTokens, outputTokens);
+        return new LlmResponse(content, promptTokens, completionTokens);
     }
 
     private void sendTokenUpdate(SseEmitter emitter, LlmResponse resp) {
