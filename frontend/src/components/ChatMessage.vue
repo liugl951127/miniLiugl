@@ -23,10 +23,15 @@
     </div>
 
     <div class="msg-body">
-      <!-- 头部: 角色 + 时间 + 状态 -->
+      <!-- 头部: 角色 + 时间 + 状态 + 来源 (V9.0) -->
       <div class="msg-meta">
         <span class="msg-role">{{ roleLabel }}</span>
         <span class="msg-time">{{ timeStr }}</span>
+        <el-tag v-if="sourceLabel && !streaming" :type="sourceLabel.type" size="small" effect="plain" round class="msg-source-tag">
+          {{ sourceLabel.text }}
+        </el-tag>
+        <span v-if="model && !streaming" class="msg-model-tag">{{ model }}</span>
+        <span v-if="durationMs && !streaming" class="msg-duration-tag">{{ durationMs }}ms</span>
         <span v-if="streaming" class="msg-status" :data-streaming="String(streaming)">
           <el-icon class="is-loading"><Loading /></el-icon>
           生成中...
@@ -139,10 +144,25 @@ const props = defineProps({
   streaming: { type: Boolean, default: false },
   status: { type: String, default: 'ok' },
   createdAt: { type: [Date, String], default: () => new Date() },
+  model: { type: String, default: '' },           // V9.0: 模型名
+  source: { type: String, default: '' },           // V9.0: CLOUD/LOCAL/LOCAL_FALLBACK/UNAVAILABLE
+  durationMs: { type: Number, default: null },     // V9.0: 响应耗时
   onRetry: Function,
   onLike: Function,
 })
 defineEmits(['retry', 'like', 'openSource', 'speak'])
+
+// V9.0: 来源标签
+const sourceLabel = computed(() => {
+  const s = props.source
+  if (!s) return null
+  return {
+    CLOUD: { text: '☁️ 云端', type: 'primary' },
+    LOCAL: { text: '💻 本地模型', type: 'success' },
+    LOCAL_FALLBACK: { text: '🔄 本地兜底', type: 'warning' },
+    UNAVAILABLE: { text: '❌ 不可用', type: 'danger' }
+  }[s] || null
+})
 
 const roleLabel = computed(() => {
   return { user: '我', assistant: 'AI 助手', system: '系统', tool: '工具' }[props.role] || 'AI'
@@ -360,6 +380,20 @@ function previewImage(url) {
 .msg-source-idx { color: #15803d; font-weight: 600; min-width: 24px; }
 .msg-source-title { flex: 1; color: #166534; }
 .msg-source-score { color: #65a30d; font-family: monospace; }
+
+/* V9.0: 来源标签 */
+.msg-source-tag { font-weight: 500; }
+.msg-model-tag {
+  font-size: 11px;
+  color: #94a3b8;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  padding: 0 4px;
+}
+.msg-duration-tag {
+  font-size: 11px;
+  color: #94a3b8;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
 
 .msg-actions {
   margin-top: 6px;

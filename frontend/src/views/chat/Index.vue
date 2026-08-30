@@ -81,6 +81,7 @@ import ChatMessage from '@/components/ChatMessage.vue'
 import { listSessions, listMessages, createSession, sendMessageStream, deleteSession } from '@/api/session'
 import { listEnabledModels } from '@/api/model'
 import { listAgents } from '@/api/agent'
+import { aiGenerate, aiLlmStatus } from '@/api/ai'
 
 const sessions = ref([])
 const activeSessionId = ref(null)
@@ -176,9 +177,9 @@ async function sendMessage() {
   attachments.value = []
   scrollToBottom()
   streaming.value = true
+
+  // V9.0: 优先走流式, 失败时降级到 aiGenerate (带 source 标签)
   try {
-    // V8.0.3 fix: sendMessageStream 签名是 (sessionId, body, opts),
-    // 之前调错了 (整对象当 sessionId 传), 现在拆开
     const res = await sendMessageStream(
       activeSessionId.value,
       {
@@ -188,10 +189,42 @@ async function sendMessage() {
         attachments: userMsg.attachments
       }
     )
-    // 简化处理: 流式响应最终合并
-    messages.value.push({ role: 'assistant', content: res.data?.text || res.data || '...', model: currentModel.value })
-  } catch (e) {
-    streamError.value = true
+    messages.value.push({
+      role: 'assistant',
+      content: res.data?.text || res.data || '...',
+      model: currentModel.value,
+      source: res.data?.source || 'CLOUD'  // V9.0: 透传 source
+    })
+  } catch (streamErr) {
+    // V9.0: 流式失败 → 用 aiGenerate (chat 服务后端, 走 LLM Gateway)
+    console.warn('[Chat] 流式失败, 降级到 aiGenerate:', streamErr)
+    try {
+      const r = await aiGenerate(activeSessionId.value, {
+        content: userMsg.content,
+        history: messages.value.filter(m => m.role !== 'user' || m !== userMsg).slice(-10)
+          .map(m => ({ role: m.role, content: m.content }))
+      })
+      const data = r.data?.data || r.data
+      if (data && data.available) {
+        messages.value.push({
+          role: 'assistant',
+          content: data.content,
+          model: data.model,
+          source: data.source,  // V9.0: CLOUD | LOCAL | LOCAL_FALLBACK
+          durationMs: data.durationMs
+        })
+      } else {
+        messages.value.push({
+          role: 'assistant',
+          content: 'AI 暂时不可用: ' + (data?.reason || '未知错误'),
+          model: '-',
+          source: 'UNAVAILABLE'
+        })
+      }
+    } catch (genErr) {
+      console.error('[Chat] aiGenerate 失败:', genErr)
+      streamError.value = true
+    }
   } finally {
     streaming.value = false
     sending.value = false

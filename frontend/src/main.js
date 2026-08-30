@@ -21,6 +21,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 import App from './App.vue'
 import router from './router'
+import './styles/tokens.css'
 import './styles/global.scss'
 import './styles/mobile.scss'
 import { i18n } from './i18n'

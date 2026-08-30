@@ -1,0 +1,116 @@
+/**
+ * 设计 Token (V9.0) — 全局设计系统
+ *
+ * 之前: 61 个 view 用了 hardcoded 颜色, 556 处 inline style, 10 档字号乱
+ * 现在: 所有页面 / 组件统一从这里拿 token, 改一处全站生效
+ *
+ * 用法 (在 .vue <style> 里):
+ *   background: var(--color-primary);
+ *   font-size: var(--font-md);
+ *   padding: var(--space-3);
+ */
+
+:root {
+  /* ===== 颜色 — 品牌紫蓝粉 ===== */
+  --color-primary: #6366f1;     /* 紫, 主色 */
+  --color-secondary: #8b5cf6;   /* 紫蓝, 次色 */
+  --color-accent: #ec4899;      /* 粉, 强调 */
+  --color-success: #10b981;     /* 绿, 成功 */
+  --color-warning: #f59e0b;     /* 黄, 警告 */
+  --color-danger: #ef4444;      /* 红, 危险 */
+  --color-info: #06b6d4;        /* 青, 信息 */
+
+  /* 中性色 (slate scale) */
+  --color-bg: #f8fafc;         /* 页面背景 */
+  --color-surface: #ffffff;     /* 卡片表面 */
+  --color-surface-2: #f1f5f9;   /* 次级表面 (hover 等) */
+  --color-border: #e2e8f0;      /* 边框 */
+  --color-text: #1e293b;        /* 主文字 */
+  --color-text-2: #475569;      /* 次文字 */
+  --color-text-3: #94a3b8;      /* 弱文字 (placeholder 等) */
+
+  /* 暗色主题 (V9.1 接入) */
+  --color-primary-dark: #818cf8;
+
+  /* ===== 字号 — 5 档, 不许乱加 ===== */
+  --font-xs: 12px;   /* 辅助文字 */
+  --font-sm: 14px;   /* 正文 (默认) */
+  --font-md: 16px;   /* 标题 / 强调 */
+  --font-lg: 18px;   /* 大标题 */
+  --font-xl: 24px;   /* 页面主标题 */
+  --font-2xl: 32px;  /* Hero */
+
+  /* ===== Spacing — 5 档 ===== */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  /* ===== 圆角 ===== */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* ===== 阴影 — 3 档 ===== */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+  /* ===== 渐变 (品牌) ===== */
+  --gradient-primary: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  --gradient-accent: linear-gradient(135deg, var(--color-secondary), var(--color-accent));
+  --gradient-warm: linear-gradient(135deg, var(--color-warning), var(--color-accent));
+
+  /* ===== 动效 ===== */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+
+  /* ===== 布局 ===== */
+  --header-h: 60px;
+  --sidebar-w: 220px;
+  --content-max: 1200px;
+}
+
+/* 全局基础样式 (V9.0: 用 token 替代 hardcoded) */
+html, body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-size: var(--font-sm);
+  color: var(--color-text);
+  background: var(--color-bg);
+  line-height: 1.6;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color var(--duration-fast);
+}
+a:hover { color: var(--color-secondary); }
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.3;
+  margin: 0;
+}
+h1 { font-size: var(--font-2xl); }
+h2 { font-size: var(--font-xl); }
+h3 { font-size: var(--font-lg); }
+h4 { font-size: var(--font-md); }
+
+button { font-family: inherit; }
+
+/* 滚动条统一 (V9.0) */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-3); }
+::-webkit-scrollbar-track { background: transparent; }

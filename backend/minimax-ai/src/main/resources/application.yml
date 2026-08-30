@@ -190,3 +190,15 @@ spring.cloud.nacos:
     metadata:
       version: 5.7.0
       group: minimax
+
+# V9.0: LLM Gateway 配置 (统一 cloud→local 兜底)
+agent-forge:
+  llm:
+    primary-model: ${LLM_PRIMARY_MODEL:gpt-4o-mini}
+    fallback-model: ${LLM_FALLBACK_MODEL:qwen2.5-0.5b-instruct}
+    timeout-ms: ${LLM_TIMEOUT_MS:8000}
+    fallback-enabled: ${LLM_FALLBACK_ENABLED:true}
+    cloud:
+      base-url: ${LLM_CLOUD_BASE_URL:https://api.openai.com/v1}
+      api-key: ${LLM_CLOUD_API_KEY:}
+      timeout-ms: ${LLM_CLOUD_TIMEOUT_MS:8000}

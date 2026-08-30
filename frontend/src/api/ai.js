@@ -1063,3 +1063,18 @@ export const listTrainedModels = () => http.get('/ai/chat/training/models')
 export const trainingChat = (data) => {
   return http.post('/ai/training/chat', data)
 }
+
+// ============ V9.0: 后端统一 chat (走 LLM Gateway) ============
+/**
+ * aiGenerate - 通过 chat 服务后端调 LLM Gateway
+ * 返回 { content, source, model, durationMs, reason, available }
+ *   source: CLOUD | LOCAL | LOCAL_FALLBACK | UNAVAILABLE
+ */
+export const aiGenerate = (sessionId, data) =>
+  http.post(`/sessions/${sessionId}/ai-generate`, data)
+
+/**
+ * aiStatus - 检查 minimax-ai 的 Qwen2.5 是否就绪
+ * { localReady, fallbackEnabled }
+ */
+export const aiLlmStatus = () => http.get('/ai/llm/status')
