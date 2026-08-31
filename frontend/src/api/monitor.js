@@ -248,6 +248,17 @@ export const getAlertRcaSummary = (metricName, historyDays) =>
     params: { metricName, historyDays }
   })
 
+/**
+ * Day 57: 知识库条目触发 RCA — 根据 metricName 触发同类告警根因分析
+ * @param {string} metricName 指标名称
+ * @param {string} [severity] 级别（可选）
+ * @param {number} [historyDays=30] 历史窗口
+ */
+export const rcaAnalysisByMetric = (metricName, severity, historyDays) =>
+  http.get('/monitor/alerts/rca/by-metric', {
+    params: { metricName, severity, historyDays }
+  })
+
 // ==================== Day 43: SLA 统计 API ====================
 /**
  * 告警 SLA 统计
@@ -291,7 +302,9 @@ function createMonitorApi() {
     // Day 53: 告警趋势预测
     getAlertPredict, getAlertPredictBySeverity,
     // Day 54: 告警根因知识库
-    getAlertRcaKnowledge, getAlertRcaSimilar, getAlertRcaSummary
+    getAlertRcaKnowledge, getAlertRcaSimilar, getAlertRcaSummary,
+    // Day 57: 知识库条目触发 RCA
+    rcaAnalysisByMetric
   }
 }
 const monitorApi = createMonitorApi()

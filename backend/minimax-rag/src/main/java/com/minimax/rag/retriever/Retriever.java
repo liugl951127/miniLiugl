@@ -55,8 +55,9 @@ public class Retriever {
      * @param query    用户问题
      * @param topK     返回数量
      * @param useTimeliness 是否启用时效性加权排序，默认 true
+     * @param sortBy    排序维度: relevance(相关性) / timeliness(时效性) / authority(权威性)，默认 relevance
      */
-    public List<Hit> retrieve(Long kbId, String query, int topK, boolean useTimeliness) {
+    public List<Hit> retrieve(Long kbId, String query, int topK, boolean useTimeliness, String sortBy) {
         if (query == null || query.isBlank()) return List.of();
         if (topK <= 0) topK = 5;
         if (topK > 50) topK = 50;
@@ -78,26 +79,44 @@ public class Retriever {
             }
         }
 
-        // 批量拉取文档时间戳，用于时效性加权 (Day 51)
+        // 批量拉取文档元数据，用于时效性/权威性加权 (Day 51 / Day 57)
         Map<Long, LocalDateTime> docUpdatedMap = new HashMap<>();
-        if (useTimeliness && timelinessBoost > 0) {
-            Set<Long> docIds = hits.stream().map(h -> h.docId).filter(java.util.Objects::nonNull).collect(Collectors.toSet());
-            if (!docIds.isEmpty()) {
-                docMapper.selectBatchIds(docIds).forEach(d -> docUpdatedMap.put(d.getId(), d.getUpdatedAt()));
-            }
+        Map<Long, Long> docSizeMap = new HashMap<>();
+        Set<Long> docIds = hits.stream().map(h -> h.docId).filter(java.util.Objects::nonNull).collect(Collectors.toSet());
+        if (!docIds.isEmpty()) {
+            docMapper.selectBatchIds(docIds).forEach(d -> {
+                docUpdatedMap.put(d.getId(), d.getUpdatedAt());
+                docSizeMap.put(d.getId(), d.getSizeBytes() != null ? d.getSizeBytes() : 0L);
+            });
         }
 
-        // 排序：相关性 + 时效性加权 (Day 51)
+        // Day 57: 排序维度切换 — relevance / timeliness / authority
         final LocalDateTime now = LocalDateTime.now();
         final double boost = timelinessBoost;
         final int maxAge = maxAgeDays;
+        final String mode = (sortBy != null && !sortBy.isBlank()) ? sortBy.toLowerCase() : "relevance";
+
         hits.forEach(h -> {
-            if (useTimeliness && boost > 0) {
-                LocalDateTime ta = docUpdatedMap.getOrDefault(h.docId, LocalDateTime.now().minusDays(maxAge + 1));
-                double rec = recencyScore(ta, now, maxAge);
-                h.rankScore = (1 - boost) * h.score + boost * rec;
-            } else {
-                h.rankScore = h.score;
+            switch (mode) {
+                case "timeliness" -> {
+                    LocalDateTime ta = docUpdatedMap.getOrDefault(h.docId, LocalDateTime.now().minusDays(maxAge + 1));
+                    h.rankScore = recencyScore(ta, now, maxAge);
+                }
+                case "authority" -> {
+                    // 权威性: 按文档大小归一化分数（sizeBytes 越大越权威，上限 10MB）
+                    long size = docSizeMap.getOrDefault(h.docId, 0L);
+                    double authScore = Math.min(1.0, size / (10.0 * 1024 * 1024));
+                    h.rankScore = (1 - boost) * h.score + boost * authScore;
+                }
+                default -> {  // relevance
+                    if (useTimeliness && boost > 0) {
+                        LocalDateTime ta = docUpdatedMap.getOrDefault(h.docId, LocalDateTime.now().minusDays(maxAge + 1));
+                        double rec = recencyScore(ta, now, maxAge);
+                        h.rankScore = (1 - boost) * h.score + boost * rec;
+                    } else {
+                        h.rankScore = h.score;
+                    }
+                }
             }
         });
         hits.sort((a, b) -> Double.compare(b.rankScore, a.rankScore));
@@ -123,8 +142,8 @@ public class Retriever {
             h.docSource = doc == null ? null : doc.getSourceUri();
             h.setHighlight(query);
         }
-        log.info("retrieve: kbId={} queryLen={} candidates={} hits={} topK={} timeliness={} reranked={}",
-                kbId, query.length(), all.size(), hits.size(), top.size(), useTimeliness, !reranked.isEmpty());
+        log.info("retrieve: kbId={} queryLen={} candidates={} hits={} topK={} timeliness={} sortBy={} reranked={}",
+                kbId, query.length(), all.size(), hits.size(), top.size(), useTimeliness, mode, !reranked.isEmpty());
         return top;
     }
 
@@ -132,7 +151,14 @@ public class Retriever {
      * 旧版兼容：默认启用时效性加权 (Day 51).
      */
     public List<Hit> retrieve(Long kbId, String query, int topK) {
-        return retrieve(kbId, query, topK, true);
+        return retrieve(kbId, query, topK, true, "relevance");
+    }
+
+    /**
+     * 旧版兼容 (Day 51).
+     */
+    public List<Hit> retrieve(Long kbId, String query, int topK, boolean useTimeliness) {
+        return retrieve(kbId, query, topK, useTimeliness, "relevance");
     }
 
     /**
@@ -143,9 +169,10 @@ public class Retriever {
      * @param query         用户查询
      * @param topK          返回数量（每个 KB 取 topK*2 的候选，合并后取 topK）
      * @param useTimeliness 是否启用时效性加权
+     * @param sortBy        排序维度: relevance / timeliness / authority
      * @return 合并排序后的命中结果，含 kbName 字段
      */
-    public List<Hit> retrieveMultiKb(List<Long> kbIds, String query, int topK, boolean useTimeliness) {
+    public List<Hit> retrieveMultiKb(List<Long> kbIds, String query, int topK, boolean useTimeliness, String sortBy) {
         if (kbIds == null || kbIds.isEmpty()) {
             log.warn("retrieveMultiKb: kbIds is empty");
             return List.of();
@@ -159,7 +186,7 @@ public class Retriever {
         for (Long kbId : kbIds) {
             try {
                 // 每个 KB 多取一些候选，防止某个 KB 大量命中而其他 KB 少的情况
-                List<Hit> hits = retrieve(kbId, query, topK * 2, useTimeliness);
+                List<Hit> hits = retrieve(kbId, query, topK * 2, useTimeliness, sortBy);
                 allHits.addAll(hits);
             } catch (Exception e) {
                 log.warn("retrieveMultiKb: kbId={} 检索失败: {}", kbId, e.getMessage());
@@ -212,7 +239,7 @@ public class Retriever {
      * 跨 KB 检索（默认启用时效性加权）.
      */
     public List<Hit> retrieveMultiKb(List<Long> kbIds, String query, int topK) {
-        return retrieveMultiKb(kbIds, query, topK, true);
+        return retrieveMultiKb(kbIds, query, topK, true, "relevance");
     }
 
     /**

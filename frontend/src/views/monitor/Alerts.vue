@@ -1,8 +1,9 @@
 <!--
-  @file monitor/Alerts.vue - 告警管理 (V7.7, Day 55)
+  @file monitor/Alerts.vue - 告警管理 (V7.8, Day 57)
   路由: /monitor/alerts
   合并: 活跃告警 + 历史告警 (原 2 个 tab)
   Day 55 新增: RCA 根因分析详情抽屉 (category / cause / suggestedActions / historicalKnowledge)
+  Day 57 新增: 知识库 Tab「触发 RCA」按钮（点击条目自动触发同类告警 RCA 分析）
 -->
 <template>
   <div class="alerts-page">
@@ -122,6 +123,14 @@
           <el-table-column prop="resolvedAt" label="解决时间" width="170" />
           <el-table-column prop="resolvedBy" label="处理人" width="90" show-overflow-tooltip />
           <el-table-column prop="notes" label="备注" min-width="160" show-overflow-tooltip />
+          <!-- Day 57: 操作列 - 触发 RCA -->
+          <el-table-column label="操作" width="100" align="center">
+            <template #default="{ row }">
+              <el-button size="small" link type="primary" :loading="rcaFromKbLoading === row.metricName" @click="triggerRcaFromKb(row)">
+                触发 RCA
+              </el-button>
+            </template>
+          </el-table-column>
         </el-table>
 
         <el-pagination
@@ -301,6 +310,35 @@ const kbSummary = ref(null)
 const kbFilter = reactive({ metricName: '', severity: '', days: 30 })
 const kbPage = ref(1)
 const kbTotal = ref(0)
+
+// Day 57: 知识库条目触发 RCA — 加载状态（key = metricName 防止多个按钮同时 loading）
+const rcaFromKbLoading = ref('')
+
+/** Day 57: 知识库条目触发 RCA 分析（联动 RCA 抽屉） */
+async function triggerRcaFromKb(entry) {
+  if (!entry?.metricName) {
+    ElMessage.warning('指标名称为空，无法触发 RCA')
+    return
+  }
+  rcaFromKbLoading.value = entry.metricName
+  rcaError.value = ''
+  rcaResult.value = null
+  rcaCurrentAlert.value = { id: null, metricName: entry.metricName, severity: entry.severity, title: entry.metricName }
+  rcaDrawerVisible.value = true
+  rawAnswerExpanded.value = false
+  try {
+    const res = await monitorApi.rcaAnalysisByMetric(entry.metricName, entry.severity, kbFilter.days)
+    if (res.code === 0) {
+      rcaResult.value = res.data
+    } else {
+      rcaError.value = res.message || 'RCA 分析失败'
+    }
+  } catch (e) {
+    rcaError.value = e.message || '网络错误，请重试'
+  } finally {
+    rcaFromKbLoading.value = ''
+  }
+}
 
 async function loadKbKnowledge() {
   kbLoading.value = true

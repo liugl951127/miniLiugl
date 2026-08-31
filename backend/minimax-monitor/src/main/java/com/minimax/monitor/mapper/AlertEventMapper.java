@@ -60,6 +60,22 @@ public interface AlertEventMapper extends BaseMapper<AlertEvent> {
         return selectList(q);
     }
 
+    /** Day 57: 按 metricName 查找最近一条告警（用于知识库条目触发 RCA） */
+    default AlertEvent selectLatestByMetric(String metricName, String severity, String status) {
+        QueryWrapper<AlertEvent> q = new QueryWrapper<>();
+        if (metricName != null && !metricName.isBlank()) {
+            q.eq("metric_name", metricName);
+        }
+        if (severity != null && !severity.isBlank()) {
+            q.eq("severity", severity.toUpperCase());
+        }
+        if (status != null && !status.isBlank()) {
+            q.eq("status", status.toLowerCase());
+        }
+        q.orderByDesc("fired_at").last("LIMIT 1");
+        return selectOne(q);
+    }
+
     /** Day 52: 高级筛选总数（用于分页） */
     default long countAdvanced(String severity, String metricName, String status,
             LocalDateTime startTime, LocalDateTime endTime) {

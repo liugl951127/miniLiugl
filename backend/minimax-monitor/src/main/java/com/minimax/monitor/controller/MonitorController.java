@@ -404,6 +404,57 @@ public class MonitorController {
     }
 
     /**
+     * Day 57: 知识库条目触发 RCA 分析 — 根据 metricName 查找最近告警并触发 RCA.
+     * 用于知识库 Tab 点击「触发 RCA」按钮，联动 RCA 分析。
+     */
+    @Operation(summary = "知识库条目触发 RCA（按 metricName 触发同类告警根因分析）")
+    @GetMapping("/alerts/rca/by-metric")
+    public Result<Map<String, Object>> rcaByMetric(
+            @RequestParam String metricName,
+            @RequestParam(required = false) String severity,
+            @RequestParam(required = false, defaultValue = "30") Integer historyDays) {
+
+        // 优先找最近一条 firing 态的同类告警
+        AlertEvent event = alertEventMapper.selectLatestByMetric(metricName, severity, "firing");
+        // 没有 firing 则找最近一条
+        if (event == null) {
+            event = alertEventMapper.selectLatestByMetric(metricName, severity, null);
+        }
+        if (event == null) {
+            return Result.fail("未找到指标「" + metricName + "」相关的告警记录");
+        }
+
+        // 复用现有 RCA 逻辑
+        List<AlertEvent> recent = alertEventMapper.selectAdvanced(
+                severity, metricName, null, null, null, 10).stream()
+                .filter(e -> e.getId() != null && !e.getId().equals(event.getId()))
+                .toList();
+
+        RcaResult rca = rcaService.analyze(event, recent);
+
+        Map<String, Object> resp = new LinkedHashMap<>();
+        resp.put("alertId", event.getId());
+        resp.put("source", "by-metric");  // 标识来源：知识库触发
+        resp.put("alert", Map.of(
+                "ruleName", event.getRuleName(),
+                "metricName", event.getMetricName(),
+                "severity", event.getSeverity(),
+                "metricValue", event.getMetricValue(),
+                "message", event.getMessage()
+        ));
+        resp.put("rca", Map.of(
+                "category", rca.getCategory() != null ? rca.getCategory().name() : null,
+                "cause", rca.getCause(),
+                "suggestedActions", rca.getSuggestedActions(),
+                "analysisMs", rca.getAnalysisMs(),
+                "method", rca.getMethod(),
+                "confidence", rca.getConfidence(),
+                "error", rca.getError()
+        ));
+        return Result.ok(resp);
+    }
+
+    /**
      * 手动触发异常检测 (Day 31).
      */
     @Operation(summary = "手动异常检测 (Day 31)")

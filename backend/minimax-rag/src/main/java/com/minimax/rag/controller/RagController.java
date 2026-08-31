@@ -389,9 +389,11 @@ public class RagController {
         Long kbId = body.get("kbId") == null ? null : ((Number) body.get("kbId")).longValue();
         String query = (String) body.get("query");
         Integer topK = (Integer) body.getOrDefault("topK", 5);
+        Boolean useTimeliness = (Boolean) body.getOrDefault("useTimeliness", true);
+        String sortBy = (String) body.getOrDefault("sortBy", "relevance");
         // V6.8.2: 归属校验 (公开库任何人都能检索，私有库仅创建者可查)
         kbService.verifyAccess(kbId, user != null ? user.id() : null);
-        return Result.ok(retriever.retrieve(kbId, query, topK));
+        return Result.ok(retriever.retrieve(kbId, query, topK, useTimeliness, sortBy));
     }
 
     // ---------- Day 53: 跨知识库联合检索 ----------
@@ -414,6 +416,8 @@ public class RagController {
         Object kbIdsObj = body.get("kbIds");
         String query = (String) body.get("query");
         Integer topK = (Integer) body.getOrDefault("topK", 5);
+        Boolean useTimeliness = (Boolean) body.getOrDefault("useTimeliness", true);
+        String sortBy = (String) body.getOrDefault("sortBy", "relevance");
 
         if (kbIdsObj == null) {
             return Result.fail("kbIds 不能为空");
@@ -437,7 +441,7 @@ public class RagController {
             kbService.verifyAccess(kbId, userId);
         }
 
-        List<Retriever.Hit> hits = retriever.retrieveMultiKb(kbIds, query, topK);
+        List<Retriever.Hit> hits = retriever.retrieveMultiKb(kbIds, query, topK, useTimeliness, sortBy);
         return Result.ok(hits);
     }
 
@@ -465,6 +469,7 @@ public class RagController {
         Integer topK = (Integer) body.getOrDefault("topK", 20);
         Integer finalTop = (Integer) body.getOrDefault("finalTop", 5);
         Boolean useTimeliness = (Boolean) body.getOrDefault("useTimeliness", true);
+        String sortBy = (String) body.getOrDefault("sortBy", "relevance");
 
         if (query == null || query.isBlank()) {
             return Result.fail("query 不能为空");
@@ -475,7 +480,7 @@ public class RagController {
         long start = System.currentTimeMillis();
 
         // Step 1: 首轮 Bi-Encoder 检索（取更多候选供重排序）
-        List<Retriever.Hit> candidates = retriever.retrieve(kbId, query, Math.max(topK, 20), useTimeliness);
+        List<Retriever.Hit> candidates = retriever.retrieve(kbId, query, Math.max(topK, 20), useTimeliness, sortBy);
         if (candidates.isEmpty()) {
             return Result.ok(Map.of(
                     "query", query,

@@ -978,3 +978,15 @@
 - [ ] Monitor 知识库 → RCA 分析联动（点击知识条目自动触发同类 RCA）
 - [ ] RAG 检索结果排序维度切换（相关性 / 时效性 / 权威性三档）
 - [ ] MiniMax 大模型平台日常维护（前端语法检查 / API 路径一致性）
+
+## Day 57 - 2026-08-31 ✅ 知识库RCA联动 + RAG排序维度切换
+
+**今日完成：**
+- [x] **Monitor 知识库 → RCA 分析联动**：`MonitorController` 新增 `GET /api/v1/monitor/alerts/rca/by-metric` endpoint，`AlertEventMapper` 新增 `selectLatestByMetric()` 方法；`Alerts.vue` 知识库 Tab 新增「操作」列 + 「触发 RCA」按钮，点击自动触发同类告警 RCA 分析并打开 RCA 抽屉；`monitor.js` 新增 `rcaAnalysisByMetric` API 函数
+- [x] **RAG 检索结果排序维度切换**：`Retriever.java` 新增 `sortBy` 参数（三档：relevance / timeliness / authority），`RagController` 三个 endpoint 全部接受 `sortBy`；`KbList.vue` 新增排序维度选择器（el-radio-group）+ 结果头部排序模式标签
+- [x] 自检 13/13 ✅ + 静态 5/5 ✅ + vite build 45.57s ✅
+
+**明日计划 Day 58：**
+- [ ] Monitor RCA 分析结果一键转知识库条目（将 RCA 分析结果写入告警知识库）
+- [ ] RAG 检索结果支持按文档类型筛选（PDF/Word/TXT/MD）
+- [ ] MiniMax 大模型平台日常维护（前端语法检查 / API 路径一致性）

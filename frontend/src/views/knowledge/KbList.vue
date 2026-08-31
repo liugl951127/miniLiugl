@@ -1,6 +1,7 @@
-<!-- @file knowledge/KbList.vue - 知识库管理 (V7.7, Day 55 从原 Index.vue 提取)
+<!-- @file knowledge/KbList.vue - 知识库管理 (V7.8, Day 57)
      路由: /knowledge/list
      Day 55: Cross-Encoder rankScore 综合分展示 (精排标签 + 双分数对比)
+     Day 57: 检索结果排序维度切换 (相关性/时效性/权威性三档)
 -->
 <template>
   <div class="kb-list-page">
@@ -157,6 +158,14 @@
                   <el-option v-for="s in retrievalStrategies" :key="s.value" :label="s.label" :value="s.value" />
                 </el-select>
               </el-form-item>
+              <!-- Day 57: 排序维度选择 -->
+              <el-form-item label="排序维度" style="margin-bottom:8px">
+                <el-radio-group v-model="retrieveSortBy" size="small">
+                  <el-radio-button value="relevance">相关性</el-radio-button>
+                  <el-radio-button value="timeliness">时效性</el-radio-button>
+                  <el-radio-button value="authority">权威性</el-radio-button>
+                </el-radio-group>
+              </el-form-item>
               <el-form-item style="margin-bottom:0">
                 <el-button type="primary" :loading="retrieveLoading" :disabled="!retrieveQuery.trim()" @click="doRetrieve" style="width:100%">
                   <el-icon v-if="!retrieveLoading"><Search /></el-icon>开始检索
@@ -175,6 +184,10 @@
                     <el-icon style="margin-right:2px"><Finished /></el-icon>Cross-Encoder 精排
                   </el-tag>
                   <el-tag size="small" type="info">{{ retrieveResults.length }} 条</el-tag>
+                  <!-- Day 57: 排序维度标签 -->
+                  <el-tag v-if="retrieveSortBy !== 'relevance'" size="small" type="warning">
+                    {{ { timeliness: '⏰ 时效性', authority: '🏆 权威性' }[retrieveSortBy] || retrieveSortBy }}
+                  </el-tag>
                   <!-- Day 56: 置信度分布摘要 -->
                   <span v-if="retrieveResults.length > 0" class="confidence-dist-summary">
                     <span v-for="(level, idx) in confidenceDist" :key="idx" class="confidence-dist-item">
@@ -892,6 +905,8 @@ const stepIndex = computed(() => {
 // ========== 检索测试 ==========
 const retrieveQuery = ref('')
 const retrievePromptTemplate = ref('default')
+// Day 57: 排序维度 — relevance(相关性) / timeliness(时效性) / authority(权威性)
+const retrieveSortBy = ref('relevance')
 const retrieveLoading = ref(false)
 const retrieveResults = ref([])
 const retrieveDone = ref(false)
@@ -1499,7 +1514,9 @@ async function doRetrieve() {
       query: q,
       kbId: currentKb.value.id,
       topK: 10,
-      scoreThreshold: 0.1
+      scoreThreshold: 0.1,
+      // Day 57: 排序维度 — relevance / timeliness / authority
+      sortBy: retrieveSortBy.value
     }
     // 根据选择的模板追加 system prompt（如果后端支持）
     if (retrievePromptTemplate.value && retrievePromptTemplate.value !== 'default') {
