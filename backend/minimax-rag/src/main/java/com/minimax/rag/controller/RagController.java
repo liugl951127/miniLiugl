@@ -391,9 +391,10 @@ public class RagController {
         Integer topK = (Integer) body.getOrDefault("topK", 5);
         Boolean useTimeliness = (Boolean) body.getOrDefault("useTimeliness", true);
         String sortBy = (String) body.getOrDefault("sortBy", "relevance");
+        String fileType = (String) body.getOrDefault("fileType", null);  // Day 58: 文档类型筛选
         // V6.8.2: 归属校验 (公开库任何人都能检索，私有库仅创建者可查)
         kbService.verifyAccess(kbId, user != null ? user.id() : null);
-        return Result.ok(retriever.retrieve(kbId, query, topK, useTimeliness, sortBy));
+        return Result.ok(retriever.retrieve(kbId, query, topK, useTimeliness, sortBy, fileType));
     }
 
     // ---------- Day 53: 跨知识库联合检索 ----------
@@ -418,6 +419,7 @@ public class RagController {
         Integer topK = (Integer) body.getOrDefault("topK", 5);
         Boolean useTimeliness = (Boolean) body.getOrDefault("useTimeliness", true);
         String sortBy = (String) body.getOrDefault("sortBy", "relevance");
+        String fileType = (String) body.getOrDefault("fileType", null);  // Day 58
 
         if (kbIdsObj == null) {
             return Result.fail("kbIds 不能为空");
@@ -441,7 +443,7 @@ public class RagController {
             kbService.verifyAccess(kbId, userId);
         }
 
-        List<Retriever.Hit> hits = retriever.retrieveMultiKb(kbIds, query, topK, useTimeliness, sortBy);
+        List<Retriever.Hit> hits = retriever.retrieveMultiKb(kbIds, query, topK, useTimeliness, sortBy, fileType);
         return Result.ok(hits);
     }
 
@@ -470,6 +472,7 @@ public class RagController {
         Integer finalTop = (Integer) body.getOrDefault("finalTop", 5);
         Boolean useTimeliness = (Boolean) body.getOrDefault("useTimeliness", true);
         String sortBy = (String) body.getOrDefault("sortBy", "relevance");
+        String fileType = (String) body.getOrDefault("fileType", null);  // Day 58
 
         if (query == null || query.isBlank()) {
             return Result.fail("query 不能为空");
@@ -480,7 +483,7 @@ public class RagController {
         long start = System.currentTimeMillis();
 
         // Step 1: 首轮 Bi-Encoder 检索（取更多候选供重排序）
-        List<Retriever.Hit> candidates = retriever.retrieve(kbId, query, Math.max(topK, 20), useTimeliness, sortBy);
+        List<Retriever.Hit> candidates = retriever.retrieve(kbId, query, Math.max(topK, 20), useTimeliness, sortBy, fileType);
         if (candidates.isEmpty()) {
             return Result.ok(Map.of(
                     "query", query,
@@ -610,6 +613,7 @@ public class RagController {
         String history = (String) body.get("history");
         Integer topK = (Integer) body.getOrDefault("topK", 5);
         String systemPrompt = (String) body.get("systemPrompt");
+        String fileType = (String) body.getOrDefault("fileType", null);  // Day 58
 
         if (kbIdsObj == null || !(kbIdsObj instanceof List) || ((List<?>) kbIdsObj).isEmpty()) {
             return Result.fail("kbIds 必须是包含至少一个 KB 的数组");
@@ -630,7 +634,7 @@ public class RagController {
         }
 
         // 跨 KB 检索
-        List<Retriever.Hit> hits = retriever.retrieveMultiKb(kbIds, question, topK);
+        List<Retriever.Hit> hits = retriever.retrieveMultiKb(kbIds, question, topK, true, "relevance", fileType);
 
         // 构建上下文（每个 KB 分别标注）
         Map<Long, String> kbNameMap = new java.util.LinkedHashMap<>();

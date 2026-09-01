@@ -188,6 +188,15 @@ export const kgTwoHop = (id) => http.get(`/agent/kg/entities/${id}/2hop`)
 export const kgPath = (userId, fromId, toId) =>
   http.get('/agent/kg/path', { params: { userId, fromId, toId } })
 
+// ==================== Day 58: RCA 保存到知识库 API ====================
+/** RCA 分析结果保存为知识库条目 */
+export const saveRcaToKnowledge = (alertId) =>
+  http.post('/monitor/alerts/rca/save-to-knowledge', { alertId })
+
+/** 查询已保存的 RCA 知识条目列表 */
+export const listRcaKnowledge = (params) =>
+  http.get('/monitor/alerts/rca/knowledge/list', { params })
+
 // ==================== Day 32: RCA 根因分析 + 异常检测 API ====================
 
 /** 告警 RCA 分析 (Day 33 修: 加 /api/v1 前缀) */
@@ -304,7 +313,9 @@ function createMonitorApi() {
     // Day 54: 告警根因知识库
     getAlertRcaKnowledge, getAlertRcaSimilar, getAlertRcaSummary,
     // Day 57: 知识库条目触发 RCA
-    rcaAnalysisByMetric
+    rcaAnalysisByMetric,
+    // Day 58: RCA 保存到知识库
+    saveRcaToKnowledge, listRcaKnowledge
   }
 }
 const monitorApi = createMonitorApi()

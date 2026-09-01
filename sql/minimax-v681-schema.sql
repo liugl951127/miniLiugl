@@ -2013,3 +2013,27 @@ CREATE TABLE `user_preferences` (
 -- 外键约束开启（按依赖顺序）
 SET FOREIGN_KEY_CHECKS = 1;
 -- ============================================================
+-- ============================================================
+-- alert_rca_knowledge (AlertRcaKnowledge) V6.9 Day 58: RCA分析结果保存为知识条目
+-- ============================================================
+DROP TABLE IF EXISTS `alert_rca_knowledge`;
+CREATE TABLE `alert_rca_knowledge` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `alert_id` BIGINT NULL COMMENT '关联告警ID',
+  `metric_name` VARCHAR(255) NULL COMMENT '指标名称',
+  `rule_name` VARCHAR(255) NULL COMMENT '告警规则名',
+  `severity` VARCHAR(32) NULL COMMENT '告警级别',
+  `category` VARCHAR(64) NULL COMMENT '根因分类: RESOURCE_BOTTLENECK/CONFIG_ERROR/EXTERNAL_DEPENDENCY/CODE_BUG/TRAFFIC_SPIKE/NETWORK/UNKNOWN',
+  `cause` TEXT NULL COMMENT '根因分析内容',
+  `suggested_actions` TEXT NULL COMMENT '建议操作(JSON数组)',
+  `confidence` DOUBLE NULL COMMENT '置信度 0~1',
+  `method` VARCHAR(64) NULL COMMENT '分析方法: rule-based/llm/fallback',
+  `historical_knowledge` TEXT NULL COMMENT '历史经验(JSON数组)',
+  `saved_by` BIGINT NULL COMMENT '保存人用户ID',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+  KEY `idx_metric_name` (`metric_name`),
+  KEY `idx_category` (`category`),
+  KEY `idx_saved_by` (`saved_by`),
+  KEY `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1 COMMENT='RCA分析结果知识库';

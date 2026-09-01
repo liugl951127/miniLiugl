@@ -31,6 +31,18 @@
         LIMIT #{limit}
     </select>
 
+    <!-- Day 58: 按文档类型筛选 -->
+    <select id="selectEmbeddingsByKbAndFileType" resultMap="chunkMap">
+        SELECT dc.id, dc.doc_id, dc.kb_id, dc.owner_id, dc.chunk_index, dc.content,
+               dc.embedding, dc.dim, dc.char_count, dc.start_pos, dc.end_pos,
+               dc.access_count, dc.last_access_at, dc.created_at, dc.updated_at
+        FROM document_chunk dc
+        INNER JOIN document d ON dc.doc_id = d.id
+        WHERE dc.kb_id = #{kbId} AND dc.deleted = 0 AND d.source_type = #{fileType}
+        ORDER BY dc.id ASC
+        LIMIT #{limit}
+    </select>
+
     <select id="selectByDoc" resultMap="chunkMap">
         SELECT id, doc_id, kb_id, owner_id, chunk_index, content, dim,
                char_count, start_pos, end_pos, access_count, last_access_at,

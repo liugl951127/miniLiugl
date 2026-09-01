@@ -56,8 +56,9 @@ public class Retriever {
      * @param topK     返回数量
      * @param useTimeliness 是否启用时效性加权排序，默认 true
      * @param sortBy    排序维度: relevance(相关性) / timeliness(时效性) / authority(权威性)，默认 relevance
+     * @param fileType  Day 58: 文档类型筛选（如 pdf/docx/md/txt），null 表示不过滤
      */
-    public List<Hit> retrieve(Long kbId, String query, int topK, boolean useTimeliness, String sortBy) {
+    public List<Hit> retrieve(Long kbId, String query, int topK, boolean useTimeliness, String sortBy, String fileType) {
         if (query == null || query.isBlank()) return List.of();
         if (topK <= 0) topK = 5;
         if (topK > 50) topK = 50;
@@ -66,7 +67,12 @@ public class Retriever {
             return List.of();
         }
         float[] qVec = embedding.embed(query);
-        List<DocumentChunk> all = chunkMapper.selectEmbeddingsByKb(kbId, 5000);
+        List<DocumentChunk> all;
+        if (fileType != null && !fileType.isBlank()) {
+            all = chunkMapper.selectEmbeddingsByKbAndFileType(kbId, fileType, 5000);
+        } else {
+            all = chunkMapper.selectEmbeddingsByKb(kbId, 5000);
+        }
         if (all.isEmpty()) return List.of();
 
         List<Hit> hits = new ArrayList<>(all.size());
@@ -151,14 +157,21 @@ public class Retriever {
      * 旧版兼容：默认启用时效性加权 (Day 51).
      */
     public List<Hit> retrieve(Long kbId, String query, int topK) {
-        return retrieve(kbId, query, topK, true, "relevance");
+        return retrieve(kbId, query, topK, true, "relevance", null);
     }
 
     /**
      * 旧版兼容 (Day 51).
      */
     public List<Hit> retrieve(Long kbId, String query, int topK, boolean useTimeliness) {
-        return retrieve(kbId, query, topK, useTimeliness, "relevance");
+        return retrieve(kbId, query, topK, useTimeliness, "relevance", null);
+    }
+
+    /**
+     * 旧版兼容 (Day 57).
+     */
+    public List<Hit> retrieve(Long kbId, String query, int topK, boolean useTimeliness, String sortBy) {
+        return retrieve(kbId, query, topK, useTimeliness, sortBy, null);
     }
 
     /**
@@ -170,9 +183,10 @@ public class Retriever {
      * @param topK          返回数量（每个 KB 取 topK*2 的候选，合并后取 topK）
      * @param useTimeliness 是否启用时效性加权
      * @param sortBy        排序维度: relevance / timeliness / authority
+     * @param fileType       Day 58: 文档类型筛选（如 pdf/docx/md/txt），null 表示不过滤
      * @return 合并排序后的命中结果，含 kbName 字段
      */
-    public List<Hit> retrieveMultiKb(List<Long> kbIds, String query, int topK, boolean useTimeliness, String sortBy) {
+    public List<Hit> retrieveMultiKb(List<Long> kbIds, String query, int topK, boolean useTimeliness, String sortBy, String fileType) {
         if (kbIds == null || kbIds.isEmpty()) {
             log.warn("retrieveMultiKb: kbIds is empty");
             return List.of();
@@ -186,7 +200,7 @@ public class Retriever {
         for (Long kbId : kbIds) {
             try {
                 // 每个 KB 多取一些候选，防止某个 KB 大量命中而其他 KB 少的情况
-                List<Hit> hits = retrieve(kbId, query, topK * 2, useTimeliness, sortBy);
+                List<Hit> hits = retrieve(kbId, query, topK * 2, useTimeliness, sortBy, fileType);
                 allHits.addAll(hits);
             } catch (Exception e) {
                 log.warn("retrieveMultiKb: kbId={} 检索失败: {}", kbId, e.getMessage());
@@ -239,7 +253,7 @@ public class Retriever {
      * 跨 KB 检索（默认启用时效性加权）.
      */
     public List<Hit> retrieveMultiKb(List<Long> kbIds, String query, int topK) {
-        return retrieveMultiKb(kbIds, query, topK, true, "relevance");
+        return retrieveMultiKb(kbIds, query, topK, true, "relevance", null);
     }
 
     /**

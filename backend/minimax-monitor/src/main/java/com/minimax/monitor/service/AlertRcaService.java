@@ -1,6 +1,10 @@
 package com.minimax.monitor.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.minimax.monitor.entity.AlertEvent;
+import com.minimax.monitor.entity.AlertRcaKnowledge;
+import com.minimax.monitor.mapper.AlertRcaKnowledgeMapper;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -66,6 +70,8 @@ public class AlertRcaService {
 
     private final RestTemplate restTemplate;
     private final AlertRcaKnowledgeService rcaKnowledgeService;
+    private final AlertRcaKnowledgeMapper rcaKnowledgeMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     // ============== 公开 API ==============
 
@@ -468,6 +474,45 @@ public class AlertRcaService {
         if (content instanceof String) return (String) content;
         if (content instanceof Map) return (String) ((Map<String, Object>) content).get("text");
         return String.valueOf(content);
+    }
+
+    /**
+     * Day 58: 将 RCA 分析结果保存为知识条目.
+     *
+     * <p>用户点击「保存到知识库」后，将 RCA 分析结果写入 alert_rca_knowledge 表。
+     *
+     * @param event  告警事件
+     * @param rca    RCA 分析结果
+     * @param savedBy 保存人用户 ID
+     * @return 保存后的知识条目 ID
+     */
+    public AlertRcaKnowledge saveRcaKnowledge(AlertEvent event, RcaResult rca, Long savedBy) {
+        AlertRcaKnowledge entry = new AlertRcaKnowledge();
+        entry.setAlertId(event.getId());
+        entry.setMetricName(event.getMetricName());
+        entry.setRuleName(event.getRuleName());
+        entry.setSeverity(event.getSeverity());
+        entry.setCategory(rca.getCategory() != null ? rca.getCategory().name() : null);
+        entry.setCause(rca.getCause());
+        entry.setConfidence(rca.getConfidence());
+        entry.setMethod(rca.getMethod());
+        entry.setSavedBy(savedBy);
+        // 序列化 suggestedActions 为 JSON
+        try {
+            entry.setSuggestedActions(objectMapper.writeValueAsString(rca.getSuggestedActions()));
+        } catch (JsonProcessingException e) {
+            entry.setSuggestedActions("[]");
+        }
+        // 序列化 historicalKnowledge
+        try {
+            entry.setHistoricalKnowledge(objectMapper.writeValueAsString(rca.getHistoricalKnowledge()));
+        } catch (JsonProcessingException e) {
+            entry.setHistoricalKnowledge("[]");
+        }
+        rcaKnowledgeMapper.insert(entry);
+        log.info("[rca-knowledge] 保存 RCA 知识条目: id={}, alertId={}, metric={}, category={}",
+                entry.getId(), event.getId(), event.getMetricName(), entry.getCategory());
+        return entry;
     }
 
     // ============== 数据类 ==============

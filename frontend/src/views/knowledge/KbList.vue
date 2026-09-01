@@ -166,6 +166,12 @@
                   <el-radio-button value="authority">权威性</el-radio-button>
                 </el-radio-group>
               </el-form-item>
+              <!-- Day 58: 文档类型筛选 -->
+              <el-form-item label="文档类型" style="margin-bottom:8px">
+                <el-select v-model="retrieveFileType" placeholder="不限类型" clearable size="small" style="width:100%">
+                  <el-option v-for="ft in fileTypeOptions" :key="ft.value" :label="ft.label" :value="ft.value" />
+                </el-select>
+              </el-form-item>
               <el-form-item style="margin-bottom:0">
                 <el-button type="primary" :loading="retrieveLoading" :disabled="!retrieveQuery.trim()" @click="doRetrieve" style="width:100%">
                   <el-icon v-if="!retrieveLoading"><Search /></el-icon>开始检索
@@ -187,6 +193,10 @@
                   <!-- Day 57: 排序维度标签 -->
                   <el-tag v-if="retrieveSortBy !== 'relevance'" size="small" type="warning">
                     {{ { timeliness: '⏰ 时效性', authority: '🏆 权威性' }[retrieveSortBy] || retrieveSortBy }}
+                  </el-tag>
+                  <!-- Day 58: 文档类型筛选标签 -->
+                  <el-tag v-if="retrieveFileType" size="small" type="info">
+                    📄 {{ { pdf: 'PDF', docx: 'Word', md: 'Markdown', txt: '纯文本' }[retrieveFileType] || retrieveFileType }}
                   </el-tag>
                   <!-- Day 56: 置信度分布摘要 -->
                   <span v-if="retrieveResults.length > 0" class="confidence-dist-summary">
@@ -907,6 +917,15 @@ const retrieveQuery = ref('')
 const retrievePromptTemplate = ref('default')
 // Day 57: 排序维度 — relevance(相关性) / timeliness(时效性) / authority(权威性)
 const retrieveSortBy = ref('relevance')
+// Day 58: 文档类型筛选 — pdf/docx/md/txt/all
+const retrieveFileType = ref('')
+const fileTypeOptions = [
+  { label: '不限类型', value: '' },
+  { label: 'PDF', value: 'pdf' },
+  { label: 'Word', value: 'docx' },
+  { label: 'Markdown', value: 'md' },
+  { label: '纯文本', value: 'txt' }
+]
 const retrieveLoading = ref(false)
 const retrieveResults = ref([])
 const retrieveDone = ref(false)
@@ -1516,7 +1535,9 @@ async function doRetrieve() {
       topK: 10,
       scoreThreshold: 0.1,
       // Day 57: 排序维度 — relevance / timeliness / authority
-      sortBy: retrieveSortBy.value
+      sortBy: retrieveSortBy.value,
+      // Day 58: 文档类型筛选
+      ...(retrieveFileType.value ? { fileType: retrieveFileType.value } : {})
     }
     // 根据选择的模板追加 system prompt（如果后端支持）
     if (retrievePromptTemplate.value && retrievePromptTemplate.value !== 'default') {

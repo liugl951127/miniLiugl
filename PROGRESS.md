@@ -986,7 +986,14 @@
 - [x] **RAG 检索结果排序维度切换**：`Retriever.java` 新增 `sortBy` 参数（三档：relevance / timeliness / authority），`RagController` 三个 endpoint 全部接受 `sortBy`；`KbList.vue` 新增排序维度选择器（el-radio-group）+ 结果头部排序模式标签
 - [x] 自检 13/13 ✅ + 静态 5/5 ✅ + vite build 45.57s ✅
 
-**明日计划 Day 58：**
-- [ ] Monitor RCA 分析结果一键转知识库条目（将 RCA 分析结果写入告警知识库）
-- [ ] RAG 检索结果支持按文档类型筛选（PDF/Word/TXT/MD）
+## Day 58 - 2026-09-01 ✅ RCA一键转知识库 + RAG文档类型筛选
+
+**今日完成：**
+- [x] **RCA 一键转知识库**：`alert_rca_knowledge` 表新建；`AlertRcaKnowledge` entity + Mapper；`AlertRcaService.saveRcaKnowledge()` 方法；`MonitorController` 两个新 endpoint（`POST /rca/save-to-knowledge`、`GET /rca/knowledge/list`）；`Alerts.vue` 抽屉新增「保存到知识库」按钮
+- [x] **RAG 文档类型筛选**：`DocumentChunkMapper` 新增 `selectEmbeddingsByKbAndFileType()`；`Retriever` 主方法增加 `fileType` 参数；`RagController` 四个 endpoint 全部透传 `fileType`；`KbList.vue` 新增文档类型选择器（PDF/Word/MD/TXT）
+- [x] 自检 13/13 ✅ + 静态 5/5 ✅ + vite build 48.55s ✅（pnpm 11.25.0）
+
+**明日计划 Day 59：**
+- [ ] RCA 知识库管理界面（查看/删除已保存的 RCA 知识条目）
+- [ ] RAG 检索结果来源标注（显示文档 MIME 类型标签）
 - [ ] MiniMax 大模型平台日常维护（前端语法检查 / API 路径一致性）

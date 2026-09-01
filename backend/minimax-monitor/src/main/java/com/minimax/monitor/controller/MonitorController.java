@@ -8,6 +8,8 @@ import com.minimax.monitor.client.ServiceEndpoints;
 import com.minimax.monitor.collector.MetricsCollector;
 import com.minimax.monitor.entity.AlertChannel;
 import com.minimax.monitor.entity.AlertEvent;
+import com.minimax.monitor.entity.AlertRcaKnowledge;
+import com.minimax.monitor.mapper.AlertRcaKnowledgeMapper;
 import com.minimax.monitor.service.AlertMetricsService;
 import com.minimax.monitor.service.AlertPredictionService;
 import com.minimax.monitor.mapper.AlertEventMapper;
@@ -90,6 +92,7 @@ public class MonitorController {
     private final AlertEventMapper alertEventMapper;
     private final AlertRuleMapper ruleMapper;
     private final AlertRcaService rcaService;
+    private final AlertRcaKnowledgeMapper rcaKnowledgeMapper;
     private final LogAnomalyDetector anomalyDetector;
     private final AlertMetricsService alertMetricsService;
     private final AlertPredictionService predictionService;
@@ -452,6 +455,81 @@ public class MonitorController {
                 "error", rca.getError()
         ));
         return Result.ok(resp);
+    }
+
+    /**
+     * Day 58: RCA 分析结果一键保存为知识条目.
+     * 前端 RCA 抽屉点击「保存到知识库」触发。
+     */
+    @Operation(summary = "RCA 分析结果保存为知识库条目 (Day 58)")
+    @PostMapping("/alerts/rca/save-to-knowledge")
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+    public Result<Map<String, Object>> saveRcaToKnowledge(
+            @RequestBody Map<String, Object> body) {
+        Long alertId = body.get("alertId") != null ? ((Number) body.get("alertId")).longValue() : null;
+        if (alertId == null) {
+            return Result.fail("alertId 不能为空");
+        }
+        AlertEvent event = alertEventMapper.selectById(alertId);
+        if (event == null) {
+            return Result.fail("告警事件不存在: " + alertId);
+        }
+        // 复用已有 RCA 分析逻辑
+        List<AlertEvent> recent = alertEventMapper.selectAdvanced(
+                null, event.getMetricName(), null, null, null, 10).stream()
+                .filter(e -> e.getId() != null && !e.getId().equals(alertId))
+                .toList();
+        RcaResult rca = rcaService.analyze(event, recent);
+        // 保存人 ID
+        Long savedBy = null;
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+            try { savedBy = Long.valueOf(auth.getName()); } catch (NumberFormatException ignored) {}
+        }
+        AlertRcaKnowledge saved = rcaService.saveRcaKnowledge(event, rca, savedBy);
+        log.info("[rca-knowledge] 用户 {} 将 alertId={} 的 RCA 保存为知识条目 id={}",
+                savedBy, alertId, saved.getId());
+        return Result.ok(Map.of(
+                "id", saved.getId(),
+                "alertId", alertId,
+                "metricName", event.getMetricName(),
+                "category", saved.getCategory(),
+                "createdAt", saved.getCreatedAt()
+        ));
+    }
+
+    /**
+     * Day 58: 查询已保存的 RCA 知识条目列表.
+     */
+    @Operation(summary = "查询已保存的 RCA 知识条目 (Day 58)")
+    @GetMapping("/alerts/rca/knowledge/list")
+    public Result<List<Map<String, Object>>> listRcaKnowledge(
+            @RequestParam(required = false) String metricName,
+            @RequestParam(required = false) Long savedBy,
+            @RequestParam(required = false, defaultValue = "50") Integer limit) {
+        List<AlertRcaKnowledge> entries;
+        if (metricName != null && !metricName.isBlank()) {
+            entries = rcaKnowledgeMapper.selectByMetricName(metricName, limit);
+        } else if (savedBy != null) {
+            entries = rcaKnowledgeMapper.selectBySavedBy(savedBy, limit);
+        } else {
+            entries = rcaKnowledgeMapper.selectList(null).stream().limit(limit).toList();
+        }
+        List<Map<String, Object>> result = entries.stream().map(e -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", e.getId());
+            m.put("alertId", e.getAlertId());
+            m.put("metricName", e.getMetricName());
+            m.put("ruleName", e.getRuleName());
+            m.put("severity", e.getSeverity());
+            m.put("category", e.getCategory());
+            m.put("cause", e.getCause());
+            m.put("confidence", e.getConfidence());
+            m.put("method", e.getMethod());
+            m.put("createdAt", e.getCreatedAt());
+            return m;
+        }).toList();
+        return Result.ok(result);
     }
 
     /**

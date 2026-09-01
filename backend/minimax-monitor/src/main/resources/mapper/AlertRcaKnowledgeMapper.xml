@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.minimax.monitor.mapper.AlertRcaKnowledgeMapper">
+
+    <resultMap id="rcaKnowledgeMap" type="com.minimax.monitor.entity.AlertRcaKnowledge">
+        <id     property="id"               column="id"/>
+        <result property="alertId"          column="alert_id"/>
+        <result property="metricName"       column="metric_name"/>
+        <result property="ruleName"         column="rule_name"/>
+        <result property="severity"         column="severity"/>
+        <result property="category"         column="category"/>
+        <result property="cause"            column="cause"/>
+        <result property="suggestedActions" column="suggested_actions"/>
+        <result property="confidence"      column="confidence"/>
+        <result property="method"           column="method"/>
+        <result property="historicalKnowledge" column="historical_knowledge"/>
+        <result property="savedBy"          column="saved_by"/>
+        <result property="createdAt"       column="created_at"/>
+    </resultMap>
+
+    <select id="selectByMetricName" resultMap="rcaKnowledgeMap">
+        SELECT * FROM alert_rca_knowledge
+        WHERE metric_name = #{metricName}
+        ORDER BY created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectBySavedBy" resultMap="rcaKnowledgeMap">
+        SELECT * FROM alert_rca_knowledge
+        WHERE saved_by = #{savedBy}
+        ORDER BY created_at DESC
+        LIMIT #{limit}
+    </select>
+</mapper>

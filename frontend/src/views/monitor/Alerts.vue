@@ -270,6 +270,11 @@
       <template #footer>
         <el-button @click="rcaDrawerVisible = false">关闭</el-button>
         <el-button type="primary" @click="refreshRca" :loading="rcaLoading">重新分析</el-button>
+        <!-- Day 58: 保存 RCA 分析结果到知识库 -->
+        <el-button type="success" @click="saveToKnowledgeBase" :loading="saveToKbLoading" :disabled="!rcaResult">
+          <el-icon v-if="!saveToKbLoading"><Collection /></el-icon>
+          保存到知识库
+        </el-button>
       </template>
     </el-drawer>
   </div>
@@ -278,7 +283,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Refresh, Search, Loading, InfoFilled } from '@element-plus/icons-vue'
+import { Refresh, Search, Loading, InfoFilled, Collection } from '@element-plus/icons-vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { monitorApi } from '@/api/monitor'
 
@@ -313,6 +318,9 @@ const kbTotal = ref(0)
 
 // Day 57: 知识库条目触发 RCA — 加载状态（key = metricName 防止多个按钮同时 loading）
 const rcaFromKbLoading = ref('')
+
+// Day 58: 保存到知识库加载状态
+const saveToKbLoading = ref(false)
 
 /** Day 57: 知识库条目触发 RCA 分析（联动 RCA 抽屉） */
 async function triggerRcaFromKb(entry) {
@@ -444,6 +452,27 @@ async function fetchRca() {
 
 async function refreshRca() {
   await fetchRca()
+}
+
+/** Day 58: 将当前 RCA 分析结果保存为知识库条目 */
+async function saveToKnowledgeBase() {
+  if (!rcaCurrentAlert.value?.id) {
+    ElMessage.warning('当前告警 ID 不存在，无法保存')
+    return
+  }
+  saveToKbLoading.value = true
+  try {
+    const res = await monitorApi.saveRcaToKnowledge(rcaCurrentAlert.value.id)
+    if (res.code === 0) {
+      ElMessage.success('已保存到知识库（条目 #' + res.data.id + '）')
+    } else {
+      ElMessage.error('保存失败: ' + (res.message || '未知错误'))
+    }
+  } catch (e) {
+    ElMessage.error('保存失败: ' + (e.message || '网络错误'))
+  } finally {
+    saveToKbLoading.value = false
+  }
 }
 
 async function loadActive() {

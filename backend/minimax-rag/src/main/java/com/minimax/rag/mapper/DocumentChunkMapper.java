@@ -14,6 +14,11 @@ public interface DocumentChunkMapper extends BaseMapper<DocumentChunk> {
     List<DocumentChunk> selectEmbeddingsByKb(@Param("kbId") Long kbId,
                                              @Param("limit") int limit);
 
+    /** Day 58: 按文档类型筛选拉 KB 内所有 chunk */
+    List<DocumentChunk> selectEmbeddingsByKbAndFileType(@Param("kbId") Long kbId,
+                                                        @Param("fileType") String fileType,
+                                                        @Param("limit") int limit);
+
     /** 拉 doc 内所有 chunk (按 chunk_index 排序)。 */
     List<DocumentChunk> selectByDoc(@Param("docId") Long docId);
 
