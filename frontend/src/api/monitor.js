@@ -197,6 +197,10 @@ export const saveRcaToKnowledge = (alertId) =>
 export const listRcaKnowledge = (params) =>
   http.get('/monitor/alerts/rca/knowledge/list', { params })
 
+/** Day 59: 删除已保存的 RCA 知识条目 */
+export const deleteRcaKnowledge = (id) =>
+  http.delete(`/monitor/alerts/rca/knowledge/${id}`)
+
 // ==================== Day 32: RCA 根因分析 + 异常检测 API ====================
 
 /** 告警 RCA 分析 (Day 33 修: 加 /api/v1 前缀) */
@@ -315,7 +319,7 @@ function createMonitorApi() {
     // Day 57: 知识库条目触发 RCA
     rcaAnalysisByMetric,
     // Day 58: RCA 保存到知识库
-    saveRcaToKnowledge, listRcaKnowledge
+    saveRcaToKnowledge, listRcaKnowledge, deleteRcaKnowledge
   }
 }
 const monitorApi = createMonitorApi()

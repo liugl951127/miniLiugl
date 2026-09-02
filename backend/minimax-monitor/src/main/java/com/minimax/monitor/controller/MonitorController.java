@@ -533,6 +533,23 @@ public class MonitorController {
     }
 
     /**
+     * Day 59: 删除已保存的 RCA 知识条目.
+     * 前端 RCA 知识库管理界面点击删除触发。
+     */
+    @Operation(summary = "删除已保存的 RCA 知识条目 (Day 59)")
+    @DeleteMapping("/alerts/rca/knowledge/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+    public Result<Void> deleteRcaKnowledge(@PathVariable Long id) {
+        AlertRcaKnowledge entry = rcaKnowledgeMapper.selectById(id);
+        if (entry == null) {
+            return Result.fail("RCA 知识条目不存在: " + id);
+        }
+        rcaKnowledgeMapper.deleteById(id);
+        log.info("[rca-knowledge] 删除 RCA 知识条目 id={} metric={}", id, entry.getMetricName());
+        return Result.ok();
+    }
+
+    /**
      * 手动触发异常检测 (Day 31).
      */
     @Operation(summary = "手动异常检测 (Day 31)")

@@ -1,9 +1,10 @@
 <!--
-  @file monitor/Alerts.vue - 告警管理 (V7.8, Day 57)
+  @file monitor/Alerts.vue - 告警管理 (V7.9, Day 59)
   路由: /monitor/alerts
   合并: 活跃告警 + 历史告警 (原 2 个 tab)
   Day 55 新增: RCA 根因分析详情抽屉 (category / cause / suggestedActions / historicalKnowledge)
   Day 57 新增: 知识库 Tab「触发 RCA」按钮（点击条目自动触发同类告警 RCA 分析）
+  Day 59 新增: 已保存 RCA Tab — 查看/删除已保存的 RCA 知识条目
 -->
 <template>
   <div class="alerts-page">
@@ -144,6 +145,87 @@
         />
       </el-tab-pane>
 
+      <!-- Day 59: RCA 知识库管理 Tab（查看/删除已保存的 RCA 知识条目） -->
+      <el-tab-pane label="已保存 RCA" name="savedRca">
+        <div class="toolbar">
+          <el-input
+            v-model="savedRcaFilter.metricName"
+            placeholder="搜索指标名称"
+            size="default"
+            style="width: 240px"
+            clearable
+            @keyup.enter="loadSavedRca"
+          />
+          <el-select v-model="savedRcaFilter.severity" placeholder="级别" size="default" clearable style="width: 120px" @change="loadSavedRca">
+            <el-option label="严重" value="critical" />
+            <el-option label="警告" value="warning" />
+            <el-option label="信息" value="info" />
+          </el-select>
+          <el-button type="primary" :icon="Search" @click="loadSavedRca">查询</el-button>
+          <el-button :icon="Refresh" @click="loadSavedRca">刷新</el-button>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="kb-summary-cards" style="margin-bottom:14px">
+          <div class="kb-summary-card">
+            <div class="kb-summary-num">{{ savedRcaEntries.length }}</div>
+            <div class="kb-summary-label">当前条目数</div>
+          </div>
+          <div class="kb-summary-card">
+            <div class="kb-summary-num">{{ savedRcaEntries.filter(e => e.severity === 'critical').length || 0 }}</div>
+            <div class="kb-summary-label">严重级别</div>
+          </div>
+        </div>
+
+        <!-- RCA 知识条目列表 -->
+        <el-table :data="savedRcaEntries" v-loading="savedRcaLoading" stripe empty-text="暂无已保存的 RCA 知识条目">
+          <el-table-column prop="severity" label="级别" width="80">
+            <template #default="{ row }">
+              <el-tag :type="getLevelType(row.severity)" size="small">{{ getLevelLabel(row.severity) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="metricName" label="指标名称" min-width="160" show-overflow-tooltip />
+          <el-table-column prop="ruleName" label="规则名" min-width="140" show-overflow-tooltip />
+          <el-table-column prop="category" label="根因分类" min-width="120">
+            <template #default="{ row }">
+              <el-tag :type="getCategoryType(row.category)" size="small">{{ getCategoryLabel(row.category) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="cause" label="根因" min-width="200" show-overflow-tooltip />
+          <el-table-column prop="confidence" label="置信度" width="90" align="center">
+            <template #default="{ row }">
+              <el-progress
+                :percentage="Math.round((row.confidence || 0) * 100)"
+                :color="getConfidenceColor(row.confidence)"
+                :stroke-width="6"
+                :show-text="false"
+              />
+              <span style="font-size:11px;color:var(--el-text-color-secondary)">{{ ((row.confidence || 0) * 100).toFixed(0) }}%</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="method" label="分析方法" width="90">
+            <template #default="{ row }">
+              <el-tag :type="getRcaMethodType(row.method)" size="small">{{ getRcaMethodLabel(row.method) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="createdAt" label="保存时间" width="170" />
+          <!-- Day 59: 操作列 - 删除 -->
+          <el-table-column label="操作" width="80" align="center">
+            <template #default="{ row }">
+              <el-button
+                size="small"
+                type="danger"
+                link
+                :loading="deletingRcaId === row.id"
+                @click="confirmDeleteRca(row)"
+              >
+                删除
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-tab-pane>
+
       <!-- 历史告警 -->
       <el-tab-pane label="历史告警" name="history">
         <div class="toolbar">
@@ -281,13 +363,18 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ref, reactive, onMounted, watch } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Search, Loading, InfoFilled, Collection } from '@element-plus/icons-vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { monitorApi } from '@/api/monitor'
 
 const activeTab = ref('active')
+
+// Day 59: Tab 切换时懒加载对应数据
+watch(activeTab, (tab) => {
+  if (tab === 'savedRca') loadSavedRca()
+})
 
 const loadingActive = ref(false)
 const loadingHistory = ref(false)
@@ -321,6 +408,64 @@ const rcaFromKbLoading = ref('')
 
 // Day 58: 保存到知识库加载状态
 const saveToKbLoading = ref(false)
+
+// ==================== Day 59: 已保存 RCA 知识库管理 ====================
+const savedRcaLoading = ref(false)
+const savedRcaEntries = ref([])
+const savedRcaFilter = reactive({ metricName: '', severity: '' })
+const deletingRcaId = ref(null)
+
+function getConfidenceColor(score) {
+  const s = Math.max(0, Math.min(1, score || 0))
+  if (s >= 0.8) return '#67c23a'
+  if (s >= 0.6) return '#e6a23c'
+  if (s >= 0.4) return '#f56c6c'
+  return '#909399'
+}
+
+async function loadSavedRca() {
+  savedRcaLoading.value = true
+  try {
+    const params = { limit: 100 }
+    if (savedRcaFilter.metricName) params.metricName = savedRcaFilter.metricName
+    const res = await monitorApi.listRcaKnowledge(params)
+    if (res.code === 0) {
+      const list = Array.isArray(res.data) ? res.data : []
+      // 按 severity 过滤（前端）
+      savedRcaEntries.value = savedRcaFilter.severity
+        ? list.filter(e => e.severity === savedRcaFilter.severity)
+        : list
+    } else {
+      ElMessage.error('加载 RCA 知识库失败: ' + (res.message || '未知错误'))
+    }
+  } catch (e) {
+    ElMessage.error('加载失败: ' + (e.message || '网络错误'))
+  } finally {
+    savedRcaLoading.value = false
+  }
+}
+
+async function confirmDeleteRca(entry) {
+  try {
+    await ElMessageBox.confirm(
+      `确认删除 RCA 知识条目「${entry.metricName}」（${entry.category || ''}）？`,
+      '删除确认',
+      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消', confirmButtonClass: 'el-button--danger' }
+    )
+  } catch (_) {
+    return
+  }
+  deletingRcaId.value = entry.id
+  try {
+    await monitorApi.deleteRcaKnowledge(entry.id)
+    ElMessage.success('已删除')
+    loadSavedRca()
+  } catch (e) {
+    ElMessage.error('删除失败: ' + (e?.response?.data?.message || e?.message || '未知错误'))
+  } finally {
+    deletingRcaId.value = null
+  }
+}
 
 /** Day 57: 知识库条目触发 RCA 分析（联动 RCA 抽屉） */
 async function triggerRcaFromKb(entry) {

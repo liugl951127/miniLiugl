@@ -145,7 +145,7 @@ public class Retriever {
             chunkMapper.touchAccess(h.chunkId);
             Document doc = docMap.get(h.docId);
             h.docTitle = doc == null ? null : doc.getTitle();
-            h.docSource = doc == null ? null : doc.getSourceUri();
+            h.docSource = doc == null ? null : doc.getSourceType(); // Day 59: 返回文档类型(PDF/DOCX/MD/TXT)而非文件路径
             h.setHighlight(query);
         }
         log.info("retrieve: kbId={} queryLen={} candidates={} hits={} topK={} timeliness={} sortBy={} reranked={}",

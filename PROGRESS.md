@@ -997,3 +997,16 @@
 - [ ] RCA 知识库管理界面（查看/删除已保存的 RCA 知识条目）
 - [ ] RAG 检索结果来源标注（显示文档 MIME 类型标签）
 - [ ] MiniMax 大模型平台日常维护（前端语法检查 / API 路径一致性）
+
+## Day 59 - 2026-09-02 ✅ RCA知识库管理界面 + RAG来源标注修复
+
+**今日完成：**
+- [x] **RCA 知识库管理界面**：`MonitorController` 新增 `DELETE /api/v1/monitor/alerts/rca/knowledge/{id}`；`monitor.js` 新增 `deleteRcaKnowledge`；`Alerts.vue` 新增「已保存 RCA」Tab（统计卡片 + 搜索筛选 + 置信度热力条 + 删除确认对话框 + Tab懒加载）
+- [x] **RAG 检索来源 Bug 修复**：`Retriever.java` 第 148 行 `doc.getSourceUri()` → `doc.getSourceType()`（修复前端显示文件路径而非 MIME 类型的问题）
+- [x] 自检 13/13 ✅ + 静态 5/5 ✅ + vite build 43.76s ✅
+
+**关键文件：** 后端 2 文件 / 前端 2 文件
+
+**明日计划 Day 60：**
+- [ ] RCA 知识库条目详情查看（点击条目展开根因分析详情）
+- [ ] MiniMax 大模型平台日常维护（前端语法检查 / API 路径一致性）
