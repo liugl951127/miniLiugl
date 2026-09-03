@@ -62,6 +62,9 @@
     "  L27: hasAny()",
     "  L27: hasAll()"
   ],
+  "router/index.js": [
+    "  L261: requestIdleCallback()"
+  ],
   "components/CrudTable.vue": [
     "  L5: defineOptions()"
   ],
@@ -78,20 +81,16 @@
     "  L5: defineOptions()"
   ],
   "layout/Index.vue": [
-    "  L183: myTenant()"
-  ],
-  "views/agent/Index.vue": [
-    "  L354: copyToClipboard()"
+    "  L180: myTenant()"
   ],
   "views/chat/Index.vue": [
-    "  L118: Audio()",
-    "  L482: scrollBottom()"
+    "  L68: apiCreateSession()"
   ],
-  "views/knowledge/Index.vue": [
-    "  L725: onProgress()",
-    "  L732: onRetry()"
+  "views/knowledge/KbList.vue": [
+    "  L771: onProgress()",
+    "  L778: onRetry()"
   ],
-  "views/settings/Index.vue": [
-    "  L234: listTenantUsers()"
+  "views/knowledge/Kg.vue": [
+    "  L81: loadKg()"
   ]
 }

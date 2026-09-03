@@ -1010,3 +1010,16 @@
 **明日计划 Day 60：**
 - [ ] RCA 知识库条目详情查看（点击条目展开根因分析详情）
 - [ ] MiniMax 大模型平台日常维护（前端语法检查 / API 路径一致性）
+
+## Day 60 - 2026-09-03 ✅ RCA行展开详情 + Monitor刷新时间 + 环境修复
+
+**今日完成：**
+- [x] **Alerts.vue RCA 行展开详情**：`el-table` 新增 `type="expand"` 列，展开显示完整根因分析（cause）+ 建议操作列表（suggestedActions JSON 解析）+ 历史经验标签云（historicalKnowledge JSON 解析）；`getParsedActions()` / `getParsedHistory()` 安全 JSON 解析函数
+- [x] **Overview.vue 刷新时间**：`lastRefreshed` 时间戳显示 + 手动刷新按钮 + `refreshAll()` 并行加载 4 模块；`formatTime()` 工具函数
+- [x] **环境修复**：`package-lock.json`（写死 tencentyun 不可达）→ 删锁文件 + `npm install` 重新安装 341 包；vite 5.4.21 构建成功
+- [x] 自检 13/13 ✅ + 静态 5/5 ✅ + vite build 42.41s ✅ + API 0 mismatch ✅
+
+**明日计划 Day 61：**
+- [ ] RCA 知识库导出 CSV 功能
+- [ ] Monitor 告警批量操作（批量确认/解决）
+- [ ] 日常维护（语法检查 / API 一致性）

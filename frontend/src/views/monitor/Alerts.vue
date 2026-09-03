@@ -1,5 +1,5 @@
 <!--
-  @file monitor/Alerts.vue - 告警管理 (V7.9, Day 59)
+  @file monitor/Alerts.vue - 告警管理 (V7.10, Day 60)
   路由: /monitor/alerts
   合并: 活跃告警 + 历史告警 (原 2 个 tab)
   Day 55 新增: RCA 根因分析详情抽屉 (category / cause / suggestedActions / historicalKnowledge)
@@ -179,6 +179,34 @@
 
         <!-- RCA 知识条目列表 -->
         <el-table :data="savedRcaEntries" v-loading="savedRcaLoading" stripe empty-text="暂无已保存的 RCA 知识条目">
+          <!-- Day 60: 行展开 — 显示完整根因分析和建议操作 -->
+          <el-table-column type="expand" width="50">
+            <template #default="{ row }">
+              <div style="padding: 12px 16px; background: var(--el-fill-color-light); border-radius: 6px">
+                <!-- 根因分析 -->
+                <div style="margin-bottom: 12px">
+                  <div style="font-size:12px;font-weight:600;color:var(--el-text-color-secondary);margin-bottom:6px">🔍 根因分析</div>
+                  <div style="font-size:13px;line-height:1.6;color:var(--el-text-color-primary)">{{ row.cause || '（无）' }}</div>
+                </div>
+                <!-- 建议操作 -->
+                <div v-if="getParsedActions(row.suggestedActions).length" style="margin-bottom: 12px">
+                  <div style="font-size:12px;font-weight:600;color:var(--el-text-color-secondary);margin-bottom:6px">🛠️ 建议操作</div>
+                  <ul style="margin:0;padding-left:20px">
+                    <li v-for="(action, ai) in getParsedActions(row.suggestedActions)" :key="ai" style="font-size:13px;line-height:1.8;color:var(--el-text-color-primary)">{{ action }}</li>
+                  </ul>
+                </div>
+                <!-- 历史经验 -->
+                <div v-if="getParsedHistory(row.historicalKnowledge).length">
+                  <div style="font-size:12px;font-weight:600;color:var(--el-text-color-secondary);margin-bottom:6px">📚 历史经验</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px">
+                    <el-tag v-for="(h, hi) in getParsedHistory(row.historicalKnowledge)" :key="hi" size="small" type="info" style="font-size:12px">{{ h }}</el-tag>
+                  </div>
+                </div>
+                <!-- 无内容提示 -->
+                <div v-if="!row.cause && !getParsedActions(row.suggestedActions).length && !getParsedHistory(row.historicalKnowledge).length" style="font-size:13px;color:var(--el-text-color-secondary);font-style:italic">暂无详细分析内容</div>
+              </div>
+            </template>
+          </el-table-column>
           <el-table-column prop="severity" label="级别" width="80">
             <template #default="{ row }">
               <el-tag :type="getLevelType(row.severity)" size="small">{{ getLevelLabel(row.severity) }}</el-tag>
@@ -558,6 +586,18 @@ function getCategoryLabel(cat) {
     NETWORK: '网络问题',
     UNKNOWN: '未知'
   }[cat] || cat
+}
+
+// Day 60: 解析 suggestedActions JSON 数组
+function getParsedActions(raw) {
+  if (!raw) return []
+  try { const a = JSON.parse(raw); return Array.isArray(a) ? a : [] } catch { return [] }
+}
+
+// Day 60: 解析 historicalKnowledge JSON 数组
+function getParsedHistory(raw) {
+  if (!raw) return []
+  try { const h = JSON.parse(raw); return Array.isArray(h) ? h : [] } catch { return [] }
 }
 
 // 时长格式化

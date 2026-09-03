@@ -1,14 +1,21 @@
 <!--
-  @file monitor/Overview.vue - 监控概览 (V7.6)
+  @file monitor/Overview.vue - 监控概览 (V7.10, Day 60)
   路由: /monitor/overview
   合并: JVM + 统计 + SLA + 趋势 (原 4 个 tab)
+  Day 60: 新增「上次刷新时间」自动更新显示 + 手动刷新按钮
 -->
 <template>
   <div class="overview-page">
     <!-- JVM 实时 -->
     <el-card shadow="never" class="section-card">
       <template #header>
-        <span class="card-title">🖥️ JVM 实时指标</span>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span class="card-title">🖥️ JVM 实时指标</span>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--el-text-color-secondary)">
+            <span v-if="lastRefreshed">刷新于 {{ lastRefreshed }}</span>
+            <el-button size="small" link type="primary" :icon="Refresh" @click="refreshAll">刷新</el-button>
+          </div>
+        </div>
       </template>
       <el-descriptions :column="3" border v-loading="loadingJvm">
         <el-descriptions-item label="堆内存使用">{{ jvm.heapUsed || '-' }} / {{ jvm.heapMax || '-' }}</el-descriptions-item>
@@ -88,11 +95,24 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { monitorApi } from '@/api/monitor'
+import { Refresh } from '@element-plus/icons-vue'
 
 const loadingJvm = ref(false)
 const loadingStats = ref(false)
 const loadingSla = ref(false)
 const loadingTrend = ref(false)
+const lastRefreshed = ref('')
+
+function formatTime(d) {
+  if (!d) return ''
+  const pad = n => String(n).padStart(2, '0')
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
+async function refreshAll() {
+  await Promise.all([loadJvm(), loadStats(), loadSla(), loadTrend()])
+  lastRefreshed.value = formatTime(new Date())
+}
 
 const jvm = reactive({})
 const sla = reactive({})
@@ -154,10 +174,7 @@ async function loadTrend() {
 }
 
 onMounted(() => {
-  loadJvm()
-  loadStats()
-  loadSla()
-  loadTrend()
+  refreshAll()
 })
 </script>
 
