@@ -81,6 +81,20 @@ export const toggleAlertRule = (id, enabled) =>
 export const acknowledgeAlert = (id, notes = '') =>
   http.post(`/monitor/alerts/${id}/ack`, notes ? { notes } : {})
 
+// ==================== Day 61: 解决告警 + 批量操作 ====================
+
+/** 解决单个告警 (Day 61) */
+export const resolveAlert = (id) =>
+  http.post(`/monitor/alerts/${id}/resolve`)
+
+/** 批量确认告警 (Day 61) */
+export const batchAcknowledge = (ids) =>
+  http.post(`/monitor/alerts/batch/ack`, ids)
+
+/** 批量解决告警 (Day 61) */
+export const batchResolve = (ids) =>
+  http.post(`/monitor/alerts/batch/resolve`, ids)
+
 // ==================== 静默功能 (Day 35) ====================
 
 /**
@@ -201,6 +215,19 @@ export const listRcaKnowledge = (params) =>
 export const deleteRcaKnowledge = (id) =>
   http.delete(`/monitor/alerts/rca/knowledge/${id}`)
 
+// ==================== Day 61: RCA 知识库导出 CSV ====================
+
+/**
+ * 导出 RCA 知识库为 CSV（返回 blob 触发下载）
+ * @param {object} params - { metricName?, savedBy? }
+ */
+export const exportRcaKnowledgeCsv = (params = {}) => {
+  return http.get('/monitor/alerts/rca/knowledge/export', {
+    params,
+    responseType: 'blob'
+  })
+}
+
 // ==================== Day 32: RCA 根因分析 + 异常检测 API ====================
 
 /** 告警 RCA 分析 (Day 33 修: 加 /api/v1 前缀) */
@@ -319,7 +346,9 @@ function createMonitorApi() {
     // Day 57: 知识库条目触发 RCA
     rcaAnalysisByMetric,
     // Day 58: RCA 保存到知识库
-    saveRcaToKnowledge, listRcaKnowledge, deleteRcaKnowledge
+    saveRcaToKnowledge, listRcaKnowledge, deleteRcaKnowledge,
+    // Day 61: 批量操作 + 导出
+    resolveAlert, batchAcknowledge, batchResolve, exportRcaKnowledgeCsv
   }
 }
 const monitorApi = createMonitorApi()

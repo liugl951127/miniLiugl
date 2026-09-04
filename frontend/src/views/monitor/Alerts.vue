@@ -1,10 +1,11 @@
 <!--
-  @file monitor/Alerts.vue - 告警管理 (V7.10, Day 60)
+  @file monitor/Alerts.vue - 告警管理 (V7.11, Day 61)
   路由: /monitor/alerts
   合并: 活跃告警 + 历史告警 (原 2 个 tab)
   Day 55 新增: RCA 根因分析详情抽屉 (category / cause / suggestedActions / historicalKnowledge)
   Day 57 新增: 知识库 Tab「触发 RCA」按钮（点击条目自动触发同类告警 RCA 分析）
   Day 59 新增: 已保存 RCA Tab — 查看/删除已保存的 RCA 知识条目
+  Day 61 新增: 批量确认/解决 (checkbox selection) + 已保存 RCA 导出 CSV + 修复 ackAlert API 调用
 -->
 <template>
   <div class="alerts-page">
@@ -26,8 +27,18 @@
             <el-option label="信息" value="info" />
           </el-select>
           <el-button type="primary" :icon="Refresh" @click="loadActive">刷新</el-button>
+          <!-- Day 61: 批量操作 -->
+          <span v-if="selectedActiveAlerts.length > 0" style="margin-left:8px">
+            <el-button type="warning" size="default" @click="doBatchAck" :loading="batchLoading">
+              批量确认 ({{ selectedActiveAlerts.length }})
+            </el-button>
+            <el-button type="success" size="default" @click="doBatchResolve" :loading="batchLoading">
+              批量解决 ({{ selectedActiveAlerts.length }})
+            </el-button>
+          </span>
         </div>
-        <el-table :data="activeAlerts" v-loading="loadingActive" stripe>
+        <el-table :data="activeAlerts" v-loading="loadingActive" stripe @selection-change="onActiveSelectionChange">
+          <el-table-column type="selection" width="40" />
           <el-table-column prop="level" label="级别" width="80">
             <template #default="{ row }">
               <el-tag :type="getLevelType(row.level)" size="small">{{ getLevelLabel(row.level) }}</el-tag>
@@ -163,6 +174,8 @@
           </el-select>
           <el-button type="primary" :icon="Search" @click="loadSavedRca">查询</el-button>
           <el-button :icon="Refresh" @click="loadSavedRca">刷新</el-button>
+          <!-- Day 61: 导出 CSV -->
+          <el-button type="success" :icon="Download" :loading="exportCsvLoading" @click="exportRcaCsv">导出 CSV</el-button>
         </div>
 
         <!-- 统计卡片 -->
@@ -393,7 +406,7 @@
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Refresh, Search, Loading, InfoFilled, Collection } from '@element-plus/icons-vue'
+import { Refresh, Search, Loading, InfoFilled, Collection, Download } from '@element-plus/icons-vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { monitorApi } from '@/api/monitor'
 
@@ -409,6 +422,11 @@ const loadingHistory = ref(false)
 
 const activeAlerts = ref([])
 const activeFilter = reactive({ keyword: '', level: '' })
+// Day 61: 批量选择
+const selectedActiveAlerts = ref([])
+const batchLoading = ref(false)
+// Day 61: 导出 CSV
+const exportCsvLoading = ref(false)
 
 const historyAlerts = ref([])
 const historyFilter = reactive({ dateRange: null, level: '' })
@@ -691,7 +709,7 @@ async function loadHistory() {
 
 async function ackAlert(row) {
   try {
-    await monitorApi.ackAlert(row.id)
+    await monitorApi.acknowledgeAlert(row.id)
     ElMessage.success('已确认')
     loadActive()
   } catch (e) { ElMessage.error('操作失败') }
@@ -703,6 +721,66 @@ async function resolveAlert(row) {
     ElMessage.success('已解决')
     loadActive()
   } catch (e) { ElMessage.error('操作失败') }
+}
+
+// Day 61: 批量操作
+function onActiveSelectionChange(selection) {
+  selectedActiveAlerts.value = selection
+}
+
+async function doBatchAck() {
+  const ids = selectedActiveAlerts.value.map(r => r.id)
+  if (!ids.length) return
+  batchLoading.value = true
+  try {
+    const res = await monitorApi.batchAcknowledge(ids)
+    if (res.code === 0) {
+      ElMessage.success(`已确认 ${res.data?.succeeded || ids.length} 条告警`)
+      selectedActiveAlerts.value = []
+      loadActive()
+    } else {
+      ElMessage.error(res.message || '批量确认失败')
+    }
+  } catch (e) { ElMessage.error('批量确认失败: ' + (e?.message || '未知错误'))
+  } finally { batchLoading.value = false }
+}
+
+async function doBatchResolve() {
+  const ids = selectedActiveAlerts.value.map(r => r.id)
+  if (!ids.length) return
+  batchLoading.value = true
+  try {
+    const res = await monitorApi.batchResolve(ids)
+    if (res.code === 0) {
+      ElMessage.success(`已解决 ${res.data?.succeeded || ids.length} 条告警`)
+      selectedActiveAlerts.value = []
+      loadActive()
+    } else {
+      ElMessage.error(res.message || '批量解决失败')
+    }
+  } catch (e) { ElMessage.error('批量解决失败: ' + (e?.message || '未知错误'))
+  } finally { batchLoading.value = false }
+}
+
+// Day 61: 导出 RCA 知识库 CSV
+async function exportRcaCsv() {
+  exportCsvLoading.value = true
+  try {
+    const params = {}
+    if (savedRcaFilter.metricName) params.metricName = savedRcaFilter.metricName
+    const blob = await monitorApi.exportRcaKnowledgeCsv(params)
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `rca-knowledge-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+    ElMessage.success('CSV 导出成功')
+  } catch (e) {
+    ElMessage.error('导出失败: ' + (e?.message || '未知错误'))
+  } finally {
+    exportCsvLoading.value = false
+  }
 }
 
 onMounted(() => {

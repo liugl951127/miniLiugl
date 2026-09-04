@@ -549,6 +549,58 @@ public class MonitorController {
         return Result.ok();
     }
 
+    // ---------- Day 61: RCA 知识库导出 CSV ----------
+    /**
+     * Day 61: 导出已保存的 RCA 知识条目为 CSV 文件.
+     */
+    @Operation(summary = "导出 RCA 知识库 CSV (Day 61)")
+    @GetMapping("/alerts/rca/knowledge/export")
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+    public ResponseEntity<byte[]> exportRcaKnowledgeCsv(
+            @RequestParam(required = false) String metricName,
+            @RequestParam(required = false) Long savedBy) {
+        List<AlertRcaKnowledge> entries;
+        if (metricName != null && !metricName.isBlank()) {
+            entries = rcaKnowledgeMapper.selectByMetricName(metricName, 1000);
+        } else if (savedBy != null) {
+            entries = rcaKnowledgeMapper.selectBySavedBy(savedBy, 1000);
+        } else {
+            entries = rcaKnowledgeMapper.selectList(null).stream().limit(1000).toList();
+        }
+
+        StringBuilder csv = new StringBuilder();
+        csv.append("ID,告警ID,指标名称,规则名,级别,根因分类,根因,置信度,分析方法,保存人,保存时间,建议操作,历史经验\n");
+        for (AlertRcaKnowledge e : entries) {
+            csv.append(e.getId()).append(",");
+            csv.append(e.getAlertId()).append(",");
+            csv.append(escapeCsv(e.getMetricName())).append(",");
+            csv.append(escapeCsv(e.getRuleName())).append(",");
+            csv.append(escapeCsv(e.getSeverity())).append(",");
+            csv.append(escapeCsv(e.getCategory())).append(",");
+            csv.append(escapeCsv(e.getCause())).append(",");
+            csv.append(e.getConfidence()).append(",");
+            csv.append(escapeCsv(e.getMethod())).append(",");
+            csv.append(e.getSavedBy()).append(",");
+            csv.append(e.getCreatedAt()).append(",");
+            csv.append(escapeCsv(e.getSuggestedActions())).append(",");
+            csv.append(escapeCsv(e.getHistoricalKnowledge())).append("\n");
+        }
+
+        byte[] body = csv.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .header("Content-Type", "text/csv; charset=UTF-8")
+                .header("Content-Disposition", "attachment; filename=rca-knowledge.csv")
+                .body(body);
+    }
+
+    private String escapeCsv(String val) {
+        if (val == null) return "";
+        if (val.contains(",") || val.contains("\"") || val.contains("\n")) {
+            return "\"" + val.replace("\"", "\"\"") + "\"";
+        }
+        return val;
+    }
+
     /**
      * 手动触发异常检测 (Day 31).
      */
@@ -658,6 +710,79 @@ public class MonitorController {
         alertEventMapper.updateById(e);
         log.info("[monitor] alert {} acked by {}", id, e.getAckedBy());
         return Result.ok(true);
+    }
+
+    // ---------- Day 61: 解决告警（单个） ----------
+    /**
+     * Day 61: 解决单个告警事件.
+     */
+    @Operation(summary = "解决告警 (Day 61)")
+    @PostMapping("/alerts/{id}/resolve")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public Result<Boolean> resolveAlert(@PathVariable Long id) {
+        log.info("[monitor] resolve alert id={}", id);
+        AlertEvent e = alertEventMapper.selectById(id);
+        if (e == null) {
+            return Result.fail("告警事件不存在: " + id);
+        }
+        e.setStatus("resolved");
+        e.setResolvedAt(java.time.LocalDateTime.now());
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof Long) {
+            e.setResolvedBy((Long) auth.getPrincipal());
+        }
+        alertEventMapper.updateById(e);
+        log.info("[monitor] alert {} resolved", id);
+        return Result.ok(true);
+    }
+
+    // ---------- Day 61: 批量确认/解决 ----------
+    /**
+     * Day 61: 批量确认告警.
+     */
+    @Operation(summary = "批量确认告警 (Day 61)")
+    @PostMapping("/alerts/batch/ack")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public Result<Map<String, Object>> batchAcknowledge(@RequestBody List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Result.fail("ID 列表不能为空");
+        }
+        int count = 0;
+        for (Long id : ids) {
+            AlertEvent e = alertEventMapper.selectById(id);
+            if (e != null) {
+                e.setStatus("acked");
+                e.setAckedAt(java.time.LocalDateTime.now());
+                alertEventMapper.updateById(e);
+                count++;
+            }
+        }
+        log.info("[monitor] batch ack {} alerts, {} succeeded", ids.size(), count);
+        return Result.ok(Map.of("total", ids.size(), "succeeded", count));
+    }
+
+    /**
+     * Day 61: 批量解决告警.
+     */
+    @Operation(summary = "批量解决告警 (Day 61)")
+    @PostMapping("/alerts/batch/resolve")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public Result<Map<String, Object>> batchResolve(@RequestBody List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Result.fail("ID 列表不能为空");
+        }
+        int count = 0;
+        for (Long id : ids) {
+            AlertEvent e = alertEventMapper.selectById(id);
+            if (e != null) {
+                e.setStatus("resolved");
+                e.setResolvedAt(java.time.LocalDateTime.now());
+                alertEventMapper.updateById(e);
+                count++;
+            }
+        }
+        log.info("[monitor] batch resolve {} alerts, {} succeeded", ids.size(), count);
+        return Result.ok(Map.of("total", ids.size(), "succeeded", count));
     }
 
     // ---------- Day 35: 静默功能 ----------
