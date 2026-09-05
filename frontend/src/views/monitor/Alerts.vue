@@ -741,8 +741,11 @@ async function doBatchAck() {
     } else {
       ElMessage.error(res.message || '批量确认失败')
     }
-  } catch (e) { ElMessage.error('批量确认失败: ' + (e?.message || '未知错误'))
-  } finally { batchLoading.value = false }
+  } catch (e) {
+    ElMessage.error('批量确认失败: ' + (e?.message || '未知错误'))
+  } finally {
+    batchLoading.value = false
+  }
 }
 
 async function doBatchResolve() {
@@ -758,8 +761,11 @@ async function doBatchResolve() {
     } else {
       ElMessage.error(res.message || '批量解决失败')
     }
-  } catch (e) { ElMessage.error('批量解决失败: ' + (e?.message || '未知错误'))
-  } finally { batchLoading.value = false }
+  } catch (e) {
+    ElMessage.error('批量解决失败: ' + (e?.message || '未知错误'))
+  } finally {
+    batchLoading.value = false
+  }
 }
 
 // Day 61: 导出 RCA 知识库 CSV

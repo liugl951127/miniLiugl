@@ -1,5 +1,5 @@
 #!/bin/bash
-cd /workspace/miniLiugl
+cd /workspace/minimax-platform
 count=0
 for f in $(find frontend/src -name "*.vue" -not -path "*/node_modules/*" -not -path "*/dist/*"); do
   # 破坏 1: class="xxx> 缺 "

@@ -1,6 +1,11 @@
 {
-  "errors": {},
+  "errors": {
+    "__tests__/e2e-page-integrity.test.js": [
+      "  L9: import 路径不存在: fs",
+      "  L10: import 路径不存在: path"
+    ]
+  },
   "warnings": {},
-  "total_err": 0,
+  "total_err": 2,
   "total_warn": 0
 }
